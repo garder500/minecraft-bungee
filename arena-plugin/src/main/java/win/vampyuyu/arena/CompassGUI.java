@@ -9,6 +9,7 @@ import org.bukkit.event.*;
 import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.*;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -79,39 +80,45 @@ public final class CompassGUI implements Listener {
     p.getInventory().setItem(8, item);
   }
 
-  /** Werewolves carry a claw instead of the compass; it opens the same menu and works as the key. */
-  void arm(Player p, String role) {
-    if (!role.equals("WEREWOLF")) {
-      // Menus open by themselves during a village game; the compass is no longer needed.
-      p.getInventory().setItem(8, null);
-      return;
-    }
-    ItemStack claw =
-        item(
-            Material.BONE,
-            "Werewolf claw",
-            "Vote for tonight's victim with the other wolves",
-            "Right-click to open the voting menu");
-    var meta = claw.getItemMeta();
-    meta.displayName(text("Werewolf claw", NamedTextColor.RED));
-    meta.getPersistentDataContainer().set(key, PersistentDataType.BYTE, (byte) 1);
-    claw.setItemMeta(meta);
-    p.getInventory().setItem(8, claw);
+  /**
+   * Menus open by themselves during a village game, so nobody keeps the compass: an item in hand
+   * that only some roles carried would give them away.
+   */
+  void disarm(Player p) {
+    p.getInventory().setItem(8, null);
   }
 
   public void open(Player p) {
     ArenaSession s = plugin.arenas.session(p.getUniqueId());
     if (s == null) return;
+    boolean skinned = plugin.skin != null && plugin.skin.active(p);
+    WerewolfMenus.Kind kind =
+        s.game instanceof WerewolfGame wolf ? WerewolfMenus.kind(wolf, p.getUniqueId()) : null;
+    if (kind != null) {
+      // The painted background carries the menu's name in its title tab.
+      CompassMenuHolder holder =
+          new CompassMenuHolder(
+              p.getUniqueId(),
+              s.config.id(),
+              skinned,
+              skinned
+                  ? MenuSkin.title(kind.tile, MenuSkin.ROWS_54, Component.empty())
+                  : Component.text(kind.title, TextColor.color(kind.color)));
+      holder.kind = kind;
+      p.openInventory(holder.getInventory());
+      render(holder, p, s);
+      return;
+    }
     boolean voting =
         s.game != null
             && (s.game.phase().equals("DAY_VOTE")
-                || s.game.phase().equals("NIGHT") && s.game.role(p.getUniqueId()).equals("WEREWOLF"));
+                || s.game.phase().equals("NIGHT")
+                    && s.game.role(p.getUniqueId()).equals("WEREWOLF"));
     boolean brewing =
         s.game != null
             && s.game.phase().equals("WITCH")
             && s.game.role(p.getUniqueId()).equals("WITCH");
     String name = voting ? "Voting" : brewing ? "Alembic" : "Arena compass";
-    boolean skinned = plugin.skin != null && plugin.skin.active(p);
     CompassMenuHolder holder =
         new CompassMenuHolder(
             p.getUniqueId(),
@@ -175,7 +182,14 @@ public final class CompassGUI implements Listener {
     if (p.getOpenInventory().getTopInventory().getHolder() instanceof CompassMenuHolder holder) {
       ArenaSession s = plugin.arenas.session(p.getUniqueId());
       if (s == null) p.closeInventory();
-      else render(holder, p, s);
+      else if (holder.kind != null
+          && (!(s.game instanceof WerewolfGame wolf)
+              || WerewolfMenus.kind(wolf, p.getUniqueId()) != holder.kind)) {
+        // The window title is the painted background: another menu needs a new window.
+        if (s.game instanceof WerewolfGame wolf
+            && WerewolfMenus.kind(wolf, p.getUniqueId()) != null) open(p);
+        else p.closeInventory();
+      } else render(holder, p, s);
     }
   }
 
@@ -200,8 +214,9 @@ public final class CompassGUI implements Listener {
 
   private static final TextColor GOLD = TextColor.color(0xe9d99b);
 
-  /** Pushes private game notices (the lovers' bond) to their recipients only, with a title and sound. */
-  private void deliverNotices(ArenaSession s) {
+  /** Pushes private game notices to their recipients only; the lovers' bond gets a title and sound. */
+  void deliverNotices(ArenaSession s) {
+    if (s.game == null) return;
     for (var notice : s.game.drainNotices().entrySet()) {
       Player target = Bukkit.getPlayer(notice.getKey());
       if (target == null) continue;
@@ -209,11 +224,14 @@ public final class CompassGUI implements Listener {
       plugin.onPlayer(
           target,
           () -> {
-            target.sendMessage(text(message, NamedTextColor.LIGHT_PURPLE));
+            target.sendMessage(whisper(message, WerewolfPresentation.CUPID));
+            if (!message.startsWith(WerewolfGame.LOVE_NOTICE)) return null;
             target.showTitle(
                 net.kyori.adventure.title.Title.title(
-                    text("♥ In love", NamedTextColor.LIGHT_PURPLE),
-                    text("Check your compass for your partner", NamedTextColor.GRAY)));
+                    Component.text("♥ In love", TextColor.color(WerewolfPresentation.CUPID)),
+                    Component.text(
+                        "Your lover's name is on the right of your screen",
+                        TextColor.color(WerewolfPresentation.INK))));
             target.playSound(target.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, .5f, 1.6f);
             return null;
           });
@@ -227,6 +245,10 @@ public final class CompassGUI implements Listener {
   }
 
   private void render(CompassMenuHolder holder, Player p, ArenaSession s) {
+    if (holder.kind != null && s.game instanceof WerewolfGame wolf) {
+      renderRole(holder, p, s, wolf);
+      return;
+    }
     Inventory inv = holder.getInventory();
     holder.targets.clear();
     holder.abilities.clear();
@@ -305,7 +327,7 @@ public final class CompassGUI implements Listener {
                 "Stay within the arena. Your original items are stored.",
                 game instanceof FreeplayGame
                     ? friendly(game.help(p.getUniqueId()), s)
-                    : "Day ties and night ties eliminate nobody."),
+                    : "Ties eliminate nobody. Wolves win once no villager is left."),
             "book"));
     place(
         inv,
@@ -344,7 +366,8 @@ public final class CompassGUI implements Listener {
             position,
             themed(
                 holder,
-                item(Material.POTION, friendly(ability.getValue(), s), "Click to use this ability."),
+                item(
+                    Material.POTION, friendly(ability.getValue(), s), "Click to use this ability."),
                 "vial"));
       }
     }
@@ -369,6 +392,81 @@ public final class CompassGUI implements Listener {
               "exit"));
   }
 
+  /** A role menu of the design guide: heads on the ring, buttons in the bottom boxes, hotbar. */
+  private void renderRole(CompassMenuHolder holder, Player p, ArenaSession s, WerewolfGame game) {
+    Inventory inv = holder.getInventory();
+    holder.targets.clear();
+    holder.abilities.clear();
+    holder.clicks.clear();
+    holder.leaveSlot = -1;
+    holder.phase = game.phase();
+    inv.clear();
+    clearBottom(p);
+    long seconds = Math.max(0, (s.phaseEndsAt - System.currentTimeMillis() + 999) / 1000);
+    for (var entry :
+        WerewolfMenus.menu(
+            game,
+            p.getUniqueId(),
+            s.players,
+            seconds,
+            plugin.arenas.leaveBlocked(p.getUniqueId()))) {
+      place(inv, p, entry.raw(), item(holder, entry));
+      if (entry.click() != null) holder.clicks.put(entry.raw(), entry.click());
+    }
+  }
+
+  static Component line(WerewolfMenus.Line line) {
+    return line.text().isEmpty()
+        ? Component.empty()
+        : Component.text(line.text(), TextColor.color(line.color()))
+            .decoration(TextDecoration.ITALIC, false);
+  }
+
+  /** "Private · …": what only this player sees, in the chat journal. */
+  static Component whisper(String text, int color) {
+    return Component.text("Private · ", TextColor.color(WerewolfPresentation.INK_DIM))
+        .append(Component.text(text, TextColor.color(color)))
+        .decoration(TextDecoration.ITALIC, false);
+  }
+
+  /** Plain item standing in for each pack icon when the player has no resource pack. */
+  static Material fallback(String icon) {
+    if (icon == null) return Material.PAPER;
+    if (icon.startsWith("card-")) return Material.PAPER;
+    if (icon.startsWith("potion-life")) return Material.HONEY_BOTTLE;
+    if (icon.startsWith("potion-death")) return Material.FERMENTED_SPIDER_EYE;
+    return switch (icon) {
+      case "moon" -> Material.GRAY_BED;
+      case "target" -> Material.TARGET;
+      case "heart" -> Material.RED_DYE;
+      case "shield" -> Material.SHIELD;
+      case "lock" -> Material.BARRIER;
+      case "timer" -> Material.CLOCK;
+      case "mark-wolf" -> Material.BONE;
+      default -> Material.GRAY_DYE; // skip, mark-last
+    };
+  }
+
+  private ItemStack item(CompassMenuHolder holder, WerewolfMenus.Entry entry) {
+    ItemStack item =
+        new ItemStack(entry.head() != null ? Material.PLAYER_HEAD : fallback(entry.icon()));
+    ItemMeta meta = item.getItemMeta();
+    meta.displayName(line(entry.lines().getFirst()));
+    meta.lore(entry.lines().stream().skip(1).map(CompassGUI::line).toList());
+    if (entry.glint()) meta.setEnchantmentGlintOverride(true);
+    if (entry.amount() > 1) meta.setMaxStackSize(99);
+    if (entry.head() != null && meta instanceof SkullMeta skull) {
+      var profile = profiles.get(entry.head());
+      if (profile != null) skull.setOwnerProfile(profile.clone());
+    }
+    if (holder.skinned && entry.icon() != null)
+      meta.setItemModel(new NamespacedKey("vampyuyu", "icon/" + entry.icon()));
+    meta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
+    item.setItemMeta(meta);
+    item.setAmount(Math.max(1, Math.min(99, entry.amount())));
+    return item;
+  }
+
   /** Raw slot in the 54-slot window: 0-53 chest, 54-80 inventory rows, 81-89 hotbar. */
   private static void place(Inventory top, Player p, int raw, ItemStack item) {
     if (raw < 54) top.setItem(raw, item);
@@ -380,9 +478,10 @@ public final class CompassGUI implements Listener {
     return raw < 81 ? raw - 54 + 9 : raw - 81;
   }
 
-  /** Empties the menu half of the inventory; hotbar slot 8 keeps the claw or compass. */
+  /** Empties the menu half of the inventory; hotbar slot 8 keeps the compass if it holds it. */
   private void clearBottom(Player p) {
-    for (int i = 0; i < 36; i++) if (i != 8) p.getInventory().setItem(i, null);
+    for (int i = 0; i < 36; i++)
+      if (i != 8 || !compass(p.getInventory().getItem(8))) p.getInventory().setItem(i, null);
   }
 
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
@@ -406,7 +505,8 @@ public final class CompassGUI implements Listener {
       if (s == null
           || !holder.viewer.equals(p.getUniqueId())
           || !holder.arenaId.equals(s.config.id())) return;
-      if (e.getRawSlot() == holder.leaveSlot && holder.leaveSlot != -1) {
+      String click = holder.clicks.get(e.getRawSlot());
+      if ("leave".equals(click) || e.getRawSlot() == holder.leaveSlot && holder.leaveSlot != -1) {
         if (plugin.arenas.leaveBlocked(p.getUniqueId())) return;
         plugin.onPlayer(
             p,
@@ -419,6 +519,30 @@ public final class CompassGUI implements Listener {
       }
       if (s.game != null && !s.game.phase().equals(holder.phase)) {
         refresh(p);
+        return;
+      }
+      if (click != null
+          && s.game instanceof WerewolfGame wolf
+          && s.presentation.isDone()
+          && !s.finishing) {
+        int color = WerewolfPresentation.color(wolf.role(p.getUniqueId()));
+        try {
+          String response =
+              click.startsWith("select:")
+                  ? wolf.select(p.getUniqueId(), UUID.fromString(click.substring(7)))
+                  : click.startsWith("aim:")
+                      ? wolf.aim(p.getUniqueId(), UUID.fromString(click.substring(4)))
+                      : wolf.use(p.getUniqueId(), click.substring(4));
+          p.sendMessage(whisper(friendly(response, s), color));
+          p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, SoundCategory.MASTER, .35f, 1.3f);
+          deliverNotices(s);
+          plugin.arenas.phaseChanged(s);
+          refresh(p);
+        } catch (IllegalArgumentException ex) {
+          p.sendMessage(whisper(friendly(ex.getMessage(), s), WerewolfPresentation.NO));
+          p.playSound(
+              p.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, SoundCategory.MASTER, .35f, .7f);
+        }
         return;
       }
       String ability = holder.abilities.get(e.getRawSlot());
