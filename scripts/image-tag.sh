@@ -10,11 +10,11 @@ rev=${2:-HEAD}
 common=(Dockerfile .dockerignore)
 go=(go.mod go.sum cmd internal)
 pack=(scripts/build_pack.py resource-pack/pack)
-plugins=(claims-plugin network-plugin arena-plugin)
+plugins=(network-plugin arena-plugin)
 case $target in
  panel) paths=("${common[@]}" "${go[@]}" web "${pack[@]}") ;;
  controller | tools) paths=("${common[@]}" "${go[@]}") ;;
- server) paths=("${common[@]}" "${plugins[@]}" "${pack[@]}") ;;
+ server) paths=("${common[@]}" "${plugins[@]}" claims-plugin "${pack[@]}") ;;
  lobby) paths=("${common[@]}" "${plugins[@]}" "${pack[@]}" lobby infra/lobby-palace) ;;
  *) echo "Unknown image target: $target" >&2; exit 1 ;;
 esac

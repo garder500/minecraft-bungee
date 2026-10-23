@@ -122,7 +122,22 @@ Creative intentionally runs only **SimpleClaimSystem 1.13.1** and **VampyuyuNetw
 
 Lobby and Survival were aligned from 1.21.4 to 1.21.9 in copies of their existing data. The former complete state remains in `state/smoke`, and the stopped pre-import backup is `backups/network-20261019T213304Z.tar.gz`. To roll back locally, stop the entire stack, restore `.env` to `STATE_DIR=./state/smoke`, `MC_VERSION=1.21.4`, `PAPER_BUILD=232`, and restart. This switches back to the preserved old data; **never start the imported Creative or upgraded world copies with 1.21.4**. New play progress after the switch belongs to its respective state directory.
 
-## Production deployment
+## Fast plugin iteration
+
+Testing a plugin change does not need new images or a deployment. `make plugin PLUGIN=<name>` builds that one jar with the same JDK/Maven/Gradle images as the Dockerfile (caches in `~/.cache/vampyuyu`), drops it in `<state>/<server>/plugin-overrides/` and restarts **only** the servers that run it, after a chat warning (about 20–30 s). It is a restart, not Paper's `/reload`: the plugins bind ports and hold Redis subscriptions, executors and arena snapshot journals, which a live reload would leak or corrupt.
+
+| `PLUGIN=` | Jar | Servers |
+| --- | --- | --- |
+| `network` | `network-display.jar` | lobby, creative, survival |
+| `arena` | `nexus-arena-engine.jar` | lobby, creative, survival |
+| `lobby` | `lobby-selector.jar` | lobby |
+| `claims` | `SimpleClaimSystem.jar` | creative |
+
+`SERVERS="creative"` narrows the targets, `FAST=1` skips the tests, `FORCE=1` restarts even while an arena game is running (otherwise refused: `/arena list` must show only `WAITING`). `make plugin-status` lists overrides, `make plugin-clear` drops them and restarts back onto the image's jars. `infra/start.sh` applies overrides at every start and logs `PLUGIN OVERRIDE ACTIVE` for each.
+
+**Production**, from your machine over SSH: create the gitignored `.env.remote` with `PROD_HOST=user@host`, `PROD_PATH=/path/to/the/clone` (and `PROD_PORT` if not 22), then `make plugin-prod PLUGIN=arena`, `make plugin-status-prod`, `make plugin-clear-prod`. The jar is built locally and copied over; nothing is built on the server. The production clone must contain this version of `scripts/plugins.sh` and `infra/start.sh`. `scripts/deploy.sh` clears every override and restarts the servers that had one, so a deployment is always what runs afterwards.
+
+
 
 GitHub Actions checks only what a change touches: Go tests, the frontend and its advisories, the archive/pack scripts, Compose, and the Paper plugins that changed (each through its Dockerfile stage). A change to the `Dockerfile` or the workflow checks everything, including every image. `check` is the single status to require on `main`.
 
@@ -136,7 +151,7 @@ ghcr.io/delikesance/minecraft-bungee-lobby:src-<hash>
 ghcr.io/delikesance/minecraft-bungee-tools:src-<hash>
 ```
 
-`scripts/image-tag.sh <target> [commit]` hashes every tracked file that image's build reads. When a commit leaves them unchanged, CI does not rebuild the image: it adds the commit tag to the existing one in seconds. A plugin change therefore rebuilds only the server and lobby images, and a dashboard change only the panel. Maven dependencies sit in their own Docker layer, so a source-only plugin change does not download them again.
+`scripts/image-tag.sh <target> [commit]` hashes every tracked file that image's build reads. When a commit leaves them unchanged, CI does not rebuild the image: it adds the commit tag to the existing one in seconds. A plugin change therefore rebuilds only the server and lobby images (a claims change only the server image), and a dashboard change only the panel. The publish builds read the plugin jobs' layer caches, so each plugin is compiled once per push. Maven dependencies sit in their own Docker layer, so a source-only plugin change does not download them again.
 
 Production Compose never builds source. Tags select exact commits; no `latest` tag is used. For immutable deployment enforcement beyond tag convention, record registry digests in release records. Third-party runtime/build images are pinned by digest; Minecraft and Velocity versions **and builds** are separately pinned. Builds currently publish `linux/amd64`; verify `uname -m` is `x86_64`. Maven's Paper API snapshot is build-time-only; runtime server versions do not follow it.
 

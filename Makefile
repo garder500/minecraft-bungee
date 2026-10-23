@@ -6,7 +6,7 @@ ZIP ?=
 OUT ?=
 export COMPOSE SERVER WORLD ZIP OUT
 
-.PHONY: export-all zip-all help status up stop configure export zip import restore inspect export-panel import-panel backup test-archives pack art test-pack
+.PHONY: export-all zip-all help status up stop configure export zip import restore inspect export-panel import-panel backup test-archives pack art test-pack plugin plugin-prod plugin-build plugin-clear plugin-clear-prod plugin-status plugin-status-prod test-plugins
 help: ## Show operator commands
 	@python3 scripts/world_archive.py help
 status: ## Show container status
@@ -42,3 +42,21 @@ art: ## Repaint pack textures from resource-pack/art/render.py (needs headless C
 	@python3 resource-pack/art/render.py
 test-pack: ## Validate the menu resource pack structure and reproducibility
 	@python3 scripts/test_pack.py
+PLUGIN ?=
+SERVERS ?=
+plugin: ## Build PLUGIN=network|arena|lobby|claims, override it locally, restart only its servers [SERVERS=...] [FAST=1] [FORCE=1]
+	@scripts/plugins.sh push $(PLUGIN) $(SERVERS)
+plugin-prod: ## Same on production over SSH (.env.remote: PROD_HOST, PROD_PATH)
+	@scripts/plugins.sh remote push $(PLUGIN) $(SERVERS)
+plugin-build: ## Only build PLUGIN's jar
+	@scripts/plugins.sh build $(PLUGIN)
+plugin-clear: ## Drop local plugin overrides and restart the affected servers [SERVERS=...]
+	@scripts/plugins.sh clear $(SERVERS)
+plugin-clear-prod: ## Drop production plugin overrides
+	@scripts/plugins.sh remote clear $(SERVERS)
+plugin-status: ## List local plugin overrides
+	@scripts/plugins.sh status
+plugin-status-prod: ## List production plugin overrides
+	@scripts/plugins.sh remote status
+test-plugins: ## Test plugin overrides (start.sh) and the hotfix script without Docker
+	@python3 scripts/test_plugins.py

@@ -36,6 +36,17 @@ if [[ "$previous" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$previous^{commit}" 2
  grep -qx 'infra/redis-start.sh' <<< "$changed" && force+=(redis)
 fi
 
+# A deployment is the source of truth: plugin hotfixes (scripts/plugins.sh) must not shadow the jars it
+# ships, so clear them and restart the servers that ran one.
+state=$(sed -n 's/^STATE_DIR=//p' .env | tail -n 1)
+for server in lobby creative survival; do
+ if compgen -G "${state:-./state}/$server/plugin-overrides/*.jar" > /dev/null; then
+  rm -f "${state:-./state}/$server/plugin-overrides/"*.jar
+  echo "Cleared plugin overrides on $server"
+  force+=("$server")
+ fi
+done
+
 # From here on a failure leaves the new tags in .env; rerunning the deployment finishes it.
 trap - ERR
 running=$(docker compose -f "$compose" ps --status running --services)

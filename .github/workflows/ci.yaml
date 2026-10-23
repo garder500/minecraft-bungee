@@ -35,7 +35,7 @@ jobs:
             all: [Dockerfile, .dockerignore, .github/workflows/**]
             go: [go.mod, go.sum, cmd/**, internal/**]
             web: [web/**]
-            scripts: [scripts/**, resource-pack/**, Makefile]
+            scripts: [scripts/**, resource-pack/**, Makefile, infra/start.sh]
             compose: [compose.*.yaml, .env.example, infra/**]
             lobby: [lobby/**]
             network: [network-plugin/**]
@@ -88,6 +88,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: make test-archives
       - run: make test-pack
+      - run: make test-plugins
   compose:
     needs: changes
     if: needs.changes.outputs.compose == 'true'
@@ -202,7 +203,15 @@ jobs:
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
-          cache-from: type=gha,scope=${{ matrix.target }}
+          # Plugin stages were already built (and tested) by the plugins job under their own scope; reading
+          # those scopes reuses their layers instead of compiling every plugin again for each image.
+          cache-from: |
+            type=gha,scope=${{ matrix.target }}
+            type=gha,scope=server
+            type=gha,scope=network-build
+            type=gha,scope=arena-build
+            type=gha,scope=claims-build
+            type=gha,scope=lobby-build
           cache-to: type=gha,mode=max,scope=${{ matrix.target }}
   # Runs scripts/deploy.sh on the production host. Connection settings are Actions variables; only the
   # SSH key is a secret. Skipped with a warning until the DEPLOY_HOST variable is set.

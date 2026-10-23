@@ -26,6 +26,19 @@ case "$1" in
    rm -f /data/plugins/SimpleClaimSystem*.jar
    cp /opt/claims/SimpleClaimSystem.jar /plugins/SimpleClaimSystem.jar
   fi
+  # Plugin hotfixes (scripts/plugins.sh) replace an image jar of the same name until the next deployment.
+  overrides=${PLUGIN_OVERRIDES:-/data/plugin-overrides}
+  image_plugins=${IMAGE_PLUGINS:-/plugins}
+  for jar in "$overrides"/*.jar; do
+   [ -f "$jar" ] || continue
+   cp "$jar" "$image_plugins/"
+   echo "PLUGIN OVERRIDE ACTIVE: ${jar##*/} (sha256 $(sha256sum "$jar" | cut -c1-12)); run scripts/plugins.sh clear to go back to the image" >&2
+  done
+  # The image syncs /plugins into /data/plugins but skips files that are newer there, so a cleared
+  # override would keep running. Removing our copies first makes /plugins always win.
+  for jar in "$image_plugins"/*.jar; do
+   [ -f "$jar" ] && rm -f "${DATA_PLUGINS:-/data/plugins}/${jar##*/}"
+  done
   exec /image/scripts/start
   ;;
  velocity)

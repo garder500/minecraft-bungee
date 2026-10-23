@@ -69,12 +69,15 @@ FROM gradle:jdk25@sha256:ca424744a6a45a575f333edea680696d980999c461be38b1574a4c7
 WORKDIR /build
 COPY claims-plugin/ ./
 RUN --mount=type=cache,target=/home/gradle/.gradle gradle shadowJar --no-daemon --console=plain
-FROM ${MINECRAFT_IMAGE} AS server
-COPY --from=claims-build /build/build/libs/SimpleClaimSystem-1.13.1.jar /opt/claims/SimpleClaimSystem.jar
+# Plugins every backend runs. Claims (Creative only) is added to `server` alone, so a claims change
+# never rebuilds or restarts the lobby.
+FROM ${MINECRAFT_IMAGE} AS server-base
 COPY --from=pack /out/vampyuyu-menus.sha1 /opt/vampyuyu-menus.sha1
 COPY --from=network-build /build/target/network-display.jar /plugins/network-display.jar
 COPY --from=arena-build /build/target/nexus-arena-engine.jar /plugins/nexus-arena-engine.jar
-FROM server AS lobby
+FROM server-base AS server
+COPY --from=claims-build /build/build/libs/SimpleClaimSystem-1.13.1.jar /opt/claims/SimpleClaimSystem.jar
+FROM server-base AS lobby
 COPY --from=lobby-build /build/target/lobby-selector.jar /plugins/lobby-selector.jar
 
 COPY infra/lobby-palace /opt/vampyuyu-lobby-palace
