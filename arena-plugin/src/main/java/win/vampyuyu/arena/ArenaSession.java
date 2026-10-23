@@ -8,8 +8,18 @@ public final class ArenaSession {
   public final Map<UUID, String> players = new ConcurrentHashMap<>();
   public final Set<UUID> bots = ConcurrentHashMap.newKeySet();
   public volatile GamePreset game;
+
+  /** The running werewolf game's play-by-play; silent for other games. */
+  volatile WerewolfJournal journal = WerewolfJournal.SILENT;
+
   public volatile long startedAt, phaseEndsAt;
   public volatile String observedPhase = "WAITING";
+
+  /** The Werewolf turn last seen by the clock (see {@link WerewolfGame#turnKey()}). */
+  volatile String observedTurn = "";
+
+  /** The practice bots of the current game, or null without bots. */
+  volatile WerewolfBots botBrain;
   public volatile boolean stopping;
   final Map<UUID, ArenaConfig.Spawn> homes = new ConcurrentHashMap<>();
   final Map<UUID, String> roster = new ConcurrentHashMap<>();
