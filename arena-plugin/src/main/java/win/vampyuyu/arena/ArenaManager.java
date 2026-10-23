@@ -135,10 +135,14 @@ public final class ArenaManager {
     return members.get(id);
   }
 
-  /** Living players cannot walk out of a running werewolf game. */
+  /**
+   * Living players cannot walk out of a running werewolf game, except in a practice game: nobody
+   * else is waiting on them there, and the arena closes by itself once no human is left.
+   */
   public boolean leaveBlocked(UUID id) {
     ArenaSession s = members.get(id);
     return s != null
+        && s.bots.isEmpty()
         && s.game instanceof WerewolfGame game
         && !s.stopping
         && !s.finishing

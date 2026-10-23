@@ -10,8 +10,8 @@ Everything lives in the gitignored .e2e/ folder; nothing of the real stack is to
 (JAVA25), Prism Launcher with an installed 26.3 instance (PRISM_DIR, PRISM_INSTANCE), Xvfb, and
 xdotool and ImageMagick (found on PATH or built through nix). EULA=TRUE must be set in .env.
 """
-import argparse, hashlib, http.server, os, pathlib, re, shutil, socket, struct, subprocess, sys
-import threading, time, urllib.request
+import argparse, shlex, hashlib, http.server, json, os, pathlib, re, shutil, socket, struct, subprocess, sys
+import threading, time, urllib.request, uuid
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -117,7 +117,33 @@ def stop_stale():
     time.sleep(1)
 
 
-def start_server(zip_path, sha1):
+ARENA_JAR = ROOT / "arena-plugin/target/nexus-arena-engine.jar"
+NETWORK_JAR = ROOT / "network-plugin/target/network-display.jar"
+API_PORT = 8085
+API_TOKEN = "e2e-token-" + "x" * 30
+
+
+def menu_pack_id(sha1):
+    """Same derivation as MenuSkin.packId: the plugin only trusts status events of this id."""
+    raw = bytearray(hashlib.md5(("vampyuyu-menus:" + sha1).encode()).digest())
+    raw[6] = raw[6] & 0x0F | 0x30
+    raw[8] = raw[8] & 0x3F | 0x80
+    return str(uuid.UUID(bytes=bytes(raw)))
+
+
+ARENA = {
+    "id": "e2e", "name": "E2E village", "worldName": "world", "preset": "werewolf",
+    "bounds": {"minX": -40, "minY": -64, "minZ": -40, "maxX": 40, "maxY": 320, "maxZ": 40},
+    "spawn": {"x": 0.5, "y": -60, "z": 0.5, "yaw": 0, "pitch": 0},
+    "allowedBreakBlocks": [], "allowedPlaceBlocks": [], "allowPvP": False, "allowChests": False,
+    "allowDoors": True, "gameMode": "ADVENTURE", "durationSeconds": 1800, "minPlayers": 4,
+    "maxPlayers": 20, "discussionSeconds": 60, "voteSeconds": 30, "nightSeconds": 30,
+    "werewolf": {"roles": {}, "cupidSeconds": 15, "witchSeconds": 15, "hunterSeconds": 15,
+                 "ambienceEnabled": True},
+}
+
+
+def start_server(zip_path, sha1, plugin=False):
     server = WORK / "server"
     shutil.rmtree(server, ignore_errors=True)
     server.mkdir(parents=True)
@@ -128,11 +154,39 @@ def start_server(zip_path, sha1):
         'generator-settings={"biome":"minecraft:plains","layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}]}', "spawn-monsters=false", "spawn-protection=0", "view-distance=4",
         f"server-port={MC_PORT}", "enable-rcon=true", f"rcon.port={RCON_PORT}",
         f"rcon.password={RCON_PASSWORD}", "enforce-secure-profile=false",
-        f"resource-pack=http://127.0.0.1:{HTTP_PORT}/{zip_path.name}", f"resource-pack-sha1={sha1}",
-        "require-resource-pack=true", "motd=e2e", "level-name=world", ""]))
+        *([] if plugin else [
+            f"resource-pack=http://127.0.0.1:{HTTP_PORT}/{zip_path.name}",
+            f"resource-pack-sha1={sha1}", "require-resource-pack=true"]),
+        "motd=e2e", "level-name=world", ""]))
+    env = dict(os.environ)
+    if plugin:
+        data = server / "plugins" / "NexusArenaEngine"
+        (data / "arenas").mkdir(parents=True)
+        shutil.copy(ARENA_JAR, server / "plugins" / ARENA_JAR.name)
+        shutil.copy(NETWORK_JAR, server / "plugins" / NETWORK_JAR.name)  # offers the pack on join
+        served = WORK / "pack" / "pack"
+        served.mkdir(exist_ok=True)
+        shutil.copy(zip_path, served / f"{sha1}.zip")
+        (data / "arenas" / "e2e.json").write_text(json.dumps(ARENA, indent=1))
+        (server / "token").write_text(API_TOKEN)
+        env.update(ROLE_BRIDGE_TOKEN_FILE=str(server / "token"), SERVER_ID="survival",
+                   MENU_PACK_BASE_URL=f"http://127.0.0.1:{HTTP_PORT}", MENU_PACK_REQUIRED="true",
+                   MENU_PACK_SHA1_FILE=str(WORK / "pack" / "vampyuyu-menus.sha1"),
+                   ROLE_BRIDGE_URL="http://127.0.0.1:9", ARENA_REDIS_HOST="127.0.0.1",
+                   WEREWOLF_LOG_CONSOLE="false")
     log = open(server / "console.log", "w")
-    proc = subprocess.Popen([java25(), "-Xmx1G", "-jar", str(paper_jar()), "--nogui"], cwd=server,
-                            stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
+    command = [java25(), "-Xmx1G", "-jar", str(paper_jar()), "--nogui"]
+    if plugin:
+        # The network plugin only reads /run/secrets/role_bridge_token: give a private mount
+        # namespace its own tmpfs there, so nothing on the real /run is touched.
+        # Binaries by their store directory (not under /run, and not the multi-call coreutils name).
+        store_bin = os.path.dirname(os.path.realpath(shutil.which("mkdir")))
+        mkdir, cp = f"{store_bin}/mkdir", f"{store_bin}/cp"
+        script = (f'mount -t tmpfs tmpfs /run && {mkdir} -p /run/secrets && '
+                  f'{cp} {shlex.quote(str(server / "token"))} /run/secrets/role_bridge_token && exec "$@"')
+        command = ["unshare", "-rm", "bash", "-c", script, "bash", *command]
+    proc = subprocess.Popen(command, cwd=server, stdout=log, stderr=subprocess.STDOUT,
+                            stdin=subprocess.DEVNULL, env=env)
     if not wait_for(server / "console.log", "Done (", 240, [proc]):
         proc.kill()
         sys.exit("server did not start:\n" + (server / "console.log").read_text()[-2000:])
@@ -173,8 +227,175 @@ def brightness(tools, path):
     return float(out)
 
 
+def shader_scenario(ctx):
+    tools, shots, client_log, failures = ctx['tools'], ctx['shots'], ctx['client_log'], ctx['failures']
+    rcon = Rcon()
+    rcon.command("tp E2EBot 0 -50 0")  # underground: a uniform scene to compare against
+    rcon.command("time set noon")
+    time.sleep(4)
+    shot(tools, shots / "baseline.png")
+    base = brightness(tools, shots / "baseline.png")
+    results = {}
+    for fx, name in ((1, "night"), (2, "dawn")):
+        for _ in range(5):
+            rcon.command('title E2EBot actionbar {"text":"%s","font":"vampyuyu:fx","color":"#4e5c0%d"}'
+                         % (GLYPH, fx))
+            time.sleep(0.4)
+        shot(tools, shots / f"{name}.png")
+        results[name] = brightness(tools, shots / f"{name}.png")
+    say(f"brightness baseline {base:.3f} night {results['night']:.3f} dawn {results['dawn']:.3f}")
+    if not results["night"] < base * 0.85:
+        failures.append("the night effect did not darken the screen")
+    if abs(results["dawn"] - base) < 0.01 and abs(results["night"] - base) < 0.01:
+        failures.append("no effect visible at all")
+    text = client_log.read_text(errors="replace")
+    for needle in FATAL:
+        if needle in text and f"client log contains '{needle}'" not in failures:
+            failures.append(f"client log contains '{needle}'")
+
+
+def api(method, path, body=None):
+    request = urllib.request.Request(
+        f"http://127.0.0.1:{API_PORT}{path}", method=method,
+        data=None if body is None else json.dumps(body).encode(),
+        headers={"Authorization": f"Bearer {API_TOKEN}", "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            raw = response.read().decode()
+    except urllib.error.HTTPError as error:
+        raise RuntimeError(f"{method} {path}: {error.code} {error.read().decode()}") from None
+    return json.loads(raw) if raw.startswith(("{", "[")) else raw
+
+
+def same_place(a, b):
+    """Same game mode and within a block: a restored player may settle a few tenths away."""
+    return a["mode"] == b["mode"] and all(abs(x - y) < 1.0 for x, y in zip(a["pos"], b["pos"]))
+
+
+def player_state(rcon):
+    pos = rcon.command("data get entity E2EBot Pos")
+    nums = [round(float(x.rstrip("d")), 1) for x in pos.split("[")[1].rstrip("]").split(",")]
+    mode = rcon.command("data get entity E2EBot playerGameType")
+    return {"pos": nums, "mode": mode.split(":")[-1].strip()}
+
+
+NIGHT = {"CUPID", "GUARD", "SEER", "NIGHT", "WITCH"}
+
+
+def werewolf_scenario(ctx):
+    """A whole practice game (human idle, seven bots) driven through the plugin's private API."""
+    tools, shots, client_log, failures, server = (ctx[k] for k in
+                                                  ("tools", "shots", "client_log", "failures", "server"))
+    say("plugin API: waiting for the arena")
+    for _ in range(60):
+        try:
+            state = api("GET", "/arenas")
+            break
+        except Exception:
+            time.sleep(2)
+    else:
+        failures.append("the plugin's private API never answered")
+        return
+    if [a["config"]["id"] for a in state["arenas"]] != ["e2e"]:
+        failures.append(f"arena e2e not loaded: {state['arenas']}")
+        return
+    me = next(p["uuid"] for p in state["onlinePlayers"] if p["name"] == "E2EBot")
+    rcon = Rcon()
+    rcon.command("time set noon")
+    time.sleep(2)
+    shot(tools, shots / "ww-00-lobby.png")
+    base = brightness(tools, shots / "ww-00-lobby.png")
+    rcon.command("tp E2EBot 12.5 -60 12.5")
+    time.sleep(1)
+    before = player_state(rcon)
+    api("POST", "/arenas/action", {"action": "arena-practice-start", "arenaId": "e2e", "uuid": me,
+                                   "botCount": 7})
+    say("practice game started (1 human + 7 bots)")
+    seen, last, deadline = [], None, time.time() + 600
+    dark = {}
+    while time.time() < deadline:
+        row = api("GET", "/arenas")["arenas"][0]
+        phase = row["phase"]
+        if phase != last:
+            last = phase
+            seen.append(phase)
+            time.sleep(3)  # let the HUD, title and effect settle
+            name = f"ww-{len(seen):02d}-{phase.lower()}.png"
+            shot(tools, shots / name)
+            dark.setdefault(phase, []).append(brightness(tools, shots / name))
+            say(f"phase {phase}: brightness {dark[phase][-1]:.3f}")
+        if phase in ("FINISHED", "WAITING") and len(seen) > 1:
+            break
+        time.sleep(2)
+    else:
+        failures.append(f"the game did not finish in 10 minutes (phases seen: {seen})")
+    time.sleep(8)  # the verdict and the finale
+    shot(tools, shots / "ww-99-end.png")
+    logs = api("GET", "/arenas/logs").get("logs", [])
+    if not logs:
+        failures.append("no werewolf journal was written")
+    else:
+        name = logs[0]["name"] if isinstance(logs[0], dict) else logs[0]
+        journal = api("GET", f"/arenas/logs/{name}")
+        (shots / "journal.txt").write_text(journal)
+        if "Winner:" not in journal and "time limit" not in journal:
+            failures.append("the journal has no outcome")
+    expected = {"DISCUSSION", "DAY_VOTE"}
+    if not expected <= set(seen):
+        failures.append(f"day phases missing from {seen}")
+    if not NIGHT & set(seen):
+        failures.append(f"no night phase in {seen}")
+    nights = [b for ph in NIGHT for b in dark.get(ph, [])]
+    days = [b for ph in ("DISCUSSION", "DAY_VOTE") for b in dark.get(ph, [])]
+    if nights and days:
+        say(f"brightness: lobby {base:.3f} day {max(days):.3f} night {min(nights):.3f}")
+        if not min(nights) < max(days) * 0.8:
+            failures.append("nights are not visibly darker than days (shader driven by the plugin)")
+    time.sleep(5)
+    after = player_state(rcon)
+    if not same_place(after, before):
+        failures.append(f"the player was not restored after the game: {before} -> {after}")
+    # Second game: the human walks out in the middle of a night.
+    api("POST", "/arenas/action", {"action": "arena-practice-start", "arenaId": "e2e", "uuid": me,
+                                   "botCount": 5})
+    for _ in range(30):
+        if api("GET", "/arenas")["arenas"][0]["phase"] not in ("WAITING", "FINISHED"):
+            break
+        time.sleep(1)
+    time.sleep(6)
+    inside = player_state(rcon)
+    say(f"inside a game: {inside}")
+    if "ADVENTURE" not in inside["mode"] and "2" not in inside["mode"]:
+        failures.append(f"the player is not in adventure mode during the game: {inside['mode']}")
+    shot(tools, shots / "ww-leave-before.png")
+    # Through the private API: the typed command is not reliable while a role menu is open.
+    api("POST", "/arenas/action", {"action": "arena-leave", "arenaId": "e2e", "uuid": me})
+    for _ in range(30):
+        if api("GET", "/arenas")["arenas"][0]["phase"] == "WAITING":
+            break
+        time.sleep(1)
+    else:
+        failures.append("the arena did not return to WAITING after the only human left")
+    time.sleep(5)
+    left = player_state(rcon)
+    if not same_place(left, before):
+        failures.append(f"the player was not restored after leaving: {before} -> {left}")
+    say("leave mid-game restored the player" if same_place(left, before) else "leave mid-game FAILED")
+    console = (server / "console.log").read_text(errors="replace")
+    for line in console.splitlines():
+        if ("win.vampyuyu" in line or "NexusArena" in line) and (
+                "Exception" in line or "ERROR" in line or "SEVERE" in line):
+            failures.append("server: " + line.strip()[:200])
+    for needle in FATAL:
+        if needle in client_log.read_text(errors="replace"):
+            failures.append(f"client log contains '{needle}'")
+    say(f"phases: {' > '.join(seen)}")
+
+
+
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--scenario", choices=["shader", "werewolf"], default="shader")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
     ap.add_argument("--shots", default=str(WORK / "shots"))
     args = ap.parse_args()
@@ -195,7 +416,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1)
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario == "werewolf")
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -226,35 +447,29 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
+        if args.scenario == "werewolf":
+            # The network plugin offers the pack after the join: accept it, then wait for the reload.
+            for i in range(60):
+                if client_log.read_text(errors="replace").count("Reloading ResourceManager") >= 2:
+                    break
+                # The server's own message line pushes the buttons 28 px lower than in the config phase.
+                subprocess.run([tools["xdotool"], "mousemove", "485", "445", "click", "1"], env=env)
+                time.sleep(3)
+            else:
+                failures.append("the pack offered after the join was never loaded")
+            time.sleep(5)
         say("bot joined with the server pack")
         time.sleep(15)
         text = client_log.read_text(errors="replace")
         for needle in FATAL:
             if needle in text:
                 failures.append(f"client log contains '{needle}'")
-        rcon = Rcon()
-        rcon.command("tp E2EBot 0 -50 0")  # underground: a uniform scene to compare against
-        rcon.command("time set noon")
-        time.sleep(4)
-        shot(tools, shots / "baseline.png")
-        base = brightness(tools, shots / "baseline.png")
-        results = {}
-        for fx, name in ((1, "night"), (2, "dawn")):
-            for _ in range(5):
-                rcon.command('title E2EBot actionbar {"text":"%s","font":"vampyuyu:fx","color":"#4e5c0%d"}'
-                             % (GLYPH, fx))
-                time.sleep(0.4)
-            shot(tools, shots / f"{name}.png")
-            results[name] = brightness(tools, shots / f"{name}.png")
-        say(f"brightness baseline {base:.3f} night {results['night']:.3f} dawn {results['dawn']:.3f}")
-        if not results["night"] < base * 0.75:
-            failures.append("the night effect did not darken the screen")
-        if abs(results["dawn"] - base) < 0.01 and abs(results["night"] - base) < 0.01:
-            failures.append("no effect visible at all")
-        text = client_log.read_text(errors="replace")
-        for needle in FATAL:
-            if needle in text and f"client log contains '{needle}'" not in failures:
-                failures.append(f"client log contains '{needle}'")
+        ctx = dict(tools=tools, env=env, shots=shots, client_log=client_log, server=server,
+                   failures=failures)
+        if args.scenario == "werewolf":
+            werewolf_scenario(ctx)
+        else:
+            shader_scenario(ctx)
     finally:
         if not args.keep:
             for p in reversed(procs):

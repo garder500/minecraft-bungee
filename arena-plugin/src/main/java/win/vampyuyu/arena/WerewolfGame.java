@@ -640,6 +640,7 @@ public final class WerewolfGame implements GamePreset {
     if (next == phase) return;
     Phase was = phase;
     phase = next;
+    aims.clear(); // A head picked in one phase is never carried into the next one.
     journal.phase(was.name(), next.name(), where());
   }
 
