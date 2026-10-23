@@ -1,0 +1,13 @@
+{
+ "providers": [
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/fx.png",
+   "ascent": 7,
+   "height": 8,
+   "chars": [
+    "\uf100"
+   ]
+  }
+ ]
+}

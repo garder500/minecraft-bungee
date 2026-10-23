@@ -30,6 +30,7 @@ final class WerewolfAmbience {
   /** Length of resource-pack/pack/assets/vampyuyu/sounds/werewolf/music.ogg, replayed in a loop. */
   static final long MUSIC_MILLIS = 75_000;
 
+  static final Key FX_FONT = Key.key("vampyuyu", "fx");
   static final Key MUSIC = Key.key("vampyuyu", "werewolf.music");
   private static final TextColor INK = TextColor.color(WerewolfPresentation.INK),
       INK_MUTED = TextColor.color(WerewolfPresentation.INK_MUTED),
@@ -160,6 +161,7 @@ final class WerewolfAmbience {
     boolean dusk = WerewolfPresentation.dusk(s.ambienceNight, night);
     boolean dawn = WerewolfPresentation.dawn(s.ambienceNight, night, phase);
     s.ambienceNight = night;
+    if (dawn) s.dawnAt = System.currentTimeMillis();
     Set<UUID> fallen = new LinkedHashSet<>();
     for (UUID id : s.players.keySet())
       if (current && !game.alive().contains(id) && !s.revealed.contains(id)) fallen.add(id);
@@ -495,8 +497,21 @@ final class WerewolfAmbience {
         view.actor()
             ? WerewolfPresentation.color(game.role(p.getUniqueId()))
             : WerewolfPresentation.INK_DIM;
-    p.sendActionBar(Component.text(view.instruction(), TextColor.color(color)));
     long now = System.currentTimeMillis();
+    Component bar = Component.text(view.instruction(), TextColor.color(color));
+    int fx = WerewolfPresentation.fx(game.night(), now - s.dawnAt);
+    if (fx > 0
+        && s.config.werewolf().ambienceEnabled()
+        && plugin.skin != null
+        && plugin.skin.active(p))
+      // The core shader stretches this glyph over the whole screen (rendertype_text.vsh).
+      bar =
+          bar.append(
+              Component.text(
+                      WerewolfPresentation.FX_GLYPH,
+                      TextColor.color(WerewolfPresentation.fxColor(fx)))
+                  .font(FX_FONT));
+    p.sendActionBar(bar);
     long seconds = Math.max(0, (s.phaseEndsAt - now + 999) / 1000);
     var line = WerewolfPresentation.center(game, p.getUniqueId(), seconds);
     if (line != null && now >= quietUntil.getOrDefault(p.getUniqueId(), 0L))

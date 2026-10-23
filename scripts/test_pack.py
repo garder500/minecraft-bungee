@@ -15,10 +15,10 @@ def png_size(path):
     return struct.unpack(">II", data[16:24])
 
 class PackTest(unittest.TestCase):
-    def test_mcmeta_supports_1_21_9_and_newer(self):
+    def test_mcmeta_targets_26_3(self):
         meta = json.loads((PACK / "pack.mcmeta").read_text())["pack"]
-        self.assertEqual(meta["min_format"], 69)
-        self.assertGreater(meta["max_format"], 84, "must cover the 26.x releases")
+        self.assertEqual(meta["min_format"], 97)
+        self.assertGreaterEqual(meta["max_format"], 97, "must cover 26.3")
         self.assertTrue(meta["description"])
 
     def test_font_tiles_fit_the_glyph_atlas_and_tile_each_window_exactly(self):
@@ -54,6 +54,17 @@ class PackTest(unittest.TestCase):
                     self.assertEqual(provider["file"], f"vampyuyu:font/{layout.tile_file(name, r, c)}.png")
             self.assertEqual(rows * th, gui_h)
         self.assertEqual(len(tiles), sum(r * layout.COLS for _, _, r in layout.BACKGROUNDS.values()))
+
+    def test_screen_effect_glyph_and_shader_agree_with_the_plugin(self):
+        font = json.loads((PACK / "assets/vampyuyu/font/fx.json").read_text())
+        self.assertEqual(font["providers"][0]["chars"], ["\uf100"])
+        self.assertTrue((PACK / "assets/vampyuyu/textures/font/fx.png").is_file())
+        vsh = (PACK / "assets/minecraft/shaders/core/text.vsh").read_text()
+        self.assertIn("rgb.r == 78 && rgb.g == 92", vsh)
+        self.assertTrue((PACK / "assets/minecraft/shaders/core/text.fsh").is_file())
+        plugin = (ROOT / "arena-plugin/src/main/java/win/vampyuyu/arena/WerewolfPresentation.java").read_text()
+        self.assertIn('FX_GLYPH = "\\uF100"', plugin)
+        self.assertIn("78 << 16 | 92 << 8", plugin)
 
     def test_inventory_label_is_blank_in_every_shipped_language(self):
         langs = sorted((PACK / "assets/minecraft/lang").glob("*.json"))

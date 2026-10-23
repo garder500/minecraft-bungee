@@ -36,6 +36,8 @@ public final class ArenaSession {
   volatile boolean verdictShowing;
 
   volatile boolean ambienceNight, ambienceFinale;
+  /** When the last dawn broke, for the fading screen effect (WerewolfPresentation.fx). */
+  volatile long dawnAt;
   volatile String ambiencePhase = "";
   final Set<UUID> revealed = ConcurrentHashMap.newKeySet();
   volatile CompletableFuture<Void> stopFuture = CompletableFuture.completedFuture(null);

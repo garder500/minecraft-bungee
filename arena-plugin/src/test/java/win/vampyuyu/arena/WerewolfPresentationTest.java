@@ -159,4 +159,13 @@ public class WerewolfPresentationTest {
     assertNull(WerewolfPresentation.awakening("FINISHED"));
     assertEquals("The village wins", WerewolfPresentation.result("VILLAGE"));
   }
+
+  @Test
+  public void screenEffectFollowsNightAndFadesAfterDawn() {
+    assertEquals(1, WerewolfPresentation.fx(true, 0));
+    assertEquals(2, WerewolfPresentation.fx(false, 100));
+    assertEquals(3, WerewolfPresentation.fx(false, 2000));
+    assertEquals(0, WerewolfPresentation.fx(false, 3000));
+    assertEquals(0x4e5c01, WerewolfPresentation.fxColor(1));
+  }
 }

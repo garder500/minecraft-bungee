@@ -190,6 +190,23 @@ final class WerewolfPresentation {
             + " back to sleep";
   }
 
+  /** Font of the screen-effect glyph (resource-pack core shader rendertype_text). */
+  static final String FX_GLYPH = "\uF100";
+
+  /**
+   * Screen effect for the core shader: 1 night, 2 dawn, 3 fading dawn, 0 none. The shader reads
+   * the id from the blue channel of the glyph colour (78, 92, id).
+   */
+  static int fx(boolean night, long sinceDawnMillis) {
+    if (night) return 1;
+    if (sinceDawnMillis < 0 || sinceDawnMillis >= 3000) return 0;
+    return sinceDawnMillis < 1500 ? 2 : 3;
+  }
+
+  static int fxColor(int id) {
+    return 78 << 16 | 92 << 8 | id;
+  }
+
   static boolean dusk(boolean wasNight, boolean night) {
     return !wasNight && night;
   }
