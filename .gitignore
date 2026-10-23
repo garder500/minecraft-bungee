@@ -21,3 +21,4 @@ resource-pack/dist/
 claims-plugin/build/
 claims-plugin/.gradle/
 .plugin-upload/
+.e2e/

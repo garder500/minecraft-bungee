@@ -6,7 +6,7 @@ ZIP ?=
 OUT ?=
 export COMPOSE SERVER WORLD ZIP OUT
 
-.PHONY: export-all zip-all help status up stop configure export zip import restore inspect export-panel import-panel backup test-archives pack art test-pack plugin plugin-prod plugin-build plugin-clear plugin-clear-prod plugin-status plugin-status-prod test-plugins
+.PHONY: export-all zip-all help status up stop configure export zip import restore inspect export-panel import-panel backup test-archives pack art test-pack e2e-pack plugin plugin-prod plugin-build plugin-clear plugin-clear-prod plugin-status plugin-status-prod test-plugins
 help: ## Show operator commands
 	@python3 scripts/world_archive.py help
 status: ## Show container status
@@ -40,6 +40,8 @@ pack: ## Build the reproducible menu resource pack and print its SHA-1
 	@python3 scripts/build_pack.py
 art: ## Repaint pack textures from resource-pack/art/render.py (needs headless Chrome)
 	@python3 resource-pack/art/render.py
+e2e-pack: ## Boot a creative Paper 26.3 + headless 26.3 client and check the pack loads and renders (see scripts/e2e_client.py)
+	@python3 scripts/e2e_client.py
 test-pack: ## Validate the menu resource pack structure and reproducibility
 	@python3 scripts/test_pack.py
 PLUGIN ?=
