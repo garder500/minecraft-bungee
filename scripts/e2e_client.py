@@ -56,11 +56,6 @@ def java25():
     sys.exit("Set JAVA25 to a Java 25 binary")
 
 
-def eula_accepted():
-    env = ROOT / ".env"
-    return env.exists() and re.search(r"^EULA=TRUE\s*$", env.read_text(), re.M) is not None
-
-
 def paper_jar():
     version, build, sha = PAPER
     jar = WORK / f"paper-{version}-{build}.jar"
@@ -183,8 +178,6 @@ def main():
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
     ap.add_argument("--shots", default=str(WORK / "shots"))
     args = ap.parse_args()
-    if not eula_accepted():
-        sys.exit("Set EULA=TRUE in .env (the Minecraft EULA is yours to accept)")
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
