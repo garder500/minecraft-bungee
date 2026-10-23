@@ -36,7 +36,7 @@ void main() {
     ivec3 rgb = ivec3(round(Color.rgb * 255.0));
     if (rgb.r == 78 && rgb.g == 92 && rgb.b >= 1 && rgb.b <= 3) {
         fx = rgb.b;
-        vec2 corner = CORNERS[gl_VertexID % 4];
+        vec2 corner = CORNERS[gl_VertexIndex % 4];
         uv = corner * 0.5 + 0.5;
         clip = vec4(corner * clip.w, clip.z, clip.w);
     } else if (rgb.r == 19 && rgb.g == 23 && rgb.b <= 1) {
