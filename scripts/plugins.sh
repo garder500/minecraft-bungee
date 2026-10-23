@@ -79,7 +79,11 @@ guard() {
  local server=$1 listing busy
  [[ ${FORCE:-} == 1 ]] && return 0
  running "$server" || return 0
- listing=$(dc exec -T "$server" rcon-cli arena list 2> /dev/null | sed 's/\xc2\xa7.//g; s/§.//g' || true)
+ if ! listing=$(dc exec -T "$server" rcon-cli arena list 2> /dev/null); then
+  echo "$server is running but did not answer /arena list; retry or set FORCE=1." >&2
+  exit 1
+ fi
+ listing=$(sed 's/\xc2\xa7.//g; s/§.//g' <<< "$listing")
  busy=$(grep -oE '[^ ,:]+ \([A-Z_]+\)' <<< "$listing" | grep -v '(WAITING)' || true)
  if [[ -n $busy ]]; then
   echo "$server has arena activity: $(tr '\n' ' ' <<< "$busy")- retry later or set FORCE=1." >&2
@@ -95,7 +99,7 @@ restart() {
  fi
  dc exec -T "$server" rcon-cli say "Server restarting for a plugin update; back in about 30 seconds." > /dev/null 2>&1 || true
  sleep 3
- dc restart "$server" > /dev/null
+ dc restart --timeout 75 "$server" > /dev/null
  echo "Restarted $server" >&2
 }
 
@@ -134,6 +138,16 @@ clear_overrides() {
  done
 }
 
+# Lists active overrides on stderr (empty output when none); used by scripts/up.sh before a rebuild.
+warn_active() {
+ local state jar
+ state=$(state_dir)
+ for jar in "$state"/{lobby,creative,survival}/plugin-overrides/*.jar; do
+  [[ -f $jar ]] && echo "  ${jar#"$state"/}" >&2
+ done
+ return 0
+}
+
 status() {
  local state server jar any=
  state=$(state_dir)
@@ -150,11 +164,12 @@ status() {
 # Production over SSH. .env.remote (gitignored): PROD_HOST=user@host, PROD_PATH=/path/to/clone,
 # optional PROD_PORT. The clone must already contain this script and the matching infra/start.sh.
 remote() {
- [[ -f .env.remote ]] || { echo 'Create .env.remote with PROD_HOST=user@host and PROD_PATH=/path/to/clone' >&2; exit 1; }
+ local config=${PLUGINS_REMOTE_ENV:-.env.remote}
+ [[ -f $config ]] || { echo "Create $config with PROD_HOST=user@host and PROD_PATH=/path/to/clone" >&2; exit 1; }
  local PROD_HOST= PROD_PATH= PROD_PORT=22
  # shellcheck disable=SC1091
- source .env.remote
- [[ -n $PROD_HOST && -n $PROD_PATH ]] || { echo '.env.remote needs PROD_HOST and PROD_PATH' >&2; exit 1; }
+ source "$config"
+ [[ -n $PROD_HOST && -n $PROD_PATH ]] || { echo "$config needs PROD_HOST and PROD_PATH" >&2; exit 1; }
  local ssh=(ssh -p "$PROD_PORT" -o BatchMode=yes "$PROD_HOST") action=${1:-} path
  path=$(printf '%q' "$PROD_PATH")
  shift || true
@@ -170,7 +185,11 @@ remote() {
    scp -q -P "$PROD_PORT" -o BatchMode=yes "$jar" "$PROD_HOST:$PROD_PATH/$upload"
    "${ssh[@]}" "cd $path && test -x scripts/plugins.sh || { echo 'Update the production clone first (git pull)' >&2; exit 1; }; $env scripts/plugins.sh install $(printf '%q ' "$1" "$upload" "${@:2}")"
    ;;
-  clear | status) "${ssh[@]}" "cd $path && $env scripts/plugins.sh $action $(printf '%q ' "$@")" ;;
+  clear | status)
+   local args=
+   (($#)) && args=$(printf '%q ' "$@")
+   "${ssh[@]}" "cd $path && $env scripts/plugins.sh $action $args"
+   ;;
   *) echo 'usage: plugins.sh remote push|clear|status [...]' >&2; exit 1 ;;
  esac
 }
@@ -186,6 +205,7 @@ case $action in
   install_jar "$@" ;;
  clear) clear_overrides "$@" ;;
  status) status ;;
+ warn-active) warn_active ;;
  remote) remote "$@" ;;
   *) sed -n '2,/^set /p' "$0" | sed '$d; s/^# \{0,1\}//'; exit 1 ;;
 esac

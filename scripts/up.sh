@@ -23,6 +23,11 @@ for name in ("lobby","creative","survival"):
 ' <<< "$config"
 [[ "$check_only" == --check ]] && exit 0
 if [[ "$compose" == compose.local.yaml ]]; then
+ # A rebuilt image must not stay shadowed by an older hotfix: say which overrides still win.
+ active=$(scripts/plugins.sh warn-active 2>&1)
+ if [[ -n $active ]]; then
+  printf '\nWARNING: these plugin overrides still replace the freshly built jars:\n%s\nRun make plugin-clear to use the image jars.\n\n' "$active" >&2
+ fi
  docker compose -f "$compose" up -d --build
 else
  docker compose -f "$compose" pull

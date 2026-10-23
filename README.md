@@ -133,7 +133,7 @@ Testing a plugin change does not need new images or a deployment. `make plugin P
 | `lobby` | `lobby-selector.jar` | lobby |
 | `claims` | `SimpleClaimSystem.jar` | creative |
 
-`SERVERS="creative"` narrows the targets, `FAST=1` skips the tests, `FORCE=1` restarts even while an arena game is running (otherwise refused: `/arena list` must show only `WAITING`). `make plugin-status` lists overrides, `make plugin-clear` drops them and restarts back onto the image's jars. `infra/start.sh` applies overrides at every start and logs `PLUGIN OVERRIDE ACTIVE` for each.
+`SERVERS="creative"` narrows the targets, `FAST=1` skips the tests, `FORCE=1` restarts even while an arena game is running (otherwise refused: `/arena list` must show only `WAITING`). `make plugin-status` lists overrides, `make plugin-clear` drops them and restarts back onto the image's jars; `make up` warns while any override still shadows a rebuilt jar. For `arena` and `network`, a production hotfix restarts all three servers unless you pass `SERVERS=creative`. `infra/start.sh` applies overrides at every start and logs `PLUGIN OVERRIDE ACTIVE` for each.
 
 **Production**, from your machine over SSH: create the gitignored `.env.remote` with `PROD_HOST=user@host`, `PROD_PATH=/path/to/the/clone` (and `PROD_PORT` if not 22), then `make plugin-prod PLUGIN=arena`, `make plugin-status-prod`, `make plugin-clear-prod`. The jar is built locally and copied over; nothing is built on the server. The production clone must contain this version of `scripts/plugins.sh` and `infra/start.sh`. `scripts/deploy.sh` clears every override and restarts the servers that had one, so a deployment is always what runs afterwards.
 
@@ -151,7 +151,7 @@ ghcr.io/delikesance/minecraft-bungee-lobby:src-<hash>
 ghcr.io/delikesance/minecraft-bungee-tools:src-<hash>
 ```
 
-`scripts/image-tag.sh <target> [commit]` hashes every tracked file that image's build reads. When a commit leaves them unchanged, CI does not rebuild the image: it adds the commit tag to the existing one in seconds. A plugin change therefore rebuilds only the server and lobby images (a claims change only the server image), and a dashboard change only the panel. The publish builds read the plugin jobs' layer caches, so each plugin is compiled once per push. Maven dependencies sit in their own Docker layer, so a source-only plugin change does not download them again.
+`scripts/image-tag.sh <target> [commit]` hashes every tracked file that image's build reads. When a commit leaves them unchanged, CI does not rebuild the image: it adds the commit tag to the existing one in seconds. A plugin change therefore rebuilds only the server and lobby images (a claims change only the server image), and a dashboard change only the panel. The publish builds also read the plugin jobs' layer caches, so that each plugin is meant to be compiled only once per push. Maven dependencies sit in their own Docker layer, so a source-only plugin change does not download them again.
 
 Production Compose never builds source. Tags select exact commits; no `latest` tag is used. For immutable deployment enforcement beyond tag convention, record registry digests in release records. Third-party runtime/build images are pinned by digest; Minecraft and Velocity versions **and builds** are separately pinned. Builds currently publish `linux/amd64`; verify `uname -m` is `x86_64`. Maven's Paper API snapshot is build-time-only; runtime server versions do not follow it.
 
