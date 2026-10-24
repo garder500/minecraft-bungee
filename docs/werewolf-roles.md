@@ -185,10 +185,27 @@ Read `RoleModule.java`: every hook is documented there and has a do-nothing defa
 
 ## 5. Rules that are not roles (engine)
 
-* **Parity**: the wolves win when their killers are at least as many as everyone else.
-* **Revote**: a tied day vote asks once for a new vote among the tied players only; a second tie
-  eliminates nobody (the Scapegoat, if alive, still takes a tie at once).
-* **Day vote modes, reveal modes, daily dice, amulet**: variants, defaults off. See the arena rules.
+* **Parity**: the wolves win when their killers (werewolves, alpha, infector, cub) are at least as
+  many as everybody else; the lone wolf plays for himself, so he counts with "everybody else"; the
+  minion and the sorcerer count on neither side; a living vampire forbids a wolf win.
+* **Tied day vote** (pointing): one new vote among the tied players only; a second tie eliminates
+  nobody (a living scapegoat takes a tie at once).
+* **Nominated voting** (`voting nominate`): right-click to nominate, another player right-clicks the
+  same player to second, the accused defends for 20 seconds, then thumbs (hotbar buttons); more than
+  half of the living down eliminates. The mayor's thumb counts twice, a pacifist's never, an idiot's
+  missing thumb is down. The vampires' victim dies with the first seconded nomination, or when the
+  day ends. A day with no condemned player ends when its time is spent.
+* **Reveal modes** (`reveal full|team|wolf|none`): what a death tells the table. With anything but
+  `full`, the call of a dead role is still made (a few seconds, no clock shown) so nothing is learned
+  from silence.
+* **Secret ballots** (`ballots secret`), **daily dice** (`dice on`), **amulet** (`amulet on`): see the
+  plugin README.
+* **A drunk's death**: before night 3 a drunk still plays his real role's death powers (a drunk
+  hunter shoots) and is announced with it; a doppelganger who copies a sleeping drunk copies the
+  real role.
+* **Skipped on purpose**: the moderator's own variants (two-player nominations, the process of
+  elimination, role changes, banning, alternating villages), "variable roles", the magician (the
+  witch), the bodyguard (the guard), and the amulet's extra role card.
 
 ## 6. Writing and testing a module
 
