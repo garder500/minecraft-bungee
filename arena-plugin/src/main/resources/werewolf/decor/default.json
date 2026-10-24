@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "maxBlocks": 8000,
+  "floor": { "inner": "spruce_planks", "outer": "stone_bricks", "innerMargin": 2.5 },
+  "campfire": { "block": "campfire" },
+  "bench": { "blocks": ["stripped_spruce_log", "spruce_log"] },
+  "railing": { "block": "spruce_fence" },
+  "lanterns": { "block": "lantern", "everySeats": 2 },
+  "underside": {
+    "blocks": ["stone", "andesite", "cobblestone", "mossy_cobblestone", "tuff"],
+    "depthFactor": 0.6,
+    "minDepth": 4,
+    "maxDepth": 14
+  }
+}
