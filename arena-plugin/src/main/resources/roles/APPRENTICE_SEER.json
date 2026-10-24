@@ -7,5 +7,6 @@
  "palette": "seer",
  "icon": "apprentice",
  "word": "APPRENTICE",
- "help": "You are a villager until the Seer dies. Then you become the new Seer and wake each night to inspect a player."
+ "help": "You are a villager until the Seer dies. Then you become the new Seer and wake each night to inspect a player.",
+ "seerSees": "VILLAGER"
 }

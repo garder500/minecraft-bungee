@@ -139,8 +139,9 @@ final class WerewolfBots {
       }
       default -> {
         // A call owned by a role module: the module plays the bot's part.
+        String call = game.phase(); // the bot's own action may end the call
         game.botAct(bot, random);
-        log.add(new Action(bot, role, "takes its " + game.phase() + " turn"));
+        log.add(new Action(bot, role, "takes its " + call + " turn"));
       }
     }
   }

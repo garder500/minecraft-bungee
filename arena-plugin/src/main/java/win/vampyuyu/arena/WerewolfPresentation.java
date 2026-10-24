@@ -203,7 +203,9 @@ final class WerewolfPresentation {
       case "WOLF" -> WerewolfGame.isWolf(role) ? "a werewolf" : "not a werewolf";
       case "NONE" -> "";
       default ->
-          (role.equals("WEREWOLF") ? "a Werewolf" : "the " + roleLabel(role))
+          (role.equals("WEREWOLF")
+                  ? "a Werewolf"
+                  : role.equals("VAMPIRE") ? "a Vampire" : "the " + roleLabel(role))
               .replace("the Villager", "a Villager");
     };
   }

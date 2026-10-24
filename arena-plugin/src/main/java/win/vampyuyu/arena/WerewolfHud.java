@@ -25,14 +25,15 @@ final class WerewolfHud {
 
   /** Glyph of a card: the back, a role card, or its grey version once the player is dead. */
   static char glyph(String role, boolean dead) {
-    int index = Math.max(0, CARDS.indexOf(role.toLowerCase(Locale.ROOT)));
+    int found = CARDS.indexOf(role.toLowerCase(Locale.ROOT));
+    // Only the first roles have a painted card: the others use the villager's.
+    int index = found >= 0 ? found : role.equals("back") ? 0 : CARDS.indexOf("villager");
     return (char) ('\uE000' + index + (dead && index > 0 ? 0x10 : 0));
   }
 
   /** Role and HUD icons as font glyphs (resource-pack/art/icons.py, font vampyuyu:icons). */
   static final Key ICONS = Key.key("vampyuyu", "icons");
 
-  /** Same order as resource-pack/layout.py ICONS; the pack test checks it. */
   /** The glyphs of the icons font, in order: the pack's art script writes the list (icon-names.txt). */
   static final List<String> ICON_NAMES = iconNames();
 

@@ -834,7 +834,7 @@ public final class WerewolfGame implements GamePreset {
   private void skipUnavailable() {
     for (int guard = 0; guard < 40 && NIGHT_ORDER.contains(phase); guard++) {
       Set<UUID> called = callActors(phase);
-      boolean over = called.isEmpty() || phase != Phase.NIGHT && done.containsAll(called);
+      boolean over = called.isEmpty() || !pack(phase) && done.containsAll(called);
       if (!over) return;
       Phase was = phase;
       next();
