@@ -283,16 +283,16 @@ public final class WerewolfGame implements GamePreset {
           case HUNTER -> "If eliminated, choose one living player for your final shot.";
           case WITCH ->
               "Potion phase: while you hold the life potion, you see the wolves' victim and can"
-                  + " save them with LIFE. Pick a head, then DEATH to poison it. Each potion works"
-                  + " once per game; SLEEP ends your turn.";
+                  + " save them with the life potion. Right-click a player, then use the death potion to"
+                  + " poison them. Each potion works once per game; Sleep ends your turn.";
           case GUARD ->
-              "At night, protect one player, or yourself with PROTECT ME. Never the same player two"
+              "At night, right-click a player to protect them, or use Protect yourself. Never the same player two"
                   + " nights in a row. Your choice is final.";
           case SEER -> "At night, inspect one other living player.";
           case ALPHA_WOLF ->
               "At night, vote with the pack for a non-wolf. As the alpha, your vote counts double.";
           case INFECTOR ->
-              "At night, vote with the pack. Once per game, press INFECT: tonight's victim turns into"
+              "At night, vote with the pack. Once per game, use Infect: tonight's victim turns into"
                   + " a werewolf instead of dying.";
           case WOLF_CUB ->
               "At night, vote with the pack. If you die, the pack kills two players the next night.";
@@ -360,7 +360,7 @@ public final class WerewolfGame implements GamePreset {
       throw new IllegalArgumentException(
           switch (ability) {
             case "heal" -> "Life potion unavailable";
-            case "poison" -> "Pick a head to poison first";
+            case "poison" -> "Right-click a player to poison first";
             case "bind" -> "Pick two lovers first";
             case "shoot" -> "Pick your target first";
             case "infect" -> "You can only infect once, at night";
@@ -402,9 +402,9 @@ public final class WerewolfGame implements GamePreset {
       }
       default -> { // skip
         ballots.remove(p);
-        if (abstained.remove(p)) return "You may vote again: click a head.";
+        if (abstained.remove(p)) return "You may vote again: right-click a player.";
         abstained.add(p);
-        return "You skip this vote. Click a head if you change your mind.";
+        return "You skip this vote. Right-click a player if you change your mind.";
       }
     }
   }
@@ -437,17 +437,17 @@ public final class WerewolfGame implements GamePreset {
     if (picks.remove(target)) return "Removed " + target + ".";
     if (picks.size() >= max) {
       if (max > 1)
-        throw new IllegalArgumentException("Two lovers are already picked: click one to remove it");
+        throw new IllegalArgumentException("Two lovers are already picked: right-click one to remove them");
       picks.clear();
     }
     picks.add(target);
     return switch (phase) {
       case CUPID ->
           picks.size() == 2
-              ? "Both lovers picked: press BIND to unite them."
+              ? "Both lovers picked: use Bind to unite them."
               : "First lover picked: " + target + ". Pick a second one.";
-      case HUNTER_SHOT -> "Target: " + target + ". Press SHOOT to fire.";
-      default -> "Target: " + target + ". Press DEATH to poison them.";
+      case HUNTER_SHOT -> "Target: " + target + ". Use Shoot to fire.";
+      default -> "Target: " + target + ". Use the death potion to poison them.";
     };
   }
 

@@ -104,12 +104,7 @@ The wolves gather at their turn's beginning. **The hunt closes as soon as every 
 | `/arena admin` | Paged browser, creation and confirmed deletion |
 | `/arena corner1`, `/arena corner2` | Capture each bounding corner |
 | `/arena create <id> <werewolf\|freeplay>` | Confirm creation with selected corners and current spawn |
-| `/arena setup <id>` | Bounds, spawn, durations, limits, protection, village mode and rewards |
-| `/arena house <id> add <name>` | Save the current position as a house |
-| `/arena houses <id>` | List coordinates, inspect, move here and confirm removal |
-| `/arena meeting <id> set` | Set the wolf meeting point here |
-| `/arena daypoint <id> set` | Set the daytime discussion point here |
-| `/arena doors <id>` | Register the targeted door or remove a registration |
+| `/arena setup <id>` | Bounds, spawn, durations, limits, protection, ambience, places and rewards |
 | `/eventadmin rewards <id> <participation> <victory>` | Set rewards; each amount must be 0–100,000 |
 
 ### Admin tools in your inventory (1.5)
@@ -121,19 +116,13 @@ The wolves gather at their turn's beginning. **The hunt closes as soon as every 
 | Arena selector (map) | next arena | previous arena |
 | Bounds wand (golden axe) | block = corner 2 | block = corner 1; sneak + right = apply to the arena (+5 blocks headroom) |
 | Arena spawn (compass) | set spawn here | — |
-| Village houses (bed) | add `maison-N` here | left: remove nearest (3 blocks); sneak + right: move it |
-| Wolf meeting point (bone), Day point (sunflower) | set here | — |
-| Controlled doors (iron door) | register/unregister the door | — |
-| Village mode (lever) | toggle village mode | sneak + right: toggle ambience |
+| Seats (bed) | add a **sitting** seat here | sneak + right: add a **standing** spot; left: remove the nearest seat (3 blocks) |
+| Vote circle (sunflower), Wolf den (bone) | set here | — |
 | Readiness checklist (book) | ✔/✘ list of what is missing | sneak + right: open setup menu |
 
-Village mode needs **at least `minPlayers` houses** (one per player at start, practice bots included), a wolf meeting point and a day point; the checklist and the start error now state exactly what is missing (e.g. `houses: 2/4`).
+Places are optional. When a game has seats, every player (and practice bot) gets one (**at least as many seats as players**), looking at the vote circle: *sit* seats put the player on an invisible chair, *stand* seats pin them in place. At night the wolves gather around the **wolf den**, and optional **night spots** (`/ww place night add`) hold the sleepers. Practice bots appear as mannequins on their seats so they can be clicked like players. With no seats configured nobody is moved. There are no houses and no doors any more; old `village` settings in existing arena files are ignored.
 
-These commands require `nexusarena.admin` (OP by default). Select corners with sufficient vertical clearance and stand inside the box when setting spawn/points. House names use 1–32 ASCII letters, digits, `_` or `-`. Edits are refused while occupied or restoring.
-
-Existing arenas load with village mode disabled. Configure safe houses, a meeting point and a day point, then enable village mode in Setup. A distinct house is required per participant, including practice bots. Assignments are shuffled once per game. Players sleep at home, wolves gather during their hunt, and living players reach the day point at dawn. Sleeping movement is blocked.
-
-Doors are optional and explicitly registered; register both leaves of a double doorway. They close at night and open by day, with manual/redstone manipulation blocked during play. `doors/<id>.json` journals original opening states before changes. Stop restores them; startup retries recovery after incidents. Destroyed/replaced door blocks are not recreated. An unavailable world retains its journal and blocks another start; fix world availability and use **Stop & restore** to retry. The web editor preserves village/reward fields saved in game.
+The checklist and the start error say exactly what is missing; `/ww check` also tests that every place is safe to stand on.
 
 ### Shards and global participation history
 
@@ -178,19 +167,37 @@ AMBIENCE_SMOKE_ONLY=1 NODE_PATH=/tmp/community-smoke-node/node_modules node scri
 
 This variant inspects each forwarded client's sound, title, action-bar and compass packets. It checks private wakeups, heartbeat pairs, one dusk bell, end-of-vote/timeout behavior, muted presentation, restoration cleanup and the victory conclusion. Existing worlds and the running network remain untouched.
 
-## Werewolf menus and screen (art direction)
+## Playing a werewolf game: no chest, a custom HUD
 
-The werewolf screens follow the "Loup-Garou Vampyuyu" design guide (design-system artifact). In-game text is English.
+**No double chest during a game.** Look at a player (or a practice bot's body) and **right-click** to vote, inspect, protect, hunt or aim. The other actions are hotbar items with a tooltip: Skip the vote, Life potion, Death potion (pick a player first), Sleep, Bind the lovers (after picking two players), Shoot (after picking a target), Protect yourself, Infect. The action bar names whoever your crosshair is on. `/ww vote <player>` and `/ww abstain` do the same by command. The only chest-style screen left is the pre-game lobby overview.
 
-* **Role menus.** Each acting role gets its own 54-slot window: Village vote, The hunt (wolves), The vision (seer), The potions (witch), The guard, The lovers (Cupid) and Last shot (hunter). With the menu pack the window is a painted background (`resource-pack/layout.py`, `menu_vote` … `menu_shot`); without it the same slots work on a plain chest. `WerewolfMenus` lays them out and is unit tested; `CompassGUI` only turns its entries into items.
-* **Sounds and music.** With the pack, werewolf games play ElevenLabs sounds (`vampyuyu:werewolf.*`, built by `resource-pack/art/sounds.py` from `resource-pack/art/werewolf/sounds/`): a looping night music on the ambient slider, a bell at dusk, a rooster at dawn, a howl when the wolves wake, drums for the vote, a death knell (after a gunshot when the hunter fired), the witch's two potions, the seer's vision, Cupid's bond, the guard's shield and a final fanfare. Players without the pack hear vanilla stand-ins and no music. Immersive ambience off mutes all of it.
-* **Village overview.** When no role menu applies (waiting for the deal, the day debate, a sleeper opening `/arena`), werewolf arenas open **The village** (`menu_village`): the living on the ring (wolves recognise their pack, lovers their partner, the seer what she saw), THE GAME box with the phase and the rules, THE VILLAGE box with the living count, the deal and your lover, then the same hotbar. Free play keeps the arena compass.
-* **Heads.** Real player heads sit on an 18-slot ring around the painted emblem (`RING`), spread evenly; past 18 players the rest fill the free slots. The item amount is the vote count, your choice glints, impossible targets show a greyed marker (a fellow wolf, the guard's last protégé), the seer's past visions show the role card. Every tooltip ends with what the click does.
-* **Buttons.** Irreversible actions go through a button in the bottom boxes: SKIP (vote), LIFE / DEATH / SLEEP (witch), PROTECT ME (guard), BIND (Cupid, after picking two lovers) and SHOOT (hunter, after picking a target). When time runs out, two picked lovers are bound and a picked target is shot; a picked poison target is not poured.
-* **Hotbar.** Slot 1 holds your role card, slot 5 the timer (stack size = seconds left, up to 99), slot 9 the lock (or leave when leaving is allowed).
-* **Screen.** The bossbar reads `☾ Night N · The Seer is awake · 12 s` (sleepers only see `You are asleep…`) in the colour of the acting role and drains with the turn; the action bar says what you must do now. The sidebar shows your role card (dealt face down, turned over after two seconds, greyed when you die), your team, night or day, the living count and the roles still in play; lovers also see their partner. The centre of the screen tells the story one beat at a time (night or day, then each death with its role, then who wakes up, for sleepers too), and between beats a steady line under the crosshair says whose turn it is and the time left (`☾ The Seer's turn · 12 s`, `☾ Your turn · 12 s`, `☀ Village vote · 30 s`). These titles stay on when ambience is off; only sounds and music go. The chat is a journal: a separator per night and day, `☠` death lines, and `Private ·` before what only you see.
-* **Card placement.** Minecraft anchors no text in the top-right corner, so the card sits on the sidebar title at the right edge, the guide's no-shader fallback. A text core shader could move it to the corner, but core shaders differ across the client versions this pack supports and a broken one makes the client drop the pack, so it needs testing in a real client first.
+**The HUD is drawn by the resource pack** (`resource-pack/art/hud.py`, 86 sprites, font `vampyuyu:hud2`), not by Minecraft's bossbar and sidebar: the plugin writes glyphs coloured `(78, 100 + element, parameter)` in the action bar and the core shader (`text.vsh`, generated by `art/fx_shaders.py`) moves each one to its place in GUI pixels. Top centre: the phase plate (moon, sun or ballot icon, round, phase name such as `SEER AWAKE`, the turn's time as `mm:ss` and a draining bar) in the colour of your role; sleepers see `VILLAGE SLEEPS` and the time, nothing about who is awake. Right: your own role (icon, name, team) and `ALIVE n/n`; the cast is never listed. Eliminated players get a grey `FALLEN` panel. Players without the pack get the vanilla bossbar and sidebar. Icons are in `art/icons.py` (font `vampyuyu:icons`).
 
+**Sounds and music** (pack): `vampyuyu:werewolf.*`, built by `resource-pack/art/sounds.py`; a looping night music, narrator cues, role actions.
+
+**Night effect** (pack, core shader): a blue vignette at night and a warm wash at dawn, thinned over the HUD so it stays readable.
+
+## Werewolf administration: `/ww`
+
+Admins (`nexusarena.admin`) manage werewolf arenas with `/ww` (console and RCON work too, with coordinates):
+
+| Command | Does |
+| --- | --- |
+| `/ww use <arena>`, `status`, `check`, `reload` | Select an arena, show it, test its places, reload files |
+| `/ww place add seat <sit\|stand> [name] [x y z yaw]` | Add a seat |
+| `/ww place set circle\|den [x y z]`, `night add\|clear`, `list`, `remove <name>`, `tp <name>`, `clear` | Vote circle, wolf den, night spots, listing and cleaning |
+| `/ww cast set wolf:2 alpha:1 seer:1 witch:1 ...`, `auto`, `show`, `roles` | Exact role counts (the rest are villagers) or the automatic cast |
+| `/ww time set discussion\|vote\|night\|cupid\|witch\|hunter <seconds>` | Timers |
+| `/ww start`, `stop`, `practice <bots> [player]`, `phase skip` | Run a game (practice: bots fill the table, phases capped at 15 s) |
+| `/ww force <player\|botN> <role>` / `clear` | Force roles for the next game (tests); botN is the practice bot "[Bot] Guest N" |
+| `/ww peek`, `act <player\|botN> select\|aim <target> \| use <ability>`, `click <player> <target\|ability:name>`, `players kick <player>` | Test helpers: list every role, act as someone, right-click as a player |
+| `/ww vote <player>`, `/ww abstain` | Players' commands |
+
+Roles: Villager, Werewolf, Seer, Witch, Hunter, Cupid, Guard and new in 1.6 **Alpha wolf** (his night vote counts double), **Infector** (once per game the victim becomes a wolf instead of dying), **Wolf cub** (when he dies the pack kills two players the next night), **Scapegoat** (dies when the day vote is tied) and **Bear tamer** (at dawn everyone hears a growl if a living wolf sits next to him). The automatic cast adds the scapegoat from 11 players and the bear tamer from 12; the new wolf roles come with `/ww cast set` (the wolf side wins and loses together). Not implemented: lone wolf, little girl, pause and resume.
+
+### Testing every role
+
+`make e2e-pack` boots a creative Paper 26.3 and a headless 26.3 client with the real pack; `python3 scripts/e2e_client.py --scenario werewolf` plays a whole practice game, and `--scenario roles [--only SEER,WITCH]` plays one game per role with you holding it, through real controls, checking the game's journal for each (see `scripts/e2e_client.py`).
 
 ## Werewolf game logs
 

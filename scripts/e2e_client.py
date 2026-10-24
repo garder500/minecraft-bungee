@@ -422,7 +422,8 @@ def role_checks(role, rcon, roles, failures, tools, shots):
         rcon.command("ww phase skip")
         if not wait_phase("HUNTER_SHOT", 20): return failures.append("HUNTER: no last shot")
         time.sleep(3)
-        rcon.command("ww click E2EBot " + others(lambda r: True))
+        if not click_until(rcon, others(lambda r: True), f"{me}[HUNTER]\u2020 picks"):
+            failures.append("HUNTER: the target was not picked")
         if not click_until(rcon, "ability:shoot", "shot by the hunter"):
             failures.append("HUNTER: the shot was not fired")
     elif role == "CUPID":
@@ -448,7 +449,6 @@ def role_checks(role, rcon, roles, failures, tools, shots):
         voters = [n for n in range(1, 12) if f"bot{n}" not in (x, y) and f"[Bot] Guest {n}" in living]
         for i, n in enumerate(voters):
             rcon.command(f"ww act bot{n} select {x if i % 2 == 0 else y}")
-        rcon.command(f"ww click E2EBot {x}")
         rcon.command(f"ww act {x} select {y}")
         rcon.command(f"ww act {y} select {x}")
         rcon.command("ww phase skip")
