@@ -218,6 +218,15 @@ def right_panel(color):
     return c
 
 
+def vote_plate(color):
+    """The "votes against you" plate: caption on the left, the big digits are separate sprites."""
+    c = plate(128, 30, color)
+    c.text(7, 6, "VOTES", mix(color, (255, 255, 255), 0.35), shadow=False)
+    c.text(7, 16, "AGAINST YOU", LIGHT, shadow=False)
+    c.rect(84, 6, 40, 20, (6, 4, 12), 170)
+    return c
+
+
 def fill_bar(color, w=8, h=4):
     c = Canvas(w, h)
     c.vgrad(0, 0, w, h, lift(color, 0.5), dim(color, 0.62), 255)
@@ -279,6 +288,8 @@ def main():
         kind, _, rest = name.partition("_")
         if name.startswith("frame_"):
             c = top_plate(rgb(layout.HUD_PALETTES[rest]))
+        elif name.startswith("vframe_"):
+            c = vote_plate(rgb(layout.HUD_PALETTES["vote" if rest == "calm" else "danger"]))
         elif name.startswith("fill_"):
             c = fill_bar(rgb(layout.HUD_PALETTES[rest]), w, h)
         elif name.startswith("pframe_"):

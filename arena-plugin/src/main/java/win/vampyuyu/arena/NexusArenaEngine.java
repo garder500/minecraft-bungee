@@ -18,6 +18,7 @@ public final class NexusArenaEngine extends JavaPlugin {
   WerewolfAmbience ambience;
   PlaceController places;
   ClickControls controls;
+  VoteMarks votes;
   CustomHud customHud;
   ArenaAdmin admin;
   ArenaTools tools;
@@ -78,6 +79,7 @@ public final class NexusArenaEngine extends JavaPlugin {
       bridge = new CrossServerBridge(this);
       customHud = new CustomHud();
       controls = new ClickControls(this);
+      votes = new VoteMarks(this);
       getServer().getPluginManager().registerEvents(gui, this);
       getServer().getPluginManager().registerEvents(controls, this);
       getServer().getPluginManager().registerEvents(new ArenaProtectionListener(this), this);
@@ -149,10 +151,10 @@ public final class NexusArenaEngine extends JavaPlugin {
                     () -> {
                       controls.sync(p, s);
                       ambience.aim(s, p);
-                      controls.markVote(p, s);
                       return null;
                     });
               }
+              for (ArenaSession session : arenas.all()) votes.tick(session);
             } catch (Exception e) {
               getLogger().warning("Arena controls: " + reason(e));
             }

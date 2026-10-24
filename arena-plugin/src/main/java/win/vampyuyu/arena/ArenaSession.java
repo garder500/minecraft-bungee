@@ -32,6 +32,11 @@ public final class ArenaSession {
 
   final Map<UUID, org.bukkit.entity.Entity> chairs = new ConcurrentHashMap<>();
 
+  /** Vote counters by the player they are over, and the voters' glowing frames (see VoteMarks). */
+  final Map<UUID, VoteMarks.Tag> voteTags = new ConcurrentHashMap<>();
+
+  final Map<UUID, VoteMarks.Glow> voteGlows = new ConcurrentHashMap<>();
+
   final Map<UUID, String> roster = new ConcurrentHashMap<>();
   final Set<UUID> abandoned = ConcurrentHashMap.newKeySet();
   volatile CompletableFuture<Void> presentation = CompletableFuture.completedFuture(null);

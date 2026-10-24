@@ -29,9 +29,9 @@ layout(location = 5) out vec2 screenUv;
 
 const vec2 CORNERS[4] = vec2[](vec2(-1.0, 1.0), vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(1.0, 1.0));
 
-const int HUD_COUNT = 42;
+const int HUD_COUNT = 45;
 const int HUD_FILL = 4;
-const int HUD_ANCHOR[HUD_COUNT] = int[](0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+const int HUD_ANCHOR[HUD_COUNT] = int[](0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
 const vec4 HUD_BOX[HUD_COUNT] = vec4[](
     vec4(-125.0, 4.0, 250.0, 44.0),
     vec4(-115.0, 14.0, 24.0, 24.0),
@@ -74,7 +74,10 @@ const vec4 HUD_BOX[HUD_COUNT] = vec4[](
     vec4(-126.0, 38.0, 12.0, 12.0),
     vec4(-112.0, 38.0, 12.0, 12.0),
     vec4(-98.0, 38.0, 12.0, 12.0),
-    vec4(-84.0, 38.0, 12.0, 12.0));
+    vec4(-84.0, 38.0, 12.0, 12.0),
+    vec4(-134.0, 58.0, 128.0, 30.0),
+    vec4(-44.0, 64.0, 12.0, 17.0),
+    vec4(-31.0, 64.0, 12.0, 17.0));
 
 void main() {
     vec4 clip = ProjMat * ModelViewMat * vec4(Position, 1.0);
@@ -101,7 +104,7 @@ void main() {
         vec2 corner = CORNERS[gl_VertexIndex % 4];
         uv = corner * 0.5 + 0.5;
         clip = vec4(corner * clip.w, clip.z, clip.w);
-    } else if (rgb.r >= 19 && rgb.r <= 20 && ((rgb.g == 23 && rgb.b <= 1) || (rgb.g >= 25 && rgb.g <= 36))) {
+    } else if (rgb.r >= 19 && rgb.r <= 20 && ((rgb.g == 23 && rgb.b <= 1) || (rgb.g >= 25 && rgb.g <= 37))) {
         clip = vec4(2.0, 2.0, 2.0, 1.0);
     }
     gl_Position = clip;

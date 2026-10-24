@@ -373,7 +373,9 @@ ROLE_CASES = {
     "WOLF_CUB": {"WEREWOLF": 1, "WOLF_CUB": 1},
     "SCAPEGOAT": {"WEREWOLF": 2, "SCAPEGOAT": 1},
     "BEAR_TAMER": {"WEREWOLF": 2, "BEAR_TAMER": 1},
+    "VOTE_UX": {"WEREWOLF": 2, "SEER": 1},
 }
+FORCED = {"VOTE_UX": "VILLAGER"}  # scenario -> the role the human is dealt
 
 
 def role_checks(role, rcon, roles, failures, tools, shots):
@@ -456,6 +458,26 @@ def role_checks(role, rcon, roles, failures, tools, shots):
     elif role == "BEAR_TAMER":
         if not wait_phase("DISCUSSION", 90): return failures.append("BEAR_TAMER: no day")
         time.sleep(2)
+    elif role == "VOTE_UX":
+        if not wait_phase("DAY_VOTE", 90): return failures.append("VOTE_UX: no day vote")
+        time.sleep(3)
+        for n in (1, 2, 3):
+            rcon.command(f"ww act bot{n} select {me}")
+        target = others(NOT_WOLF)
+        if not click_until(rcon, target, f"{me}[VILLAGER] selects"):
+            failures.append("VOTE_UX: the human's vote was not recorded")
+        time.sleep(2)
+        rcon.command("execute as E2EBot at @s facing entity @e[type=minecraft:mannequin,name=\"[Bot] Guest "
+                     + target[3:] + "\",limit=1] eyes run tp @s ~ ~ ~ ~ ~")
+        time.sleep(2)
+        tags = rcon.command("execute if entity @e[type=minecraft:text_display]")
+        frames = rcon.command("execute if entity @e[type=minecraft:block_display]")
+        say(f"vote markers: counters -> {tags.strip()}; frames -> {frames.strip()}")
+        if "passed" not in tags:
+            failures.append("VOTE_UX: no vote counter was spawned")
+        if "passed" not in frames:
+            failures.append("VOTE_UX: no glowing frame was spawned")
+        shot(tools, shots / "vote-ux.png")
     time.sleep(2)
     shot(tools, shots / f"role-{role.lower()}.png")
 
@@ -479,17 +501,17 @@ def roles_scenario(ctx, only):
     for role in wanted:
         say(f"--- {role}")
         cast = ", ".join(f"{k.lower()}:{v}" for k, v in ROLE_CASES[role].items())
-        if role not in ROLE_CASES[role]:
+        if role not in ROLE_CASES[role] and role not in FORCED:
             cast += f" {role.lower()}:1" if role not in ("VILLAGER",) else ""
         out = rcon.command("ww cast set " + cast.replace(", ", " "))
         rcon.command("ww force clear")
-        rcon.command(f"ww force E2EBot {role}")
+        rcon.command(f"ww force E2EBot {FORCED.get(role, role)}")
         api("POST", "/arenas/action", {"action": "arena-practice-start", "arenaId": "e2e", "uuid": me, "botCount": 11})
         if not wait_phase({"CUPID", "SEER", "NIGHT", "GUARD", "DISCUSSION"}, 40):
             failures.append(f"{role}: the game did not start ({out.strip()[:120]})")
             continue
         roles = peek(rcon)
-        if roles.get("E2EBot") != role:
+        if roles.get("E2EBot") != FORCED.get(role, role):
             failures.append(f"{role}: forced role missing, the human is {roles.get('E2EBot')}")
         time.sleep(4)
         shot(tools, shots / f"hud-{role.lower()}.png")

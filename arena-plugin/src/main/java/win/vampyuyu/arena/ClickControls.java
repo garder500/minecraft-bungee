@@ -214,31 +214,6 @@ final class ClickControls implements Listener {
     last.remove(e.getPlayer().getUniqueId());
   }
 
-  /**
-   * A marker, seen only by the voter, floating over the head of whoever their ballot is for: a
-   * ring of coloured dust and a spark, drawn a few times a second while a vote is open.
-   */
-  void markVote(Player p, ArenaSession s) {
-    if (!(s.game instanceof WerewolfGame game) || !plugin.gui.inGame(s)) return;
-    UUID me = p.getUniqueId();
-    boolean voting = game.phase().equals("DAY_VOTE") || game.phase().equals("NIGHT") && game.packMember(me);
-    UUID ballot = voting && game.alive().contains(me) ? game.ballot(me) : null;
-    if (ballot == null) return;
-    org.bukkit.Location head = null;
-    Player target = org.bukkit.Bukkit.getPlayer(ballot);
-    if (target != null && target.isOnline()) head = target.getLocation().add(0, 2.35, 0);
-    else if (s.bodies.get(ballot) != null) head = s.bodies.get(ballot).getLocation().add(0, 2.35, 0);
-    if (head == null) return;
-    int rgb = WerewolfPresentation.color(game.role(me));
-    var dust = new org.bukkit.Particle.DustOptions(org.bukkit.Color.fromRGB(rgb), 1.3f);
-    double turn = (System.currentTimeMillis() % 1600) / 1600.0 * Math.PI * 2;
-    for (int i = 0; i < 6; i++) {
-      double a = turn + i * Math.PI / 3;
-      p.spawnParticle(org.bukkit.Particle.DUST, head.getX() + Math.cos(a) * 0.38, head.getY(), head.getZ() + Math.sin(a) * 0.38, 1, 0, 0, 0, 0, dust);
-    }
-    p.spawnParticle(org.bukkit.Particle.END_ROD, head.getX(), head.getY() + 0.35, head.getZ(), 1, 0, 0, 0, 0);
-  }
-
   /** The line the action bar shows for the player's crosshair, or null. */
   Component target(Player p, ArenaSession s) {
     UUID target = lookingAt(p, s);

@@ -102,6 +102,10 @@ HUD_ELEMENTS = [
     ("a4", 1, -40, 2, 12, 17),
 ] + [(f"m{i}", 1, -126 + 5 * i, 24, 5, 8) for i in range(20)] + [
     (f"b{i}", 1, -126 + 14 * i, 38, 12, 12) for i in range(4)
+] + [
+    ("vframe", 1, -134, 58, 128, 30),   # "votes against you", under the panel during the day vote
+    ("v1", 1, -44, 64, 12, 17),
+    ("v2", 1, -31, 64, 12, 17),
 ]
 HUD_ID_BASE = 100        # the green channel of an element's colour is HUD_ID_BASE + its index
 HUD_SPRITE_BASE = 0xE000
@@ -140,4 +144,5 @@ def hud_sprites():
     out += [(f"pteam_{w.lower().replace(' ', '_')}", *box["pteam"]) for w in HUD_TEAM_WORDS]
     out += [(f"dot_{n}", *box["m0"]) for n in HUD_DOTS]
     out += [(f"badge_{n}", *box["b0"]) for n in HUD_BADGES]
+    out += [(f"vframe_{n}", *box["vframe"]) for n in ("calm", "hot")]
     return out

@@ -118,6 +118,8 @@ sprite 116 badge_life
 sprite 117 badge_death
 sprite 118 badge_infect
 sprite 119 badge_guard
+sprite 120 vframe_calm
+sprite 121 vframe_hot
 element 0 frame
 element 1 icon
 element 2 round
@@ -160,3 +162,6 @@ element 38 b0
 element 39 b1
 element 40 b2
 element 41 b3
+element 42 vframe
+element 43 v1
+element 44 v2

@@ -250,10 +250,17 @@ public final class WerewolfGame implements GamePreset {
     };
   }
 
+  /**
+   * Whether this viewer may see the running ballots: everyone at the day vote, only the pack during
+   * the hunt. The one place that decides it, so a secret-ballot variant changes only this.
+   */
+  public synchronized boolean tallyVisible(UUID viewer) {
+    return phase == Phase.DAY_VOTE
+        || phase == Phase.NIGHT && roles.get(viewer) != null && wolf(roles.get(viewer));
+  }
+
   public synchronized Map<UUID, Integer> votes(UUID viewer) {
-    if (phase != Phase.DAY_VOTE
-        && !(phase == Phase.NIGHT && roles.get(viewer) != null && wolf(roles.get(viewer))))
-      return Map.of();
+    if (!tallyVisible(viewer)) return Map.of();
     Map<UUID, Integer> totals = new HashMap<>();
     ballots.values().forEach(p -> totals.merge(p, 1, Integer::sum));
     return Map.copyOf(totals);

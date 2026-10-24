@@ -54,7 +54,8 @@ final class CustomHud {
       int alive,
       int total,
       List<String> seats,
-      List<String> badges) {}
+      List<String> badges,
+      int against) {}
 
   /** HUD sizes by name: the red channel of the glyphs (78 follows the window, 79 full, 80 medium, 81 small). */
   static int mode(String size) {
@@ -117,6 +118,16 @@ final class CustomHud {
         out = out.append(glyph(mode, "m" + i, "dot_" + s.seats().get(i), 0));
       for (int i = 0; i < Math.min(BADGES, s.badges().size()); i++)
         out = out.append(glyph(mode, "b" + i, "badge_" + s.badges().get(i), 0));
+      // During the day vote: how many ballots are against this player right now.
+      if (s.against() >= 0) {
+        boolean hot = s.against() > 0;
+        String digits = String.format(Locale.ROOT, "%2d", Math.min(99, s.against()));
+        out = out.append(glyph(mode, "vframe", "vframe_" + (hot ? "hot" : "calm"), 0));
+        for (int i = 0; i < 2; i++) {
+          char c = digits.charAt(i);
+          out = out.append(glyph(mode, "v" + (i + 1), c == ' ' ? "dblank" : (hot ? "x" : "d") + c, 0));
+        }
+      }
     }
     return out;
   }
@@ -214,6 +225,9 @@ final class CustomHud {
         game.alive().size(),
         total,
         seats(game, viewer),
-        badges(game, viewer));
+        badges(game, viewer),
+        phase.equals("DAY_VOTE") && !dead && game.tallyVisible(viewer)
+            ? game.votes(viewer).getOrDefault(viewer, 0)
+            : -1);
   }
 }

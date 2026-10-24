@@ -1081,6 +1081,24 @@
    ]
   },
   {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/vframe_calm.png",
+   "ascent": 30,
+   "height": 30,
+   "chars": [
+    "\ue078"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/vframe_hot.png",
+   "ascent": 30,
+   "height": 30,
+   "chars": [
+    "\ue079"
+   ]
+  },
+  {
    "type": "space",
    "advances": {
     "\uf000": -251,
@@ -1202,7 +1220,9 @@
     "\uf074": -13,
     "\uf075": -13,
     "\uf076": -13,
-    "\uf077": -13
+    "\uf077": -13,
+    "\uf078": -129,
+    "\uf079": -129
    }
   }
  ]
