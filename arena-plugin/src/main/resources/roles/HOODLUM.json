@@ -7,13 +7,13 @@
  "palette": "solo",
  "icon": "hoodlum",
  "word": "HOODLUM",
- "help": "On the first night, mark two players. You win if both are dead and you are still alive at the end.",
+ "help": "First night: right-click two players to mark them. You win, whoever else does, if you are alive at the end and both marks are dead.",
  "teamWord": "ALONE",
  "call": {
   "phase": "HOODLUM",
   "label": "HOODLUM",
   "title": "Hoodlum, awaken",
   "subtitle": "Mark two players",
-  "instruction": "Right-click two players to mark them"
+  "instruction": "Right-click two other players to mark them"
  }
 }

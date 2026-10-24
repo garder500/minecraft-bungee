@@ -7,6 +7,6 @@
  "palette": "wolf",
  "icon": "lonewolf",
  "word": "LONE WOLF",
- "help": "You hunt with the pack, but you win only if you are the last player standing, or one of the last two with a villager.",
+ "help": "You hunt with the pack, but you win alone: be the last player alive, or one of the last two with someone who is not a wolf.",
  "teamWord": "ALONE"
 }
