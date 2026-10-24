@@ -290,6 +290,7 @@ final class WerewolfBots {
   private void settleTie(WerewolfGame game, Set<UUID> bots, List<Action> log) {
     List<UUID> voters = new ArrayList<>(bots);
     voters.retainAll(game.alive());
+    voters.removeIf(game::exiled);
     Collections.shuffle(voters, random);
     for (UUID bot : voters) {
       List<UUID> top = new ArrayList<>(top(game.votes(bot)));

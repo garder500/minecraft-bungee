@@ -159,7 +159,7 @@ final class WerewolfHud {
     }
     if (objective.getDisplaySlot() != DisplaySlot.SIDEBAR) objective.setDisplaySlot(DisplaySlot.SIDEBAR);
     UUID id = p.getUniqueId();
-    String role = game.role(id);
+    String role = game.selfRoleName(id);
     boolean dead = !game.alive().contains(id);
     int roleColor = dead ? WerewolfPresentation.INK_DIM : WerewolfPresentation.color(role);
     Component roleLine =

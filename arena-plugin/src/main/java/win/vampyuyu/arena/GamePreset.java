@@ -10,6 +10,11 @@ public interface GamePreset {
 
   String role(UUID player);
 
+  /** The role this player believes they hold (a drunk thinks they are a villager). */
+  default String selfRoleName(UUID player) {
+    return role(player);
+  }
+
   Set<UUID> alive();
 
   Map<UUID, Integer> votes(UUID viewer);

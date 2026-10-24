@@ -385,6 +385,75 @@ ROLE_CASES = {
 FORCED = {"VOTE_UX": "VILLAGER"}  # scenario -> the role the human is dealt
 
 
+def _role_files():
+    """role id -> its JSON, from the plugin's resources (one file per role)."""
+    folder = ROOT / "arena-plugin/src/main/resources/roles"
+    return {f.stem: json.loads(f.read_text()) for f in sorted(folder.glob("*.json"))}
+
+
+# The roles of the Ultimate Werewolf set have no hand-written scenario: the human holds the role, plays
+# its night call through the real controls if it has one, else votes, and the game must go on.
+ULTIMATE = [r for r in _role_files() if r not in ROLE_CASES]
+CAST_OF = {
+    "MASON": {"WEREWOLF": 2, "MASON": 2},
+    "VAMPIRE": {"WEREWOLF": 1, "VAMPIRE": 2},
+    "LONE_WOLF": {"WEREWOLF": 1, "LONE_WOLF": 1},
+    "APPRENTICE_SEER": {"WEREWOLF": 2, "SEER": 1, "APPRENTICE_SEER": 1},
+    "DOPPELGANGER": {"WEREWOLF": 2, "SEER": 1, "DOPPELGANGER": 1},
+    "CULT_LEADER": {"WEREWOLF": 2, "CULT_LEADER": 1},
+}
+for _role in ULTIMATE:
+    ROLE_CASES[_role] = CAST_OF.get(_role, {"WEREWOLF": 2, _role: 1})
+# How the human plays a call: ("pick", n) right-clicks n different players, ("button", key) presses a
+# button, ("watch",) only checks that the call opens (the ghost writes in the chat).
+CALL_PLAY = {"HOODLUM": ("pick", 2), "TROUBLEMAKER": ("button", "stir"), "GHOST": ("watch",)}
+
+
+def ultimate_checks(role, rcon, failures, tools, shots):
+    me = "E2EBot"
+    info = _role_files()[role]
+    call = info.get("call")
+    any_bot = lambda exclude=(): bot_with(rcon, lambda r: True, exclude)
+    if role == "MARTYR":
+        if not wait_phase("DAY_VOTE", 120): return failures.append("MARTYR: no day vote")
+        time.sleep(3)
+        victim = bot_with(rcon, NOT_WOLF)
+        for k in range(1, 12):
+            if f"bot{k}" != victim:
+                rcon.command(f"ww act bot{k} select {victim}")
+        rcon.command("ww phase skip")
+        if not wait_phase("MARTYR", 20): return failures.append("MARTYR: the martyr phase never opened")
+        time.sleep(3)
+        shot(tools, shots / "call-martyr.png")
+        if not click_until(rcon, "ability:sacrifice", "presses SACRIFICE"):
+            failures.append("MARTYR: sacrifice was refused")
+    elif call:
+        if not wait_phase(call["phase"], 150):
+            return failures.append(f"{role}: its call {call['phase']} never opened")
+        time.sleep(3)
+        shot(tools, shots / f"call-{role.lower()}.png")
+        play = CALL_PLAY.get(role, ("pick", 1))
+        if play[0] == "pick":
+            used = []
+            for _ in range(play[1]):
+                target = any_bot(tuple("[Bot] Guest " + u[3:] for u in used))
+                used.append(target)
+                if not click_until(rcon, target, f"{me}[{role}] selects"):
+                    failures.append(f"{role}: picking {target} was refused")
+        elif play[0] == "button":
+            if not click_until(rcon, f"ability:{play[1]}", f"presses {play[1].upper()}"):
+                failures.append(f"{role}: button {play[1]} was refused")
+        if wait_phase("DISCUSSION", 120) is None:
+            failures.append(f"{role}: the night never ended after its call")
+    else:
+        if not wait_phase("DAY_VOTE", 150): return failures.append(f"{role}: no day vote")
+        time.sleep(3)
+        if role == "DRUNK":  # the journal shows the real role he does not know yet
+            return
+        if not click_until(rcon, bot_with(rcon, NOT_WOLF), f"{me}[{role}] selects"):
+            failures.append(f"{role}: the vote was not recorded")
+
+
 def role_checks(role, rcon, roles, failures, tools, shots):
     """The human holds `role`: do what the role does, as a player, and check the game answered."""
     me = "E2EBot"
@@ -465,6 +534,8 @@ def role_checks(role, rcon, roles, failures, tools, shots):
     elif role == "BEAR_TAMER":
         if not wait_phase("DISCUSSION", 90): return failures.append("BEAR_TAMER: no day")
         time.sleep(2)
+    elif role in ULTIMATE:
+        ultimate_checks(role, rcon, failures, tools, shots)
     elif role == "VOTE_UX":
         if not wait_phase("DAY_VOTE", 90): return failures.append("VOTE_UX: no day vote")
         time.sleep(3)

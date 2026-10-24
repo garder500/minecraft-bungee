@@ -227,6 +227,6 @@ final class ClickControls implements Listener {
     UUID target = lookingAt(p, s);
     if (target == null || !(s.game instanceof WerewolfGame game) || !game.alive().contains(target)) return null;
     String name = s.players.getOrDefault(target, "Player");
-    return Component.text(" ▸ " + name, TextColor.color(WerewolfPresentation.color(game.role(p.getUniqueId()))));
+    return Component.text(" ▸ " + name, TextColor.color(WerewolfPresentation.color(game.selfRoleName(p.getUniqueId()))));
   }
 }

@@ -36,7 +36,10 @@ public final class CompassGUI implements Listener {
       case "WITCH" -> NamedTextColor.DARK_PURPLE;
       case "CUPID" -> NamedTextColor.LIGHT_PURPLE;
       case "HUNTER" -> NamedTextColor.DARK_GREEN;
-      default -> NamedTextColor.WHITE;
+      case "VILLAGER", "Not assigned yet" -> NamedTextColor.WHITE;
+      default ->
+          net.kyori.adventure.text.format.NamedTextColor.nearestTo(
+              net.kyori.adventure.text.format.TextColor.color(WerewolfPresentation.color(role)));
     };
   }
 
@@ -326,7 +329,7 @@ public final class CompassGUI implements Listener {
     int[] abilitySlots = wide ? new int[] {83, 84, 85} : new int[] {46, 47, 49, 51, 52};
     holder.leaveSlot = wide ? 88 : 53;
     holder.phase = game == null ? "" : game.phase();
-    String role = game == null ? "Not assigned yet" : game.role(p.getUniqueId());
+    String role = game == null ? "Not assigned yet" : game.selfRoleName(p.getUniqueId());
     ItemStack roleCard =
         themed(
             holder,
@@ -548,7 +551,7 @@ public final class CompassGUI implements Listener {
    * by the menus and by clicking players and hotbar items (ClickControls).
    */
   void act(Player p, ArenaSession s, WerewolfGame wolf, String click) {
-    int color = WerewolfPresentation.color(wolf.role(p.getUniqueId()));
+    int color = WerewolfPresentation.color(wolf.selfRoleName(p.getUniqueId()));
     try {
       String response =
           click.startsWith("select:")
@@ -557,7 +560,7 @@ public final class CompassGUI implements Listener {
                   ? wolf.aim(p.getUniqueId(), UUID.fromString(click.substring(4)))
                   : wolf.use(p.getUniqueId(), click.substring(4));
       p.sendMessage(whisper(friendly(response, s), color));
-      String cue = WerewolfPresentation.actionSound(wolf.role(p.getUniqueId()), click);
+      String cue = WerewolfPresentation.actionSound(wolf.selfRoleName(p.getUniqueId()), click);
       if (cue != null && s.config.werewolf().ambienceEnabled())
         WerewolfAmbience.cue(plugin, p, cue, Sound.UI_BUTTON_CLICK, .35f, 1.3f);
       else p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, SoundCategory.MASTER, .35f, 1.3f);
@@ -649,7 +652,7 @@ public final class CompassGUI implements Listener {
           p.sendMessage(
               text(
                   friendly(s.game.use(p.getUniqueId(), ability), s),
-                  roleColor(s.game.role(p.getUniqueId()))));
+                  roleColor(s.game.selfRoleName(p.getUniqueId()))));
           plugin.arenas.phaseChanged(s);
           refresh(p);
         } catch (IllegalArgumentException ex) {
@@ -668,7 +671,7 @@ public final class CompassGUI implements Listener {
               s.game
                   .select(p.getUniqueId(), target)
                   .replace(target.toString(), s.players.getOrDefault(target, "Player"));
-          p.sendMessage(text(response, roleColor(s.game.role(p.getUniqueId()))));
+          p.sendMessage(text(response, roleColor(s.game.selfRoleName(p.getUniqueId()))));
           deliverNotices(s);
           plugin.arenas.phaseChanged(s);
           refresh(p);

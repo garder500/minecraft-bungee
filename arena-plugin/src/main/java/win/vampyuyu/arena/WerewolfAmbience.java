@@ -174,7 +174,7 @@ final class WerewolfAmbience {
     for (UUID id : s.players.keySet()) {
       Player p = Bukkit.getPlayer(id);
       if (p == null) continue;
-      String role = game.role(id);
+      String role = game.selfRoleName(id);
       TextColor roleColor = TextColor.color(WerewolfPresentation.color(role));
       if (opening)
         tasks.add(
@@ -518,7 +518,7 @@ final class WerewolfAmbience {
   private Component actionBar(ArenaSession s, Player p, WerewolfGame game, long now) {
     UUID me = p.getUniqueId();
     var view = WerewolfPresentation.view(game, me);
-    int color = view.actor() ? WerewolfPresentation.color(game.role(me)) : WerewolfPresentation.INK_DIM;
+    int color = view.actor() ? WerewolfPresentation.color(game.selfRoleName(me)) : WerewolfPresentation.INK_DIM;
     boolean skinned = plugin.skin != null && plugin.skin.active(p);
     Component bar = Component.empty();
     // The screen effect comes first so everything after it (text, HUD) is drawn on top of it.

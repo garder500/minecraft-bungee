@@ -490,6 +490,7 @@ public final class WerewolfGame implements GamePreset {
   }
 
   /** What the HUD and help show as the player's own role. */
+  @Override
   public synchronized String selfRoleName(UUID p) {
     return selfRole(p).name();
   }
