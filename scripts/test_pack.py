@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Structural checks for resource-pack/pack that do not need a Minecraft client."""
-import hashlib, json, pathlib, re, struct, sys, tempfile, unittest
+import hashlib, json, pathlib, re, struct, sys, tempfile, unittest, zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PACK = ROOT / "resource-pack" / "pack"
@@ -10,6 +10,20 @@ import build_pack  # noqa: E402
 import layout  # noqa: E402
 sys.path.insert(0, str(ROOT / "resource-pack" / "art"))
 import hud as hud_art  # noqa: E402
+
+def ogg_seconds(data):
+    """Length of an Ogg Vorbis file: the last page's granule position counts PCM samples."""
+    rate, granule, offset = None, 0, 0
+    while offset < len(data):
+        assert data[offset:offset + 4] == b"OggS", f"bad Ogg page at {offset}"
+        segments = data[offset + 26]
+        body = sum(data[offset + 27:offset + 27 + segments])
+        if rate is None:  # first page holds the Vorbis identification header
+            packet = offset + 27 + segments
+            rate = struct.unpack("<I", data[packet + 12:packet + 16])[0]
+        granule = struct.unpack("<q", data[offset + 6:offset + 14])[0]
+        offset += 27 + segments + body
+    return granule / rate
 
 def png_size(path):
     data = path.read_bytes()
@@ -208,6 +222,40 @@ class PackTest(unittest.TestCase):
                 self.assertEqual(path.read_bytes()[:4], b"OggS", path)
         self.assertIn('Key.key("vampyuyu", "werewolf.music")', ambience)
         self.assertTrue(sounds["werewolf.music"]["sounds"][0]["stream"])
+
+    def test_every_ambience_sound_is_in_sounds_json_and_the_built_pack(self):
+        profile = json.loads((ROOT / "arena-plugin/src/main/resources/werewolf/ambience.json").read_text())
+        sounds = json.loads((PACK / "assets/vampyuyu/sounds.json").read_text())
+        subtitles = json.loads((PACK / "assets/vampyuyu/lang/en_us.json").read_text())
+        with tempfile.TemporaryDirectory() as out:
+            built, _ = build_pack.build(out)
+            with zipfile.ZipFile(built) as z:
+                members = set(z.namelist())
+                beds = set()
+                for phase, entry in profile.items():
+                    self.assertRegex(entry["fallback"], r"^minecraft:[a-z0-9_./]+$", phase)
+                    self.assertGreater(entry["ambient"]["loopMillis"], 0, phase)
+                    for role, sound in (("ambient", entry["ambient"]["sound"]), ("sting", entry["sting"]["sound"])):
+                        self.assertRegex(sound, r"^vampyuyu:werewolf\.[a-z0-9_]+$", f"{phase}.{role}")
+                        key = sound.split(":", 1)[1]  # werewolf.<name>, the sounds.json key
+                        definition = sounds.get(key)
+                        self.assertIsNotNone(definition, f"{phase}.{role}: {key} not in sounds.json")
+                        self.assertIn(definition["subtitle"], subtitles)
+                        # sounds.json names the file: vampyuyu:werewolf/<name>, i.e. assets/vampyuyu/sounds/werewolf/<name>.ogg
+                        namespace, path = definition["sounds"][0]["name"].split(":", 1)
+                        rel = f"assets/{namespace}/sounds/{path}.ogg"
+                        self.assertTrue((PACK / rel).is_file(), rel)
+                        self.assertIn(rel, members, f"{rel} missing from the built pack")
+                        data = z.read(rel)
+                        self.assertEqual(data[:4], b"OggS", rel)
+                        self.assertLessEqual(len(data), 600 * 1024, f"{rel} is too large")
+                        if role == "ambient":
+                            beds.add(key)
+                            self.assertAlmostEqual(
+                                ogg_seconds(data) * 1000, entry["ambient"]["loopMillis"], delta=50,
+                                msg=f"{phase}: loopMillis must match the length of {rel}")
+                self.assertGreaterEqual(len(beds), 4, "each main phase changes the loop")
+                self.assertIn("assets/vampyuyu/sounds.json", members)
 
     def test_build_is_reproducible_and_complete(self):
         with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
