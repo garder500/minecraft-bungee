@@ -116,5 +116,41 @@
       }
     ],
     "subtitle": "subtitles.vampyuyu.werewolf.game_over"
+  },
+  "werewolf.ambience_night": {
+    "sounds": [
+      {
+        "name": "vampyuyu:werewolf/ambience_night",
+        "volume": 1.0
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.werewolf.ambience_night"
+  },
+  "werewolf.ambience_day": {
+    "sounds": [
+      {
+        "name": "vampyuyu:werewolf/ambience_day",
+        "volume": 1.0
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.werewolf.ambience_day"
+  },
+  "werewolf.ambience_vote": {
+    "sounds": [
+      {
+        "name": "vampyuyu:werewolf/ambience_vote",
+        "volume": 1.0
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.werewolf.ambience_vote"
+  },
+  "werewolf.ambience_finale": {
+    "sounds": [
+      {
+        "name": "vampyuyu:werewolf/ambience_finale",
+        "volume": 1.0
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.werewolf.ambience_finale"
   }
 }

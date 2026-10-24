@@ -1,0 +1,42 @@
+{
+  "lobby": {
+    "ambient": { "sound": "vampyuyu:werewolf.music", "loopMillis": 75000, "volume": 0.3 },
+    "sting": { "sound": "vampyuyu:werewolf.howl", "volume": 0.5 },
+    "fallback": "minecraft:music.game"
+  },
+  "day": {
+    "ambient": { "sound": "vampyuyu:werewolf.ambience_day", "loopMillis": 32000, "volume": 0.45 },
+    "sting": { "sound": "vampyuyu:werewolf.dawn", "volume": 0.7 },
+    "fallback": "minecraft:music.game"
+  },
+  "night": {
+    "ambient": { "sound": "vampyuyu:werewolf.ambience_night", "loopMillis": 32000, "volume": 0.45 },
+    "sting": { "sound": "vampyuyu:werewolf.night", "volume": 0.8 },
+    "fallback": "minecraft:ambient.cave"
+  },
+  "vote": {
+    "ambient": { "sound": "vampyuyu:werewolf.ambience_vote", "loopMillis": 16000, "volume": 0.4 },
+    "sting": { "sound": "vampyuyu:werewolf.vote", "volume": 0.8 },
+    "fallback": "minecraft:ambient.cave"
+  },
+  "trial": {
+    "ambient": { "sound": "vampyuyu:werewolf.ambience_vote", "loopMillis": 16000, "volume": 0.6 },
+    "sting": { "sound": "vampyuyu:werewolf.death", "volume": 0.6 },
+    "fallback": "minecraft:ambient.cave"
+  },
+  "finale": {
+    "ambient": { "sound": "vampyuyu:werewolf.ambience_finale", "loopMillis": 24000, "volume": 0.5 },
+    "sting": { "sound": "vampyuyu:werewolf.game_over", "volume": 0.8 },
+    "fallback": "minecraft:music.credits"
+  },
+  "DAY_VOTE": {
+    "ambient": { "sound": "vampyuyu:werewolf.ambience_vote", "loopMillis": 16000, "volume": 0.35 },
+    "sting": { "sound": "vampyuyu:werewolf.vote", "volume": 0.8 },
+    "fallback": "minecraft:ambient.cave"
+  },
+  "DEFENSE": {
+    "ambient": { "sound": "vampyuyu:werewolf.ambience_day", "loopMillis": 32000, "volume": 0.25 },
+    "sting": { "sound": "vampyuyu:werewolf.protect", "volume": 0.5 },
+    "fallback": "minecraft:music.game"
+  }
+}
