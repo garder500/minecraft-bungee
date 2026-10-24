@@ -69,10 +69,12 @@ public class ShapeModuleTest {
     for (int seed = 0; seed < 150; seed++) {
       var ids = ids(seed, N);
       var g = game(ids, seed, Map.of("WEREWOLF", 1, "SEER", 1, "DRUNK", 1, "CUPID", 1));
-      UUID drunk = ids.stream().filter(p -> g.selfRoleName(p).equals("VILLAGER") && g.role(p).equals("DRUNK")).findFirst().orElse(null);
-      assertNull("the drunk never keeps the DRUNK card", drunk);
-      long hidden = ids.stream().filter(p -> g.selfRoleName(p).equals("VILLAGER")).count();
-      assertTrue(hidden >= 1);
+      // Nobody keeps the DRUNK card, and at most the one drunk hides a real role behind "villager".
+      assertTrue(ids.stream().noneMatch(p -> g.role(p).equals("DRUNK") || g.selfRoleName(p).equals("DRUNK")));
+      long hiding = ids.stream().filter(p -> g.selfRoleName(p).equals("VILLAGER") && !g.role(p).equals("VILLAGER")).count();
+      assertTrue("at most one sleeper: " + hiding, hiding <= 1);
+      assertEquals("three awake special roles, everybody else (the drunk too) believes villager",
+          N - 3, ids.stream().filter(p -> g.selfRoleName(p).equals("VILLAGER")).count());
       for (String r : List.of("SEER", "WEREWOLF", "CUPID"))
         assertTrue(r + " is never held twice", ids.stream().filter(p -> g.role(p).equals(r)).count() <= (r.equals("WEREWOLF") ? 2 : 1));
       for (UUID p : ids) {
@@ -164,8 +166,17 @@ public class ShapeModuleTest {
     var ids = ids(seed, N);
     var g = game(ids, seed, cast);
     UUID drunk = ids.stream().filter(p -> g.role(p).equals("WEREWOLF") && g.selfRoleName(p).equals("VILLAGER")).findFirst().orElseThrow();
+    List<UUID> others = ids.stream().filter(p -> g.role(p).equals("WEREWOLF") && !p.equals(drunk)).toList();
+    assertEquals(2, others.size());
+    for (UUID w : others) {
+      assertEquals("the sleeping drunk is not in the pack", List.of(), g.pack(w).stream().filter(drunk::equals).toList());
+      assertEquals(1, g.pack(w).size());
+    }
+    assertEquals("the sleeping drunk knows no pack", List.of(), g.pack(drunk));
     var notices = untilSober(g, drunk, new HashSet<>(), new int[1]);
     assertEquals("You sober up: you are the Werewolf", notices.get(drunk));
+    for (UUID w : others) assertTrue("woken: in the pack now", g.pack(w).contains(drunk));
+    assertEquals(2, g.pack(drunk).size());
     for (UUID p : ids) {
       String text = notices.getOrDefault(p, "");
       if (p.equals(drunk)) continue;
@@ -186,6 +197,95 @@ public class ShapeModuleTest {
       assertFalse(g.drainNotices().getOrDefault(drunk, "").contains("sober"));
       g.advance();
     }
+  }
+
+  @Test
+  public void aSleepingDrunkWolfIsOutOfThePackAndWolvesMayTargetHimByMistake() {
+    var cast = Map.of("WEREWOLF", 2, "DRUNK", 1);
+    int seed = -1;
+    for (int s = 0; s < 800 && seed < 0; s++) {
+      var ids = ids(s, N);
+      var g = game(ids, s, cast);
+      if (ids.stream().filter(p -> g.role(p).equals("WEREWOLF")).count() == 3) seed = s;
+    }
+    var ids = ids(seed, N);
+    var g = game(ids, seed, cast);
+    UUID drunk = ids.stream().filter(p -> g.role(p).equals("WEREWOLF") && g.selfRoleName(p).equals("VILLAGER")).findFirst().orElseThrow();
+    List<UUID> others = ids.stream().filter(p -> g.role(p).equals("WEREWOLF") && !p.equals(drunk)).toList();
+    toPhase(g, "NIGHT");
+    assertEquals(1, g.nightNumber());
+    for (UUID w : others) {
+      assertFalse(g.pack(w).contains(drunk));
+      assertFalse(g.packMember(drunk));
+      assertTrue(g.packMember(w));
+    }
+    assertEquals(List.of(), g.pack(drunk));
+    assertFalse(g.actors().contains(drunk));
+    // Nobody tells the wolves: they may pick him, and he dies as the werewolf he really was.
+    for (UUID w : others) g.select(w, drunk);
+    toPhase(g, "DISCUSSION");
+    assertFalse(g.alive().contains(drunk));
+    assertEquals("WEREWOLF", g.role(drunk));
+  }
+
+  @Test
+  public void aSleepingDrunkHunterKeepsHisRealRoleAtDeathAndTakesHisShot() {
+    var cast = Map.of("WEREWOLF", 1, "DRUNK", 1);
+    int seed = seedWhereDrunkIs("HUNTER", cast);
+    var ids = ids(seed, N);
+    var g = game(ids, seed, cast);
+    UUID hunter = holder(g, ids, "HUNTER");
+    assertEquals("VILLAGER", g.selfRoleName(hunter));
+    UUID wolf = holder(g, ids, "WEREWOLF");
+    lynch(g, ids, hunter);
+    assertFalse(g.alive().contains(hunter));
+    assertEquals("the death reveals what he was", "HUNTER", g.role(hunter));
+    assertEquals("HUNTER_SHOT", g.phase());
+    g.select(hunter, wolf);
+    assertFalse("the drunk hunter shot the wolf", g.alive().contains(wolf));
+  }
+
+  @Test
+  public void theDoppelgangerCopiesTheRealRoleOfASleepingDrunk() {
+    var cast = Map.of("WEREWOLF", 1, "DRUNK", 1, "DOPPELGANGER", 1);
+    int seed = seedWhereDrunkIs("SEER", cast);
+    var ids = ids(seed, N);
+    var g = game(ids, seed, cast);
+    UUID doppel = holder(g, ids, "DOPPELGANGER");
+    UUID drunk = holder(g, ids, "SEER");
+    assertEquals("VILLAGER", g.selfRoleName(drunk));
+    g.select(doppel, drunk);
+    lynch(g, ids, drunk);
+    assertFalse(g.alive().contains(drunk));
+    assertEquals("SEER", g.role(doppel));
+    assertTrue(g.drainNotices().get(doppel).contains("you are now the Seer"));
+  }
+
+  @Test
+  public void aSmallTableNeverDealsTheDrunkAWolfThatWouldStartAtParity() {
+    var cast = Map.of("WEREWOLF", 1, "DRUNK", 1, "VILLAGER", 2);
+    Set<String> seen = new HashSet<>();
+    for (int seed = 0; seed < 300; seed++) {
+      var ids = ids(seed, 4);
+      var g = game(ids, seed, cast);
+      assertEquals("one wolf only", 1, ids.stream().filter(p -> g.role(p).equals("WEREWOLF")).count());
+      assertEquals("the game starts", "", g.winner());
+      for (UUID p : ids) if (g.selfRoleName(p).equals("VILLAGER")) seen.add(g.role(p));
+    }
+    assertFalse(seen.isEmpty());
+  }
+
+  @Test
+  public void theAuraSeerReadsASleepingDrunkSeerAsAPlainVillager() {
+    var cast = Map.of("WEREWOLF", 1, "DRUNK", 1, "AURA_SEER", 1);
+    int seed = seedWhereDrunkIs("SEER", cast);
+    var ids = ids(seed, N);
+    var g = game(ids, seed, cast);
+    UUID aura = holder(g, ids, "AURA_SEER");
+    UUID drunk = holder(g, ids, "SEER");
+    toPhase(g, "AURA");
+    String reply = g.select(aura, drunk);
+    assertTrue(reply, reply.contains("plain"));
   }
 
   // ------------------------------------------------------------------ doppelganger
@@ -303,6 +403,52 @@ public class ShapeModuleTest {
     assertFalse(g.drainNotices().containsKey(doppel));
   }
 
+  @Test
+  public void theApprenticeIsPromotedBeforeTheDoppelgangerCopiesAtDawnAndADoppelgangerWhoDiesThatDawnIsNotTold() {
+    var cast = Map.of("WEREWOLF", 1, "SEER", 1, "APPRENTICE_SEER", 1, "DOPPELGANGER", 1, "WITCH", 1);
+    int found = 0;
+    for (int seed = 0; seed < 40; seed++) {
+      var ids = ids(seed, N);
+      var g = game(ids, seed, cast);
+      UUID doppel = holder(g, ids, "DOPPELGANGER");
+      UUID wolf = holder(g, ids, "WEREWOLF");
+      UUID seer = holder(g, ids, "SEER");
+      UUID apprentice = holder(g, ids, "APPRENTICE_SEER");
+      UUID witch = holder(g, ids, "WITCH");
+      g.select(doppel, seer);
+      toPhase(g, "NIGHT");
+      g.drainNotices();
+      g.select(wolf, seer);
+      toPhase(g, "WITCH");
+      g.select(witch, doppel);
+      toPhase(g, "DISCUSSION");
+      assertFalse(g.alive().contains(seer));
+      assertFalse("poisoned the same dawn", g.alive().contains(doppel));
+      assertEquals("the apprentice took the seat first", "SEER", g.role(apprentice));
+      assertEquals("a dead doppelganger copies nothing", "DOPPELGANGER", g.role(doppel));
+      assertFalse("no notice to a dead player", g.drainNotices().containsKey(doppel));
+      found++;
+    }
+    assertEquals(40, found);
+  }
+
+  @Test
+  public void aCopyOfTheNightWaitsForDawnButStaysImmediateByDay() {
+    var ids = ids(3, N);
+    var g = game(ids, 3, DOPPEL);
+    UUID doppel = holder(g, ids, "DOPPELGANGER");
+    UUID wolf = holder(g, ids, "WEREWOLF");
+    UUID seer = holder(g, ids, "SEER");
+    g.select(doppel, seer);
+    toPhase(g, "NIGHT");
+    g.drainNotices();
+    g.select(wolf, seer);
+    toPhase(g, "DISCUSSION");
+    // The copy happened at dawn, before the day opened, and she was told once.
+    assertEquals("SEER", g.role(doppel));
+    assertEquals(1, g.drainNotices().get(doppel).split("you are now the Seer", -1).length - 1);
+  }
+
   // ------------------------------------------------------------------ bots
 
   @Test
@@ -349,10 +495,9 @@ public class ShapeModuleTest {
       for (int t = 0; t < 250 && g.winner().isEmpty(); t++) log.addAll(turn(g, brain, bots));
       assertFalse("The game should end, seed " + seed, g.winner().isEmpty());
       for (WerewolfBots.Action a : log) {
-        // The shared bots still aim at exiled players now and then (a drunk may wake as the hag).
         assertFalse(
             a.toString(),
-            a.what().startsWith("was refused") && !a.what().contains("away from the village"));
+            a.what().startsWith("was refused"));
         if (a.role().equals("DOPPELGANGER") && a.what().contains("DOPPEL")) doppelActs++;
       }
     }

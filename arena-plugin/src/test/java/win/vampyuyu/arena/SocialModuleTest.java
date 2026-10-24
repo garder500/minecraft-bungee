@@ -358,12 +358,11 @@ public class SocialModuleTest {
       if (key.equals(game.turnKey())) game.advance();
     }
     assertFalse("The game should end, seed " + seed, game.winner().isEmpty());
-    // Known shared-bot gap (see the report): WerewolfBots still lets a seer vote for an exiled wolf
-    // and lets exiled bots join settleTie; the game refuses both. Any other refusal fails.
+    // Bots keep away from exiled players: any refusal fails.
     for (WerewolfBots.Action action : log)
       assertFalse(
           action.toString(),
-          action.what().startsWith("was refused") && !action.what().contains("away from the village"));
+          action.what().startsWith("was refused"));
   }
 
   private static final Map<String, Integer> CAST =
