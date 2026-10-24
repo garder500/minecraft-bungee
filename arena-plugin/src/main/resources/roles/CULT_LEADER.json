@@ -7,13 +7,13 @@
  "palette": "cult",
  "icon": "cult",
  "word": "CULT LEADER",
- "help": "Each night, recruit one player into your cult; they do not know. You win if every living player is in the cult.",
+ "help": "Each night, recruit one player into your cult. Recruits are not told. The cult wins when every living player is a member.",
  "teamWord": "THE CULT",
  "call": {
   "phase": "CULT",
   "label": "CULT LEADER",
   "title": "Cult leader, awaken",
-  "subtitle": "Recruit one player",
-  "instruction": "Right-click a player to recruit them into the cult"
+  "subtitle": "Recruit a player",
+  "instruction": "Right-click a player to recruit them"
  }
 }
