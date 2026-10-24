@@ -3,6 +3,7 @@ package win.vampyuyu.arena;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +56,12 @@ final class ShapeModule implements RoleModule {
     for (UUID p : drunks) g.setRole(p, realRole(g));
   }
 
-  /** A werewolf, a villager or a village role nobody holds yet (never a first-night one). */
+  /**
+   * A werewolf, a villager or a village role nobody holds yet (never a first-night one). Decisions:
+   * a sleeping drunk who dies before night 3 is announced with his real role and his death powers
+   * (hunter, prince, cub) work; a doppelganger copies that real role; the engine keeps him out of
+   * the pack and its ballots until he wakes, so wolves may pick him by mistake.
+   */
   private Role realRole(WerewolfGame g) {
     Set<Role> held = new HashSet<>();
     for (UUID p : g.table()) held.add(g.roleOf(p));
@@ -113,24 +119,43 @@ final class ShapeModule implements RoleModule {
     return "You will become " + target + " when they die.";
   }
 
+  /** Copies waiting for the dawn: each doppelganger and the role her target held when he died. */
+  private final Map<UUID, Role> pending = new LinkedHashMap<>();
+
   @Override
   public void died(WerewolfGame g, UUID player, String source, String cause) {
+    // The real role counts: a sleeping drunk is copied for what he really was.
     Role role = g.roleOf(player);
     for (var e : new ArrayList<>(targets.entrySet())) {
       UUID doppel = e.getKey();
       if (!e.getValue().equals(player) || !g.living().contains(doppel)) continue;
       targets.remove(doppel);
-      if (taken(g, role, doppel)) {
-        g.setRole(doppel, Role.VILLAGER);
-        g.notify(
-            doppel,
-            "Your target died, but somebody already holds the "
-                + RoleInfo.of(role.name()).name()
-                + ": you stay a plain Villager.");
-      } else {
-        g.setRole(doppel, role);
-        g.notify(doppel, "Your target died: you are now the " + RoleInfo.of(role.name()).name());
-      }
+      // A death of the night's resolution waits for dawn(), which runs after the apprentice seer
+      // has been promoted (InsightModule): the uniqueness rule must see that promotion.
+      if (g.night()) pending.put(doppel, role);
+      else copy(g, doppel, role);
+    }
+  }
+
+  @Override
+  public void dawn(WerewolfGame g) {
+    for (var e : new ArrayList<>(pending.entrySet())) {
+      pending.remove(e.getKey());
+      if (g.living().contains(e.getKey())) copy(g, e.getKey(), e.getValue());
+    }
+  }
+
+  private void copy(WerewolfGame g, UUID doppel, Role role) {
+    if (taken(g, role, doppel)) {
+      g.setRole(doppel, Role.VILLAGER);
+      g.notify(
+          doppel,
+          "Your target died, but somebody already holds the "
+              + RoleInfo.of(role.name()).name()
+              + ": you stay a plain Villager.");
+    } else {
+      g.setRole(doppel, role);
+      g.notify(doppel, "Your target died: you are now the " + RoleInfo.of(role.name()).name());
     }
   }
 
