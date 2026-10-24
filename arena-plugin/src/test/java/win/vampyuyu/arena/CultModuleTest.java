@@ -31,6 +31,15 @@ public class CultModuleTest {
     assertEquals(phase, g.phase());
   }
 
+  /** The game's own cult module, to look at its members. */
+  @SuppressWarnings("unchecked")
+  private static CultModule cultOf(WerewolfGame g) throws Exception {
+    var f = WerewolfGame.class.getDeclaredField("modules");
+    f.setAccessible(true);
+    for (RoleModule m : (List<RoleModule>) f.get(g)) if (m instanceof CultModule c) return c;
+    throw new AssertionError("no cult module");
+  }
+
   /** Four players: a cult leader, a werewolf and two villagers. */
   private static final Map<String, Integer> SMALL = Map.of("WEREWOLF", 1, "CULT_LEADER", 1);
 
@@ -93,6 +102,26 @@ public class CultModuleTest {
     assertFalse(g.alive().contains(prey));
     to(g, "CULT");
     assertThrows(IllegalArgumentException.class, () -> g.select(leader, prey));
+  }
+
+  @Test
+  public void theModuleItselfRefusesADeadTarget() throws Exception {
+    var ids = ids(4, 5);
+    var g = game(ids, 4, Map.of("WEREWOLF", 1, "CULT_LEADER", 1));
+    UUID leader = holder(g, ids, "CULT_LEADER");
+    UUID wolf = holder(g, ids, "WEREWOLF");
+    UUID prey = villagers(g, ids).get(0);
+    to(g, "NIGHT");
+    g.select(wolf, prey);
+    to(g, "DAY_VOTE");
+    assertFalse(g.alive().contains(prey));
+    CultModule module = cultOf(g);
+    var e =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> module.select(g, WerewolfGame.Phase.CULT, leader, prey));
+    assertEquals("Select a living player", e.getMessage());
+    assertFalse(module.members(g, "CULT").contains(prey));
   }
 
   @Test
@@ -159,16 +188,16 @@ public class CultModuleTest {
   }
 
   @Test
-  public void theCultKeepsItsMembersWhenTheLeaderDiesAndNobodyReplacesHim() {
+  public void theCultKeepsItsMembersWhenTheLeaderDiesAndNobodyReplacesHim() throws Exception {
     var ids = ids(8, 5);
     var g = game(ids, 8, Map.of("WEREWOLF", 1, "CULT_LEADER", 1));
     UUID leader = holder(g, ids, "CULT_LEADER");
     UUID wolf = holder(g, ids, "WEREWOLF");
     UUID a = villagers(g, ids).get(0);
-    to(g, "NIGHT");
-    g.select(wolf, leader);
     to(g, "CULT");
     g.select(leader, a);
+    to(g, "NIGHT");
+    g.select(wolf, leader);
     to(g, "DAY_VOTE");
     assertFalse(g.alive().contains(leader));
     assertTrue(g.alive().contains(a));
@@ -178,10 +207,11 @@ public class CultModuleTest {
       g.advance();
       assertNotEquals("CULT", g.phase());
     }
+    assertTrue(cultOf(g).members(g, "CULT").containsAll(Set.of(leader, a)));
   }
 
   @Test
-  public void aLonelyLeaderWithDeadRecruitsDoesNotWinWhileOthersLive() {
+  public void recruitsOfALeaderWhoLivesAloneDoNotGiveTheWinWhileOutsidersLive() throws Exception {
     var ids = ids(9, 5);
     var g = game(ids, 9, Map.of("WEREWOLF", 1, "CULT_LEADER", 1));
     UUID leader = holder(g, ids, "CULT_LEADER");
@@ -194,8 +224,11 @@ public class CultModuleTest {
     g.select(leader, a);
     g.select(wolf, a);
     g.advance();
-    assertFalse(g.alive().contains(a));
-    assertNotEquals("CULT", g.winner());
+    assertFalse("the recruit is dead", g.alive().contains(a));
+    assertTrue("the leader lives", g.alive().contains(leader));
+    assertTrue(cultOf(g).members(g, "CULT").containsAll(Set.of(leader, a)));
+    assertTrue("outsiders live", g.alive().contains(wolf));
+    assertEquals("", g.winner());
   }
 
   @Test
