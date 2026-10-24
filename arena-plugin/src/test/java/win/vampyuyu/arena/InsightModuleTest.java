@@ -147,6 +147,7 @@ public class InsightModuleTest {
     UUID pi = holder(g, ids, "PI");
     UUID wolf = holder(g, ids, "WEREWOLF");
     UUID beside = g.neighbour(wolf, 1);
+    if (beside.equals(pi)) beside = g.neighbour(wolf, -1);
     toPhase(g, "PI");
     assertTrue(g.abilities(pi).containsKey("pass"));
     String reply = g.select(pi, beside);
@@ -232,6 +233,42 @@ public class InsightModuleTest {
     assertThrows(IllegalArgumentException.class, () -> g.select(other, pi));
     assertThrows(IllegalArgumentException.class, () -> g.select(pi, new UUID(0, 0)));
     assertEquals("PI", g.phase());
+  }
+
+  @Test
+  public void aDeadPlayerCannotBePickedByTheAuraSeerThePiOrTheSorcerer() {
+    var ids = ids(40, 11);
+    var g = game(ids, 40, Map.of("WEREWOLF", 1, "AURA_SEER", 1, "PI", 1, "SORCERER", 1));
+    UUID victim = holder(g, ids, "VILLAGER");
+    toPhase(g, "NIGHT");
+    g.select(holder(g, ids, "WEREWOLF"), victim);
+    toDay(g);
+    assertFalse(g.alive().contains(victim));
+    toNextHunt(g);
+    for (String role : List.of("AURA_SEER", "PI", "SORCERER")) {
+      toPhase(g, role.equals("AURA_SEER") ? "AURA" : role);
+      UUID actor = holder(g, ids, role);
+      assertThrows(role, IllegalArgumentException.class, () -> g.select(actor, victim));
+      assertNotEquals("NIGHT", g.phase()); // the refusal did not spend the call
+      assertTrue(role, g.actors().contains(actor));
+      g.use(actor, "pass");
+    }
+  }
+
+  @Test
+  public void thePiAndTheSorcererCannotPickThemselves() {
+    var ids = ids(41, 9);
+    var g = game(ids, 41, Map.of("WEREWOLF", 1, "PI", 1, "SORCERER", 1));
+    UUID pi = holder(g, ids, "PI");
+    UUID sorcerer = holder(g, ids, "SORCERER");
+    toPhase(g, "PI");
+    assertThrows(IllegalArgumentException.class, () -> g.select(pi, pi));
+    assertEquals("PI", g.phase());
+    g.select(pi, sorcerer); // the investigation was not spent by the refusal
+    toPhase(g, "SORCERER");
+    assertThrows(IllegalArgumentException.class, () -> g.select(sorcerer, sorcerer));
+    assertEquals("SORCERER", g.phase());
+    assertTrue(g.select(sorcerer, pi).contains("not the Seer"));
   }
 
   // ------------------------------------------------------------------ sorcerer
@@ -388,6 +425,81 @@ public class InsightModuleTest {
   }
 
   @Test
+  public void aDeadApprenticeIsNeverToldHeIsTheSeer() {
+    var ids = ids(42, 11);
+    var g = game(ids, 42, Map.of("WEREWOLF", 1, "SEER", 1, "APPRENTICE_SEER", 1, "WITCH", 1));
+    UUID apprentice = holder(g, ids, "APPRENTICE_SEER");
+    UUID seer = holder(g, ids, "SEER");
+    UUID witch = holder(g, ids, "WITCH");
+    toPhase(g, "NIGHT");
+    g.select(holder(g, ids, "WEREWOLF"), seer);
+    g.aim(witch, apprentice);
+    g.use(witch, "poison");
+    g.drainNotices();
+    toDay(g);
+    assertFalse(g.alive().contains(seer));
+    assertFalse(g.alive().contains(apprentice));
+    assertEquals("APPRENTICE_SEER", g.role(apprentice));
+    assertFalse(mentions(g.drainNotices(), apprentice, "Seer"));
+  }
+
+  @Test
+  public void theApprenticeKeepsHisNoticeWhenTheBearGrowlsTheSameDawn() {
+    var ids = ids(43, 11);
+    var g = game(ids, 43, Map.of("WEREWOLF", 1, "SEER", 1, "APPRENTICE_SEER", 1, "BEAR_TAMER", 1));
+    UUID apprentice = holder(g, ids, "APPRENTICE_SEER");
+    UUID seer = holder(g, ids, "SEER");
+    UUID wolf = holder(g, ids, "WEREWOLF");
+    UUID tamer = holder(g, ids, "BEAR_TAMER");
+    List<UUID> ring = new ArrayList<>(ids);
+    ring.remove(tamer);
+    ring.remove(wolf);
+    ring.add(0, wolf);
+    ring.add(0, tamer);
+    g.ring(ring);
+    toPhase(g, "NIGHT");
+    g.drainNotices();
+    g.select(wolf, seer);
+    toDay(g);
+    assertFalse(g.alive().contains(seer));
+    String text = g.drainNotices().getOrDefault(apprentice, "");
+    assertTrue(text, text.contains("The bear growls"));
+    assertTrue(text, text.contains("you are the Seer now"));
+    assertEquals("SEER", g.role(apprentice));
+  }
+
+  @Test
+  public void theApprenticeKeepsHisNoticeWhenTheSeerIsCondemnedWithATroublePending() {
+    var ids = ids(44, 11);
+    var g = game(ids, 44, Map.of("WEREWOLF", 1, "SEER", 1, "APPRENTICE_SEER", 1));
+    UUID apprentice = holder(g, ids, "APPRENTICE_SEER");
+    UUID seer = holder(g, ids, "SEER");
+    toPhase(g, "DAY_VOTE");
+    g.extraLynches(1);
+    g.drainNotices();
+    for (UUID p : ids) if (!p.equals(seer)) g.select(p, seer);
+    g.advance();
+    assertFalse(g.alive().contains(seer));
+    assertEquals("SEER", g.role(apprentice));
+    String text = g.drainNotices().getOrDefault(apprentice, "");
+    assertTrue(text, text.contains("Trouble!"));
+    assertTrue(text, text.contains("you are the Seer now"));
+  }
+
+  @Test
+  public void theSeerSeesTheApprenticeAsAVillagerAndTheAuraSeerAsSpecial() {
+    var ids = ids(45, 11);
+    var g = game(ids, 45, Map.of("WEREWOLF", 1, "SEER", 1, "AURA_SEER", 1, "APPRENTICE_SEER", 1));
+    UUID apprentice = holder(g, ids, "APPRENTICE_SEER");
+    toPhase(g, "SEER");
+    String vision = g.select(holder(g, ids, "SEER"), apprentice);
+    assertTrue(vision, vision.endsWith("is VILLAGER."));
+    toPhase(g, "AURA");
+    String aura = g.select(holder(g, ids, "AURA_SEER"), apprentice);
+    assertTrue(aura, aura.contains("special"));
+  }
+
+  @Test
   public void theApprenticeTakesOverWhenTheSeerIsLynched() {
     var ids = ids(21, 11);
     var g = game(ids, 21, Map.of("WEREWOLF", 1, "SEER", 1, "APPRENTICE_SEER", 1));
@@ -505,13 +617,19 @@ public class InsightModuleTest {
       List<UUID> ids = ids(seed, 9);
       var g = game(ids, seed, Map.of("WEREWOLF", 1, "AURA_SEER", 1, "SORCERER", 1));
       var random = new Random(seed);
+      var brain = new InsightModule(); // remembers the picks; the game applies them
+      Map<String, UUID> previous = new HashMap<>();
       for (int night = 0; night < 3; night++) {
-        toPhase(g, "AURA");
-        g.botAct(holder(g, ids, "AURA_SEER"), random); // a self pick would throw
-        assertNotEquals("AURA", g.phase());
-        toPhase(g, "SORCERER");
-        g.botAct(holder(g, ids, "SORCERER"), random);
-        assertNotEquals("SORCERER", g.phase());
+        for (String role : List.of("AURA_SEER", "SORCERER")) {
+          toPhase(g, role.equals("AURA_SEER") ? "AURA" : role);
+          UUID bot = holder(g, ids, role);
+          brain.bot(g, WerewolfGame.Phase.valueOf(g.phase()), bot, random);
+          assertNotEquals(role, g.phase());
+          UUID pick = brain.lastPick(bot);
+          assertNotNull(pick);
+          assertNotEquals(bot, pick);
+          assertNotEquals("seed " + seed + " " + role, previous.put(role, pick), pick);
+        }
         toDay(g);
         toNextHunt(g);
       }

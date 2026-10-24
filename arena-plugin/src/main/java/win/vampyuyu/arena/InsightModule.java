@@ -23,6 +23,9 @@ final class InsightModule implements RoleModule {
   /** Investigators whose single investigation is spent. */
   private final Set<UUID> spent = new HashSet<>();
 
+  /** The Seer died during the night: the apprentice is promoted at dawn, once all kills are in. */
+  private boolean seerFell;
+
   /** Each bot's last pick, to avoid the same target two nights in a row. */
   private final Map<UUID, UUID> lastPick = new HashMap<>();
 
@@ -50,6 +53,20 @@ final class InsightModule implements RoleModule {
   @Override
   public void died(WerewolfGame g, UUID player, String source, String cause) {
     if (g.roleOf(player) != Role.SEER) return;
+    if (g.night()) seerFell = true; // the apprentice may die in the same dawn: decide in dawn()
+    else promote(g);
+  }
+
+  @Override
+  public void dawn(WerewolfGame g) {
+    if (!seerFell) return;
+    seerFell = false;
+    promote(g);
+  }
+
+  /** The first living apprentice becomes the Seer, unless a living Seer remains. */
+  private void promote(WerewolfGame g) {
+    for (UUID p : g.table()) if (g.living().contains(p) && g.roleOf(p) == Role.SEER) return;
     for (UUID p : g.table()) {
       if (g.living().contains(p) && g.roleOf(p) == Role.APPRENTICE_SEER) {
         g.setRole(p, Role.SEER);
@@ -67,15 +84,21 @@ final class InsightModule implements RoleModule {
     String reply =
         switch (phase) {
           case AURA -> aura(g, actor, target);
-          case PI -> investigate(g, target);
+          case PI -> investigate(g, actor, target);
           case SORCERER ->
-              target + (g.roleOf(target) == Role.SEER ? " is the Seer." : " is not the Seer.");
+              sorcerer(actor, target)
+                  + (g.roleOf(target) == Role.SEER ? " is the Seer." : " is not the Seer.");
           default -> throw new IllegalArgumentException("You cannot pick a player now");
         };
     acted.add(actor);
     if (phase == Phase.PI) spent.add(actor);
     g.done(actor);
     return reply;
+  }
+
+  private String sorcerer(UUID actor, UUID target) {
+    if (actor.equals(target)) throw new IllegalArgumentException("Select another living player");
+    return target.toString();
   }
 
   private String aura(WerewolfGame g, UUID actor, UUID target) {
@@ -85,7 +108,8 @@ final class InsightModule implements RoleModule {
         : target + " has a special aura: a special role.";
   }
 
-  private String investigate(WerewolfGame g, UUID target) {
+  private String investigate(WerewolfGame g, UUID actor, UUID target) {
+    if (actor.equals(target)) throw new IllegalArgumentException("Select another living player");
     List<UUID> near = new ArrayList<>(List.of(target));
     for (int dir : new int[] {-1, 1}) {
       UUID beside = g.neighbour(target, dir);
@@ -95,6 +119,11 @@ final class InsightModule implements RoleModule {
     return wolf
         ? "There is at least one werewolf among " + target + " and the two players beside them."
         : "There is no werewolf among " + target + " and the two players beside them.";
+  }
+
+  /** The last target this bot picked (null if none yet). */
+  UUID lastPick(UUID bot) {
+    return lastPick.get(bot);
   }
 
   @Override
