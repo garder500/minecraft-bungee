@@ -189,12 +189,25 @@ Admins (`nexusarena.admin`) manage werewolf arenas with `/ww` (console and RCON 
 | `/ww place set circle [x y z]`, `list`, `remove <name>`, `tp <name>`, `clear` | Vote circle (targeted block by default), listing and cleaning |
 | `/ww cast set wolf:2 alpha:1 seer:1 witch:1 ...`, `auto`, `show`, `roles` | Exact role counts (the rest are villagers) or the automatic cast |
 | `/ww time set discussion\|vote\|night\|cupid\|witch\|hunter <seconds>` | Timers |
+| `/ww rules`, `rules voting point\|nominate`, `reveal full\|team\|wolf\|none`, `ballots open\|secret`, `dice on\|off`, `amulet on\|off` | The variants of the game, see below |
 | `/ww start`, `stop`, `practice <bots> [player]`, `phase skip` | Run a game (practice: bots fill the table, phases capped at 15 s) |
 | `/ww force <player\|botN> <role>` / `clear` | Force roles for the next game (tests); botN is the practice bot "[Bot] Guest N" |
 | `/ww peek`, `act <player\|botN> select\|aim <target> \| use <ability>`, `click <player> <target\|ability:name>`, `players kick <player>` | Test helpers: list every role, act as someone, right-click as a player |
 | `/ww vote <player>`, `/ww abstain` | Players' commands |
 
 Roles: Villager, Werewolf, Seer, Witch, Hunter, Cupid, Guard and new in 1.6 **Alpha wolf** (his night vote counts double), **Infector** (once per game the victim becomes a wolf instead of dying), **Wolf cub** (when he dies the pack kills two players the next night), **Scapegoat** (dies when the day vote is tied) and **Bear tamer** (at dawn everyone hears a growl if a living wolf sits next to him). The automatic cast adds the scapegoat from 11 players and the bear tamer from 12; the new wolf roles come with `/ww cast set` (the wolf side wins and loses together). Not implemented: little girl, pause and resume.
+
+### Variants (`/ww rules`, or the panel's arena editor)
+
+| Setting | Default | Does |
+| --- | --- | --- |
+| `voting` | `point` | `point`: everybody right-clicks the player they suspect, the most pointed at falls (a tie is voted again among the tied players). `nominate`: the Ultimate Werewolf way: right-click to nominate, another player right-clicks the same player to second, the accused defends for 20 seconds, then everybody gives thumbs up or down (hotbar buttons); more than half of the living down and the accused is eliminated, else the debate resumes until the day's time is spent. |
+| `reveal` | `full` | What a death tells the table: the `full` role, the `team`, only `wolf` or not, or `none`. With anything but `full` the dead roles are still called every night, for a few seconds, so the silence tells nothing. |
+| `ballots` | `open` | `secret`: nobody sees the running count; the ballots are opened when the vote closes. |
+| `dice` | off | Every dawn two dice pick a twist: the next victim becomes a wolf (2), a lightning vote at three ballots (3), two eliminations (4), the seer's last look is named (5), nothing (6-8), same as yesterday (9), secret ballots (10), a silent day (11), the next victim only loses their power (12). |
+| `amulet` | off | A hidden player (never a wolf) holds the Amulet of Protection: it saves them once from any death, and they may pass it on each night; a player who already held it destroys it, and so does an unused amulet that saved a life. |
+
+What the board game asks a moderator to judge is adapted: the mason taboo is not enforced; the ghost's letter is one letter typed in the chat; the old hag's and the spellcaster's targets are away or silent for the day (chat blocked, hidden from the table); the mayor is dealt, not elected; the minion is dealt, not chosen by the wolves.
 
 ### Testing every role
 
