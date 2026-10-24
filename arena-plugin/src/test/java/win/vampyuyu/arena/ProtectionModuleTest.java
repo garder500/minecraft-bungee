@@ -36,7 +36,7 @@ public class ProtectionModuleTest {
   /** Every living player votes for the target (the target votes for somebody else). */
   private static void lynch(WerewolfGame g, List<UUID> ids, UUID target) {
     toPhase(g, "DAY_VOTE");
-    UUID other = ids.stream().filter(p -> !p.equals(target)).findFirst().orElseThrow();
+    UUID other = g.alive().stream().filter(p -> !p.equals(target)).findFirst().orElseThrow();
     for (UUID p : g.alive()) g.select(p, p.equals(target) ? other : target);
     g.advance();
   }
@@ -136,6 +136,27 @@ public class ProtectionModuleTest {
     module.select(g, WerewolfGame.Phase.PRIEST, priest, blessed);
     assertFalse(module.saves(g, new WerewolfGame.Kill(blessed, "OTHER", "old age")));
     assertTrue(module.saves(g, new WerewolfGame.Kill(blessed, "POISON", "poison")));
+  }
+
+  @Test
+  public void aBlessingDoesNotSaveAWoundedToughGuyAndStaysForLater() {
+    var ids = ids(N);
+    var g = game(ids, 5, Map.of("WEREWOLF", 1, "TOUGH_GUY", 1, "PRIEST", 1));
+    UUID tough = holder(g, ids, "TOUGH_GUY"), wolf = holder(g, ids, "WEREWOLF");
+    UUID priest = holder(g, ids, "PRIEST");
+    UUID other = villagers(g, ids).get(0);
+    g.use(priest, "pass");
+    g.select(wolf, tough);
+    assertTrue(g.alive().contains(tough));
+    toPhase(g, "PRIEST");
+    g.select(priest, tough);
+    g.select(wolf, other);
+    assertFalse("Dies of his wounds", g.alive().contains(tough));
+    var module = new ProtectionModule();
+    UUID later = villagers(g, ids).stream().filter(g.alive()::contains).findFirst().orElseThrow();
+    module.select(g, WerewolfGame.Phase.PRIEST, priest, later);
+    assertFalse(module.saves(g, new WerewolfGame.Kill(later, "DELAYED", "wounds")));
+    assertTrue("The blessing stays", module.saves(g, new WerewolfGame.Kill(later, "POISON", "p")));
   }
 
   // ------------------------------------------------------------------ tough guy
@@ -304,6 +325,25 @@ public class ProtectionModuleTest {
     assertTrue(module.saves(g, new WerewolfGame.Kill(cursed, "WOLVES", "wolves")));
   }
 
+  @Test
+  public void theCubsRevengeKillsTheCursedInsteadOfBitingHim() {
+    var ids = ids(10);
+    var g = game(ids, 5, Map.of("WEREWOLF", 3, "WOLF_CUB", 1, "CURSED", 1));
+    UUID cub = holder(g, ids, "WOLF_CUB"), cursed = holder(g, ids, "CURSED");
+    List<UUID> wolves = ids.stream().filter(p -> g.role(p).equals("WEREWOLF")).toList();
+    UUID prey = villagers(g, ids).get(0);
+    lynch(g, ids, cub);
+    assertFalse(g.alive().contains(cub));
+    toPhase(g, "NIGHT");
+    g.select(wolves.get(0), prey);
+    g.select(wolves.get(1), prey);
+    g.select(wolves.get(2), cursed);
+    toPhase(g, "DISCUSSION");
+    assertFalse(g.alive().contains(prey));
+    assertFalse("The revenge kills the cursed", g.alive().contains(cursed));
+    assertEquals("CURSED", g.role(cursed));
+  }
+
   // ------------------------------------------------------------------ bots
 
   private static List<WerewolfBots.Action> turn(
@@ -332,12 +372,15 @@ public class ProtectionModuleTest {
   public void practiceGamesWithTheProtectionRolesFinish() {
     Map<String, Integer> cast =
         Map.of("WEREWOLF", 2, "PRIEST", 1, "TOUGH_GUY", 1, "DISEASED", 1, "CURSED", 1, "SEER", 1);
-    boolean priestActed = false;
+    boolean priestActed = false, blessed = false;
     for (int seed = 0; seed < 60; seed++) {
       var ids = ids(8 + seed % 6);
       var botsOnly = game(ids, seed, cast);
+      List<String> lines = new ArrayList<>();
+      botsOnly.journal(new WerewolfJournal("t", Map.of(), lines::add));
       for (var action : play(botsOnly, new HashSet<>(ids), seed))
         priestActed |= action.role().equals("PRIEST") && action.what().startsWith("takes its");
+      blessed |= lines.stream().anyMatch(l -> l.contains("PRIEST") && l.contains("blesses"));
       // One idle human: the clock handles whatever they hold.
       var withHuman = game(ids, seed, cast);
       Set<UUID> bots = new HashSet<>(ids);
@@ -345,5 +388,6 @@ public class ProtectionModuleTest {
       play(withHuman, bots, seed);
     }
     assertTrue(priestActed);
+    assertTrue("A bot priest really blesses somebody", blessed);
   }
 }

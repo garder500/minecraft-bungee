@@ -7,5 +7,5 @@
  "palette": "witch",
  "icon": "diseased",
  "word": "DISEASED",
- "help": "If the wolves eat you, they are too sick to hunt the following night. A vote or a potion does not make them sick."
+ "help": "If you are the wolves' main victim and they eat you, they are too sick to hunt the following night. The cub's revenge kill, a vote or a potion does not make them sick."
 }
