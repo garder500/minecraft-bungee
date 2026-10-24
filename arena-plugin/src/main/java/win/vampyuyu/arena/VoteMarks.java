@@ -99,6 +99,8 @@ final class VoteMarks {
       }
     }
 
+    accused(s, game);
+
     // Frames: only the voter sees theirs.
     Map<UUID, UUID> picks = new HashMap<>();
     for (UUID voter : audience) {
@@ -114,6 +116,57 @@ final class VoteMarks {
       }
     }
     for (var pick : picks.entrySet()) frame(s, pick.getKey(), pick.getValue(), color);
+  }
+
+  /** Nominated voting: a red frame, seen by every player, around whoever is nominated or on trial. */
+  private void accused(ArenaSession s, WerewolfGame game) {
+    UUID nominee =
+        game.nominating() && game.alive().contains(game.nominee() == null ? new UUID(0, 0) : game.nominee())
+            ? game.nominee()
+            : null;
+    Glow glow = s.accusedGlow;
+    if (glow != null && (nominee == null || !nominee.equals(glow.target))) {
+      s.accusedGlow = null;
+      retire(glow);
+      glow = null;
+    }
+    if (nominee == null) return;
+    if (glow == null) {
+      Location at = where(s, nominee);
+      if (at == null) return;
+      glow = new Glow();
+      glow.target = nominee;
+      s.accusedGlow = glow;
+      final Glow created = glow;
+      float height = seated(s, nominee) ? 1.5f : 2.0f;
+      spawn(
+          at,
+          loc ->
+              loc.getWorld()
+                  .spawn(
+                      loc,
+                      BlockDisplay.class,
+                      b -> {
+                        base(b);
+                        b.setBlock(Material.RED_STAINED_GLASS.createBlockData());
+                        b.setTransformation(
+                            new Transformation(
+                                new Vector3f(-0.4f, -0.05f, -0.4f),
+                                new AxisAngle4f(),
+                                new Vector3f(0.8f, height, 0.8f),
+                                new AxisAngle4f()));
+                        b.setGlowing(true);
+                        b.setGlowColorOverride(Color.fromRGB(HUNT));
+                      }),
+          e -> adopt(created, e));
+      return;
+    }
+    if (glow.entity == null || glow.shown) return;
+    glow.shown = true;
+    for (UUID id : s.players.keySet()) {
+      Player p = Bukkit.getPlayer(id);
+      if (p != null) show(p, glow.entity);
+    }
   }
 
   // ------------------------------------------------------------------ counters
@@ -345,9 +398,11 @@ final class VoteMarks {
 
   /** Removes every marker of the session; safe to call again and again. */
   void clear(ArenaSession s) {
-    if (s.voteTags.isEmpty() && s.voteGlows.isEmpty()) return;
+    if (s.voteTags.isEmpty() && s.voteGlows.isEmpty() && s.accusedGlow == null) return;
     for (var tag : List.copyOf(s.voteTags.values())) retire(tag);
     for (var glow : List.copyOf(s.voteGlows.values())) retire(glow);
+    if (s.accusedGlow != null) retire(s.accusedGlow);
+    s.accusedGlow = null;
     s.voteTags.clear();
     s.voteGlows.clear();
   }

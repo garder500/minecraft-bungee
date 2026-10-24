@@ -37,6 +37,9 @@ public final class ArenaSession {
 
   final Map<UUID, VoteMarks.Glow> voteGlows = new ConcurrentHashMap<>();
 
+  /** The frame everybody sees around a nominated player (nominated voting), and who it is on. */
+  volatile VoteMarks.Glow accusedGlow;
+
   final Map<UUID, String> roster = new ConcurrentHashMap<>();
   final Set<UUID> abandoned = ConcurrentHashMap.newKeySet();
   volatile CompletableFuture<Void> presentation = CompletableFuture.completedFuture(null);
