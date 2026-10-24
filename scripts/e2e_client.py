@@ -780,6 +780,12 @@ def werewolf_scenario(ctx):
     for needle in FATAL:
         if needle in client_log.read_text(errors="replace"):
             failures.append(f"client log contains '{needle}'")
+    # The ambient bed follows the phase: the plugin logs "[ambience] bed <player> <phase> -> <sound>".
+    beds = [l.split("[ambience] bed ", 1)[1] for l in console.splitlines() if "[ambience] bed E2EBot" in l]
+    sounds = {b.rsplit("-> ", 1)[1].split()[0] for b in beds}
+    say(f"ambience: {len(beds)} bed changes, sounds {sorted(sounds)}")
+    if len(sounds) < 2:
+        failures.append(f"the ambient bed never followed the phases: {beds}")
     say(f"phases: {' > '.join(seen)}")
 
 

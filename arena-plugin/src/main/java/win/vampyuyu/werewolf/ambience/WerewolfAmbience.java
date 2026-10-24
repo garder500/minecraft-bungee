@@ -31,17 +31,15 @@ public final class WerewolfAmbience {
   /** Until when a story beat holds the centre of the screen, so the turn line waits for it. */
   private final Map<UUID, Long> quietUntil = new ConcurrentHashMap<>();
 
-  /** Until when the current pass of the night music plays for each player. */
-  private final Map<UUID, Long> musicUntil = new ConcurrentHashMap<>();
+  /** The ambient bed each player hears now, and when its current pass started. */
+  private final Map<UUID, AmbienceDirector.Bed> beds = new ConcurrentHashMap<>();
+
+  private static final AmbienceDirector DIRECTOR = new AmbienceDirector(AmbienceProfile.defaults());
 
   /** Ticks between two story beats in the centre of the screen. */
   public static final long BEAT = 45;
 
-  /** Length of resource-pack/pack/assets/vampyuyu/sounds/werewolf/music.ogg, replayed in a loop. */
-  public static final long MUSIC_MILLIS = 75_000;
-
   public static final Key FX_FONT = Key.key("vampyuyu", "fx");
-  public static final Key MUSIC = Key.key("vampyuyu", "werewolf.music");
   private static final TextColor INK = TextColor.color(WerewolfPresentation.INK),
       INK_MUTED = TextColor.color(WerewolfPresentation.INK_MUTED),
       VOTE = TextColor.color(WerewolfPresentation.VOTE);
@@ -103,15 +101,16 @@ public final class WerewolfAmbience {
    */
   public static void cue(
       NexusArenaEngine plugin, Player p, String name, Sound fallback, float volume, float pitch) {
-    if (plugin.skin != null && plugin.skin.active(p))
+    if (plugin.skin != null && plugin.skin.active(p)) {
+      AmbienceProfile.Sting sting = DIRECTOR.sting(name);
       p.playSound(
           net.kyori.adventure.sound.Sound.sound(
-              Key.key("vampyuyu", "werewolf." + name),
+              Key.key(sting != null ? sting.sound() : "vampyuyu:werewolf." + name),
               net.kyori.adventure.sound.Sound.Source.PLAYER,
-              1f,
+              sting != null ? sting.volume() : 1f,
               1f),
           net.kyori.adventure.sound.Sound.Emitter.self());
-    else p.playSound(p.getLocation(), fallback, SoundCategory.PLAYERS, volume, pitch);
+    } else p.playSound(p.getLocation(), fallback, SoundCategory.PLAYERS, volume, pitch);
   }
 
   private void cue(Player p, String name, Sound fallback, float volume, float pitch) {
@@ -605,22 +604,39 @@ public final class WerewolfAmbience {
     if (!(s.game instanceof WerewolfGame game)) return;
     long now = System.currentTimeMillis();
     p.sendActionBar(actionBar(s, p, game, now));
-    if (WerewolfOptions.of(s.config).rules().ambienceEnabled()
-        && plugin.skin != null
-        && plugin.skin.active(p)
-        && now >= musicUntil.getOrDefault(p.getUniqueId(), 0L)) {
-      musicUntil.put(p.getUniqueId(), now + MUSIC_MILLIS);
-      p.playSound(
-          net.kyori.adventure.sound.Sound.sound(
-              MUSIC, net.kyori.adventure.sound.Sound.Source.AMBIENT, 1f, 1f),
-          net.kyori.adventure.sound.Sound.Emitter.self());
-    }
+    if (WerewolfOptions.of(s.config).rules().ambienceEnabled())
+      bed(s, p, game.phase(), game.night(), WerewolfSession.of(s).ambienceFinale, now);
     screen.show(
         s, p, game, now >= WerewolfSession.of(s).cardsTurnAt, plugin.skin != null && plugin.skin.active(p));
   }
 
+  /**
+   * Keeps the player's ambient bed in step with the phase: a changed bed stops the previous one and
+   * starts the new one, an unchanged bed is only re-triggered when its loop has run out.
+   */
+  private void bed(ArenaSession s, Player p, String phase, boolean night, boolean finale, long now) {
+    boolean skinned = plugin.skin != null && plugin.skin.active(p);
+    var last = beds.get(p.getUniqueId());
+    var decision = DIRECTOR.decide(phase, night, finale, skinned, last, now);
+    if (decision.idle()) return;
+    if (decision.stop() != null) p.stopSound(SoundStop.named(Key.key(decision.stop())));
+    var start = decision.start();
+    beds.put(p.getUniqueId(), decision.next());
+    p.playSound(
+        net.kyori.adventure.sound.Sound.sound(
+            Key.key(start.sound()), net.kyori.adventure.sound.Sound.Source.AMBIENT, start.volume(), 1f),
+        net.kyori.adventure.sound.Sound.Emitter.self());
+    if (decision.stop() != null || last == null)
+      plugin
+          .getLogger()
+          .info(
+              "[ambience] bed " + p.getName() + " " + phase + " -> " + start.sound()
+                  + (skinned ? "" : " (vanilla)"));
+  }
+
   private void silence(Player p) {
-    if (musicUntil.remove(p.getUniqueId()) != null) p.stopSound(SoundStop.named(MUSIC));
+    var bed = beds.remove(p.getUniqueId());
+    if (bed != null) p.stopSound(SoundStop.named(Key.key(bed.sound())));
   }
 
   /** Chat journal separator at the start of each night and day. */
@@ -651,8 +667,10 @@ public final class WerewolfAmbience {
                 player.sendMessage(separator("Game over", WerewolfPresentation.VOTE));
                 player.sendMessage(Component.text(result, VOTE));
                 silence(player);
-                if (WerewolfOptions.of(s.config).rules().ambienceEnabled())
+                if (WerewolfOptions.of(s.config).rules().ambienceEnabled()) {
                   cue(player, "game_over", Sound.ENTITY_PLAYER_LEVELUP, .3f, .85f);
+                  bed(s, player, "FINISHED", false, true, System.currentTimeMillis());
+                }
                 title(player, "Game over", result, VOTE);
               }));
     }
