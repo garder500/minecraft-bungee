@@ -22,7 +22,7 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
   private static final List<String> ADMIN =
       List.of(
           "use", "status", "place", "cast", "time", "rules", "start", "stop", "practice", "phase", "force",
-          "check", "reload", "act", "click", "peek", "players", "help");
+          "check", "reload", "act", "click", "peek", "players", "debug", "help");
   private static final Map<String, String> ALIASES =
       Map.ofEntries(
           Map.entry("WOLF", "WEREWOLF"),
@@ -48,9 +48,16 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
 
   private final NexusArenaEngine plugin;
   private final Map<String, String> selected = new HashMap<>();
+  private final WwDebugCommand debug;
 
   public WwCommand(NexusArenaEngine plugin) {
     this.plugin = plugin;
+    this.debug = new WwDebugCommand(plugin, this);
+  }
+
+  /** Every role name, for the completion of /ww debug force. */
+  static List<String> roleNames() {
+    return Arrays.stream(WerewolfGame.Role.values()).map(r -> r.name().toLowerCase(Locale.ROOT)).toList();
   }
 
   // ------------------------------------------------------------------ plumbing
@@ -141,7 +148,10 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
         throw new IllegalArgumentException("Arena administrator permission required");
       if (sender instanceof Player p && plugin.arenas.locked(p.getUniqueId()))
         throw new IllegalArgumentException("Administrator access outside an arena required");
+      String moved = WwDebugCommand.deprecation(sub);
+      if (moved != null && sender instanceof Player) say(sender, moved);
       switch (sub) {
+        case "debug" -> debug.run(sender, args);
         case "use" -> {
           need(args, 2, "/ww use <arena>");
           plugin.arenas.require(args[1]);
@@ -186,7 +196,7 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
             "/ww place list · remove <name> · tp <name> · clear",
             "/ww cast set wolf:2 alpha:1 seer:1 ... · auto · show · roles",
             "/ww time set discussion|vote|night|cupid|witch|hunter <seconds>",
-            "/ww start · stop · practice <bots> [player] · phase skip",
+            "/ww start · stop · debug help   (test tools: debug hud|ambience|sky|practice|force|act|click|peek|phase)",
             "/ww force <player> <role> | clear     (roles for the next game, for tests)",
             "/ww players kick <player> · peek      (peek lists every role: admins only)",
             "/ww act <player|botN> select|aim <target> | use <ability>   (test: act as someone)",
@@ -423,14 +433,14 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
 
   // ----------------------------------------------------------------- lifecycle
 
-  private void practice(CommandSender sender, String[] args) {
+  void practice(CommandSender sender, String[] args) {
     need(args, 2, "/ww practice <bots> [player]");
     String id = arena(sender);
     Player p = args.length > 2 ? Bukkit.getPlayerExact(args[2]) : sender instanceof Player self ? self : null;
     done(sender, plugin.arenas.startPractice(id, Integer.parseInt(args[1]), p), "Practice game started");
   }
 
-  private void phase(CommandSender sender, String[] args) {
+  void phase(CommandSender sender, String[] args) {
     need(args, 2, "/ww phase skip");
     ArenaSession s = plugin.arenas.require(arena(sender));
     if (!(s.game instanceof WerewolfGame game)) throw new IllegalArgumentException("No game is running");
@@ -440,7 +450,7 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
     say(sender, "Phase is now " + game.phase());
   }
 
-  private void force(CommandSender sender, String[] args) {
+  void force(CommandSender sender, String[] args) {
     need(args, 2, "/ww force <player> <role> | clear");
     String id = arena(sender);
     if (args[1].equalsIgnoreCase("clear")) {
@@ -464,7 +474,7 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
     done(sender, plugin.arenas.leaveArena(p), p.getName() + " removed from the arena");
   }
 
-  private void peek(CommandSender sender) {
+  void peek(CommandSender sender) {
     ArenaSession s = plugin.arenas.require(arena(sender));
     if (!(s.game instanceof WerewolfGame game)) throw new IllegalArgumentException("No game is running");
     for (var entry : s.players.entrySet())
@@ -474,7 +484,7 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
   // -------------------------------------------------------------------- tests
 
   /** Acts as a participant (a bot too): the same game calls a click makes. */
-  private void act(CommandSender sender, String[] args) {
+  void act(CommandSender sender, String[] args) {
     need(args, 4, "/ww act <player|botN> select|aim <target> | use <ability>");
     ArenaSession s = plugin.arenas.require(arena(sender));
     if (!(s.game instanceof WerewolfGame game)) throw new IllegalArgumentException("No game is running");
@@ -492,7 +502,7 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
   }
 
   /** Right-click on a player as the real controls do (needs the actor online). */
-  private void click(CommandSender sender, String[] args) {
+  void click(CommandSender sender, String[] args) {
     need(args, 3, "/ww click <player> <target|ability:name>");
     ArenaSession s = plugin.arenas.require(arena(sender));
     Player p = Bukkit.getPlayerExact(args[1]);
@@ -513,6 +523,7 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
       all.addAll(List.of("vote", "abstain", "hud"));
       return all.stream().filter(x -> x.startsWith(args[0].toLowerCase(Locale.ROOT))).toList();
     }
+    if (args[0].equalsIgnoreCase("debug") && sender.hasPermission("nexusarena.admin")) return debug.complete(args);
     if (args.length == 2 && args[0].equalsIgnoreCase("hud")) return List.of("auto", "large", "medium", "small");
     if (args.length == 2 && args[0].equalsIgnoreCase("place")) return List.of("add", "set", "list", "remove", "tp", "clear");
     if (args.length == 2 && args[0].equalsIgnoreCase("cast")) return List.of("set", "auto", "show", "roles");

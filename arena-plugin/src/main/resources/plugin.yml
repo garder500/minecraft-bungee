@@ -14,7 +14,7 @@ commands:
     usage: /arena <list|join|leave|status|admin|tools|select|create|setup|corner1|corner2|house|houses|meeting|daypoint|doors|start|stop|announce|reload>
   ww:
     description: Werewolf management and play
-    usage: /ww help
+    usage: /ww <help|use|status|place|cast|time|rules|start|stop|check|reload|players|vote|abstain|hud|debug>  (tests and previews, see /ww debug help)
 permissions:
   nexusarena.admin:
     default: op

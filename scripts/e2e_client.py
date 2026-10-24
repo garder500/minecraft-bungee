@@ -618,6 +618,46 @@ def roles_scenario(ctx, only):
             failures.append(f"client log contains '{needle}'")
 
 
+DEBUG_HUDS = ["night-seer", "day-day_vote-2", "role-witch", "danger-4"]
+
+
+def debughud_scenario(ctx):
+    """/ww debug hud: synthetic HUD states drawn for the bot with no game running."""
+    tools, shots, client_log, failures, server = (ctx[k] for k in
+                                                  ("tools", "shots", "client_log", "failures", "server"))
+    for _ in range(60):
+        try:
+            api("GET", "/arenas")
+            break
+        except Exception:
+            time.sleep(2)
+    else:
+        failures.append("the plugin's private API never answered")
+        return
+    rcon = Rcon()
+    out = re.sub("\u00a7.", "", rcon.command("ww debug hud list badge"))
+    if "badge-lover" not in out:
+        failures.append("debug hud list: " + out.strip()[:120])
+    for sid in DEBUG_HUDS:
+        out = re.sub("\u00a7.", "", rcon.command(f"ww debug hud {sid} E2EBot"))
+        say(f"debug hud {sid}: " + out.strip().replace("\n", " | ")[:160])
+        if "Unknown" in out or "not active" in out or "offline" in out:
+            failures.append(f"debug hud {sid}: {out.strip()[:120]}")
+        time.sleep(3)
+        shot(tools, shots / f"debughud-{sid}.png")
+        rcon.command("ww debug hud stop E2EBot")
+    for text in ("ww debug ambience night", "ww debug sky 12", "ww phase skip"):
+        say(text + ": " + re.sub("\u00a7.", "", rcon.command(text)).strip().replace("\n", " | ")[:200])
+    console = (server / "console.log").read_text(errors="replace")
+    for line in console.splitlines():
+        if ("win.vampyuyu" in line or "NexusArena" in line) and (
+                "Exception" in line or "ERROR" in line or "SEVERE" in line):
+            failures.append("server: " + line.strip()[:200])
+    for needle in FATAL:
+        if needle in client_log.read_text(errors="replace"):
+            failures.append(f"client log contains '{needle}'")
+
+
 def tooltip_scenario(ctx):
     """Online inventory tooltips: enchantments, lore, custom data and durability come back as lines."""
     failures, server = ctx["failures"], ctx["server"]
@@ -786,7 +826,7 @@ def werewolf_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -814,7 +854,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -845,7 +885,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             for i in range(60):
                 if client_log.read_text(errors="replace").count("Reloading ResourceManager") >= 2:
@@ -870,6 +910,8 @@ def main():
             roles_scenario(ctx, args.only)
         elif args.scenario == "tooltip":
             tooltip_scenario(ctx)
+        elif args.scenario == "debughud":
+            debughud_scenario(ctx)
         else:
             shader_scenario(ctx)
     finally:

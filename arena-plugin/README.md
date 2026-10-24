@@ -190,10 +190,20 @@ Admins (`nexusarena.admin`) manage werewolf arenas with `/ww` (console and RCON 
 | `/ww cast set wolf:2 alpha:1 seer:1 witch:1 ...`, `auto`, `show`, `roles` | Exact role counts (the rest are villagers) or the automatic cast |
 | `/ww time set discussion\|vote\|night\|cupid\|witch\|hunter <seconds>` | Timers |
 | `/ww rules`, `rules voting point\|nominate`, `reveal full\|team\|wolf\|none`, `ballots open\|secret`, `dice on\|off`, `amulet on\|off` | The variants of the game, see below |
-| `/ww start`, `stop`, `practice <bots> [player]`, `phase skip` | Run a game (practice: bots fill the table, phases capped at 15 s) |
-| `/ww force <player\|botN> <role>` / `clear` | Force roles for the next game (tests); botN is the practice bot "[Bot] Guest N" |
-| `/ww peek`, `act <player\|botN> select\|aim <target> \| use <ability>`, `click <player> <target\|ability:name>`, `players kick <player>` | Test helpers: list every role, act as someone, right-click as a player |
-| `/ww vote <player>`, `/ww abstain` | Players' commands |
+| `/ww start`, `stop` | Run a game |
+| `/ww players kick <player>` | Remove a player from the arena |
+| `/ww debug practice <bots> [player]` | Practice game: bots fill the table, phases capped at 15 s |
+| `/ww debug phase skip` | Skip to the next phase |
+| `/ww debug force <player\|botN> <role>` / `clear` | Force roles for the next game; botN is the practice bot "[Bot] Guest N" |
+| `/ww debug peek`, `act <player\|botN> select\|aim <target> \| use <ability>`, `click <player> <target\|ability:name>` | List every role, act as someone, right-click as a player |
+| `/ww debug hud <stateId\|phase\|role> [player]` | Preview a synthetic HUD for 10 s, no game needed (`nexusarena.admin`; from the console name a player) |
+| `/ww debug hud list [filter]`, `cycle [seconds]`, `stop`, `size auto\|large\|medium\|small` | List the state ids, walk through all of them (default 4 s each), stop, preview a size mode without saving it |
+| `/ww debug ambience <phase> [player]` | Print the resolved ambience entry (bed, sting, fallback) and play its sting when the pack is active |
+| `/ww debug sky <players>` | Print the sky platform layout numbers for that many players (4 to 45) |
+| `/ww debug help` | The same list in game |
+| `/ww vote <player>`, `/ww abstain`, `/ww hud auto\|large\|medium\|small` | Players' commands |
+
+The old spellings `/ww practice`, `force`, `act`, `click`, `peek` and `phase` still work as aliases of `/ww debug ...` (players see a one-line hint).
 
 Roles: Villager, Werewolf, Seer, Witch, Hunter, Cupid, Guard and new in 1.6 **Alpha wolf** (his night vote counts double), **Infector** (once per game the victim becomes a wolf instead of dying), **Wolf cub** (when he dies the pack kills two players the next night), **Scapegoat** (dies when the day vote is tied) and **Bear tamer** (at dawn everyone hears a growl if a living wolf sits next to him). The automatic cast adds the scapegoat from 11 players and the bear tamer from 12; the new wolf roles come with `/ww cast set` (the wolf side wins and loses together). Not implemented: little girl, pause and resume.
 
