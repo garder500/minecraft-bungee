@@ -493,6 +493,7 @@ def roles_scenario(ctx, only):
             failures.append(f"{role}: forced role missing, the human is {roles.get('E2EBot')}")
         time.sleep(4)
         shot(tools, shots / f"hud-{role.lower()}.png")
+        print(f"[e2e] {role}: seated at {rcon.command('data get entity E2EBot Pos').strip()}")
         try:
             role_checks(role, rcon, roles, failures, tools, shots)
         except Exception as error:  # a broken step must not hide the other roles

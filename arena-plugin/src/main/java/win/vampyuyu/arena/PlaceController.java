@@ -336,7 +336,7 @@ final class PlaceController {
         at.getX(),
         at.getZ(),
         () -> {
-          Location low = at.clone().subtract(0, 0.45, 0);
+          Location low = at.clone().add(0, 0.55, 0);
           ArmorStand chair =
               w.spawn(
                   low,
