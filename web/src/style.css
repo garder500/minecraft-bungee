@@ -1466,6 +1466,32 @@ select:focus-visible {
 .mc-offhand {
   align-self: flex-end;
 }
+.mc-player {
+  position: relative;
+}
+.mc-skin {
+  width: calc(var(--px) * 30);
+  height: calc(var(--px) * 60);
+  image-rendering: pixelated;
+}
+.mc-player-name,
+.mc-player-level {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - var(--px) * 4);
+  overflow: hidden;
+}
+.mc-player-name {
+  top: calc(var(--px) * 3);
+}
+.mc-player-level {
+  bottom: calc(var(--px) * 3);
+}
+.mc-italic {
+  transform: skewX(-8deg);
+  transform-origin: bottom left;
+}
 .mc-title {
   display: block;
   margin: 0 0 calc(var(--px) * 2) var(--px);

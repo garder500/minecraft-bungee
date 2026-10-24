@@ -33,13 +33,23 @@ final class PlayerNbt {
         if (!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) throw new NoSuchFileException("No saved player data on this server. Join it once first.");
         if (Files.isSymbolicLink(path) || !Files.isRegularFile(path) || Files.size(path) > LIMIT) throw new IOException("Player data file unavailable");
         try (InputStream raw = Files.newInputStream(path); GZIPInputStream gzip = new GZIPInputStream(raw)) {
-            byte[] bytes = gzip.readNBytes(LIMIT + 1); if (bytes.length > LIMIT) throw new IOException("Player data exceeds limit");
-            DataInputStream in = new DataInputStream(new ByteArrayInputStream(bytes));
-            int type = in.readUnsignedByte(); if (type != 10) throw new IOException("Invalid player NBT root");
-            String name = in.readUTF(); Tag tag = readTag(in, type, 0, new int[] {0});
-            if (in.read() != -1) throw new IOException("Trailing player NBT data");
-            return new Document(name, tag);
+            return parse(gzip.readNBytes(LIMIT + 1));
         }
+    }
+    /** An NBT document from bytes, gzip-compressed or not (Bukkit's ItemStack#serializeAsBytes). */
+    static Document readBytes(byte[] data) throws IOException {
+        if (data.length > 2 && (data[0] & 0xff) == 0x1f && (data[1] & 0xff) == 0x8b) {
+            try (GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(data))) { return parse(gzip.readNBytes(LIMIT + 1)); }
+        }
+        return parse(data);
+    }
+    private static Document parse(byte[] bytes) throws IOException {
+        if (bytes.length > LIMIT) throw new IOException("Player data exceeds limit");
+        DataInputStream in = new DataInputStream(new ByteArrayInputStream(bytes));
+        int type = in.readUnsignedByte(); if (type != 10) throw new IOException("Invalid player NBT root");
+        String name = in.readUTF(); Tag tag = readTag(in, type, 0, new int[] {0});
+        if (in.read() != -1) throw new IOException("Trailing player NBT data");
+        return new Document(name, tag);
     }
     private static int length(DataInputStream in) throws IOException {
         int value = in.readInt(); if (value < 0 || value > 1_000_000) throw new IOException("NBT length out of bounds"); return value;

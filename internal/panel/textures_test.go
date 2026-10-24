@@ -136,7 +136,7 @@ func TestTexturesDownloadResolveAndServe(t *testing.T) {
 			t.Fatal("served", p)
 		}
 	}
-	cached, e := os.ReadFile(filepath.Join(cache, "26.3.zip"))
+	cached, e := os.ReadFile(filepath.Join(cache, "26.3-2.zip"))
 	if e != nil || len(cached) >= len(jar) || bytes.Contains(cached, []byte("Main.class")) {
 		t.Fatal("cache should only keep textures", e, len(cached), len(jar))
 	}

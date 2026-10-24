@@ -199,7 +199,7 @@ def start_server(zip_path, sha1, plugin=False):
         command = ["unshare", "-rm", "bash", "-c", script, "bash", *command]
     proc = subprocess.Popen(command, cwd=server, stdout=log, stderr=subprocess.STDOUT,
                             stdin=subprocess.DEVNULL, env=env)
-    if not wait_for(server / "console.log", "Done (", 240, [proc]):
+    if not wait_for(server / "console.log", "Done (", 600, [proc]):
         proc.kill()
         sys.exit("server did not start:\n" + (server / "console.log").read_text()[-2000:])
     return proc, server
@@ -514,6 +514,53 @@ def roles_scenario(ctx, only):
             failures.append(f"client log contains '{needle}'")
 
 
+def tooltip_scenario(ctx):
+    """Online inventory tooltips: enchantments, lore, custom data and durability come back as lines."""
+    failures, server = ctx["failures"], ctx["server"]
+    rcon = Rcon()
+    me = None
+    for _ in range(60):
+        try:
+            me = next(p["uuid"] for p in api("GET", "/arenas")["onlinePlayers"] if p["name"] == "E2EBot")
+            break
+        except Exception:
+            time.sleep(2)
+    if not me:
+        failures.append("no online player")
+        return
+    gives = [
+        'give E2EBot minecraft:diamond_sword[minecraft:enchantments={"minecraft:sharpness":5,"minecraft:unbreaking":3,"minecraft:mending":1},minecraft:custom_name=\'{"text":"Vampyuyu Blade","color":"gold"}\',minecraft:lore=[\'{"text":"Forged in the moonlight","color":"dark_purple"}\'],minecraft:custom_data={owner:"jeremy",tier:3},minecraft:damage=120]',
+        'give E2EBot minecraft:enchanted_book[minecraft:stored_enchantments={"minecraft:protection":4}]',
+        'give E2EBot minecraft:apple 5',
+    ]
+    for g in gives:
+        out = rcon.command(g)
+        say(out.strip()[:120])
+    time.sleep(1)
+    token = {"Authorization": f"Bearer {API_TOKEN}"}
+    request = urllib.request.Request(f"http://127.0.0.1:8084/players/{me}/inventory", headers=token)
+    with urllib.request.urlopen(request, timeout=20) as response:
+        view = json.loads(response.read().decode())
+    (ctx["shots"] / "inventory.json").write_text(json.dumps(view, indent=1))
+    slots = {s["slot"]: s for s in view["slots"] if s["amount"]}
+    sword = next((s for s in slots.values() if s["material"] == "minecraft:diamond_sword"), None)
+    if not sword:
+        failures.append("the sword is not in the inventory view")
+        return
+    lines = [l["text"] for l in sword.get("lines", [])]
+    say("sword lines: " + " | ".join(lines))
+    for want in ("Sharpness V", "Unbreaking III", "Mending", "Forged in the moonlight", "Durability: 1441 / 1561"):
+        if want not in lines:
+            failures.append(f"tooltip line missing: {want} (got {lines})")
+    if not any("owner" in l for l in lines):
+        failures.append("custom data missing from the tooltip")
+    if sword.get("nameColor") != "#ffaa00":
+        failures.append(f"custom name colour: {sword.get('nameColor')}")
+    book = next((s for s in slots.values() if s["material"] == "minecraft:enchanted_book"), None)
+    if not book or "Protection IV" not in [l["text"] for l in book.get("lines", [])]:
+        failures.append("stored enchantment of the book missing")
+
+
 def werewolf_scenario(ctx):
     """A whole practice game (human idle, seven bots) driven through the plugin's private API."""
     tools, shots, client_log, failures, server = (ctx[k] for k in
@@ -627,7 +674,7 @@ def werewolf_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
     ap.add_argument("--shots", default=str(WORK / "shots"))
@@ -642,6 +689,11 @@ def main():
     tools["magick"] = str(magick_dir / "magick")
     tools["import"] = str(magick_dir / "import")
 
+    # Two runs share the ports and .e2e/: queue behind any other run, whoever started it.
+    import fcntl
+    lock = open("/tmp/vampyuyu-e2e.lock", "w")
+    say("waiting for the e2e lock (another run may be using the ports)")
+    fcntl.flock(lock, fcntl.LOCK_EX)
     stop_stale()
     pack_dir = WORK / "pack"
     zip_path, sha1 = build_pack.build(pack_dir)
@@ -649,7 +701,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -680,7 +732,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles"):
+        if args.scenario in ("werewolf", "roles", "tooltip"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             for i in range(60):
                 if client_log.read_text(errors="replace").count("Reloading ResourceManager") >= 2:
@@ -703,6 +755,8 @@ def main():
             werewolf_scenario(ctx)
         elif args.scenario == "roles":
             roles_scenario(ctx, args.only)
+        elif args.scenario == "tooltip":
+            tooltip_scenario(ctx)
         else:
             shader_scenario(ctx)
     finally:

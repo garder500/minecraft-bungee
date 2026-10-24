@@ -1,4 +1,5 @@
 import { useConfirm } from "./ConfirmDialog";
+import { PlayerSkin } from "./PlayerSkin";
 import { useEffect, useRef, useState } from "react";
 import { api, APIError } from "./api";
 import {
@@ -16,6 +17,9 @@ type Slot = {
   name: string;
   details: string;
   custom: boolean;
+  nameColor?: string;
+  nameItalic?: boolean;
+  lines?: { text: string; color: string; italic: boolean }[];
 };
 type Inventory = {
   uuid: string;
@@ -101,13 +105,23 @@ function SlotTooltip({
         <>
           <McText
             text={renamed ? item.name : label || itemName(item.material)}
-            color={enchanted(item) ? "#55ffff" : "#ffffff"}
+            color={item.nameColor || (enchanted(item) ? "#55ffff" : "#ffffff")}
           />
           {renamed && label && <McText text={label} color="#aaaaaa" />}
+          {item.lines?.map((line, i) => (
+            <McText
+              key={i}
+              text={line.text || " "}
+              color={line.color}
+              className={line.italic ? "mc-italic" : ""}
+            />
+          ))}
           {item.amount > 1 && (
             <McText text={`Count: ${item.amount}`} color="#aaaaaa" />
           )}
-          {item.custom && <McText text="Custom properties" color="#ff55ff" />}
+          {item.custom && !item.lines?.length && (
+            <McText text="Custom properties" color="#ff55ff" />
+          )}
           <McText text={item.material} color="#777777" />
         </>
       ) : (
@@ -551,8 +565,10 @@ export function PlayerDetails({
                           {[39, 38, 37, 36].map(renderSlot)}
                         </div>
                         <div className="mc-player">
-                          <McText text={player.name} />
+                          <PlayerSkin uuid={player.uuid} name={player.name} />
+                          <McText className="mc-player-name" text={player.name} />
                           <McText
+                            className="mc-player-level"
                             text={`Level ${view.player.level}`}
                             color="#80ff20"
                           />

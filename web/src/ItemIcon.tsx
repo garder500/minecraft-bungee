@@ -90,6 +90,15 @@ function image(texture: string) {
   return img;
 }
 
+/** Steve or Alex from the client jar, picked from the player's id, for players without a Mojang skin. */
+export async function defaultSkin(uuid: string) {
+  const alex = parseInt(uuid.replace(/-/g, "").slice(-1), 16) % 2 === 1;
+  const img = (await textures())
+    ? await image(`entity/player/${alex ? "slim/alex" : "wide/steve"}`)
+    : null;
+  return { img, slim: alex };
+}
+
 /** Text explaining why textures are missing, or "" once they load. */
 export function useTextureStatus() {
   const [status, setStatus] = useState(unavailable);

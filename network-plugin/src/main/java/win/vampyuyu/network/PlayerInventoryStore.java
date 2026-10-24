@@ -13,7 +13,20 @@ import org.bukkit.plugin.java.JavaPlugin;
 final class PlayerInventoryStore {
     private final JavaPlugin plugin;
     private static final Gson JSON = new Gson();
-    record Slot(int slot, String material, int amount, String name, String details, boolean custom) {}
+    record Slot(int slot, String material, int amount, String name, String details, boolean custom, String nameColor, boolean nameItalic, List<ItemTooltip.Line> lines) {}
+    static int maxLevel(String key) {
+        try {
+            var e = io.papermc.paper.registry.RegistryAccess.registryAccess().getRegistry(io.papermc.paper.registry.RegistryKey.ENCHANTMENT).get(net.kyori.adventure.key.Key.key(key));
+            return e == null ? 0 : e.getMaxLevel();
+        } catch (RuntimeException e) { return 0; }
+    }
+    private static Slot withTooltip(int index, String id, int amount, String name, String details, boolean custom, Map<String,PlayerNbt.Tag> item) {
+        try {
+            return new Slot(index, id, amount, name, details, custom, ItemTooltip.nameColor(item), ItemTooltip.italicName(item), ItemTooltip.lines(item, PlayerInventoryStore::maxLevel));
+        } catch (RuntimeException e) {
+            return new Slot(index, id, amount, name, details, custom, "#ffffff", false, List.of());
+        }
+    }
     record View(String uuid, boolean online, String container, String revision, List<Slot> slots, Map<String,Object> player) {}
     record Edit(String container, String revision, int slot, String material, int amount) {}
     static class Conflict extends IllegalArgumentException { Conflict(String message) { super(message); } }
@@ -23,13 +36,19 @@ final class PlayerInventoryStore {
     private static Inventory inventory(Player player, String container) { return container.equals("ender") ? player.getEnderChest() : player.getInventory(); }
     static int fromNbtSlot(int slot, boolean ender) { if (ender) return slot; if (slot == -106 || slot == 150) return 40; if (slot >= 100 && slot <= 103) return slot - 64; return slot; }
     static int toNbtSlot(int slot, boolean ender) { if (ender || slot < 36) return slot; return slot == 40 ? -106 : slot + 64; }
-    private static Slot empty(int index) { return new Slot(index,"minecraft:air",0,"Empty","",false); }
+    private static Slot empty(int index) { return new Slot(index,"minecraft:air",0,"Empty","",false,"#ffffff",false,List.of()); }
     private static Slot onlineSlot(int index, ItemStack item) {
         if (item == null || item.getType().isAir()) return empty(index);
         String name = item.hasItemMeta() && item.getItemMeta().hasDisplayName()
                 ? PlainTextComponentSerializer.plainText().serialize(item.getItemMeta().displayName()) : item.getType().getKey().toString();
         String detail = item.hasItemMeta() ? item.getItemMeta().getAsString() : "";
-        return new Slot(index,item.getType().getKey().toString(),item.getAmount(),name,detail.length()>4000?detail.substring(0,4000):detail,item.hasItemMeta());
+        String shortDetail = detail.length()>4000?detail.substring(0,4000):detail;
+        try {
+            var parsed = PlayerNbt.compound(PlayerNbt.readBytes(item.serializeAsBytes()).root());
+            return withTooltip(index,item.getType().getKey().toString(),item.getAmount(),name,shortDetail,item.hasItemMeta(),parsed);
+        } catch (IOException | RuntimeException e) {
+            return new Slot(index,item.getType().getKey().toString(),item.getAmount(),name,shortDetail,item.hasItemMeta(),"#ffffff",false,List.of());
+        }
     }
     private static String onlineRevision(Inventory inventory) throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream(); DataOutputStream out = new DataOutputStream(bytes);
@@ -59,8 +78,8 @@ final class PlayerInventoryStore {
             String details = properties == null ? "" : JSON.toJson(properties.value());
             if(details.length()>4000)details=details.substring(0,4000)+"…";
             String name=id;
-            if(properties!=null&&properties.type()==10){var fields=PlayerNbt.compound(properties);var customName=fields.get("minecraft:custom_name");if(customName!=null){if(customName.type()==8)name=(String)customName.value();else if(customName.type()==10)name=PlayerNbt.string(PlayerNbt.compound(customName),"text",id);}}
-            slots.add(new Slot(i,id,amount,name,details,custom));
+            if(properties!=null&&properties.type()==10){var fields=PlayerNbt.compound(properties);var customName=fields.get("minecraft:custom_name");if(customName!=null){String plain=ItemTooltip.component(customName).text();if(!plain.isEmpty())name=plain;}}
+            slots.add(withTooltip(i,id,amount,name,details,custom,item));
         }
         int mode = PlayerNbt.number(root,"playerGameType",0); info.put("gamemode",switch(mode){case 1->"CREATIVE";case 2->"ADVENTURE";case 3->"SPECTATOR";default->"SURVIVAL";});
         info.put("health",number(root,"Health",20)); info.put("food",PlayerNbt.number(root,"foodLevel",20)); info.put("level",PlayerNbt.number(root,"XpLevel",0));

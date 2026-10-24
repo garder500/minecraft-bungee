@@ -38,7 +38,7 @@ const (
 var (
 	validVersion  = regexp.MustCompile(`^[0-9A-Za-z][0-9A-Za-z._-]{0,40}$`)
 	validMaterial = regexp.MustCompile(`^minecraft:[a-z0-9_./-]{1,96}$`)
-	textureKeep   = []string{"assets/minecraft/textures/item/", "assets/minecraft/textures/block/", "assets/minecraft/textures/gui/sprites/container/slot/", "assets/minecraft/textures/font/ascii.png", "assets/minecraft/textures/entity/shield_base_nopattern.png", "assets/minecraft/textures/entity/shield/base_nopattern.png", "assets/minecraft/models/item/", "assets/minecraft/models/block/", "assets/minecraft/items/", "assets/minecraft/lang/en_us.json"}
+	textureKeep   = []string{"assets/minecraft/textures/item/", "assets/minecraft/textures/block/", "assets/minecraft/textures/gui/sprites/container/slot/", "assets/minecraft/textures/font/ascii.png", "assets/minecraft/textures/entity/player/", "assets/minecraft/textures/entity/shield_base_nopattern.png", "assets/minecraft/textures/entity/shield/base_nopattern.png", "assets/minecraft/models/item/", "assets/minecraft/models/block/", "assets/minecraft/items/", "assets/minecraft/lang/en_us.json"}
 )
 
 type TextureStore struct {
@@ -104,7 +104,7 @@ func (t *TextureStore) load(done chan struct{}) {
 }
 
 func (t *TextureStore) open() (*textureSet, error) {
-	cache := filepath.Join(t.CacheDir, t.Version+".zip")
+	cache := filepath.Join(t.CacheDir, t.Version+"-2.zip") // -2: default player skins joined the kept textures
 	if b, e := os.ReadFile(cache); e == nil {
 		if set, e := readTextureSet(b); e == nil {
 			return set, nil
