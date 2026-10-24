@@ -256,11 +256,11 @@ final class WerewolfAmbience {
                 } else if (phase.equals("DAY_VOTE")) {
                   player.sendMessage(
                       Component.text(
-                          "The village vote opens: vote in your menu, or skip.",
+                          "The village vote opens: right-click a player to vote, or skip.",
                           TextColor.color(WerewolfPresentation.VOTE)));
                   header =
                       target -> {
-                        title(target, "Village vote", "Pick a head, or skip", VOTE);
+                        title(target, "Village vote", "Right-click a player, or skip", VOTE);
                         if (enabled) cue(target, "vote", Sound.BLOCK_NOTE_BLOCK_HAT, .2f, 1f);
                       };
                 }
@@ -500,6 +500,15 @@ final class WerewolfAmbience {
     if (view.actor() && plugin.controls != null) {
       Component aim = plugin.controls.target(p, s);
       if (aim != null) bar = bar.append(aim);
+    }
+    boolean skinned = plugin.skin != null && plugin.skin.active(p);
+    if (skinned && plugin.customHud != null) {
+      long seconds = Math.max(0, (s.phaseEndsAt - now + 999) / 1000);
+      // The HUD glyphs are placed by the core shader and take no room in the bar.
+      bar =
+          bar.append(
+              plugin.customHud.render(
+                  CustomHud.of(game, p.getUniqueId(), seconds, s.players.size(), now >= s.cardsTurnAt)));
     }
     int fx = WerewolfPresentation.fx(game.night(), now - s.dawnAt);
     if (fx > 0

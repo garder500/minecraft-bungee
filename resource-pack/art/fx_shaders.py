@@ -7,21 +7,45 @@ id 1 = night, 2 = dawn, 3 = fading dawn. Text shadows are Color / 4: (19, 23, 0|
 
 Target: Minecraft 26.3 only (pack format 97): core/text.*, #include, explicit locations, OIT.
 """
-import json, pathlib
+import json, pathlib, sys
 
 PACK = pathlib.Path(__file__).resolve().parent.parent / "pack"
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+import layout  # noqa: E402
 
-COMMON_VS = """    int fx = 0;
+HUD_N = len(layout.HUD_ELEMENTS)
+HUD_TABLE = (
+    f"const int HUD_COUNT = {HUD_N};\n"
+    f"const int HUD_FILL = {[e[0] for e in layout.HUD_ELEMENTS].index('fill')};\n"
+    "const int HUD_ANCHOR[HUD_COUNT] = int[](" + ", ".join(str(e[1]) for e in layout.HUD_ELEMENTS) + ");\n"
+    "const vec4 HUD_BOX[HUD_COUNT] = vec4[](\n    "
+    + ",\n    ".join(f"vec4({e[2]}.0, {e[3]}.0, {e[4]}.0, {e[5]}.0)" for e in layout.HUD_ELEMENTS)
+    + ");\n"
+)
+
+COMMON_VS = f"""    int fx = 0;
     vec2 uv = vec2(0.0);
     ivec3 rgb = ivec3(round(Color.rgb * 255.0));
-    if (rgb.r == 78 && rgb.g == 92 && rgb.b >= 1 && rgb.b <= 3) {
+    if (rgb.r == 78 && rgb.g >= {layout.HUD_ID_BASE} && rgb.g < {layout.HUD_ID_BASE} + HUD_COUNT) {{
+        // A custom HUD glyph: move its quad to its element's box, in GUI pixels.
+        int e = rgb.g - {layout.HUD_ID_BASE};
+        vec2 gui = vec2(2.0 / ProjMat[0][0], -2.0 / ProjMat[1][1]);
+        vec2 anchor = HUD_ANCHOR[e] == 0 ? vec2(floor(gui.x * 0.5), 0.0) : vec2(gui.x, floor(gui.y * 0.5));
+        vec4 box = HUD_BOX[e];
+        float w = e == HUD_FILL ? max(1.0, floor(box.z * float(rgb.b) / 255.0 + 0.5)) : box.z;
+        int k = gl_VertexIndex % 4;
+        vec2 corner = vec2((k == 2 || k == 3) ? w : 0.0, (k == 1 || k == 2) ? box.w : 0.0);
+        vec2 px = anchor + box.xy + corner;
+        clip = ProjMat * ModelViewMat * vec4(px, Position.z, 1.0);
+        fx = 10 + e;
+    }} else if (rgb.r == 78 && rgb.g == 92 && rgb.b >= 1 && rgb.b <= 3) {{
         fx = rgb.b;
         vec2 corner = CORNERS[gl_VertexIndex % 4];
         uv = corner * 0.5 + 0.5;
         clip = vec4(corner * clip.w, clip.z, clip.w);
-    } else if (rgb.r == 19 && rgb.g == 23 && rgb.b <= 1) {
+    }} else if (rgb.r >= 19 && rgb.r <= 20 && ((rgb.g == 23 && rgb.b <= 1) || (rgb.g >= {layout.HUD_ID_BASE // 4} && rgb.g <= {(layout.HUD_ID_BASE + 27) // 4 + 1}))) {{
         clip = vec4(2.0, 2.0, 2.0, 1.0);
-    }
+    }}
     gl_Position = clip;
     fxId = fx;
     screenUv = uv;
@@ -74,6 +98,7 @@ layout(location = 4) flat out int fxId;
 layout(location = 5) out vec2 screenUv;
 
 {CORNERS}
+{HUD_TABLE}
 void main() {{
     vec4 clip = ProjMat * ModelViewMat * vec4(Position, 1.0);
 {COMMON_VS}
@@ -135,16 +160,16 @@ vec4 calculateFinalColor(vec4 color) {{
 }}
 
 void main() {{
-    vec4 effect = fxId > 0 ? werewolf_fx(fxId, screenUv) : vec4(0.0);
+    vec4 effect = fxId > 0 && fxId < 10 ? werewolf_fx(fxId, screenUv) : vec4(0.0);
     #ifdef IS_GRAYSCALE
     vec4 texColor = texture(Sampler0, texCoord0).rrrr;
     #else
     vec4 texColor = texture(Sampler0, texCoord0);
     #endif
 
-    vec4 color = fxId > 0 ? effect : texColor * vertexColor * ColorModulator;
+    vec4 color = fxId >= 10 ? texColor : fxId > 0 ? effect : texColor * vertexColor * ColorModulator;
 
-    if (color.a < 0.1 && fxId == 0) {{
+    if (color.a < 0.1 && (fxId == 0 || fxId >= 10)) {{
         discard;
     }}
 

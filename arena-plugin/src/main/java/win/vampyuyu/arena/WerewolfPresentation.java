@@ -236,13 +236,13 @@ final class WerewolfPresentation {
           actor
               ? switch (phase) {
                 case "DISCUSSION" -> "Talk it over: who are the wolves?";
-                case "DAY_VOTE" -> "Click a head to vote, or SKIP";
-                case "CUPID" -> "Pick two lovers, then press BIND";
-                case "GUARD" -> "Click a head to protect it tonight";
-                case "SEER" -> "Click a head to see its role";
-                case "NIGHT" -> "Click a head to choose your prey";
-                case "WITCH" -> "LIFE saves, DEATH poisons, SLEEP ends your turn";
-                case "HUNTER_SHOT" -> "Pick a target, then press SHOOT";
+                case "DAY_VOTE" -> "Right-click a player to vote, or use Skip";
+                case "CUPID" -> "Right-click two players, then use Bind";
+                case "GUARD" -> "Right-click a player to protect them tonight";
+                case "SEER" -> "Right-click a player to see their role";
+                case "NIGHT" -> "Right-click a player to choose your prey";
+                case "WITCH" -> "Life saves, Death poisons the player you picked, Sleep ends your turn";
+                case "HUNTER_SHOT" -> "Right-click a target, then use Shoot";
                 default -> "The game has ended";
               }
               : phase.equals("FINISHED") ? "The game has ended" : "Watch the village";
@@ -252,10 +252,10 @@ final class WerewolfPresentation {
 
   static Cue awakening(String phase) {
     return switch (phase) {
-      case "CUPID" -> new Cue("Cupid, bind two hearts", "Choose two lovers in your menu");
+      case "CUPID" -> new Cue("Cupid, bind two hearts", "Right-click two players");
       case "GUARD" -> new Cue("Guard, awaken", "Choose someone to protect");
       case "SEER" -> new Cue("Seer, awaken", "Discover one player's secret");
-      case "NIGHT" -> new Cue("Wolves, awaken", "Vote for your victim in the menu");
+      case "NIGHT" -> new Cue("Wolves, awaken", "Right-click your victim");
       case "WITCH" -> new Cue("Witch, awaken", "Your potions may change their fate");
       case "HUNTER_SHOT" -> new Cue("Hunter, take your final shot", "Choose your last target");
       default -> null;

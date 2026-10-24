@@ -62,3 +62,83 @@ ICON_BASE = 0xE000
 ICON_PX = 64             # texture size of one icon
 ICON_HEIGHT = 12         # drawn height in GUI px
 ICON_ASCENT = 11
+
+
+# ---------------------------------------------------------------------------------------------
+# Custom HUD (font vampyuyu:hud2, drawn by the text core shader; art/hud.py draws the sprites).
+#
+# The plugin writes the HUD as glyphs of the action bar, each one coloured (78, 100 + element,
+# parameter). The core shader (rendertype_text, see art/fx_shaders.py) moves such a glyph to its
+# element's box, anchored to the top centre or the right middle of the screen, in GUI pixels:
+# the sprite is drawn 1 texel per GUI pixel, whatever the GUI scale. Every sprite is followed by
+# its negative-advance glyph so the rest of the action bar text stays centred.
+
+HUD_PALETTES = {  # name -> role colour
+    "villager": 0xe9d99b, "wolf": 0xff5a5a, "seer": 0xb892ff, "witch": 0x6fdc8c,
+    "hunter": 0xf0a050, "cupid": 0xff8fc0, "guard": 0x6cc6ff, "dead": 0x8f84b3,
+    "vote": 0xffd36e, "sleep": 0x6a5fa0,
+}
+
+# element -> (anchor, x, y, w, h); anchor 0 = top centre, 1 = right middle. The element's id is its
+# index here. "fill" is stretched to the width given by the colour's blue channel (0-255).
+HUD_ELEMENTS = [
+    ("frame", 0, -95, 3, 190, 26),
+    ("icon", 0, -89, 7, 16, 16),
+    ("round", 0, -70, 10, 7, 9),
+    ("label", 0, -61, 11, 84, 9),
+    ("t1", 0, 30, 10, 7, 9),
+    ("t2", 0, 38, 10, 7, 9),
+    ("tcolon", 0, 46, 10, 3, 9),
+    ("t3", 0, 50, 10, 7, 9),
+    ("t4", 0, 58, 10, 7, 9),
+    ("fill", 0, -89, 22, 178, 3),
+    ("pframe", 1, -104, -30, 100, 60),
+    ("picon", 1, -98, -25, 24, 24),
+    ("plabel", 1, -68, -24, 62, 9),
+    ("pteam", 1, -68, -12, 62, 9),
+    ("a1", 1, -60, 6, 7, 9),
+    ("a2", 1, -52, 6, 7, 9),
+    ("aslash", 1, -44, 6, 5, 9),
+    ("a3", 1, -38, 6, 7, 9),
+    ("a4", 1, -30, 6, 7, 9),
+]
+HUD_ID_BASE = 100        # the green channel of an element's colour is HUD_ID_BASE + its index
+HUD_SPRITE_BASE = 0xE000
+HUD_NEG_BASE = 0xF000    # negative-advance twin of every sprite: sprite index + HUD_NEG_BASE
+
+HUD_PHASE_WORDS = ["DEBATE", "VOTE", "VILLAGE SLEEPS", "CUPID AWAKE", "GUARD AWAKE", "SEER AWAKE",
+                   "WOLVES HUNT", "WITCH AWAKE", "LAST SHOT", "GAME OVER", "WAITING"]
+HUD_ROLE_WORDS = ["WEREWOLF", "VILLAGER", "SEER", "WITCH", "HUNTER", "CUPID", "GUARD", "ALPHA WOLF",
+                  "INFECTOR", "WOLF CUB", "SCAPEGOAT", "BEAR TAMER", "FALLEN"]
+HUD_TEAM_WORDS = ["VILLAGE", "WOLF PACK", "OUT"]
+HUD_TOP_ICONS = ["moon", "sun", "vote"]
+HUD_ROLE_ICONS = ["wolf", "villager", "seer", "witch", "hunter", "cupid", "guard", "dead", "alpha",
+                  "infector", "cub", "scapegoat", "bear"]
+
+
+def hud_sprites():
+    """(name, element-class width, height) of every sprite, in glyph order."""
+    box = {e[0]: (e[4], e[5]) for e in HUD_ELEMENTS}
+    out = []
+    for pal in HUD_PALETTES:
+        out.append((f"frame_{pal}", *box["frame"]))
+    for pal in HUD_PALETTES:
+        out.append((f"fill_{pal}", 8, 3))
+    for name in HUD_TOP_ICONS:
+        out.append((f"icon_{name}", *box["icon"]))
+    for word in HUD_PHASE_WORDS:
+        out.append((f"label_{word.lower().replace(' ', '_')}", *box["label"]))
+    for d in "0123456789":
+        out.append((f"d{d}", *box["t1"]))
+    out.append(("dblank", *box["t1"]))
+    out.append(("dcolon", *box["tcolon"]))
+    out.append(("dslash", *box["aslash"]))
+    for pal in HUD_PALETTES:
+        out.append((f"pframe_{pal}", *box["pframe"]))
+    for name in HUD_ROLE_ICONS:
+        out.append((f"picon_{name}", *box["picon"]))
+    for word in HUD_ROLE_WORDS:
+        out.append((f"plabel_{word.lower().replace(' ', '_')}", *box["plabel"]))
+    for word in HUD_TEAM_WORDS:
+        out.append((f"pteam_{word.lower().replace(' ', '_')}", *box["pteam"]))
+    return out

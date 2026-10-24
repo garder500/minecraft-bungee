@@ -1,0 +1,869 @@
+{
+ "providers": [
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/frame_villager.png",
+   "ascent": 26,
+   "height": 26,
+   "chars": [
+    "\ue000"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/frame_wolf.png",
+   "ascent": 26,
+   "height": 26,
+   "chars": [
+    "\ue001"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/frame_seer.png",
+   "ascent": 26,
+   "height": 26,
+   "chars": [
+    "\ue002"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/frame_witch.png",
+   "ascent": 26,
+   "height": 26,
+   "chars": [
+    "\ue003"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/frame_hunter.png",
+   "ascent": 26,
+   "height": 26,
+   "chars": [
+    "\ue004"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/frame_cupid.png",
+   "ascent": 26,
+   "height": 26,
+   "chars": [
+    "\ue005"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/frame_guard.png",
+   "ascent": 26,
+   "height": 26,
+   "chars": [
+    "\ue006"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/frame_dead.png",
+   "ascent": 26,
+   "height": 26,
+   "chars": [
+    "\ue007"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/frame_vote.png",
+   "ascent": 26,
+   "height": 26,
+   "chars": [
+    "\ue008"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/frame_sleep.png",
+   "ascent": 26,
+   "height": 26,
+   "chars": [
+    "\ue009"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/fill_villager.png",
+   "ascent": 3,
+   "height": 3,
+   "chars": [
+    "\ue00a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/fill_wolf.png",
+   "ascent": 3,
+   "height": 3,
+   "chars": [
+    "\ue00b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/fill_seer.png",
+   "ascent": 3,
+   "height": 3,
+   "chars": [
+    "\ue00c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/fill_witch.png",
+   "ascent": 3,
+   "height": 3,
+   "chars": [
+    "\ue00d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/fill_hunter.png",
+   "ascent": 3,
+   "height": 3,
+   "chars": [
+    "\ue00e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/fill_cupid.png",
+   "ascent": 3,
+   "height": 3,
+   "chars": [
+    "\ue00f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/fill_guard.png",
+   "ascent": 3,
+   "height": 3,
+   "chars": [
+    "\ue010"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/fill_dead.png",
+   "ascent": 3,
+   "height": 3,
+   "chars": [
+    "\ue011"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/fill_vote.png",
+   "ascent": 3,
+   "height": 3,
+   "chars": [
+    "\ue012"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/fill_sleep.png",
+   "ascent": 3,
+   "height": 3,
+   "chars": [
+    "\ue013"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/icon_moon.png",
+   "ascent": 16,
+   "height": 16,
+   "chars": [
+    "\ue014"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/icon_sun.png",
+   "ascent": 16,
+   "height": 16,
+   "chars": [
+    "\ue015"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/icon_vote.png",
+   "ascent": 16,
+   "height": 16,
+   "chars": [
+    "\ue016"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/label_debate.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue017"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/label_vote.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue018"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/label_village_sleeps.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue019"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/label_cupid_awake.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue01a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/label_guard_awake.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue01b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/label_seer_awake.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue01c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/label_wolves_hunt.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue01d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/label_witch_awake.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue01e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/label_last_shot.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue01f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/label_game_over.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue020"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/label_waiting.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue021"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/d0.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue022"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/d1.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue023"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/d2.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue024"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/d3.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue025"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/d4.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue026"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/d5.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue027"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/d6.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue028"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/d7.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue029"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/d8.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue02a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/d9.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue02b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/dblank.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue02c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/dcolon.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue02d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/dslash.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue02e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/pframe_villager.png",
+   "ascent": 60,
+   "height": 60,
+   "chars": [
+    "\ue02f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/pframe_wolf.png",
+   "ascent": 60,
+   "height": 60,
+   "chars": [
+    "\ue030"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/pframe_seer.png",
+   "ascent": 60,
+   "height": 60,
+   "chars": [
+    "\ue031"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/pframe_witch.png",
+   "ascent": 60,
+   "height": 60,
+   "chars": [
+    "\ue032"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/pframe_hunter.png",
+   "ascent": 60,
+   "height": 60,
+   "chars": [
+    "\ue033"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/pframe_cupid.png",
+   "ascent": 60,
+   "height": 60,
+   "chars": [
+    "\ue034"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/pframe_guard.png",
+   "ascent": 60,
+   "height": 60,
+   "chars": [
+    "\ue035"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/pframe_dead.png",
+   "ascent": 60,
+   "height": 60,
+   "chars": [
+    "\ue036"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/pframe_vote.png",
+   "ascent": 60,
+   "height": 60,
+   "chars": [
+    "\ue037"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/pframe_sleep.png",
+   "ascent": 60,
+   "height": 60,
+   "chars": [
+    "\ue038"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/picon_wolf.png",
+   "ascent": 24,
+   "height": 24,
+   "chars": [
+    "\ue039"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/picon_villager.png",
+   "ascent": 24,
+   "height": 24,
+   "chars": [
+    "\ue03a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/picon_seer.png",
+   "ascent": 24,
+   "height": 24,
+   "chars": [
+    "\ue03b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/picon_witch.png",
+   "ascent": 24,
+   "height": 24,
+   "chars": [
+    "\ue03c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/picon_hunter.png",
+   "ascent": 24,
+   "height": 24,
+   "chars": [
+    "\ue03d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/picon_cupid.png",
+   "ascent": 24,
+   "height": 24,
+   "chars": [
+    "\ue03e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/picon_guard.png",
+   "ascent": 24,
+   "height": 24,
+   "chars": [
+    "\ue03f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/picon_dead.png",
+   "ascent": 24,
+   "height": 24,
+   "chars": [
+    "\ue040"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/picon_alpha.png",
+   "ascent": 24,
+   "height": 24,
+   "chars": [
+    "\ue041"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/picon_infector.png",
+   "ascent": 24,
+   "height": 24,
+   "chars": [
+    "\ue042"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/picon_cub.png",
+   "ascent": 24,
+   "height": 24,
+   "chars": [
+    "\ue043"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/picon_scapegoat.png",
+   "ascent": 24,
+   "height": 24,
+   "chars": [
+    "\ue044"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/picon_bear.png",
+   "ascent": 24,
+   "height": 24,
+   "chars": [
+    "\ue045"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/plabel_werewolf.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue046"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/plabel_villager.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue047"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/plabel_seer.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue048"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/plabel_witch.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue049"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/plabel_hunter.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue04a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/plabel_cupid.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue04b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/plabel_guard.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue04c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/plabel_alpha_wolf.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue04d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/plabel_infector.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue04e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/plabel_wolf_cub.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue04f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/plabel_scapegoat.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue050"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/plabel_bear_tamer.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue051"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/plabel_fallen.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue052"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/pteam_village.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue053"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/pteam_wolf_pack.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue054"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/hud/pteam_out.png",
+   "ascent": 9,
+   "height": 9,
+   "chars": [
+    "\ue055"
+   ]
+  },
+  {
+   "type": "space",
+   "advances": {
+    "\uf000": -191,
+    "\uf001": -191,
+    "\uf002": -191,
+    "\uf003": -191,
+    "\uf004": -191,
+    "\uf005": -191,
+    "\uf006": -191,
+    "\uf007": -191,
+    "\uf008": -191,
+    "\uf009": -191,
+    "\uf00a": -9,
+    "\uf00b": -9,
+    "\uf00c": -9,
+    "\uf00d": -9,
+    "\uf00e": -9,
+    "\uf00f": -9,
+    "\uf010": -9,
+    "\uf011": -9,
+    "\uf012": -9,
+    "\uf013": -9,
+    "\uf014": -17,
+    "\uf015": -17,
+    "\uf016": -17,
+    "\uf017": -85,
+    "\uf018": -85,
+    "\uf019": -85,
+    "\uf01a": -85,
+    "\uf01b": -85,
+    "\uf01c": -85,
+    "\uf01d": -85,
+    "\uf01e": -85,
+    "\uf01f": -85,
+    "\uf020": -85,
+    "\uf021": -85,
+    "\uf022": -8,
+    "\uf023": -8,
+    "\uf024": -8,
+    "\uf025": -8,
+    "\uf026": -8,
+    "\uf027": -8,
+    "\uf028": -8,
+    "\uf029": -8,
+    "\uf02a": -8,
+    "\uf02b": -8,
+    "\uf02c": -8,
+    "\uf02d": -4,
+    "\uf02e": -6,
+    "\uf02f": -101,
+    "\uf030": -101,
+    "\uf031": -101,
+    "\uf032": -101,
+    "\uf033": -101,
+    "\uf034": -101,
+    "\uf035": -101,
+    "\uf036": -101,
+    "\uf037": -101,
+    "\uf038": -101,
+    "\uf039": -25,
+    "\uf03a": -25,
+    "\uf03b": -25,
+    "\uf03c": -25,
+    "\uf03d": -25,
+    "\uf03e": -25,
+    "\uf03f": -25,
+    "\uf040": -25,
+    "\uf041": -25,
+    "\uf042": -25,
+    "\uf043": -25,
+    "\uf044": -25,
+    "\uf045": -25,
+    "\uf046": -63,
+    "\uf047": -63,
+    "\uf048": -63,
+    "\uf049": -63,
+    "\uf04a": -63,
+    "\uf04b": -63,
+    "\uf04c": -63,
+    "\uf04d": -63,
+    "\uf04e": -63,
+    "\uf04f": -63,
+    "\uf050": -63,
+    "\uf051": -63,
+    "\uf052": -63,
+    "\uf053": -63,
+    "\uf054": -63,
+    "\uf055": -63
+   }
+  }
+ ]
+}

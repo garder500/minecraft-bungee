@@ -59,16 +59,16 @@ vec4 calculateFinalColor(vec4 color) {
 }
 
 void main() {
-    vec4 effect = fxId > 0 ? werewolf_fx(fxId, screenUv) : vec4(0.0);
+    vec4 effect = fxId > 0 && fxId < 10 ? werewolf_fx(fxId, screenUv) : vec4(0.0);
     #ifdef IS_GRAYSCALE
     vec4 texColor = texture(Sampler0, texCoord0).rrrr;
     #else
     vec4 texColor = texture(Sampler0, texCoord0);
     #endif
 
-    vec4 color = fxId > 0 ? effect : texColor * vertexColor * ColorModulator;
+    vec4 color = fxId >= 10 ? texColor : fxId > 0 ? effect : texColor * vertexColor * ColorModulator;
 
-    if (color.a < 0.1 && fxId == 0) {
+    if (color.a < 0.1 && (fxId == 0 || fxId >= 10)) {
         discard;
     }
 

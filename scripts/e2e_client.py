@@ -131,15 +131,27 @@ def menu_pack_id(sha1):
     return str(uuid.UUID(bytes=bytes(raw)))
 
 
+def _ring(n, radius, cx, cz, y):
+    """n seats on a circle looking at its centre; every other one sits."""
+    import math
+    return [{"name": f"seat-{i + 1}",
+             "at": {"x": round(cx + radius * math.cos(2 * math.pi * i / n), 2), "y": y,
+                    "z": round(cz + radius * math.sin(2 * math.pi * i / n), 2), "yaw": 0, "pitch": 0},
+             "sit": i % 2 == 0} for i in range(n)]
+
+
 ARENA = {
     "id": "e2e", "name": "E2E village", "worldName": "world", "preset": "werewolf",
     "bounds": {"minX": -40, "minY": -64, "minZ": -40, "maxX": 40, "maxY": 320, "maxZ": 40},
     "spawn": {"x": 0.5, "y": -60, "z": 0.5, "yaw": 0, "pitch": 0},
     "allowedBreakBlocks": [], "allowedPlaceBlocks": [], "allowPvP": False, "allowChests": False,
-    "allowDoors": True, "gameMode": "ADVENTURE", "durationSeconds": 1800, "minPlayers": 4,
+    "allowDoors": True, "gameMode": "ADVENTURE", "durationSeconds": 1800, "minPlayers": 12,
     "maxPlayers": 20, "discussionSeconds": 60, "voteSeconds": 30, "nightSeconds": 30,
     "werewolf": {"roles": {}, "cupidSeconds": 15, "witchSeconds": 15, "hunterSeconds": 15,
                  "ambienceEnabled": True},
+    "places": {"seats": _ring(12, 6, 0.5, 0.5, -60),
+               "circle": {"x": 0.5, "y": -60, "z": 0.5, "yaw": 0, "pitch": 0},
+               "den": {"x": 20.5, "y": -60, "z": 0.5, "yaw": 0, "pitch": 0}, "night": []},
 }
 
 
@@ -282,6 +294,226 @@ def player_state(rcon):
 NIGHT = {"CUPID", "GUARD", "SEER", "NIGHT", "WITCH"}
 
 
+def journal_text():
+    logs = api("GET", "/arenas/logs").get("logs", [])
+    if not logs:
+        return ""
+    names = sorted(x["name"] if isinstance(x, dict) else x for x in logs)
+    return api("GET", f"/arenas/logs/{names[-1]}")
+
+
+def arena_phase():
+    return api("GET", "/arenas")["arenas"][0]["phase"]
+
+
+def wait_phase(wanted, seconds=60):
+    """Waits until the arena reaches one of the phases; returns it, or None."""
+    wanted = {wanted} if isinstance(wanted, str) else set(wanted)
+    deadline = time.time() + seconds
+    while time.time() < deadline:
+        phase = arena_phase()
+        if phase in wanted:
+            return phase
+        time.sleep(0.4)
+    return None
+
+
+def wait_journal(needle, seconds=25):
+    deadline = time.time() + seconds
+    while time.time() < deadline:
+        if needle in journal_text():
+            return True
+        time.sleep(0.5)
+    return False
+
+
+def peek(rcon, alive_only=False):
+    """role of every participant, from the admin /ww peek (dead ones left out when asked)."""
+    import re
+    roles = {}
+    for line in re.sub("\u00a7.", "", rcon.command("ww peek")).splitlines():
+        if ": " in line:
+            name, role = line.rsplit(": ", 1)
+            if alive_only and "(dead)" in role:
+                continue
+            roles[name.strip()] = role.split()[0]
+    return roles
+
+
+def bot_with(rcon, wanted, exclude=()):
+    """Name token (botN) of a living bot whose role satisfies wanted (a predicate), looked up now."""
+    for name, role in peek(rcon, alive_only=True).items():
+        if name.startswith("[Bot] Guest ") and wanted(role) and name not in exclude:
+            return "bot" + name.rsplit(" ", 1)[1]
+    raise AssertionError("no such living bot")
+
+
+def click_until(rcon, args, needle, tries=12):
+    """Right-clicks as the human until the journal shows the effect (presentations delay the first)."""
+    for _ in range(tries):
+        rcon.command("ww click E2EBot " + args)
+        if wait_journal(needle, 2.5):
+            return True
+    return False
+
+
+WOLVES = lambda role: role in ("WEREWOLF", "ALPHA_WOLF", "INFECTOR", "WOLF_CUB")
+NOT_WOLF = lambda role: not WOLVES(role)
+
+# role -> (cast of the other roles, what to check)
+ROLE_CASES = {
+    "VILLAGER": {"WEREWOLF": 2, "SEER": 1},
+    "WEREWOLF": {"WEREWOLF": 2, "SEER": 1},
+    "SEER": {"WEREWOLF": 2, "SEER": 1},
+    "WITCH": {"WEREWOLF": 2, "WITCH": 1},
+    "HUNTER": {"WEREWOLF": 2, "HUNTER": 1},
+    "CUPID": {"WEREWOLF": 2, "CUPID": 1},
+    "GUARD": {"WEREWOLF": 2, "GUARD": 1},
+    "ALPHA_WOLF": {"WEREWOLF": 1, "ALPHA_WOLF": 1},
+    "INFECTOR": {"WEREWOLF": 1, "INFECTOR": 1},
+    "WOLF_CUB": {"WEREWOLF": 1, "WOLF_CUB": 1},
+    "SCAPEGOAT": {"WEREWOLF": 2, "SCAPEGOAT": 1},
+    "BEAR_TAMER": {"WEREWOLF": 2, "BEAR_TAMER": 1},
+}
+
+
+def role_checks(role, rcon, roles, failures, tools, shots):
+    """The human holds `role`: do what the role does, as a player, and check the game answered."""
+    me = "E2EBot"
+    others = lambda pred, exclude=(): bot_with(rcon, pred, exclude)
+    if role == "VILLAGER":
+        if not wait_phase("DAY_VOTE", 90): return failures.append("VILLAGER: no day vote")
+        time.sleep(3)
+        if not click_until(rcon, others(NOT_WOLF), f"{me}[VILLAGER] selects"):
+            failures.append("VILLAGER: the vote was not recorded")
+        if not click_until(rcon, "ability:skip", "presses SKIP"):
+            failures.append("VILLAGER: skip did not work")
+    elif role in ("WEREWOLF", "ALPHA_WOLF", "WOLF_CUB"):
+        if not wait_phase("NIGHT", 60): return failures.append(f"{role}: no night")
+        time.sleep(3)
+        if not click_until(rcon, others(NOT_WOLF), f"{me}[{role}] selects"):
+            failures.append(f"{role}: the hunt vote was not recorded")
+    elif role == "INFECTOR":
+        if not wait_phase("NIGHT", 60): return failures.append("INFECTOR: no night")
+        time.sleep(3)
+        if not click_until(rcon, "ability:infect", "will infect tonight"):
+            failures.append("INFECTOR: infect was refused")
+        click_until(rcon, others(NOT_WOLF), f"{me}[INFECTOR] selects")
+        if not wait_journal("turns into a werewolf", 40):
+            failures.append("INFECTOR: nobody was infected")
+    elif role == "SEER":
+        if not wait_phase("SEER", 60): return failures.append("SEER: no seer phase")
+        time.sleep(3)
+        if not click_until(rcon, others(lambda r: True), "Your vision"):
+            failures.append("SEER: no vision")
+    elif role == "WITCH":
+        if not wait_phase("WITCH", 90): return failures.append("WITCH: no witch phase")
+        time.sleep(3)
+        victim_ok = click_until(rcon, "ability:heal", "saves")
+        if not victim_ok: failures.append("WITCH: the life potion did not work")
+        rcon.command("ww click E2EBot " + others(NOT_WOLF))
+        if not click_until(rcon, "ability:poison", "poisons"):
+            failures.append("WITCH: the death potion did not work")
+    elif role == "HUNTER":
+        if not wait_phase("DAY_VOTE", 90): return failures.append("HUNTER: no day vote")
+        time.sleep(3)
+        for n in range(1, 12):
+            rcon.command(f"ww act bot{n} select {me}")
+        rcon.command("ww phase skip")
+        if not wait_phase("HUNTER_SHOT", 20): return failures.append("HUNTER: no last shot")
+        time.sleep(3)
+        rcon.command("ww click E2EBot " + others(lambda r: True))
+        if not click_until(rcon, "ability:shoot", "shot by the hunter"):
+            failures.append("HUNTER: the shot was not fired")
+    elif role == "CUPID":
+        if not wait_phase("CUPID", 60): return failures.append("CUPID: no cupid phase")
+        time.sleep(3)
+        a = others(lambda r: True)
+        b = others(lambda r: True, exclude=("[Bot] Guest " + a[3:],))
+        rcon.command("ww click E2EBot " + a)
+        rcon.command("ww click E2EBot " + b)
+        if not click_until(rcon, "ability:bind", "are bound by"):
+            failures.append("CUPID: the lovers were not bound")
+    elif role == "GUARD":
+        if not wait_phase("GUARD", 60): return failures.append("GUARD: no guard phase")
+        time.sleep(3)
+        if not click_until(rcon, others(lambda r: True), "protects"):
+            failures.append("GUARD: no protection")
+    elif role == "SCAPEGOAT":
+        if not wait_phase("DAY_VOTE", 90): return failures.append("SCAPEGOAT: no day vote")
+        time.sleep(3)
+        living = peek(rcon, alive_only=True)
+        pool = [n for n in living if n.startswith("[Bot] Guest ") and NOT_WOLF(living[n])]
+        x, y = ["bot" + n.rsplit(" ", 1)[1] for n in pool[:2]]
+        voters = [n for n in range(1, 12) if f"bot{n}" not in (x, y) and f"[Bot] Guest {n}" in living]
+        for i, n in enumerate(voters):
+            rcon.command(f"ww act bot{n} select {x if i % 2 == 0 else y}")
+        rcon.command(f"ww click E2EBot {x}")
+        rcon.command(f"ww act {x} select {y}")
+        rcon.command(f"ww act {y} select {x}")
+        rcon.command("ww phase skip")
+        if not wait_journal("takes the blame", 15):
+            failures.append("SCAPEGOAT: the tied vote did not fall on the scapegoat")
+    elif role == "BEAR_TAMER":
+        if not wait_phase("DISCUSSION", 90): return failures.append("BEAR_TAMER: no day")
+        time.sleep(2)
+    time.sleep(2)
+    shot(tools, shots / f"role-{role.lower()}.png")
+
+
+def roles_scenario(ctx, only):
+    """Every role, one game each: the human holds the role and plays it through real controls."""
+    tools, shots, client_log, failures, server = (ctx[k] for k in
+                                                  ("tools", "shots", "client_log", "failures", "server"))
+    for _ in range(60):
+        try:
+            state = api("GET", "/arenas")
+            break
+        except Exception:
+            time.sleep(2)
+    else:
+        failures.append("the plugin's private API never answered")
+        return
+    me = next(p["uuid"] for p in state["onlinePlayers"] if p["name"] == "E2EBot")
+    rcon = Rcon()
+    wanted = [r for r in ROLE_CASES if not only or r in only.split(",")]
+    for role in wanted:
+        say(f"--- {role}")
+        cast = ", ".join(f"{k.lower()}:{v}" for k, v in ROLE_CASES[role].items())
+        if role not in ROLE_CASES[role]:
+            cast += f" {role.lower()}:1" if role not in ("VILLAGER",) else ""
+        out = rcon.command("ww cast set " + cast.replace(", ", " "))
+        rcon.command("ww force clear")
+        rcon.command(f"ww force E2EBot {role}")
+        api("POST", "/arenas/action", {"action": "arena-practice-start", "arenaId": "e2e", "uuid": me, "botCount": 11})
+        if not wait_phase({"CUPID", "SEER", "NIGHT", "GUARD", "DISCUSSION"}, 40):
+            failures.append(f"{role}: the game did not start ({out.strip()[:120]})")
+            continue
+        roles = peek(rcon)
+        if roles.get("E2EBot") != role:
+            failures.append(f"{role}: forced role missing, the human is {roles.get('E2EBot')}")
+        time.sleep(4)
+        shot(tools, shots / f"hud-{role.lower()}.png")
+        try:
+            role_checks(role, rcon, roles, failures, tools, shots)
+        except Exception as error:  # a broken step must not hide the other roles
+            failures.append(f"{role}: {error}")
+        api("POST", "/arenas/action", {"action": "arena-stop", "arenaId": "e2e"})
+        if wait_phase("WAITING", 40) is None:
+            failures.append(f"{role}: the arena did not come back to WAITING")
+            api("POST", "/arenas/action", {"action": "arena-leave", "arenaId": "e2e", "uuid": me})
+            wait_phase("WAITING", 20)
+        say(f"{role}: done")
+    console = (server / "console.log").read_text(errors="replace")
+    for line in console.splitlines():
+        if ("win.vampyuyu" in line or "NexusArena" in line) and (
+                "Exception" in line or "ERROR" in line or "SEVERE" in line):
+            failures.append("server: " + line.strip()[:200])
+    for needle in FATAL:
+        if needle in client_log.read_text(errors="replace"):
+            failures.append(f"client log contains '{needle}'")
+
+
 def werewolf_scenario(ctx):
     """A whole practice game (human idle, seven bots) driven through the plugin's private API."""
     tools, shots, client_log, failures, server = (ctx[k] for k in
@@ -309,8 +541,8 @@ def werewolf_scenario(ctx):
     time.sleep(1)
     before = player_state(rcon)
     api("POST", "/arenas/action", {"action": "arena-practice-start", "arenaId": "e2e", "uuid": me,
-                                   "botCount": 7})
-    say("practice game started (1 human + 7 bots)")
+                                   "botCount": 11})
+    say("practice game started (1 human + 11 bots)")
     seen, last, deadline = [], None, time.time() + 600
     dark = {}
     while time.time() < deadline:
@@ -357,7 +589,7 @@ def werewolf_scenario(ctx):
         failures.append(f"the player was not restored after the game: {before} -> {after}")
     # Second game: the human walks out in the middle of a night.
     api("POST", "/arenas/action", {"action": "arena-practice-start", "arenaId": "e2e", "uuid": me,
-                                   "botCount": 5})
+                                   "botCount": 11})
     for _ in range(30):
         if api("GET", "/arenas")["arenas"][0]["phase"] not in ("WAITING", "FINISHED"):
             break
@@ -395,7 +627,8 @@ def werewolf_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles"], default="shader")
+    ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
     ap.add_argument("--shots", default=str(WORK / "shots"))
     args = ap.parse_args()
@@ -416,7 +649,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario == "werewolf")
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -447,7 +680,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario == "werewolf":
+        if args.scenario in ("werewolf", "roles"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             for i in range(60):
                 if client_log.read_text(errors="replace").count("Reloading ResourceManager") >= 2:
@@ -468,6 +701,8 @@ def main():
                    failures=failures)
         if args.scenario == "werewolf":
             werewolf_scenario(ctx)
+        elif args.scenario == "roles":
+            roles_scenario(ctx, args.only)
         else:
             shader_scenario(ctx)
     finally:

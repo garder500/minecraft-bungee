@@ -45,6 +45,11 @@ final class WerewolfHud {
         : Component.text(String.valueOf((char) ('\uE000' + index))).font(ICONS);
   }
 
+  /** An icon followed by text; the icon's font must not leak into the text (children inherit). */
+  static Component withIcon(String name, Component text) {
+    return Component.text().append(icon(name)).append(Component.text(" ")).append(text).build();
+  }
+
   /** Icon of a role, or of the dead once the player is out. */
   static String iconName(String role, boolean dead) {
     if (dead) return "dead";
@@ -75,10 +80,12 @@ final class WerewolfHud {
         boss.timer() && game.seconds() > 0
             ? Math.max(0f, Math.min(1f, seconds / (float) game.seconds()))
             : 1f;
-    Component text = Component.text(boss.text(), TextColor.color(boss.color()));
+    // The moon or sun icon replaces the ☾ / ☀ character of the text.
+    String words = skinned ? boss.text().replaceFirst("^[☾☀] ", "") : boss.text();
+    Component text = Component.text(words, TextColor.color(boss.color()));
     final Component title =
         skinned && !game.phase().equals("FINISHED")
-            ? icon(game.night() ? "moon" : "sun").append(Component.text(" ")).append(text)
+            ? withIcon(game.night() ? "moon" : "sun", text)
             : text;
     BossBar bar =
         bars.computeIfAbsent(
@@ -90,6 +97,12 @@ final class WerewolfHud {
               p.showBossBar(created);
               return created;
             });
+    if (skinned) {
+      // The resource pack draws the HUD itself (CustomHud): no vanilla bossbar, no sidebar.
+      p.hideBossBar(bar);
+      sidebar(s, p, game, cardFaceUp, true);
+      return;
+    }
     p.showBossBar(bar); // No-op while shown; brings it back after a reconnect.
     bar.name(title);
     bar.progress(progress);
@@ -134,6 +147,12 @@ final class WerewolfHud {
     voteTags(board, s, game, p.getUniqueId());
     Objective objective = board.getObjective("werewolf");
     if (objective == null) return;
+    // With the pack the sidebar is part of the custom HUD: only the vote tags keep the scoreboard.
+    if (skinned) {
+      if (objective.getDisplaySlot() != null) objective.setDisplaySlot(null);
+      return;
+    }
+    if (objective.getDisplaySlot() != DisplaySlot.SIDEBAR) objective.setDisplaySlot(DisplaySlot.SIDEBAR);
     UUID id = p.getUniqueId();
     String role = game.role(id);
     boolean dead = !game.alive().contains(id);
@@ -144,7 +163,7 @@ final class WerewolfHud {
             TextColor.color(roleColor));
     objective.displayName(
         skinned && cardFaceUp
-            ? icon(iconName(role, dead)).append(Component.text(" ")).append(roleLine)
+            ? withIcon(iconName(role, dead), roleLine)
             : roleLine);
     List<Component> lines = new ArrayList<>();
     lines.add(
@@ -158,7 +177,7 @@ final class WerewolfHud {
                 Component.text(
                     game.alive().size() + " / " + s.players.size(),
                     TextColor.color(WerewolfPresentation.INK)));
-    lines.add(skinned ? icon("alive").append(Component.text(" ")).append(alive) : alive);
+    lines.add(skinned ? withIcon("alive", alive) : alive);
     UUID partner = game.partner(id);
     if (partner != null) {
       lines.add(Component.empty());

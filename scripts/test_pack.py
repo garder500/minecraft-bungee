@@ -78,6 +78,23 @@ class PackTest(unittest.TestCase):
         names = re.search(r"ICON_NAMES =\s*List\.of\((.*?)\);", hud, re.S).group(1)
         self.assertEqual(re.findall(r'"([a-z]+)"', names), layout.ICONS)
 
+    def test_custom_hud_sprites_font_and_plugin_table_agree(self):
+        sprites = layout.hud_sprites()
+        font = json.loads((PACK / "assets/vampyuyu/font/hud2.json").read_text())
+        bitmaps = [p for p in font["providers"] if p["type"] == "bitmap"]
+        space = next(p for p in font["providers"] if p["type"] == "space")["advances"]
+        self.assertEqual(len(bitmaps), len(sprites))
+        for index, ((name, w, h), provider) in enumerate(zip(sprites, bitmaps)):
+            self.assertEqual(provider["chars"], [chr(layout.HUD_SPRITE_BASE + index)], name)
+            png = PACK / "assets/vampyuyu/textures/font/hud" / f"{name}.png"
+            self.assertEqual(png_size(png), (w, h), name)
+            self.assertEqual(space[chr(layout.HUD_NEG_BASE + index)], -(w + 1), name)
+        table = (ROOT / "arena-plugin/src/main/resources/hud-sprites.txt").read_text().split("\n")
+        self.assertEqual([l.split()[2] for l in table if l.startswith("sprite")], [n for n, _, _ in sprites])
+        self.assertEqual([l.split()[2] for l in table if l.startswith("element")], [e[0] for e in layout.HUD_ELEMENTS])
+        vsh = (PACK / "assets/minecraft/shaders/core/text.vsh").read_text()
+        self.assertIn(f"const int HUD_COUNT = {len(layout.HUD_ELEMENTS)};", vsh)
+
     def test_inventory_label_is_blank_in_every_shipped_language(self):
         langs = sorted((PACK / "assets/minecraft/lang").glob("*.json"))
         self.assertIn("en_us", [p.stem for p in langs])

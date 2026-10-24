@@ -16,6 +16,7 @@ public final class NexusArenaEngine extends JavaPlugin {
   WerewolfAmbience ambience;
   PlaceController places;
   ClickControls controls;
+  CustomHud customHud;
   ArenaAdmin admin;
   ArenaTools tools;
   MenuSkin skin;
@@ -73,6 +74,7 @@ public final class NexusArenaEngine extends JavaPlugin {
       skin = MenuSkin.load(this);
       tools = new ArenaTools(this);
       bridge = new CrossServerBridge(this);
+      customHud = new CustomHud();
       controls = new ClickControls(this);
       getServer().getPluginManager().registerEvents(gui, this);
       getServer().getPluginManager().registerEvents(controls, this);
