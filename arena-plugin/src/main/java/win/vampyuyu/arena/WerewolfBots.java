@@ -177,7 +177,8 @@ final class WerewolfBots {
     if (!game.alive().contains(bot)) return;
     List<UUID> pool = suspects(game, bot);
     UUID known = knownWolf(game, bot);
-    if (known != null) {
+    List<UUID> tied = game.candidates();
+    if (known != null && (tied == null || tied.contains(known))) {
       vote(game, bot, known, log, "votes against");
       return;
     }
@@ -208,7 +209,7 @@ final class WerewolfBots {
     List<UUID> pool = without(new ArrayList<>(game.alive()), bot);
     pool.removeIf(game::exiled);
     List<UUID> tied = game.candidates();
-    if (tied != null && pool.stream().anyMatch(tied::contains)) pool.retainAll(tied);
+    if (tied != null) pool.retainAll(tied);
     pool.remove(game.partner(bot));
     pool.removeAll(game.pack(bot));
     game.visions(bot)
