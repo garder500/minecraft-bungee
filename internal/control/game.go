@@ -15,7 +15,7 @@ import (
 // GameLogName is a werewolf journal's file name, as the arena engine writes it.
 var GameLogName = regexp.MustCompile(`^[A-Za-z0-9_-]{1,120}\.log$`)
 var gameUUID = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
-var gameActions = map[string]bool{"lobby-build": true, "arena-save": true, "arena-delete": true, "arena-start": true, "arena-practice-start": true, "arena-stop": true, "arena-announce": true, "arena-reload": true, "arena-join": true, "arena-leave": true, "arena-ban": true, "arena-kick": true, "arena-unban": true, "gamemode": true, "restore-inventory": true, "heal": true, "feed": true, "clear-effects": true, "teleport-spawn": true, "set-spawn": true, "kick": true, "ban": true, "pardon": true, "pardon-name": true, "whitelist-add": true, "whitelist-remove": true, "broadcast": true, "save": true, "whitelist": true, "difficulty": true, "time": true, "weather": true, "pvp": true, "gamerule": true}
+var gameActions = map[string]bool{"lobby-build": true, "arena-save": true, "arena-delete": true, "arena-start": true, "arena-practice-start": true, "arena-stop": true, "arena-announce": true, "arena-reload": true, "arena-join": true, "arena-leave": true, "arena-ban": true, "arena-kick": true, "arena-unban": true, "ww-config-get": true, "ww-config-save": true, "ww-start": true, "ww-stop": true, "ww-practice-start": true, "gamemode": true, "restore-inventory": true, "heal": true, "feed": true, "clear-effects": true, "teleport-spawn": true, "set-spawn": true, "kick": true, "ban": true, "pardon": true, "pardon-name": true, "whitelist-add": true, "whitelist-remove": true, "broadcast": true, "save": true, "whitelist": true, "difficulty": true, "time": true, "weather": true, "pvp": true, "gamerule": true}
 
 func ValidGameAction(action string) bool { return gameActions[action] }
 func (s *Server) gameProxy(w http.ResponseWriter, r *http.Request, id, method, path string, body io.Reader) {
@@ -152,7 +152,7 @@ func (s *Server) gameRoutes(mux *http.ServeMux) {
 		lock.Lock()
 		defer lock.Unlock()
 		path := "/action"
-		if strings.HasPrefix(action, "arena-") {
+		if strings.HasPrefix(action, "arena-") || strings.HasPrefix(action, "ww-") {
 			path = "/arenas/action"
 		}
 		s.gameProxy(w, r, id, "POST", path, bytes.NewReader(body))
