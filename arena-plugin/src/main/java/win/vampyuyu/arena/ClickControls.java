@@ -34,7 +34,13 @@ final class ClickControls implements Listener {
           Map.entry("bind", new Look(Material.ARROW, "Bind the lovers", "Right-click: unite the two you picked")),
           Map.entry("shoot", new Look(Material.BOW, "Shoot", "Right-click: fire at the player you picked")),
           Map.entry("protect-self", new Look(Material.SHIELD, "Protect yourself", "Right-click: guard yourself tonight")),
-          Map.entry("infect", new Look(Material.ROTTEN_FLESH, "Infect", "Right-click: tonight's victim becomes a wolf")));
+          Map.entry("infect", new Look(Material.ROTTEN_FLESH, "Infect", "Right-click: tonight's victim becomes a wolf")),
+          Map.entry("pass", new Look(Material.RED_BED, "Go back to sleep", "Right-click: end your turn")),
+          Map.entry("live", new Look(Material.LIME_DYE, "Thumbs up", "Right-click: let the accused live")),
+          Map.entry("die", new Look(Material.RED_DYE, "Thumbs down", "Right-click: eliminate the accused")),
+          Map.entry("let", new Look(Material.PAPER, "Let it pass", "Right-click: do nothing")),
+          Map.entry("sacrifice", new Look(Material.TOTEM_OF_UNDYING, "Sacrifice yourself", "Right-click: take the condemned player's place")),
+          Map.entry("stir", new Look(Material.FIREWORK_ROCKET, "Stir up trouble", "Right-click: two eliminations tomorrow")));
 
   private static final double RANGE = 48;
 
@@ -74,8 +80,10 @@ final class ClickControls implements Listener {
     for (int slot = 0; slot < 9; slot++) if (control(inventory.getItem(slot))) inventory.setItem(slot, null);
     int slot = 0;
     for (var entry : abilities.entrySet()) {
-      Look look = LOOKS.get(entry.getKey());
-      if (look == null || slot >= 8) continue;
+      // A button a role module added without a look of its own is a paper with its label.
+      Look look =
+          LOOKS.getOrDefault(entry.getKey(), new Look(Material.PAPER, entry.getValue(), "Right-click to use"));
+      if (slot >= 8) continue;
       ItemStack item = CompassGUI.item(look.material(), look.title(), entry.getValue(), look.lore());
       var meta = item.getItemMeta();
       meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, entry.getKey());

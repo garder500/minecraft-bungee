@@ -90,6 +90,8 @@ final class WerewolfPresentation {
       return switch (phase) {
         case "DISCUSSION" -> new Boss(head + "Debate · " + clock(seconds), VILLAGER, true);
         case "DAY_VOTE" -> new Boss(head + "Village vote · " + clock(seconds), VOTE, true);
+        case "DEFENSE" -> new Boss(head + "The accused speaks · " + clock(seconds), VOTE, true);
+        case "TRIAL" -> new Boss(head + "Thumbs up or down · " + clock(seconds), VOTE, true);
         case "MARTYR" ->
             new Boss(head + "The Martyr may step in · " + clock(seconds), color("MARTYR"), true);
         default ->
@@ -111,9 +113,12 @@ final class WerewolfPresentation {
       String time = " · " + clock(seconds);
       String role = turnRole(phase);
       if (role == null)
-        return phase.equals("DAY_VOTE")
-            ? new Line("☀ Village vote" + time, VOTE)
-            : new Line("☀ Debate" + time, VILLAGER);
+        return switch (phase) {
+          case "DAY_VOTE" -> new Line("☀ Village vote" + time, VOTE);
+          case "DEFENSE" -> new Line("☀ The accused speaks" + time, VOTE);
+          case "TRIAL" -> new Line("☀ Thumbs up or down" + time, VOTE);
+          default -> new Line("☀ Debate" + time, VILLAGER);
+        };
       String moon = game.night() ? "☾ " : "☀ ";
       if (game.actors().contains(viewer)) return new Line(moon + "Your turn" + time, color(role));
       String turn =
@@ -175,10 +180,32 @@ final class WerewolfPresentation {
   }
 
   static String deathLine(String name, String role) {
-    return name
-        + " has died — they were "
-        + (role.equals("WEREWOLF") ? "a Werewolf" : "the " + roleLabel(role))
-            .replace("the Villager", "a Villager");
+    return deathLine(name, role, "FULL");
+  }
+
+  /** What a death tells the table, by the arena's reveal setting: FULL role, TEAM, WOLF or NONE. */
+  static String deathLine(String name, String role, String reveal) {
+    String what = revealed(role, reveal);
+    return name + " has died" + (what.isEmpty() ? "" : " — they were " + what);
+  }
+
+  /** The words for what a dead player was ("the Seer", "on the village's side", ""). */
+  static String revealed(String role, String reveal) {
+    return switch (reveal == null ? "FULL" : reveal) {
+      case "TEAM" ->
+          switch (RoleInfo.of(role).team()) {
+            case "wolves" -> "on the wolves' side";
+            case "vampires" -> "on the vampires' side";
+            case "cult" -> "on the cult's side";
+            case "solo" -> "on nobody's side";
+            default -> "on the village's side";
+          };
+      case "WOLF" -> WerewolfGame.isWolf(role) ? "a werewolf" : "not a werewolf";
+      case "NONE" -> "";
+      default ->
+          (role.equals("WEREWOLF") ? "a Werewolf" : "the " + roleLabel(role))
+              .replace("the Villager", "a Villager");
+    };
   }
 
   static String wakeLine(String phase) {
@@ -237,6 +264,8 @@ final class WerewolfPresentation {
           switch (phase) {
             case "DISCUSSION" -> "Day · Discussion";
             case "DAY_VOTE" -> "Day · Voting";
+            case "DEFENSE" -> "Day · Defense";
+            case "TRIAL" -> "Day · Trial";
             case "CUPID" -> "Cupid's choice";
             case "GUARD" -> "Guard's turn";
             case "SEER" -> "Seer's turn";
@@ -254,6 +283,8 @@ final class WerewolfPresentation {
               ? switch (phase) {
                 case "DISCUSSION" -> "Talk it over: who are the wolves?";
                 case "DAY_VOTE" -> "Right-click a player to vote, or use Skip";
+                case "DEFENSE" -> "The accused speaks: the thumbs come next";
+                case "TRIAL" -> "Thumbs up to let them live, thumbs down to eliminate them";
                 case "CUPID" -> "Right-click two players, then use Bind";
                 case "GUARD" -> "Right-click a player to protect them tonight";
                 case "SEER" -> "Right-click a player to see their role";

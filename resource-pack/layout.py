@@ -151,7 +151,7 @@ HUD_NEG_BASE = 0xF000    # negative-advance twin of every sprite: sprite index +
 HUD_PHASE_WORDS = unique(
     (r["call"]["label"] for r in roles().values() if "call" in r),
     ["DEBATE", "VOTE", "SLEEPING", "CUPID AWAKE", "GUARD AWAKE", "SEER AWAKE",
-     "WOLVES HUNT", "WITCH AWAKE", "LAST SHOT", "GAME OVER", "WAITING"])
+     "WOLVES HUNT", "WITCH AWAKE", "LAST SHOT", "GAME OVER", "WAITING", "DEFENSE", "TRIAL"])
 HUD_ROLE_WORDS = unique((r["word"] for r in roles().values()), []) + ["FALLEN"]
 HUD_TEAM_WORDS = unique((team_word(r) for r in roles().values()), []) + ["OUT"]
 HUD_TOP_ICONS = ["moon", "sun", "vote"]

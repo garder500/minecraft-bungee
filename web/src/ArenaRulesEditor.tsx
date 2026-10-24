@@ -1,4 +1,5 @@
 import type { Config } from "./Arenas";
+import { werewolfRoles } from "./werewolfRoles";
 
 export type WerewolfRules = {
   roles: Record<string, number>;
@@ -6,6 +7,11 @@ export type WerewolfRules = {
   witchSeconds: number;
   hunterSeconds: number;
   ambienceEnabled?: boolean;
+  reveal?: string;
+  ballots?: string;
+  dice?: boolean;
+  amulet?: boolean;
+  voting?: string;
 };
 export type FreeplayRules = {
   objective: string;
@@ -26,6 +32,11 @@ export const defaultWerewolf: WerewolfRules = {
   witchSeconds: 15,
   hunterSeconds: 15,
   ambienceEnabled: true,
+  reveal: "FULL",
+  ballots: "OPEN",
+  dice: false,
+  amulet: false,
+  voting: "POINT",
 };
 export const defaultFreeplay: FreeplayRules = {
   objective: "SANDBOX",
@@ -41,20 +52,13 @@ export const defaultFreeplay: FreeplayRules = {
   instructions:
     "Enjoy the arena. Use your compass to follow the game or leave.",
 };
-const roles = [
-  ["WEREWOLF", "Werewolf", "Hunt with the pack until no villager is left.", "☾"],
-  [
-    "VILLAGER",
-    "Villager",
-    "Find the wolves through discussion and voting.",
-    "♙",
-  ],
-  ["SEER", "Seer", "Privately inspect one role every night.", "✧"],
-  ["CUPID", "Cupid", "Bind two lovers; their fates stay linked.", "♡"],
-  ["HUNTER", "Hunter", "Take a final shot when eliminated.", "➶"],
-  ["WITCH", "Witch", "One healing potion and one poison per game.", "⚗"],
-  ["GUARD", "Guard", "Protect a player each night, alternating targets.", "◇"],
-] as const;
+const teamNames: Record<string, string> = {
+  village: "Village team",
+  wolves: "Wolves' side",
+  vampires: "Vampires",
+  cult: "The cult",
+  solo: "Playing alone",
+};
 export function ArenaRulesEditor({
   config,
   onPatch,
@@ -70,7 +74,7 @@ export function ArenaRulesEditor({
     const minimum = Math.max(
       4,
       sum,
-      (next.WEREWOLF || 1) * 2 + 1,
+      ((next.WEREWOLF || 0) + (next.VAMPIRE || 0) + (next.LONE_WOLF || 0) || 1) * 2 + 1,
       config.minPlayers,
     );
     onPatch({
@@ -176,39 +180,52 @@ export function ArenaRulesEditor({
             </label>
           </div>
           <p className="console-note">
-            Automatic casting scales wolves with player count, adds a Seer, then
+            Automatic casting follows the rulebook: one wolf up to 8 players, two
+            up to 11, three up to 15, then one per five. It adds a Seer, then
             the Witch from 6 players, the Hunter from 7, Cupid from 8 and the
-            Guard from 10. Custom casting fills any remaining places with
+            Guard from 10, and keeps adding village roles on bigger tables.
+            Vampires, the cult leader, the lone wolf, the hoodlum and the tanner
+            only join a custom cast, which fills any remaining places with
             villagers.
           </p>
-          <div className="arena-role-grid">
-            {roles.map(([id, name, description, icon]) => (
-              <label key={id} className="arena-role-card">
-                <span aria-hidden="true">{icon}</span>
-                <strong>{name}</strong>
-                <small>{description}</small>
-                {automatic ? (
-                  <b>Automatic</b>
-                ) : (
-                  <input
-                    type="number"
-                    aria-label={`${name} count`}
-                    value={ww.roles[id] || 0}
-                    min={id === "WEREWOLF" ? 1 : 0}
-                    max={id === "WEREWOLF" || id === "VILLAGER" ? 20 : 1}
-                    onChange={(e) =>
-                      cast({ ...ww.roles, [id]: Number(e.target.value) })
-                    }
-                  />
-                )}
-              </label>
-            ))}
-          </div>
+          {Object.keys(teamNames).map((team) => (
+            <div key={team}>
+              <span className="eyebrow">{teamNames[team].toUpperCase()}</span>
+              <div className="arena-role-grid">
+                {werewolfRoles
+                  .filter((role) => role.team === team)
+                  .map(({ id, name, blurb, icon, max, impact }) => (
+                    <label key={id} className="arena-role-card">
+                      <span aria-hidden="true">{icon}</span>
+                      <strong>{name}</strong>
+                      <small>
+                        {blurb} <i>Balance {impact > 0 ? "+" : ""}{impact}</i>
+                      </small>
+                      {automatic ? (
+                        <b>Automatic</b>
+                      ) : (
+                        <input
+                          type="number"
+                          aria-label={`${name} count`}
+                          value={ww.roles[id] || 0}
+                          min={0}
+                          max={max}
+                          onChange={(e) =>
+                            cast({ ...ww.roles, [id]: Number(e.target.value) })
+                          }
+                        />
+                      )}
+                    </label>
+                  ))}
+              </div>
+            </div>
+          ))}
           {!automatic && (
             <p className="console-note">
               {Object.values(ww.roles).reduce((a, b) => a + b, 0)} assigned
-              roles · minimum {config.minPlayers} players. Wolves must start in
-              the minority.
+              roles · minimum {config.minPlayers} players. Killers (wolves,
+              vampires) must start in the minority. Balance adds up the roles'
+              weights: aim for about zero.
             </p>
           )}
           <div className="arena-form-grid">
@@ -235,6 +252,69 @@ export function ArenaRulesEditor({
                 />
               </label>
             ))}
+          </div>
+          <span className="eyebrow">VARIANTS</span>
+          <div className="arena-form-grid">
+            <label>
+              When someone dies, reveal…
+              <select
+                value={ww.reveal || "FULL"}
+                onChange={(e) =>
+                  onPatch({ werewolf: { ...ww, reveal: e.target.value } })
+                }
+              >
+                <option value="FULL">Their role</option>
+                <option value="TEAM">Only their team</option>
+                <option value="WOLF">Only wolf or not</option>
+                <option value="NONE">Nothing</option>
+              </select>
+            </label>
+            <label>
+              How the village eliminates
+              <select
+                value={ww.voting || "POINT"}
+                onChange={(e) =>
+                  onPatch({ werewolf: { ...ww, voting: e.target.value } })
+                }
+              >
+                <option value="POINT">Everybody points: most votes falls</option>
+                <option value="NOMINATE">
+                  Nominate, second, defend, thumbs up or down
+                </option>
+              </select>
+            </label>
+            <label>
+              Day ballots
+              <select
+                value={ww.ballots || "OPEN"}
+                onChange={(e) =>
+                  onPatch({ werewolf: { ...ww, ballots: e.target.value } })
+                }
+              >
+                <option value="OPEN">Open: everybody sees the count</option>
+                <option value="SECRET">Secret until the vote closes</option>
+              </select>
+            </label>
+            <label className="arena-inline-toggle">
+              <input
+                type="checkbox"
+                checked={!!ww.dice}
+                onChange={(e) =>
+                  onPatch({ werewolf: { ...ww, dice: e.target.checked } })
+                }
+              />
+              Daily dice: a twist every dawn
+            </label>
+            <label className="arena-inline-toggle">
+              <input
+                type="checkbox"
+                checked={!!ww.amulet}
+                onChange={(e) =>
+                  onPatch({ werewolf: { ...ww, amulet: e.target.checked } })
+                }
+              />
+              Amulet of Protection
+            </label>
           </div>
         </>
       ) : (

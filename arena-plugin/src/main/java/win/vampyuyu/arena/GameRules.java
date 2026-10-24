@@ -12,14 +12,50 @@ public final class GameRules {
       int cupidSeconds,
       int witchSeconds,
       int hunterSeconds,
-      Boolean ambienceEnabled) {
+      Boolean ambienceEnabled,
+      String reveal,
+      String ballots,
+      Boolean dice,
+      Boolean amulet,
+      String voting) {
     public Werewolf(
         Map<String, Integer> roles, int cupidSeconds, int witchSeconds, int hunterSeconds) {
       this(roles, cupidSeconds, witchSeconds, hunterSeconds, true);
     }
 
+    public Werewolf(
+        Map<String, Integer> roles,
+        int cupidSeconds,
+        int witchSeconds,
+        int hunterSeconds,
+        Boolean ambienceEnabled) {
+      this(
+          roles, cupidSeconds, witchSeconds, hunterSeconds, ambienceEnabled, "FULL", "OPEN",
+          false, false, "POINT");
+    }
+
+    /** What a death tells the table: FULL role, TEAM only, WOLF or not, or NONE. */
+    public static final List<String> REVEALS = List.of("FULL", "TEAM", "WOLF", "NONE");
+
+    /** How ballots are seen: OPEN (running counts, as in a show of hands) or SECRET until the end. */
+    public static final List<String> BALLOTS = List.of("OPEN", "SECRET");
+
+    /** How the village eliminates: POINT (everybody points, the most pointed at falls) or NOMINATE. */
+    public static final List<String> VOTINGS = List.of("POINT", "NOMINATE");
+
     public Werewolf {
       ambienceEnabled = ambienceEnabled == null ? true : ambienceEnabled;
+      reveal = reveal == null ? "FULL" : reveal.toUpperCase(Locale.ROOT);
+      ballots = ballots == null ? "OPEN" : ballots.toUpperCase(Locale.ROOT);
+      voting = voting == null ? "POINT" : voting.toUpperCase(Locale.ROOT);
+      if (!VOTINGS.contains(voting))
+        throw new IllegalArgumentException("Voting must be one of " + VOTINGS);
+      dice = dice != null && dice;
+      amulet = amulet != null && amulet;
+      if (!REVEALS.contains(reveal))
+        throw new IllegalArgumentException("Reveal must be one of " + REVEALS);
+      if (!BALLOTS.contains(ballots))
+        throw new IllegalArgumentException("Ballots must be one of " + BALLOTS);
       roles = roles == null ? Map.of() : Map.copyOf(roles);
       for (var e : roles.entrySet()) {
         try {

@@ -17,7 +17,7 @@ import org.bukkit.entity.Player;
 final class WwCommand implements CommandExecutor, TabCompleter {
   private static final List<String> ADMIN =
       List.of(
-          "use", "status", "place", "cast", "time", "start", "stop", "practice", "phase", "force",
+          "use", "status", "place", "cast", "time", "rules", "start", "stop", "practice", "phase", "force",
           "check", "reload", "act", "click", "peek", "players", "help");
   private static final Map<String, String> ALIASES =
       Map.ofEntries(
@@ -148,6 +148,7 @@ final class WwCommand implements CommandExecutor, TabCompleter {
         case "place" -> place(sender, args);
         case "cast" -> cast(sender, args);
         case "time" -> time(sender, args);
+        case "rules" -> rules(sender, args);
         case "start" -> {
           plugin.arenas.start(arena(sender));
           say(sender, "Game started");
@@ -348,6 +349,42 @@ final class WwCommand implements CommandExecutor, TabCompleter {
       case "roles" -> say(sender, "Roles: " + Arrays.toString(WerewolfGame.Role.values()));
       default -> throw new IllegalArgumentException("Use set, auto, show or roles");
     }
+  }
+
+  /** The variants of the game: what a death reveals, secret ballots, the daily dice, the amulet. */
+  private void rules(CommandSender sender, String[] args) throws Exception {
+    String id = arena(sender);
+    var w = plugin.arenas.require(id).config.werewolf();
+    if (args.length < 3) {
+      say(sender, "voting " + w.voting() + " · reveal " + w.reveal() + " · ballots " + w.ballots()
+          + " · dice " + (w.dice() ? "on" : "off") + " · amulet " + (w.amulet() ? "on" : "off"));
+      say(sender, "Change with /ww rules voting point|nominate, reveal full|team|wolf|none, ballots open|secret, dice on|off, amulet on|off");
+      return;
+    }
+    String key = args[1].toLowerCase(Locale.ROOT), value = args[2].toLowerCase(Locale.ROOT);
+    switch (key) {
+      case "reveal" -> {
+        if (!GameRules.Werewolf.REVEALS.contains(value.toUpperCase(Locale.ROOT)))
+          throw new IllegalArgumentException("Use full, team, wolf or none");
+        plugin.admin.change(id, j -> j.getAsJsonObject("werewolf").addProperty("reveal", value.toUpperCase(Locale.ROOT)));
+      }
+      case "voting" -> {
+        if (!GameRules.Werewolf.VOTINGS.contains(value.toUpperCase(Locale.ROOT)))
+          throw new IllegalArgumentException("Use point or nominate");
+        plugin.admin.change(id, j -> j.getAsJsonObject("werewolf").addProperty("voting", value.toUpperCase(Locale.ROOT)));
+      }
+      case "ballots" -> {
+        if (!GameRules.Werewolf.BALLOTS.contains(value.toUpperCase(Locale.ROOT)))
+          throw new IllegalArgumentException("Use open or secret");
+        plugin.admin.change(id, j -> j.getAsJsonObject("werewolf").addProperty("ballots", value.toUpperCase(Locale.ROOT)));
+      }
+      case "dice", "amulet" -> {
+        if (!value.equals("on") && !value.equals("off")) throw new IllegalArgumentException("Use on or off");
+        plugin.admin.change(id, j -> j.getAsJsonObject("werewolf").addProperty(key, value.equals("on")));
+      }
+      default -> throw new IllegalArgumentException("Use voting, reveal, ballots, dice or amulet");
+    }
+    say(sender, key + " = " + value);
   }
 
   private void time(CommandSender sender, String[] args) throws Exception {

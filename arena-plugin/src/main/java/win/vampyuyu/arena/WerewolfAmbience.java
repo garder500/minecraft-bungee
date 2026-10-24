@@ -283,9 +283,14 @@ final class WerewolfAmbience {
                         title(
                             target,
                             self ? "☠ You died" : "☠ " + s.players.getOrDefault(dead, "Someone"),
-                            (self ? "You were " : "They were ")
-                                + WerewolfMenus.article(deadRole)
-                                + WerewolfPresentation.roleName(deadRole),
+                            self
+                                ? "You were "
+                                    + WerewolfMenus.article(deadRole)
+                                    + WerewolfPresentation.roleName(deadRole)
+                                : WerewolfPresentation.revealed(deadRole, game.reveal()).isEmpty()
+                                    ? ""
+                                    : "They were "
+                                        + WerewolfPresentation.revealed(deadRole, game.reveal()),
                             TextColor.color(WerewolfPresentation.WEREWOLF));
                         if (!enabled || !sting) return;
                         if (shot) cue(target, "shot", Sound.ENTITY_GENERIC_EXPLODE, .25f, 1.6f);
@@ -461,7 +466,9 @@ final class WerewolfAmbience {
           && s.revealed.add(entry.getKey()))
         lines.add(
             Component.text(
-                "☠ " + WerewolfPresentation.deathLine(entry.getValue(), game.role(entry.getKey())),
+                "☠ "
+                    + WerewolfPresentation.deathLine(
+                        entry.getValue(), game.role(entry.getKey()), game.reveal()),
                 TextColor.color(WerewolfPresentation.WEREWOLF)));
     return lines;
   }

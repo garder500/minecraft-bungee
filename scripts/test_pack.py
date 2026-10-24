@@ -106,6 +106,11 @@ class PackTest(unittest.TestCase):
                 for field in ("label", "title", "subtitle", "instruction"):
                     self.assertTrue(call.get(field), f"{role}.call.{field}")
 
+    def test_panel_role_list_is_generated_from_the_role_files(self):
+        import subprocess
+        result = subprocess.run([sys.executable, str(ROOT / "scripts/gen_roles_ts.py"), "--check"])
+        self.assertEqual(result.returncode, 0, "run: python3 scripts/gen_roles_ts.py")
+
     def test_every_role_has_an_icon_svg(self):
         for role, info in layout.roles().items():
             self.assertTrue((ROOT / "resource-pack/art/icons" / f"{info['icon']}.svg").is_file(),

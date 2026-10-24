@@ -290,7 +290,14 @@ def player_state(rcon):
     return {"pos": nums, "mode": mode.split(":")[-1].strip()}
 
 
-NIGHT = {"CUPID", "GUARD", "SEER", "NIGHT", "WITCH"}
+def _call_phases():
+    """The night calls of the roles of the Ultimate Werewolf set, from the plugin's role files."""
+    roles = ROOT / "arena-plugin/src/main/resources/roles"
+    return {json.loads(f.read_text())["call"]["phase"] for f in roles.glob("*.json")
+            if "call" in json.loads(f.read_text()) and json.loads(f.read_text())["call"]["phase"] != "MARTYR"}
+
+
+NIGHT = {"CUPID", "GUARD", "SEER", "NIGHT", "WITCH"} | _call_phases()
 
 
 def journal_text():
@@ -507,7 +514,7 @@ def roles_scenario(ctx, only):
         rcon.command("ww force clear")
         rcon.command(f"ww force E2EBot {FORCED.get(role, role)}")
         api("POST", "/arenas/action", {"action": "arena-practice-start", "arenaId": "e2e", "uuid": me, "botCount": 11})
-        if not wait_phase({"CUPID", "SEER", "NIGHT", "GUARD", "DISCUSSION"}, 40):
+        if not wait_phase({"CUPID", "SEER", "NIGHT", "GUARD", "DISCUSSION"} | NIGHT, 40):
             failures.append(f"{role}: the game did not start ({out.strip()[:120]})")
             continue
         roles = peek(rcon)

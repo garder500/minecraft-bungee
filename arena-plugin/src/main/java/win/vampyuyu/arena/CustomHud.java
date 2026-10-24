@@ -198,11 +198,18 @@ final class CustomHud {
             : boss.color() == WerewolfPresentation.INK_DIM
                 ? "sleep"
                 : turn != null ? RoleInfo.of(turn).palette()
-                : phase.equals("DAY_VOTE") ? "vote" : "villager";
+                : phase.equals("DAY_VOTE") || phase.equals("TRIAL") ? "vote" : "villager";
     String label;
     if (phase.equals("FINISHED")) label = "game over";
     else if (phase.equals("HUNTER_SHOT")) label = night && !actor ? "sleeping" : "last shot";
-    else if (!night) label = phase.equals("DAY_VOTE") ? "vote" : "debate";
+    else if (!night)
+      label =
+          switch (phase) {
+            case "DAY_VOTE" -> "vote";
+            case "DEFENSE" -> "defense";
+            case "TRIAL" -> "trial";
+            default -> "debate";
+          };
     else if (!actor) label = "sleeping";
     else
       label =

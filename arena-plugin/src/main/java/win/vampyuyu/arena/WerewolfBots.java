@@ -127,6 +127,8 @@ final class WerewolfBots {
         witch(game, bot, log);
       }
       case "DAY_VOTE" -> dayVote(game, bot, log);
+      case "DISCUSSION" -> nominate(game, bot, log);
+      case "TRIAL" -> trial(game, bot, log);
       case "HUNTER_SHOT" -> {
         List<UUID> pool = new ArrayList<>(game.alive());
         pool.remove(game.partner(bot));
@@ -202,6 +204,41 @@ final class WerewolfBots {
       target = leader;
     if (target == null) target = pick(pool, List.of());
     vote(game, bot, target, log, "votes against");
+  }
+
+  /** Nominated voting, during the debate: a bot seconds a nomination it likes or makes its own. */
+  private void nominate(WerewolfGame game, UUID bot, List<Action> log) {
+    if (!game.nominating() || game.exiled(bot) || !game.alive().contains(bot)) return;
+    List<UUID> pool = suspects(game, bot);
+    UUID pending = game.nominee();
+    if (pending != null) {
+      if (!pending.equals(bot) && pool.contains(pending) && random.nextInt(100) < 80) {
+        game.select(bot, pending);
+        log.add(new Action(bot, game.role(bot), "seconds the nomination of " + pending));
+      }
+      return;
+    }
+    if (pool.isEmpty() || random.nextInt(100) >= 60) return;
+    UUID known = knownWolf(game, bot);
+    UUID target = known != null && pool.contains(known) ? known : pick(pool, List.of());
+    if (target == null) return;
+    game.select(bot, target);
+    log.add(new Action(bot, game.role(bot), "nominates " + target));
+  }
+
+  /** Nominated voting, the trial: thumbs down on a suspect, up on friends. */
+  private void trial(WerewolfGame game, UUID bot, List<Action> log) {
+    UUID accused = game.nominee();
+    if (accused == null || accused.equals(bot) || !game.alive().contains(bot)) return;
+    boolean friend = accused.equals(game.partner(bot)) || game.pack(bot).contains(accused);
+    UUID known = knownWolf(game, bot);
+    boolean die =
+        accused.equals(known)
+            || !friend && suspects(game, bot).contains(accused) && random.nextInt(100) < 55;
+    String ability = die ? "die" : "live";
+    if (!game.abilities(bot).containsKey(ability)) return;
+    game.use(bot, ability);
+    log.add(new Action(bot, game.role(bot), "gives a thumb " + (die ? "down" : "up")));
   }
 
   /** Whom this bot could vote out: never itself, its lover, its pack or a villager it saw. */

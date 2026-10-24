@@ -42,8 +42,11 @@ public class ExpandedGameTest {
     assertEquals(Map.of("WEREWOLF", 1L, "SEER", 1L, "VILLAGER", 2L), cast(4));
     assertEquals(Map.of("WEREWOLF", 1L, "SEER", 1L, "WITCH", 1L, "VILLAGER", 3L), cast(6));
     assertEquals(
-        Map.of("WEREWOLF", 2L, "SEER", 1L, "WITCH", 1L, "HUNTER", 1L, "CUPID", 1L, "VILLAGER", 2L),
-        cast(8));
+        Map.of("WEREWOLF", 1L, "SEER", 1L, "WITCH", 1L, "HUNTER", 1L, "CUPID", 1L, "VILLAGER", 3L),
+        cast(8)); // the rulebook: one wolf up to eight players, two up to eleven, three up to fifteen
+    assertEquals(2L, cast(11).get("WEREWOLF").longValue());
+    assertEquals(3L, cast(15).get("WEREWOLF").longValue());
+    assertEquals(3L, cast(16).get("WEREWOLF").longValue());
     assertEquals(3L, cast(10).get("VILLAGER").longValue());
   }
 
