@@ -466,9 +466,27 @@ final class WerewolfAmbience {
     return lines;
   }
 
+  /** Practice bots wear their ballots like players do: "[Bot] Guest 2 · ✖ 3 votes" during a vote. */
+  private void nameBodies(ArenaSession s, WerewolfGame game) {
+    boolean voting = game.phase().equals("DAY_VOTE");
+    Map<UUID, Integer> totals = voting ? game.votes(s.players.keySet().iterator().next()) : Map.of();
+    for (var body : s.bodies.entrySet()) {
+      int votes = totals.getOrDefault(body.getKey(), 0);
+      String base = s.players.getOrDefault(body.getKey(), "Bot");
+      Component name =
+          votes == 0
+              ? Component.text(base)
+              : Component.text(base + " · ", NamedTextColor.WHITE)
+                  .append(Component.text("✖ " + votes + (votes == 1 ? " vote" : " votes"), TextColor.color(VOTE.value())));
+      var entity = body.getValue();
+      entity.getScheduler().run(plugin, t -> entity.customName(name), null);
+    }
+  }
+
   void tick(ArenaSession s) {
     if (!(s.game instanceof WerewolfGame) || s.stopping || s.finishing || !s.presentation.isDone())
       return;
+    if (s.game instanceof WerewolfGame wolf && !s.bodies.isEmpty() && !s.players.isEmpty()) nameBodies(s, wolf);
     boolean pulse = System.currentTimeMillis() >= s.nextHeartbeatAt;
     if (pulse) s.nextHeartbeatAt = System.currentTimeMillis() + 4000;
     String event = s.eventId;
@@ -491,39 +509,51 @@ final class WerewolfAmbience {
 
   /** Action bar: what to do now, who the crosshair is on, and the screen effect's marker glyph. */
   private Component actionBar(ArenaSession s, Player p, WerewolfGame game, long now) {
-    var view = WerewolfPresentation.view(game, p.getUniqueId());
-    int color =
-        view.actor()
-            ? WerewolfPresentation.color(game.role(p.getUniqueId()))
-            : WerewolfPresentation.INK_DIM;
-    Component bar = Component.text(view.instruction(), TextColor.color(color));
+    UUID me = p.getUniqueId();
+    var view = WerewolfPresentation.view(game, me);
+    int color = view.actor() ? WerewolfPresentation.color(game.role(me)) : WerewolfPresentation.INK_DIM;
+    boolean skinned = plugin.skin != null && plugin.skin.active(p);
+    Component bar = Component.empty();
+    // The screen effect comes first so everything after it (text, HUD) is drawn on top of it.
+    boolean asleep = game.sleeping(me);
+    int fx = asleep ? 4 : s.config.werewolf().ambienceEnabled() ? WerewolfPresentation.fx(game.night(), now - s.dawnAt) : 0;
+    if (skinned && fx > 0)
+      bar =
+          bar.append(
+              Component.text(
+                      WerewolfPresentation.FX_GLYPH + WerewolfPresentation.FX_BACK,
+                      TextColor.color(WerewolfPresentation.fxColor(fx)))
+                  .font(FX_FONT));
+    bar = bar.append(Component.text(view.instruction(), TextColor.color(color)));
     if (view.actor() && plugin.controls != null) {
       Component aim = plugin.controls.target(p, s);
       if (aim != null) bar = bar.append(aim);
     }
-    boolean skinned = plugin.skin != null && plugin.skin.active(p);
+    Component vote = voteLine(s, game, me);
+    if (vote != null) bar = bar.append(vote);
     if (skinned && plugin.customHud != null) {
       long seconds = Math.max(0, (s.phaseEndsAt - now + 999) / 1000);
       // The HUD glyphs are placed by the core shader and take no room in the bar.
       bar =
           bar.append(
               plugin.customHud.render(
-                  CustomHud.of(game, p.getUniqueId(), seconds, s.players.size(), now >= s.cardsTurnAt),
+                  CustomHud.of(game, me, seconds, s.players.size(), now >= s.cardsTurnAt),
                   CustomHud.mode(plugin.hudSize(p))));
     }
-    int fx = WerewolfPresentation.fx(game.night(), now - s.dawnAt);
-    if (fx > 0
-        && s.config.werewolf().ambienceEnabled()
-        && plugin.skin != null
-        && plugin.skin.active(p))
-      // The core shader stretches this glyph over the whole screen (rendertype_text.vsh).
-      bar =
-          bar.append(
-              Component.text(
-                      WerewolfPresentation.FX_GLYPH,
-                      TextColor.color(WerewolfPresentation.fxColor(fx)))
-                  .font(FX_FONT));
     return bar;
+  }
+
+  /** "Voted: Alex" in the action bar: who the player's current ballot is for (day vote, wolves' hunt). */
+  private Component voteLine(ArenaSession s, WerewolfGame game, UUID me) {
+    String phase = game.phase();
+    boolean voting = phase.equals("DAY_VOTE") || phase.equals("NIGHT") && game.packMember(me);
+    if (!voting || !game.alive().contains(me)) return null;
+    UUID ballot = game.ballot(me);
+    if (ballot != null)
+      return Component.text(
+          "  ✔ Your vote: " + s.players.getOrDefault(ballot, "?"), TextColor.color(WerewolfPresentation.OK));
+    if (game.abstained(me)) return Component.text("  ✔ You skipped", TextColor.color(WerewolfPresentation.INK_MUTED));
+    return null;
   }
 
   /** Refreshes the action bar several times a second so the crosshair target feels live. */

@@ -17,8 +17,8 @@ final class CustomHud {
   static final Key FONT = Key.key("vampyuyu", "hud2");
   private static final int ID_BASE = 100;
   private static final int SPRITE_BASE = 0xE000, NEG_BASE = 0xF000;
-  /** Most pips drawn in the panel (resource-pack/layout.py HUD_PIPS). */
-  static final int PIPS = 20;
+  /** Seats drawn in the panel's table strip (resource-pack/layout.py HUD_SEATS) and badge slots. */
+  static final int SEATS = 20, BADGES = 4;
 
   private final Map<String, Integer> sprites = new HashMap<>();
   private final Map<String, Integer> elements = new HashMap<>();
@@ -52,7 +52,9 @@ final class CustomHud {
       String teamWord,
       String rolePalette,
       int alive,
-      int total) {}
+      int total,
+      List<String> seats,
+      List<String> badges) {}
 
   /** HUD sizes by name: the red channel of the glyphs (78 follows the window, 79 full, 80 medium, 81 small). */
   static int mode(String size) {
@@ -110,10 +112,11 @@ final class CustomHud {
       out = out.append(bigDigit(mode, "a1", alive.charAt(0))).append(bigDigit(mode, "a2", alive.charAt(1)));
       out = out.append(glyph(mode, "aslash", "dslash", 0));
       out = out.append(bigDigit(mode, "a3", total.charAt(0))).append(bigDigit(mode, "a4", total.charAt(1)));
-      int pips = Math.max(1, Math.min(PIPS, s.total()));
-      int live = s.total() > PIPS ? (int) Math.ceil(s.alive() * (double) PIPS / s.total()) : s.alive();
-      out = out.append(glyph(mode, "ptotal", "pipsdark_" + pips, 0));
-      if (live > 0) out = out.append(glyph(mode, "palive", "pipslive_" + Math.min(pips, live), 0));
+      // The table strip: one dot per seat, in seat order.
+      for (int i = 0; i < Math.min(SEATS, s.seats().size()); i++)
+        out = out.append(glyph(mode, "m" + i, "dot_" + s.seats().get(i), 0));
+      for (int i = 0; i < Math.min(BADGES, s.badges().size()); i++)
+        out = out.append(glyph(mode, "b" + i, "badge_" + s.badges().get(i), 0));
     }
     return out;
   }
@@ -136,6 +139,36 @@ final class CustomHud {
       case WerewolfPresentation.VOTE -> "vote";
       default -> "villager";
     };
+  }
+
+  /** The table strip for one viewer: dead, themselves, their ballot, their pack mates and lover, the rest. */
+  static List<String> seats(WerewolfGame game, UUID viewer) {
+    List<UUID> order = game.seatOrder();
+    UUID ballot = game.ballot(viewer);
+    UUID lover = game.lover(viewer);
+    var pack = game.pack(viewer);
+    List<String> out = new ArrayList<>();
+    for (UUID p : order) {
+      out.add(
+          !game.alive().contains(p) ? "dead"
+              : p.equals(viewer) ? "me"
+              : p.equals(ballot) ? "ballot"
+              : pack.contains(p) || p.equals(lover) ? "mate"
+              : "alive");
+    }
+    return out;
+  }
+
+  /** What the viewer carries: their bond, potions left, infection, last guarded player. */
+  static List<String> badges(WerewolfGame game, UUID viewer) {
+    List<String> out = new ArrayList<>();
+    if (!game.alive().contains(viewer)) return out;
+    if (game.inLove(viewer)) out.add("lover");
+    if (game.lifePotion(viewer)) out.add("life");
+    if (game.deathPotion(viewer)) out.add("death");
+    if (game.infectLeft(viewer)) out.add("infect");
+    if (game.lastProtected(viewer) != null) out.add("guard");
+    return out;
   }
 
   /** The state for a viewer of a werewolf game, from the same rules as the vanilla bossbar. */
@@ -179,6 +212,8 @@ final class CustomHud {
         team,
         rolePalette,
         game.alive().size(),
-        total);
+        total,
+        seats(game, viewer),
+        badges(game, viewer));
   }
 }

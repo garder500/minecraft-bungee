@@ -11,7 +11,7 @@ import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 
 /**
- * /ww: werewolf management. Admins set the places (seats, vote circle, den, night spots), the cast
+ * /ww: werewolf management. Admins set the places (seats, vote circle), the cast
  * and the timers, start and stop games, and drive practice games and tests; players only vote.
  */
 final class WwCommand implements CommandExecutor, TabCompleter {
@@ -73,7 +73,7 @@ final class WwCommand implements CommandExecutor, TabCompleter {
     throw new IllegalArgumentException("Nobody called " + token + " in this arena");
   }
 
-  private ArenaConfig.Spawn here(CommandSender sender, String[] args, int from, String id) {
+  private ArenaConfig.Spawn here(CommandSender sender, String[] args, int from, String id, boolean sit) {
     if (args.length >= from + 3) {
       double x = Double.parseDouble(args[from]);
       double y = Double.parseDouble(args[from + 1]);
@@ -81,7 +81,12 @@ final class WwCommand implements CommandExecutor, TabCompleter {
       float yaw = args.length > from + 3 ? Float.parseFloat(args[from + 3]) : 0f;
       return new ArenaConfig.Spawn(x, y, z, yaw, 0f);
     }
-    if (sender instanceof Player p) return plugin.admin.point(p, id);
+    if (sender instanceof Player p) {
+      plugin.admin.point(p, id); // checks the arena and the world
+      var looked = p.getTargetBlockExact(10);
+      if (looked != null) return PlaceController.onBlock(looked, sit);
+      return plugin.admin.point(p, id);
+    }
     throw new IllegalArgumentException("From the console give coordinates: <x> <y> <z> [yaw]");
   }
 
@@ -158,7 +163,7 @@ final class WwCommand implements CommandExecutor, TabCompleter {
     for (String line :
         List.of(
             "/ww use <arena> · status · check · reload",
-            "/ww place add seat <sit|stand> [name] [x y z yaw] · set circle|den [x y z] · night add|clear",
+            "/ww place add seat <sit|stand> [name] [x y z yaw] · set circle [x y z]   (look at a block, or give coordinates)",
             "/ww place list · remove <name> · tp <name> · clear",
             "/ww cast set wolf:2 alpha:1 seer:1 ... · auto · show · roles",
             "/ww time set discussion|vote|night|cupid|witch|hunter <seconds>",
@@ -198,7 +203,7 @@ final class WwCommand implements CommandExecutor, TabCompleter {
     say(
         sender,
         "Places: " + p.seats().size() + " seats, circle " + (p.circle() != null ? "set" : "missing")
-            + ", den " + (p.den() != null ? "set" : "missing") + ", night spots " + p.night().size());
+            );
     say(sender, "Cast: " + (c.werewolf().roles().isEmpty() ? "automatic" : c.werewolf().roles()));
     say(
         sender,
@@ -229,7 +234,7 @@ final class WwCommand implements CommandExecutor, TabCompleter {
   // ------------------------------------------------------------------- places
 
   private void place(CommandSender sender, String[] args) throws Exception {
-    need(args, 2, "/ww place add|set|night|list|remove|tp|clear");
+    need(args, 2, "/ww place add|set|list|remove|tp|clear");
     String id = arena(sender);
     ArenaConfig c = plugin.arenas.require(id).config;
     switch (args[1].toLowerCase(Locale.ROOT)) {
@@ -245,7 +250,7 @@ final class WwCommand implements CommandExecutor, TabCompleter {
           name = args[4];
           coordsAt = 5;
         } else while (names.contains(name)) name = "seat-" + (++next);
-        var at = here(sender, args, coordsAt, id);
+        var at = here(sender, args, coordsAt, id, sit);
         final String chosen = name;
         plugin.admin.change(
             id,
@@ -256,30 +261,17 @@ final class WwCommand implements CommandExecutor, TabCompleter {
         say(sender, "Seat " + chosen + (sit ? " (sit)" : " (stand)") + " added: " + (c.places().seats().size() + 1) + " seats");
       }
       case "set" -> {
-        need(args, 3, "/ww place set circle|den [x y z]");
-        String field = args[2].toLowerCase(Locale.ROOT);
-        if (!field.equals("circle") && !field.equals("den"))
-          throw new IllegalArgumentException("Use circle or den");
-        var at = here(sender, args, 3, id);
-        plugin.admin.change(id, j -> j.getAsJsonObject("places").add(field, ArenaManager.JSON.toJsonTree(at)));
-        say(sender, field + " set");
-      }
-      case "night" -> {
-        need(args, 3, "/ww place night add [x y z]|clear");
-        if (args[2].equalsIgnoreCase("clear"))
-          plugin.admin.change(id, j -> j.getAsJsonObject("places").add("night", new com.google.gson.JsonArray()));
-        else {
-          var at = here(sender, args, 3, id);
-          plugin.admin.change(
-              id, j -> j.getAsJsonObject("places").getAsJsonArray("night").add(ArenaManager.JSON.toJsonTree(at)));
-        }
-        say(sender, "Night spots: " + plugin.arenas.require(id).config.places().night().size());
+        need(args, 3, "/ww place set circle [x y z]");
+        if (!args[2].equalsIgnoreCase("circle")) throw new IllegalArgumentException("Use circle");
+        var at = here(sender, args, 3, id, false);
+        plugin.admin.change(id, j -> j.getAsJsonObject("places").add("circle", ArenaManager.JSON.toJsonTree(at)));
+        say(sender, "circle set");
       }
       case "list" -> {
         var p = c.places();
         for (var seat : p.seats())
           say(sender, seat.name() + " " + (seat.sit() ? "sit" : "stand") + " " + coords(seat.at()));
-        say(sender, "circle " + (p.circle() == null ? "-" : coords(p.circle())) + " · den " + (p.den() == null ? "-" : coords(p.den())) + " · night " + p.night().size());
+        say(sender, "circle " + (p.circle() == null ? "-" : coords(p.circle())));
       }
       case "remove" -> {
         need(args, 3, "/ww place remove <name>");
@@ -309,7 +301,7 @@ final class WwCommand implements CommandExecutor, TabCompleter {
         plugin.admin.change(id, j -> j.add("places", ArenaManager.JSON.toJsonTree(ArenaConfig.Places.defaults())));
         say(sender, "Places cleared");
       }
-      default -> throw new IllegalArgumentException("Use add, set, night, list, remove, tp or clear");
+      default -> throw new IllegalArgumentException("Use add, set, list, remove, tp or clear");
     }
   }
 
@@ -456,7 +448,7 @@ final class WwCommand implements CommandExecutor, TabCompleter {
       return all.stream().filter(x -> x.startsWith(args[0].toLowerCase(Locale.ROOT))).toList();
     }
     if (args.length == 2 && args[0].equalsIgnoreCase("hud")) return List.of("auto", "large", "medium", "small");
-    if (args.length == 2 && args[0].equalsIgnoreCase("place")) return List.of("add", "set", "night", "list", "remove", "tp", "clear");
+    if (args.length == 2 && args[0].equalsIgnoreCase("place")) return List.of("add", "set", "list", "remove", "tp", "clear");
     if (args.length == 2 && args[0].equalsIgnoreCase("cast")) return List.of("set", "auto", "show", "roles");
     if (args.length == 2 && args[0].equalsIgnoreCase("use")) return plugin.arenas.all().stream().map(s -> s.config.id()).toList();
     return List.of();

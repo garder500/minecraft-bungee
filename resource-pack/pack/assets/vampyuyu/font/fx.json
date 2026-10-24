@@ -8,6 +8,12 @@
    "chars": [
     "\uf100"
    ]
+  },
+  {
+   "type": "space",
+   "advances": {
+    "\uf101": -9
+   }
   }
  ]
 }

@@ -208,7 +208,7 @@ def top_plate(color):
 
 
 def right_panel(color):
-    c = plate(128, 92, color)
+    c = plate(128, 108, color)
     medallion(c, 28, 28, 18, color)
     # divider and the static caption
     for x in range(8, 120):
@@ -225,17 +225,45 @@ def fill_bar(color, w=8, h=4):
     return c
 
 
-def pips(n, alive):
-    c = Canvas(100, 8)
-    for i in range(n):
-        x = i * 5
-        if alive:
-            c.rect(x, 1, 4, 6, INK, 255)
-            c.vgrad(x + 1, 2, 2, 4, (255, 246, 214), (214, 190, 120), 255)
-            c.set(x + 1, 2, (255, 255, 255), 255)
-        else:
-            c.rect(x, 1, 4, 6, (0, 0, 0), 150)
-            c.rect(x + 1, 2, 2, 4, (52, 44, 78), 255)
+def dot(kind):
+    """One seat of the table strip: alive, dead, the viewer, their ballot, a pack mate / lover."""
+    c = Canvas(5, 8)
+    fill, edge = {
+        "alive": ((255, 246, 214), INK),
+        "dead": ((52, 44, 78), (0, 0, 0)),
+        "me": ((120, 235, 255), (10, 60, 90)),
+        "ballot": ((255, 211, 110), (110, 60, 0)),
+        "mate": ((255, 110, 120), (90, 10, 30)),
+    }[kind]
+    c.rect(0, 1, 4, 6, edge, 150 if kind == "dead" else 255)
+    c.rect(1, 2, 2, 4, fill, 255)
+    if kind in ("me", "ballot", "mate"):  # a pointer over the seat so it stands out
+        c.rect(1, 0, 2, 1, fill, 255)
+    return c
+
+
+BADGES = {
+    "lover": ((255, 143, 192), ["01100110", "11111111", "11111111", "01111110", "00111100", "00011000"]),
+    "life": ((111, 220, 140), ["00111100", "00011000", "00111100", "01111110", "01111110", "00111100"]),
+    "death": ((190, 120, 255), ["00111100", "00011000", "00111100", "01111110", "01111110", "00111100"]),
+    "infect": ((150, 190, 90), ["00111100", "01111110", "11011011", "11111111", "01100110", "00111100"]),
+    "guard": ((108, 198, 255), ["11111111", "11111111", "11111111", "01111110", "00111100", "00011000"]),
+}
+
+
+def badge(kind):
+    """A 12x12 status badge: a dark chip with a small bitmap in the status colour."""
+    color, rows = BADGES[kind]
+    c = Canvas(12, 12)
+    c.rect(1, 0, 10, 12, (8, 6, 16), 255)
+    c.rect(0, 1, 12, 10, (8, 6, 16), 255)
+    c.rect(1, 1, 10, 10, mix((26, 20, 46), color, 0.25), 255)
+    for y, row in enumerate(rows):
+        for x, ch in enumerate(row):
+            if ch == "1":
+                c.set(2 + x, 3 + y, color, 255)
+    if kind == "death":  # the death potion is the same bottle in purple with a pale cross
+        c.rect(5, 6, 2, 1, (255, 255, 255), 255)
     return c
 
 
@@ -275,10 +303,10 @@ def main():
             c.text(-1, 0, "/", (190, 178, 220), scale=2)
         elif name[0] == "s" and name[1:].isdigit():
             c.text(0, 0, name[1:], LIGHT)
-        elif name.startswith("pipsdark_"):
-            c = pips(int(rest), False)
-        elif name.startswith("pipslive_"):
-            c = pips(int(rest), True)
+        elif name.startswith("dot_"):
+            c = dot(rest)
+        elif name.startswith("badge_"):
+            c = badge(rest)
         c.png(out / f"{name}.png")
     providers, advances, lines = [], {}, []
     for index, (name, w, h) in enumerate(sprites):

@@ -149,6 +149,7 @@ public final class NexusArenaEngine extends JavaPlugin {
                     () -> {
                       controls.sync(p, s);
                       ambience.aim(s, p);
+                      controls.markVote(p, s);
                       return null;
                     });
               }

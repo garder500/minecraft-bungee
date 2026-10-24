@@ -633,8 +633,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/hud/pframe_villager.png",
-   "ascent": 92,
-   "height": 92,
+   "ascent": 108,
+   "height": 108,
    "chars": [
     "\ue046"
    ]
@@ -642,8 +642,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/hud/pframe_wolf.png",
-   "ascent": 92,
-   "height": 92,
+   "ascent": 108,
+   "height": 108,
    "chars": [
     "\ue047"
    ]
@@ -651,8 +651,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/hud/pframe_seer.png",
-   "ascent": 92,
-   "height": 92,
+   "ascent": 108,
+   "height": 108,
    "chars": [
     "\ue048"
    ]
@@ -660,8 +660,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/hud/pframe_witch.png",
-   "ascent": 92,
-   "height": 92,
+   "ascent": 108,
+   "height": 108,
    "chars": [
     "\ue049"
    ]
@@ -669,8 +669,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/hud/pframe_hunter.png",
-   "ascent": 92,
-   "height": 92,
+   "ascent": 108,
+   "height": 108,
    "chars": [
     "\ue04a"
    ]
@@ -678,8 +678,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/hud/pframe_cupid.png",
-   "ascent": 92,
-   "height": 92,
+   "ascent": 108,
+   "height": 108,
    "chars": [
     "\ue04b"
    ]
@@ -687,8 +687,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/hud/pframe_guard.png",
-   "ascent": 92,
-   "height": 92,
+   "ascent": 108,
+   "height": 108,
    "chars": [
     "\ue04c"
    ]
@@ -696,8 +696,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/hud/pframe_dead.png",
-   "ascent": 92,
-   "height": 92,
+   "ascent": 108,
+   "height": 108,
    "chars": [
     "\ue04d"
    ]
@@ -705,8 +705,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/hud/pframe_vote.png",
-   "ascent": 92,
-   "height": 92,
+   "ascent": 108,
+   "height": 108,
    "chars": [
     "\ue04e"
    ]
@@ -714,8 +714,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/hud/pframe_sleep.png",
-   "ascent": 92,
-   "height": 92,
+   "ascent": 108,
+   "height": 108,
    "chars": [
     "\ue04f"
    ]
@@ -723,8 +723,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/hud/pframe_danger.png",
-   "ascent": 92,
-   "height": 92,
+   "ascent": 108,
+   "height": 108,
    "chars": [
     "\ue050"
    ]
@@ -992,7 +992,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_1.png",
+   "file": "vampyuyu:font/hud/dot_alive.png",
    "ascent": 8,
    "height": 8,
    "chars": [
@@ -1001,7 +1001,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_2.png",
+   "file": "vampyuyu:font/hud/dot_dead.png",
    "ascent": 8,
    "height": 8,
    "chars": [
@@ -1010,7 +1010,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_3.png",
+   "file": "vampyuyu:font/hud/dot_me.png",
    "ascent": 8,
    "height": 8,
    "chars": [
@@ -1019,7 +1019,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_4.png",
+   "file": "vampyuyu:font/hud/dot_ballot.png",
    "ascent": 8,
    "height": 8,
    "chars": [
@@ -1028,7 +1028,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_5.png",
+   "file": "vampyuyu:font/hud/dot_mate.png",
    "ascent": 8,
    "height": 8,
    "chars": [
@@ -1037,317 +1037,47 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_6.png",
-   "ascent": 8,
-   "height": 8,
+   "file": "vampyuyu:font/hud/badge_lover.png",
+   "ascent": 12,
+   "height": 12,
    "chars": [
     "\ue073"
    ]
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_7.png",
-   "ascent": 8,
-   "height": 8,
+   "file": "vampyuyu:font/hud/badge_life.png",
+   "ascent": 12,
+   "height": 12,
    "chars": [
     "\ue074"
    ]
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_8.png",
-   "ascent": 8,
-   "height": 8,
+   "file": "vampyuyu:font/hud/badge_death.png",
+   "ascent": 12,
+   "height": 12,
    "chars": [
     "\ue075"
    ]
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_9.png",
-   "ascent": 8,
-   "height": 8,
+   "file": "vampyuyu:font/hud/badge_infect.png",
+   "ascent": 12,
+   "height": 12,
    "chars": [
     "\ue076"
    ]
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_10.png",
-   "ascent": 8,
-   "height": 8,
+   "file": "vampyuyu:font/hud/badge_guard.png",
+   "ascent": 12,
+   "height": 12,
    "chars": [
     "\ue077"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_11.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue078"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_12.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue079"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_13.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue07a"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_14.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue07b"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_15.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue07c"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_16.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue07d"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_17.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue07e"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_18.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue07f"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_19.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue080"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipsdark_20.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue081"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_1.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue082"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_2.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue083"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_3.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue084"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_4.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue085"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_5.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue086"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_6.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue087"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_7.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue088"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_8.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue089"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_9.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue08a"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_10.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue08b"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_11.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue08c"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_12.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue08d"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_13.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue08e"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_14.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue08f"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_15.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue090"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_16.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue091"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_17.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue092"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_18.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue093"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_19.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue094"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/hud/pipslive_20.png",
-   "ascent": 8,
-   "height": 8,
-   "chars": [
-    "\ue095"
    ]
   },
   {
@@ -1463,46 +1193,16 @@
     "\uf06b": -69,
     "\uf06c": -69,
     "\uf06d": -69,
-    "\uf06e": -101,
-    "\uf06f": -101,
-    "\uf070": -101,
-    "\uf071": -101,
-    "\uf072": -101,
-    "\uf073": -101,
-    "\uf074": -101,
-    "\uf075": -101,
-    "\uf076": -101,
-    "\uf077": -101,
-    "\uf078": -101,
-    "\uf079": -101,
-    "\uf07a": -101,
-    "\uf07b": -101,
-    "\uf07c": -101,
-    "\uf07d": -101,
-    "\uf07e": -101,
-    "\uf07f": -101,
-    "\uf080": -101,
-    "\uf081": -101,
-    "\uf082": -101,
-    "\uf083": -101,
-    "\uf084": -101,
-    "\uf085": -101,
-    "\uf086": -101,
-    "\uf087": -101,
-    "\uf088": -101,
-    "\uf089": -101,
-    "\uf08a": -101,
-    "\uf08b": -101,
-    "\uf08c": -101,
-    "\uf08d": -101,
-    "\uf08e": -101,
-    "\uf08f": -101,
-    "\uf090": -101,
-    "\uf091": -101,
-    "\uf092": -101,
-    "\uf093": -101,
-    "\uf094": -101,
-    "\uf095": -101
+    "\uf06e": -6,
+    "\uf06f": -6,
+    "\uf070": -6,
+    "\uf071": -6,
+    "\uf072": -6,
+    "\uf073": -13,
+    "\uf074": -13,
+    "\uf075": -13,
+    "\uf076": -13,
+    "\uf077": -13
    }
   }
  ]

@@ -30,11 +30,10 @@ final class ArenaTools implements Listener {
     SEAT(
         Material.RED_BED,
         "Seats",
-        "Right-click: add a sitting seat where you stand",
-        "Sneak + right-click: add a standing spot",
-        "Left-click: remove the nearest seat (3 blocks)"),
-    CIRCLE(Material.SUNFLOWER, "Vote circle", "Right-click: set its centre where you stand"),
-    DEN(Material.BONE, "Wolf den", "Right-click: set it where you stand"),
+        "Right-click a block: a sitting seat on it (stairs and slabs work)",
+        "Sneak + right-click a block: a standing spot on it",
+        "Left-click a seat's block: remove it"),
+    CIRCLE(Material.SUNFLOWER, "Vote circle", "Right-click the block at the centre of the table"),
     STATUS(
         Material.WRITABLE_BOOK,
         "Readiness checklist",
@@ -209,8 +208,6 @@ final class ArenaTools implements Listener {
                   + c.minPlayers()
                   + " needed (none: players stay where they spawn)"));
       lines.add(ok(v.circle() != null, "Vote circle" + at(v.circle())));
-      lines.add(ok(v.den() != null, "Wolf den" + at(v.den())));
-      if (!v.night().isEmpty()) lines.add("§7• Night spots: " + v.night().size());
       missing = v.missing(c.minPlayers());
     }
     lines.add(
@@ -288,14 +285,15 @@ final class ArenaTools implements Listener {
         plugin.admin.change(id, j -> j.add("spawn", ArenaManager.JSON.toJsonTree(position)));
         feedback(p, "Spawn of " + id + " set " + coords(position));
       }
-      case SEAT -> seat(p, left, sneak);
-      case CIRCLE, DEN -> {
+      case SEAT -> seat(p, left, sneak, block);
+      case CIRCLE -> {
         if (left) return;
+        if (block == null) throw new IllegalArgumentException("Right-click the block at the centre of the table");
         String id = needArena(p);
-        var position = plugin.admin.point(p, id);
-        String field = t == Tool.CIRCLE ? "circle" : "den";
-        plugin.admin.change(id, j -> j.getAsJsonObject("places").add(field, ArenaManager.JSON.toJsonTree(position)));
-        feedback(p, (t == Tool.CIRCLE ? "Vote circle" : "Wolf den") + " set for " + id);
+        plugin.admin.point(p, id); // checks the arena and the world
+        var position = PlaceController.onBlock(block, false);
+        plugin.admin.change(id, j -> j.getAsJsonObject("places").add("circle", ArenaManager.JSON.toJsonTree(position)));
+        feedback(p, "Vote circle set for " + id);
         report(p, id);
       }
       case STATUS -> {
@@ -367,12 +365,14 @@ final class ArenaTools implements Listener {
         Locale.ROOT, "%.0f × %.0f × %.0f", b.maxX() - b.minX(), b.maxY() - b.minY(), b.maxZ() - b.minZ());
   }
 
-  private void seat(Player p, boolean left, boolean sneak) throws Exception {
+  private void seat(Player p, boolean left, boolean sneak, Block block) throws Exception {
     String id = needArena(p);
     var c = plugin.arenas.require(id).config;
     var seats = c.places().seats();
     if (!left) {
-      var position = plugin.admin.point(p, id);
+      if (block == null) throw new IllegalArgumentException("Right-click the block to sit on (stairs and slabs work)");
+      plugin.admin.point(p, id);
+      var position = PlaceController.onBlock(block, !sneak);
       int n = seats.size() + 1;
       Set<String> names = new HashSet<>();
       for (var seat : seats) names.add(seat.name());
@@ -400,7 +400,7 @@ final class ArenaTools implements Listener {
               + " for a full lobby)");
       return;
     }
-    String nearest = nearestSeat(p, seats);
+    String nearest = nearestSeat(p, seats, block);
     if (nearest == null)
       throw new IllegalArgumentException("No seat within " + (int) NEAREST_SEAT + " blocks");
     plugin.admin.change(
@@ -416,10 +416,10 @@ final class ArenaTools implements Listener {
     feedback(p, "Seat " + nearest + " removed (" + (seats.size() - 1) + " left)");
   }
 
-  private String nearestSeat(Player p, List<ArenaConfig.Seat> seats) {
+  private String nearestSeat(Player p, List<ArenaConfig.Seat> seats, Block block) {
     String best = null;
-    double bestDistance = NEAREST_SEAT * NEAREST_SEAT;
-    Location at = p.getLocation();
+    double bestDistance = (block != null ? 1.5 : NEAREST_SEAT) * (block != null ? 1.5 : NEAREST_SEAT);
+    Location at = block != null ? block.getLocation().add(0.5, 0.5, 0.5) : p.getLocation();
     for (var seat : seats) {
       var s = seat.at();
       double d =
@@ -485,7 +485,6 @@ final class ArenaTools implements Listener {
     dot(p, w, c.spawn(), Particle.CLOUD);
     for (var seat : c.places().seats())
       dot(p, w, seat.at(), seat.sit() ? Particle.HAPPY_VILLAGER : Particle.CRIT);
-    dot(p, w, c.places().den(), Particle.SOUL_FIRE_FLAME);
     dot(p, w, c.places().circle(), Particle.END_ROD);
     var dust = new Particle.DustOptions(Color.fromRGB(0xe9, 0xd9, 0x9b), 1.2f);
     var b = c.bounds();

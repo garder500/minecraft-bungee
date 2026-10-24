@@ -925,6 +925,24 @@ public final class WerewolfGame implements GamePreset {
     return alive.contains(p) && roles.get(p) != null && wolf(roles.get(p));
   }
 
+  /** The table order, as set by {@link #ring}: every player of the game, dead or alive. */
+  public synchronized List<UUID> seatOrder() {
+    return ring;
+  }
+
+  /** Whether the player is bound by Cupid, and not yet dead. */
+  public synchronized boolean inLove(UUID p) {
+    return alive.contains(p) && lovers.containsKey(p);
+  }
+
+  public synchronized UUID lover(UUID p) {
+    return lovers.get(p);
+  }
+
+  public synchronized boolean infectLeft(UUID p) {
+    return roles.get(p) == Role.INFECTOR && !infectUsed.contains(p);
+  }
+
   /** Sets the table order (seat order), which decides who sits next to whom. */
   public synchronized void ring(List<UUID> order) {
     ring = List.copyOf(order);

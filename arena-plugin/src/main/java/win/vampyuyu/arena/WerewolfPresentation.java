@@ -192,6 +192,9 @@ final class WerewolfPresentation {
   /** Font of the screen-effect glyph (resource-pack core shader rendertype_text). */
   static final String FX_GLYPH = "\uF100";
 
+  /** Its negative-advance twin (resource-pack font fx.json): the glyph takes no room in the bar. */
+  static final String FX_BACK = "\uF101";
+
   /**
    * Screen effect for the core shader: 1 night, 2 dawn, 3 fading dawn, 0 none. The shader reads
    * the id from the blue channel of the glyph colour (78, 92, id).

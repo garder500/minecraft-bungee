@@ -150,8 +150,7 @@ ARENA = {
     "werewolf": {"roles": {}, "cupidSeconds": 15, "witchSeconds": 15, "hunterSeconds": 15,
                  "ambienceEnabled": True},
     "places": {"seats": _ring(12, 6, 0.5, 0.5, -60),
-               "circle": {"x": 0.5, "y": -60, "z": 0.5, "yaw": 0, "pitch": 0},
-               "den": {"x": 20.5, "y": -60, "z": 0.5, "yaw": 0, "pitch": 0}, "night": []},
+               "circle": {"x": 0.5, "y": -60, "z": 0.5, "yaw": 0, "pitch": 0}},
 }
 
 

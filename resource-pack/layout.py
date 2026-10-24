@@ -91,17 +91,17 @@ HUD_ELEMENTS = [
     ("tcolon", 0, 78, 8, 6, 17),
     ("t3", 0, 85, 8, 12, 17),
     ("t4", 0, 98, 8, 12, 17),
-    ("pframe", 1, -134, -46, 128, 92),
-    ("picon", 1, -122, -34, 32, 32),
-    ("plabel", 1, -80, -34, 68, 9),
-    ("pteam", 1, -80, -22, 68, 9),
-    ("a1", 1, -84, 10, 12, 17),
-    ("a2", 1, -72, 10, 12, 17),
-    ("aslash", 1, -60, 10, 8, 17),
-    ("a3", 1, -52, 10, 12, 17),
-    ("a4", 1, -40, 10, 12, 17),
-    ("ptotal", 1, -126, 32, 100, 8),
-    ("palive", 1, -126, 32, 100, 8),
+    ("pframe", 1, -134, -54, 128, 108),
+    ("picon", 1, -122, -42, 32, 32),
+    ("plabel", 1, -80, -42, 68, 9),
+    ("pteam", 1, -80, -30, 68, 9),
+    ("a1", 1, -84, 2, 12, 17),
+    ("a2", 1, -72, 2, 12, 17),
+    ("aslash", 1, -60, 2, 8, 17),
+    ("a3", 1, -52, 2, 12, 17),
+    ("a4", 1, -40, 2, 12, 17),
+] + [(f"m{i}", 1, -126 + 5 * i, 24, 5, 8) for i in range(20)] + [
+    (f"b{i}", 1, -126 + 14 * i, 38, 12, 12) for i in range(4)
 ]
 HUD_ID_BASE = 100        # the green channel of an element's colour is HUD_ID_BASE + its index
 HUD_SPRITE_BASE = 0xE000
@@ -115,7 +115,9 @@ HUD_TEAM_WORDS = ["VILLAGE", "WOLF PACK", "OUT"]
 HUD_TOP_ICONS = ["moon", "sun", "vote"]
 HUD_ROLE_ICONS = ["wolf", "villager", "seer", "witch", "hunter", "cupid", "guard", "dead", "alpha",
                   "infector", "cub", "scapegoat", "bear"]
-HUD_PIPS = 20           # most pips drawn; bigger tables are scaled down
+HUD_SEATS = 20          # seats of the table strip; the first ones are drawn on bigger tables
+HUD_DOTS = ["alive", "dead", "me", "ballot", "mate"]   # what a seat of the strip can show
+HUD_BADGES = ["lover", "life", "death", "infect", "guard"]   # status badges (4 fit the panel)
 
 
 def hud_sprites():
@@ -136,6 +138,6 @@ def hud_sprites():
     out += [(f"picon_{n}", *box["picon"]) for n in HUD_ROLE_ICONS]
     out += [(f"plabel_{w.lower().replace(' ', '_')}", *box["plabel"]) for w in HUD_ROLE_WORDS]
     out += [(f"pteam_{w.lower().replace(' ', '_')}", *box["pteam"]) for w in HUD_TEAM_WORDS]
-    out += [(f"pipsdark_{n}", *box["ptotal"]) for n in range(1, HUD_PIPS + 1)]
-    out += [(f"pipslive_{n}", *box["palive"]) for n in range(1, HUD_PIPS + 1)]
+    out += [(f"dot_{n}", *box["m0"]) for n in HUD_DOTS]
+    out += [(f"badge_{n}", *box["b0"]) for n in HUD_BADGES]
     return out

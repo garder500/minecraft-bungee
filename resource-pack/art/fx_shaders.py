@@ -41,12 +41,12 @@ COMMON_VS = f"""    int fx = 0;
         vec2 px = anchor + floor((box.xy + corner) * f + 0.5);
         clip = ProjMat * ModelViewMat * vec4(px, Position.z, 1.0);
         fx = 10 + e;
-    }} else if (rgb.r == 78 && rgb.g == 92 && rgb.b >= 1 && rgb.b <= 3) {{
+    }} else if (rgb.r == 78 && rgb.g == 92 && rgb.b >= 1 && rgb.b <= 4) {{
         fx = rgb.b;
         vec2 corner = CORNERS[gl_VertexIndex % 4];
         uv = corner * 0.5 + 0.5;
         clip = vec4(corner * clip.w, clip.z, clip.w);
-    }} else if (rgb.r >= 19 && rgb.r <= 20 && ((rgb.g == 23 && rgb.b <= 1) || (rgb.g >= {layout.HUD_ID_BASE // 4} && rgb.g <= {(layout.HUD_ID_BASE + 27) // 4 + 1}))) {{
+    }} else if (rgb.r >= 19 && rgb.r <= 20 && ((rgb.g == 23 && rgb.b <= 1) || (rgb.g >= {layout.HUD_ID_BASE // 4} && rgb.g <= {(layout.HUD_ID_BASE + HUD_N - 1) // 4 + 1}))) {{
         clip = vec4(2.0, 2.0, 2.0, 1.0);
     }}
     gl_Position = clip;
@@ -62,6 +62,9 @@ EFFECT = """vec4 werewolf_fx(int id, vec2 uv) {
     float sidebar = smoothstep(0.62, 0.84, st.x) * smoothstep(0.04, 0.22, st.y) * (1.0 - smoothstep(0.56, 0.76, st.y));
     float chat = (1.0 - smoothstep(0.30, 0.56, st.x)) * smoothstep(0.56, 0.70, st.y) * (1.0 - smoothstep(0.84, 0.96, st.y));
     float keep = 1.0 - 0.6 * max(sidebar, chat);
+    if (id == 4) { // asleep: nothing of the world is left
+        return vec4(0.0, 0.0, 0.015, 1.0);
+    }
     if (id == 1) { // night: deep blue grade, vignette
         return vec4(mix(vec3(0.02, 0.03, 0.12), vec3(0.01, 0.01, 0.06), edge), (0.14 + 0.46 * edge) * keep);
     }

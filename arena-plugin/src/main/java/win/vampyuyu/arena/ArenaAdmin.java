@@ -364,7 +364,7 @@ final class ArenaAdmin implements Listener {
           p.closeInventory();
           plugin.tools.give(p, id);
         },
-        "Items for corners, spawn, seats, the circle and the den");
+        "Items for corners, spawn, seats and the vote circle");
     m.put(
         6,
         Material.WRITABLE_BOOK,
@@ -391,7 +391,7 @@ final class ArenaAdmin implements Listener {
           p.closeInventory();
           plugin.tools.report(p, id);
         },
-        "Seats, vote circle and wolf den: /ww place list");
+        "Seats and the vote circle: /ww place list");
     if (c.preset().equals("werewolf"))
       m.toggle(
           15,

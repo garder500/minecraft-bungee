@@ -36,15 +36,13 @@ public record ArenaConfig(
   }
 
   /**
-   * Where the game moves players: seats around the vote circle, the wolves' den and optional
-   * night spots for the sleepers. All optional; without seats players stay where they spawn.
+   * Where the game puts players, once, when it starts: a seat each (sitting or standing, looking at the
+   * vote circle). Optional; without seats players stay where they spawn. Nobody is moved afterwards.
    */
-  public record Places(List<Seat> seats, Spawn circle, Spawn den, List<Spawn> night) {
+  public record Places(List<Seat> seats, Spawn circle) {
     public Places {
       seats = seats == null ? List.of() : List.copyOf(seats);
-      night = night == null ? List.of() : List.copyOf(night);
-      if (seats.size() > 45 || night.size() > 45)
-        throw new IllegalArgumentException("At most 45 seats and 45 night spots");
+      if (seats.size() > 45) throw new IllegalArgumentException("At most 45 seats");
       Set<String> names = new HashSet<>();
       for (Seat seat : seats)
         if (!names.add(seat.name())) throw new IllegalArgumentException("Seat names must be unique");
@@ -53,25 +51,20 @@ public record ArenaConfig(
     /** What still stops a game of this size from using the places, or null. */
     public String missing(int players) {
       if (seats.isEmpty()) return null; // No seats configured: players stay where they spawn.
-      List<String> lacks = new ArrayList<>();
-      if (seats.size() < players)
-        lacks.add("seats: " + seats.size() + "/" + players + " (one per player, bots included)");
-      if (!night.isEmpty() && night.size() < players)
-        lacks.add("night spots: " + night.size() + "/" + players);
-      return lacks.isEmpty() ? null : "Places are missing " + String.join(", ", lacks);
+      return seats.size() < players
+          ? "Places are missing seats: " + seats.size() + "/" + players + " (one per player, bots included)"
+          : null;
     }
 
     public List<Spawn> points() {
       List<Spawn> all = new ArrayList<>();
       for (Seat seat : seats) all.add(seat.at());
       if (circle != null) all.add(circle);
-      if (den != null) all.add(den);
-      all.addAll(night);
       return all;
     }
 
     public static Places defaults() {
-      return new Places(List.of(), null, null, List.of());
+      return new Places(List.of(), null);
     }
   }
 

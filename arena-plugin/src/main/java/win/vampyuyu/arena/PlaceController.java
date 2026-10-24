@@ -94,12 +94,29 @@ final class PlaceController {
         };
     for (var seat : places.seats()) point.accept("Seat " + seat.name(), seat.at());
     point.accept("Vote circle", places.circle());
-    point.accept("Wolf den", places.den());
-    for (int i = 0; i < places.night().size(); i++)
-      point.accept("Night spot " + (i + 1), places.night().get(i));
     return CompletableFuture.allOf(checks.toArray(CompletableFuture[]::new))
         .thenApply(
             v -> checks.stream().map(CompletableFuture::join).filter(Objects::nonNull).toList());
+  }
+
+  /**
+   * Height above the block's base where someone sits (or stands) on it: half a block on bottom
+   * slabs and bottom stairs, a whole block on top ones and full blocks, the collision height otherwise.
+   */
+  static double surface(org.bukkit.block.Block block, boolean sit) {
+    var data = block.getBlockData();
+    if (data instanceof org.bukkit.block.data.type.Stairs stairs)
+      return sit ? (stairs.getHalf() == org.bukkit.block.data.Bisected.Half.BOTTOM ? 0.5 : 1.0) : 1.0;
+    if (data instanceof org.bukkit.block.data.type.Slab slab)
+      return slab.getType() == org.bukkit.block.data.type.Slab.Type.BOTTOM ? 0.5 : 1.0;
+    double top = 0;
+    for (var box : block.getCollisionShape().getBoundingBoxes()) top = Math.max(top, box.getMaxY());
+    return top > 0 ? top : 1.0;
+  }
+
+  /** The seat or stand spot on the top of a block: its centre, at the surface height. */
+  static ArenaConfig.Spawn onBlock(org.bukkit.block.Block block, boolean sit) {
+    return new ArenaConfig.Spawn(block.getX() + 0.5, block.getY() + surface(block, sit), block.getZ() + 0.5, 0f, 0f);
   }
 
   boolean sleeping(Player p) {
@@ -242,7 +259,6 @@ final class PlaceController {
     String phase = game.phase();
     boolean night = game.night();
     List<CompletableFuture<?>> tasks = new ArrayList<>();
-    List<UUID> order = new ArrayList<>(s.seats.keySet());
     for (UUID id : s.players.keySet()) {
       Player p = Bukkit.getPlayer(id);
       if (p == null) {
@@ -251,13 +267,9 @@ final class PlaceController {
       }
       boolean asleep = game.sleeping(id);
       CompletableFuture<Void> move = CompletableFuture.completedFuture(null);
-      if (s.seats.containsKey(id) && game.alive().contains(id)) {
-        String target = target(s, game, id, order, phase, night);
-        if (!target.equals(s.placed.get(id))) {
-          s.placed.put(id, target);
-          move = move.thenCompose(v -> goTo(p, s, id, target, order));
-        }
-      }
+      // Players are seated once, when the game opens; nobody is moved afterwards.
+      if (s.seats.containsKey(id) && game.alive().contains(id) && s.placed.putIfAbsent(id, "seat") == null)
+        move = move.thenCompose(v -> goTo(p, s, id));
       tasks.add(
           move.thenCompose(
               v ->
@@ -265,17 +277,20 @@ final class PlaceController {
                       p,
                       () -> {
                         if (s.game != game || s.stopping) return null;
-                        if (asleep)
+                        if (asleep) {
+                          // The pack blacks the screen out itself; these cover players without it.
                           p.addPotionEffect(
                               new PotionEffect(
-                                  PotionEffectType.BLINDNESS,
-                                  PotionEffect.INFINITE_DURATION,
-                                  0,
-                                  false,
-                                  false));
-                        else p.removePotionEffect(PotionEffectType.BLINDNESS);
+                                  PotionEffectType.BLINDNESS, PotionEffect.INFINITE_DURATION, 0, false, false));
+                          p.addPotionEffect(
+                              new PotionEffect(
+                                  PotionEffectType.DARKNESS, PotionEffect.INFINITE_DURATION, 0, false, false));
+                        } else {
+                          p.removePotionEffect(PotionEffectType.BLINDNESS);
+                          p.removePotionEffect(PotionEffectType.DARKNESS);
+                        }
                         p.setPlayerTime(night ? 18000 : 1000, false);
-                        conceal(p, s, game, night);
+                        conceal(p, s, game);
                         return null;
                       })));
     }
@@ -288,46 +303,12 @@ final class PlaceController {
     return body == null ? CompletableFuture.completedFuture(null) : removeEntity(body);
   }
 
-  /** Which kind of place this player should be at in this phase: seat, den or night. */
-  private String target(
-      ArenaSession s, WerewolfGame game, UUID id, List<UUID> order, String phase, boolean night) {
-    var places = s.config.places();
-    if (night && phase.equals("NIGHT") && game.packMember(id) && places.den() != null) return "den";
-    if (night
-        && !places.night().isEmpty()
-        && order.indexOf(id) >= 0
-        && order.indexOf(id) < places.night().size()) return "night";
-    return "seat";
-  }
-
-  private CompletableFuture<Void> goTo(
-      Player p, ArenaSession s, UUID id, String kind, List<UUID> order) {
+  private CompletableFuture<Void> goTo(Player p, ArenaSession s, UUID id) {
     World w = Bukkit.getWorld(s.config.worldName());
     var seat = s.seats.get(id);
     if (w == null || seat == null) return CompletableFuture.completedFuture(null);
-    Location to;
-    boolean sit = false;
-    switch (kind) {
-      case "den" -> {
-        var den = s.config.places().den();
-        // The pack stands around the den's marker, one step apart.
-        int slot = Math.max(0, order.indexOf(id)) % 6;
-        double a = Math.PI * 2 * slot / 6;
-        to =
-            new Location(w, den.x() + Math.cos(a) * 1.4, den.y(), den.z() + Math.sin(a) * 1.4);
-        to.setYaw((float) Math.toDegrees(Math.atan2(-(den.x() - to.getX()), den.z() - to.getZ())));
-      }
-      case "night" -> {
-        var spot = s.config.places().night().get(order.indexOf(id));
-        to = new Location(w, spot.x(), spot.y(), spot.z(), spot.yaw(), spot.pitch());
-      }
-      default -> {
-        to = faced(s, seat.at(), w);
-        sit = seat.sit();
-      }
-    }
-    final Location destination = to;
-    final boolean seatIt = sit;
+    final Location destination = faced(s, seat.at(), w);
+    final boolean seatIt = seat.sit();
     return release(s, p)
         .thenCompose(v -> teleport(p, s, destination))
         .thenCompose(v -> seatIt ? sitDown(p, s, destination) : CompletableFuture.completedFuture(null));
@@ -376,20 +357,29 @@ final class PlaceController {
   }
 
   /**
-   * At night nobody sees anybody (no name tags); eliminated players are always hidden from the
-   * living, but spectators keep seeing everyone.
+   * Who sees whom. A sleeper sees nobody (no player, no practice body, no name tag): the pack's
+   * screen goes fully black too. Whoever is awake sees every living player, so they can aim at them.
+   * The eliminated are hidden from the living; spectators see everyone.
    */
-  private void conceal(Player viewer, ArenaSession s, WerewolfGame game, boolean night) {
+  private void conceal(Player viewer, ArenaSession s, WerewolfGame game) {
     boolean viewerAlive = game.alive().contains(viewer.getUniqueId());
+    boolean viewerAsleep = game.sleeping(viewer.getUniqueId());
     for (UUID other : s.players.keySet()) {
       Player o = Bukkit.getPlayer(other);
       if (o == null || other.equals(viewer.getUniqueId())) continue;
-      boolean hide = viewerAlive && (night || !game.alive().contains(other));
+      boolean hide = viewerAlive && (viewerAsleep || !game.alive().contains(other));
       try {
         if (hide) viewer.hidePlayer(plugin, o);
         else viewer.showPlayer(plugin, o);
       } catch (RuntimeException ignored) {
         // Visibility is cosmetic; never abort a phase transition over it.
+      }
+    }
+    for (var body : s.bodies.entrySet()) {
+      try {
+        if (viewerAlive && viewerAsleep) viewer.hideEntity(plugin, body.getValue());
+        else viewer.showEntity(plugin, body.getValue());
+      } catch (RuntimeException ignored) {
       }
     }
   }
