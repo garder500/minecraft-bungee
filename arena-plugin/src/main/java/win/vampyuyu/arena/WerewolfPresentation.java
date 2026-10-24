@@ -93,7 +93,10 @@ final class WerewolfPresentation {
         case "DEFENSE" -> new Boss(head + "The accused speaks · " + clock(seconds), VOTE, true);
         case "TRIAL" -> new Boss(head + "Thumbs up or down · " + clock(seconds), VOTE, true);
         case "MARTYR" ->
-            new Boss(head + "The Martyr may step in · " + clock(seconds), color("MARTYR"), true);
+            // Only the martyr is told what the pause is: it would give his role away.
+            actor
+                ? new Boss(head + "The Martyr may step in · " + clock(seconds), color("MARTYR"), true)
+                : new Boss(head + "The village weighs the verdict · " + clock(seconds), VOTE, true);
         default ->
             new Boss(head + "The Hunter takes a last shot · " + clock(seconds), HUNTER, true);
       };
@@ -120,6 +123,8 @@ final class WerewolfPresentation {
           default -> new Line("☀ Debate" + time, VILLAGER);
         };
       String moon = game.night() ? "☾ " : "☀ ";
+      if (phase.equals("MARTYR") && !game.actors().contains(viewer))
+        return new Line("☀ The village weighs the verdict" + time, VOTE);
       if (game.actors().contains(viewer)) return new Line(moon + "Your turn" + time, color(role));
       String turn =
           switch (phase) {
@@ -211,6 +216,7 @@ final class WerewolfPresentation {
   }
 
   static String wakeLine(String phase) {
+    if (phase.equals("MARTYR")) return null; // a day pause: it would give the martyr away
     String role = turnRole(phase);
     return role == null
         ? null
@@ -218,6 +224,7 @@ final class WerewolfPresentation {
   }
 
   static String sleepLine(String phase) {
+    if (phase.equals("MARTYR")) return null;
     String role = turnRole(phase);
     return role == null
         ? null
@@ -267,6 +274,7 @@ final class WerewolfPresentation {
             case "DISCUSSION" -> "Day · Discussion";
             case "DAY_VOTE" -> "Day · Voting";
             case "DEFENSE" -> "Day · Defense";
+            case "MARTYR" -> actor ? "Martyr's choice" : "Day · Verdict";
             case "TRIAL" -> "Day · Trial";
             case "CUPID" -> "Cupid's choice";
             case "GUARD" -> "Guard's turn";

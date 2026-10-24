@@ -682,7 +682,7 @@ final class WerewolfMenus {
         Line state =
             p.equals(viewer)
                 ? new Line(
-                    "You · " + roleName(game.role(p)), WerewolfPresentation.color(game.role(p)))
+                    "You · " + roleName(game.selfRoleName(p)), WerewolfPresentation.color(game.selfRoleName(p)))
                 : pack.contains(p)
                     ? new Line("A wolf of your pack", WEREWOLF)
                     : p.equals(partner)
@@ -821,7 +821,7 @@ final class WerewolfMenus {
 
   /** The viewer's role card: its name in the role colour, the team, then how to play it. */
   static Entry card(WerewolfGame game, UUID viewer, Map<UUID, String> names) {
-    String role = game.role(viewer);
+    String role = game.selfRoleName(viewer);
     String help = game.help(viewer);
     for (var entry : names.entrySet())
       help = help.replace(entry.getKey().toString(), entry.getValue());

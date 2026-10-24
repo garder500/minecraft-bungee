@@ -60,6 +60,9 @@ final class ShapeModule implements RoleModule {
     Set<Role> held = new HashSet<>();
     for (UUID p : g.table()) held.add(g.roleOf(p));
     List<Role> pool = new ArrayList<>(List.of(Role.WEREWOLF, Role.VILLAGER));
+    // A drunk wolf must not tip the table into parity before the first night.
+    long wolves = g.table().stream().filter(p -> WerewolfGame.wolf(g.roleOf(p))).count();
+    if ((wolves + 1) * 2 >= g.table().size()) pool.remove(Role.WEREWOLF);
     for (Role r : Role.values())
       if (!FIRST_NIGHT.contains(r)
           && !pool.contains(r)

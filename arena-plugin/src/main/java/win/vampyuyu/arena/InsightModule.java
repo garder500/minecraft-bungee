@@ -103,7 +103,7 @@ final class InsightModule implements RoleModule {
 
   private String aura(WerewolfGame g, UUID actor, UUID target) {
     if (actor.equals(target)) throw new IllegalArgumentException("Select another living player");
-    return PLAIN_AURA.contains(g.roleOf(target))
+    return PLAIN_AURA.contains(g.selfRole(target))
         ? target + " has a plain aura: a villager or a werewolf."
         : target + " has a special aura: a special role.";
   }

@@ -213,6 +213,7 @@ public final class WerewolfGame implements GamePreset {
   /** Variants: the amulet's holder, today's dice effects. */
   private UUID amuletHolder;
 
+  private boolean dayOpened;
   private boolean amuletSaved, secretToday, lightningToday, diceInfectNext, defangNext, defangTonight;
   private final Set<UUID> amuletSeen = new HashSet<>();
   private int lastDice;
@@ -431,6 +432,12 @@ public final class WerewolfGame implements GamePreset {
     };
   }
 
+  /** False for a player a module keeps out of the night (a drunk who has not woken yet). */
+  private boolean awake(UUID p) {
+    for (RoleModule m : modules) if (!m.ready(this, Phase.NIGHT, p)) return false;
+    return true;
+  }
+
   /**
    * Whether this viewer may see the running ballots: everyone at the day vote, only the pack during
    * the hunt. The one place that decides it, so a secret-ballot variant changes only this.
@@ -438,7 +445,7 @@ public final class WerewolfGame implements GamePreset {
   public synchronized boolean tallyVisible(UUID viewer) {
     Role mine = roles.get(viewer);
     return phase == Phase.DAY_VOTE && !secretBallots()
-        || phase == Phase.NIGHT && mine != null && wolf(mine)
+        || phase == Phase.NIGHT && mine != null && wolf(mine) && awake(viewer)
         || phase == Phase.VAMPIRE && mine == Role.VAMPIRE;
   }
 
@@ -748,7 +755,8 @@ public final class WerewolfGame implements GamePreset {
     boolean hunting = pack(phase) && callActors(phase).contains(voter);
     if (phase != Phase.DAY_VOTE && !hunting)
       throw new IllegalArgumentException("You cannot vote during this phase");
-    if (phase == Phase.NIGHT && wolf(roles.get(target)))
+    // A wolf the pack does not know yet (a drunk who has not woken) can be hunted by mistake.
+    if (phase == Phase.NIGHT && wolf(roles.get(target)) && awake(target))
       throw new IllegalArgumentException("Wolves cannot target another wolf");
     if (phase == Phase.VAMPIRE && roles.get(target) == Role.VAMPIRE)
       throw new IllegalArgumentException("Vampires cannot target another vampire");
@@ -997,6 +1005,7 @@ public final class WerewolfGame implements GamePreset {
     rollDice();
     voteRound = 0;
     lynchRound = 0;
+    dayOpened = false;
     nominee = null;
     nominator = null;
     dayLeft = discussion + vote;
@@ -1262,7 +1271,12 @@ public final class WerewolfGame implements GamePreset {
 
   /** The village condemned this player (or nobody): a martyr may stand in, then the verdict. */
   private void condemn(UUID chosen) {
+    boolean spared = false;
     if (chosen != null) {
+      Kill kill = new Kill(chosen, "VOTE", "eliminated by the village vote");
+      for (RoleModule m : modules) spared |= m.spares(this, kill);
+    }
+    if (chosen != null && !spared) {
       pendingLynch = chosen;
       Set<UUID> martyrs = callActors(Phase.MARTYR);
       if (!martyrs.isEmpty()) {
@@ -1318,11 +1332,9 @@ public final class WerewolfGame implements GamePreset {
     voteRound++;
     thumbs.clear();
     notifyLiving(voter + " seconds. " + target + " may now defend themselves.");
-    if (voteRound == 1) {
+    if (!dayOpened) {
       // The day's vote opens with its first seconded nomination: the vampires' victim dies now.
-      int before = alive.size();
-      for (RoleModule m : modules) m.entered(this, Phase.DAY_VOTE);
-      if (alive.size() != before) {
+      if (openDayVote()) {
         checkWinner();
         if (phase == Phase.FINISHED) return "The game is over.";
         if (!alive.contains(target)) {
@@ -1389,8 +1401,21 @@ public final class WerewolfGame implements GamePreset {
     else to(Phase.DISCUSSION);
   }
 
+  /**
+   * The day's vote opens (nominated voting: with the first seconded nomination, or when the day
+   * runs out): the modules that act then, the vampires, go. Returns true when somebody died.
+   */
+  private boolean openDayVote() {
+    if (dayOpened) return false;
+    dayOpened = true;
+    int before = alive.size();
+    for (RoleModule m : modules) m.entered(this, Phase.DAY_VOTE);
+    return alive.size() != before;
+  }
+
   /** The day ends with no verdict (nominated voting ran out of time). */
   private void endDay(String why) {
+    openDayVote();
     journal.log("VERDICT", why);
     verdict = new Verdict(null);
     nominee = null;
@@ -1657,8 +1682,11 @@ public final class WerewolfGame implements GamePreset {
   /** The other living members of the hunting pack (wolves, or vampires), known only to the pack. */
   public synchronized List<UUID> pack(UUID member) {
     Role mine = roles.get(member);
+    if (!awake(member)) return List.of();
     if (wolf(mine))
-      return alive.stream().filter(p -> !p.equals(member) && wolf(roles.get(p))).toList();
+      return alive.stream()
+          .filter(p -> !p.equals(member) && wolf(roles.get(p)) && awake(p))
+          .toList();
     if (mine == Role.VAMPIRE)
       return alive.stream().filter(p -> !p.equals(member) && roles.get(p) == Role.VAMPIRE).toList();
     return List.of();
@@ -1673,7 +1701,7 @@ public final class WerewolfGame implements GamePreset {
 
   /** Whether this living player wakes with the pack at night. */
   public synchronized boolean packMember(UUID p) {
-    return alive.contains(p) && roles.get(p) != null && wolf(roles.get(p));
+    return alive.contains(p) && roles.get(p) != null && wolf(roles.get(p)) && awake(p);
   }
 
   /** The table order, as set by {@link #ring}: every player of the game, dead or alive. */
@@ -1837,8 +1865,9 @@ public final class WerewolfGame implements GamePreset {
     long vampires = alive.stream().filter(p -> roles.get(p) == Role.VAMPIRE).count();
     long others = alive.size() - pack - lone - helpers - vampires;
     if (pack + lone == 0 && vampires == 0) end("VILLAGE", "every wolf is dead");
-    else if (pack > 0 && vampires == 0 && pack + lone >= others + 0)
-      // As many wolves as everyone else together: the village can no longer outvote them.
+    else if (pack > 0 && vampires == 0 && pack >= others + lone)
+      // As many wolves as everyone else together (the lone wolf plays for himself, so he is one of
+      // the others): the village can no longer outvote them.
       end("WEREWOLVES", "the wolves are as many as the rest of the village");
   }
 

@@ -132,7 +132,10 @@ final class WerewolfBots {
       case "HUNTER_SHOT" -> {
         List<UUID> pool = new ArrayList<>(game.alive());
         pool.remove(game.partner(bot));
-        UUID target = pick(pool, new ArrayList<>(game.alive()));
+        pool.removeIf(game::exiled);
+        List<UUID> anyone = new ArrayList<>(game.alive());
+        anyone.removeIf(game::exiled);
+        UUID target = pick(pool, anyone);
         if (target == null) return;
         game.select(bot, target);
         log.add(new Action(bot, role, "shoots " + target));
@@ -185,7 +188,7 @@ final class WerewolfBots {
       vote(game, bot, known, log, "votes against");
       return;
     }
-    boolean wolf = WerewolfGame.isWolf(game.role(bot));
+    boolean wolf = WerewolfGame.isWolf(game.selfRoleName(bot));
     if (pool.isEmpty() || random.nextInt(100) < (wolf ? 5 : 12)) {
       if (!game.abstained(bot)) {
         game.use(bot, "skip");
@@ -263,6 +266,7 @@ final class WerewolfBots {
     for (var vision : game.visions(bot).entrySet())
       if (WerewolfGame.isWolf(vision.getValue())
           && game.alive().contains(vision.getKey())
+          && !game.exiled(vision.getKey())
           && !vision.getKey().equals(game.partner(bot))) return vision.getKey();
     return null;
   }

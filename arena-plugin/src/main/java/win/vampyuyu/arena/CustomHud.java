@@ -224,7 +224,7 @@ final class CustomHud {
               yield info == null ? "waiting" : info.call().label();
             }
           };
-    if (phase.equals("MARTYR")) label = RoleInfo.of("MARTYR").call().label();
+    if (phase.equals("MARTYR")) label = actor ? RoleInfo.of("MARTYR").call().label() : "vote";
     double fraction = boss.timer() && game.seconds() > 0 ? Math.max(0, Math.min(1, seconds / (double) game.seconds())) : 1;
     String rolePalette = dead ? "dead" : RoleInfo.of(role).palette();
     String team = dead ? "out" : RoleInfo.of(role).teamWord();

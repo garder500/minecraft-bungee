@@ -100,6 +100,15 @@ interface RoleModule {
   }
 
   /**
+   * Whether this kill would be refused anyway, with no side effect: asked of the modules before a
+   * martyr is offered the condemned player's place (an unrevealed prince is spared whoever
+   * stands in). Return true to skip the martyr's window.
+   */
+  default boolean spares(WerewolfGame g, WerewolfGame.Kill kill) {
+    return false;
+  }
+
+  /**
    * A player just died (already removed from the living). {@code source} is the kill's source
    * (WOLVES, VOTE, POISON...), or OTHER. Called before the player's lover dies of grief.
    */

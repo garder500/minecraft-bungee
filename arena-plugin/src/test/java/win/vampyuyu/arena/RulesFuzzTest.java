@@ -53,7 +53,7 @@ public class RulesFuzzTest {
   @Test
   public void randomTablesAlwaysFinishWithoutARefusedBot() {
     Set<String> rolesSeen = new HashSet<>();
-    for (int seed = 0; seed < 400; seed++) {
+    for (int seed = 0; seed < Integer.getInteger("fuzz.seeds", 400); seed++) {
       Random r = new Random(seed * 7919L + 13);
       int n = 6 + r.nextInt(25);
       Map<String, Integer> cast = cast(r, n);
