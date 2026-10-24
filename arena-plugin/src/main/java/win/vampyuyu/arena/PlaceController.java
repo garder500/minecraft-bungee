@@ -374,8 +374,12 @@ final class PlaceController {
     for (UUID other : s.players.keySet()) {
       Player o = Bukkit.getPlayer(other);
       if (o == null || other.equals(viewer.getUniqueId())) continue;
+      // Whoever the hag sent away is only gone from view once the day is here: at night the pick is a secret.
       boolean hide =
-          viewerAlive && (viewerAsleep || !game.alive().contains(other) || game.exiled(other));
+          viewerAlive
+              && (viewerAsleep
+                  || !game.alive().contains(other)
+                  || game.exiled(other) && !game.night());
       try {
         if (hide) viewer.hidePlayer(plugin, o);
         else viewer.showPlayer(plugin, o);
@@ -385,7 +389,7 @@ final class PlaceController {
     }
     for (var body : s.bodies.entrySet()) {
       try {
-        if (viewerAlive && (viewerAsleep || game.exiled(body.getKey())))
+        if (viewerAlive && (viewerAsleep || game.exiled(body.getKey()) && !game.night()))
           viewer.hideEntity(plugin, body.getValue());
         else viewer.showEntity(plugin, body.getValue());
       } catch (RuntimeException ignored) {

@@ -99,9 +99,7 @@ final class SoloModule implements RoleModule {
       return null;
     }
     UUID other = g.living().stream().filter(p -> !p.equals(lone)).findFirst().orElseThrow();
-    WerewolfGame.Role role = g.roleOf(other);
-    boolean wolfSide = WerewolfGame.wolf(role) || RoleInfo.of(role.name()).team().equals("wolves");
-    return wolfSide ? null : "LONE_WOLF";
+    return g.wolfSide(other) ? null : "LONE_WOLF"; // a picked minion is on the wolves' side too
   }
 
   @Override

@@ -166,12 +166,32 @@ public class MayorMinionAwayTest {
   }
 
   @Test
-  public void aMinionCardInTheCastMeansTheWolvesPickNobody() {
+  public void aMinionCardAndAPickedMinionAreNotDealtTogether() {
     var cast = Map.of("WEREWOLF", 2, "MINION", 1);
-    var g = game(9, cast, "DEALT", "PICKED");
+    assertThrows(IllegalArgumentException.class, () -> rules(cast, "DEALT", "PICKED"));
+    // The automatic cast of a big table leaves the minion card out when the wolves pick.
+    var big = new WerewolfGame(ids(30), 120, 30, 10, new Random(2), rules(Map.of(), "DEALT", "PICKED"));
+    assertFalse(big.composition().containsKey("MINION"));
+  }
+
+  @Test
+  public void aPickedMinionIsOnTheWolvesSideForTheLoneWolf() {
+    var cast = Map.of("WEREWOLF", 1, "LONE_WOLF", 1);
+    var ids = ids(6);
+    var g = game(6, cast, "DEALT", "PICKED");
+    UUID wolf = holder(g, ids, "WEREWOLF"), lone = holder(g, ids, "LONE_WOLF");
+    UUID villager = ids.stream().filter(p -> g.role(p).equals("VILLAGER")).findFirst().orElseThrow();
+    UUID prey = ids.stream().filter(p -> g.role(p).equals("VILLAGER") && !p.equals(villager)).findFirst().orElseThrow();
     toPhase(g, "NIGHT");
-    for (UUID w : new ArrayList<>(g.actors())) g.select(w, g.alive().stream().filter(p -> !g.role(p).equals("WEREWOLF")).findFirst().orElseThrow());
-    assertNotEquals("no pick when a minion card is dealt", "MINION", g.phase());
+    g.select(wolf, prey);
+    g.select(lone, prey);
+    assertEquals("MINION", g.phase());
+    g.select(wolf, villager);
+    g.select(lone, villager);
+    assertTrue(g.isMinion(villager));
+    // Last two: the lone wolf and his own pack's minion: the lone wolf does not win alone.
+    for (UUID p : Set.copyOf(g.alive())) if (!p.equals(lone) && !p.equals(villager)) g.remove(p);
+    assertNotEquals("LONE_WOLF", g.winner());
   }
 
   // ------------------------------------------------------------------ away and silenced
@@ -218,5 +238,86 @@ public class MayorMinionAwayTest {
     assertFalse("a silenced player still votes", g.exiled(target));
     assertTrue(g.actors().contains(target));
     assertFalse(g.sleeping(target));
+  }
+
+  // ------------------------------------------------------------------ the dawn's hunter and the election
+
+  private static WerewolfGame electedGame(Map<String, Integer> cast, int n) {
+    return game(n, cast, "ELECTED", "DEALT");
+  }
+
+  @Test
+  public void aHunterKilledAtDawnShootsInDaylightBeforeTheElection() {
+    var cast = Map.of("WEREWOLF", 1, "HUNTER", 1);
+    var ids = ids(8);
+    var g = electedGame(cast, 8);
+    UUID hunter = holder(g, ids, "HUNTER"), wolf = holder(g, ids, "WEREWOLF");
+    toPhase(g, "NIGHT");
+    g.select(wolf, hunter);
+    for (int i = 0; i < 30 && !g.phase().equals("HUNTER_SHOT"); i++) g.advance();
+    assertEquals("HUNTER_SHOT", g.phase());
+    assertFalse("the shot is in daylight, whatever comes next", g.night());
+    for (UUID p : g.alive()) assertFalse(p.toString(), g.sleeping(p));
+    UUID target = ids.stream().filter(p -> g.alive().contains(p) && !p.equals(wolf)).findFirst().orElseThrow();
+    g.aim(hunter, target);
+    g.use(hunter, "shoot");
+    assertEquals("the election follows the shot", "ELECTION", g.phase());
+  }
+
+  @Test
+  public void aMayorShotByTheDawnsHunterIsReplacedTheSameMorning() {
+    var cast = Map.of("WEREWOLF", 1, "HUNTER", 1);
+    var ids = ids(8);
+    var g = electedGame(cast, 8);
+    UUID hunter = holder(g, ids, "HUNTER"), wolf = holder(g, ids, "WEREWOLF");
+    toPhase(g, "ELECTION");
+    UUID mayor = ids.stream().filter(p -> !p.equals(wolf) && !p.equals(hunter)).findFirst().orElseThrow();
+    for (UUID p : ids) if (!p.equals(mayor)) g.select(p, mayor);
+    g.advance();
+    assertEquals(mayor, g.mayor());
+    toPhase(g, "NIGHT");
+    g.select(wolf, hunter);
+    for (int i = 0; i < 30 && !g.phase().equals("HUNTER_SHOT"); i++) g.advance();
+    g.aim(hunter, mayor);
+    g.use(hunter, "shoot");
+    assertFalse(g.alive().contains(mayor));
+    assertEquals("a new mayor is elected the same morning", "ELECTION", g.phase());
+  }
+
+  @Test
+  public void aDaylightShotKeepsAnExiledPlayerAsleep() {
+    var cast = Map.of("WEREWOLF", 1, "HUNTER", 1, "OLD_HAG", 1);
+    var ids = ids(8);
+    var g = game(8, cast, "DEALT", "DEALT");
+    UUID hunter = holder(g, ids, "HUNTER"), wolf = holder(g, ids, "WEREWOLF"), hag = holder(g, ids, "OLD_HAG");
+    UUID away = ids.stream().filter(p -> g.role(p).equals("VILLAGER")).findFirst().orElseThrow();
+    toPhase(g, "NIGHT");
+    g.select(wolf, hunter);
+    toPhase(g, "HAG");
+    g.select(hag, away);
+    assertEquals("HUNTER_SHOT", g.phase());
+    assertTrue(g.sleeping(away));
+    UUID other = ids.stream().filter(p -> g.alive().contains(p) && !p.equals(away) && !p.equals(wolf)).findFirst().orElseThrow();
+    assertFalse(g.sleeping(other));
+    // The hunter cannot aim at the player who is away, and a refused shot keeps the aim.
+    assertThrows(IllegalArgumentException.class, () -> g.aim(hunter, away));
+    g.aim(hunter, other);
+    assertEquals(List.of(other), g.aims(hunter));
+  }
+
+  @Test
+  public void aSilencedPlayerWhoDiedIsNotAnnounced() {
+    var cast = Map.of("WEREWOLF", 1, "SPELLCASTER", 1);
+    var ids = ids(8);
+    var g = game(8, cast, "DEALT", "DEALT");
+    UUID caster = holder(g, ids, "SPELLCASTER"), wolf = holder(g, ids, "WEREWOLF");
+    UUID target = ids.stream().filter(p -> g.role(p).equals("VILLAGER")).findFirst().orElseThrow();
+    toPhase(g, "NIGHT");
+    g.select(wolf, target);
+    toPhase(g, "SPELL");
+    g.select(caster, target);
+    assertFalse(g.alive().contains(target));
+    assertTrue(
+        g.drainNotices().values().stream().noneMatch(n -> n.contains("is silenced by a spell today")));
   }
 }

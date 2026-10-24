@@ -173,7 +173,9 @@ final class WerewolfHud {
     List<Component> lines = new ArrayList<>();
     lines.add(
         Component.text(
-            cardFaceUp ? WerewolfPresentation.team(role) + (dead ? " · out" : "") : "",
+            cardFaceUp
+                ? (game.isMinion(id) ? "Wolf side" : WerewolfPresentation.team(role)) + (dead ? " · out" : "")
+                : "",
             TextColor.color(WerewolfPresentation.INK_MUTED)));
     lines.add(Component.empty());
     Component alive =
@@ -221,7 +223,7 @@ final class WerewolfHud {
   private static void voteTags(Scoreboard board, ArenaSession s, WerewolfGame game, UUID viewer) {
     Objective tags = board.getObjective("votes");
     if (tags == null) tags = board.registerNewObjective("votes", Criteria.DUMMY, Component.empty());
-    if (!game.phase().equals("DAY_VOTE")) {
+    if (!game.phase().equals("DAY_VOTE") && !game.phase().equals("ELECTION")) {
       if (tags.getDisplaySlot() != null) tags.setDisplaySlot(null);
       return;
     }

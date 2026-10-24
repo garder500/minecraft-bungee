@@ -58,6 +58,8 @@ public class RulesFuzzTest {
       Random r = new Random(seed * 7919L + 13);
       int n = 6 + r.nextInt(25);
       Map<String, Integer> cast = cast(r, n);
+      String minionMode = r.nextInt(3) == 0 ? "PICKED" : "DEALT";
+      if (minionMode.equals("PICKED")) cast.remove("MINION"); // the wolves pick: no card
       var rules =
           new GameRules.Werewolf(
               cast, 5, 5, 5, true,
@@ -67,7 +69,7 @@ public class RulesFuzzTest {
               r.nextInt(3) == 0,
               r.nextInt(3) == 0 ? "NOMINATE" : "POINT",
               r.nextInt(3) == 0 ? "ELECTED" : "DEALT",
-              r.nextInt(3) == 0 ? "PICKED" : "DEALT");
+              minionMode);
       String label = describe(seed, cast, rules);
       var ids = ids(seed, n);
       WerewolfGame game;

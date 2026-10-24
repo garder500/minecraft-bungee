@@ -63,7 +63,7 @@ final class WerewolfMenus {
     synchronized (game) {
       if (!game.actors().contains(viewer)) return null;
       return switch (game.phase()) {
-        case "DAY_VOTE" -> Kind.VOTE;
+        case "DAY_VOTE", "ELECTION" -> Kind.VOTE;
         case "NIGHT" -> Kind.HUNT;
         case "SEER" -> Kind.VISION;
         case "WITCH" -> Kind.POTIONS;
@@ -827,7 +827,7 @@ final class WerewolfMenus {
       help = help.replace(entry.getKey().toString(), entry.getValue());
     List<Line> l = new ArrayList<>();
     l.add(new Line(roleName(role), WerewolfPresentation.color(role)));
-    l.add(new Line(team(role), INK));
+    l.add(new Line(game.isMinion(viewer) ? "Wolf side" : team(role), INK));
     l.add(BLANK);
     for (String part : wrap(help, 40)) l.add(new Line(part, INK_MUTED));
     return new Entry(

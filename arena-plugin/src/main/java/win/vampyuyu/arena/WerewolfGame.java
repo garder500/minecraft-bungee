@@ -222,6 +222,7 @@ public final class WerewolfGame implements GamePreset {
 
   /** The elected mayor (a setting), and the players the wolves picked as their minions. */
   private UUID mayor;
+  private boolean electionWindow;
 
   private final Set<UUID> minions = new LinkedHashSet<>();
   private boolean minionCard;
@@ -334,7 +335,8 @@ public final class WerewolfGame implements GamePreset {
         for (var unlock : UNLOCK)
           if (players.size() >= unlock.getValue()
               && deck.size() < players.size()
-              && !(unlock.getKey() == Role.MAYOR && settings.mayor().equals("ELECTED")))
+              && !(unlock.getKey() == Role.MAYOR && settings.mayor().equals("ELECTED"))
+              && !(unlock.getKey() == Role.MINION && settings.minion().equals("PICKED")))
             deck.add(unlock.getKey());
     }
     long wolves = deck.stream().filter(WerewolfGame::wolf).count();
@@ -507,7 +509,9 @@ public final class WerewolfGame implements GamePreset {
             ? " You are in love with " + lovers.get(p) + "; if either dies, both die."
             : "";
     String text = RoleInfo.of(selfRole(p).name()).help();
-    return (text.isEmpty() ? RoleInfo.of("VILLAGER").help() : text) + bond;
+    String wolves =
+        minions.contains(p) ? " The wolves picked you as their minion: you win with them." : "";
+    return (text.isEmpty() ? RoleInfo.of("VILLAGER").help() : text) + wolves + bond;
   }
 
   /** The role this player believes they hold (a drunk thinks they are a villager). */
@@ -634,7 +638,10 @@ public final class WerewolfGame implements GamePreset {
         return select(p, pair.get(1));
       }
       case "shoot" -> {
-        return select(p, aims.remove(p).getFirst());
+        UUID aimed = aims.get(p).getFirst();
+        String shot = select(p, aimed); // a refused shot keeps the aim
+        aims.remove(p);
+        return shot;
       }
       case "protect-self" -> {
         return select(p, p);
@@ -665,7 +672,11 @@ public final class WerewolfGame implements GamePreset {
     int max;
     if (phase == Phase.CUPID && role == Role.CUPID && alive.contains(p) && lovers.isEmpty())
       max = 2;
-    else if (phase == Phase.HUNTER_SHOT && Objects.equals(hunters.peekFirst(), p)) max = 1;
+    else if (phase == Phase.HUNTER_SHOT && Objects.equals(hunters.peekFirst(), p)) {
+      if (exiled.contains(target))
+        throw new IllegalArgumentException("That player is away from the village today");
+      max = 1;
+    }
     else if (phase == Phase.WITCH && role == Role.WITCH && alive.contains(p)) {
       if (poisonUsed.contains(p))
         throw new IllegalArgumentException("Your death potion has already been used");
@@ -781,7 +792,8 @@ public final class WerewolfGame implements GamePreset {
     boolean voting = phase == Phase.DAY_VOTE || phase == Phase.ELECTION;
     if (!voting && !hunting)
       throw new IllegalArgumentException("You cannot vote during this phase");
-    if (phase == Phase.MINION && (wolf(roles.get(target)) || minions.contains(target) || exiled.contains(target)))
+    if (phase == Phase.MINION
+        && ((wolf(roles.get(target)) && awake(target)) || minions.contains(target) || exiled.contains(target)))
       throw new IllegalArgumentException("Pick somebody outside the pack");
     // A wolf the pack does not know yet (a drunk who has not woken) can be hunted by mistake.
     if (phase == Phase.NIGHT && wolf(roles.get(target)) && awake(target))
@@ -945,6 +957,7 @@ public final class WerewolfGame implements GamePreset {
     ballots.values().removeIf(p::equals);
     aims.values().forEach(picks -> picks.remove(p));
     exiled.remove(p);
+    muted.remove(p);
     if (p.equals(mayor)) {
       mayor = null;
       journal.log("MAYOR", who(p) + " was the mayor: the village elects another one at dawn");
@@ -1030,7 +1043,9 @@ public final class WerewolfGame implements GamePreset {
     for (RoleModule m : modules) m.dawn(this);
     // Everybody sees who was sent away and who was silenced (the spells' own effects).
     for (UUID p : exiled) notifyLiving(p + " is away from the village today.");
-    for (UUID p : muted) notifyLiving(p + " is silenced by a spell today: gestures only, the vote still counts.");
+    for (UUID p : muted)
+      if (alive.contains(p))
+        notifyLiving(p + " is silenced by a spell today: gestures only, the vote still counts.");
     lastGuard.clear();
     lastGuard.putAll(guards);
     guards.clear();
@@ -1050,6 +1065,7 @@ public final class WerewolfGame implements GamePreset {
     nominee = null;
     nominator = null;
     dayLeft = discussion + vote;
+    electionWindow = true;
     continueWith(electionDue() ? Phase.ELECTION : Phase.DISCUSSION);
   }
 
@@ -1060,7 +1076,22 @@ public final class WerewolfGame implements GamePreset {
     else enterResume();
   }
 
+  /** True for the phases of the day: a hunter's shot that interrupts one is a shot in daylight. */
+  private static boolean dayPhase(Phase ph) {
+    return ph == Phase.DISCUSSION
+        || ph == Phase.DAY_VOTE
+        || ph == Phase.ELECTION
+        || ph == Phase.DEFENSE
+        || ph == Phase.TRIAL
+        || ph == Phase.MARTYR;
+  }
+
   private void enterResume() {
+    // The morning's election is decided once the dawn's shots are in: the mayor may have just died.
+    if (electionWindow && (resume == Phase.DISCUSSION || resume == Phase.ELECTION)) {
+      electionWindow = false;
+      resume = electionDue() ? Phase.ELECTION : Phase.DISCUSSION;
+    }
     // A nomination that fell while a hunter shot (its nominee died or left) is not resumed.
     if ((resume == Phase.DEFENSE || resume == Phase.TRIAL) && nominee == null) resume = Phase.DISCUSSION;
     if (resume == null) {
@@ -1399,6 +1430,11 @@ public final class WerewolfGame implements GamePreset {
             + " them. The pack: "
             + String.join(", ", pack.stream().map(UUID::toString).toList())
             + ". The Seer sees you as a villager.");
+  }
+
+  /** Whether this player plays for the wolves: a wolf, a helper, or a minion the wolves picked. */
+  boolean wolfSide(UUID p) {
+    return wolf(roles.get(p)) || teamOf(p).equals("wolves");
   }
 
   /** Whether the wolves picked this player as their minion. */
@@ -1934,7 +1970,7 @@ public final class WerewolfGame implements GamePreset {
   public synchronized boolean night() {
     return switch (phase) {
       case DISCUSSION, DAY_VOTE, FINISHED, MARTYR, DEFENSE, TRIAL, ELECTION -> false;
-      case HUNTER_SHOT -> resume != Phase.DISCUSSION && resume != Phase.DAY_VOTE;
+      case HUNTER_SHOT -> !dayPhase(resume);
       default -> true;
     };
   }
@@ -1945,7 +1981,8 @@ public final class WerewolfGame implements GamePreset {
       // A player sent away for the day (the old hag) sleeps through it: black screen, nobody in view.
       case DISCUSSION, DAY_VOTE, MARTYR, DEFENSE, TRIAL, ELECTION -> exiled.contains(p);
       case FINISHED -> false;
-      case HUNTER_SHOT -> night() && !Objects.equals(hunters.peekFirst(), p);
+      case HUNTER_SHOT ->
+          night() ? !Objects.equals(hunters.peekFirst(), p) : exiled.contains(p);
       default -> !callActors(phase).contains(p);
     };
   }

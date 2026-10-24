@@ -253,6 +253,16 @@ final class WerewolfAmbience {
                             TextColor.color(WerewolfPresentation.VILLAGER));
                         if (enabled) cue(target, "dawn", Sound.BLOCK_NOTE_BLOCK_CHIME, .35f, 1.2f);
                       };
+                } else if (phase.equals("ELECTION")) {
+                  player.sendMessage(
+                      Component.text(
+                          "The election opens: right-click the player you want as mayor, or skip.",
+                          TextColor.color(WerewolfPresentation.VOTE)));
+                  header =
+                      target -> {
+                        title(target, "Election", "Who will be the mayor?", VOTE);
+                        if (enabled) cue(target, "vote", Sound.BLOCK_NOTE_BLOCK_HAT, .2f, 1f);
+                      };
                 } else if (phase.equals("DAY_VOTE")) {
                   player.sendMessage(
                       Component.text(
@@ -483,7 +493,7 @@ final class WerewolfAmbience {
 
   /** Practice bots wear their ballots like players do: "[Bot] Guest 2 · ✖ 3 votes" during a vote. */
   private void nameBodies(ArenaSession s, WerewolfGame game) {
-    boolean voting = game.phase().equals("DAY_VOTE");
+    boolean voting = game.phase().equals("DAY_VOTE") || game.phase().equals("ELECTION");
     Map<UUID, Integer> totals = voting ? game.votes(s.players.keySet().iterator().next()) : Map.of();
     for (var body : s.bodies.entrySet()) {
       int votes = totals.getOrDefault(body.getKey(), 0);
@@ -561,7 +571,10 @@ final class WerewolfAmbience {
   /** "Voted: Alex" in the action bar: who the player's current ballot is for (day vote, wolves' hunt). */
   private Component voteLine(ArenaSession s, WerewolfGame game, UUID me) {
     String phase = game.phase();
-    boolean voting = phase.equals("DAY_VOTE") || phase.equals("NIGHT") && game.packMember(me);
+    boolean voting =
+        phase.equals("DAY_VOTE")
+            || phase.equals("ELECTION")
+            || (phase.equals("NIGHT") || phase.equals("MINION")) && game.packMember(me);
     if (!voting || !game.alive().contains(me)) return null;
     UUID ballot = game.ballot(me);
     if (ballot != null)

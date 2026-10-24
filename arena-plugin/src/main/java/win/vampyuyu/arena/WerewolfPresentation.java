@@ -287,7 +287,7 @@ final class WerewolfPresentation {
       boolean actor = game.actors().contains(viewer);
       if (game.night() && !actor)
         return new View("The village sleeps", "Zzz… You sleep until dawn", false, false);
-      if (game.exiled(viewer) && !phase.equals("FINISHED"))
+      if (game.exiled(viewer) && !game.night() && !phase.equals("FINISHED"))
         return new View("Away", "You are away from the village today. You come back at nightfall.", false, true);
       String label =
           switch (phase) {

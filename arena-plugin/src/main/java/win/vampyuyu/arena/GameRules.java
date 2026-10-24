@@ -98,6 +98,9 @@ public final class GameRules {
           throw new IllegalArgumentException(
               "Too many " + RoleInfo.of(e.getKey()).name() + " (at most " + RoleInfo.of(e.getKey()).max() + ")");
       }
+      if (minion.equals("PICKED") && roles.getOrDefault("MINION", 0) > 0)
+        throw new IllegalArgumentException(
+            "With a picked minion the wolves choose one on the first night: deal no Minion card");
       if (!roles.isEmpty() && wolves(roles) + roles.getOrDefault("VAMPIRE", 0) < 1)
         throw new IllegalArgumentException("Custom roles need at least one werewolf or vampire");
       if (cupidSeconds < 5

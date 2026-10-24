@@ -132,7 +132,9 @@ final class WerewolfBots {
       case "MINION" -> {
         if (!WerewolfGame.isWolf(role)) return;
         List<UUID> pool = new ArrayList<>(game.alive());
-        pool.removeIf(p -> WerewolfGame.isWolf(game.role(p)) || game.isMinion(p) || game.exiled(p));
+        pool.remove(bot);
+        pool.removeAll(game.pack(bot)); // only what a wolf knows: its pack, not every card
+        pool.removeIf(p -> game.isMinion(p) || game.exiled(p));
         UUID target = packChoice(game, bot);
         if (target == null || !pool.contains(target)) target = pick(pool, List.of());
         if (target == null) return;
