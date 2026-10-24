@@ -195,11 +195,6 @@ def top_plate(color):
     # round badge (the digit sprite sits on it)
     c.circle(33, 33, 6, (8, 6, 16), 255)
     c.circle(33, 33, 6, color, 255, fill=False, width=1)
-    # groove of the progress bar, ticks every tenth
-    c.rect(43, 30, 146, 7, (6, 4, 12), 255)
-    c.rect(44, 31, 144, 5, dim(color, 0.2), 255)
-    for k in range(1, 10):
-        c.rect(45 + k * 140 // 10, 31, 1, 5, (0, 0, 0), 90)
     # timer well
     c.rect(188, 6, 54, 26, (6, 4, 12), 180)
     c.rect(188, 6, 54, 1, color, 120)

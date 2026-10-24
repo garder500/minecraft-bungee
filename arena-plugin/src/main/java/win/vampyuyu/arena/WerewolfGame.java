@@ -182,6 +182,10 @@ public final class WerewolfGame implements GamePreset {
           Map.entry(Role.OLD_MAN, 34),
           Map.entry(Role.GHOST, 35));
 
+  /** Wolf-side specials a small table adds to its wolves, in order. */
+  private static final List<Role> WOLF_EXTRAS =
+      List.of(Role.SORCERER, Role.MINION, Role.WOLF_CUB, Role.ALPHA_WOLF);
+
   /** Wolves at a table of this size, as the rulebook has it: 6-8 one, 9-11 two, 12-15 three, then one per five. */
   static int wolvesAt(int players) {
     return players <= 8 ? 1 : players <= 11 ? 2 : players <= 15 ? 3 : players / 5;
@@ -331,13 +335,28 @@ public final class WerewolfGame implements GamePreset {
       int wolves = settings == null ? Math.max(1, players.size() / 4) : wolvesAt(players.size());
       for (int i = 0; i < wolves; i++) deck.add(Role.WEREWOLF);
       deck.add(Role.SEER);
-      if (settings != null)
-        for (var unlock : UNLOCK)
-          if (players.size() >= unlock.getValue()
-              && deck.size() < players.size()
-              && !(unlock.getKey() == Role.MAYOR && settings.mayor().equals("ELECTED"))
-              && !(unlock.getKey() == Role.MINION && settings.minion().equals("PICKED")))
-            deck.add(unlock.getKey());
+      if (settings != null) {
+        // Small tables leave no seat to a plain villager: the wolf side grows with the table
+        // (one in four) through its special roles, then every seat takes the next special role.
+        int side = Math.max(wolvesAt(players.size()), players.size() / 4);
+        int extras = side - wolves;
+        for (Role extra : WOLF_EXTRAS) {
+          if (extras <= 0 || deck.size() >= players.size()) break;
+          if (extra == Role.MINION && settings.minion().equals("PICKED")) continue;
+          deck.add(extra);
+          extras--;
+        }
+        for (var unlock : UNLOCK) {
+          Role role = unlock.getKey();
+          if (deck.size() >= players.size()) break;
+          if (WOLF_EXTRAS.contains(role)) continue; // the wolf side was settled above
+          if (deck.contains(role) && role != Role.MASON) continue;
+          if (role == Role.MASON && players.size() - deck.size() < 2) continue; // masons come in pairs
+          if (role == Role.MAYOR && settings.mayor().equals("ELECTED")) continue;
+          if (role == Role.APPRENTICE_SEER && !deck.contains(Role.SEER)) continue;
+          deck.add(role);
+        }
+      }
     }
     long wolves = deck.stream().filter(WerewolfGame::wolf).count();
     long killers = wolves + deck.stream().filter(r -> r == Role.VAMPIRE).count();

@@ -27,8 +27,8 @@ public class ExpandedGameTest {
   @Test
   public void automaticCastIncludesAllSpecialRoles() {
     var g = new WerewolfGame(players(10), 5, 5, 5, new Random(2), GameRules.Werewolf.defaults());
-    for (String role : List.of("CUPID", "HUNTER", "WITCH", "GUARD", "SEER", "WEREWOLF", "VILLAGER"))
-      assertTrue(players(10).stream().anyMatch(p -> g.role(p).equals(role)));
+    for (String role : List.of("CUPID", "HUNTER", "WITCH", "GUARD", "SEER", "WEREWOLF", "SCAPEGOAT"))
+      assertTrue(role, players(10).stream().anyMatch(p -> g.role(p).equals(role)));
   }
 
   private Map<String, Long> cast(int n) {
@@ -38,16 +38,17 @@ public class ExpandedGameTest {
   }
 
   @Test
-  public void automaticCastGrowsWithTheTableAndKeepsPlainVillagers() {
-    assertEquals(Map.of("WEREWOLF", 1L, "SEER", 1L, "VILLAGER", 2L), cast(4));
-    assertEquals(Map.of("WEREWOLF", 1L, "SEER", 1L, "WITCH", 1L, "VILLAGER", 3L), cast(6));
-    assertEquals(
-        Map.of("WEREWOLF", 1L, "SEER", 1L, "WITCH", 1L, "HUNTER", 1L, "CUPID", 1L, "VILLAGER", 3L),
-        cast(8)); // the rulebook: one wolf up to eight players, two up to eleven, three up to fifteen
+  public void automaticCastLeavesNoPlainVillagerAtASmallTable() {
+    for (int n = 4; n <= 20; n++)
+      assertNull("no villager at " + n + " players: " + cast(n), cast(n).get("VILLAGER"));
+    assertEquals(Map.of("WEREWOLF", 1L, "SEER", 1L, "WITCH", 1L, "HUNTER", 1L), cast(4));
+    // one wolf-side seat in four: a wolf and a Sorcerer at eight, the wolf pack grown by the rulebook table
+    var eight = cast(8);
+    assertEquals(1L, eight.get("WEREWOLF").longValue());
+    assertEquals(1L, eight.get("SORCERER").longValue());
+    assertEquals(1L, eight.get("CUPID").longValue());
     assertEquals(2L, cast(11).get("WEREWOLF").longValue());
     assertEquals(3L, cast(15).get("WEREWOLF").longValue());
-    assertEquals(3L, cast(16).get("WEREWOLF").longValue());
-    assertEquals(3L, cast(10).get("VILLAGER").longValue());
   }
 
   @Test
