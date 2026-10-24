@@ -7,12 +7,12 @@
  "palette": "hunter",
  "icon": "troublemaker",
  "word": "TROUBLE",
- "help": "Once per game, stir up trouble: the next day the village eliminates two players instead of one.",
+ "help": "Once per game, at night, stir up trouble: the next day the village eliminates two players instead of one. Pass to keep the power.",
  "call": {
   "phase": "TROUBLE",
   "label": "TROUBLE",
   "title": "Troublemaker, awaken",
   "subtitle": "Stir up trouble?",
-  "instruction": "Use Stir up trouble for two eliminations tomorrow, or go back to sleep"
+  "instruction": "Stir up trouble for two eliminations tomorrow, or go back to sleep"
  }
 }

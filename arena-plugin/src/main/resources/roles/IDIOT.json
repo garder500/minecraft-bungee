@@ -7,5 +7,5 @@
  "palette": "villager",
  "icon": "idiot",
  "word": "IDIOT",
- "help": "You always vote to eliminate someone: if you have not voted when the day vote ends, your ballot is cast at random. Nobody knows."
+ "help": "You cannot abstain: if you have not voted when the day vote ends, your ballot is cast at random against another player. Nobody knows."
 }

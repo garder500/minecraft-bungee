@@ -7,12 +7,12 @@
  "palette": "hunter",
  "icon": "martyr",
  "word": "MARTYR",
- "help": "When the village is about to eliminate someone else, you may take their place and die instead.",
+ "help": "When the village condemns someone else, you may take their place and die instead, or let it pass.",
  "call": {
   "phase": "MARTYR",
   "label": "MARTYR",
   "title": "Martyr, will you sacrifice yourself?",
-  "subtitle": "Take the condemned player's place",
-  "instruction": "Use Sacrifice to take the condemned player's place, or let it pass"
+  "subtitle": "The village condemned someone",
+  "instruction": "Use Take place to die instead of the condemned, or Let it pass"
  }
 }
