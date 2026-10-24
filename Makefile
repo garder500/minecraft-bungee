@@ -6,7 +6,7 @@ ZIP ?=
 OUT ?=
 export COMPOSE SERVER WORLD ZIP OUT
 
-.PHONY: export-all zip-all help status up stop configure export zip import restore inspect export-panel import-panel backup test-archives pack art test-pack e2e-pack plugin plugin-prod plugin-build plugin-test plugin-clear plugin-clear-prod plugin-status plugin-status-prod test-plugins
+.PHONY: hud-sheet export-all zip-all help status up stop configure export zip import restore inspect export-panel import-panel backup test-archives pack art test-pack e2e-pack plugin plugin-prod plugin-build plugin-test plugin-clear plugin-clear-prod plugin-status plugin-status-prod test-plugins
 help: ## Show operator commands
 	@python3 scripts/world_archive.py help
 status: ## Show container status
@@ -44,6 +44,9 @@ e2e-pack: ## Boot a creative Paper 26.3 + headless 26.3 client and check the pac
 	@python3 scripts/e2e_client.py
 test-pack: ## Validate the menu resource pack structure and reproducibility
 	@python3 scripts/test_pack.py
+	@python3 scripts/test_hud_sheet.py
+hud-sheet: ## Render every HUD state to resource-pack/dist/hud-sheet/ (index.html is self-contained) [SCALE=2|3|4] [MODE=auto|large|medium|small]
+	@python3 resource-pack/art/hud_sheet.py --scale $(or $(SCALE),3) --mode $(or $(MODE),auto)
 PLUGIN ?=
 SERVERS ?=
 plugin: ## Build PLUGIN=network|arena|lobby|claims, override it locally, restart only its servers [SERVERS=...] [FAST=1] [FORCE=1]
