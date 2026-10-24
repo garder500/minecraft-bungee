@@ -7,5 +7,5 @@
  "palette": "vote",
  "icon": "prince",
  "word": "PRINCE",
- "help": "The first time the village votes to eliminate you, you are revealed and spared."
+ "help": "The first time the village votes to eliminate you, everybody learns you are the Prince and you are spared. Wolves can still kill you."
 }
