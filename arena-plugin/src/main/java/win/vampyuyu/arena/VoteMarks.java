@@ -84,7 +84,7 @@ final class VoteMarks {
     Set<UUID> audience = new HashSet<>();
     for (UUID id : s.players.keySet()) if (game.tallyVisible(id)) audience.add(id);
     Map<UUID, Integer> totals = audience.isEmpty() ? Map.of() : game.votes(audience.iterator().next());
-    int color = game.phase().equals("NIGHT") ? HUNT : GOLD;
+    int color = game.phase().equals("NIGHT") || game.phase().equals("VAMPIRE") ? HUNT : GOLD;
 
     // Counters.
     for (var entry : totals.entrySet()) {
@@ -102,8 +102,11 @@ final class VoteMarks {
     accused(s, game);
 
     // Frames: only the voter sees theirs.
+    // Whoever voted always sees their own pick, even when the running count is secret.
     Map<UUID, UUID> picks = new HashMap<>();
-    for (UUID voter : audience) {
+    boolean balloting =
+        game.phase().equals("DAY_VOTE") || game.phase().equals("NIGHT") || game.phase().equals("VAMPIRE");
+    for (UUID voter : balloting ? s.players.keySet() : Set.<UUID>of()) {
       UUID pick = game.alive().contains(voter) ? game.ballot(voter) : null;
       if (pick != null && game.alive().contains(pick) && Bukkit.getPlayer(voter) != null)
         picks.put(voter, pick);

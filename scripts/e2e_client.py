@@ -683,6 +683,10 @@ def werewolf_scenario(ctx):
         return
     me = next(p["uuid"] for p in state["onlinePlayers"] if p["name"] == "E2EBot")
     rcon = Rcon()
+    for rule in filter(None, ctx.get("rules", "").split(",")):
+        key, _, value = rule.partition("=")
+        say(f"/ww rules {key} {value}: " + rcon.command(f"ww rules {key} {value}").strip())
+    time.sleep(1)
     rcon.command("time set noon")
     time.sleep(2)
     shot(tools, shots / "ww-00-lobby.png")
@@ -693,7 +697,8 @@ def werewolf_scenario(ctx):
     api("POST", "/arenas/action", {"action": "arena-practice-start", "arenaId": "e2e", "uuid": me,
                                    "botCount": 11})
     say("practice game started (1 human + 11 bots)")
-    seen, last, deadline = [], None, time.time() + 600
+    # Nominated voting plays a longer day: every nomination adds a defense and a trial.
+    seen, last, deadline = [], None, time.time() + (1500 if ctx.get("rules") else 600)
     dark = {}
     while time.time() < deadline:
         row = api("GET", "/arenas")["arenas"][0]
@@ -722,7 +727,10 @@ def werewolf_scenario(ctx):
         (shots / "journal.txt").write_text(journal)
         if "Winner:" not in journal and "time limit" not in journal:
             failures.append("the journal has no outcome")
-    expected = {"DISCUSSION", "DAY_VOTE"}
+    nominated = "voting=nominate" in ctx.get("rules", "")
+    expected = {"DISCUSSION"} | (set() if nominated else {"DAY_VOTE"})
+    if nominated and not {"DEFENSE", "TRIAL"} & set(seen):
+        say("nominated voting: no nomination was seconded in this game (not a failure)")
     if not expected <= set(seen):
         failures.append(f"day phases missing from {seen}")
     if not NIGHT & set(seen):
@@ -779,6 +787,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
+    ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
     ap.add_argument("--shots", default=str(WORK / "shots"))
     args = ap.parse_args()
@@ -853,7 +862,7 @@ def main():
             if needle in text:
                 failures.append(f"client log contains '{needle}'")
         ctx = dict(tools=tools, env=env, shots=shots, client_log=client_log, server=server,
-                   failures=failures)
+                   failures=failures, rules=args.rules)
         if args.scenario == "werewolf":
             werewolf_scenario(ctx)
         elif args.scenario == "roles":
