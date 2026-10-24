@@ -282,6 +282,47 @@ public class SocialModuleTest {
   }
 
   @Test
+  public void oldManDiesSoonerWhenAWolfIsLynched() {
+    var ids = ids(20, 9);
+    var g = game(ids, 20, Map.of("WEREWOLF", 2, "OLD_MAN", 1));
+    UUID oldMan = holder(g, ids, "OLD_MAN");
+    UUID wolf = holders(g, ids, "WEREWOLF").getFirst();
+    toPhase(g, "DISCUSSION"); // dawn of night 1: 2 wolves, he lives
+    assertTrue(g.alive().contains(oldMan));
+    toPhase(g, "DAY_VOTE");
+    for (UUID voter : new ArrayList<>(g.actors())) if (!voter.equals(wolf)) g.select(voter, wolf);
+    if (g.phase().equals("DAY_VOTE")) g.advance();
+    toPhase(g, "DISCUSSION"); // dawn of night 2: one wolf left, 2 >= 1 + 1
+    assertEquals("dawn 2 has passed", 3, g.nightNumber());
+    assertFalse("the lynched wolf is dead", g.alive().contains(wolf));
+    assertFalse("old man dies at dawn 2", g.alive().contains(oldMan));
+  }
+
+  @Test
+  public void ghostLetterAndBearGrowlBothArriveTheSameDawn() {
+    var ids = ids(21, 9);
+    var g = game(ids, 21, Map.of("WEREWOLF", 1, "GHOST", 1, "BEAR_TAMER", 1));
+    UUID ghost = holder(g, ids, "GHOST");
+    UUID tamer = holder(g, ids, "BEAR_TAMER");
+    UUID wolf = holder(g, ids, "WEREWOLF");
+    List<UUID> ring = new ArrayList<>(List.of(wolf, tamer));
+    for (UUID p : ids) if (!ring.contains(p)) ring.add(p);
+    g.ring(ring);
+    toPhase(g, "DISCUSSION");
+    toPhase(g, "GHOST");
+    g.drainNotices();
+    assertTrue(g.chat(ghost, "q"));
+    toPhase(g, "DISCUSSION");
+    var notices = g.drainNotices();
+    for (UUID p : g.alive()) {
+      String all = notices.get(p);
+      assertNotNull(all);
+      assertTrue(all, all.contains("A ghostly letter appears in the mist: Q"));
+      assertTrue(all, all.contains("The bear growls!"));
+    }
+  }
+
+  @Test
   public void oldManWithASingleWolfDiesOnTheSecondNight() {
     var ids = ids(18, 9);
     var g = game(ids, 18, Map.of("WEREWOLF", 1, "OLD_MAN", 1));
@@ -317,7 +358,8 @@ public class SocialModuleTest {
       if (key.equals(game.turnKey())) game.advance();
     }
     assertFalse("The game should end, seed " + seed, game.winner().isEmpty());
-    // The shared bots still aim at exiled players now and then; the game refuses and moves on.
+    // Known shared-bot gap (see the report): WerewolfBots still lets a seer vote for an exiled wolf
+    // and lets exiled bots join settleTie; the game refuses both. Any other refusal fails.
     for (WerewolfBots.Action action : log)
       assertFalse(
           action.toString(),
