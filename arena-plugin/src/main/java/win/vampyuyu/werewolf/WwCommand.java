@@ -428,7 +428,6 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
     }
     if (args[0].equalsIgnoreCase("debug") && sender.hasPermission("nexusarena.admin")) return debug.complete(args);
     if (args.length == 2 && args[0].equalsIgnoreCase("hud")) return List.of("auto", "large", "medium", "small");
-    if (args.length == 2 && args[0].equalsIgnoreCase("place")) return List.of("add", "set", "list", "remove", "tp", "clear");
     if (args.length == 2 && args[0].equalsIgnoreCase("cast")) return List.of("set", "auto", "show", "roles");
     if (args.length == 2 && args[0].equalsIgnoreCase("use")) return plugin.arenas.all().stream().map(s -> s.config.id()).toList();
     return List.of();

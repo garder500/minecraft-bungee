@@ -88,8 +88,19 @@ final class ArenaHttpApi implements AutoCloseable {
     }
   }
 
+  /** The panel's game-session actions (ww-*) are the zone operations seen from a game's own page. */
+  static String gameAction(String action) {
+    return switch (action) {
+      case "ww-config-save" -> "arena-save";
+      case "ww-start" -> "arena-start";
+      case "ww-stop" -> "arena-stop";
+      case "ww-practice-start" -> "arena-practice-start";
+      default -> action;
+    };
+  }
+
   private CompletableFuture<?> operation(JsonObject input) {
-    String action = text(input, "action", 40);
+    String action = gameAction(text(input, "action", 40));
     String id = input.has("arenaId") ? text(input, "arenaId", 40) : "";
     return switch (action) {
       case "arena-save" ->
