@@ -46,7 +46,7 @@ export const werewolfRoles: WerewolfRole[] = [
   {"id": "WOLF_CUB", "name": "Wolf cub", "team": "wolves", "impact": -8, "max": 1, "icon": "☾", "blurb": "At night, vote with the pack."},
   {"id": "VAMPIRE", "name": "Vampire", "team": "vampires", "impact": -8, "max": 6, "icon": "✦", "blurb": "Each night the vampires pick one victim, who dies when the day vote opens."},
   {"id": "CULT_LEADER", "name": "Cult leader", "team": "cult", "impact": 1, "max": 1, "icon": "✺", "blurb": "Each night, recruit one player into your cult."},
-  {"id": "TANNER", "name": "Tanner", "team": "solo", "impact": 1, "max": 1, "icon": "◆", "blurb": "You win if you die."},
-  {"id": "HOODLUM", "name": "Hoodlum", "team": "solo", "impact": 0, "max": 1, "icon": "◆", "blurb": "On the first night, mark two players."},
-  {"id": "LONE_WOLF", "name": "Lone wolf", "team": "solo", "impact": -5, "max": 1, "icon": "◆", "blurb": "You hunt with the pack, but you win only if you are the last player standing, or one of the last two with a...."},
+  {"id": "TANNER", "name": "Tanner", "team": "solo", "impact": 1, "max": 1, "icon": "◆", "blurb": "You want to die."},
+  {"id": "HOODLUM", "name": "Hoodlum", "team": "solo", "impact": 0, "max": 1, "icon": "◆", "blurb": "First night: right-click two players to mark them."},
+  {"id": "LONE_WOLF", "name": "Lone wolf", "team": "solo", "impact": -5, "max": 1, "icon": "◆", "blurb": "You hunt with the pack, but you win alone: be the last player alive, or one of the last two with someone wh...."},
 ];
