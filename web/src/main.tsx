@@ -5,7 +5,8 @@ import "./style.css";
 import { api, APIError } from "./api";
 import { Players } from "./Players";
 import { ServerTools } from "./ServerTools";
-import { Arenas } from "./Arenas";
+import { WerewolfSessions } from "./WerewolfSessions";
+import { Zones } from "./Zones";
 import { Operations, Activity } from "./Operations";
 
 type Session = { username: string; csrf: string };
@@ -36,16 +37,19 @@ function App() {
     | "plugins"
     | "settings"
     | "activity"
-    | "arenas";
+    | "zones"
+    | "werewolf";
   const readView = (): View => {
-    const value = window.location.hash.slice(1);
+    const raw = window.location.hash.slice(1);
+    const value = raw === "arenas" ? "zones" : raw; // old bookmarks
     return [
       "overview",
       "players",
       "plugins",
       "settings",
       "activity",
-      "arenas",
+      "zones",
+      "werewolf",
     ].includes(value)
       ? (value as View)
       : "overview";
@@ -287,7 +291,8 @@ function App() {
           </button>
           {(
             [
-              ["arenas", "☾", "Arenas"],
+              ["zones", "✦", "Zones"],
+              ["werewolf", "☾", "Werewolf"],
               ["plugins", "♧", "Plugins"],
               ["settings", "⚙", "Server settings"],
               ["activity", "≡", "Activity"],
@@ -348,7 +353,8 @@ function App() {
             Workspace <span>/</span>{" "}
             {
               {
-                arenas: "Arenas",
+                zones: "Zones",
+                werewolf: "Werewolf",
                 overview: "Overview",
                 players: "Players & roles",
                 plugins: "Plugins",
@@ -369,7 +375,8 @@ function App() {
             <h1>
               {
                 {
-                  arenas: "Arenas & mini-games",
+                  zones: "Zones & mini-games",
+                  werewolf: "Werewolf sessions",
                   overview: "Network overview",
                   players: "Players & roles",
                   plugins: "Server plugins",
@@ -383,8 +390,10 @@ function App() {
               {view === "overview"
                 ? "Keep your worlds running and your community connected."
                 : {
-                    arenas:
-                      "Create a playground. Gather your players. Tell a new story.",
+                    zones:
+                      "Define a play area. Gather your players. Start a game.",
+                    werewolf:
+                      "Choose the cast, the timers and the rules. Tell a new story.",
                     players:
                       "Inventories, game modes, roles and care for your community.",
                     plugins: "Install and manage the plugins for each world.",
@@ -407,8 +416,10 @@ function App() {
             </button>
           </div>
         )}
-        {view === "arenas" ? (
-          <Arenas csrf={session.csrf} onError={report} />
+        {view === "zones" ? (
+          <Zones csrf={session.csrf} onError={report} />
+        ) : view === "werewolf" ? (
+          <WerewolfSessions csrf={session.csrf} onError={report} />
         ) : view === "players" ? (
           <Players csrf={session.csrf} onError={report} />
         ) : view === "activity" ? (

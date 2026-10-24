@@ -86,11 +86,18 @@ func TestArenaProxyUsesPrivatePortAndFixedPath(t *testing.T) {
 	if w := controllerRequest(s, "POST", "/servers/creative/game/action", []byte(`{"action":"arena-start","arenaId":"village"}`)); w.Code != 200 {
 		t.Fatal(w.Code)
 	}
-	if len(seen) != 2 || seen[0] != "GET /arenas" || seen[1] != "POST /arenas/action" {
+	for _, action := range []string{"ww-config-get", "ww-config-save", "ww-start", "ww-stop", "ww-practice-start"} {
+		if w := controllerRequest(s, "POST", "/servers/creative/game/action", []byte(`{"action":"`+action+`","arenaId":"village"}`)); w.Code != 200 {
+			t.Fatal(action, w.Code)
+		}
+	}
+	if len(seen) != 7 || seen[0] != "GET /arenas" || seen[1] != "POST /arenas/action" || seen[6] != "POST /arenas/action" {
 		t.Fatal(seen)
 	}
-	if w := controllerRequest(s, "POST", "/servers/creative/game/action", []byte(`{"action":"arena-exec"}`)); w.Code != 400 {
-		t.Fatal(w.Code)
+	for _, action := range []string{"arena-exec", "ww-exec", "ww-"} {
+		if w := controllerRequest(s, "POST", "/servers/creative/game/action", []byte(`{"action":"`+action+`"}`)); w.Code != 400 {
+			t.Fatal(action, w.Code)
+		}
 	}
 }
 

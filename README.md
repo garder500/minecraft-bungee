@@ -335,7 +335,7 @@ References: [Velocity forwarding](https://docs.papermc.io/velocity/player-inform
 
 ## Arenas and mini-games
 
-Open [Arenas](http://localhost:5173/#arenas) to configure play zones in existing worlds, manage Werewolf/free-play sessions, follow participants, stop and restore players, send clickable network invitations, and issue network kick/ban/unban actions. For a solo Werewolf test, use **Solo practice → Start practice**: select your connected Minecraft player and add a virtual cast (seven by default). Practice bots vote and act automatically, phases are capped at 15 seconds, and the cast is removed on stop or the last real player leaving. Bots are virtual menu participants, not NPCs or Minecraft accounts.
+Open [Zones](http://localhost:5173/#zones) to configure play areas in existing worlds (bounds, spawn, players, rewards, free-play rules), follow participants, stop and restore players, send clickable network invitations, and issue network kick/ban/unban actions. Open [Werewolf](http://localhost:5173/#werewolf) for sessions: cast, timers, rule variants, logs, stop and restore players, send clickable network invitations, and issue network kick/ban/unban actions. For a solo Werewolf test, use **Solo practice → Start practice**: select your connected Minecraft player and add a virtual cast (seven by default). Practice bots vote and act automatically, phases are capped at 15 seconds, and the cast is removed on stop or the last real player leaving. Bots are virtual menu participants, not NPCs or Minecraft accounts.
 
 The engine stores persistent player snapshots before joining and protects inventory/gamemode edits while a snapshot is outstanding. No arena or world is automatically created on installation.
 

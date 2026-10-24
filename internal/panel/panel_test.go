@@ -212,13 +212,13 @@ func TestInventoryManagementAuthValidationAndAudit(t *testing.T) {
 func TestArenaActionsRequireCSRFAndFixedOperation(t *testing.T) {
 	s, _ := setup(t)
 	cookie, csrf := login(t, s)
-	for _, action := range []string{"arena-save", "arena-start", "arena-ban", "arena-announce"} {
+	for _, action := range []string{"arena-save", "arena-start", "arena-ban", "arena-announce", "ww-config-save", "ww-start"} {
 		body := `{"action":"` + action + `","arenaId":"werewolf"}`
 		if w := request(t, s, "POST", "/api/v1/servers/creative/game/action", body, cookie, ""); w.Code != 403 {
 			t.Fatal(action, w.Code)
 		}
 	}
-	for _, action := range []string{"arena-exec", "arena-op", "arena-command"} {
+	for _, action := range []string{"arena-exec", "arena-op", "arena-command", "ww-exec"} {
 		if w := request(t, s, "POST", "/api/v1/servers/creative/game/action", `{"action":"`+action+`"}`, cookie, csrf); w.Code != 400 {
 			t.Fatal(action, w.Code)
 		}

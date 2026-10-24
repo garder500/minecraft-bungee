@@ -105,7 +105,7 @@ func (s *Server) gameRoutes(mux *http.ServeMux, protected func(func(http.Respons
 			return
 		}
 		detail := map[string]string{"action": action}
-		if strings.HasPrefix(action, "arena-") {
+		if strings.HasPrefix(action, "arena-") || strings.HasPrefix(action, "ww-") {
 			var arenaId string
 			json.Unmarshal(input["arenaId"], &arenaId)
 			if arenaId != "" && (len(arenaId) > 40 || strings.ContainsAny(arenaId, "/\\\n\r")) {
