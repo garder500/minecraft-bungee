@@ -220,7 +220,8 @@ class PackTest(unittest.TestCase):
                 path = PACK / "assets/vampyuyu/sounds" / (sound["name"].split(":", 1)[1] + ".ogg")
                 self.assertTrue(path.is_file(), path)
                 self.assertEqual(path.read_bytes()[:4], b"OggS", path)
-        self.assertIn('Key.key("vampyuyu", "werewolf.music")', ambience)
+        profile = (ROOT / "arena-plugin/src/main/resources/werewolf/ambience.json").read_text()
+        self.assertIn("vampyuyu:werewolf.music", profile)  # the bed loops are chosen by the ambience profile
         self.assertTrue(sounds["werewolf.music"]["sounds"][0]["stream"])
 
     def test_every_ambience_sound_is_in_sounds_json_and_the_built_pack(self):
