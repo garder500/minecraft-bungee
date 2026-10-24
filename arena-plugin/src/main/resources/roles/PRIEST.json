@@ -7,7 +7,7 @@
  "palette": "guard",
  "icon": "priest",
  "word": "PRIEST",
- "help": "Once per game, bless a player (not yourself): the next attempt to kill them, by any means, fails. The blessing stays even if you die.",
+ "help": "Once per game, bless a player (not yourself). The next attempt to kill them fails, except old age and grief. The blessing stays if you die.",
  "call": {
   "phase": "PRIEST",
   "label": "PRIEST",

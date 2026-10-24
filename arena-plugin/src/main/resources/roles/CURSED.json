@@ -7,6 +7,6 @@
  "palette": "witch",
  "icon": "cursed",
  "word": "CURSED",
- "help": "You are a villager. If the wolves attack you, you do not die: you become a werewolf the next night.",
+ "help": "You are a villager. If the wolves attack you, you survive and become a werewolf the next night. Other deaths still kill you.",
  "seerSees": "VILLAGER"
 }

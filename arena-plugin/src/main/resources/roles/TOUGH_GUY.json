@@ -7,5 +7,5 @@
  "palette": "hunter",
  "icon": "toughguy",
  "word": "TOUGH GUY",
- "help": "If the wolves attack you, you survive the night and die the following night instead. Nobody dies the first dawn."
+ "help": "If the wolves attack you, you survive that night but die at the next dawn. Only the wolves wound you: a vote kills you at once."
 }
