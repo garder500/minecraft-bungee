@@ -104,7 +104,7 @@ The wolves gather at their turn's beginning. **The hunt closes as soon as every 
 | `/arena admin` | Paged browser, creation and confirmed deletion |
 | `/arena corner1`, `/arena corner2` | Capture each bounding corner |
 | `/arena create <id> <werewolf\|freeplay>` | Confirm creation with selected corners and current spawn |
-| `/arena setup <id>` | Bounds, spawn, durations, limits, protection, ambience, places and rewards |
+| `/arena setup <id>` | Bounds, spawn, durations, limits, protection, ambience and rewards |
 | `/eventadmin rewards <id> <participation> <victory>` | Set rewards; each amount must be 0–100,000 |
 
 ### Admin tools in your inventory (1.5)
@@ -116,14 +116,11 @@ The wolves gather at their turn's beginning. **The hunt closes as soon as every 
 | Arena selector (map) | next arena | previous arena |
 | Bounds wand (golden axe) | block = corner 2 | block = corner 1; sneak + right = apply to the arena (+5 blocks headroom) |
 | Arena spawn (compass) | set spawn here | — |
-| Seats (bed) | add a **sitting** seat here | sneak + right: add a **standing** spot; left: remove the nearest seat (3 blocks) |
-| Seat (armor stand) | right-click a block = sitting seat; sneak + right-click = standing spot | left-click a seat's block = remove it |
-| Vote circle (sunflower) | right-click the block at the table centre | — |
 | Readiness checklist (book) | ✔/✘ list of what is missing | sneak + right: open setup menu |
 
-Places are optional. When a game has seats, every player (and practice bot) gets one (**at least as many seats as players**), looking at the vote circle: *sit* seats put the player on an invisible chair, *stand* seats pin them in place. Nobody is teleported at night: every player stays on their seat. A sleeper's screen goes completely black (core shader plus blindness and darkness) and every other player and practice body is hidden from them; players awake at night see only the living. Seat tools select the block you point at, and stairs and slabs get the right chair height. Practice bots appear as mannequins on their seats so they can be clicked like players. With no seats configured nobody is moved. There are no houses and no doors any more; old `village` settings in existing arena files are ignored.
+Every Werewolf game plays on its own **flying platform**: when the game starts, the plugin builds a round platform around a campfire at height 200 in the void world `ww_sky` (slot *i* of the world is centred at x = *i* x 256, so concurrent games never touch), with one seat per player and practice bot on a ring whose radius grows with the table (4 to 45 seats). Everybody is teleported to a random seat, sits on an invisible chair looking at the campfire and cannot walk off; practice bots appear as mannequins on their seats so they can be clicked like players. Nobody is moved afterwards, even at night: a sleeper's screen goes completely black (core shader plus blindness and darkness) and every other player and practice body is hidden from them; players awake at night see only the living. When the game stops, or a player leaves, players are restored to where they were before they joined (inventory, stats and position snapshot), the platform is removed and its slot is freed. The arena zone (bounds and spawn) is only the lobby where players wait. There are no houses and no doors any more; old `village` settings and old `places` blocks (seats and vote circle) in existing arena files are ignored and left untouched in the file.
 
-The checklist and the start error say exactly what is missing; `/ww check` also tests that every place is safe to stand on.
+The checklist and the start error say exactly what is missing; `/ww check` also tells whether the `ww_sky` world is ready. The plugin creates `ww_sky` itself when it enables (and discards any older copy, since platforms are ephemeral). If the server forbids creating worlds at runtime (Folia), pre-create it in `bukkit.yml` (`worlds: ww_sky: generator: NexusArenaEngine`) and restart; a game refuses to start while the world is missing. A table seats 4 to 45 players.
 
 ### Shards and global participation history
 
@@ -184,9 +181,7 @@ Admins (`nexusarena.admin`) manage werewolf arenas with `/ww` (console and RCON 
 
 | Command | Does |
 | --- | --- |
-| `/ww use <arena>`, `status`, `check`, `reload` | Select an arena, show it, test its places, reload files |
-| `/ww place add seat <sit\|stand> [name] [x y z yaw]` | Add a seat |
-| `/ww place set circle [x y z]`, `list`, `remove <name>`, `tp <name>`, `clear` | Vote circle (targeted block by default), listing and cleaning |
+| `/ww use <arena>`, `status`, `check`, `reload` | Select an arena, show it, check that the sky world is ready, reload files |
 | `/ww cast set wolf:2 alpha:1 seer:1 witch:1 ...`, `auto`, `show`, `roles` | Exact role counts (the rest are villagers) or the automatic cast |
 | `/ww time set discussion\|vote\|night\|cupid\|witch\|hunter <seconds>` | Timers |
 | `/ww rules`, `rules voting point\|nominate`, `reveal full\|team\|wolf\|none`, `ballots open\|secret`, `dice on\|off`, `amulet on\|off` | The variants of the game, see below |

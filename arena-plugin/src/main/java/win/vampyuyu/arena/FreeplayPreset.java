@@ -45,11 +45,6 @@ public final class FreeplayPreset implements ArenaPreset {
   @Override
   public void validate(ArenaConfig c, World world) {
     var rules = GameRules.Freeplay.of(c);
-    if (c.options().json().has("places")
-        && c.options().json().get("places").isJsonObject()
-        && c.options().json().getAsJsonObject("places").has("seats")
-        && !c.options().json().getAsJsonObject("places").getAsJsonArray("seats").isEmpty())
-      throw new IllegalArgumentException("Seats and places require Werewolf");
     if (rules.objective().equals("PVP") && !world.getPVP())
       throw new IllegalArgumentException(
           "This world has PvP disabled. Enable it in Server settings or choose another world.");

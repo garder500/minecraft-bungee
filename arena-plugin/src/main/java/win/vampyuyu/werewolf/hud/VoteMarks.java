@@ -63,9 +63,8 @@ public final class VoteMarks {
   // ------------------------------------------------------------------ geometry
 
   private static Location where(ArenaSession s, UUID id) {
-    World w = Bukkit.getWorld(s.config.worldName());
     var seat = WerewolfSession.of(s).seats.get(id);
-    if (w != null && seat != null) return new Location(w, seat.at().x(), seat.at().y(), seat.at().z());
+    if (seat != null) return seat.at().clone();
     Player p = Bukkit.getPlayer(id);
     return p == null ? null : p.getLocation();
   }

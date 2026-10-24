@@ -40,6 +40,13 @@ public final class NexusArenaEngine extends JavaPlugin {
       Executors.newSingleThreadScheduledExecutor(
           r -> Thread.ofPlatform().daemon().name("nexus-game-clock").unstarted(r));
 
+  /** Lets bukkit.yml pre-create the sky world (generator: NexusArenaEngine) where creating it at runtime is not allowed. */
+  @Override
+  public org.bukkit.generator.ChunkGenerator getDefaultWorldGenerator(
+      String worldName, String id) {
+    return new win.vampyuyu.werewolf.sky.SkyWorld.VoidGenerator();
+  }
+
   @Override
   public void onEnable() {
     try {
@@ -64,6 +71,7 @@ public final class NexusArenaEngine extends JavaPlugin {
       arenas = new ArenaManager(this);
       gui = new CompassGUI(this);
       werewolf = new WerewolfModule(this);
+      werewolf.prepareSky();
       admin = new ArenaAdmin(this);
       skin = MenuSkin.load(this);
       tools = new ArenaTools(this);

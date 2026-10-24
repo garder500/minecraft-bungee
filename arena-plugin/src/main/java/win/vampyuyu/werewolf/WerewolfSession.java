@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.entity.Entity;
 import win.vampyuyu.arena.ArenaSession;
 import win.vampyuyu.werewolf.hud.VoteMarks;
+import win.vampyuyu.werewolf.sky.PlatformHandle;
 
 /** What a Werewolf game keeps on an arena session (see {@link ArenaSession#attachment}). */
 public final class WerewolfSession {
@@ -17,10 +18,13 @@ public final class WerewolfSession {
   /** The practice bots of the current game, or null without bots. */
   public volatile WerewolfBots botBrain;
 
-  /** Seat of every participant (humans and bots) while the places are in use. */
-  public final Map<UUID, Seat> seats = new ConcurrentHashMap<>();
+  /** Seat of every participant (humans and bots) while the platform is in use. */
+  public final Map<UUID, SeatSpot> seats = new ConcurrentHashMap<>();
 
-  /** Where each participant currently is: "seat", "den" or "night" (see PlaceController). */
+  /** The game's flying platform (see SkyStage), from the opening until the players are restored. */
+  public volatile PlatformHandle platform;
+
+  /** Where each participant currently is: "seat" once they have been seated (see PlaceController). */
   public final Map<UUID, String> placed = new ConcurrentHashMap<>();
 
   /** Bodies of the practice bots (mannequins) and the chairs of seated players. */

@@ -121,6 +121,14 @@ public interface GameHooks {
     return false;
   }
 
+  /**
+   * A place outside the zone where the game itself keeps this session's players (a stage it built).
+   * Moving there is part of the game, not leaving the zone.
+   */
+  default boolean hosts(ArenaSession s, org.bukkit.Location where) {
+    return false;
+  }
+
   /** Whether the game can be played with practice bots. */
   default boolean practice() {
     return false;

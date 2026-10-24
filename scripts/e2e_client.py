@@ -131,15 +131,6 @@ def menu_pack_id(sha1):
     return str(uuid.UUID(bytes=bytes(raw)))
 
 
-def _ring(n, radius, cx, cz, y):
-    """n seats on a circle looking at its centre; every other one sits."""
-    import math
-    return [{"name": f"seat-{i + 1}",
-             "at": {"x": round(cx + radius * math.cos(2 * math.pi * i / n), 2), "y": y,
-                    "z": round(cz + radius * math.sin(2 * math.pi * i / n), 2), "yaw": 0, "pitch": 0},
-             "sit": i % 2 == 0} for i in range(n)]
-
-
 ARENA = {
     "id": "e2e", "name": "E2E village", "worldName": "world", "preset": "werewolf",
     "bounds": {"minX": -40, "minY": -64, "minZ": -40, "maxX": 40, "maxY": 320, "maxZ": 40},
@@ -149,8 +140,6 @@ ARENA = {
     "maxPlayers": 20, "discussionSeconds": 60, "voteSeconds": 30, "nightSeconds": 30,
     "werewolf": {"roles": {}, "cupidSeconds": 15, "witchSeconds": 15, "hunterSeconds": 15,
                  "ambienceEnabled": True},
-    "places": {"seats": _ring(12, 6, 0.5, 0.5, -60),
-               "circle": {"x": 0.5, "y": -60, "z": 0.5, "yaw": 0, "pitch": 0}},
 }
 
 
@@ -281,6 +270,14 @@ def api(method, path, body=None):
 def same_place(a, b):
     """Same game mode and within a block: a restored player may settle a few tenths away."""
     return a["mode"] == b["mode"] and all(abs(x - y) < 1.0 for x, y in zip(a["pos"], b["pos"]))
+
+
+def on_platform(rcon):
+    """The human sits on the sky platform (world ww_sky, around height 200), not in the lobby zone."""
+    dimension = rcon.command("data get entity E2EBot Dimension")
+    pos = rcon.command("data get entity E2EBot Pos")
+    y = float(pos.split("[")[1].split(",")[1].rstrip("d "))
+    return "ww_sky" in dimension and 199 <= y <= 204, f"{dimension.strip()} y={y}"
 
 
 def player_state(rcon):
@@ -597,7 +594,10 @@ def roles_scenario(ctx, only):
             failures.append(f"{role}: forced role missing, the human is {roles.get('E2EBot')}")
         time.sleep(4)
         shot(tools, shots / f"hud-{role.lower()}.png")
-        print(f"[e2e] {role}: seated at {rcon.command('data get entity E2EBot Pos').strip()}")
+        ok, where = on_platform(rcon)
+        print(f"[e2e] {role}: seated at {where}")
+        if not ok:
+            failures.append(f"{role}: the player is not on the sky platform: {where}")
         try:
             role_checks(role, rcon, roles, failures, tools, shots)
         except Exception as error:  # a broken step must not hide the other roles
@@ -798,6 +798,10 @@ def werewolf_scenario(ctx):
     say(f"inside a game: {inside}")
     if "ADVENTURE" not in inside["mode"] and "2" not in inside["mode"]:
         failures.append(f"the player is not in adventure mode during the game: {inside['mode']}")
+    ok, where = on_platform(rcon)
+    say(f"seated at {where}")
+    if not ok:
+        failures.append(f"the player is not on the sky platform during the game: {where}")
     shot(tools, shots / "ww-leave-before.png")
     # Through the private API: the typed command is not reliable while a role menu is open.
     api("POST", "/arenas/action", {"action": "arena-leave", "arenaId": "e2e", "uuid": me})

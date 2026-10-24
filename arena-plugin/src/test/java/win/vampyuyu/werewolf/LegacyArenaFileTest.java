@@ -61,7 +61,7 @@ public class LegacyArenaFileTest {
   }
 
   @Test
-  public void werewolfReadsItsTimersRulesAndEmptyPlaces() throws Exception {
+  public void werewolfReadsItsTimersAndRules() throws Exception {
     WerewolfOptions options = WerewolfOptions.of(load());
     assertEquals(60, options.discussionSeconds());
     assertEquals(30, options.voteSeconds());
@@ -69,8 +69,6 @@ public class LegacyArenaFileTest {
     assertEquals(15, options.rules().cupidSeconds());
     assertTrue(options.rules().roles().isEmpty());
     assertTrue(options.rules().ambienceEnabled());
-    assertTrue(options.places().seats().isEmpty());
-    assertNull(options.places().circle());
   }
 
   @Test
@@ -86,8 +84,32 @@ public class LegacyArenaFileTest {
     assertEquals(
         before.getAsJsonObject("werewolf").get("cupidSeconds"),
         after.getAsJsonObject("werewolf").get("cupidSeconds"));
-    assertTrue(after.has("places"));
+    assertEquals("places is neither added nor dropped", before.has("places"), after.has("places"));
     assertFalse("options are flat on disk", after.has("options"));
+  }
+
+  @Test
+  public void aPlacesBlockOfAnOlderFileIsIgnoredAndKeptUntouched() throws Exception {
+    JsonObject file = legacy();
+    JsonObject places = new JsonObject();
+    JsonArray seats = new JsonArray();
+    JsonObject seat = new JsonObject();
+    seat.addProperty("name", "seat-1");
+    seats.add(seat);
+    places.add("seats", seats);
+    places.add("circle", new JsonObject()); // would have been refused by the old validation
+    file.add("places", places);
+    var preset = new WerewolfPreset(GameHooks.NONE);
+    ArenaConfig read = GSON.fromJson(file, ArenaConfig.class);
+    ArenaConfig c = read.withOptions(new ArenaConfig.Options(preset.migrate(read.options().json())));
+    assertEquals(60, WerewolfOptions.of(c).discussionSeconds());
+    assertEquals(places, GSON.toJsonTree(c).getAsJsonObject().get("places"));
+    // A file without the block stays without it: nothing writes it back.
+    file.remove("places");
+    ArenaConfig bare = GSON.fromJson(file, ArenaConfig.class);
+    bare = bare.withOptions(new ArenaConfig.Options(preset.migrate(bare.options().json())));
+    assertFalse(GSON.toJsonTree(bare).getAsJsonObject().has("places"));
+    assertEquals(60, WerewolfOptions.of(bare).discussionSeconds());
   }
 
   @Test

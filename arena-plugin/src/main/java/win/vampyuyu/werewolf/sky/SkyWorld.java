@@ -2,6 +2,7 @@ package win.vampyuyu.werewolf.sky;
 
 import java.util.Random;
 import org.bukkit.Bukkit;
+import org.bukkit.Difficulty;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
@@ -42,6 +43,51 @@ public final class SkyWorld {
 
   public boolean inUse(SkySlot slot) {
     return slots.inUse(slot.index());
+  }
+
+  /** The sky world when it is already loaded, else null. Safe from any thread. */
+  public World loaded() {
+    World w = world;
+    if (w != null) return w;
+    w = Bukkit.getWorld(NAME);
+    if (w != null) world = w;
+    return w;
+  }
+
+  /**
+   * Creates the world (a void world, peaceful, no weather) unless it is loaded. Platforms are
+   * ephemeral, so blocks a crashed server left in an older copy are discarded first. Must run on the
+   * main thread (plugin enable). Returns null when the world is ready, else why it is not.
+   */
+  public synchronized String create() {
+    try {
+      if (loaded() == null) {
+        deleteStale(Bukkit.getWorldContainer().toPath().resolve(NAME));
+        World created = new WorldCreator(NAME).generator(new VoidGenerator()).createWorld();
+        if (created == null) return "The server refused to create the world " + NAME;
+        world = created;
+      }
+      World w = world;
+      w.setDifficulty(Difficulty.PEACEFUL);
+      w.setSpawnFlags(false, false);
+      w.setStorm(false);
+      w.setThundering(false);
+      return null;
+    } catch (Throwable e) {
+      return "Could not create the world "
+          + NAME
+          + " ("
+          + e
+          + "). Pre-create it: see the SkyWorld javadoc";
+    }
+  }
+
+  private static void deleteStale(java.nio.file.Path dir) throws java.io.IOException {
+    if (!java.nio.file.Files.isDirectory(dir)) return;
+    try (var walk = java.nio.file.Files.walk(dir)) {
+      for (var path : walk.sorted(java.util.Comparator.reverseOrder()).toList())
+        java.nio.file.Files.deleteIfExists(path);
+    }
   }
 
   /** The sky world, created on first use. */
