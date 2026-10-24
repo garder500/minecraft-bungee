@@ -99,6 +99,9 @@ public class CourtModuleTest {
     toPhase(g, "DAY_VOTE");
     assertEquals(2, module.weight(g, mayor));
     assertEquals(1, module.weight(g, wolf));
+    g.remove(mayor);
+    assertFalse(g.living().contains(mayor));
+    assertEquals("a dead mayor weighs once", 1, module.weight(g, mayor));
   }
 
   @Test
@@ -162,7 +165,7 @@ public class CourtModuleTest {
 
   @Test
   public void thePacifistsThumbNeverCountsAtTheTrial() {
-    var ids = ids(8);
+    var ids = ids(6);
     var g = nominated(ids, 3, Map.of("WEREWOLF", 1, "PACIFIST", 1));
     UUID pacifist = holder(g, ids, "PACIFIST");
     List<UUID> v = villagers(g, ids);
@@ -170,11 +173,13 @@ public class CourtModuleTest {
     toTrial(g, accused, v.get(1), v.get(2));
     List<UUID> others = new ArrayList<>(g.actors());
     others.remove(pacifist);
-    // 4 down of 7 counted (the accused included) is more than half; the pacifist's thumb is not.
+    assertEquals(4, others.size());
+    // Right rule: 2 down of 4 counted is not more than half, spared. Counting the pacifist's
+    // thumb it would be 3 of 5, condemned.
     g.use(pacifist, "die");
-    for (int i = 0; i < 3; i++) g.use(others.get(i), "die");
-    for (int i = 3; i < others.size(); i++) g.use(others.get(i), "live");
-    assertTrue("3 down of 7 counted spares him", g.alive().contains(accused));
+    for (int i = 0; i < 2; i++) g.use(others.get(i), "die");
+    for (int i = 2; i < others.size(); i++) g.use(others.get(i), "live");
+    assertTrue("2 down of 4 counted spares him", g.alive().contains(accused));
   }
 
   // ------------------------------------------------------------------ idiot
@@ -313,6 +318,79 @@ public class CourtModuleTest {
     toTrial(g, prince, v.get(0), v.get(1));
     for (UUID juror : new ArrayList<>(g.actors())) g.use(juror, "die");
     assertTrue(g.alive().contains(prince));
+  }
+
+  @Test
+  public void aCondemnedPrinceOpensNoMartyrWindow() {
+    var ids = ids(8);
+    var g = game(ids, 3, Map.of("WEREWOLF", 1, "PRINCE", 1, "MARTYR", 1));
+    UUID prince = holder(g, ids, "PRINCE"), martyr = holder(g, ids, "MARTYR");
+    ballotOn(g, prince);
+    g.advance();
+    assertNotEquals("MARTYR", g.phase());
+    assertTrue(g.alive().contains(prince));
+    assertTrue("the martyr lives", g.alive().contains(martyr));
+    assertTrue(g.abilities(martyr).isEmpty());
+    // Revealed: the next time the prince is condemned, the martyr is asked.
+    toPhase(g, "DAY_VOTE");
+    allVote(g, prince);
+    g.advance();
+    assertEquals("MARTYR", g.phase());
+  }
+
+  @Test
+  public void sparesOnlyAnUnrevealedLivingPrinceFromTheVote() {
+    var ids = ids(8);
+    var g = game(ids, 3, Map.of("WEREWOLF", 2, "PRINCE", 1));
+    UUID prince = holder(g, ids, "PRINCE"), wolf = holder(g, ids, "WEREWOLF");
+    var module = new CourtModule();
+    assertFalse(module.spares(g, new WerewolfGame.Kill(prince, "WOLVES", "x")));
+    assertFalse(module.spares(g, new WerewolfGame.Kill(wolf, "VOTE", "x")));
+    assertTrue(module.spares(g, new WerewolfGame.Kill(prince, "VOTE", "x")));
+    assertTrue("no side effect", module.spares(g, new WerewolfGame.Kill(prince, "VOTE", "x")));
+    assertTrue(module.saves(g, new WerewolfGame.Kill(prince, "VOTE", "x")));
+    assertFalse(module.spares(g, new WerewolfGame.Kill(prince, "VOTE", "x")));
+  }
+
+  @Test
+  public void theMartyrPhaseNamesTheMartyrOnlyToHim() {
+    var ids = ids(8);
+    var g = game(ids, 3, Map.of("WEREWOLF", 1, "MARTYR", 1));
+    UUID martyr = holder(g, ids, "MARTYR");
+    UUID condemned = villagers(g, ids).get(0);
+    ballotOn(g, condemned);
+    g.advance();
+    assertEquals("MARTYR", g.phase());
+    for (UUID viewer : ids) {
+      String boss = WerewolfPresentation.boss(g, viewer, 10).text();
+      String center = WerewolfPresentation.center(g, viewer, 10).text();
+      if (viewer.equals(martyr)) {
+        assertTrue(boss, boss.contains("Martyr"));
+      } else {
+        assertFalse(boss, boss.contains("Martyr") || boss.contains("Marty"));
+        assertFalse(center, center.contains("Martyr") || center.contains("Marty"));
+      }
+    }
+  }
+
+  @Test
+  public void theMartyrBotsChanceDoesNotDependOnTheCondemnedRole() {
+    int[] hits = new int[2];
+    for (int k = 0; k < 2; k++) {
+      for (int seed = 0; seed < 400; seed++) {
+        var ids = ids(8);
+        var g = game(ids, 3, Map.of("WEREWOLF", 1, "MARTYR", 1));
+        UUID martyr = holder(g, ids, "MARTYR");
+        UUID condemned = k == 0 ? holder(g, ids, "WEREWOLF") : villagers(g, ids).get(0);
+        ballotOn(g, condemned);
+        g.advance();
+        assertEquals("MARTYR", g.phase());
+        new CourtModule().bot(g, WerewolfGame.Phase.MARTYR, martyr, new Random(seed));
+        if (!g.alive().contains(martyr)) hits[k]++;
+      }
+    }
+    assertEquals("same draws, same outcome whoever is condemned", hits[0], hits[1]);
+    assertTrue("about a quarter: " + hits[0], hits[0] > 60 && hits[0] < 140);
   }
 
   // ------------------------------------------------------------------ martyr
