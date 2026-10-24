@@ -845,7 +845,7 @@ public final class WerewolfGame implements GamePreset {
   /** Ballot weight: the alpha counts double at night; at the day vote the modules decide. */
   private int weight(UUID voter) {
     if (phase == Phase.NIGHT) return roles.get(voter) == Role.ALPHA_WOLF ? 2 : 1;
-    if (phase != Phase.DAY_VOTE) return 1;
+    if (phase != Phase.DAY_VOTE && phase != Phase.TRIAL) return 1;
     int w = 1;
     for (RoleModule m : modules) w *= Math.max(0, m.weight(this, voter));
     return w;
@@ -1343,15 +1343,38 @@ public final class WerewolfGame implements GamePreset {
   /** The thumbs are counted: more than half of the living down eliminates the accused. */
   private void closeTrial() {
     UUID accused = nominee;
-    long down = thumbs.values().stream().filter(b -> b).count();
-    long up = thumbs.size() - down;
-    boolean condemned = accused != null && alive.contains(accused) && down * 2 > alive.size();
+    // A juror who did not vote is asked of the modules (an idiot always votes to eliminate).
+    for (UUID juror : jurors())
+      if (!thumbs.containsKey(juror) && accused != null)
+        for (RoleModule m : modules)
+          if (accused.equals(m.autoBallot(this, juror, List.of(accused)))) {
+            thumbs.put(juror, true);
+            break;
+          }
+    // The mayor's thumb counts twice and a pacifist's not at all; more than half of the living
+    // (the accused included, who does not vote) must be down.
+    long down = 0, up = 0, total = accused == null ? 0 : 1, shownDown = 0, shownUp = 0;
+    for (UUID juror : jurors()) {
+      int w = weight(juror);
+      total += w;
+      Boolean thumb = thumbs.get(juror);
+      if (thumb == null) continue;
+      if (thumb) {
+        down += w;
+        shownDown++;
+      } else {
+        up += w;
+        shownUp++;
+      }
+    }
+    boolean condemned = accused != null && alive.contains(accused) && down * 2 > total;
     journal.log(
         "TRIAL",
-        who(accused) + ": " + down + " down, " + up + " up of " + alive.size() + " living"
+        who(accused) + ": " + down + " down, " + up + " up of " + total + " counted"
             + (condemned ? " · condemned" : " · spared"));
+    // The table hears the thumbs as they were raised, not as they counted.
     notifyLiving(
-        "Thumbs: " + down + " down, " + up + " up. " + accused
+        "Thumbs: " + shownDown + " down, " + shownUp + " up. " + accused
             + (condemned ? " is condemned." : " is spared."));
     nominee = null;
     nominator = null;
