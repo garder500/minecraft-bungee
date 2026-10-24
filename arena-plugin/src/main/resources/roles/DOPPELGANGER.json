@@ -7,7 +7,7 @@
  "palette": "seer",
  "icon": "doppel",
  "word": "DOPPEL",
- "help": "On the first night, pick a player. When they die, you secretly take over their role. Until then you are a villager.",
+ "help": "On the first night, pick another player. When they die, you secretly take over their role, unless somebody living already holds a unique role. Until then you are a villager.",
  "seerSees": "VILLAGER",
  "call": {
   "phase": "DOPPEL",
