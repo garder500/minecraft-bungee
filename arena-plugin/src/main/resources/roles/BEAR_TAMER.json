@@ -1,0 +1,11 @@
+{
+ "name": "Bear tamer",
+ "team": "village",
+ "impact": 2,
+ "max": 1,
+ "color": "e9d99b",
+ "palette": "villager",
+ "icon": "bear",
+ "word": "BEAR TAMER",
+ "help": "Each dawn your bear growls if a wolf sits next to you. Everyone hears it."
+}

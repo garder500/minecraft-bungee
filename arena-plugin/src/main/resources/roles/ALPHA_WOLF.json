@@ -1,0 +1,11 @@
+{
+ "name": "Alpha wolf",
+ "team": "wolves",
+ "impact": -8,
+ "max": 1,
+ "color": "ff5a5a",
+ "palette": "wolf",
+ "icon": "alpha",
+ "word": "ALPHA WOLF",
+ "help": "At night, vote with the pack for a non-wolf. As the alpha, your vote counts double."
+}

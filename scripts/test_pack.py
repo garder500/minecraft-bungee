@@ -8,6 +8,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "resource-pack"))
 import build_pack  # noqa: E402
 import layout  # noqa: E402
+sys.path.insert(0, str(ROOT / "resource-pack" / "art"))
+import hud as hud_art  # noqa: E402
 
 def png_size(path):
     data = path.read_bytes()
@@ -74,9 +76,40 @@ class PackTest(unittest.TestCase):
             self.assertEqual(provider["file"], f"vampyuyu:font/icon/{name}.png")
             png = PACK / "assets/vampyuyu/textures/font/icon" / f"{name}.png"
             self.assertEqual(png_size(png), (layout.ICON_PX, layout.ICON_PX), name)
-        hud = (ROOT / "arena-plugin/src/main/java/win/vampyuyu/arena/WerewolfHud.java").read_text()
-        names = re.search(r"ICON_NAMES =\s*List\.of\((.*?)\);", hud, re.S).group(1)
-        self.assertEqual(re.findall(r'"([a-z]+)"', names), layout.ICONS)
+        names = (ROOT / "arena-plugin/src/main/resources/icon-names.txt").read_text().split()
+        self.assertEqual(names, layout.ICONS)
+
+    def test_every_role_is_described_and_its_words_fit_the_hud(self):
+        java = (ROOT / "arena-plugin/src/main/java/win/vampyuyu/arena/WerewolfGame.java").read_text()
+        enum = re.search(r"public enum Role \{(.*?)\n  \}", java, re.S).group(1)
+        names = re.findall(r"^\s+([A-Z_]+),?\s*(?://.*)?$", enum, re.M)
+        roles = layout.roles()
+        self.assertEqual(sorted(names), sorted(roles), "one resources/roles/<ROLE>.json per Role")
+        phases = set()
+        for role, info in roles.items():
+            for field in ("name", "team", "impact", "color", "palette", "icon", "word", "help"):
+                self.assertIn(field, info, f"{role}.{field}")
+            self.assertIn(info["team"], ("village", "wolves", "vampires", "cult", "solo"), role)
+            self.assertIn(info["palette"], layout.HUD_PALETTES, role)
+            self.assertRegex(info["color"], "^[0-9a-f]{6}$", role)
+            # plabel / pteam are 68 px boxes of 1x text (6 px a letter plus the 2 px outline); the
+            # phase label is 136 px of 2x text
+            self.assertLessEqual((len(info["word"]) - 1) * 6 + 5 + 2, 68, f"{role} word '{info['word']}'")
+            self.assertLessEqual((len(layout.team_word(info)) - 1) * 6 + 5 + 2, 68, f"{role} team word")
+            for ch in info["word"] + layout.team_word(info):
+                self.assertIn(ch, hud_art.FONT, f"{role}: no glyph for {ch!r}")
+            if "call" in info:
+                call = info["call"]
+                self.assertLessEqual(((len(call["label"]) - 1) * 6 + 5) * 2 + 2, 136, f"{role} label")
+                self.assertNotIn(call["phase"], phases, f"two roles own the call {call['phase']}")
+                phases.add(call["phase"])
+                for field in ("label", "title", "subtitle", "instruction"):
+                    self.assertTrue(call.get(field), f"{role}.call.{field}")
+
+    def test_every_role_has_an_icon_svg(self):
+        for role, info in layout.roles().items():
+            self.assertTrue((ROOT / "resource-pack/art/icons" / f"{info['icon']}.svg").is_file(),
+                            f"{role}: icon art/icons/{info['icon']}.svg is missing")
 
     def test_custom_hud_sprites_font_and_plugin_table_agree(self):
         sprites = layout.hud_sprites()

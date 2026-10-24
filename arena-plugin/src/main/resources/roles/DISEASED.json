@@ -1,0 +1,11 @@
+{
+ "name": "Diseased",
+ "team": "village",
+ "impact": 3,
+ "max": 1,
+ "color": "9bd67a",
+ "palette": "witch",
+ "icon": "diseased",
+ "word": "DISEASED",
+ "help": "If the wolves eat you, they are too sick to hunt the following night."
+}

@@ -1,0 +1,11 @@
+{
+ "name": "Drunk",
+ "team": "village",
+ "impact": -3,
+ "max": 1,
+ "color": "e0b070",
+ "palette": "hunter",
+ "icon": "drunk",
+ "word": "DRUNK",
+ "help": "You think you are a plain villager until the third night, when you learn your real role. Until then you cannot act."
+}

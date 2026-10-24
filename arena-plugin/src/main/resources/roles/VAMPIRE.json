@@ -1,0 +1,19 @@
+{
+ "name": "Vampire",
+ "team": "vampires",
+ "impact": -8,
+ "max": 6,
+ "color": "d8456f",
+ "palette": "vampire",
+ "icon": "vampire",
+ "word": "VAMPIRE",
+ "help": "Each night the vampires choose a victim, who dies at the start of the next day vote. Wolves cannot kill vampires. Wipe out every other team to win.",
+ "teamWord": "VAMPIRES",
+ "call": {
+  "phase": "VAMPIRE",
+  "label": "VAMPIRES",
+  "title": "Vampires, awaken",
+  "subtitle": "Choose your victim",
+  "instruction": "Right-click a player to feed on them"
+ }
+}

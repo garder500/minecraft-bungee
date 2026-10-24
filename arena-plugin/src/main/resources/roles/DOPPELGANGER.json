@@ -1,0 +1,19 @@
+{
+ "name": "Doppelganger",
+ "team": "village",
+ "impact": -2,
+ "max": 1,
+ "color": "d8d8ff",
+ "palette": "seer",
+ "icon": "doppel",
+ "word": "DOPPEL",
+ "help": "On the first night, pick a player. When they die, you secretly take over their role. Until then you are a villager.",
+ "seerSees": "VILLAGER",
+ "call": {
+  "phase": "DOPPEL",
+  "label": "DOPPEL",
+  "title": "Doppelganger, awaken",
+  "subtitle": "Choose who to become",
+  "instruction": "Right-click a player: you take their role when they die"
+ }
+}

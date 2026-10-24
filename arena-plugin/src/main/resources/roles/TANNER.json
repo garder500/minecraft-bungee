@@ -1,0 +1,12 @@
+{
+ "name": "Tanner",
+ "team": "solo",
+ "impact": 1,
+ "max": 1,
+ "color": "b59a7a",
+ "palette": "solo",
+ "icon": "tanner",
+ "word": "TANNER",
+ "help": "You win if you die. The game goes on for the others.",
+ "teamWord": "ALONE"
+}

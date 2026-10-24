@@ -252,6 +252,16 @@ public final class ArenaProtectionListener implements Listener {
     GamePreset game = s.game;
     UUID from = e.getPlayer().getUniqueId();
     boolean alive = game == null || game.alive().contains(from);
+    if (game instanceof WerewolfGame wolf) {
+      String typed =
+          net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+              .serialize(e.message());
+      if (wolf.chat(from, typed)) return; // A role took the message (a ghost's letter).
+      if (alive && wolf.silenced(from)) {
+        plugin.message(e.getPlayer(), "You cannot speak today.");
+        return;
+      }
+    }
     boolean night = game instanceof WerewolfGame wolf && wolf.night();
     if (night && alive) {
       plugin.message(

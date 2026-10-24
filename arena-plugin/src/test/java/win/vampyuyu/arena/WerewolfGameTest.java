@@ -52,8 +52,15 @@ public class WerewolfGameTest {
     tie.select(players().get(0), players().get(1));
     tie.select(players().get(1), players().get(0));
     tie.advance();
+    // A tie asks for one more vote, among the tied players only.
+    assertEquals("DAY_VOTE", tie.phase());
+    assertEquals(2, tie.candidates().size());
+    assertThrows(IllegalArgumentException.class, () -> tie.select(players().get(3), players().get(4)));
+    tie.select(players().get(0), players().get(1));
+    tie.select(players().get(1), players().get(0));
+    tie.advance();
     assertEquals(8, tie.alive().size());
-    assertNull(tie.takeVerdict().lynched()); // Counted, but nobody had a majority.
+    assertNull(tie.takeVerdict().lynched()); // Tied twice: nobody is eliminated.
   }
 
   @Test

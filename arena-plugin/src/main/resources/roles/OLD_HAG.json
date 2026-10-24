@@ -1,0 +1,18 @@
+{
+ "name": "Old hag",
+ "team": "village",
+ "impact": 1,
+ "max": 1,
+ "color": "7bd6a6",
+ "palette": "witch",
+ "icon": "hag",
+ "word": "OLD HAG",
+ "help": "Each night, send one player away: they cannot speak, vote or be voted for the next day, and are safe from the Hunter's shot. Not yourself.",
+ "call": {
+  "phase": "HAG",
+  "label": "OLD HAG",
+  "title": "Old hag, awaken",
+  "subtitle": "Banish one player for the day",
+  "instruction": "Right-click a player to banish them for the day"
+ }
+}

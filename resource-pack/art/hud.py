@@ -39,7 +39,7 @@ FONT = {
     "4": "00010 00110 01010 10010 11111 00010 00010", "5": "11111 10000 11110 00001 00001 10001 01110",
     "6": "00110 01000 10000 11110 10001 10001 01110", "7": "11111 00001 00010 00100 01000 01000 01000",
     "8": "01110 10001 10001 01110 10001 10001 01110", "9": "01110 10001 10001 01111 00001 00010 01100",
-    ":": "00000 00100 00000 00000 00000 00100 00000", "/": "00001 00010 00010 00100 01000 01000 10000",
+    ":": "00000 00100 00000 00000 00000 00100 00000", ".": "00000 00000 00000 00000 00000 01100 01100", "/": "00001 00010 00010 00100 01000 01000 10000",
     "-": "00000 00000 00000 11111 00000 00000 00000", " ": "00000 00000 00000 00000 00000 00000 00000",
 }
 
@@ -296,6 +296,9 @@ def main():
             c = right_panel(rgb(layout.HUD_PALETTES[rest]))
         elif name.startswith(("icon_", "picon_")):
             svg = ART / "icons" / f"{rest}.svg"
+            if not svg.exists():  # a role whose icon is not drawn yet shows the villager's
+                print(f"warning: no icon art/icons/{rest}.svg, using the villager's")
+                svg = ART / "icons" / "villager.svg"
             subprocess.run([magick, "-background", "none", "-density", str(72 * w * 2 // 32), str(svg),
                             "-resize", f"{w}x{h}", "-strip", f"PNG32:{out / (name + '.png')}"], check=True)
             continue

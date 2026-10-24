@@ -29,12 +29,12 @@ public final class GameRules {
         }
         if (e.getValue() == null
             || e.getValue() < 0
-            || e.getValue() > 20
-            || !e.getKey().equals("VILLAGER") && !e.getKey().equals("WEREWOLF") && e.getValue() > 1)
-          throw new IllegalArgumentException("Special roles may appear at most once");
+            || e.getValue() > RoleInfo.of(e.getKey()).max())
+          throw new IllegalArgumentException(
+              "Too many " + RoleInfo.of(e.getKey()).name() + " (at most " + RoleInfo.of(e.getKey()).max() + ")");
       }
-      if (!roles.isEmpty() && wolves(roles) < 1)
-        throw new IllegalArgumentException("Custom roles need at least one werewolf");
+      if (!roles.isEmpty() && wolves(roles) + roles.getOrDefault("VAMPIRE", 0) < 1)
+        throw new IllegalArgumentException("Custom roles need at least one werewolf or vampire");
       if (cupidSeconds < 5
           || cupidSeconds > 120
           || witchSeconds < 5

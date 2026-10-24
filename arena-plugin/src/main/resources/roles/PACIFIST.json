@@ -1,0 +1,11 @@
+{
+ "name": "Pacifist",
+ "team": "village",
+ "impact": -2,
+ "max": 1,
+ "color": "e9d99b",
+ "palette": "villager",
+ "icon": "pacifist",
+ "word": "PACIFIST",
+ "help": "You always vote to let people live: your ballots never count. Nobody knows."
+}

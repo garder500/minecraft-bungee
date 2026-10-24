@@ -1,0 +1,11 @@
+{
+ "name": "Tough guy",
+ "team": "village",
+ "impact": 3,
+ "max": 1,
+ "color": "f0a050",
+ "palette": "hunter",
+ "icon": "toughguy",
+ "word": "TOUGH GUY",
+ "help": "If the wolves attack you, you survive the night and die the following night instead. Nobody dies the first dawn."
+}

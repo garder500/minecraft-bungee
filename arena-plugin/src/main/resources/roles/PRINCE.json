@@ -1,0 +1,11 @@
+{
+ "name": "Prince",
+ "team": "village",
+ "impact": 3,
+ "max": 1,
+ "color": "ffd36e",
+ "palette": "vote",
+ "icon": "prince",
+ "word": "PRINCE",
+ "help": "The first time the village votes to eliminate you, you are revealed and spared."
+}

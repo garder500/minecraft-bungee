@@ -161,6 +161,258 @@
    "chars": [
     "\ue011"
    ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/apprentice.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue012"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/aura.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue013"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/cult.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue014"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/cursed.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue015"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/diseased.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue016"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/doppel.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue017"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/drunk.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue018"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/ghost.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue019"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/hoodlum.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue01a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/idiot.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue01b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/lonewolf.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue01c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/lycan.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue01d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/martyr.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue01e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/mason.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue01f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/mayor.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue020"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/minion.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue021"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/hag.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue022"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/oldman.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue023"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/pacifist.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue024"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/investigator.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue025"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/priest.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue026"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/prince.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue027"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/sorcerer.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue028"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/spellcaster.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue029"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/tanner.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue02a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/toughguy.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue02b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/troublemaker.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue02c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/vampire.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue02d"
+   ]
   }
  ]
 }

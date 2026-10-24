@@ -1,0 +1,11 @@
+{
+ "name": "Werewolf",
+ "team": "wolves",
+ "impact": -6,
+ "max": 20,
+ "color": "ff5a5a",
+ "palette": "wolf",
+ "icon": "wolf",
+ "word": "WEREWOLF",
+ "help": "At night, vote with the pack for a non-wolf. The hunt ends as soon as every wolf picks the same victim. There is no night chat."
+}

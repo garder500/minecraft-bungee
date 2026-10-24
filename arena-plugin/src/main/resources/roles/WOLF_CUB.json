@@ -1,0 +1,11 @@
+{
+ "name": "Wolf cub",
+ "team": "wolves",
+ "impact": -8,
+ "max": 1,
+ "color": "ff5a5a",
+ "palette": "wolf",
+ "icon": "cub",
+ "word": "WOLF CUB",
+ "help": "At night, vote with the pack. If you die, the pack kills two players the next night."
+}

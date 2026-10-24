@@ -1,0 +1,11 @@
+{
+ "name": "Idiot",
+ "team": "village",
+ "impact": 2,
+ "max": 1,
+ "color": "e9d99b",
+ "palette": "villager",
+ "icon": "idiot",
+ "word": "IDIOT",
+ "help": "You always vote to eliminate someone: if you have not voted when the day vote ends, your ballot is cast at random. Nobody knows."
+}

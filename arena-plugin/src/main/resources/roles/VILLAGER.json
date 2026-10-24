@@ -1,0 +1,11 @@
+{
+ "name": "Villager",
+ "team": "village",
+ "impact": 1,
+ "max": 40,
+ "color": "e9d99b",
+ "palette": "villager",
+ "icon": "villager",
+ "word": "VILLAGER",
+ "help": "Discuss by day, then vote to identify the wolves, or skip the vote."
+}

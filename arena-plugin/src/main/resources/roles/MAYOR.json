@@ -1,0 +1,11 @@
+{
+ "name": "Mayor",
+ "team": "village",
+ "impact": 2,
+ "max": 1,
+ "color": "ffd36e",
+ "palette": "vote",
+ "icon": "mayor",
+ "word": "MAYOR",
+ "help": "Your vote counts twice in the day vote."
+}

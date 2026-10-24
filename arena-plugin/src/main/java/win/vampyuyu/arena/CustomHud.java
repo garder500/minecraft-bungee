@@ -75,8 +75,9 @@ final class CustomHud {
         .font(FONT);
   }
 
-  private static String word(String text) {
-    return text.toLowerCase(Locale.ROOT).replace(' ', '_');
+  /** A word's sprite key: lower case, anything else than letters and digits becomes one underscore. */
+  static String word(String text) {
+    return text.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_").replaceAll("^_|_$", "");
   }
 
   /** Seconds left at which the plate and the clock turn red and flash. */
@@ -185,12 +186,19 @@ final class CustomHud {
   /** The state for a viewer of a werewolf game, from the same rules as the vanilla bossbar. */
   static State of(WerewolfGame game, UUID viewer, long seconds, int total, boolean faceUp) {
     String phase = game.phase();
-    String role = game.role(viewer);
+    String role = game.selfRoleName(viewer);
     boolean dead = !game.alive().contains(viewer);
     boolean actor = game.actors().contains(viewer);
     boolean night = game.night();
     var boss = WerewolfPresentation.boss(game, viewer, seconds);
-    String palette = dead ? "dead" : boss.color() == WerewolfPresentation.INK_DIM ? "sleep" : palette(boss.color());
+    String turn = WerewolfPresentation.turnRole(phase);
+    String palette =
+        dead
+            ? "dead"
+            : boss.color() == WerewolfPresentation.INK_DIM
+                ? "sleep"
+                : turn != null ? RoleInfo.of(turn).palette()
+                : phase.equals("DAY_VOTE") ? "vote" : "villager";
     String label;
     if (phase.equals("FINISHED")) label = "game over";
     else if (phase.equals("HUNTER_SHOT")) label = night && !actor ? "sleeping" : "last shot";
@@ -204,11 +212,15 @@ final class CustomHud {
             case "SEER" -> "seer awake";
             case "NIGHT" -> "wolves hunt";
             case "WITCH" -> "witch awake";
-            default -> "waiting";
+            default -> {
+              RoleInfo info = RoleInfo.byPhase(phase);
+              yield info == null ? "waiting" : info.call().label();
+            }
           };
+    if (phase.equals("MARTYR")) label = RoleInfo.of("MARTYR").call().label();
     double fraction = boss.timer() && game.seconds() > 0 ? Math.max(0, Math.min(1, seconds / (double) game.seconds())) : 1;
-    String rolePalette = dead ? "dead" : palette(WerewolfPresentation.color(role));
-    String team = dead ? "out" : WerewolfGame.isWolf(role) ? "wolf pack" : "village";
+    String rolePalette = dead ? "dead" : RoleInfo.of(role).palette();
+    String team = dead ? "out" : RoleInfo.of(role).teamWord();
     return new State(
         palette,
         phase.equals("DAY_VOTE") ? "vote" : night ? "moon" : "sun",
@@ -219,7 +231,7 @@ final class CustomHud {
         boss.timer(),
         faceUp,
         WerewolfHud.iconName(role, dead),
-        dead ? "fallen" : WerewolfPresentation.roleName(role),
+        dead ? "fallen" : RoleInfo.of(role).word(),
         team,
         rolePalette,
         game.alive().size(),

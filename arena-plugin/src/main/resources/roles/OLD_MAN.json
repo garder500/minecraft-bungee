@@ -1,0 +1,11 @@
+{
+ "name": "Old man",
+ "team": "village",
+ "impact": 0,
+ "max": 1,
+ "color": "d8cfa4",
+ "palette": "villager",
+ "icon": "oldman",
+ "word": "OLD MAN",
+ "help": "You die of old age on the night numbered one more than the wolves still alive. Each wolf that falls brings your death closer."
+}

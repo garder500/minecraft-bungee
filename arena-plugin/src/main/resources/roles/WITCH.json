@@ -1,0 +1,11 @@
+{
+ "name": "Witch",
+ "team": "village",
+ "impact": 4,
+ "max": 1,
+ "color": "6fdc8c",
+ "palette": "witch",
+ "icon": "witch",
+ "word": "WITCH",
+ "help": "Potion phase: while you hold the life potion, you see the wolves' victim and can save them. Right-click a player, then use the death potion to poison them. Each potion works once per game; Sleep ends your turn."
+}

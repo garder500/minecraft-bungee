@@ -54,10 +54,46 @@ def tile_file(name, r, c):
     return f"{name}_{r}{c}"
 
 
+import json
+import pathlib
+import re
+
+# Every werewolf role is described by one JSON file of the plugin (RoleInfo.java reads the same):
+# its name, team, colour, HUD palette, icon, the words the HUD shows for it, the call it owns.
+ROLES_DIR = pathlib.Path(__file__).resolve().parent.parent / "arena-plugin/src/main/resources/roles"
+
+
+def key(word):
+    """Sprite key of a HUD word; the plugin does the same (CustomHud.word)."""
+    return re.sub(r"[^a-z0-9]+", "_", word.lower()).strip("_")
+
+
+def roles():
+    """role id -> its JSON, in file-name order."""
+    return {f.stem: json.loads(f.read_text()) for f in sorted(ROLES_DIR.glob("*.json"))}
+
+
+def team_word(role):
+    if "teamWord" in role:
+        return role["teamWord"]
+    return {"wolves": "WOLF PACK", "vampires": "VAMPIRES", "cult": "THE CULT", "solo": "ALONE"}.get(
+        role["team"], "VILLAGE")
+
+
+def unique(items, first=()):
+    out = list(first)
+    for item in items:
+        if item not in out:
+            out.append(item)
+    return out
+
+
 # Role and HUD icons: glyphs of the vampyuyu:icons font, from ICON_BASE in this order
-# (art/icons.py draws them; plugin: WerewolfHud.icon).
-ICONS = ["wolf", "villager", "seer", "witch", "hunter", "cupid", "guard", "dead", "moon", "sun",
-         "vote", "timer", "alive", "alpha", "infector", "cub", "scapegoat", "bear"]
+# (art/icons.py draws them; plugin: WerewolfHud.icon reads icon-names.txt). The first ones are
+# drawn by art/icons.py itself; every other role's icon is its own SVG in art/icons/.
+BASE_ICONS = ["wolf", "villager", "seer", "witch", "hunter", "cupid", "guard", "dead", "moon", "sun",
+              "vote", "timer", "alive", "alpha", "infector", "cub", "scapegoat", "bear"]
+ICONS = unique((r["icon"] for r in roles().values()), BASE_ICONS)
 ICON_BASE = 0xE000
 ICON_PX = 64             # texture size of one icon
 ICON_HEIGHT = 12         # drawn height in GUI px
@@ -77,6 +113,7 @@ HUD_PALETTES = {  # name -> role colour
     "villager": 0xe9d99b, "wolf": 0xff5a5a, "seer": 0xb892ff, "witch": 0x6fdc8c,
     "hunter": 0xf0a050, "cupid": 0xff8fc0, "guard": 0x6cc6ff, "dead": 0x8f84b3,
     "vote": 0xffd36e, "sleep": 0x6a5fa0, "danger": 0xff4040,
+    "ghost": 0xbfe9ff, "vampire": 0xd8456f, "cult": 0xd46aff, "solo": 0x9aa6b8,
 }
 
 # element -> (anchor, x, y, w, h); anchor 0 = top centre, 1 = right middle. The element's id is its
@@ -111,14 +148,14 @@ HUD_ID_BASE = 100        # the green channel of an element's colour is HUD_ID_BA
 HUD_SPRITE_BASE = 0xE000
 HUD_NEG_BASE = 0xF000    # negative-advance twin of every sprite: sprite index + HUD_NEG_BASE
 
-HUD_PHASE_WORDS = ["DEBATE", "VOTE", "SLEEPING", "CUPID AWAKE", "GUARD AWAKE", "SEER AWAKE",
-                   "WOLVES HUNT", "WITCH AWAKE", "LAST SHOT", "GAME OVER", "WAITING"]
-HUD_ROLE_WORDS = ["WEREWOLF", "VILLAGER", "SEER", "WITCH", "HUNTER", "CUPID", "GUARD", "ALPHA WOLF",
-                  "INFECTOR", "WOLF CUB", "SCAPEGOAT", "BEAR TAMER", "FALLEN"]
-HUD_TEAM_WORDS = ["VILLAGE", "WOLF PACK", "OUT"]
+HUD_PHASE_WORDS = unique(
+    (r["call"]["label"] for r in roles().values() if "call" in r),
+    ["DEBATE", "VOTE", "SLEEPING", "CUPID AWAKE", "GUARD AWAKE", "SEER AWAKE",
+     "WOLVES HUNT", "WITCH AWAKE", "LAST SHOT", "GAME OVER", "WAITING"])
+HUD_ROLE_WORDS = unique((r["word"] for r in roles().values()), []) + ["FALLEN"]
+HUD_TEAM_WORDS = unique((team_word(r) for r in roles().values()), []) + ["OUT"]
 HUD_TOP_ICONS = ["moon", "sun", "vote"]
-HUD_ROLE_ICONS = ["wolf", "villager", "seer", "witch", "hunter", "cupid", "guard", "dead", "alpha",
-                  "infector", "cub", "scapegoat", "bear"]
+HUD_ROLE_ICONS = unique((r["icon"] for r in roles().values()), []) + ["dead"]
 HUD_SEATS = 20          # seats of the table strip; the first ones are drawn on bigger tables
 HUD_DOTS = ["alive", "dead", "me", "ballot", "mate"]   # what a seat of the strip can show
 HUD_BADGES = ["lover", "life", "death", "infect", "guard"]   # status badges (4 fit the panel)
@@ -132,7 +169,7 @@ def hud_sprites():
     out += [(f"frame_{p}", *box["frame"]) for p in pals]
     out += [(f"fill_{p}", 8, 4) for p in pals]
     out += [(f"icon_{n}", *box["icon"]) for n in HUD_TOP_ICONS]
-    out += [(f"label_{w.lower().replace(' ', '_')}", *box["label"]) for w in HUD_PHASE_WORDS]
+    out += [(f"label_{key(w)}", *box["label"]) for w in HUD_PHASE_WORDS]
     out += [(f"d{d}", *box["t1"]) for d in "0123456789"]
     out += [(f"x{d}", *box["t1"]) for d in "0123456789"]
     out += [("dblank", *box["t1"]), ("dcolon", *box["tcolon"]), ("xcolon", *box["tcolon"]),
@@ -140,8 +177,8 @@ def hud_sprites():
     out += [(f"s{d}", *box["round"]) for d in "0123456789"]
     out += [(f"pframe_{p}", *box["pframe"]) for p in pals]
     out += [(f"picon_{n}", *box["picon"]) for n in HUD_ROLE_ICONS]
-    out += [(f"plabel_{w.lower().replace(' ', '_')}", *box["plabel"]) for w in HUD_ROLE_WORDS]
-    out += [(f"pteam_{w.lower().replace(' ', '_')}", *box["pteam"]) for w in HUD_TEAM_WORDS]
+    out += [(f"plabel_{key(w)}", *box["plabel"]) for w in HUD_ROLE_WORDS]
+    out += [(f"pteam_{key(w)}", *box["pteam"]) for w in HUD_TEAM_WORDS]
     out += [(f"dot_{n}", *box["m0"]) for n in HUD_DOTS]
     out += [(f"badge_{n}", *box["b0"]) for n in HUD_BADGES]
     out += [(f"vframe_{n}", *box["vframe"]) for n in ("calm", "hot")]

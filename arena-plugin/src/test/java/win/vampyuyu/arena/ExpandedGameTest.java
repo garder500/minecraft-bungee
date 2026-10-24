@@ -74,14 +74,13 @@ public class ExpandedGameTest {
   }
 
   @Test
-  public void wolvesWinOnlyOnceNoVillagerIsLeft() {
+  public void wolvesWinAtParity() {
     var g = game(5, Map.of("WEREWOLF", 2));
     var villagers = g.alive().stream().filter(p -> g.role(p).equals("VILLAGER")).toList();
     g.remove(villagers.get(0));
     g.remove(villagers.get(1));
-    assertEquals("two wolves against one villager play on", "", g.winner());
-    g.remove(villagers.get(2));
-    assertEquals("WEREWOLVES", g.winner());
+    assertEquals("WEREWOLVES", g.winner()); // two wolves against one villager: parity
+    assertEquals(2, g.winners().size());
   }
 
   @Test
@@ -175,10 +174,10 @@ public class ExpandedGameTest {
   public void bindingTheLastTwoPlayersAsAMixedCoupleEndsTheGame() {
     var g = game(5, Map.of("WEREWOLF", 1, "CUPID", 1));
     UUID cupid = who(g, "CUPID"), wolf = who(g, "WEREWOLF");
-    for (UUID p : Set.copyOf(g.alive())) if (!p.equals(cupid) && !p.equals(wolf)) g.remove(p);
     assertEquals("CUPID", g.phase());
     g.select(cupid, cupid);
     g.select(cupid, wolf);
+    for (UUID p : Set.copyOf(g.alive())) if (!p.equals(cupid) && !p.equals(wolf)) g.remove(p);
     assertEquals("LOVERS", g.winner());
   }
 

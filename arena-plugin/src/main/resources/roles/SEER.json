@@ -1,0 +1,11 @@
+{
+ "name": "Seer",
+ "team": "village",
+ "impact": 7,
+ "max": 1,
+ "color": "b892ff",
+ "palette": "seer",
+ "icon": "seer",
+ "word": "SEER",
+ "help": "At night, inspect one other living player."
+}

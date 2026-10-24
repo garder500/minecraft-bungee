@@ -1,0 +1,13 @@
+{
+ "name": "Minion",
+ "team": "wolves",
+ "impact": -6,
+ "max": 1,
+ "color": "ff7a5a",
+ "palette": "wolf",
+ "icon": "minion",
+ "word": "MINION",
+ "help": "You are on the wolves' side. On the first night you learn who they are, but you do not wake with them. The Seer sees you as a villager.",
+ "teamWord": "WOLF SIDE",
+ "seerSees": "VILLAGER"
+}

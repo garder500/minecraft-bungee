@@ -1,0 +1,18 @@
+{
+ "name": "Aura seer",
+ "team": "village",
+ "impact": 3,
+ "max": 1,
+ "color": "9ad7ff",
+ "palette": "seer",
+ "icon": "aura",
+ "word": "AURA SEER",
+ "help": "Each night, inspect one player: you learn whether they hold a special role, or are just a plain villager or werewolf.",
+ "call": {
+  "phase": "AURA",
+  "label": "AURA SEER",
+  "title": "Aura seer, awaken",
+  "subtitle": "Read one player's aura",
+  "instruction": "Right-click a player to read their aura"
+ }
+}

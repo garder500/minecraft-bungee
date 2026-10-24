@@ -1,0 +1,11 @@
+{
+ "name": "Apprentice seer",
+ "team": "village",
+ "impact": 4,
+ "max": 1,
+ "color": "c8b0ff",
+ "palette": "seer",
+ "icon": "apprentice",
+ "word": "APPRENTICE",
+ "help": "You are a villager until the Seer dies. Then you become the new Seer and wake each night to inspect a player."
+}

@@ -25,21 +25,17 @@ final class WerewolfPresentation {
 
   /** One colour per role, used by its menu, card, bossbar and chat lines. */
   static int color(String role) {
-    return switch (role == null ? "" : role) {
-      case "WEREWOLF", "ALPHA_WOLF", "INFECTOR", "WOLF_CUB" -> WEREWOLF;
-      case "SEER" -> SEER;
-      case "WITCH" -> WITCH;
-      case "HUNTER" -> HUNTER;
-      case "CUPID" -> CUPID;
-      case "GUARD" -> GUARD;
-      default -> VILLAGER;
-    };
+    return RoleInfo.of(role).color();
   }
 
   /** Singular display name: "Werewolf", "Seer", "Guard"... */
   static String roleName(String role) {
-    String spaced = role.replace('_', ' ').toLowerCase(Locale.ROOT);
-    return Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1);
+    return RoleInfo.of(role).name();
+  }
+
+  /** Roles whose whole side wakes together, so their call is plural: "The Werewolves wake up". */
+  private static boolean plural(String role) {
+    return role.equals("WEREWOLF") || role.equals("VAMPIRE");
   }
 
   static String plural(String role, int count) {
@@ -48,7 +44,14 @@ final class WerewolfPresentation {
   }
 
   static String team(String role) {
-    return WerewolfGame.isWolf(role) ? "Wolf pack" : "Village team";
+    RoleInfo info = RoleInfo.of(role);
+    return switch (info.team()) {
+      case "wolves" -> WerewolfGame.isWolf(role) ? "Wolf pack" : "Wolf side";
+      case "vampires" -> "Vampires";
+      case "cult" -> "Cult";
+      case "solo" -> "On your own";
+      default -> "Village team";
+    };
   }
 
   /** Bossbar countdown: "12 s" under a minute, "1 min 20" above. */
@@ -87,6 +90,8 @@ final class WerewolfPresentation {
       return switch (phase) {
         case "DISCUSSION" -> new Boss(head + "Debate · " + clock(seconds), VILLAGER, true);
         case "DAY_VOTE" -> new Boss(head + "Village vote · " + clock(seconds), VOTE, true);
+        case "MARTYR" ->
+            new Boss(head + "The Martyr may step in · " + clock(seconds), color("MARTYR"), true);
         default ->
             new Boss(head + "The Hunter takes a last shot · " + clock(seconds), HUNTER, true);
       };
@@ -156,12 +161,17 @@ final class WerewolfPresentation {
       case "NIGHT" -> "WEREWOLF";
       case "WITCH" -> "WITCH";
       case "HUNTER_SHOT" -> "HUNTER";
-      default -> null;
+      default -> {
+        RoleInfo info = RoleInfo.byPhase(phase);
+        yield info == null ? null : info.id();
+      }
     };
   }
 
   static String roleLabel(String role) {
-    return role.equals("WEREWOLF") ? "Werewolves" : roleName(role);
+    return role.equals("WEREWOLF")
+        ? "Werewolves"
+        : role.equals("VAMPIRE") ? "Vampires" : roleName(role);
   }
 
   static String deathLine(String name, String role) {
@@ -175,7 +185,7 @@ final class WerewolfPresentation {
     String role = turnRole(phase);
     return role == null
         ? null
-        : "The " + roleLabel(role) + " wake" + (role.equals("WEREWOLF") ? "" : "s") + " up";
+        : "The " + roleLabel(role) + " wake" + (plural(role) ? "" : "s") + " up";
   }
 
   static String sleepLine(String phase) {
@@ -185,7 +195,7 @@ final class WerewolfPresentation {
         : "The "
             + roleLabel(role)
             + " go"
-            + (role.equals("WEREWOLF") ? "" : "es")
+            + (plural(role) ? "" : "es")
             + " back to sleep";
   }
 
@@ -233,7 +243,11 @@ final class WerewolfPresentation {
             case "NIGHT" -> "Wolf hunt";
             case "WITCH" -> "Potions";
             case "HUNTER_SHOT" -> "Hunter's final shot";
-            default -> "Game over";
+            case "FINISHED" -> "Game over";
+            default -> {
+              RoleInfo info = RoleInfo.byPhase(phase);
+              yield info == null ? "Game over" : info.call().label() + " call";
+            }
           };
       String instruction =
           actor
@@ -246,7 +260,11 @@ final class WerewolfPresentation {
                 case "NIGHT" -> "Right-click a player to choose your prey";
                 case "WITCH" -> "Life saves, Death poisons the player you picked, Sleep ends your turn";
                 case "HUNTER_SHOT" -> "Right-click a target, then use Shoot";
-                default -> "The game has ended";
+                case "FINISHED" -> "The game has ended";
+                default -> {
+                  RoleInfo info = RoleInfo.byPhase(phase);
+                  yield info == null ? "The game has ended" : info.call().instruction();
+                }
               }
               : phase.equals("FINISHED") ? "The game has ended" : "Watch the village";
       return new View(label, instruction, actor, !phase.equals("FINISHED"));
@@ -261,7 +279,10 @@ final class WerewolfPresentation {
       case "NIGHT" -> new Cue("Wolves, awaken", "Right-click your victim");
       case "WITCH" -> new Cue("Witch, awaken", "Your potions may change their fate");
       case "HUNTER_SHOT" -> new Cue("Hunter, take your final shot", "Choose your last target");
-      default -> null;
+      default -> {
+        RoleInfo info = RoleInfo.byPhase(phase);
+        yield info == null ? null : new Cue(info.call().title(), info.call().subtitle());
+      }
     };
   }
 
@@ -270,6 +291,9 @@ final class WerewolfPresentation {
       case "VILLAGE" -> "The village wins";
       case "WEREWOLVES" -> "The wolves win";
       case "LOVERS" -> "Love conquers all";
+      case "VAMPIRES" -> "The vampires win";
+      case "CULT" -> "The cult wins";
+      case "LONE_WOLF" -> "The lone wolf wins alone";
       case "DRAW" -> "The story ends in a draw";
       default -> "Time is up";
     };

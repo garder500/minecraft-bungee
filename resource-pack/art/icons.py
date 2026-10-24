@@ -121,7 +121,7 @@ def magick():
 
 
 def main():
-    assert sorted(SVG) == sorted(layout.ICONS), "art/icons.py and layout.ICONS must list the same icons"
+    assert sorted(SVG) == sorted(layout.BASE_ICONS), "art/icons.py and layout.BASE_ICONS must list the same icons"
     tool = magick()
     (ART / "icons").mkdir(exist_ok=True)
     out = PACK / "textures" / "font" / "icon"
@@ -129,7 +129,10 @@ def main():
     providers = []
     for index, name in enumerate(layout.ICONS):
         svg = ART / "icons" / f"{name}.svg"
-        svg.write_text(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">{SVG[name]}</svg>\n')
+        if name in SVG:  # the base icons are drawn here; the other roles' SVGs are files of their own
+            svg.write_text(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">{SVG[name]}</svg>\n')
+        elif not svg.exists():
+            svg = ART / "icons" / "villager.svg"
         subprocess.run([tool, "-background", "none", "-density", str(72 * layout.ICON_PX // 32),
                         str(svg), "-resize", f"{layout.ICON_PX}x{layout.ICON_PX}", "-strip",
                         f"PNG32:{out / (name + '.png')}"], check=True)
@@ -138,6 +141,8 @@ def main():
                           "chars": [chr(layout.ICON_BASE + index)]})
     (PACK / "font").mkdir(parents=True, exist_ok=True)
     (PACK / "font" / "icons.json").write_text(json.dumps({"providers": providers}, indent=1) + "\n")
+    names = ART.parent.parent / "arena-plugin" / "src" / "main" / "resources" / "icon-names.txt"
+    names.write_text("\n".join(layout.ICONS) + "\n")
     print("drew", len(providers), "icons")
 
 

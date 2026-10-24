@@ -33,10 +33,27 @@ final class WerewolfHud {
   static final Key ICONS = Key.key("vampyuyu", "icons");
 
   /** Same order as resource-pack/layout.py ICONS; the pack test checks it. */
-  static final List<String> ICON_NAMES =
-      List.of(
-          "wolf", "villager", "seer", "witch", "hunter", "cupid", "guard", "dead", "moon", "sun",
-          "vote", "timer", "alive", "alpha", "infector", "cub", "scapegoat", "bear");
+  /** The glyphs of the icons font, in order: the pack's art script writes the list (icon-names.txt). */
+  static final List<String> ICON_NAMES = iconNames();
+
+  private static List<String> iconNames() {
+    List<String> base =
+        List.of(
+            "wolf", "villager", "seer", "witch", "hunter", "cupid", "guard", "dead", "moon", "sun",
+            "vote", "timer", "alive", "alpha", "infector", "cub", "scapegoat", "bear");
+    try (var in = WerewolfHud.class.getResourceAsStream("/icon-names.txt")) {
+      if (in == null) return base;
+      List<String> names =
+          new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
+              .lines()
+              .map(String::trim)
+              .filter(l -> !l.isEmpty())
+              .toList();
+      return names.isEmpty() ? base : names;
+    } catch (java.io.IOException e) {
+      return base;
+    }
+  }
 
   static Component icon(String name) {
     int index = ICON_NAMES.indexOf(name);
@@ -53,20 +70,7 @@ final class WerewolfHud {
   /** Icon of a role, or of the dead once the player is out. */
   static String iconName(String role, boolean dead) {
     if (dead) return "dead";
-    return switch (role) {
-      case "WEREWOLF" -> "wolf";
-      case "ALPHA_WOLF" -> "alpha";
-      case "INFECTOR" -> "infector";
-      case "WOLF_CUB" -> "cub";
-      case "SEER" -> "seer";
-      case "WITCH" -> "witch";
-      case "HUNTER" -> "hunter";
-      case "CUPID" -> "cupid";
-      case "GUARD" -> "guard";
-      case "SCAPEGOAT" -> "scapegoat";
-      case "BEAR_TAMER" -> "bear";
-      default -> "villager";
-    };
+    return RoleInfo.of(role).icon();
   }
 
   private final Map<UUID, BossBar> bars = new ConcurrentHashMap<>();

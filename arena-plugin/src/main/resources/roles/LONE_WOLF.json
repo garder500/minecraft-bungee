@@ -1,0 +1,12 @@
+{
+ "name": "Lone wolf",
+ "team": "solo",
+ "impact": -5,
+ "max": 1,
+ "color": "ff9a5a",
+ "palette": "wolf",
+ "icon": "lonewolf",
+ "word": "LONE WOLF",
+ "help": "You hunt with the pack, but you win only if you are the last player standing, or one of the last two with a villager.",
+ "teamWord": "ALONE"
+}

@@ -1,0 +1,11 @@
+{
+ "name": "Scapegoat",
+ "team": "village",
+ "impact": 0,
+ "max": 1,
+ "color": "e9d99b",
+ "palette": "villager",
+ "icon": "scapegoat",
+ "word": "SCAPEGOAT",
+ "help": "If the day vote is tied, you are the one who is eliminated."
+}

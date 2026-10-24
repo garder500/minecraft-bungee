@@ -1,0 +1,20 @@
+{
+ "name": "Sorcerer",
+ "team": "wolves",
+ "impact": -3,
+ "max": 1,
+ "color": "ff7a5a",
+ "palette": "wolf",
+ "icon": "sorcerer",
+ "word": "SORCERER",
+ "help": "You are on the wolves' side but do not wake with them. Each night, pick a player to learn whether they are the Seer. The Seer sees you as a villager.",
+ "teamWord": "WOLF SIDE",
+ "seerSees": "VILLAGER",
+ "call": {
+  "phase": "SORCERER",
+  "label": "SORCERER",
+  "title": "Sorcerer, awaken",
+  "subtitle": "Find the Seer",
+  "instruction": "Right-click a player: are they the Seer?"
+ }
+}

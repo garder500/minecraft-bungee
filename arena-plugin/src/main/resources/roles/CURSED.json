@@ -1,0 +1,12 @@
+{
+ "name": "Cursed",
+ "team": "village",
+ "impact": -3,
+ "max": 1,
+ "color": "c9b6e4",
+ "palette": "witch",
+ "icon": "cursed",
+ "word": "CURSED",
+ "help": "You are a villager. If the wolves attack you, you do not die: you become a werewolf the next night.",
+ "seerSees": "VILLAGER"
+}

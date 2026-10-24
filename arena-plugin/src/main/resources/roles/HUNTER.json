@@ -1,0 +1,11 @@
+{
+ "name": "Hunter",
+ "team": "village",
+ "impact": 3,
+ "max": 1,
+ "color": "f0a050",
+ "palette": "hunter",
+ "icon": "hunter",
+ "word": "HUNTER",
+ "help": "If eliminated, choose one living player for your final shot."
+}

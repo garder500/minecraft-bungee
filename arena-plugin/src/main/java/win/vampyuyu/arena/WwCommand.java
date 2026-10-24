@@ -26,7 +26,21 @@ final class WwCommand implements CommandExecutor, TabCompleter {
           Map.entry("CUB", "WOLF_CUB"),
           Map.entry("BEAR", "BEAR_TAMER"),
           Map.entry("GOAT", "SCAPEGOAT"),
-          Map.entry("VILLAGE", "VILLAGER"));
+          Map.entry("VILLAGE", "VILLAGER"),
+          Map.entry("APPRENTICE", "APPRENTICE_SEER"),
+          Map.entry("AURA", "AURA_SEER"),
+          Map.entry("HAG", "OLD_HAG"),
+          Map.entry("OLDMAN", "OLD_MAN"),
+          Map.entry("INVESTIGATOR", "PI"),
+          Map.entry("P.I.", "PI"),
+          Map.entry("TOUGH", "TOUGH_GUY"),
+          Map.entry("TROUBLE", "TROUBLEMAKER"),
+          Map.entry("SPELL", "SPELLCASTER"),
+          Map.entry("DOPPEL", "DOPPELGANGER"),
+          Map.entry("CULT", "CULT_LEADER"),
+          Map.entry("LONE", "LONE_WOLF"),
+          Map.entry("VAMP", "VAMPIRE"),
+          Map.entry("SORC", "SORCERER"));
 
   private final NexusArenaEngine plugin;
   private final Map<String, String> selected = new HashMap<>();

@@ -1,0 +1,11 @@
+{
+ "name": "Cupid",
+ "team": "village",
+ "impact": -3,
+ "max": 1,
+ "color": "ff8fc0",
+ "palette": "cupid",
+ "icon": "cupid",
+ "word": "CUPID",
+ "help": "Opening night: select two living players to bind as lovers."
+}

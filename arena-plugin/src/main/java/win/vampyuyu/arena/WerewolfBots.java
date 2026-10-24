@@ -56,7 +56,7 @@ final class WerewolfBots {
     if (!key.equals(game.turnKey())) return log;
     try {
       switch (game.phase()) {
-        case "NIGHT" -> followPack(game, bots, log, deadline);
+        case "NIGHT", "VAMPIRE" -> followPack(game, bots, log, deadline);
         case "DAY_VOTE" -> {
           if (deadline) settleTie(game, bots, log);
         }
@@ -135,7 +135,11 @@ final class WerewolfBots {
         game.select(bot, target);
         log.add(new Action(bot, role, "shoots " + target));
       }
-      default -> {}
+      default -> {
+        // A call owned by a role module: the module plays the bot's part.
+        game.botAct(bot, random);
+        log.add(new Action(bot, role, "takes its " + game.phase() + " turn"));
+      }
     }
   }
 
@@ -202,6 +206,9 @@ final class WerewolfBots {
   /** Whom this bot could vote out: never itself, its lover, its pack or a villager it saw. */
   private static List<UUID> suspects(WerewolfGame game, UUID bot) {
     List<UUID> pool = without(new ArrayList<>(game.alive()), bot);
+    pool.removeIf(game::exiled);
+    List<UUID> tied = game.candidates();
+    if (tied != null && pool.stream().anyMatch(tied::contains)) pool.retainAll(tied);
     pool.remove(game.partner(bot));
     pool.removeAll(game.pack(bot));
     game.visions(bot)
