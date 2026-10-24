@@ -80,6 +80,7 @@ Read `RoleModule.java`: every hook is documented there and has a do-nothing defa
   `kill` sources: `WOLVES`, `WOLVES2`, `POISON`, `VOTE`, `VAMPIRE`, `SHOT`, `DELAYED`, `OTHER`.
   The witch's flask and the guard only stop `WOLVES`/`WOLVES2`.
 * Never loop or block. Never call `g.select`/`g.use` of another player from a hook except in `bot`.
+* `g.notify` appends: several messages for one player in the same dawn all arrive, in order.
 * A seer's view of a role is `seerSees` in the JSON (lycan reads as a werewolf, minion and sorcerer
   as villagers); the aura seer, the P.I. and the sorcerer use their own tests on the *actual* role.
 
@@ -92,8 +93,10 @@ Read `RoleModule.java`: every hook is documented there and has a do-nothing defa
 * **Seer** (+7), **Witch** (+4), **Hunter** (+3), **Cupid** (-3), **Guard** (+3, the rulebook's
   Bodyguard; may protect himself), **Scapegoat**, **Bear tamer**: classic roles, already in the game.
   The Witch also covers the **Magician** (same powers).
-* **Apprentice seer** (+4): a villager until the Seer dies; then becomes the Seer (role change, a
-  private notice) and is called in the `SEER` call from the next night.
+* **Apprentice seer** (+4): a villager until the Seer dies (the Seer sees him as a villager); then he
+  becomes the Seer (role change, a private notice) and is called in the `SEER` call from the next
+  night. A seer who dies at dawn is replaced once the dawn's deaths are known, so an apprentice who
+  dies the same dawn is never told he is the Seer.
 * **Aura seer** (+3, `AURA`): each night picks a player and learns "special role" or "plain villager
   or werewolf". Special = any role other than `VILLAGER` and `WEREWOLF`. A cursed, a drunk who has
   not woken and a doppelganger who has not copied read as plain villagers.
@@ -154,6 +157,9 @@ Read `RoleModule.java`: every hook is documented there and has a do-nothing defa
   the pack learns him at that moment).
 * **Doppelganger** (-2, `DOPPEL`): first night, picks a player; when that player dies (`died`) she
   secretly takes over their role (`setRole`, a private notice). She is a villager meanwhile.
+  A role of which only one exists (`max` 1 in its JSON, such as the Seer) is never held twice: if
+  somebody living already holds it when she would copy it (an apprentice just became the Seer), she
+  copies nothing, becomes a plain villager and is told so.
 * **Drunk** (-3): dealt a hidden real role (chosen in `deal`: werewolf, villager or another role the
   deal did not use) and believes he is a villager (`perceived`) until the third night (`nightfall`
   reveals it with a notice). Until then he is not called (`ready` false for every call). The Seer

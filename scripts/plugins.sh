@@ -4,6 +4,7 @@
 # plugins bind ports, hold executors, Redis subscriptions and arena snapshot journals.
 #
 #   scripts/plugins.sh build   <plugin>...                 Build jars into their target/ or build/ dir
+#   scripts/plugins.sh test    <plugin> [pattern]          Run the tests (maven plugins), e.g. pattern CultModuleTest
 #   scripts/plugins.sh push    <plugin> [server...]        Build, install locally, restart (make plugin)
 #   scripts/plugins.sh install <plugin> <jar> [server...]  Install a built jar here and restart
 #   scripts/plugins.sh clear   [server...]                 Drop overrides; the image's jars come back
@@ -68,6 +69,18 @@ build() {
  local jar="$dir/$(plugin_jar "$plugin")"
  [[ -f $jar ]] || { echo "Build finished without $jar" >&2; exit 1; }
  echo "$jar"
+}
+
+# Runs the unit tests of a maven plugin, all of them or those matching a surefire pattern.
+test_plugin() {
+ local plugin=$1 pattern=${2:-} dir cache
+ dir=$(plugin_dir "$plugin")
+ [[ $plugin != claims ]] || { echo "claims is a gradle plugin: no test shortcut" >&2; exit 1; }
+ cache=${XDG_CACHE_HOME:-$HOME/.cache}/vampyuyu
+ mkdir -p "$cache/m2"
+ docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e MAVEN_CONFIG=/tmp/.m2 \
+  -v "$PWD/$dir:/build" -v "$cache/m2:/m2" -w /build "$(image_of maven:3-eclipse-temurin-25)" \
+  mvn --batch-mode --quiet -Dmaven.repo.local=/m2 ${pattern:+-Dtest=$pattern -Dsurefire.failIfNoSpecifiedTests=false} test
 }
 
 dc() { docker compose -f "$compose" "$@"; }
@@ -197,6 +210,8 @@ remote() {
 action=${1:-}
 shift || true
 case $action in
+ test) [[ $# -gt 0 ]] || { echo 'usage: plugins.sh test <plugin> [pattern]' >&2; exit 1; }
+  known "$1"; test_plugin "$1" "${2:-}" ;;
  build) [[ $# -gt 0 ]] || { echo 'usage: plugins.sh build <plugin>...' >&2; exit 1; }
   for p in "$@"; do known "$p"; build "$p" > /dev/null; done ;;
  push) [[ $# -gt 0 ]] || { echo 'usage: plugins.sh push <plugin> [server...]' >&2; exit 1; }

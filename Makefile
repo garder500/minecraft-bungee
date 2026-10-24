@@ -6,7 +6,7 @@ ZIP ?=
 OUT ?=
 export COMPOSE SERVER WORLD ZIP OUT
 
-.PHONY: export-all zip-all help status up stop configure export zip import restore inspect export-panel import-panel backup test-archives pack art test-pack e2e-pack plugin plugin-prod plugin-build plugin-clear plugin-clear-prod plugin-status plugin-status-prod test-plugins
+.PHONY: export-all zip-all help status up stop configure export zip import restore inspect export-panel import-panel backup test-archives pack art test-pack e2e-pack plugin plugin-prod plugin-build plugin-test plugin-clear plugin-clear-prod plugin-status plugin-status-prod test-plugins
 help: ## Show operator commands
 	@python3 scripts/world_archive.py help
 status: ## Show container status
@@ -52,6 +52,8 @@ plugin-prod: ## Same on production over SSH (.env.remote: PROD_HOST, PROD_PATH)
 	@scripts/plugins.sh remote push $(PLUGIN) $(SERVERS)
 plugin-build: ## Only build PLUGIN's jar
 	@scripts/plugins.sh build $(PLUGIN)
+plugin-test: ## Only run PLUGIN's unit tests [TEST=SomeTestClass]
+	@scripts/plugins.sh test $(PLUGIN) $(TEST)
 plugin-clear: ## Drop local plugin overrides and restart the affected servers [SERVERS=...]
 	@scripts/plugins.sh clear $(SERVERS)
 plugin-clear-prod: ## Drop production plugin overrides
