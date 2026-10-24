@@ -101,6 +101,15 @@ final class WwCommand implements CommandExecutor, TabCompleter {
   public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
     try {
       String sub = args.length == 0 ? "help" : args[0].toLowerCase(Locale.ROOT);
+      if (sub.equals("hud")) {
+        if (!(sender instanceof Player p)) throw new IllegalArgumentException("Players only");
+        String size = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : "";
+        if (!List.of("auto", "large", "medium", "small").contains(size))
+          throw new IllegalArgumentException("Usage: /ww hud auto|large|medium|small (now " + plugin.hudSize(p) + ")");
+        plugin.hudSize(p, size);
+        say(sender, "HUD size: " + size);
+        return true;
+      }
       if (sub.equals("vote") || sub.equals("abstain")) {
         player(sender, sub, args);
         return true;
@@ -158,7 +167,7 @@ final class WwCommand implements CommandExecutor, TabCompleter {
             "/ww players kick <player> · peek      (peek lists every role: admins only)",
             "/ww act <player|botN> select|aim <target> | use <ability>   (test: act as someone)",
             "/ww click <player> <target>           (test: the right-click on a player)",
-            "Players: /ww vote <player> · /ww abstain"))
+            "Players: /ww vote <player> · /ww abstain · /ww hud auto|large|medium|small"))
       say(sender, line);
   }
 
@@ -443,9 +452,10 @@ final class WwCommand implements CommandExecutor, TabCompleter {
   public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
     if (args.length == 1) {
       List<String> all = new ArrayList<>(ADMIN);
-      all.addAll(List.of("vote", "abstain"));
+      all.addAll(List.of("vote", "abstain", "hud"));
       return all.stream().filter(x -> x.startsWith(args[0].toLowerCase(Locale.ROOT))).toList();
     }
+    if (args.length == 2 && args[0].equalsIgnoreCase("hud")) return List.of("auto", "large", "medium", "small");
     if (args.length == 2 && args[0].equalsIgnoreCase("place")) return List.of("add", "set", "night", "list", "remove", "tp", "clear");
     if (args.length == 2 && args[0].equalsIgnoreCase("cast")) return List.of("set", "auto", "show", "roles");
     if (args.length == 2 && args[0].equalsIgnoreCase("use")) return plugin.arenas.all().stream().map(s -> s.config.id()).toList();

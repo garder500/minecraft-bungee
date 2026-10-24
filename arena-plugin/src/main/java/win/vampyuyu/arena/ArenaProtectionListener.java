@@ -172,6 +172,7 @@ public final class ArenaProtectionListener implements Listener {
       String command = e.getMessage().trim().toLowerCase(java.util.Locale.ROOT);
       if (!command.equals("/arena")
           && !command.startsWith("/ww vote ")
+          && !command.startsWith("/ww hud")
           && !command.equals("/ww abstain")
           && !command.equals("/arena leave")
           && !command.equals("/nexusarenaengine:arena leave")) {

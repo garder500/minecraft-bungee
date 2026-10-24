@@ -54,11 +54,21 @@ final class CustomHud {
       int alive,
       int total) {}
 
-  private Component glyph(String element, String sprite, int parameter) {
+  /** HUD sizes by name: the red channel of the glyphs (78 follows the window, 79 full, 80 medium, 81 small). */
+  static int mode(String size) {
+    return switch (size == null ? "auto" : size) {
+      case "large" -> 79;
+      case "medium" -> 80;
+      case "small" -> 81;
+      default -> 78;
+    };
+  }
+
+  private Component glyph(int mode, String element, String sprite, int parameter) {
     Integer id = elements.get(element), index = sprites.get(sprite);
     if (id == null || index == null) return Component.empty();
     String chars = "" + (char) (SPRITE_BASE + index) + (char) (NEG_BASE + index);
-    return Component.text(chars, TextColor.color(78, ID_BASE + id, Math.max(0, Math.min(255, parameter))))
+    return Component.text(chars, TextColor.color(mode, ID_BASE + id, Math.max(0, Math.min(255, parameter))))
         .font(FONT);
   }
 
@@ -69,7 +79,7 @@ final class CustomHud {
   /** Seconds left at which the plate and the clock turn red and flash. */
   static final int DANGER_SECONDS = 5;
 
-  Component render(State s) {
+  Component render(State s, int mode) {
     boolean danger = s.timed() && s.seconds() <= DANGER_SECONDS;
     long t = Math.max(0, Math.min(9 * 60 + 59, s.seconds()));
     // The plate flashes red every other second once the turn is nearly over.
@@ -77,39 +87,39 @@ final class CustomHud {
     String clockKind = danger ? "x" : "d";
     Component out = Component.empty();
     // Top plate: phase medallion, round, label, draining bar and the clock.
-    out = out.append(glyph("frame", "frame_" + plate, 0));
-    out = out.append(glyph("icon", "icon_" + s.topIcon(), 0));
-    out = out.append(glyph("round", "s" + Math.max(0, Math.min(9, s.round())), 0));
-    out = out.append(glyph("label", "label_" + word(s.label()), 0));
-    out = out.append(glyph("fill", "fill_" + (danger ? "danger" : s.palette()), (int) Math.round(s.fraction() * 255)));
+    out = out.append(glyph(mode, "frame", "frame_" + plate, 0));
+    out = out.append(glyph(mode, "icon", "icon_" + s.topIcon(), 0));
+    out = out.append(glyph(mode, "round", "s" + Math.max(0, Math.min(9, s.round())), 0));
+    out = out.append(glyph(mode, "label", "label_" + word(s.label()), 0));
+    out = out.append(glyph(mode, "fill", "fill_" + (danger ? "danger" : s.palette()), (int) Math.round(s.fraction() * 255)));
     if (s.timed()) {
       String clock = String.format(Locale.ROOT, "%d%02d", t / 60, t % 60);
-      out = out.append(glyph("t1", clockKind + clock.charAt(0), 0));
-      out = out.append(glyph("tcolon", clockKind + "colon", 0));
-      out = out.append(glyph("t3", clockKind + clock.charAt(1), 0));
-      out = out.append(glyph("t4", clockKind + clock.charAt(2), 0));
+      out = out.append(glyph(mode, "t1", clockKind + clock.charAt(0), 0));
+      out = out.append(glyph(mode, "tcolon", clockKind + "colon", 0));
+      out = out.append(glyph(mode, "t3", clockKind + clock.charAt(1), 0));
+      out = out.append(glyph(mode, "t4", clockKind + clock.charAt(2), 0));
     }
     // Right panel: role, team, the number alive and one pip per player.
     if (s.showRole()) {
-      out = out.append(glyph("pframe", "pframe_" + s.rolePalette(), 0));
-      out = out.append(glyph("picon", "picon_" + s.roleIcon(), 0));
-      out = out.append(glyph("plabel", "plabel_" + word(s.roleWord()), 0));
-      out = out.append(glyph("pteam", "pteam_" + word(s.teamWord()), 0));
+      out = out.append(glyph(mode, "pframe", "pframe_" + s.rolePalette(), 0));
+      out = out.append(glyph(mode, "picon", "picon_" + s.roleIcon(), 0));
+      out = out.append(glyph(mode, "plabel", "plabel_" + word(s.roleWord()), 0));
+      out = out.append(glyph(mode, "pteam", "pteam_" + word(s.teamWord()), 0));
       String alive = String.format(Locale.ROOT, "%2d", Math.min(99, s.alive()));
       String total = String.format(Locale.ROOT, "%2d", Math.min(99, s.total()));
-      out = out.append(bigDigit("a1", alive.charAt(0))).append(bigDigit("a2", alive.charAt(1)));
-      out = out.append(glyph("aslash", "dslash", 0));
-      out = out.append(bigDigit("a3", total.charAt(0))).append(bigDigit("a4", total.charAt(1)));
+      out = out.append(bigDigit(mode, "a1", alive.charAt(0))).append(bigDigit(mode, "a2", alive.charAt(1)));
+      out = out.append(glyph(mode, "aslash", "dslash", 0));
+      out = out.append(bigDigit(mode, "a3", total.charAt(0))).append(bigDigit(mode, "a4", total.charAt(1)));
       int pips = Math.max(1, Math.min(PIPS, s.total()));
       int live = s.total() > PIPS ? (int) Math.ceil(s.alive() * (double) PIPS / s.total()) : s.alive();
-      out = out.append(glyph("ptotal", "pipsdark_" + pips, 0));
-      if (live > 0) out = out.append(glyph("palive", "pipslive_" + Math.min(pips, live), 0));
+      out = out.append(glyph(mode, "ptotal", "pipsdark_" + pips, 0));
+      if (live > 0) out = out.append(glyph(mode, "palive", "pipslive_" + Math.min(pips, live), 0));
     }
     return out;
   }
 
-  private Component bigDigit(String element, char c) {
-    return glyph(element, c == ' ' ? "dblank" : "d" + c, 0);
+  private Component bigDigit(int mode, String element, char c) {
+    return glyph(mode, element, c == ' ' ? "dblank" : "d" + c, 0);
   }
 
   // ------------------------------------------------------------------ derivation

@@ -7,7 +7,9 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.command.*;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class NexusArenaEngine extends JavaPlugin {
@@ -211,6 +213,20 @@ public final class NexusArenaEngine extends JavaPlugin {
       result.completeExceptionally(e);
     }
     return result;
+  }
+
+  private NamespacedKey hudKey() {
+    return new NamespacedKey(this, "hud-size");
+  }
+
+  /** The player's HUD size choice: auto (follows the window), large, medium or small. */
+  String hudSize(Player p) {
+    String size = p.getPersistentDataContainer().get(hudKey(), PersistentDataType.STRING);
+    return size == null ? "auto" : size;
+  }
+
+  void hudSize(Player p, String size) {
+    p.getPersistentDataContainer().set(hudKey(), PersistentDataType.STRING, size);
   }
 
   public void message(Player p, String message) {

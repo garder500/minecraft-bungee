@@ -26,16 +26,19 @@ HUD_TABLE = (
 COMMON_VS = f"""    int fx = 0;
     vec2 uv = vec2(0.0);
     ivec3 rgb = ivec3(round(Color.rgb * 255.0));
-    if (rgb.r == 78 && rgb.g >= {layout.HUD_ID_BASE} && rgb.g < {layout.HUD_ID_BASE} + HUD_COUNT) {{
-        // A custom HUD glyph: move its quad to its element's box, in GUI pixels.
+    if (rgb.r >= 78 && rgb.r <= 81 && rgb.g >= {layout.HUD_ID_BASE} && rgb.g < {layout.HUD_ID_BASE} + HUD_COUNT) {{
+        // A custom HUD glyph: move its quad to its element's box, in GUI pixels. The red channel
+        // picks the size: 78 follows the window, 79 full, 80 three quarters, 81 half.
         int e = rgb.g - {layout.HUD_ID_BASE};
         vec2 gui = vec2(2.0 / ProjMat[0][0], -2.0 / ProjMat[1][1]);
+        float fit = min(gui.x / 640.0, gui.y / 360.0);
+        float f = rgb.r == 79 ? 1.0 : rgb.r == 80 ? 0.75 : rgb.r == 81 ? 0.5 : (fit >= 0.9 ? 1.0 : fit >= 0.65 ? 0.75 : 0.5);
         vec2 anchor = HUD_ANCHOR[e] == 0 ? vec2(floor(gui.x * 0.5), 0.0) : vec2(gui.x, floor(gui.y * 0.5));
         vec4 box = HUD_BOX[e];
         float w = e == HUD_FILL ? max(1.0, floor(box.z * float(rgb.b) / 255.0 + 0.5)) : box.z;
         int k = gl_VertexIndex % 4;
         vec2 corner = vec2((k == 2 || k == 3) ? w : 0.0, (k == 1 || k == 2) ? box.w : 0.0);
-        vec2 px = anchor + box.xy + corner;
+        vec2 px = anchor + floor((box.xy + corner) * f + 0.5);
         clip = ProjMat * ModelViewMat * vec4(px, Position.z, 1.0);
         fx = 10 + e;
     }} else if (rgb.r == 78 && rgb.g == 92 && rgb.b >= 1 && rgb.b <= 3) {{

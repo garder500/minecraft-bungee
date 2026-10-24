@@ -508,7 +508,8 @@ final class WerewolfAmbience {
       bar =
           bar.append(
               plugin.customHud.render(
-                  CustomHud.of(game, p.getUniqueId(), seconds, s.players.size(), now >= s.cardsTurnAt)));
+                  CustomHud.of(game, p.getUniqueId(), seconds, s.players.size(), now >= s.cardsTurnAt),
+                  CustomHud.mode(plugin.hudSize(p))));
     }
     int fx = WerewolfPresentation.fx(game.night(), now - s.dawnAt);
     if (fx > 0
