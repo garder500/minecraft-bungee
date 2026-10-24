@@ -11,8 +11,8 @@
  "call": {
   "phase": "MARTYR",
   "label": "MARTYR",
-  "title": "Martyr, will you sacrifice yourself?",
-  "subtitle": "The village condemned someone",
+  "title": "Martyr, the village has condemned someone",
+  "subtitle": "Take their place, or let it pass",
   "instruction": "Use Take place to die instead of the condemned, or Let it pass"
  }
 }
