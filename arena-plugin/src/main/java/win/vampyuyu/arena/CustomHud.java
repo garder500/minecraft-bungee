@@ -17,6 +17,8 @@ final class CustomHud {
   static final Key FONT = Key.key("vampyuyu", "hud2");
   private static final int ID_BASE = 100;
   private static final int SPRITE_BASE = 0xE000, NEG_BASE = 0xF000;
+  /** Most pips drawn in the panel (resource-pack/layout.py HUD_PIPS). */
+  static final int PIPS = 20;
 
   private final Map<String, Integer> sprites = new HashMap<>();
   private final Map<String, Integer> elements = new HashMap<>();
@@ -43,6 +45,7 @@ final class CustomHud {
       String label,
       long seconds,
       double fraction,
+      boolean timed,
       boolean showRole,
       String roleIcon,
       String roleWord,
@@ -63,24 +66,30 @@ final class CustomHud {
     return text.toLowerCase(Locale.ROOT).replace(' ', '_');
   }
 
-  private Component digit(String element, char c) {
-    return glyph(element, c == ' ' ? "dblank" : "d" + c, 0);
-  }
+  /** Seconds left at which the plate and the clock turn red and flash. */
+  static final int DANGER_SECONDS = 5;
 
   Component render(State s) {
+    boolean danger = s.timed() && s.seconds() <= DANGER_SECONDS;
+    long t = Math.max(0, Math.min(9 * 60 + 59, s.seconds()));
+    // The plate flashes red every other second once the turn is nearly over.
+    String plate = danger && t % 2 == 0 ? "danger" : s.palette();
+    String clockKind = danger ? "x" : "d";
     Component out = Component.empty();
-    // Top plate: phase, round, label, time and the draining bar.
-    out = out.append(glyph("frame", "frame_" + s.palette(), 0));
+    // Top plate: phase medallion, round, label, draining bar and the clock.
+    out = out.append(glyph("frame", "frame_" + plate, 0));
     out = out.append(glyph("icon", "icon_" + s.topIcon(), 0));
-    out = out.append(digit("round", (char) ('0' + Math.max(0, Math.min(9, s.round())))));
+    out = out.append(glyph("round", "s" + Math.max(0, Math.min(9, s.round())), 0));
     out = out.append(glyph("label", "label_" + word(s.label()), 0));
-    long t = Math.max(0, Math.min(99 * 60 + 59, s.seconds()));
-    String clock = String.format(Locale.ROOT, "%02d%02d", t / 60, t % 60);
-    out = out.append(digit("t1", clock.charAt(0))).append(digit("t2", clock.charAt(1)));
-    out = out.append(glyph("tcolon", "dcolon", 0));
-    out = out.append(digit("t3", clock.charAt(2))).append(digit("t4", clock.charAt(3)));
-    out = out.append(glyph("fill", "fill_" + s.palette(), (int) Math.round(s.fraction() * 255)));
-    // Right panel: role, team, and how many are alive.
+    out = out.append(glyph("fill", "fill_" + (danger ? "danger" : s.palette()), (int) Math.round(s.fraction() * 255)));
+    if (s.timed()) {
+      String clock = String.format(Locale.ROOT, "%d%02d", t / 60, t % 60);
+      out = out.append(glyph("t1", clockKind + clock.charAt(0), 0));
+      out = out.append(glyph("tcolon", clockKind + "colon", 0));
+      out = out.append(glyph("t3", clockKind + clock.charAt(1), 0));
+      out = out.append(glyph("t4", clockKind + clock.charAt(2), 0));
+    }
+    // Right panel: role, team, the number alive and one pip per player.
     if (s.showRole()) {
       out = out.append(glyph("pframe", "pframe_" + s.rolePalette(), 0));
       out = out.append(glyph("picon", "picon_" + s.roleIcon(), 0));
@@ -88,11 +97,19 @@ final class CustomHud {
       out = out.append(glyph("pteam", "pteam_" + word(s.teamWord()), 0));
       String alive = String.format(Locale.ROOT, "%2d", Math.min(99, s.alive()));
       String total = String.format(Locale.ROOT, "%2d", Math.min(99, s.total()));
-      out = out.append(digit("a1", alive.charAt(0))).append(digit("a2", alive.charAt(1)));
+      out = out.append(bigDigit("a1", alive.charAt(0))).append(bigDigit("a2", alive.charAt(1)));
       out = out.append(glyph("aslash", "dslash", 0));
-      out = out.append(digit("a3", total.charAt(0))).append(digit("a4", total.charAt(1)));
+      out = out.append(bigDigit("a3", total.charAt(0))).append(bigDigit("a4", total.charAt(1)));
+      int pips = Math.max(1, Math.min(PIPS, s.total()));
+      int live = s.total() > PIPS ? (int) Math.ceil(s.alive() * (double) PIPS / s.total()) : s.alive();
+      out = out.append(glyph("ptotal", "pipsdark_" + pips, 0));
+      if (live > 0) out = out.append(glyph("palive", "pipslive_" + Math.min(pips, live), 0));
     }
     return out;
+  }
+
+  private Component bigDigit(String element, char c) {
+    return glyph(element, c == ' ' ? "dblank" : "d" + c, 0);
   }
 
   // ------------------------------------------------------------------ derivation
@@ -122,9 +139,9 @@ final class CustomHud {
     String palette = dead ? "dead" : boss.color() == WerewolfPresentation.INK_DIM ? "sleep" : palette(boss.color());
     String label;
     if (phase.equals("FINISHED")) label = "game over";
-    else if (phase.equals("HUNTER_SHOT")) label = night && !actor ? "village sleeps" : "last shot";
+    else if (phase.equals("HUNTER_SHOT")) label = night && !actor ? "sleeping" : "last shot";
     else if (!night) label = phase.equals("DAY_VOTE") ? "vote" : "debate";
-    else if (!actor) label = "village sleeps";
+    else if (!actor) label = "sleeping";
     else
       label =
           switch (phase) {
@@ -145,6 +162,7 @@ final class CustomHud {
         label,
         seconds,
         fraction,
+        boss.timer(),
         faceUp,
         WerewolfHud.iconName(role, dead),
         dead ? "fallen" : WerewolfPresentation.roleName(role),

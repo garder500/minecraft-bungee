@@ -7,7 +7,7 @@ Sprites are drawn 1 texel per GUI pixel (the core shader scales them with the GU
 phase icons come from art/icons.py's SVGs, drawn through ImageMagick. Also writes
 arena-plugin/src/main/resources/hud-sprites.txt, which tells the plugin the glyph of each sprite.
 """
-import json, pathlib, struct, subprocess, sys, zlib
+import json, math, pathlib, struct, subprocess, sys, zlib
 
 ART = pathlib.Path(__file__).resolve().parent
 ROOT = ART.parent.parent
@@ -17,8 +17,9 @@ sys.path.insert(0, str(ART))
 import layout  # noqa: E402
 import icons  # noqa: E402
 
-INK = (14, 11, 24)
-LIGHT = (246, 234, 208)
+INK = (12, 9, 22)
+LIGHT = (250, 240, 218)
+DANGER = (255, 88, 72)
 FONT = {
     "A": "01110 10001 10001 11111 10001 10001 10001", "B": "11110 10001 10001 11110 10001 10001 11110",
     "C": "01110 10001 10000 10000 10000 10001 01110", "D": "11100 10010 10001 10001 10001 10010 11100",
@@ -43,42 +44,88 @@ FONT = {
 }
 
 
+def mix(a, b, t):
+    return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
+
+
+def rgb(hexcolor):
+    return ((hexcolor >> 16) & 255, (hexcolor >> 8) & 255, hexcolor & 255)
+
+
+def lift(c, k):
+    return mix(c, (255, 255, 255), k)
+
+
+def dim(c, k):
+    return tuple(int(v * k) for v in c)
+
+
 class Canvas:
     def __init__(self, w, h):
         self.w, self.h = w, h
         self.px = [[(0, 0, 0, 0)] * w for _ in range(h)]
 
-    def set(self, x, y, c):
-        if 0 <= x < self.w and 0 <= y < self.h:
-            self.px[y][x] = c if len(c) == 4 else (*c, 255)
+    def get(self, x, y):
+        return self.px[y][x] if 0 <= x < self.w and 0 <= y < self.h else (0, 0, 0, 0)
 
-    def rect(self, x, y, w, h, c):
+    def set(self, x, y, c, a=255):
+        """Alpha-blends colour c at (x, y); a is the colour's own opacity."""
+        if not (0 <= x < self.w and 0 <= y < self.h):
+            return
+        a = c[3] if len(c) == 4 else a
+        if a <= 0:
+            return
+        base = self.px[y][x]
+        ba = base[3] / 255
+        oa = a / 255 + ba * (1 - a / 255)
+        if oa <= 0:
+            return
+        out = tuple(round((c[i] * (a / 255) + base[i] * ba * (1 - a / 255)) / oa) for i in range(3))
+        self.px[y][x] = (*out, round(oa * 255))
+
+    def rect(self, x, y, w, h, c, a=255):
         for j in range(y, y + h):
             for i in range(x, x + w):
-                self.set(i, j, c)
+                self.set(i, j, c, a)
 
-    def text(self, x, y, word, color, outline=True):
-        """5x7 pixel text with a 1 px outline; (x, y) is the top left of the outlined box."""
-        cx = x + 1
-        for ch in word:
-            rows = FONT[ch].split()
-            for r, row in enumerate(rows):
-                for c, bit in enumerate(row):
-                    if bit == "1":
-                        if outline:
-                            for dx in (-1, 0, 1):
-                                for dy in (-1, 0, 1):
-                                    px, py = cx + c + dx, y + 1 + r + dy
-                                    if 0 <= px < self.w and 0 <= py < self.h and self.px[py][px][3] == 0:
-                                        self.set(px, py, INK)
-            cx += 6
-        cx = x + 1
+    def vgrad(self, x, y, w, h, top, bottom, a=255, mask=None):
+        for j in range(h):
+            t = j / max(1, h - 1)
+            c = mix(top, bottom, t)
+            for i in range(w):
+                if mask is None or mask(x + i, y + j):
+                    self.set(x + i, y + j, c, a)
+
+    def circle(self, cx, cy, r, c, a=255, fill=True, width=1):
+        for j in range(int(cy - r - 1), int(cy + r + 2)):
+            for i in range(int(cx - r - 1), int(cx + r + 2)):
+                d = math.hypot(i + 0.5 - cx, j + 0.5 - cy)
+                if (fill and d <= r) or (not fill and r - width < d <= r):
+                    self.set(i, j, c, a)
+
+    def text(self, x, y, word, color, scale=1, outline=True, shadow=True):
+        """Pixel text with an outline; (x, y) is the top left of the outlined box."""
+        cell = []
+        cx = 0
         for ch in word:
             for r, row in enumerate(FONT[ch].split()):
                 for c, bit in enumerate(row):
                     if bit == "1":
-                        self.set(cx + c, y + 1 + r, color)
+                        cell.append((cx + c, r))
             cx += 6
+        pts = {(px * scale + dx, py * scale + dy) for px, py in cell for dx in range(scale) for dy in range(scale)}
+        o = 1  # outline thickness, whatever the scale
+        if outline:
+            for px, py in pts:
+                for dx in range(-o, o + 1):
+                    for dy in range(-o, o + 1):
+                        self.set(x + o + px + dx, y + o + py + dy, INK)
+        if shadow:
+            for px, py in pts:
+                self.set(x + o + px, y + o + py + 1, mix(INK, color, 0.35))
+        bottom = mix(color, (0, 0, 0), 0.22)
+        for px, py in pts:
+            self.set(x + o + px, y + o + py, mix(color, bottom, py / (7 * scale)))
 
     def png(self, path):
         raw = b"".join(b"\x00" + b"".join(bytes(p) for p in row) for row in self.px)
@@ -92,32 +139,103 @@ class Canvas:
         path.write_bytes(data)
 
 
-def rgb(hexcolor):
-    return ((hexcolor >> 16) & 255, (hexcolor >> 8) & 255, hexcolor & 255)
+def rounded(w, h, r):
+    """Mask of a rounded rectangle w x h at the origin."""
+    def inside(x, y):
+        if x < 0 or y < 0 or x >= w or y >= h:
+            return False
+        cx = r - x - 0.5 if x < r else (x - (w - r) + 0.5 if x >= w - r else 0)
+        cy = r - y - 0.5 if y < r else (y - (h - r) + 0.5 if y >= h - r else 0)
+        return cx * cx + cy * cy <= r * r
+    return inside
 
 
-def dim(c, k):
-    return tuple(int(v * k) for v in c)
-
-
-def frame(w, h, color, groove=None):
-    """A dark plate with a notched border in the role colour (and a groove for a progress bar)."""
+def plate(w, h, color, radius=5):
+    """A glassy dark plate: gradient, role-coloured rim, inner glow, corner brackets and a top gleam."""
     c = Canvas(w, h)
-    c.rect(0, 0, w, h, (*INK, 215))
-    for x in range(w):
-        c.set(x, 0, color)
-        c.set(x, h - 1, color)
-    for y in range(h):
-        c.set(0, y, color)
-        c.set(w - 1, y, color)
-    for x, y in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)):  # notched corners
-        c.set(x, y, (0, 0, 0, 0))
-    for x in range(1, w - 1):
-        c.set(x, 1, dim(color, 0.45))
-    if groove:
-        gx, gy, gw, gh = groove
-        c.rect(gx - 1, gy - 1, gw + 2, gh + 2, (0, 0, 0, 200))
-        c.rect(gx, gy, gw, gh, (*dim(color, 0.25), 255))
+    inside = rounded(w, h, radius)
+    c.vgrad(0, 0, w, h, (30, 24, 52), (11, 8, 22), 232, inside)
+    for y in range(h):  # soft inner glow near the edges in the role colour
+        for x in range(w):
+            if inside(x, y):
+                edge = min(x, y, w - 1 - x, h - 1 - y)
+                if 1 <= edge <= 5:
+                    c.set(x, y, color, int(46 * (1 - (edge - 1) / 5)))
+    for y in range(h):  # rim
+        for x in range(w):
+            if inside(x, y) and not (inside(x - 1, y) and inside(x + 1, y) and inside(x, y - 1) and inside(x, y + 1)):
+                c.set(x, y, color, 255)
+    for y in range(h):  # second, darker rim just inside
+        for x in range(w):
+            if inside(x, y) and not (inside(x - 2, y) and inside(x + 2, y) and inside(x, y - 2) and inside(x, y + 2)) \
+                    and c.get(x, y)[3] and (x, y) != (-1, -1):
+                if inside(x - 1, y) and inside(x + 1, y) and inside(x, y - 1) and inside(x, y + 1):
+                    c.set(x, y, dim(color, 0.42), 255)
+    for x in range(radius, w - radius):  # gleam
+        c.set(x, 2, (255, 255, 255), 26)
+    bright = lift(color, 0.45)
+    for k in range(4):  # corner brackets
+        for (sx, sy, dx, dy) in ((3, 3, 1, 1), (w - 4, 3, -1, 1), (3, h - 4, 1, -1), (w - 4, h - 4, -1, -1)):
+            c.set(sx + dx * k, sy, bright, 255)
+            c.set(sx, sy + dy * k, bright, 255)
+    return c
+
+
+def medallion(c, cx, cy, r, color):
+    c.circle(cx, cy, r, (8, 6, 16), 255)
+    c.circle(cx, cy, r - 1, mix((26, 20, 46), color, 0.18), 255)
+    c.circle(cx, cy, r, color, 255, fill=False, width=2)
+    c.circle(cx, cy, r - 3, dim(color, 0.45), 200, fill=False, width=1)
+    c.circle(cx - r * 0.35, cy - r * 0.45, r * 0.18, (255, 255, 255), 70)
+
+
+def top_plate(color):
+    c = plate(250, 44, color)
+    medallion(c, 22, 22, 15, color)
+    # round badge (the digit sprite sits on it)
+    c.circle(33, 33, 6, (8, 6, 16), 255)
+    c.circle(33, 33, 6, color, 255, fill=False, width=1)
+    # groove of the progress bar, ticks every tenth
+    c.rect(43, 30, 146, 7, (6, 4, 12), 255)
+    c.rect(44, 31, 144, 5, dim(color, 0.2), 255)
+    for k in range(1, 10):
+        c.rect(45 + k * 140 // 10, 31, 1, 5, (0, 0, 0), 90)
+    # timer well
+    c.rect(188, 6, 54, 26, (6, 4, 12), 180)
+    c.rect(188, 6, 54, 1, color, 120)
+    c.rect(188, 31, 54, 1, color, 60)
+    return c
+
+
+def right_panel(color):
+    c = plate(128, 92, color)
+    medallion(c, 28, 28, 18, color)
+    # divider and the static caption
+    for x in range(8, 120):
+        c.set(x, 52, dim(color, 0.55), 255)
+        c.set(x, 53, (255, 255, 255), 14)
+    c.text(5, 56, "ALIVE", mix(color, (255, 255, 255), 0.35), shadow=False)
+    return c
+
+
+def fill_bar(color, w=8, h=4):
+    c = Canvas(w, h)
+    c.vgrad(0, 0, w, h, lift(color, 0.5), dim(color, 0.62), 255)
+    c.rect(0, 0, w, 1, lift(color, 0.75), 255)
+    return c
+
+
+def pips(n, alive):
+    c = Canvas(100, 8)
+    for i in range(n):
+        x = i * 5
+        if alive:
+            c.rect(x, 1, 4, 6, INK, 255)
+            c.vgrad(x + 1, 2, 2, 4, (255, 246, 214), (214, 190, 120), 255)
+            c.set(x + 1, 2, (255, 255, 255), 255)
+        else:
+            c.rect(x, 1, 4, 6, (0, 0, 0), 150)
+            c.rect(x + 1, 2, 2, 4, (52, 44, 78), 255)
     return c
 
 
@@ -126,36 +244,41 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     sprites = layout.hud_sprites()
     magick = icons.magick()
+    for old in out.glob("*.png"):
+        old.unlink()
     for name, w, h in sprites:
         c = Canvas(w, h)
         kind, _, rest = name.partition("_")
         if name.startswith("frame_"):
-            color = rgb(layout.HUD_PALETTES[rest])
-            c = frame(w, h, color, groove=(6, 19, 178, 3))
+            c = top_plate(rgb(layout.HUD_PALETTES[rest]))
         elif name.startswith("fill_"):
-            color = rgb(layout.HUD_PALETTES[rest])
-            c.rect(0, 0, w, h, color)
-            c.rect(0, 0, w, 1, tuple(min(255, v + 60) for v in color))
+            c = fill_bar(rgb(layout.HUD_PALETTES[rest]), w, h)
         elif name.startswith("pframe_"):
-            color = rgb(layout.HUD_PALETTES[rest])
-            c = frame(w, h, color)
-            for x in range(4, w - 4):
-                c.set(x, 33, dim(color, 0.5))
-            c.text(3, 36, "ALIVE", dim(color, 1.0))
+            c = right_panel(rgb(layout.HUD_PALETTES[rest]))
         elif name.startswith(("icon_", "picon_")):
-            icon = rest
-            svg = ART / "icons" / f"{icon}.svg"
-            subprocess.run([magick, "-background", "none", "-density", str(72 * w // 32), str(svg),
+            svg = ART / "icons" / f"{rest}.svg"
+            subprocess.run([magick, "-background", "none", "-density", str(72 * w * 2 // 32), str(svg),
                             "-resize", f"{w}x{h}", "-strip", f"PNG32:{out / (name + '.png')}"], check=True)
             continue
-        elif name.startswith(("label_", "plabel_", "pteam_")):
-            c.text(0, 0, rest.replace("_", " ").upper(), LIGHT)
-        elif name.startswith("d") and name[1:].isdigit():
-            c.text(0, 0, name[1:], LIGHT)
+        elif name.startswith("label_"):
+            c.text(0, 0, rest.replace("_", " ").upper(), LIGHT, scale=2)
+        elif name.startswith(("plabel_", "pteam_")):
+            tint = LIGHT if name.startswith("plabel_") else (176, 164, 210)
+            c.text(0, 0, rest.replace("_", " ").upper(), tint)
+        elif name[0] in "dx" and name[1:].isdigit():
+            c.text(0, 0, name[1:], DANGER if name[0] == "x" else LIGHT, scale=2)
         elif name == "dcolon":
-            c.text(-1, 0, ":", LIGHT)
+            c.text(-1, 0, ":", LIGHT, scale=2)
+        elif name == "xcolon":
+            c.text(-1, 0, ":", DANGER, scale=2)
         elif name == "dslash":
-            c.text(0, 0, "/", LIGHT)
+            c.text(-1, 0, "/", (190, 178, 220), scale=2)
+        elif name[0] == "s" and name[1:].isdigit():
+            c.text(0, 0, name[1:], LIGHT)
+        elif name.startswith("pipsdark_"):
+            c = pips(int(rest), False)
+        elif name.startswith("pipslive_"):
+            c = pips(int(rest), True)
         c.png(out / f"{name}.png")
     providers, advances, lines = [], {}, []
     for index, (name, w, h) in enumerate(sprites):

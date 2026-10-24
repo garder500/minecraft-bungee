@@ -76,37 +76,38 @@ ICON_ASCENT = 11
 HUD_PALETTES = {  # name -> role colour
     "villager": 0xe9d99b, "wolf": 0xff5a5a, "seer": 0xb892ff, "witch": 0x6fdc8c,
     "hunter": 0xf0a050, "cupid": 0xff8fc0, "guard": 0x6cc6ff, "dead": 0x8f84b3,
-    "vote": 0xffd36e, "sleep": 0x6a5fa0,
+    "vote": 0xffd36e, "sleep": 0x6a5fa0, "danger": 0xff4040,
 }
 
 # element -> (anchor, x, y, w, h); anchor 0 = top centre, 1 = right middle. The element's id is its
 # index here. "fill" is stretched to the width given by the colour's blue channel (0-255).
 HUD_ELEMENTS = [
-    ("frame", 0, -95, 3, 190, 26),
-    ("icon", 0, -89, 7, 16, 16),
-    ("round", 0, -70, 10, 7, 9),
-    ("label", 0, -61, 11, 84, 9),
-    ("t1", 0, 30, 10, 7, 9),
-    ("t2", 0, 38, 10, 7, 9),
-    ("tcolon", 0, 46, 10, 3, 9),
-    ("t3", 0, 50, 10, 7, 9),
-    ("t4", 0, 58, 10, 7, 9),
-    ("fill", 0, -89, 22, 178, 3),
-    ("pframe", 1, -104, -30, 100, 60),
-    ("picon", 1, -98, -25, 24, 24),
-    ("plabel", 1, -68, -24, 62, 9),
-    ("pteam", 1, -68, -12, 62, 9),
-    ("a1", 1, -60, 6, 7, 9),
-    ("a2", 1, -52, 6, 7, 9),
-    ("aslash", 1, -44, 6, 5, 9),
-    ("a3", 1, -38, 6, 7, 9),
-    ("a4", 1, -30, 6, 7, 9),
+    ("frame", 0, -125, 4, 250, 44),
+    ("icon", 0, -115, 14, 24, 24),
+    ("round", 0, -96, 32, 7, 9),
+    ("label", 0, -81, 8, 136, 17),
+    ("fill", 0, -80, 32, 140, 4),
+    ("t1", 0, 65, 8, 12, 17),
+    ("tcolon", 0, 78, 8, 6, 17),
+    ("t3", 0, 85, 8, 12, 17),
+    ("t4", 0, 98, 8, 12, 17),
+    ("pframe", 1, -134, -46, 128, 92),
+    ("picon", 1, -122, -34, 32, 32),
+    ("plabel", 1, -80, -34, 68, 9),
+    ("pteam", 1, -80, -22, 68, 9),
+    ("a1", 1, -84, 10, 12, 17),
+    ("a2", 1, -72, 10, 12, 17),
+    ("aslash", 1, -60, 10, 8, 17),
+    ("a3", 1, -52, 10, 12, 17),
+    ("a4", 1, -40, 10, 12, 17),
+    ("ptotal", 1, -126, 32, 100, 8),
+    ("palive", 1, -126, 32, 100, 8),
 ]
 HUD_ID_BASE = 100        # the green channel of an element's colour is HUD_ID_BASE + its index
 HUD_SPRITE_BASE = 0xE000
 HUD_NEG_BASE = 0xF000    # negative-advance twin of every sprite: sprite index + HUD_NEG_BASE
 
-HUD_PHASE_WORDS = ["DEBATE", "VOTE", "VILLAGE SLEEPS", "CUPID AWAKE", "GUARD AWAKE", "SEER AWAKE",
+HUD_PHASE_WORDS = ["DEBATE", "VOTE", "SLEEPING", "CUPID AWAKE", "GUARD AWAKE", "SEER AWAKE",
                    "WOLVES HUNT", "WITCH AWAKE", "LAST SHOT", "GAME OVER", "WAITING"]
 HUD_ROLE_WORDS = ["WEREWOLF", "VILLAGER", "SEER", "WITCH", "HUNTER", "CUPID", "GUARD", "ALPHA WOLF",
                   "INFECTOR", "WOLF CUB", "SCAPEGOAT", "BEAR TAMER", "FALLEN"]
@@ -114,31 +115,27 @@ HUD_TEAM_WORDS = ["VILLAGE", "WOLF PACK", "OUT"]
 HUD_TOP_ICONS = ["moon", "sun", "vote"]
 HUD_ROLE_ICONS = ["wolf", "villager", "seer", "witch", "hunter", "cupid", "guard", "dead", "alpha",
                   "infector", "cub", "scapegoat", "bear"]
+HUD_PIPS = 20           # most pips drawn; bigger tables are scaled down
 
 
 def hud_sprites():
-    """(name, element-class width, height) of every sprite, in glyph order."""
+    """(name, width, height) of every sprite, in glyph order."""
     box = {e[0]: (e[4], e[5]) for e in HUD_ELEMENTS}
     out = []
-    for pal in HUD_PALETTES:
-        out.append((f"frame_{pal}", *box["frame"]))
-    for pal in HUD_PALETTES:
-        out.append((f"fill_{pal}", 8, 3))
-    for name in HUD_TOP_ICONS:
-        out.append((f"icon_{name}", *box["icon"]))
-    for word in HUD_PHASE_WORDS:
-        out.append((f"label_{word.lower().replace(' ', '_')}", *box["label"]))
-    for d in "0123456789":
-        out.append((f"d{d}", *box["t1"]))
-    out.append(("dblank", *box["t1"]))
-    out.append(("dcolon", *box["tcolon"]))
-    out.append(("dslash", *box["aslash"]))
-    for pal in HUD_PALETTES:
-        out.append((f"pframe_{pal}", *box["pframe"]))
-    for name in HUD_ROLE_ICONS:
-        out.append((f"picon_{name}", *box["picon"]))
-    for word in HUD_ROLE_WORDS:
-        out.append((f"plabel_{word.lower().replace(' ', '_')}", *box["plabel"]))
-    for word in HUD_TEAM_WORDS:
-        out.append((f"pteam_{word.lower().replace(' ', '_')}", *box["pteam"]))
+    pals = list(HUD_PALETTES)
+    out += [(f"frame_{p}", *box["frame"]) for p in pals]
+    out += [(f"fill_{p}", 8, 4) for p in pals]
+    out += [(f"icon_{n}", *box["icon"]) for n in HUD_TOP_ICONS]
+    out += [(f"label_{w.lower().replace(' ', '_')}", *box["label"]) for w in HUD_PHASE_WORDS]
+    out += [(f"d{d}", *box["t1"]) for d in "0123456789"]
+    out += [(f"x{d}", *box["t1"]) for d in "0123456789"]
+    out += [("dblank", *box["t1"]), ("dcolon", *box["tcolon"]), ("xcolon", *box["tcolon"]),
+            ("dslash", *box["aslash"])]
+    out += [(f"s{d}", *box["round"]) for d in "0123456789"]
+    out += [(f"pframe_{p}", *box["pframe"]) for p in pals]
+    out += [(f"picon_{n}", *box["picon"]) for n in HUD_ROLE_ICONS]
+    out += [(f"plabel_{w.lower().replace(' ', '_')}", *box["plabel"]) for w in HUD_ROLE_WORDS]
+    out += [(f"pteam_{w.lower().replace(' ', '_')}", *box["pteam"]) for w in HUD_TEAM_WORDS]
+    out += [(f"pipsdark_{n}", *box["ptotal"]) for n in range(1, HUD_PIPS + 1)]
+    out += [(f"pipslive_{n}", *box["palive"]) for n in range(1, HUD_PIPS + 1)]
     return out
