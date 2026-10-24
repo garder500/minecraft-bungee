@@ -66,6 +66,18 @@ class PackTest(unittest.TestCase):
         self.assertIn('FX_GLYPH = "\\uF100"', plugin)
         self.assertIn("78 << 16 | 92 << 8", plugin)
 
+    def test_icons_font_matches_layout_and_the_plugin(self):
+        font = json.loads((PACK / "assets/vampyuyu/font/icons.json").read_text())
+        self.assertEqual(len(font["providers"]), len(layout.ICONS))
+        for index, (name, provider) in enumerate(zip(layout.ICONS, font["providers"])):
+            self.assertEqual(provider["chars"], [chr(layout.ICON_BASE + index)], name)
+            self.assertEqual(provider["file"], f"vampyuyu:font/icon/{name}.png")
+            png = PACK / "assets/vampyuyu/textures/font/icon" / f"{name}.png"
+            self.assertEqual(png_size(png), (layout.ICON_PX, layout.ICON_PX), name)
+        hud = (ROOT / "arena-plugin/src/main/java/win/vampyuyu/arena/WerewolfHud.java").read_text()
+        names = re.search(r"ICON_NAMES =\s*List\.of\((.*?)\);", hud, re.S).group(1)
+        self.assertEqual(re.findall(r'"([a-z]+)"', names), layout.ICONS)
+
     def test_inventory_label_is_blank_in_every_shipped_language(self):
         langs = sorted((PACK / "assets/minecraft/lang").glob("*.json"))
         self.assertIn("en_us", [p.stem for p in langs])

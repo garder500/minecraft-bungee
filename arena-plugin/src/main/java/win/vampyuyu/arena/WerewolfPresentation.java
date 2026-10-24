@@ -26,7 +26,7 @@ final class WerewolfPresentation {
   /** One colour per role, used by its menu, card, bossbar and chat lines. */
   static int color(String role) {
     return switch (role == null ? "" : role) {
-      case "WEREWOLF" -> WEREWOLF;
+      case "WEREWOLF", "ALPHA_WOLF", "INFECTOR", "WOLF_CUB" -> WEREWOLF;
       case "SEER" -> SEER;
       case "WITCH" -> WITCH;
       case "HUNTER" -> HUNTER;
@@ -38,7 +38,8 @@ final class WerewolfPresentation {
 
   /** Singular display name: "Werewolf", "Seer", "Guard"... */
   static String roleName(String role) {
-    return role.charAt(0) + role.substring(1).toLowerCase(Locale.ROOT);
+    String spaced = role.replace('_', ' ').toLowerCase(Locale.ROOT);
+    return Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1);
   }
 
   static String plural(String role, int count) {
@@ -47,7 +48,7 @@ final class WerewolfPresentation {
   }
 
   static String team(String role) {
-    return role.equals("WEREWOLF") ? "Wolf pack" : "Village team";
+    return WerewolfGame.isWolf(role) ? "Wolf pack" : "Village team";
   }
 
   /** Bossbar countdown: "12 s" under a minute, "1 min 20" above. */
@@ -72,7 +73,7 @@ final class WerewolfPresentation {
       boolean actor = game.actors().contains(viewer);
       if (game.night()) {
         String head = "☾ Night " + round + " · ";
-        if (!actor) return new Boss(head + "You are asleep…", INK_DIM, false);
+        if (!actor) return new Boss(head + "The village sleeps · " + clock(seconds), INK_DIM, true);
         String role = turnRole(phase);
         String turn =
             switch (phase) {
@@ -160,9 +161,7 @@ final class WerewolfPresentation {
   }
 
   static String roleLabel(String role) {
-    return role.equals("WEREWOLF")
-        ? "Werewolves"
-        : role.charAt(0) + role.substring(1).toLowerCase(Locale.ROOT);
+    return role.equals("WEREWOLF") ? "Werewolves" : roleName(role);
   }
 
   static String deathLine(String name, String role) {

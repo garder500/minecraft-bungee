@@ -14,7 +14,8 @@ public final class NexusArenaEngine extends JavaPlugin {
   public ArenaManager arenas;
   CompassGUI gui;
   WerewolfAmbience ambience;
-  VillageController village;
+  PlaceController places;
+  ClickControls controls;
   ArenaAdmin admin;
   ArenaTools tools;
   MenuSkin skin;
@@ -67,13 +68,14 @@ public final class NexusArenaEngine extends JavaPlugin {
       arenas = new ArenaManager(this);
       gui = new CompassGUI(this);
       ambience = new WerewolfAmbience(this);
-      village = new VillageController(this);
-      village.recover();
+      places = new PlaceController(this);
       admin = new ArenaAdmin(this);
       skin = MenuSkin.load(this);
       tools = new ArenaTools(this);
       bridge = new CrossServerBridge(this);
+      controls = new ClickControls(this);
       getServer().getPluginManager().registerEvents(gui, this);
+      getServer().getPluginManager().registerEvents(controls, this);
       getServer().getPluginManager().registerEvents(new ArenaProtectionListener(this), this);
       getServer().getPluginManager().registerEvents(bridge, this);
       try {
@@ -97,6 +99,9 @@ public final class NexusArenaEngine extends JavaPlugin {
       api = new ArenaHttpApi(this, token);
       Objects.requireNonNull(getCommand("eventadmin")).setExecutor(admin::rewards);
       Objects.requireNonNull(getCommand("arena")).setExecutor(this::command);
+      WwCommand ww = new WwCommand(this);
+      Objects.requireNonNull(getCommand("ww")).setExecutor(ww);
+      Objects.requireNonNull(getCommand("ww")).setTabCompleter(ww);
       getCommand("arena")
           .setTabCompleter(
               (sender, cmd, alias, args) ->
@@ -129,6 +134,27 @@ public final class NexusArenaEngine extends JavaPlugin {
           1,
           1,
           TimeUnit.SECONDS);
+      clock.scheduleAtFixedRate(
+          () -> {
+            try {
+              for (Player p : Bukkit.getOnlinePlayers()) {
+                ArenaSession s = arenas.session(p.getUniqueId());
+                if (s == null || !(s.game instanceof WerewolfGame)) continue;
+                onPlayer(
+                    p,
+                    () -> {
+                      controls.sync(p, s);
+                      ambience.aim(s, p);
+                      return null;
+                    });
+              }
+            } catch (Exception e) {
+              getLogger().warning("Arena controls: " + reason(e));
+            }
+          },
+          200,
+          200,
+          TimeUnit.MILLISECONDS);
       for (Player p : Bukkit.getOnlinePlayers()) arenas.recover(p);
       getLogger()
           .info(

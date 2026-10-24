@@ -14,6 +14,12 @@ public final class ArenaManager {
   private final NexusArenaEngine plugin;
   private final Path configs;
   public final PlayerSnapshotManager snapshots;
+  /**
+   * Roles forced by an admin for the next game of an arena, by arena id then lower-case player
+   * name (so they survive the arena being edited and the players joining later). For tests.
+   */
+  public final Map<String, Map<String, String>> forced = new ConcurrentHashMap<>();
+
   private final Map<String, ArenaPreset> presets = new ConcurrentHashMap<>();
   private final Set<UUID> recovery = ConcurrentHashMap.newKeySet();
   private final Map<String, ArenaSession> sessions = new ConcurrentHashMap<>();
@@ -74,8 +80,8 @@ public final class ArenaManager {
       throw new IllegalArgumentException("Unregistered game preset");
     World w = Bukkit.getWorld(c.worldName());
     if (w == null) throw new IllegalArgumentException("Choose a loaded world");
-    if (!c.preset().equals("werewolf") && c.village().enabled())
-      throw new IllegalArgumentException("Village mode requires Werewolf");
+    if (!c.preset().equals("werewolf") && !c.places().seats().isEmpty())
+      throw new IllegalArgumentException("Seats and places require Werewolf");
     if (c.preset().equals("freeplay") && c.freeplay().objective().equals("PVP") && !w.getPVP())
       throw new IllegalArgumentException(
           "This world has PvP disabled. Enable it in Server settings or choose another world.");
@@ -96,7 +102,7 @@ public final class ArenaManager {
             || old.stopping
             || old.finishing
             || old.game != null
-            || plugin.village.pending(c.id())))
+            ))
       throw new IllegalArgumentException(
           "Stop this arena and wait for restoration before editing it");
     Path temp = Files.createTempFile(configs, "arena-", ".tmp");
@@ -118,8 +124,7 @@ public final class ArenaManager {
     if (!s.players.isEmpty()
         || s.stopping
         || s.finishing
-        || s.game != null
-        || plugin.village.pending(id))
+        || s.game != null)
       throw new IllegalArgumentException("Stop this arena before deleting it");
     Files.delete(configs.resolve(s.config.id() + ".json"));
     sessions.remove(id);
@@ -446,8 +451,8 @@ public final class ArenaManager {
         || s.players.size() < s.config.minPlayers()
         || s.players.keySet().stream().anyMatch(busy::contains))
       throw new IllegalArgumentException("Wait for enough fully joined players before starting");
-    if (plugin.village.pending(id)) throw new IllegalArgumentException("Door recovery pending");
-    s.config.village().requireCapacity(s.players.size());
+    String lacking = s.config.places().missing(s.players.size());
+    if (lacking != null) throw new IllegalArgumentException(lacking);
     s.eventId = UUID.randomUUID().toString();
     s.ambienceEpoch++;
     s.ambienceNight = false;
@@ -459,15 +464,20 @@ public final class ArenaManager {
     s.practice = !s.bots.isEmpty();
     s.roster.clear();
     s.abandoned.clear();
-    s.homes.clear();
+    s.seats.clear();
+    s.placed.clear();
     for (var entry : s.players.entrySet())
       if (!s.bots.contains(entry.getKey())) s.roster.put(entry.getKey(), entry.getValue());
-    List<ArenaConfig.Spawn> houses = new ArrayList<>(s.config.village().houses().values());
-    Collections.shuffle(houses);
-    int houseIndex = 0;
-    if (s.config.village().enabled())
-      for (UUID player : s.players.keySet()) s.homes.put(player, houses.get(houseIndex++));
-    s.game = presets.get(s.config.preset()).create(s.config, Set.copyOf(s.players.keySet()));
+    Map<UUID, String> forcedRoles = new HashMap<>();
+    var byName = forced.getOrDefault(s.config.id(), Map.of());
+    for (var entry : s.players.entrySet()) {
+      String role = byName.get(entry.getValue().toLowerCase(Locale.ROOT));
+      if (role != null) forcedRoles.put(entry.getKey(), role);
+    }
+    s.game =
+        presets
+            .get(s.config.preset())
+            .create(s.config, Set.copyOf(s.players.keySet()), Map.copyOf(forcedRoles));
     s.botBrain = s.bots.isEmpty() ? null : new WerewolfBots(new Random());
     s.observedTurn = s.game instanceof WerewolfGame game ? game.turnKey() : "";
     s.journal.close();
@@ -493,8 +503,8 @@ public final class ArenaManager {
         plugin
             .rewards
             .begin(s)
-            .thenCompose(v -> plugin.village.prepare(s))
-            .thenCompose(v -> plugin.village.present(s, "WAITING"))
+            .thenCompose(v -> plugin.places.prepare(s))
+            .thenCompose(v -> plugin.places.present(s, "WAITING"))
             .thenRun(
                 () -> {
                   if (s.game != null) {
@@ -506,8 +516,8 @@ public final class ArenaManager {
     s.presentation.whenComplete(
         (v, e) -> {
           if (e != null) {
-            s.journal.log("ERROR", "Village start failed: " + NexusArenaEngine.reason(e));
-            plugin.getLogger().warning("Village start failed: " + NexusArenaEngine.reason(e));
+            s.journal.log("ERROR", "Start failed: " + NexusArenaEngine.reason(e));
+            plugin.getLogger().warning("Start failed: " + NexusArenaEngine.reason(e));
             tell(s, "The game could not start: " + NexusArenaEngine.reason(e));
             stop(s.config.id(), "INTERRUPTED");
           }
@@ -545,7 +555,7 @@ public final class ArenaManager {
                     : plugin.rewards.enqueue(current, reason))
         .thenCompose(v -> plugin.ambience.conclude(current, reason))
         .thenCompose(v -> stopPlayers(id))
-        .thenCompose(v -> plugin.village.restore(id))
+        .thenCompose(v -> plugin.places.restore(current))
         .whenComplete(
             (v, e) -> {
               current.finishing = false;
@@ -656,7 +666,7 @@ public final class ArenaManager {
         previousPresentation
             .thenCompose(v -> plugin.ambience.verdict(s, verdict))
             .whenComplete((v, e) -> s.verdictShowing = false)
-            .thenCompose(v -> plugin.village.present(s, previous))
+            .thenCompose(v -> plugin.places.present(s, previous))
             .thenRun(
                 () -> {
                   if (s.game != null) {
@@ -668,8 +678,8 @@ public final class ArenaManager {
     s.presentation.whenComplete(
         (v, e) -> {
           if (e != null) {
-            s.journal.log("ERROR", "Village transition failed: " + NexusArenaEngine.reason(e));
-            plugin.getLogger().warning("Village transition failed: " + NexusArenaEngine.reason(e));
+            s.journal.log("ERROR", "Transition failed: " + NexusArenaEngine.reason(e));
+            plugin.getLogger().warning("Transition failed: " + NexusArenaEngine.reason(e));
             tell(s, "The game was interrupted: " + NexusArenaEngine.reason(e));
             stop(s.config.id(), "INTERRUPTED");
           }

@@ -1,0 +1,454 @@
+package win.vampyuyu.arena;
+
+import com.google.gson.JsonObject;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.command.*;
+import org.bukkit.entity.Player;
+
+/**
+ * /ww: werewolf management. Admins set the places (seats, vote circle, den, night spots), the cast
+ * and the timers, start and stop games, and drive practice games and tests; players only vote.
+ */
+final class WwCommand implements CommandExecutor, TabCompleter {
+  private static final List<String> ADMIN =
+      List.of(
+          "use", "status", "place", "cast", "time", "start", "stop", "practice", "phase", "force",
+          "check", "reload", "act", "click", "peek", "players", "help");
+  private static final Map<String, String> ALIASES =
+      Map.ofEntries(
+          Map.entry("WOLF", "WEREWOLF"),
+          Map.entry("ALPHA", "ALPHA_WOLF"),
+          Map.entry("CUB", "WOLF_CUB"),
+          Map.entry("BEAR", "BEAR_TAMER"),
+          Map.entry("GOAT", "SCAPEGOAT"),
+          Map.entry("VILLAGE", "VILLAGER"));
+
+  private final NexusArenaEngine plugin;
+  private final Map<String, String> selected = new HashMap<>();
+
+  WwCommand(NexusArenaEngine plugin) {
+    this.plugin = plugin;
+  }
+
+  // ------------------------------------------------------------------ plumbing
+
+  private static void say(CommandSender to, String text) {
+    to.sendMessage(Component.text(text, NamedTextColor.GOLD));
+  }
+
+  private String arena(CommandSender sender) {
+    String name = sender.getName();
+    String id = selected.get(name);
+    if (id != null && plugin.arenas.all().stream().anyMatch(s -> s.config.id().equals(id))) return id;
+    var all = plugin.arenas.all().stream().map(s -> s.config.id()).sorted().toList();
+    if (all.size() == 1) return all.get(0);
+    throw new IllegalArgumentException("Choose an arena first: /ww use <id> (" + String.join(", ", all) + ")");
+  }
+
+  private static void need(String[] args, int n, String usage) {
+    if (args.length < n) throw new IllegalArgumentException("Usage: " + usage);
+  }
+
+  private static String role(String text) {
+    String name = text.toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
+    name = ALIASES.getOrDefault(name, name);
+    try {
+      return WerewolfGame.Role.valueOf(name).name();
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException(
+          "Unknown role '" + text + "'. Roles: " + Arrays.toString(WerewolfGame.Role.values()));
+    }
+  }
+
+  /** A participant by name, or botN for the practice bot "[Bot] Guest N". */
+  private UUID who(ArenaSession s, String token) {
+    String wanted = token.matches("(?i)bot\\d+") ? "[Bot] Guest " + token.substring(3) : token;
+    for (var entry : s.players.entrySet())
+      if (entry.getValue().equalsIgnoreCase(wanted)) return entry.getKey();
+    throw new IllegalArgumentException("Nobody called " + token + " in this arena");
+  }
+
+  private ArenaConfig.Spawn here(CommandSender sender, String[] args, int from, String id) {
+    if (args.length >= from + 3) {
+      double x = Double.parseDouble(args[from]);
+      double y = Double.parseDouble(args[from + 1]);
+      double z = Double.parseDouble(args[from + 2]);
+      float yaw = args.length > from + 3 ? Float.parseFloat(args[from + 3]) : 0f;
+      return new ArenaConfig.Spawn(x, y, z, yaw, 0f);
+    }
+    if (sender instanceof Player p) return plugin.admin.point(p, id);
+    throw new IllegalArgumentException("From the console give coordinates: <x> <y> <z> [yaw]");
+  }
+
+  private void done(CommandSender sender, CompletableFuture<?> future, String ok) {
+    future.whenComplete(
+        (v, e) -> {
+          if (sender instanceof Player p) plugin.message(p, e == null ? ok : NexusArenaEngine.reason(e));
+          else
+            sender.sendMessage(
+                Component.text(e == null ? ok : NexusArenaEngine.reason(e), e == null ? NamedTextColor.GREEN : NamedTextColor.RED));
+        });
+  }
+
+  // ----------------------------------------------------------------- dispatch
+
+  @Override
+  public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    try {
+      String sub = args.length == 0 ? "help" : args[0].toLowerCase(Locale.ROOT);
+      if (sub.equals("vote") || sub.equals("abstain")) {
+        player(sender, sub, args);
+        return true;
+      }
+      if (!sender.hasPermission("nexusarena.admin"))
+        throw new IllegalArgumentException("Arena administrator permission required");
+      if (sender instanceof Player p && plugin.arenas.locked(p.getUniqueId()))
+        throw new IllegalArgumentException("Administrator access outside an arena required");
+      switch (sub) {
+        case "use" -> {
+          need(args, 2, "/ww use <arena>");
+          plugin.arenas.require(args[1]);
+          selected.put(sender.getName(), args[1]);
+          say(sender, "Arena selected: " + args[1]);
+        }
+        case "status" -> status(sender);
+        case "place" -> place(sender, args);
+        case "cast" -> cast(sender, args);
+        case "time" -> time(sender, args);
+        case "start" -> {
+          plugin.arenas.start(arena(sender));
+          say(sender, "Game started");
+        }
+        case "stop" -> done(sender, plugin.arenas.stop(arena(sender)), "Arena stopped and restored");
+        case "practice" -> practice(sender, args);
+        case "phase" -> phase(sender, args);
+        case "force" -> force(sender, args);
+        case "check" -> check(sender);
+        case "reload" -> {
+          plugin.arenas.reload();
+          say(sender, "Arenas reloaded");
+        }
+        case "act" -> act(sender, args);
+        case "click" -> click(sender, args);
+        case "peek" -> peek(sender);
+        case "players" -> players(sender, args);
+        default -> help(sender);
+      }
+    } catch (Exception e) {
+      sender.sendMessage(Component.text(NexusArenaEngine.reason(e), NamedTextColor.RED));
+    }
+    return true;
+  }
+
+  private void help(CommandSender sender) {
+    for (String line :
+        List.of(
+            "/ww use <arena> · status · check · reload",
+            "/ww place add seat <sit|stand> [name] [x y z yaw] · set circle|den [x y z] · night add|clear",
+            "/ww place list · remove <name> · tp <name> · clear",
+            "/ww cast set wolf:2 alpha:1 seer:1 ... · auto · show · roles",
+            "/ww time set discussion|vote|night|cupid|witch|hunter <seconds>",
+            "/ww start · stop · practice <bots> [player] · phase skip",
+            "/ww force <player> <role> | clear     (roles for the next game, for tests)",
+            "/ww players kick <player> · peek      (peek lists every role: admins only)",
+            "/ww act <player|botN> select|aim <target> | use <ability>   (test: act as someone)",
+            "/ww click <player> <target>           (test: the right-click on a player)",
+            "Players: /ww vote <player> · /ww abstain"))
+      say(sender, line);
+  }
+
+  // ------------------------------------------------------------------ players
+
+  private void player(CommandSender sender, String sub, String[] args) {
+    if (!(sender instanceof Player p)) throw new IllegalArgumentException("Players only");
+    ArenaSession s = plugin.arenas.session(p.getUniqueId());
+    if (s == null || !(s.game instanceof WerewolfGame) || !plugin.gui.inGame(s))
+      throw new IllegalArgumentException("You are not in a werewolf game");
+    if (sub.equals("abstain")) plugin.controls.useItem(p, s, "skip");
+    else {
+      need(args, 2, "/ww vote <player>");
+      plugin.controls.pickPlayer(p, s, who(s, args[1]));
+    }
+  }
+
+  // ------------------------------------------------------------------- status
+
+  private void status(CommandSender sender) {
+    ArenaSession s = plugin.arenas.require(arena(sender));
+    var c = s.config;
+    say(
+        sender,
+        c.id() + ": " + s.phase() + " · players " + s.players.size() + "/" + c.maxPlayers()
+            + " (min " + c.minPlayers() + ")" + (s.bots.isEmpty() ? "" : " · " + s.bots.size() + " bots"));
+    var p = c.places();
+    say(
+        sender,
+        "Places: " + p.seats().size() + " seats, circle " + (p.circle() != null ? "set" : "missing")
+            + ", den " + (p.den() != null ? "set" : "missing") + ", night spots " + p.night().size());
+    say(sender, "Cast: " + (c.werewolf().roles().isEmpty() ? "automatic" : c.werewolf().roles()));
+    say(
+        sender,
+        "Timers: discussion " + c.discussionSeconds() + "s, vote " + c.voteSeconds() + "s, night "
+            + c.nightSeconds() + "s, cupid " + c.werewolf().cupidSeconds() + "s, witch "
+            + c.werewolf().witchSeconds() + "s, hunter " + c.werewolf().hunterSeconds() + "s");
+    var forcedNow = plugin.arenas.forced.get(c.id());
+    if (forcedNow != null && !forcedNow.isEmpty()) say(sender, "Forced roles: " + forcedNow);
+    if (s.game instanceof WerewolfGame game)
+      say(sender, "Game: " + game.phase() + " · round " + game.round() + " · alive " + game.alive().size());
+  }
+
+  private void check(CommandSender sender) {
+    String id = arena(sender);
+    ArenaConfig c = plugin.arenas.require(id).config;
+    String missing = c.places().missing(c.minPlayers());
+    say(sender, missing == null ? "Places: ready" : "Not ready: " + missing);
+    plugin
+        .places
+        .problems(c)
+        .thenAccept(
+            found -> {
+              if (found.isEmpty()) say(sender, "Safety check: every place is usable");
+              for (String line : found) sender.sendMessage(Component.text(line, NamedTextColor.RED));
+            });
+  }
+
+  // ------------------------------------------------------------------- places
+
+  private void place(CommandSender sender, String[] args) throws Exception {
+    need(args, 2, "/ww place add|set|night|list|remove|tp|clear");
+    String id = arena(sender);
+    ArenaConfig c = plugin.arenas.require(id).config;
+    switch (args[1].toLowerCase(Locale.ROOT)) {
+      case "add" -> {
+        need(args, 3, "/ww place add seat <sit|stand> [name] [x y z yaw]");
+        boolean sit = args.length < 4 || !args[3].equalsIgnoreCase("stand");
+        int next = c.places().seats().size() + 1;
+        Set<String> names = new HashSet<>();
+        for (var seat : c.places().seats()) names.add(seat.name());
+        String name = "seat-" + next;
+        int coordsAt = 4;
+        if (args.length > 4 && !args[4].matches("-?[0-9.]+")) {
+          name = args[4];
+          coordsAt = 5;
+        } else while (names.contains(name)) name = "seat-" + (++next);
+        var at = here(sender, args, coordsAt, id);
+        final String chosen = name;
+        plugin.admin.change(
+            id,
+            j ->
+                j.getAsJsonObject("places")
+                    .getAsJsonArray("seats")
+                    .add(ArenaManager.JSON.toJsonTree(new ArenaConfig.Seat(chosen, at, sit))));
+        say(sender, "Seat " + chosen + (sit ? " (sit)" : " (stand)") + " added: " + (c.places().seats().size() + 1) + " seats");
+      }
+      case "set" -> {
+        need(args, 3, "/ww place set circle|den [x y z]");
+        String field = args[2].toLowerCase(Locale.ROOT);
+        if (!field.equals("circle") && !field.equals("den"))
+          throw new IllegalArgumentException("Use circle or den");
+        var at = here(sender, args, 3, id);
+        plugin.admin.change(id, j -> j.getAsJsonObject("places").add(field, ArenaManager.JSON.toJsonTree(at)));
+        say(sender, field + " set");
+      }
+      case "night" -> {
+        need(args, 3, "/ww place night add [x y z]|clear");
+        if (args[2].equalsIgnoreCase("clear"))
+          plugin.admin.change(id, j -> j.getAsJsonObject("places").add("night", new com.google.gson.JsonArray()));
+        else {
+          var at = here(sender, args, 3, id);
+          plugin.admin.change(
+              id, j -> j.getAsJsonObject("places").getAsJsonArray("night").add(ArenaManager.JSON.toJsonTree(at)));
+        }
+        say(sender, "Night spots: " + plugin.arenas.require(id).config.places().night().size());
+      }
+      case "list" -> {
+        var p = c.places();
+        for (var seat : p.seats())
+          say(sender, seat.name() + " " + (seat.sit() ? "sit" : "stand") + " " + coords(seat.at()));
+        say(sender, "circle " + (p.circle() == null ? "-" : coords(p.circle())) + " · den " + (p.den() == null ? "-" : coords(p.den())) + " · night " + p.night().size());
+      }
+      case "remove" -> {
+        need(args, 3, "/ww place remove <name>");
+        String name = args[2];
+        if (c.places().seats().stream().noneMatch(seat -> seat.name().equals(name)))
+          throw new IllegalArgumentException("No seat called " + name);
+        plugin.admin.change(
+            id,
+            j -> {
+              var array = j.getAsJsonObject("places").getAsJsonArray("seats");
+              for (int i = 0; i < array.size(); i++)
+                if (array.get(i).getAsJsonObject().get("name").getAsString().equals(name)) {
+                  array.remove(i);
+                  break;
+                }
+            });
+        say(sender, "Seat " + name + " removed");
+      }
+      case "tp" -> {
+        need(args, 3, "/ww place tp <name>");
+        if (!(sender instanceof Player p)) throw new IllegalArgumentException("Players only");
+        var seat = c.places().seats().stream().filter(x -> x.name().equals(args[2])).findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("No seat called " + args[2]));
+        p.teleportAsync(new Location(Bukkit.getWorld(c.worldName()), seat.at().x(), seat.at().y(), seat.at().z(), seat.at().yaw(), seat.at().pitch()));
+      }
+      case "clear" -> {
+        plugin.admin.change(id, j -> j.add("places", ArenaManager.JSON.toJsonTree(ArenaConfig.Places.defaults())));
+        say(sender, "Places cleared");
+      }
+      default -> throw new IllegalArgumentException("Use add, set, night, list, remove, tp or clear");
+    }
+  }
+
+  private static String coords(ArenaConfig.Spawn s) {
+    return String.format(Locale.ROOT, "(%.1f, %.1f, %.1f)", s.x(), s.y(), s.z());
+  }
+
+  // --------------------------------------------------------------------- cast
+
+  private void cast(CommandSender sender, String[] args) throws Exception {
+    need(args, 2, "/ww cast set|auto|show|roles");
+    String id = arena(sender);
+    ArenaConfig c = plugin.arenas.require(id).config;
+    switch (args[1].toLowerCase(Locale.ROOT)) {
+      case "set" -> {
+        need(args, 3, "/ww cast set wolf:2 alpha:1 seer:1 witch:1 ...");
+        Map<String, Integer> roles = new LinkedHashMap<>();
+        for (int i = 2; i < args.length; i++) {
+          String[] pair = args[i].split(":");
+          roles.merge(role(pair[0]), pair.length > 1 ? Integer.parseInt(pair[1]) : 1, Integer::sum);
+        }
+        plugin.admin.change(id, j -> j.getAsJsonObject("werewolf").add("roles", ArenaManager.JSON.toJsonTree(roles)));
+        say(sender, "Cast: " + roles + " (the rest are villagers)");
+      }
+      case "auto" -> {
+        plugin.admin.change(id, j -> j.getAsJsonObject("werewolf").add("roles", new JsonObject()));
+        say(sender, "Cast: automatic");
+      }
+      case "show" -> say(sender, c.werewolf().roles().isEmpty() ? "Cast: automatic" : "Cast: " + c.werewolf().roles());
+      case "roles" -> say(sender, "Roles: " + Arrays.toString(WerewolfGame.Role.values()));
+      default -> throw new IllegalArgumentException("Use set, auto, show or roles");
+    }
+  }
+
+  private void time(CommandSender sender, String[] args) throws Exception {
+    need(args, 4, "/ww time set discussion|vote|night|cupid|witch|hunter <seconds>");
+    String id = arena(sender);
+    int seconds = Integer.parseInt(args[3]);
+    String field =
+        switch (args[2].toLowerCase(Locale.ROOT)) {
+          case "discussion", "day" -> "discussionSeconds";
+          case "vote" -> "voteSeconds";
+          case "night" -> "nightSeconds";
+          case "cupid" -> "cupidSeconds";
+          case "witch" -> "witchSeconds";
+          case "hunter" -> "hunterSeconds";
+          default -> throw new IllegalArgumentException("Use discussion, vote, night, cupid, witch or hunter");
+        };
+    boolean special = field.equals("cupidSeconds") || field.equals("witchSeconds") || field.equals("hunterSeconds");
+    plugin.admin.change(id, j -> (special ? j.getAsJsonObject("werewolf") : j).addProperty(field, seconds));
+    say(sender, field + " = " + seconds);
+  }
+
+  // ----------------------------------------------------------------- lifecycle
+
+  private void practice(CommandSender sender, String[] args) {
+    need(args, 2, "/ww practice <bots> [player]");
+    String id = arena(sender);
+    Player p = args.length > 2 ? Bukkit.getPlayerExact(args[2]) : sender instanceof Player self ? self : null;
+    done(sender, plugin.arenas.startPractice(id, Integer.parseInt(args[1]), p), "Practice game started");
+  }
+
+  private void phase(CommandSender sender, String[] args) {
+    need(args, 2, "/ww phase skip");
+    ArenaSession s = plugin.arenas.require(arena(sender));
+    if (!(s.game instanceof WerewolfGame game)) throw new IllegalArgumentException("No game is running");
+    if (!args[1].equalsIgnoreCase("skip")) throw new IllegalArgumentException("Use skip");
+    game.advance();
+    plugin.arenas.phaseChanged(s);
+    say(sender, "Phase is now " + game.phase());
+  }
+
+  private void force(CommandSender sender, String[] args) {
+    need(args, 2, "/ww force <player> <role> | clear");
+    String id = arena(sender);
+    if (args[1].equalsIgnoreCase("clear")) {
+      plugin.arenas.forced.remove(id);
+      say(sender, "Forced roles cleared");
+      return;
+    }
+    need(args, 3, "/ww force <player|botN> <role>");
+    // botN is the practice bot "[Bot] Guest N"; the player may not have joined yet.
+    String name = args[1].matches("(?i)bot\\d+") ? "[Bot] Guest " + args[1].substring(3) : args[1];
+    plugin.arenas.forced.computeIfAbsent(id, k -> new java.util.concurrent.ConcurrentHashMap<>())
+        .put(name.toLowerCase(Locale.ROOT), role(args[2]));
+    say(sender, "Forced for the next game: " + plugin.arenas.forced.get(id));
+  }
+
+  private void players(CommandSender sender, String[] args) {
+    need(args, 3, "/ww players kick <player>");
+    if (!args[1].equalsIgnoreCase("kick")) throw new IllegalArgumentException("Use kick");
+    Player p = Bukkit.getPlayerExact(args[2]);
+    if (p == null) throw new IllegalArgumentException("Player offline");
+    done(sender, plugin.arenas.leaveArena(p), p.getName() + " removed from the arena");
+  }
+
+  private void peek(CommandSender sender) {
+    ArenaSession s = plugin.arenas.require(arena(sender));
+    if (!(s.game instanceof WerewolfGame game)) throw new IllegalArgumentException("No game is running");
+    for (var entry : s.players.entrySet())
+      say(sender, entry.getValue() + ": " + game.role(entry.getKey()) + (game.alive().contains(entry.getKey()) ? "" : " (dead)"));
+  }
+
+  // -------------------------------------------------------------------- tests
+
+  /** Acts as a participant (a bot too): the same game calls a click makes. */
+  private void act(CommandSender sender, String[] args) {
+    need(args, 4, "/ww act <player|botN> select|aim <target> | use <ability>");
+    ArenaSession s = plugin.arenas.require(arena(sender));
+    if (!(s.game instanceof WerewolfGame game)) throw new IllegalArgumentException("No game is running");
+    UUID actor = who(s, args[1]);
+    String reply =
+        switch (args[2].toLowerCase(Locale.ROOT)) {
+          case "select" -> game.select(actor, who(s, args[3]));
+          case "aim" -> game.aim(actor, who(s, args[3]));
+          case "use" -> game.use(actor, args[3]);
+          default -> throw new IllegalArgumentException("Use select, aim or use");
+        };
+    plugin.gui.deliverNotices(s);
+    plugin.arenas.phaseChanged(s);
+    say(sender, reply);
+  }
+
+  /** Right-click on a player as the real controls do (needs the actor online). */
+  private void click(CommandSender sender, String[] args) {
+    need(args, 3, "/ww click <player> <target|ability:name>");
+    ArenaSession s = plugin.arenas.require(arena(sender));
+    Player p = Bukkit.getPlayerExact(args[1]);
+    if (p == null) throw new IllegalArgumentException("Player offline");
+    boolean ok =
+        args[2].startsWith("ability:")
+            ? plugin.controls.useItem(p, s, args[2].substring(8))
+            : plugin.controls.pickPlayer(p, s, who(s, args[2]));
+    say(sender, ok ? "Clicked" : "Nothing happened (not in a running game?)");
+  }
+
+  // --------------------------------------------------------------- completion
+
+  @Override
+  public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    if (args.length == 1) {
+      List<String> all = new ArrayList<>(ADMIN);
+      all.addAll(List.of("vote", "abstain"));
+      return all.stream().filter(x -> x.startsWith(args[0].toLowerCase(Locale.ROOT))).toList();
+    }
+    if (args.length == 2 && args[0].equalsIgnoreCase("place")) return List.of("add", "set", "night", "list", "remove", "tp", "clear");
+    if (args.length == 2 && args[0].equalsIgnoreCase("cast")) return List.of("set", "auto", "show", "roles");
+    if (args.length == 2 && args[0].equalsIgnoreCase("use")) return plugin.arenas.all().stream().map(s -> s.config.id()).toList();
+    return List.of();
+  }
+}

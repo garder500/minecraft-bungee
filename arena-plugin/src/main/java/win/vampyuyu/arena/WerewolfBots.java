@@ -109,10 +109,17 @@ final class WerewolfBots {
         log.add(new Action(bot, role, "inspects " + target + " (" + vision + ")"));
       }
       case "NIGHT" -> {
-        if (!role.equals("WEREWOLF")) return;
+        if (!WerewolfGame.isWolf(role)) return;
         UUID target = packChoice(game, bot);
         if (target == null) target = pick(prey(game, bot), List.of());
         if (target == null) return;
+        // The infector bites now and then, once per game (the game refuses a second bite).
+        if (role.equals("INFECTOR")
+            && game.abilities(bot).containsKey("infect")
+            && random.nextInt(100) < 40) {
+          game.use(bot, "infect");
+          log.add(new Action(bot, role, "infects tonight's victim"));
+        }
         vote(game, bot, target, log, "hunts");
       }
       case "WITCH" -> {
@@ -170,7 +177,7 @@ final class WerewolfBots {
       vote(game, bot, known, log, "votes against");
       return;
     }
-    boolean wolf = game.role(bot).equals("WEREWOLF");
+    boolean wolf = WerewolfGame.isWolf(game.role(bot));
     if (pool.isEmpty() || random.nextInt(100) < (wolf ? 5 : 12)) {
       if (!game.abstained(bot)) {
         game.use(bot, "skip");
@@ -200,7 +207,7 @@ final class WerewolfBots {
     game.visions(bot)
         .forEach(
             (p, role) -> {
-              if (!role.equals("WEREWOLF")) pool.remove(p);
+              if (!WerewolfGame.isWolf(role)) pool.remove(p);
             });
     return pool;
   }
@@ -208,7 +215,7 @@ final class WerewolfBots {
   /** A living wolf this seer has seen, unless it is the seer's own lover. */
   private static UUID knownWolf(WerewolfGame game, UUID bot) {
     for (var vision : game.visions(bot).entrySet())
-      if (vision.getValue().equals("WEREWOLF")
+      if (WerewolfGame.isWolf(vision.getValue())
           && game.alive().contains(vision.getKey())
           && !vision.getKey().equals(game.partner(bot))) return vision.getKey();
     return null;

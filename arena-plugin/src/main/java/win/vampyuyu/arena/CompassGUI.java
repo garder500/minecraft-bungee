@@ -30,7 +30,7 @@ public final class CompassGUI implements Listener {
 
   static NamedTextColor roleColor(String role) {
     return switch (role) {
-      case "WEREWOLF" -> NamedTextColor.RED;
+      case "WEREWOLF", "ALPHA_WOLF", "INFECTOR", "WOLF_CUB" -> NamedTextColor.RED;
       case "SEER" -> NamedTextColor.LIGHT_PURPLE;
       case "GUARD" -> NamedTextColor.AQUA;
       case "WITCH" -> NamedTextColor.DARK_PURPLE;
@@ -91,6 +91,11 @@ public final class CompassGUI implements Listener {
   public void open(Player p) {
     ArenaSession s = plugin.arenas.session(p.getUniqueId());
     if (s == null) return;
+    if (inGame(s)) {
+      // No double chest during a game: look at a player and right-click.
+      p.sendActionBar(Component.text("Look at a player and right-click", TextColor.color(GOLD.value())));
+      return;
+    }
     boolean skinned = plugin.skin != null && plugin.skin.active(p);
     WerewolfMenus.Kind kind =
         s.game instanceof WerewolfGame wolf ? WerewolfMenus.kind(wolf, p.getUniqueId()) : null;
@@ -151,7 +156,8 @@ public final class CompassGUI implements Listener {
 
   /** Menus a player must act in cannot be closed; they reopen on the next tick. */
   boolean mandatory(ArenaSession s, UUID id) {
-    return s != null
+    return false
+        && s != null
         && !s.stopping
         && !s.finishing
         && !s.verdictShowing
@@ -537,6 +543,42 @@ public final class CompassGUI implements Listener {
       if (i != 8 || !compass(p.getInventory().getItem(8))) p.getInventory().setItem(i, null);
   }
 
+  /**
+   * One player action in a werewolf game: "select:<uuid>", "aim:<uuid>" or "use:<ability>". Shared
+   * by the menus and by clicking players and hotbar items (ClickControls).
+   */
+  void act(Player p, ArenaSession s, WerewolfGame wolf, String click) {
+    int color = WerewolfPresentation.color(wolf.role(p.getUniqueId()));
+    try {
+      String response =
+          click.startsWith("select:")
+              ? wolf.select(p.getUniqueId(), UUID.fromString(click.substring(7)))
+              : click.startsWith("aim:")
+                  ? wolf.aim(p.getUniqueId(), UUID.fromString(click.substring(4)))
+                  : wolf.use(p.getUniqueId(), click.substring(4));
+      p.sendMessage(whisper(friendly(response, s), color));
+      String cue = WerewolfPresentation.actionSound(wolf.role(p.getUniqueId()), click);
+      if (cue != null && s.config.werewolf().ambienceEnabled())
+        WerewolfAmbience.cue(plugin, p, cue, Sound.UI_BUTTON_CLICK, .35f, 1.3f);
+      else p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, SoundCategory.MASTER, .35f, 1.3f);
+      deliverNotices(s);
+      plugin.arenas.phaseChanged(s);
+      refresh(p);
+    } catch (IllegalArgumentException ex) {
+      p.sendMessage(whisper(friendly(ex.getMessage(), s), WerewolfPresentation.NO));
+      p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, SoundCategory.MASTER, .35f, .7f);
+    }
+  }
+
+  /** A werewolf game in progress: no chest-style menu, the player acts on the world itself. */
+  boolean inGame(ArenaSession s) {
+    return s != null
+        && s.game instanceof WerewolfGame game
+        && !game.phase().equals("FINISHED")
+        && !s.stopping
+        && !s.finishing;
+  }
+
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
   public void interact(PlayerInteractEvent e) {
     if (compass(e.getItem()) && plugin.arenas.locked(e.getPlayer().getUniqueId())) {
@@ -598,28 +640,7 @@ public final class CompassGUI implements Listener {
           && s.game instanceof WerewolfGame wolf
           && s.presentation.isDone()
           && !s.finishing) {
-        int color = WerewolfPresentation.color(wolf.role(p.getUniqueId()));
-        try {
-          String response =
-              click.startsWith("select:")
-                  ? wolf.select(p.getUniqueId(), UUID.fromString(click.substring(7)))
-                  : click.startsWith("aim:")
-                      ? wolf.aim(p.getUniqueId(), UUID.fromString(click.substring(4)))
-                      : wolf.use(p.getUniqueId(), click.substring(4));
-          p.sendMessage(whisper(friendly(response, s), color));
-          String cue = WerewolfPresentation.actionSound(wolf.role(p.getUniqueId()), click);
-          if (cue != null && s.config.werewolf().ambienceEnabled())
-            WerewolfAmbience.cue(plugin, p, cue, Sound.UI_BUTTON_CLICK, .35f, 1.3f);
-          else
-            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, SoundCategory.MASTER, .35f, 1.3f);
-          deliverNotices(s);
-          plugin.arenas.phaseChanged(s);
-          refresh(p);
-        } catch (IllegalArgumentException ex) {
-          p.sendMessage(whisper(friendly(ex.getMessage(), s), WerewolfPresentation.NO));
-          p.playSound(
-              p.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, SoundCategory.MASTER, .35f, .7f);
-        }
+        act(p, s, wolf, click);
         return;
       }
       String ability = holder.abilities.get(e.getRawSlot());

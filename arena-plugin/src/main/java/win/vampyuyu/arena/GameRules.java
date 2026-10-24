@@ -33,7 +33,7 @@ public final class GameRules {
             || !e.getKey().equals("VILLAGER") && !e.getKey().equals("WEREWOLF") && e.getValue() > 1)
           throw new IllegalArgumentException("Special roles may appear at most once");
       }
-      if (!roles.isEmpty() && roles.getOrDefault("WEREWOLF", 0) < 1)
+      if (!roles.isEmpty() && wolves(roles) < 1)
         throw new IllegalArgumentException("Custom roles need at least one werewolf");
       if (cupidSeconds < 5
           || cupidSeconds > 120
@@ -42,6 +42,13 @@ public final class GameRules {
           || hunterSeconds < 5
           || hunterSeconds > 120)
         throw new IllegalArgumentException("Special-role phases must last 5–120 seconds");
+    }
+
+    /** Wolves of every kind in a role count map. */
+    public static int wolves(Map<String, Integer> roles) {
+      int n = 0;
+      for (var e : roles.entrySet()) if (WerewolfGame.isWolf(e.getKey())) n += e.getValue();
+      return n;
     }
 
     public static Werewolf defaults() {

@@ -489,16 +489,18 @@ final class WerewolfAmbience {
     }
   }
 
-  /** Action bar: what this player must do now. The bossbar carries the phase and the time. */
-  private void hud(ArenaSession s, Player p) {
-    if (!(s.game instanceof WerewolfGame game)) return;
+  /** Action bar: what to do now, who the crosshair is on, and the screen effect's marker glyph. */
+  private Component actionBar(ArenaSession s, Player p, WerewolfGame game, long now) {
     var view = WerewolfPresentation.view(game, p.getUniqueId());
     int color =
         view.actor()
             ? WerewolfPresentation.color(game.role(p.getUniqueId()))
             : WerewolfPresentation.INK_DIM;
-    long now = System.currentTimeMillis();
     Component bar = Component.text(view.instruction(), TextColor.color(color));
+    if (view.actor() && plugin.controls != null) {
+      Component aim = plugin.controls.target(p, s);
+      if (aim != null) bar = bar.append(aim);
+    }
     int fx = WerewolfPresentation.fx(game.night(), now - s.dawnAt);
     if (fx > 0
         && s.config.werewolf().ambienceEnabled()
@@ -511,16 +513,20 @@ final class WerewolfAmbience {
                       WerewolfPresentation.FX_GLYPH,
                       TextColor.color(WerewolfPresentation.fxColor(fx)))
                   .font(FX_FONT));
-    p.sendActionBar(bar);
-    long seconds = Math.max(0, (s.phaseEndsAt - now + 999) / 1000);
-    var line = WerewolfPresentation.center(game, p.getUniqueId(), seconds);
-    if (line != null && now >= quietUntil.getOrDefault(p.getUniqueId(), 0L))
-      // Resent every second with no fade, so it reads as one steady line under the crosshair.
-      p.showTitle(
-          Title.title(
-              Component.empty(),
-              Component.text(line.text(), TextColor.color(line.color())),
-              Title.Times.times(Duration.ZERO, Duration.ofMillis(1500), Duration.ofMillis(300))));
+    return bar;
+  }
+
+  /** Refreshes the action bar several times a second so the crosshair target feels live. */
+  void aim(ArenaSession s, Player p) {
+    if (s.game instanceof WerewolfGame game && s.presentation.isDone() && !s.finishing)
+      p.sendActionBar(actionBar(s, p, game, System.currentTimeMillis()));
+  }
+
+  /** Action bar and bossbar: what this player must do now. The bossbar carries the phase and the time. */
+  private void hud(ArenaSession s, Player p) {
+    if (!(s.game instanceof WerewolfGame game)) return;
+    long now = System.currentTimeMillis();
+    p.sendActionBar(actionBar(s, p, game, now));
     if (s.config.werewolf().ambienceEnabled()
         && plugin.skin != null
         && plugin.skin.active(p)
@@ -531,7 +537,8 @@ final class WerewolfAmbience {
               MUSIC, net.kyori.adventure.sound.Sound.Source.AMBIENT, 1f, 1f),
           net.kyori.adventure.sound.Sound.Emitter.self());
     }
-    screen.show(s, p, game, now >= s.cardsTurnAt);
+    screen.show(
+        s, p, game, now >= s.cardsTurnAt, plugin.skin != null && plugin.skin.active(p));
   }
 
   private void silence(Player p) {
@@ -580,7 +587,7 @@ final class WerewolfAmbience {
     screen.clear(p);
     silence(p);
     quietUntil.remove(p.getUniqueId());
-    plugin.village.unconceal(p, s);
+    plugin.places.unconceal(p, s);
     if (p.getOpenInventory().getTopInventory().getHolder() instanceof CompassMenuHolder)
       p.closeInventory();
     if (!s.ambienceFinale) p.clearTitle();

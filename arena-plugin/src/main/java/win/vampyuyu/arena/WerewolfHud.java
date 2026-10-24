@@ -12,9 +12,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.*;
 
 /**
- * The screen outside the menus (design guide "L'écran de jeu"): the bossbar says the phase, who
- * acts and the time left; the sidebar carries the role card, the night or day, the living and the
- * roles in play. Must run on the player's thread.
+ * The screen outside the menus: the bossbar on top says the phase, who acts and the time left; the
+ * sidebar on the right carries the player's own role and the number of players alive, nothing else
+ * about the cast. Must run on the player's thread.
  */
 final class WerewolfHud {
   /** Role cards as font glyphs (resource-pack/art/render.py, font vampyuyu:hud). */
@@ -29,10 +29,45 @@ final class WerewolfHud {
     return (char) ('\uE000' + index + (dead && index > 0 ? 0x10 : 0));
   }
 
+  /** Role and HUD icons as font glyphs (resource-pack/art/icons.py, font vampyuyu:icons). */
+  static final Key ICONS = Key.key("vampyuyu", "icons");
+
+  /** Same order as resource-pack/layout.py ICONS; the pack test checks it. */
+  static final List<String> ICON_NAMES =
+      List.of(
+          "wolf", "villager", "seer", "witch", "hunter", "cupid", "guard", "dead", "moon", "sun",
+          "vote", "timer", "alive", "alpha", "infector", "cub", "scapegoat", "bear");
+
+  static Component icon(String name) {
+    int index = ICON_NAMES.indexOf(name);
+    return index < 0
+        ? Component.empty()
+        : Component.text(String.valueOf((char) ('\uE000' + index))).font(ICONS);
+  }
+
+  /** Icon of a role, or of the dead once the player is out. */
+  static String iconName(String role, boolean dead) {
+    if (dead) return "dead";
+    return switch (role) {
+      case "WEREWOLF" -> "wolf";
+      case "ALPHA_WOLF" -> "alpha";
+      case "INFECTOR" -> "infector";
+      case "WOLF_CUB" -> "cub";
+      case "SEER" -> "seer";
+      case "WITCH" -> "witch";
+      case "HUNTER" -> "hunter";
+      case "CUPID" -> "cupid";
+      case "GUARD" -> "guard";
+      case "SCAPEGOAT" -> "scapegoat";
+      case "BEAR_TAMER" -> "bear";
+      default -> "villager";
+    };
+  }
+
   private final Map<UUID, BossBar> bars = new ConcurrentHashMap<>();
   private final Map<UUID, Scoreboard> boards = new ConcurrentHashMap<>();
 
-  void show(ArenaSession s, Player p, WerewolfGame game, boolean cardFaceUp) {
+  void show(ArenaSession s, Player p, WerewolfGame game, boolean cardFaceUp, boolean skinned) {
     UUID id = p.getUniqueId();
     long seconds = Math.max(0, (s.phaseEndsAt - System.currentTimeMillis() + 999) / 1000);
     var boss = WerewolfPresentation.boss(game, id, seconds);
@@ -40,7 +75,11 @@ final class WerewolfHud {
         boss.timer() && game.seconds() > 0
             ? Math.max(0f, Math.min(1f, seconds / (float) game.seconds()))
             : 1f;
-    Component title = Component.text(boss.text(), TextColor.color(boss.color()));
+    Component text = Component.text(boss.text(), TextColor.color(boss.color()));
+    final Component title =
+        skinned && !game.phase().equals("FINISHED")
+            ? icon(game.night() ? "moon" : "sun").append(Component.text(" ")).append(text)
+            : text;
     BossBar bar =
         bars.computeIfAbsent(
             id,
@@ -55,7 +94,7 @@ final class WerewolfHud {
     bar.name(title);
     bar.progress(progress);
     bar.color(barColor(boss.color()));
-    sidebar(s, p, game, cardFaceUp);
+    sidebar(s, p, game, cardFaceUp, skinned);
   }
 
   /** Nearest of the six bossbar colours to the role colour. */
@@ -71,7 +110,8 @@ final class WerewolfHud {
     };
   }
 
-  private void sidebar(ArenaSession s, Player p, WerewolfGame game, boolean cardFaceUp) {
+  private void sidebar(
+      ArenaSession s, Player p, WerewolfGame game, boolean cardFaceUp, boolean skinned) {
     Scoreboard board = boards.get(p.getUniqueId());
     if (board == null) {
       // Folia has no scoreboard API: the bossbar and the menus still say everything.
@@ -98,49 +138,27 @@ final class WerewolfHud {
     String role = game.role(id);
     boolean dead = !game.alive().contains(id);
     int roleColor = dead ? WerewolfPresentation.INK_DIM : WerewolfPresentation.color(role);
-    // The card hangs above the sidebar title, at the right edge of the screen.
+    Component roleLine =
+        Component.text(
+            cardFaceUp ? WerewolfPresentation.roleName(role) : "Dealing your role…",
+            TextColor.color(roleColor));
     objective.displayName(
-        Component.text()
-            .append(
-                Component.text(String.valueOf(glyph(cardFaceUp ? role : "back", dead))).font(FONT))
-            .append(
-                Component.text(
-                    " " + (cardFaceUp ? WerewolfPresentation.roleName(role) : "Your card…"),
-                    TextColor.color(roleColor)))
-            .build());
+        skinned && cardFaceUp
+            ? icon(iconName(role, dead)).append(Component.text(" ")).append(roleLine)
+            : roleLine);
     List<Component> lines = new ArrayList<>();
     lines.add(
         Component.text(
-            cardFaceUp ? WerewolfPresentation.team(role) + (dead ? " · dead" : "") : "",
+            cardFaceUp ? WerewolfPresentation.team(role) + (dead ? " · out" : "") : "",
             TextColor.color(WerewolfPresentation.INK_MUTED)));
     lines.add(Component.empty());
-    lines.add(
-        Component.text(
-            game.night() ? "☾ Night " + game.round() : "☀ Day " + game.round(),
-            TextColor.color(
-                game.night() ? WerewolfPresentation.SEER : WerewolfPresentation.VILLAGER)));
-    lines.add(
+    Component alive =
         Component.text("Alive ", TextColor.color(WerewolfPresentation.INK_MUTED))
             .append(
                 Component.text(
                     game.alive().size() + " / " + s.players.size(),
-                    TextColor.color(WerewolfPresentation.INK))));
-    lines.add(Component.empty());
-    lines.add(Component.text("Roles in play", TextColor.color(WerewolfPresentation.INK_MUTED)));
-    // Dead players' roles are announced, so what is left in play is public knowledge.
-    Map<String, Integer> left = new LinkedHashMap<>(game.composition());
-    for (UUID other : s.players.keySet())
-      if (!game.alive().contains(other) && s.revealed.contains(other))
-        left.computeIfPresent(game.role(other), (k, n) -> n - 1);
-    for (var entry : left.entrySet())
-      if (entry.getValue() > 0)
-        lines.add(
-            Component.text(
-                " "
-                    + entry.getValue()
-                    + " "
-                    + WerewolfPresentation.plural(entry.getKey(), entry.getValue()),
-                TextColor.color(WerewolfPresentation.color(entry.getKey()))));
+                    TextColor.color(WerewolfPresentation.INK)));
+    lines.add(skinned ? icon("alive").append(Component.text(" ")).append(alive) : alive);
     UUID partner = game.partner(id);
     if (partner != null) {
       lines.add(Component.empty());
@@ -148,6 +166,19 @@ final class WerewolfHud {
           Component.text(
               "♥ " + s.players.getOrDefault(partner, "Your lover"),
               TextColor.color(WerewolfPresentation.CUPID)));
+    }
+    List<UUID> pack = game.pack(id);
+    if (!pack.isEmpty()) {
+      lines.add(Component.empty());
+      lines.add(Component.text("Pack", TextColor.color(WerewolfPresentation.INK_MUTED)));
+      for (UUID mate : pack)
+        lines.add(
+            Component.text(
+                " " + s.players.getOrDefault(mate, "Wolf"),
+                TextColor.color(
+                    game.alive().contains(mate)
+                        ? WerewolfPresentation.WEREWOLF
+                        : WerewolfPresentation.INK_DIM)));
     }
     for (int i = 0; i < 15; i++) {
       String entry = "line" + i;

@@ -1,0 +1,166 @@
+{
+ "providers": [
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/wolf.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue000"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/villager.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue001"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/seer.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue002"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/witch.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue003"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/hunter.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue004"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/cupid.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue005"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/guard.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue006"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/dead.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue007"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/moon.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue008"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/sun.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue009"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/vote.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue00a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/timer.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue00b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/alive.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue00c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/alpha.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue00d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/infector.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue00e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/cub.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue00f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/scapegoat.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue010"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/icon/bear.png",
+   "ascent": 11,
+   "height": 12,
+   "chars": [
+    "\ue011"
+   ]
+  }
+ ]
+}

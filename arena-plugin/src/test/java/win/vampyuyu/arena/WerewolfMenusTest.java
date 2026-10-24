@@ -270,8 +270,8 @@ public class WerewolfMenusTest {
     assertEquals("☾ Night 1 · The Seer is awake · 12 s", seer.text());
     assertEquals(WerewolfPresentation.SEER, seer.color());
     var sleeper = WerewolfPresentation.boss(g, role(g, "VILLAGER"), 12);
-    assertEquals("☾ Night 1 · You are asleep…", sleeper.text());
-    assertFalse(sleeper.timer());
+    assertEquals("☾ Night 1 · The village sleeps · 12 s", sleeper.text());
+    assertTrue("sleepers see the time but not whose turn it is", sleeper.timer());
     phase(g, "DISCUSSION");
     assertEquals(
         "☀ Day 1 · Debate · 1 min 20",

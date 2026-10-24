@@ -24,46 +24,54 @@ public record ArenaConfig(
     int nightSeconds,
     GameRules.Werewolf werewolf,
     GameRules.Freeplay freeplay,
-    Village village,
+    Places places,
     Rewards rewards) {
-  public record Door(int x, int y, int z) {}
+  /** A named spot where a player sits or stands during the game. */
+  public record Seat(String name, Spawn at, boolean sit) {
+    public Seat {
+      if (name == null || !name.matches("[A-Za-z0-9_-]{1,32}"))
+        throw new IllegalArgumentException("Seat names use letters, digits, _ or - (32 maximum)");
+      if (at == null) throw new IllegalArgumentException("A seat needs a position");
+    }
+  }
 
-  public record Village(
-      boolean enabled, Map<String, Spawn> houses, Spawn meeting, Spawn daypoint, List<Door> doors) {
-    public Village {
-      houses = houses == null ? Map.of() : Map.copyOf(houses);
-      doors = doors == null ? List.of() : List.copyOf(doors);
-      if (houses.size() > 45 || doors.size() > 256)
-        throw new IllegalArgumentException("Too many houses or doors");
-      Set<String> positions = new HashSet<>();
-      for (Spawn p : houses.values())
-        if (!positions.add(p.x() + ":" + p.y() + ":" + p.z()))
-          throw new IllegalArgumentException("Houses must have distinct positions");
-      if (new HashSet<>(doors).size() != doors.size())
-        throw new IllegalArgumentException("Duplicate registered door");
-      for (String name : houses.keySet())
-        if (!name.matches("[A-Za-z0-9_-]{1,32}"))
-          throw new IllegalArgumentException("Invalid house name");
+  /**
+   * Where the game moves players: seats around the vote circle, the wolves' den and optional
+   * night spots for the sleepers. All optional; without seats players stay where they spawn.
+   */
+  public record Places(List<Seat> seats, Spawn circle, Spawn den, List<Spawn> night) {
+    public Places {
+      seats = seats == null ? List.of() : List.copyOf(seats);
+      night = night == null ? List.of() : List.copyOf(night);
+      if (seats.size() > 45 || night.size() > 45)
+        throw new IllegalArgumentException("At most 45 seats and 45 night spots");
+      Set<String> names = new HashSet<>();
+      for (Seat seat : seats)
+        if (!names.add(seat.name())) throw new IllegalArgumentException("Seat names must be unique");
     }
 
-    public void requireCapacity(int players) {
-      String missing = missing(players);
-      if (enabled && missing != null) throw new IllegalArgumentException(missing);
-    }
-
-    /** Human-readable list of what village mode still lacks, or null when ready. */
+    /** What still stops a game of this size from using the places, or null. */
     public String missing(int players) {
+      if (seats.isEmpty()) return null; // No seats configured: players stay where they spawn.
       List<String> lacks = new ArrayList<>();
-      if (houses.size() < players)
-        lacks.add(
-            "houses: " + houses.size() + "/" + players + " (one per player, bots included)");
-      if (meeting == null) lacks.add("wolf meeting point");
-      if (daypoint == null) lacks.add("day point");
-      return lacks.isEmpty() ? null : "Village mode is missing " + String.join(", ", lacks);
+      if (seats.size() < players)
+        lacks.add("seats: " + seats.size() + "/" + players + " (one per player, bots included)");
+      if (!night.isEmpty() && night.size() < players)
+        lacks.add("night spots: " + night.size() + "/" + players);
+      return lacks.isEmpty() ? null : "Places are missing " + String.join(", ", lacks);
     }
 
-    public static Village defaults() {
-      return new Village(false, Map.of(), null, null, List.of());
+    public List<Spawn> points() {
+      List<Spawn> all = new ArrayList<>();
+      for (Seat seat : seats) all.add(seat.at());
+      if (circle != null) all.add(circle);
+      if (den != null) all.add(den);
+      all.addAll(night);
+      return all;
+    }
+
+    public static Places defaults() {
+      return new Places(List.of(), null, null, List.of());
     }
   }
 
@@ -167,30 +175,24 @@ public record ArenaConfig(
   public record Spawn(double x, double y, double z, float yaw, float pitch) {}
 
   public ArenaConfig {
-    village = village == null ? Village.defaults() : village;
+    places = places == null ? Places.defaults() : places;
     rewards = rewards == null ? new Rewards(10, 5) : rewards;
     if (bounds != null) {
-      List<Spawn> points = new ArrayList<>(village.houses().values());
-      if (village.meeting() != null) points.add(village.meeting());
-      if (village.daypoint() != null) points.add(village.daypoint());
-      for (Spawn p : points)
+      for (Spawn p : places.points())
         if (!Double.isFinite(p.x())
             || !Double.isFinite(p.y())
             || !Double.isFinite(p.z())
             || !Float.isFinite(p.yaw())
             || !Float.isFinite(p.pitch())
             || !bounds.contains(p.x(), p.y(), p.z()))
-          throw new IllegalArgumentException("Village points must be inside the arena");
-      for (Door d : village.doors())
-        if (!bounds.contains(d.x() + .5, d.y(), d.z() + .5))
-          throw new IllegalArgumentException("Doors must be inside the arena");
+          throw new IllegalArgumentException("Places must be inside the arena");
     }
 
     werewolf = werewolf == null ? GameRules.Werewolf.defaults() : werewolf;
     freeplay = freeplay == null ? GameRules.Freeplay.defaults() : freeplay;
     if ("werewolf".equals(preset)
         && !werewolf.roles().isEmpty()
-        && werewolf.roles().getOrDefault("WEREWOLF", 0) * 2 >= minPlayers)
+        && GameRules.Werewolf.wolves(werewolf.roles()) * 2 >= minPlayers)
       throw new IllegalArgumentException(
           "Wolves must be in the minority at the minimum player count");
     if ("werewolf".equals(preset)

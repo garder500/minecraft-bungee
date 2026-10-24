@@ -52,3 +52,13 @@ def tile_height(gui_h, rows):
 
 def tile_file(name, r, c):
     return f"{name}_{r}{c}"
+
+
+# Role and HUD icons: glyphs of the vampyuyu:icons font, from ICON_BASE in this order
+# (art/icons.py draws them; plugin: WerewolfHud.icon).
+ICONS = ["wolf", "villager", "seer", "witch", "hunter", "cupid", "guard", "dead", "moon", "sun",
+         "vote", "timer", "alive", "alpha", "infector", "cub", "scapegoat", "bear"]
+ICON_BASE = 0xE000
+ICON_PX = 64             # texture size of one icon
+ICON_HEIGHT = 12         # drawn height in GUI px
+ICON_ASCENT = 11

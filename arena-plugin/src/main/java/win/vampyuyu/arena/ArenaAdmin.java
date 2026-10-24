@@ -7,8 +7,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.*;
 import org.bukkit.*;
-import org.bukkit.block.data.Bisected;
-import org.bukkit.block.data.type.Door;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
@@ -127,8 +125,7 @@ final class ArenaAdmin implements Listener {
     if (!s.players.isEmpty()
         || s.game != null
         || s.stopping
-        || s.finishing
-        || plugin.village.pending(id))
+        || s.finishing)
       throw new IllegalArgumentException("Stop and empty this arena before editing");
     return s;
   }
@@ -156,11 +153,6 @@ final class ArenaAdmin implements Listener {
             "setup",
             "corner1",
             "corner2",
-            "house",
-            "houses",
-            "meeting",
-            "daypoint",
-            "doors",
             "tools",
             "select")
         .contains(sub)) return false;
@@ -182,26 +174,6 @@ final class ArenaAdmin implements Listener {
       case "setup" -> {
         need(args, 2, "/arena setup <id>");
         setup(p, args[1]);
-      }
-      case "houses" -> {
-        need(args, 2, "/arena houses <id>");
-        houses(p, args[1], 0);
-      }
-      case "house" -> {
-        need(args, 4, "/arena house <id> add <name>");
-        if (!args[2].equals("add")) throw new IllegalArgumentException("Use add");
-        addHouse(p, args[1], args[3]);
-        houses(p, args[1], 0);
-      }
-      case "meeting", "daypoint" -> {
-        need(args, 3, "/arena " + sub + " <id> set");
-        if (!args[2].equals("set")) throw new IllegalArgumentException("Use set");
-        setPoint(p, args[1], sub);
-        setup(p, args[1]);
-      }
-      case "doors" -> {
-        need(args, 2, "/arena doors <id>");
-        doors(p, args[1], 0);
       }
     }
     return true;
@@ -392,7 +364,7 @@ final class ArenaAdmin implements Listener {
           p.closeInventory();
           plugin.tools.give(p, id);
         },
-        "Items for corners, spawn, houses, points and doors");
+        "Items for corners, spawn, seats, the circle and the den");
     m.put(
         6,
         Material.WRITABLE_BOOK,
@@ -410,41 +382,16 @@ final class ArenaAdmin implements Listener {
           p.closeInventory();
         });
     m.put(8, Material.RED_WOOL, "Stop & restore", () -> plugin.handle(p, plugin.arenas.stop(id)));
-    // Row 1: village.
-    m.toggle(
+    // Row 1: places (set them with /ww place, or the admin items).
+    m.put(
         10,
-        Material.OAK_DOOR,
-        "Village",
-        c.village().enabled(),
-        () -> {
-          change(
-              id, j -> j.getAsJsonObject("village").addProperty("enabled", !c.village().enabled()));
-          plugin.tools.report(p, id);
-          setup(p, id);
-        },
-        "Click to toggle; the checklist shows what is missing");
-    m.put(
-        11,
         Material.RED_BED,
-        "Houses (" + c.village().houses().size() + ")",
-        () -> houses(p, id, 0));
-    m.put(
-        12,
-        Material.BONE,
-        "Set wolf meeting here",
+        "Places (" + c.places().seats().size() + " seats)",
         () -> {
-          setPoint(p, id, "meeting");
-          setup(p, id);
-        });
-    m.put(
-        13,
-        Material.SUNFLOWER,
-        "Set day point here",
-        () -> {
-          setPoint(p, id, "daypoint");
-          setup(p, id);
-        });
-    m.put(14, Material.IRON_DOOR, "Controlled doors", () -> doors(p, id, 0));
+          p.closeInventory();
+          plugin.tools.report(p, id);
+        },
+        "Seats, vote circle and wolf den: /ww place list");
     if (c.preset().equals("werewolf"))
       m.toggle(
           15,
@@ -546,189 +493,8 @@ final class ArenaAdmin implements Listener {
     show(p, m);
   }
 
-  void setPoint(Player p, String id, String field) throws Exception {
-    var position = point(p, id);
-    change(
-        id, j -> j.getAsJsonObject("village").add(field, ArenaManager.JSON.toJsonTree(position)));
-  }
-
-  private void addHouse(Player p, String id, String name) throws Exception {
-    var position = point(p, id);
-    change(
-        id,
-        j -> {
-          var houses = j.getAsJsonObject("village").getAsJsonObject("houses");
-          if (houses.has(name)) throw new IllegalArgumentException("House name already exists");
-          houses.add(name, ArenaManager.JSON.toJsonTree(position));
-        });
-  }
-
   private static String coordinates(ArenaConfig.Spawn p) {
     return String.format(Locale.ROOT, "X %.2f / Y %.2f / Z %.2f", p.x(), p.y(), p.z());
-  }
-
-  private void houses(Player p, String id, int page) {
-    var c = plugin.arenas.require(id).config;
-    var entries =
-        c.village().houses().entrySet().stream().sorted(Map.Entry.comparingByKey()).toList();
-    Menu m = new Menu(p, Kind.LIST, "Houses · " + id);
-    for (int i = page * 36; i < Math.min(entries.size(), (page + 1) * 36); i++) {
-      var entry = entries.get(i);
-      m.put(
-          i - page * 36,
-          Material.RED_BED,
-          entry.getKey(),
-          () -> {
-            Menu detail = new Menu(p, Kind.DETAIL, entry.getKey());
-            detail.put(
-                13,
-                Material.ENDER_PEARL,
-                "Inspect house",
-                () -> {
-                  var position = editable(id).config.village().houses().get(entry.getKey());
-                  if (position == null) throw new IllegalArgumentException("House removed");
-                  plugin.handle(
-                      p,
-                      p.teleportAsync(
-                              new Location(
-                                  Bukkit.getWorld(c.worldName()),
-                                  position.x(),
-                                  position.y(),
-                                  position.z(),
-                                  position.yaw(),
-                                  position.pitch()))
-                          .thenAccept(
-                              ok -> {
-                                if (!ok) throw new IllegalArgumentException("Teleport refused");
-                              }));
-                },
-                coordinates(entry.getValue()));
-            detail.put(
-                11,
-                Material.COMPASS,
-                "Move house here",
-                () -> {
-                  var position = point(p, id);
-                  change(
-                      id,
-                      j ->
-                          j.getAsJsonObject("village")
-                              .getAsJsonObject("houses")
-                              .add(entry.getKey(), ArenaManager.JSON.toJsonTree(position)));
-                  houses(p, id, page);
-                });
-            detail.put(
-                15,
-                Material.BARRIER,
-                "Delete house",
-                () ->
-                    confirm(
-                        p,
-                        "Delete house " + entry.getKey(),
-                        () -> {
-                          change(
-                              id,
-                              j ->
-                                  j.getAsJsonObject("village")
-                                      .getAsJsonObject("houses")
-                                      .remove(entry.getKey()));
-                          houses(p, id, 0);
-                        },
-                        () -> houses(p, id, page)));
-            detail.put(detail.hot(0), Material.ARROW, "Back", () -> houses(p, id, page));
-            show(p, detail);
-          },
-          coordinates(entry.getValue()));
-    }
-    paging(m, page, entries.size(), n -> houses(p, id, n));
-    m.area(
-        new int[] {48, 49, 50},
-        Material.EMERALD,
-        "plus",
-        "Add house here",
-        () -> {
-          var position = point(p, id);
-          prompt(
-              p,
-              "House name:",
-              name -> {
-                change(
-                    id,
-                    j -> {
-                      var houses = j.getAsJsonObject("village").getAsJsonObject("houses");
-                      if (houses.has(name))
-                        throw new IllegalArgumentException("House already exists");
-                      houses.add(name, ArenaManager.JSON.toJsonTree(position));
-                    });
-                houses(p, id, 0);
-              });
-        });
-    m.put(m.hot(0), Material.ARROW, "Setup", () -> setup(p, id));
-    show(p, m);
-  }
-
-  private void doors(Player p, String id, int page) {
-    var c = plugin.arenas.require(id).config;
-    var entries = c.village().doors();
-    Menu m = new Menu(p, Kind.LIST, "Doors · " + id);
-    for (int i = page * 36; i < Math.min(entries.size(), (page + 1) * 36); i++) {
-      var d = entries.get(i);
-      m.put(
-          i - page * 36,
-          Material.OAK_DOOR,
-          d.x() + " / " + d.y() + " / " + d.z(),
-          () ->
-              confirm(
-                  p,
-                  "Remove door",
-                  () -> {
-                    change(
-                        id,
-                        j -> {
-                          var list =
-                              new ArrayList<>(
-                                  ArenaManager.JSON
-                                      .fromJson(j, ArenaConfig.class)
-                                      .village()
-                                      .doors());
-                          list.remove(d);
-                          j.getAsJsonObject("village")
-                              .add("doors", ArenaManager.JSON.toJsonTree(list));
-                        });
-                    doors(p, id, 0);
-                  },
-                  () -> doors(p, id, page)));
-    }
-    paging(m, page, entries.size(), n -> doors(p, id, n));
-    m.area(
-        new int[] {48, 49, 50},
-        Material.EMERALD,
-        "plus",
-        "Register targeted door",
-        () -> {
-          editable(id);
-          var block = p.getTargetBlockExact(6);
-          if (block == null || !(block.getBlockData() instanceof Door door))
-            throw new IllegalArgumentException("Look at a door within 6 blocks");
-          if (door.getHalf() == Bisected.Half.TOP) block = block.getRelative(0, -1, 0);
-          if (!block.getWorld().getName().equals(c.worldName()))
-            throw new IllegalArgumentException("Wrong world");
-          var d = new ArenaConfig.Door(block.getX(), block.getY(), block.getZ());
-          change(
-              id,
-              j -> {
-                var list =
-                    new ArrayList<>(
-                        ArenaManager.JSON.fromJson(j, ArenaConfig.class).village().doors());
-                if (list.contains(d)) throw new IllegalArgumentException("Door already registered");
-                list.add(d);
-                j.getAsJsonObject("village").add("doors", ArenaManager.JSON.toJsonTree(list));
-              });
-          doors(p, id, 0);
-        },
-        "Close the menu to aim at a door, then reopen");
-    m.put(m.hot(0), Material.ARROW, "Setup", () -> setup(p, id));
-    show(p, m);
   }
 
   private void paging(Menu m, int page, int size, java.util.function.IntConsumer render) {

@@ -7,8 +7,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.Bisected;
-import org.bukkit.block.data.type.Door;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
 import org.bukkit.event.block.Action;
@@ -29,24 +27,14 @@ final class ArenaTools implements Listener {
         "Sneak + right-click: apply to the arena",
         "Height gets 5 blocks of headroom"),
     SPAWN(Material.COMPASS, "Arena spawn", "Right-click: set the spawn where you stand"),
-    HOUSE(
+    SEAT(
         Material.RED_BED,
-        "Village houses",
-        "Right-click: add a house where you stand",
-        "Left-click: remove the nearest house (3 blocks)",
-        "Sneak + right-click: move the nearest house"),
-    MEETING(Material.BONE, "Wolf meeting point", "Right-click: set it where you stand"),
-    DAYPOINT(Material.SUNFLOWER, "Day point", "Right-click: set it where you stand"),
-    DOOR(
-        Material.IRON_DOOR,
-        "Controlled doors",
-        "Right-click a door: register or unregister it",
-        "Both leaves of a doorway must be registered"),
-    VILLAGE(
-        Material.LEVER,
-        "Village mode",
-        "Right-click: toggle village mode",
-        "Sneak + right-click: toggle ambience"),
+        "Seats",
+        "Right-click: add a sitting seat where you stand",
+        "Sneak + right-click: add a standing spot",
+        "Left-click: remove the nearest seat (3 blocks)"),
+    CIRCLE(Material.SUNFLOWER, "Vote circle", "Right-click: set its centre where you stand"),
+    DEN(Material.BONE, "Wolf den", "Right-click: set it where you stand"),
     STATUS(
         Material.WRITABLE_BOOK,
         "Readiness checklist",
@@ -64,7 +52,7 @@ final class ArenaTools implements Listener {
     }
   }
 
-  private static final double NEAREST_HOUSE = 3.0;
+  private static final double NEAREST_SEAT = 3.0;
   private static final int HEADROOM = 5;
   private final Map<UUID, Block[]> marked = new ConcurrentHashMap<>();
 
@@ -209,46 +197,30 @@ final class ArenaTools implements Listener {
                 c.worldName())));
     lines.add(ok(true, "Spawn " + coords(c.spawn())));
     lines.add(ok(true, "Players " + c.minPlayers() + "–" + c.maxPlayers()));
+    String missing = null;
     if (c.preset().equals("werewolf")) {
-      var v = c.village();
+      var v = c.places();
       lines.add(
-          v.enabled()
-              ? "§a✔ §fVillage mode §aON"
-              : "§7• Village mode OFF (houses and points not required)");
-      if (v.enabled()) {
-        lines.add(
-            ok(
-                v.houses().size() >= c.minPlayers(),
-                "Houses "
-                    + v.houses().size()
-                    + " / "
-                    + c.minPlayers()
-                    + " needed to start ("
-                    + c.maxPlayers()
-                    + " for a full lobby)"));
-        lines.add(
-            ok(v.meeting() != null, "Wolf meeting point" + at(v.meeting())));
-        lines.add(ok(v.daypoint() != null, "Day point" + at(v.daypoint())));
-        lines.add(
-            "§7• Doors registered: "
-                + v.doors().size()
-                + " (optional, they close at night)");
-      } else if (!v.houses().isEmpty() || v.meeting() != null || v.daypoint() != null) {
-        lines.add(
-            "§7• "
-                + v.houses().size()
-                + " house(s) saved; use the Village mode lever to enable them");
-      }
+          ok(
+              !v.seats().isEmpty(),
+              "Seats "
+                  + v.seats().size()
+                  + " / "
+                  + c.minPlayers()
+                  + " needed (none: players stay where they spawn)"));
+      lines.add(ok(v.circle() != null, "Vote circle" + at(v.circle())));
+      lines.add(ok(v.den() != null, "Wolf den" + at(v.den())));
+      if (!v.night().isEmpty()) lines.add("§7• Night spots: " + v.night().size());
+      missing = v.missing(c.minPlayers());
     }
-    String missing = c.village().enabled() ? c.village().missing(c.minPlayers()) : null;
     lines.add(
         missing == null
             ? "§a★ Ready to start once " + c.minPlayers() + " players have joined."
             : "§c✘ Not ready: " + missing + ".");
     for (String line : lines) p.sendMessage(Component.text(line));
-    if (c.preset().equals("werewolf") && c.village().enabled())
+    if (c.preset().equals("werewolf") && !c.places().seats().isEmpty())
       plugin
-          .village
+          .places
           .problems(c)
           .thenAccept(
               found ->
@@ -256,8 +228,7 @@ final class ArenaTools implements Listener {
                       p,
                       () -> {
                         if (found.isEmpty())
-                          p.sendMessage(
-                              Component.text("§a✔ §fSafety check: every point and door is usable"));
+                          p.sendMessage(Component.text("§a✔ §fSafety check: every place is usable"));
                         for (String problem : found)
                           p.sendMessage(Component.text("§c✘ §f" + problem));
                         return null;
@@ -317,30 +288,14 @@ final class ArenaTools implements Listener {
         plugin.admin.change(id, j -> j.add("spawn", ArenaManager.JSON.toJsonTree(position)));
         feedback(p, "Spawn of " + id + " set " + coords(position));
       }
-      case HOUSE -> house(p, left, sneak);
-      case MEETING, DAYPOINT -> {
+      case SEAT -> seat(p, left, sneak);
+      case CIRCLE, DEN -> {
         if (left) return;
         String id = needArena(p);
-        String field = t == Tool.MEETING ? "meeting" : "daypoint";
-        plugin.admin.setPoint(p, id, field);
-        feedback(p, (t == Tool.MEETING ? "Wolf meeting point" : "Day point") + " set for " + id);
-        report(p, id);
-      }
-      case DOOR -> door(p, block);
-      case VILLAGE -> {
-        if (left) return;
-        String id = needArena(p);
-        var c = plugin.arenas.require(id).config;
-        if (sneak) {
-          change(id, j -> j.getAsJsonObject("werewolf")
-              .addProperty("ambienceEnabled", !c.werewolf().ambienceEnabled()));
-          feedback(p, "Ambience " + (!c.werewolf().ambienceEnabled() ? "enabled" : "disabled"));
-          return;
-        }
-        if (!c.preset().equals("werewolf"))
-          throw new IllegalArgumentException("Village mode requires a Werewolf arena");
-        change(id, j -> j.getAsJsonObject("village").addProperty("enabled", !c.village().enabled()));
-        feedback(p, "Village mode " + (!c.village().enabled() ? "ENABLED" : "disabled"));
+        var position = plugin.admin.point(p, id);
+        String field = t == Tool.CIRCLE ? "circle" : "den";
+        plugin.admin.change(id, j -> j.getAsJsonObject("places").add(field, ArenaManager.JSON.toJsonTree(position)));
+        feedback(p, (t == Tool.CIRCLE ? "Vote circle" : "Wolf den") + " set for " + id);
         report(p, id);
       }
       case STATUS -> {
@@ -412,79 +367,71 @@ final class ArenaTools implements Listener {
         Locale.ROOT, "%.0f × %.0f × %.0f", b.maxX() - b.minX(), b.maxY() - b.minY(), b.maxZ() - b.minZ());
   }
 
-  private void house(Player p, boolean left, boolean sneak) throws Exception {
+  private void seat(Player p, boolean left, boolean sneak) throws Exception {
     String id = needArena(p);
     var c = plugin.arenas.require(id).config;
-    var houses = c.village().houses();
-    if (!left && !sneak) {
+    var seats = c.places().seats();
+    if (!left) {
       var position = plugin.admin.point(p, id);
-      int n = houses.size() + 1;
-      String name = "maison-" + n;
-      while (houses.containsKey(name)) name = "maison-" + (++n);
-      final String chosen = name;
+      int n = seats.size() + 1;
+      Set<String> names = new HashSet<>();
+      for (var seat : seats) names.add(seat.name());
+      while (names.contains("seat-" + n)) n++;
+      final String chosen = "seat-" + n;
+      final boolean sit = !sneak;
       plugin.admin.change(
           id,
-          j -> j.getAsJsonObject("village").getAsJsonObject("houses")
-              .add(chosen, ArenaManager.JSON.toJsonTree(position)));
+          j ->
+              j.getAsJsonObject("places")
+                  .getAsJsonArray("seats")
+                  .add(ArenaManager.JSON.toJsonTree(new ArenaConfig.Seat(chosen, position, sit))));
       var after = plugin.arenas.require(id).config;
       feedback(
           p,
-          "House " + chosen + " added: " + after.village().houses().size() + "/" + c.minPlayers()
-              + " needed (" + c.maxPlayers() + " for a full lobby)");
+          "Seat "
+              + chosen
+              + (sit ? " (sit)" : " (stand)")
+              + " added: "
+              + after.places().seats().size()
+              + "/"
+              + c.minPlayers()
+              + " needed ("
+              + c.maxPlayers()
+              + " for a full lobby)");
       return;
     }
-    String nearest = nearestHouse(p, houses);
+    String nearest = nearestSeat(p, seats);
     if (nearest == null)
-      throw new IllegalArgumentException("No house within " + (int) NEAREST_HOUSE + " blocks");
-    if (left) {
-      plugin.admin.change(
-          id, j -> j.getAsJsonObject("village").getAsJsonObject("houses").remove(nearest));
-      feedback(p, "House " + nearest + " removed (" + (houses.size() - 1) + " left)");
-    } else {
-      var position = plugin.admin.point(p, id);
-      plugin.admin.change(
-          id,
-          j -> j.getAsJsonObject("village").getAsJsonObject("houses")
-              .add(nearest, ArenaManager.JSON.toJsonTree(position)));
-      feedback(p, "House " + nearest + " moved here");
-    }
+      throw new IllegalArgumentException("No seat within " + (int) NEAREST_SEAT + " blocks");
+    plugin.admin.change(
+        id,
+        j -> {
+          var array = j.getAsJsonObject("places").getAsJsonArray("seats");
+          for (int i = 0; i < array.size(); i++)
+            if (array.get(i).getAsJsonObject().get("name").getAsString().equals(nearest)) {
+              array.remove(i);
+              break;
+            }
+        });
+    feedback(p, "Seat " + nearest + " removed (" + (seats.size() - 1) + " left)");
   }
 
-  private String nearestHouse(Player p, Map<String, ArenaConfig.Spawn> houses) {
+  private String nearestSeat(Player p, List<ArenaConfig.Seat> seats) {
     String best = null;
-    double bestDistance = NEAREST_HOUSE * NEAREST_HOUSE;
+    double bestDistance = NEAREST_SEAT * NEAREST_SEAT;
     Location at = p.getLocation();
-    for (var entry : houses.entrySet()) {
-      var s = entry.getValue();
-      double d = Math.pow(s.x() - at.getX(), 2) + Math.pow(s.y() - at.getY(), 2) + Math.pow(s.z() - at.getZ(), 2);
+    for (var seat : seats) {
+      var s = seat.at();
+      double d =
+          Math.pow(s.x() - at.getX(), 2)
+              + Math.pow(s.y() - at.getY(), 2)
+              + Math.pow(s.z() - at.getZ(), 2);
       if (d <= bestDistance) {
-        best = entry.getKey();
+        best = seat.name();
         bestDistance = d;
       }
     }
     return best;
-  }
-
-  private void door(Player p, Block block) throws Exception {
-    String id = needArena(p);
-    var c = plugin.arenas.require(id).config;
-    if (block == null || !(block.getBlockData() instanceof Door door))
-      throw new IllegalArgumentException("Right-click a door with this item");
-    if (door.getHalf() == Bisected.Half.TOP) block = block.getRelative(0, -1, 0);
-    if (!block.getWorld().getName().equals(c.worldName()))
-      throw new IllegalArgumentException("This door is not in the arena world");
-    var d = new ArenaConfig.Door(block.getX(), block.getY(), block.getZ());
-    boolean registered = c.village().doors().contains(d);
-    plugin.admin.change(
-        id,
-        j -> {
-          var list = new ArrayList<>(ArenaManager.JSON.fromJson(j, ArenaConfig.class).village().doors());
-          if (registered) list.remove(d);
-          else list.add(d);
-          j.getAsJsonObject("village").add("doors", ArenaManager.JSON.toJsonTree(list));
-        });
-    int total = plugin.arenas.require(id).config.village().doors().size();
-    feedback(p, "Door " + (registered ? "unregistered" : "registered") + " (" + total + " total)");
   }
 
   /** Right-clicking air with a tool should not require a target block, so cancel containers. */
@@ -536,12 +483,10 @@ final class ArenaTools implements Listener {
     if (!p.getWorld().getName().equals(c.worldName())) return;
     var w = p.getWorld();
     dot(p, w, c.spawn(), Particle.CLOUD);
-    for (var h : c.village().houses().values()) dot(p, w, h, Particle.HAPPY_VILLAGER);
-    dot(p, w, c.village().meeting(), Particle.SOUL_FIRE_FLAME);
-    dot(p, w, c.village().daypoint(), Particle.END_ROD);
-    for (var d : c.village().doors())
-      if (near(p, d.x(), d.y(), d.z()))
-        p.spawnParticle(Particle.CRIT, d.x() + .5, d.y() + 1, d.z() + .5, 6, .3, .6, .3, 0);
+    for (var seat : c.places().seats())
+      dot(p, w, seat.at(), seat.sit() ? Particle.HAPPY_VILLAGER : Particle.CRIT);
+    dot(p, w, c.places().den(), Particle.SOUL_FIRE_FLAME);
+    dot(p, w, c.places().circle(), Particle.END_ROD);
     var dust = new Particle.DustOptions(Color.fromRGB(0xe9, 0xd9, 0x9b), 1.2f);
     var b = c.bounds();
     double[][] corners = {

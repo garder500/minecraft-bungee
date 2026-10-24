@@ -21,7 +21,17 @@ public final class ArenaSession {
   /** The practice bots of the current game, or null without bots. */
   volatile WerewolfBots botBrain;
   public volatile boolean stopping;
-  final Map<UUID, ArenaConfig.Spawn> homes = new ConcurrentHashMap<>();
+  /** Seat of every participant (humans and bots) while the places are in use. */
+  final Map<UUID, ArenaConfig.Seat> seats = new ConcurrentHashMap<>();
+
+  /** Where each participant currently is: "seat", "den" or "night" (see PlaceController). */
+  final Map<UUID, String> placed = new ConcurrentHashMap<>();
+
+  /** Bodies of the practice bots (mannequins) and the chairs of seated players. */
+  final Map<UUID, org.bukkit.entity.Entity> bodies = new ConcurrentHashMap<>();
+
+  final Map<UUID, org.bukkit.entity.Entity> chairs = new ConcurrentHashMap<>();
+
   final Map<UUID, String> roster = new ConcurrentHashMap<>();
   final Set<UUID> abandoned = ConcurrentHashMap.newKeySet();
   volatile CompletableFuture<Void> presentation = CompletableFuture.completedFuture(null);

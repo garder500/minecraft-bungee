@@ -145,7 +145,9 @@ public final class ArenaProtectionListener implements Listener {
     if (s == null || plugin.arenas.teleporting(e.getPlayer().getUniqueId()) || e.getTo() == null)
       return;
     if (!(e instanceof PlayerTeleportEvent)
-        && (plugin.village.sleeping(e.getPlayer()) || !s.presentation.isDone())
+        && (plugin.places.sleeping(e.getPlayer())
+            || plugin.places.pinned(e.getPlayer())
+            || !s.presentation.isDone())
         && e.hasChangedPosition()) {
       e.setTo(e.getFrom());
       return;
@@ -169,6 +171,8 @@ public final class ArenaProtectionListener implements Listener {
     if (plugin.arenas.locked(e.getPlayer().getUniqueId())) {
       String command = e.getMessage().trim().toLowerCase(java.util.Locale.ROOT);
       if (!command.equals("/arena")
+          && !command.startsWith("/ww vote ")
+          && !command.equals("/ww abstain")
           && !command.equals("/arena leave")
           && !command.equals("/nexusarenaengine:arena leave")) {
         e.setCancelled(true);
@@ -274,15 +278,11 @@ public final class ArenaProtectionListener implements Listener {
     }
   }
 
+  /** A seated player stays on their chair until the game moves or releases them. */
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-  public void villageDoor(org.bukkit.event.player.PlayerInteractEvent e) {
-    if (e.getClickedBlock() != null && plugin.village.controlled(e.getClickedBlock()))
+  public void dismount(org.bukkit.event.entity.EntityDismountEvent e) {
+    if (e.isCancellable() && e.getEntity() instanceof Player p && plugin.places.seated(p))
       e.setCancelled(true);
-  }
-
-  @EventHandler
-  public void villageRedstone(org.bukkit.event.block.BlockRedstoneEvent e) {
-    if (plugin.village.controlled(e.getBlock())) e.setNewCurrent(e.getOldCurrent());
   }
 
   @EventHandler
