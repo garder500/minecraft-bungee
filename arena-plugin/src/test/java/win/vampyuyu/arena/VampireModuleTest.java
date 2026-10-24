@@ -241,15 +241,20 @@ public class VampireModuleTest {
 
   @Test
   public void aWolfCannotWinWhileAVampireLives() {
-    var ids = ids(11, 6);
+    var ids = ids(11, 5);
     var g = game(ids, 11, Map.of("WEREWOLF", 1, "VAMPIRE", 1));
     UUID wolf = holder(g, ids, "WEREWOLF");
     UUID vampire = holder(g, ids, "VAMPIRE");
+    // Night one: the vampire drains a villager.
     feast(g, List.of(vampire), firstPlain(g, ids));
     toPhase(g, "DAY_VOTE");
-    // Wolf and vampire are two of five: village and vampire still stand.
-    assertTrue(g.winner().isEmpty());
-    assertTrue(g.alive().contains(wolf));
+    assertEquals(4, g.alive().size());
+    // Night two: the wolf eats another one, leaving wolf, vampire and one villager.
+    toPhase(g, "NIGHT");
+    g.select(wolf, firstPlain(g, ids));
+    toVote(g);
+    assertEquals(Set.of(wolf, vampire, firstPlain(g, ids)), g.alive());
+    assertTrue("1 wolf >= 1 other, yet a vampire lives", g.winner().isEmpty());
   }
 
   // ---------------------------------------------------------------- bots
@@ -307,5 +312,34 @@ public class VampireModuleTest {
       toPhase(g, "DAY_VOTE");
       assertFalse(g.alive().contains(prey));
     }
+  }
+
+  @Test
+  public void theHookItselfMakesBotVampiresFollowAHumanVampire() {
+    for (int seed = 0; seed < 30; seed++) {
+      List<UUID> ids = ids(seed, 10);
+      var g = game(ids, seed, Map.of("VAMPIRE", 3));
+      var vampires = holders(g, ids, "VAMPIRE");
+      UUID human = vampires.getFirst();
+      toPhase(g, "VAMPIRE");
+      UUID prey = ids.stream().filter(p -> !vampires.contains(p)).findFirst().orElseThrow();
+      g.select(human, prey);
+      var bots = vampires.subList(1, vampires.size());
+      for (UUID bot : bots.subList(0, bots.size() - 1)) {
+        g.botAct(bot, new Random(seed));
+        assertEquals("seed " + seed, prey, g.ballot(bot));
+      }
+      // The last vote makes the feast unanimous: the call closes on the human's prey.
+      g.botAct(bots.getLast(), new Random(seed));
+      assertNotEquals("VAMPIRE", g.phase());
+      toPhase(g, "DAY_VOTE");
+      assertFalse("seed " + seed, g.alive().contains(prey));
+    }
+  }
+
+  @Test
+  public void aVampireIsAnnouncedAsAVampire() {
+    String line = WerewolfPresentation.deathLine("X", "VAMPIRE", "FULL");
+    assertTrue(line, line.contains("a Vampire"));
   }
 }
