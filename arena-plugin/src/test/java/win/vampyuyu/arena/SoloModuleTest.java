@@ -293,7 +293,55 @@ public class SoloModuleTest {
     UUID pack = holder(g, ids, "WEREWOLF");
     thin(g, ids, wolf, pack);
     assertEquals("WEREWOLVES", g.winner());
-    assertFalse(g.winners().contains(wolf) && g.winner().equals("LONE_WOLF"));
+    assertFalse(g.winners().contains(wolf));
+    assertTrue(g.winners().contains(pack));
+  }
+
+  @Test
+  public void theLoneWolfCountsWithTheVillageAtParity() {
+    var ids = ids(N);
+    var g = lone(ids, "WEREWOLF");
+    UUID wolf = holder(g, ids, "LONE_WOLF");
+    UUID pack = holder(g, ids, "WEREWOLF");
+    var villagers = others(g, ids, "LONE_WOLF", "WEREWOLF");
+    thin(g, ids, wolf, pack, villagers.get(0), villagers.get(1));
+    assertEquals("", g.winner());
+    assertNotEquals("FINISHED", g.phase());
+  }
+
+  @Test
+  public void theLoneWolfWinsAgainstTheLastVillagerWhenThePackIsGone() {
+    var ids = ids(N);
+    var g = lone(ids, "WEREWOLF");
+    UUID wolf = holder(g, ids, "LONE_WOLF");
+    UUID villager = others(g, ids, "LONE_WOLF", "WEREWOLF").get(0);
+    thin(g, ids, wolf, villager);
+    assertEquals("LONE_WOLF", g.winner());
+    assertEquals(Set.of(wolf), g.winners());
+  }
+
+  @Test
+  public void aSeerSeesTheLoneWolfAsAWerewolf() {
+    var ids = ids(N);
+    var g = lone(ids, "SEER");
+    UUID wolf = holder(g, ids, "LONE_WOLF");
+    UUID seer = holder(g, ids, "SEER");
+    assertEquals("SEER", g.phase());
+    String vision = g.select(seer, wolf);
+    assertTrue(vision, vision.endsWith("is WEREWOLF."));
+  }
+
+  @Test
+  public void aTannerWhoLeavesTheGameDoesNotWin() {
+    var ids = ids(N);
+    var g = game(ids, 4, Map.of("WEREWOLF", 1, "TANNER", 1));
+    UUID tanner = holder(g, ids, "TANNER");
+    UUID wolf = holder(g, ids, "WEREWOLF");
+    g.remove(tanner);
+    hunt(g, wolf, others(g, ids, "WEREWOLF").get(0));
+    lynch(g, ids, wolf);
+    assertEquals("VILLAGE", g.winner());
+    assertFalse(g.winners().contains(tanner));
   }
 
   @Test
