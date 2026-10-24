@@ -79,7 +79,7 @@ final class SoloModule implements RoleModule {
 
   @Override
   public void died(WerewolfGame g, UUID player, String source, String cause) {
-    if (g.roleOf(player) == WerewolfGame.Role.TANNER) {
+    if (g.roleOf(player) == WerewolfGame.Role.TANNER && !"left the game".equals(cause)) {
       deadTanners.add(player);
     }
   }
