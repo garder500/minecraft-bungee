@@ -57,6 +57,13 @@ final class PlaceController {
   /** Why standing at this point would be unsafe, or null. Must run on the owning region thread. */
   private static String unsafe(Location l) {
     var feet = l.getBlock();
+    // A point on the surface of a stair or slab (half a block up) is inside that block's cell but
+    // stands on it: the real feet are in the cell above it.
+    if (!feet.isPassable() && !feet.isLiquid()) {
+      double top = 0;
+      for (var box : feet.getCollisionShape().getBoundingBoxes()) top = Math.max(top, box.getMaxY());
+      if (top > 0 && l.getY() - feet.getY() >= top - 0.01) feet = feet.getRelative(0, 1, 0);
+    }
     var head = feet.getRelative(0, 1, 0);
     var floor = feet.getRelative(0, -1, 0);
     if (!l.getWorld().getWorldBorder().isInside(l)) return "outside the world border";
