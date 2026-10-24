@@ -73,7 +73,7 @@ final class ClickControls implements Listener {
     if (!(s.game instanceof WerewolfGame game)) return;
     boolean live = plugin.gui.inGame(s) && s.presentation.isDone() && game.alive().contains(p.getUniqueId());
     Map<String, String> abilities = live ? game.abilities(p.getUniqueId()) : Map.of();
-    String signature = String.join(",", abilities.keySet());
+    String signature = String.join(",", abilities.keySet()) + "|" + String.join(",", abilities.values());
     if (signature.equals(shown.get(p.getUniqueId()))) return;
     shown.put(p.getUniqueId(), signature);
     var inventory = p.getInventory();

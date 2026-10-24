@@ -106,7 +106,11 @@ final class SoloModule implements RoleModule {
 
   @Override
   public Set<UUID> members(WerewolfGame g, String winnerLabel) {
-    UUID lone = "LONE_WOLF".equals(winnerLabel) ? loneWolf(g, false) : null;
+    UUID lone = null;
+    if ("LONE_WOLF".equals(winnerLabel)) {
+      lone = loneWolf(g, true); // a doppelganger who copied him may be the one standing
+      if (lone == null) lone = loneWolf(g, false);
+    }
     return lone == null ? Set.of() : Set.of(lone);
   }
 

@@ -37,7 +37,8 @@ final class SocialModule implements RoleModule {
     List<UUID> masons = livingWith(g, WerewolfGame.Role.MASON);
     for (UUID mason : masons) g.notify(mason, masonNotice(masons, mason));
     List<UUID> wolves = new ArrayList<>();
-    for (UUID p : g.living()) if (WerewolfGame.wolf(g.roleOf(p))) wolves.add(p);
+    // The pack as it stands: a drunk wolf who has not woken yet is not in it.
+    for (UUID p : g.living()) if (g.packMember(p)) wolves.add(p);
     for (UUID minion : livingWith(g, WerewolfGame.Role.MINION))
       g.notify(minion, minionNotice(wolves));
   }

@@ -619,6 +619,7 @@ public final class ArenaManager {
       if (s.game instanceof WerewolfGame werewolf && s.botBrain != null) {
         String before = werewolf.turnKey();
         bots(s, werewolf, now, due);
+        if (plugin.gui != null) plugin.gui.deliverNotices(s); // a nomination by a bot, a thumb...
         // A bot ended the turn (the seer's vision, the pack agreeing, the witch going to sleep...).
         if (!werewolf.turnKey().equals(before)) {
           phaseChanged(s);
@@ -649,6 +650,19 @@ public final class ArenaManager {
       if (s.game instanceof WerewolfGame game && !game.turnKey().equals(s.observedTurn)) {
         s.observedTurn = game.turnKey();
         s.phaseEndsAt = System.currentTimeMillis() + phaseMillis(s);
+        // The troublemaker's second vote opens in the same phase: the first verdict plays first.
+        WerewolfGame.Verdict again = game.takeVerdict();
+        if (again != null) {
+          s.verdictShowing = true;
+          s.presentation =
+              s.presentation
+                  .thenCompose(v -> plugin.ambience.verdict(s, again))
+                  .whenComplete(
+                      (v, e) -> {
+                        s.verdictShowing = false;
+                        if (s.game != null) s.phaseEndsAt = System.currentTimeMillis() + phaseMillis(s);
+                      });
+        }
       }
       return;
     }

@@ -87,7 +87,7 @@ final class InsightModule implements RoleModule {
           case PI -> investigate(g, actor, target);
           case SORCERER ->
               sorcerer(actor, target)
-                  + (g.roleOf(target) == Role.SEER ? " is the Seer." : " is not the Seer.");
+                  + (g.selfRole(target) == Role.SEER ? " is the Seer." : " is not the Seer.");
           default -> throw new IllegalArgumentException("You cannot pick a player now");
         };
     acted.add(actor);

@@ -10,8 +10,8 @@ final class Modules {
   static List<RoleModule> create() {
     return List.of(
         new InsightModule(),
-        new ProtectionModule(),
         new CourtModule(),
+        new ProtectionModule(),
         new SocialModule(),
         new ShapeModule(),
         new VampireModule(),

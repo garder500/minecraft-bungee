@@ -329,7 +329,7 @@ final class WerewolfAmbience {
                           }
                       });
                   at += BEAT;
-                } else if (turn != null) {
+                } else if (turn != null && !phase.equals("MARTYR")) {
                   // Sleepers hear the narrator too: who wakes up, never who they are.
                   beat(
                       s,
@@ -341,7 +341,7 @@ final class WerewolfAmbience {
                         title(
                             target,
                             phase.equals("HUNTER_SHOT")
-                                ? "The Hunter takes aim"
+                                ? game.reveal().equals("FULL") ? "The Hunter takes aim" : "A last shot is coming"
                                 : WerewolfPresentation.wakeLine(phase),
                             night ? "Keep your eyes shut…" : "Hold your breath…",
                             TextColor.color(WerewolfPresentation.color(turn)));
@@ -390,9 +390,15 @@ final class WerewolfAmbience {
     if (grieving != null) fallen.add(grieving);
     fallen.removeIf(id -> game.alive().contains(id) || s.revealed.contains(id));
     List<Component> news = deaths(s, game, fallen); // Announced now, so dusk does not repeat them.
-    String heading = lynched == null ? "Nobody is eliminated" : "☠ " + s.players.get(lynched);
+    UUID spared = verdict.spared();
+    String heading =
+        lynched != null
+            ? "☠ " + s.players.get(lynched)
+            : spared != null ? s.players.getOrDefault(spared, "Someone") + " is spared" : "Nobody is eliminated";
     String subtitle =
-        lynched == null ? "No majority: the village spares everyone" : "The village has spoken";
+        lynched != null
+            ? "The village has spoken"
+            : spared != null ? "The village condemned them, but they stay" : "No majority: the village spares everyone";
     boolean enabled = s.config.werewolf().ambienceEnabled();
     for (UUID id : s.players.keySet()) {
       Player p = Bukkit.getPlayer(id);
@@ -440,10 +446,12 @@ final class WerewolfAmbience {
     String previous = s.ambiencePhase;
     s.ambiencePhase = phase;
     if (!previous.equals(phase)) {
-      String sleep = WerewolfPresentation.sleepLine(previous);
+      // A last shot names the hunter: with a hidden reveal the narrator keeps quiet about it.
+      boolean quiet = !game.reveal().equals("FULL");
+      String sleep = quiet && previous.equals("HUNTER_SHOT") ? null : WerewolfPresentation.sleepLine(previous);
       if (sleep != null)
         lines.add(Component.text(sleep, TextColor.color(WerewolfPresentation.INK_DIM)));
-      String wake = WerewolfPresentation.wakeLine(phase);
+      String wake = quiet && phase.equals("HUNTER_SHOT") ? null : WerewolfPresentation.wakeLine(phase);
       if (wake != null)
         lines.add(
             Component.text(

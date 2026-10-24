@@ -448,6 +448,8 @@ def ultimate_checks(role, rcon, failures, tools, shots):
     else:
         if not wait_phase("DAY_VOTE", 150): return failures.append(f"{role}: no day vote")
         time.sleep(3)
+        if me not in peek(rcon, alive_only=True):  # the practice wolves ate him: nothing to vote with
+            return say(f"{role}: eaten during the night, no vote to cast")
         if role == "DRUNK":  # the journal shows the real role he does not know yet
             return
         if not click_until(rcon, bot_with(rcon, NOT_WOLF), f"{me}[{role}] selects"):
@@ -589,7 +591,8 @@ def roles_scenario(ctx, only):
             failures.append(f"{role}: the game did not start ({out.strip()[:120]})")
             continue
         roles = peek(rcon)
-        if roles.get("E2EBot") != FORCED.get(role, role):
+        # A drunk's card is swapped for his real role at the deal: peek shows the real one.
+        if roles.get("E2EBot") != FORCED.get(role, role) and role != "DRUNK":
             failures.append(f"{role}: forced role missing, the human is {roles.get('E2EBot')}")
         time.sleep(4)
         shot(tools, shots / f"hud-{role.lower()}.png")

@@ -160,7 +160,7 @@ final class WerewolfMenus {
             "select:" + target);
       }
       case HUNT -> {
-        if (game.role(target).equals("WEREWOLF"))
+        if (game.pack(viewer).contains(target))
           return new Entry(
               slot,
               target,

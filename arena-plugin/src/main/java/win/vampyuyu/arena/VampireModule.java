@@ -52,7 +52,11 @@ final class VampireModule implements RoleModule {
     if (target == null) return;
     g.cancelShot(player);
     g.slay(target, "killed by the vampire hunter's last strike");
-    String text = "The vampire hunter's last strike killed the vampire " + target + ".";
+    // Under a hidden reveal the table is not told what the victim was.
+    String text =
+        g.reveal().equals("FULL")
+            ? "The vampire hunter's last strike killed the vampire " + target + "."
+            : "A last strike killed " + target + ".";
     if (news == null) g.notifyLiving(text);
     else news.append(' ').append(text);
   }

@@ -76,12 +76,18 @@ final class WerewolfPresentation {
       boolean actor = game.actors().contains(viewer);
       if (game.night()) {
         String head = "☾ Night " + round + " · ";
-        if (!actor) return new Boss(head + "The village sleeps · " + clock(seconds), INK_DIM, true);
+        // With a hidden reveal the clock of a call tells whether anybody living answers it: hide it.
+        boolean hidden = !game.reveal().equals("FULL");
+        if (!actor)
+          return hidden
+              ? new Boss(head + "The village sleeps", INK_DIM, false)
+              : new Boss(head + "The village sleeps · " + clock(seconds), INK_DIM, true);
         String role = turnRole(phase);
         String turn =
             switch (phase) {
               case "NIGHT" -> "The Werewolves hunt";
               case "HUNTER_SHOT" -> "The Hunter takes a last shot";
+              case "AMULET" -> "The amulet's holder is awake";
               default -> "The " + roleName(role) + " is awake";
             };
         return new Boss(head + turn + " · " + clock(seconds), color(role), true);
@@ -98,7 +104,9 @@ final class WerewolfPresentation {
                 ? new Boss(head + "The Martyr may step in · " + clock(seconds), color("MARTYR"), true)
                 : new Boss(head + "The village weighs the verdict · " + clock(seconds), VOTE, true);
         default ->
-            new Boss(head + "The Hunter takes a last shot · " + clock(seconds), HUNTER, true);
+            !actor && !game.reveal().equals("FULL")
+                ? new Boss(head + "A last shot is fired · " + clock(seconds), VOTE, true)
+                : new Boss(head + "The Hunter takes a last shot · " + clock(seconds), HUNTER, true);
       };
     }
   }
@@ -113,8 +121,13 @@ final class WerewolfPresentation {
     synchronized (game) {
       String phase = game.phase();
       if (phase.equals("FINISHED")) return null;
-      String time = " · " + clock(seconds);
+      boolean sleeper = game.night() && !game.actors().contains(viewer);
+      String time = sleeper && !game.reveal().equals("FULL") ? "" : " · " + clock(seconds);
       String role = turnRole(phase);
+      if (role == null && game.night()) // a call without a role of its own (the amulet's)
+        return sleeper
+            ? new Line("☾ The village sleeps" + time, INK_DIM)
+            : new Line("☾ Your turn" + time, VOTE);
       if (role == null)
         return switch (phase) {
           case "DAY_VOTE" -> new Line("☀ Village vote" + time, VOTE);
@@ -129,7 +142,8 @@ final class WerewolfPresentation {
       String turn =
           switch (phase) {
             case "NIGHT" -> "The Werewolves' turn";
-            case "HUNTER_SHOT" -> "The Hunter's last shot";
+            case "HUNTER_SHOT" ->
+                game.reveal().equals("FULL") ? "The Hunter's last shot" : "A last shot";
             default -> "The " + roleName(role) + "'s turn";
           };
       return new Line(moon + turn + time, color(role));
@@ -275,6 +289,7 @@ final class WerewolfPresentation {
             case "DAY_VOTE" -> "Day · Voting";
             case "DEFENSE" -> "Day · Defense";
             case "MARTYR" -> actor ? "Martyr's choice" : "Day · Verdict";
+            case "AMULET" -> "Amulet";
             case "TRIAL" -> "Day · Trial";
             case "CUPID" -> "Cupid's choice";
             case "GUARD" -> "Guard's turn";
@@ -295,6 +310,7 @@ final class WerewolfPresentation {
                 case "DAY_VOTE" -> "Right-click a player to vote, or use Skip";
                 case "DEFENSE" -> "The accused speaks: the thumbs come next";
                 case "TRIAL" -> "Thumbs up to let them live, thumbs down to eliminate them";
+                case "AMULET" -> "Right-click a player to pass the amulet on, or go back to sleep";
                 case "CUPID" -> "Right-click two players, then use Bind";
                 case "GUARD" -> "Right-click a player to protect them tonight";
                 case "SEER" -> "Right-click a player to see their role";
@@ -320,6 +336,7 @@ final class WerewolfPresentation {
       case "NIGHT" -> new Cue("Wolves, awaken", "Right-click your victim");
       case "WITCH" -> new Cue("Witch, awaken", "Your potions may change their fate");
       case "HUNTER_SHOT" -> new Cue("Hunter, take your final shot", "Choose your last target");
+      case "AMULET" -> new Cue("Amulet holder, awaken", "Pass the amulet on, or keep it");
       default -> {
         RoleInfo info = RoleInfo.byPhase(phase);
         yield info == null ? null : new Cue(info.call().title(), info.call().subtitle());

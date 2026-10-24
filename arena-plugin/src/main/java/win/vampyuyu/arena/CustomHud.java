@@ -176,10 +176,12 @@ final class CustomHud {
     List<String> out = new ArrayList<>();
     if (!game.alive().contains(viewer)) return out;
     if (game.inLove(viewer)) out.add("lover");
-    if (game.lifePotion(viewer)) out.add("life");
-    if (game.deathPotion(viewer)) out.add("death");
-    if (game.infectLeft(viewer)) out.add("infect");
-    if (game.lastProtected(viewer) != null) out.add("guard");
+    // Only what the player believes they are: a drunk witch has no potions to show before he wakes.
+    String believed = game.selfRoleName(viewer);
+    if (believed.equals("WITCH") && game.lifePotion(viewer)) out.add("life");
+    if (believed.equals("WITCH") && game.deathPotion(viewer)) out.add("death");
+    if (believed.equals("INFECTOR") && game.infectLeft(viewer)) out.add("infect");
+    if (believed.equals("GUARD") && game.lastProtected(viewer) != null) out.add("guard");
     return out;
   }
 
@@ -192,11 +194,14 @@ final class CustomHud {
     boolean night = game.night();
     var boss = WerewolfPresentation.boss(game, viewer, seconds);
     String turn = WerewolfPresentation.turnRole(phase);
+    // A day pause only its actor may name (the martyr's) wears the vote colours for everybody else.
+    boolean neutralPause = phase.equals("MARTYR") && !actor;
     String palette =
         dead
             ? "dead"
             : boss.color() == WerewolfPresentation.INK_DIM
                 ? "sleep"
+                : neutralPause ? "vote"
                 : turn != null ? RoleInfo.of(turn).palette()
                 : phase.equals("DAY_VOTE") || phase.equals("TRIAL") ? "vote" : "villager";
     String label;
@@ -219,6 +224,7 @@ final class CustomHud {
             case "SEER" -> "seer awake";
             case "NIGHT" -> "wolves hunt";
             case "WITCH" -> "witch awake";
+            case "AMULET" -> "amulet";
             default -> {
               RoleInfo info = RoleInfo.byPhase(phase);
               yield info == null ? "waiting" : info.call().label();

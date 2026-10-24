@@ -214,6 +214,9 @@ public final class WerewolfGame implements GamePreset {
   private UUID amuletHolder;
 
   private boolean dayOpened;
+
+  /** The cards as they were dealt (see composition()). */
+  private Map<String, Integer> dealt;
   private boolean amuletSaved, secretToday, lightningToday, diceInfectNext, defangNext, defangTonight;
   private final Set<UUID> amuletSeen = new HashSet<>();
   private int lastDice;
@@ -347,6 +350,8 @@ public final class WerewolfGame implements GamePreset {
     }
     ring = List.copyOf(players);
     alive.addAll(players);
+    // The cast as dealt: what the table may read, before a drunk's real role replaces his card.
+    dealt = Collections.unmodifiableMap(count());
     for (RoleModule m : modules) m.deal(this);
     if (this.settings.amulet()) dealAmulet();
     // Like the card game, the story opens at night: Cupid first, then the usual night turns.
@@ -695,6 +700,10 @@ public final class WerewolfGame implements GamePreset {
         throw new IllegalArgumentException("That player is away from the village today");
       hunters.removeFirst();
       resolveKill(new Kill(target, "SHOT", "shot by the hunter " + who(voter)));
+      if (target.equals(nominee)) {
+        nominee = null;
+        nominator = null;
+      }
       resumeAfterHunters();
       return "Your final shot has been fired.";
     }
@@ -832,6 +841,7 @@ public final class WerewolfGame implements GamePreset {
     if (p.equals(pendingLynch) && phase == Phase.MARTYR) pendingLynch = null;
     if (p.equals(firstLover)) firstLover = null;
     if (phase == Phase.HUNTER_SHOT) resumeAfterHunters();
+    else if (phase == Phase.TRIAL && !jurors().isEmpty() && thumbs.keySet().containsAll(jurors())) next();
     // A departing lover can take a hunter down with them: let them shoot now, then carry on.
     else if (!hunters.isEmpty() && phase != Phase.FINISHED) continueWith(phase);
     else checkWinner();
@@ -843,7 +853,12 @@ public final class WerewolfGame implements GamePreset {
   private void skipUnavailable() {
     for (int guard = 0; guard < 40 && NIGHT_ORDER.contains(phase); guard++) {
       Set<UUID> called = callActors(phase);
-      boolean over = called.isEmpty() || !pack(phase) && done.containsAll(called);
+      // With a hidden reveal a call only the dead would answer stays open, as if they were there.
+      boolean hidden = !settings.reveal().equals("FULL");
+      Set<UUID> shown = hidden ? callActors(phase, true) : called;
+      boolean over =
+          shown.isEmpty() || !called.isEmpty() && !pack(phase) && done.containsAll(called)
+              || !hidden && called.isEmpty();
       if (!over) return;
       Phase was = phase;
       next();
@@ -942,7 +957,7 @@ public final class WerewolfGame implements GamePreset {
       journal.log("SAVED", who(v) + " is saved by the guard");
       return false;
     }
-    if (v.equals(amuletHolder) && !source.equals("OTHER")) {
+    if (v.equals(amuletHolder) && !amuletSaved && !source.equals("OTHER")) {
       amuletSaved = true;
       notify(
           v,
@@ -1020,6 +1035,8 @@ public final class WerewolfGame implements GamePreset {
   }
 
   private void enterResume() {
+    // A nomination that fell while a hunter shot (its nominee died or left) is not resumed.
+    if ((resume == Phase.DEFENSE || resume == Phase.TRIAL) && nominee == null) resume = Phase.DISCUSSION;
     if (resume == null) {
       checkWinner();
       if (phase != Phase.FINISHED) startNight();
@@ -1117,7 +1134,7 @@ public final class WerewolfGame implements GamePreset {
       UUID p = entry.getKey();
       if (!calls(ph, entry.getValue())) continue;
       if (!alive.contains(p) && ph != Phase.GHOST && !dead) continue;
-      if (ph == Phase.MARTYR && p.equals(pendingLynch)) continue;
+      if (ph == Phase.MARTYR && (p.equals(pendingLynch) || exiled.contains(p))) continue;
       boolean ready = true;
       for (RoleModule m : modules) ready &= m.ready(this, ph, p);
       if (ready) out.add(p);
@@ -1229,7 +1246,6 @@ public final class WerewolfGame implements GamePreset {
 
   /** The day vote closes: forced ballots, ties, the scapegoat, a martyr, then the verdict. */
   private void closeVote() {
-    if (secretBallots()) revealBallots();
     List<UUID> pool = new ArrayList<>(alive);
     pool.removeAll(exiled);
     if (candidates != null) pool.retainAll(candidates);
@@ -1245,6 +1261,7 @@ public final class WerewolfGame implements GamePreset {
         }
       }
     }
+    if (secretBallots()) revealBallots();
     UUID chosen = majority();
     List<UUID> tied = chosen == null ? tiedLeaders() : List.of();
     if (!tied.isEmpty()) {
@@ -1331,7 +1348,6 @@ public final class WerewolfGame implements GamePreset {
     journal.log("NOMINATE", who(voter) + " seconds the nomination of " + who(target));
     voteRound++;
     thumbs.clear();
-    notifyLiving(voter + " seconds. " + target + " may now defend themselves.");
     if (!dayOpened) {
       // The day's vote opens with its first seconded nomination: the vampires' victim dies now.
       if (openDayVote()) {
@@ -1344,11 +1360,13 @@ public final class WerewolfGame implements GamePreset {
         }
         if (!hunters.isEmpty()) {
           resume = Phase.DEFENSE;
+          notifyLiving(voter + " seconds. " + target + " may defend themselves after the last shot.");
           to(Phase.HUNTER_SHOT);
           return "You second the nomination.";
         }
       }
     }
+    notifyLiving(voter + " seconds. " + target + " may now defend themselves.");
     to(Phase.DEFENSE);
     return "You second the nomination.";
   }
@@ -1357,11 +1375,13 @@ public final class WerewolfGame implements GamePreset {
   private void closeTrial() {
     UUID accused = nominee;
     // A juror who did not vote is asked of the modules (an idiot always votes to eliminate).
+    Set<UUID> forced = new HashSet<>();
     for (UUID juror : jurors())
       if (!thumbs.containsKey(juror) && accused != null)
         for (RoleModule m : modules)
           if (accused.equals(m.autoBallot(this, juror, List.of(accused)))) {
             thumbs.put(juror, true);
+            forced.add(juror);
             break;
           }
     // The mayor's thumb counts twice and a pacifist's not at all; more than half of the living
@@ -1374,7 +1394,7 @@ public final class WerewolfGame implements GamePreset {
       if (thumb == null) continue;
       if (thumb) {
         down += w;
-        shownDown++;
+        if (!forced.contains(juror)) shownDown++;
       } else {
         up += w;
         shownUp++;
@@ -1416,6 +1436,7 @@ public final class WerewolfGame implements GamePreset {
   /** The day ends with no verdict (nominated voting ran out of time). */
   private void endDay(String why) {
     openDayVote();
+    lynchesLeft = 0; // a stir or a dice roll for a day that ended without a vote is spent
     journal.log("VERDICT", why);
     verdict = new Verdict(null);
     nominee = null;
@@ -1522,7 +1543,7 @@ public final class WerewolfGame implements GamePreset {
     String counted = tally();
     if (chosen != null
         && resolveKill(new Kill(chosen, "VOTE", "eliminated by the village vote"))) dead = chosen;
-    verdict = new Verdict(dead);
+    verdict = new Verdict(dead, dead == null ? chosen : null);
     journal.log(
         "VERDICT",
         (dead == null
@@ -1772,7 +1793,11 @@ public final class WerewolfGame implements GamePreset {
   }
 
   /** A counted day vote: whom the village eliminated, or null when no one had a majority. */
-  public record Verdict(UUID lynched) {}
+  public record Verdict(UUID lynched, UUID spared) {
+    public Verdict(UUID lynched) {
+      this(lynched, null);
+    }
+  }
 
   /**
    * The day vote counted since the last call, or null when the day vote ended some other way (the
@@ -1791,6 +1816,10 @@ public final class WerewolfGame implements GamePreset {
 
   /** How many of each role were dealt, in enum order. */
   public synchronized Map<String, Integer> composition() {
+    return dealt != null ? dealt : count();
+  }
+
+  private Map<String, Integer> count() {
     Map<String, Integer> out = new LinkedHashMap<>();
     for (Role role : Role.values()) {
       int n = (int) roles.values().stream().filter(role::equals).count();
@@ -1836,6 +1865,12 @@ public final class WerewolfGame implements GamePreset {
     return Set.copyOf(result);
   }
 
+  /** The side a player plays for: its team, and a solo role stands alone (two solo roles are two sides). */
+  private String side(UUID p) {
+    String team = team(roles.get(p));
+    return team.equals("solo") ? "solo:" + roles.get(p) : team;
+  }
+
   private void checkWinner() {
     if (phase == Phase.FINISHED || !hunters.isEmpty()) return;
     if (alive.isEmpty()) {
@@ -1846,7 +1881,7 @@ public final class WerewolfGame implements GamePreset {
       UUID a = alive.iterator().next(), b = lovers.get(a);
       if (b != null
           && alive.contains(b)
-          && !team(roles.get(a)).equals(team(roles.get(b)))) {
+          && !side(a).equals(side(b))) {
         end("LOVERS", "the last two players are on different sides and in love");
         return;
       }

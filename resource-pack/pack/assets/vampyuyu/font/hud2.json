@@ -416,7 +416,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/label_aura_seer.png",
+   "file": "vampyuyu:font/hud/label_amulet.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -425,7 +425,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/label_cult_leader.png",
+   "file": "vampyuyu:font/hud/label_aura_seer.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -434,7 +434,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/label_doppel.png",
+   "file": "vampyuyu:font/hud/label_cult_leader.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -443,7 +443,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/label_ghost.png",
+   "file": "vampyuyu:font/hud/label_doppel.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -452,7 +452,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/label_hoodlum.png",
+   "file": "vampyuyu:font/hud/label_ghost.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -461,7 +461,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/label_martyr.png",
+   "file": "vampyuyu:font/hud/label_hoodlum.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -470,7 +470,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/label_old_hag.png",
+   "file": "vampyuyu:font/hud/label_martyr.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -479,7 +479,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/label_p_i.png",
+   "file": "vampyuyu:font/hud/label_old_hag.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -488,7 +488,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/label_priest.png",
+   "file": "vampyuyu:font/hud/label_p_i.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -497,7 +497,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/label_sorcerer.png",
+   "file": "vampyuyu:font/hud/label_priest.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -506,7 +506,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/label_spellcaster.png",
+   "file": "vampyuyu:font/hud/label_sorcerer.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -515,7 +515,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/label_trouble.png",
+   "file": "vampyuyu:font/hud/label_spellcaster.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -524,7 +524,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/label_vampires.png",
+   "file": "vampyuyu:font/hud/label_trouble.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -533,7 +533,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/d0.png",
+   "file": "vampyuyu:font/hud/label_vampires.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -542,7 +542,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/d1.png",
+   "file": "vampyuyu:font/hud/d0.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -551,7 +551,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/d2.png",
+   "file": "vampyuyu:font/hud/d1.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -560,7 +560,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/d3.png",
+   "file": "vampyuyu:font/hud/d2.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -569,7 +569,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/d4.png",
+   "file": "vampyuyu:font/hud/d3.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -578,7 +578,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/d5.png",
+   "file": "vampyuyu:font/hud/d4.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -587,7 +587,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/d6.png",
+   "file": "vampyuyu:font/hud/d5.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -596,7 +596,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/d7.png",
+   "file": "vampyuyu:font/hud/d6.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -605,7 +605,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/d8.png",
+   "file": "vampyuyu:font/hud/d7.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -614,7 +614,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/d9.png",
+   "file": "vampyuyu:font/hud/d8.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -623,7 +623,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/x0.png",
+   "file": "vampyuyu:font/hud/d9.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -632,7 +632,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/x1.png",
+   "file": "vampyuyu:font/hud/x0.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -641,7 +641,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/x2.png",
+   "file": "vampyuyu:font/hud/x1.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -650,7 +650,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/x3.png",
+   "file": "vampyuyu:font/hud/x2.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -659,7 +659,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/x4.png",
+   "file": "vampyuyu:font/hud/x3.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -668,7 +668,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/x5.png",
+   "file": "vampyuyu:font/hud/x4.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -677,7 +677,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/x6.png",
+   "file": "vampyuyu:font/hud/x5.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -686,7 +686,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/x7.png",
+   "file": "vampyuyu:font/hud/x6.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -695,7 +695,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/x8.png",
+   "file": "vampyuyu:font/hud/x7.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -704,7 +704,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/x9.png",
+   "file": "vampyuyu:font/hud/x8.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -713,7 +713,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/dblank.png",
+   "file": "vampyuyu:font/hud/x9.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -722,7 +722,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/dcolon.png",
+   "file": "vampyuyu:font/hud/dblank.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -731,7 +731,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/xcolon.png",
+   "file": "vampyuyu:font/hud/dcolon.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -740,7 +740,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/dslash.png",
+   "file": "vampyuyu:font/hud/xcolon.png",
    "ascent": 17,
    "height": 17,
    "chars": [
@@ -749,16 +749,16 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/s0.png",
-   "ascent": 9,
-   "height": 9,
+   "file": "vampyuyu:font/hud/dslash.png",
+   "ascent": 17,
+   "height": 17,
    "chars": [
     "\ue053"
    ]
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/s1.png",
+   "file": "vampyuyu:font/hud/s0.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -767,7 +767,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/s2.png",
+   "file": "vampyuyu:font/hud/s1.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -776,7 +776,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/s3.png",
+   "file": "vampyuyu:font/hud/s2.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -785,7 +785,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/s4.png",
+   "file": "vampyuyu:font/hud/s3.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -794,7 +794,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/s5.png",
+   "file": "vampyuyu:font/hud/s4.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -803,7 +803,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/s6.png",
+   "file": "vampyuyu:font/hud/s5.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -812,7 +812,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/s7.png",
+   "file": "vampyuyu:font/hud/s6.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -821,7 +821,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/s8.png",
+   "file": "vampyuyu:font/hud/s7.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -830,7 +830,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/s9.png",
+   "file": "vampyuyu:font/hud/s8.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -839,16 +839,16 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pframe_villager.png",
-   "ascent": 108,
-   "height": 108,
+   "file": "vampyuyu:font/hud/s9.png",
+   "ascent": 9,
+   "height": 9,
    "chars": [
     "\ue05d"
    ]
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pframe_wolf.png",
+   "file": "vampyuyu:font/hud/pframe_villager.png",
    "ascent": 108,
    "height": 108,
    "chars": [
@@ -857,7 +857,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pframe_seer.png",
+   "file": "vampyuyu:font/hud/pframe_wolf.png",
    "ascent": 108,
    "height": 108,
    "chars": [
@@ -866,7 +866,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pframe_witch.png",
+   "file": "vampyuyu:font/hud/pframe_seer.png",
    "ascent": 108,
    "height": 108,
    "chars": [
@@ -875,7 +875,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pframe_hunter.png",
+   "file": "vampyuyu:font/hud/pframe_witch.png",
    "ascent": 108,
    "height": 108,
    "chars": [
@@ -884,7 +884,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pframe_cupid.png",
+   "file": "vampyuyu:font/hud/pframe_hunter.png",
    "ascent": 108,
    "height": 108,
    "chars": [
@@ -893,7 +893,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pframe_guard.png",
+   "file": "vampyuyu:font/hud/pframe_cupid.png",
    "ascent": 108,
    "height": 108,
    "chars": [
@@ -902,7 +902,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pframe_dead.png",
+   "file": "vampyuyu:font/hud/pframe_guard.png",
    "ascent": 108,
    "height": 108,
    "chars": [
@@ -911,7 +911,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pframe_vote.png",
+   "file": "vampyuyu:font/hud/pframe_dead.png",
    "ascent": 108,
    "height": 108,
    "chars": [
@@ -920,7 +920,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pframe_sleep.png",
+   "file": "vampyuyu:font/hud/pframe_vote.png",
    "ascent": 108,
    "height": 108,
    "chars": [
@@ -929,7 +929,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pframe_danger.png",
+   "file": "vampyuyu:font/hud/pframe_sleep.png",
    "ascent": 108,
    "height": 108,
    "chars": [
@@ -938,7 +938,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pframe_ghost.png",
+   "file": "vampyuyu:font/hud/pframe_danger.png",
    "ascent": 108,
    "height": 108,
    "chars": [
@@ -947,7 +947,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pframe_vampire.png",
+   "file": "vampyuyu:font/hud/pframe_ghost.png",
    "ascent": 108,
    "height": 108,
    "chars": [
@@ -956,7 +956,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pframe_cult.png",
+   "file": "vampyuyu:font/hud/pframe_vampire.png",
    "ascent": 108,
    "height": 108,
    "chars": [
@@ -965,7 +965,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pframe_solo.png",
+   "file": "vampyuyu:font/hud/pframe_cult.png",
    "ascent": 108,
    "height": 108,
    "chars": [
@@ -974,16 +974,16 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_alpha.png",
-   "ascent": 32,
-   "height": 32,
+   "file": "vampyuyu:font/hud/pframe_solo.png",
+   "ascent": 108,
+   "height": 108,
    "chars": [
     "\ue06c"
    ]
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_apprentice.png",
+   "file": "vampyuyu:font/hud/picon_alpha.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -992,7 +992,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_aura.png",
+   "file": "vampyuyu:font/hud/picon_apprentice.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1001,7 +1001,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_bear.png",
+   "file": "vampyuyu:font/hud/picon_aura.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1010,7 +1010,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_cult.png",
+   "file": "vampyuyu:font/hud/picon_bear.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1019,7 +1019,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_cupid.png",
+   "file": "vampyuyu:font/hud/picon_cult.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1028,7 +1028,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_cursed.png",
+   "file": "vampyuyu:font/hud/picon_cupid.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1037,7 +1037,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_diseased.png",
+   "file": "vampyuyu:font/hud/picon_cursed.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1046,7 +1046,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_doppel.png",
+   "file": "vampyuyu:font/hud/picon_diseased.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1055,7 +1055,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_drunk.png",
+   "file": "vampyuyu:font/hud/picon_doppel.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1064,7 +1064,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_ghost.png",
+   "file": "vampyuyu:font/hud/picon_drunk.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1073,7 +1073,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_guard.png",
+   "file": "vampyuyu:font/hud/picon_ghost.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1082,7 +1082,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_hoodlum.png",
+   "file": "vampyuyu:font/hud/picon_guard.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1091,7 +1091,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_hunter.png",
+   "file": "vampyuyu:font/hud/picon_hoodlum.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1100,7 +1100,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_idiot.png",
+   "file": "vampyuyu:font/hud/picon_hunter.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1109,7 +1109,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_infector.png",
+   "file": "vampyuyu:font/hud/picon_idiot.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1118,7 +1118,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_lonewolf.png",
+   "file": "vampyuyu:font/hud/picon_infector.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1127,7 +1127,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_lycan.png",
+   "file": "vampyuyu:font/hud/picon_lonewolf.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1136,7 +1136,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_martyr.png",
+   "file": "vampyuyu:font/hud/picon_lycan.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1145,7 +1145,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_mason.png",
+   "file": "vampyuyu:font/hud/picon_martyr.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1154,7 +1154,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_mayor.png",
+   "file": "vampyuyu:font/hud/picon_mason.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1163,7 +1163,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_minion.png",
+   "file": "vampyuyu:font/hud/picon_mayor.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1172,7 +1172,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_hag.png",
+   "file": "vampyuyu:font/hud/picon_minion.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1181,7 +1181,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_oldman.png",
+   "file": "vampyuyu:font/hud/picon_hag.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1190,7 +1190,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_pacifist.png",
+   "file": "vampyuyu:font/hud/picon_oldman.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1199,7 +1199,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_investigator.png",
+   "file": "vampyuyu:font/hud/picon_pacifist.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1208,7 +1208,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_priest.png",
+   "file": "vampyuyu:font/hud/picon_investigator.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1217,7 +1217,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_prince.png",
+   "file": "vampyuyu:font/hud/picon_priest.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1226,7 +1226,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_scapegoat.png",
+   "file": "vampyuyu:font/hud/picon_prince.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1235,7 +1235,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_seer.png",
+   "file": "vampyuyu:font/hud/picon_scapegoat.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1244,7 +1244,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_sorcerer.png",
+   "file": "vampyuyu:font/hud/picon_seer.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1253,7 +1253,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_spellcaster.png",
+   "file": "vampyuyu:font/hud/picon_sorcerer.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1262,7 +1262,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_tanner.png",
+   "file": "vampyuyu:font/hud/picon_spellcaster.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1271,7 +1271,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_toughguy.png",
+   "file": "vampyuyu:font/hud/picon_tanner.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1280,7 +1280,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_troublemaker.png",
+   "file": "vampyuyu:font/hud/picon_toughguy.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1289,7 +1289,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_vampire.png",
+   "file": "vampyuyu:font/hud/picon_troublemaker.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1298,7 +1298,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_villager.png",
+   "file": "vampyuyu:font/hud/picon_vampire.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1307,7 +1307,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_wolf.png",
+   "file": "vampyuyu:font/hud/picon_villager.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1316,7 +1316,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_witch.png",
+   "file": "vampyuyu:font/hud/picon_wolf.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1325,7 +1325,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_cub.png",
+   "file": "vampyuyu:font/hud/picon_witch.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1334,7 +1334,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/picon_dead.png",
+   "file": "vampyuyu:font/hud/picon_cub.png",
    "ascent": 32,
    "height": 32,
    "chars": [
@@ -1343,16 +1343,16 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_alpha_wolf.png",
-   "ascent": 9,
-   "height": 9,
+   "file": "vampyuyu:font/hud/picon_dead.png",
+   "ascent": 32,
+   "height": 32,
    "chars": [
     "\ue095"
    ]
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_apprentice.png",
+   "file": "vampyuyu:font/hud/plabel_alpha_wolf.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1361,7 +1361,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_aura_seer.png",
+   "file": "vampyuyu:font/hud/plabel_apprentice.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1370,7 +1370,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_bear_tamer.png",
+   "file": "vampyuyu:font/hud/plabel_aura_seer.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1379,7 +1379,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_cult_leader.png",
+   "file": "vampyuyu:font/hud/plabel_bear_tamer.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1388,7 +1388,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_cupid.png",
+   "file": "vampyuyu:font/hud/plabel_cult_leader.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1397,7 +1397,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_cursed.png",
+   "file": "vampyuyu:font/hud/plabel_cupid.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1406,7 +1406,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_diseased.png",
+   "file": "vampyuyu:font/hud/plabel_cursed.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1415,7 +1415,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_doppel.png",
+   "file": "vampyuyu:font/hud/plabel_diseased.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1424,7 +1424,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_drunk.png",
+   "file": "vampyuyu:font/hud/plabel_doppel.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1433,7 +1433,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_ghost.png",
+   "file": "vampyuyu:font/hud/plabel_drunk.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1442,7 +1442,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_guard.png",
+   "file": "vampyuyu:font/hud/plabel_ghost.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1451,7 +1451,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_hoodlum.png",
+   "file": "vampyuyu:font/hud/plabel_guard.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1460,7 +1460,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_hunter.png",
+   "file": "vampyuyu:font/hud/plabel_hoodlum.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1469,7 +1469,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_idiot.png",
+   "file": "vampyuyu:font/hud/plabel_hunter.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1478,7 +1478,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_infector.png",
+   "file": "vampyuyu:font/hud/plabel_idiot.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1487,7 +1487,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_lone_wolf.png",
+   "file": "vampyuyu:font/hud/plabel_infector.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1496,7 +1496,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_lycan.png",
+   "file": "vampyuyu:font/hud/plabel_lone_wolf.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1505,7 +1505,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_martyr.png",
+   "file": "vampyuyu:font/hud/plabel_lycan.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1514,7 +1514,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_mason.png",
+   "file": "vampyuyu:font/hud/plabel_martyr.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1523,7 +1523,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_mayor.png",
+   "file": "vampyuyu:font/hud/plabel_mason.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1532,7 +1532,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_minion.png",
+   "file": "vampyuyu:font/hud/plabel_mayor.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1541,7 +1541,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_old_hag.png",
+   "file": "vampyuyu:font/hud/plabel_minion.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1550,7 +1550,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_old_man.png",
+   "file": "vampyuyu:font/hud/plabel_old_hag.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1559,7 +1559,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_pacifist.png",
+   "file": "vampyuyu:font/hud/plabel_old_man.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1568,7 +1568,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_p_i.png",
+   "file": "vampyuyu:font/hud/plabel_pacifist.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1577,7 +1577,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_priest.png",
+   "file": "vampyuyu:font/hud/plabel_p_i.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1586,7 +1586,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_prince.png",
+   "file": "vampyuyu:font/hud/plabel_priest.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1595,7 +1595,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_scapegoat.png",
+   "file": "vampyuyu:font/hud/plabel_prince.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1604,7 +1604,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_seer.png",
+   "file": "vampyuyu:font/hud/plabel_scapegoat.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1613,7 +1613,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_sorcerer.png",
+   "file": "vampyuyu:font/hud/plabel_seer.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1622,7 +1622,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_spellcaster.png",
+   "file": "vampyuyu:font/hud/plabel_sorcerer.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1631,7 +1631,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_tanner.png",
+   "file": "vampyuyu:font/hud/plabel_spellcaster.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1640,7 +1640,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_tough_guy.png",
+   "file": "vampyuyu:font/hud/plabel_tanner.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1649,7 +1649,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_trouble.png",
+   "file": "vampyuyu:font/hud/plabel_tough_guy.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1658,7 +1658,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_vampire.png",
+   "file": "vampyuyu:font/hud/plabel_trouble.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1667,7 +1667,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_villager.png",
+   "file": "vampyuyu:font/hud/plabel_vampire.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1676,7 +1676,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_werewolf.png",
+   "file": "vampyuyu:font/hud/plabel_villager.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1685,7 +1685,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_witch.png",
+   "file": "vampyuyu:font/hud/plabel_werewolf.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1694,7 +1694,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_wolf_cub.png",
+   "file": "vampyuyu:font/hud/plabel_witch.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1703,7 +1703,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/plabel_fallen.png",
+   "file": "vampyuyu:font/hud/plabel_wolf_cub.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1712,7 +1712,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pteam_wolf_pack.png",
+   "file": "vampyuyu:font/hud/plabel_fallen.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1721,7 +1721,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pteam_village.png",
+   "file": "vampyuyu:font/hud/pteam_wolf_pack.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1730,7 +1730,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pteam_the_cult.png",
+   "file": "vampyuyu:font/hud/pteam_village.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1739,7 +1739,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pteam_alone.png",
+   "file": "vampyuyu:font/hud/pteam_the_cult.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1748,7 +1748,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pteam_wolf_side.png",
+   "file": "vampyuyu:font/hud/pteam_alone.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1757,7 +1757,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pteam_vampires.png",
+   "file": "vampyuyu:font/hud/pteam_wolf_side.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1766,7 +1766,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/pteam_out.png",
+   "file": "vampyuyu:font/hud/pteam_vampires.png",
    "ascent": 9,
    "height": 9,
    "chars": [
@@ -1775,16 +1775,16 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/dot_alive.png",
-   "ascent": 8,
-   "height": 8,
+   "file": "vampyuyu:font/hud/pteam_out.png",
+   "ascent": 9,
+   "height": 9,
    "chars": [
     "\ue0c5"
    ]
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/dot_dead.png",
+   "file": "vampyuyu:font/hud/dot_alive.png",
    "ascent": 8,
    "height": 8,
    "chars": [
@@ -1793,7 +1793,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/dot_me.png",
+   "file": "vampyuyu:font/hud/dot_dead.png",
    "ascent": 8,
    "height": 8,
    "chars": [
@@ -1802,7 +1802,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/dot_ballot.png",
+   "file": "vampyuyu:font/hud/dot_me.png",
    "ascent": 8,
    "height": 8,
    "chars": [
@@ -1811,7 +1811,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/dot_mate.png",
+   "file": "vampyuyu:font/hud/dot_ballot.png",
    "ascent": 8,
    "height": 8,
    "chars": [
@@ -1820,16 +1820,16 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/badge_lover.png",
-   "ascent": 12,
-   "height": 12,
+   "file": "vampyuyu:font/hud/dot_mate.png",
+   "ascent": 8,
+   "height": 8,
    "chars": [
     "\ue0ca"
    ]
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/badge_life.png",
+   "file": "vampyuyu:font/hud/badge_lover.png",
    "ascent": 12,
    "height": 12,
    "chars": [
@@ -1838,7 +1838,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/badge_death.png",
+   "file": "vampyuyu:font/hud/badge_life.png",
    "ascent": 12,
    "height": 12,
    "chars": [
@@ -1847,7 +1847,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/badge_infect.png",
+   "file": "vampyuyu:font/hud/badge_death.png",
    "ascent": 12,
    "height": 12,
    "chars": [
@@ -1856,7 +1856,7 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/hud/badge_guard.png",
+   "file": "vampyuyu:font/hud/badge_infect.png",
    "ascent": 12,
    "height": 12,
    "chars": [
@@ -1865,11 +1865,20 @@
   },
   {
    "type": "bitmap",
+   "file": "vampyuyu:font/hud/badge_guard.png",
+   "ascent": 12,
+   "height": 12,
+   "chars": [
+    "\ue0cf"
+   ]
+  },
+  {
+   "type": "bitmap",
    "file": "vampyuyu:font/hud/vframe_calm.png",
    "ascent": 30,
    "height": 30,
    "chars": [
-    "\ue0cf"
+    "\ue0d0"
    ]
   },
   {
@@ -1878,7 +1887,7 @@
    "ascent": 30,
    "height": 30,
    "chars": [
-    "\ue0d0"
+    "\ue0d1"
    ]
   },
   {
@@ -1943,7 +1952,7 @@
     "\uf038": -137,
     "\uf039": -137,
     "\uf03a": -137,
-    "\uf03b": -13,
+    "\uf03b": -137,
     "\uf03c": -13,
     "\uf03d": -13,
     "\uf03e": -13,
@@ -1964,10 +1973,10 @@
     "\uf04d": -13,
     "\uf04e": -13,
     "\uf04f": -13,
-    "\uf050": -7,
+    "\uf050": -13,
     "\uf051": -7,
-    "\uf052": -9,
-    "\uf053": -8,
+    "\uf052": -7,
+    "\uf053": -9,
     "\uf054": -8,
     "\uf055": -8,
     "\uf056": -8,
@@ -1977,7 +1986,7 @@
     "\uf05a": -8,
     "\uf05b": -8,
     "\uf05c": -8,
-    "\uf05d": -129,
+    "\uf05d": -8,
     "\uf05e": -129,
     "\uf05f": -129,
     "\uf060": -129,
@@ -1992,7 +2001,7 @@
     "\uf069": -129,
     "\uf06a": -129,
     "\uf06b": -129,
-    "\uf06c": -33,
+    "\uf06c": -129,
     "\uf06d": -33,
     "\uf06e": -33,
     "\uf06f": -33,
@@ -2033,7 +2042,7 @@
     "\uf092": -33,
     "\uf093": -33,
     "\uf094": -33,
-    "\uf095": -69,
+    "\uf095": -33,
     "\uf096": -69,
     "\uf097": -69,
     "\uf098": -69,
@@ -2081,18 +2090,19 @@
     "\uf0c2": -69,
     "\uf0c3": -69,
     "\uf0c4": -69,
-    "\uf0c5": -6,
+    "\uf0c5": -69,
     "\uf0c6": -6,
     "\uf0c7": -6,
     "\uf0c8": -6,
     "\uf0c9": -6,
-    "\uf0ca": -13,
+    "\uf0ca": -6,
     "\uf0cb": -13,
     "\uf0cc": -13,
     "\uf0cd": -13,
     "\uf0ce": -13,
-    "\uf0cf": -129,
-    "\uf0d0": -129
+    "\uf0cf": -13,
+    "\uf0d0": -129,
+    "\uf0d1": -129
    }
   }
  ]
