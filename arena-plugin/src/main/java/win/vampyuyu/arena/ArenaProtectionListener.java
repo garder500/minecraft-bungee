@@ -27,7 +27,8 @@ public final class ArenaProtectionListener implements Listener {
 
   private boolean inside(ArenaSession s, Location l) {
     return l.getWorld().getName().equals(s.config.worldName())
-        && s.config.bounds().contains(l.getX(), l.getY(), l.getZ());
+            && s.config.bounds().contains(l.getX(), l.getY(), l.getZ())
+        || s.hooks.hosts(s, l);
   }
 
   private boolean eliminated(Player p, ArenaSession s) {

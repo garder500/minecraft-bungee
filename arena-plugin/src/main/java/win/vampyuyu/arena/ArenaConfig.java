@@ -12,7 +12,7 @@ import org.bukkit.*;
 
 /**
  * A zone and its life-cycle limits; nothing here knows what game runs inside. Whatever is specific
- * to a game (Werewolf rules, free-play objectives, places, timers) lives in {@link Options}, which
+ * to a game (Werewolf rules, free-play objectives, timers) lives in {@link Options}, which
  * the game's {@link ArenaPreset} parses and validates.
  *
  * <p>On disk and on the wire the options sit flat beside the generic fields, exactly as every file

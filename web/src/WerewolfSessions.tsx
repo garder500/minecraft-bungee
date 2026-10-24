@@ -330,9 +330,9 @@ export function WerewolfSessions({
                     </button>
                   </div>
                   <p className="console-note">
-                    Each game runs on its own platform; the village, houses and
-                    meeting places are set up in game with <code>/ww place</code>
-                    . Saving settings never touches them.
+                    Each game runs on its own flying platform around a campfire,
+                    built when it starts and removed when it ends; players wait
+                    in this zone until then. Saving settings never touches it.
                   </p>
                   {current.phase === "WAITING" && (
                     <section

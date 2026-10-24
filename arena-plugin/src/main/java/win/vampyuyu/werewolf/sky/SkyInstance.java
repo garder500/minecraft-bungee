@@ -7,6 +7,7 @@ import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -127,6 +128,16 @@ public final class SkyInstance {
       return done;
     }
     AtomicInteger left = new AtomicInteger(byChunk.size());
+    // The future only completes once every chunk task is over, even after a failure: a slot is
+    // reused as soon as its clear() future completes, so no write of the old platform may be pending.
+    AtomicReference<Throwable> failure = new AtomicReference<>();
+    Runnable finished =
+        () -> {
+          if (left.decrementAndGet() != 0) return;
+          Throwable first = failure.get();
+          if (first != null) done.completeExceptionally(first);
+          else done.complete(null);
+        };
     for (var entry : byChunk.entrySet()) {
       int cx = (int) (entry.getKey() >> 32), cz = (int) (long) entry.getKey();
       List<Runnable> tasks = entry.getValue();
@@ -138,19 +149,19 @@ public final class SkyInstance {
                 try {
                   t.run();
                 } catch (RuntimeException e) {
-                  done.completeExceptionally(e);
+                  failure.compareAndSet(null, e);
                 }
               }
             } finally {
-              if (left.decrementAndGet() == 0) done.complete(null);
+              finished.run();
             }
           };
       try {
         runner.run(cx, cz, chunk);
       } catch (RuntimeException e) {
         // The scheduler refused this chunk: count it as finished so the future still completes.
-        done.completeExceptionally(e);
-        if (left.decrementAndGet() == 0) done.complete(null);
+        failure.compareAndSet(null, e);
+        finished.run();
       }
     }
     return done;

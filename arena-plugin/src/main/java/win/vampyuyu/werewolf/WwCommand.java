@@ -13,15 +13,16 @@ import win.vampyuyu.arena.ArenaConfig;
 import win.vampyuyu.arena.ArenaManager;
 import win.vampyuyu.arena.ArenaSession;
 import win.vampyuyu.arena.NexusArenaEngine;
+import win.vampyuyu.werewolf.sky.PlatformLayout;
+import win.vampyuyu.werewolf.sky.SkyWorld;
 
 /**
- * /ww: werewolf management. Admins set the places (seats, vote circle), the cast
- * and the timers, start and stop games, and drive practice games and tests; players only vote.
+ * /ww: werewolf management. Admins set the cast and the timers, start and stop games, and drive practice games and tests; players only vote.
  */
 public final class WwCommand implements CommandExecutor, TabCompleter {
   private static final List<String> ADMIN =
       List.of(
-          "use", "status", "place", "cast", "time", "rules", "start", "stop", "practice", "phase", "force",
+          "use", "status", "cast", "time", "rules", "start", "stop", "practice", "phase", "force",
           "check", "reload", "act", "click", "peek", "players", "help");
   private static final Map<String, String> ALIASES =
       Map.ofEntries(
@@ -91,23 +92,6 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
     throw new IllegalArgumentException("Nobody called " + token + " in this arena");
   }
 
-  private ArenaConfig.Spawn here(CommandSender sender, String[] args, int from, String id, boolean sit) {
-    if (args.length >= from + 3) {
-      double x = Double.parseDouble(args[from]);
-      double y = Double.parseDouble(args[from + 1]);
-      double z = Double.parseDouble(args[from + 2]);
-      float yaw = args.length > from + 3 ? Float.parseFloat(args[from + 3]) : 0f;
-      return new ArenaConfig.Spawn(x, y, z, yaw, 0f);
-    }
-    if (sender instanceof Player p) {
-      plugin.admin.point(p, id); // checks the arena and the world
-      var looked = p.getTargetBlockExact(10);
-      if (looked != null) return PlaceController.onBlock(looked, sit);
-      return plugin.admin.point(p, id);
-    }
-    throw new IllegalArgumentException("From the console give coordinates: <x> <y> <z> [yaw]");
-  }
-
   private void done(CommandSender sender, CompletableFuture<?> future, String ok) {
     future.whenComplete(
         (v, e) -> {
@@ -149,7 +133,6 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
           say(sender, "Arena selected: " + args[1]);
         }
         case "status" -> status(sender);
-        case "place" -> place(sender, args);
         case "cast" -> cast(sender, args);
         case "time" -> time(sender, args);
         case "rules" -> rules(sender, args);
@@ -182,8 +165,6 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
     for (String line :
         List.of(
             "/ww use <arena> · status · check · reload",
-            "/ww place add seat <sit|stand> [name] [x y z yaw] · set circle [x y z]   (look at a block, or give coordinates)",
-            "/ww place list · remove <name> · tp <name> · clear",
             "/ww cast set wolf:2 alpha:1 seer:1 ... · auto · show · roles",
             "/ww time set discussion|vote|night|cupid|witch|hunter <seconds>",
             "/ww start · stop · practice <bots> [player] · phase skip",
@@ -218,11 +199,13 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
         sender,
         c.id() + ": " + s.phase() + " · players " + s.players.size() + "/" + c.maxPlayers()
             + " (min " + c.minPlayers() + ")" + (s.bots.isEmpty() ? "" : " · " + s.bots.size() + " bots"));
-    var p = WerewolfOptions.of(c).places();
+    var platform = WerewolfSession.of(s).platform;
     say(
         sender,
-        "Places: " + p.seats().size() + " seats, circle " + (p.circle() != null ? "set" : "missing")
-            );
+        "Sky platform: "
+            + (platform == null
+                ? "none (built when the game starts)"
+                : "slot " + platform.slot().index() + " · " + platform.players() + " seats"));
     say(sender, "Cast: " + (WerewolfOptions.of(c).rules().roles().isEmpty() ? "automatic" : WerewolfOptions.of(c).rules().roles()));
     say(
         sender,
@@ -238,94 +221,14 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
   private void check(CommandSender sender) {
     String id = arena(sender);
     ArenaConfig c = plugin.arenas.require(id).config;
-    String missing = WerewolfOptions.of(c).places().missing(c.minPlayers());
-    say(sender, missing == null ? "Places: ready" : "Not ready: " + missing);
-    plugin.werewolf
-        .places
-        .problems(c)
-        .thenAccept(
-            found -> {
-              if (found.isEmpty()) say(sender, "Safety check: every place is usable");
-              for (String line : found) sender.sendMessage(Component.text(line, NamedTextColor.RED));
-            });
-  }
-
-  // ------------------------------------------------------------------- places
-
-  private void place(CommandSender sender, String[] args) throws Exception {
-    need(args, 2, "/ww place add|set|list|remove|tp|clear");
-    String id = arena(sender);
-    ArenaConfig c = plugin.arenas.require(id).config;
-    switch (args[1].toLowerCase(Locale.ROOT)) {
-      case "add" -> {
-        need(args, 3, "/ww place add seat <sit|stand> [name] [x y z yaw]");
-        boolean sit = args.length < 4 || !args[3].equalsIgnoreCase("stand");
-        int next = WerewolfOptions.of(c).places().seats().size() + 1;
-        Set<String> names = new HashSet<>();
-        for (var seat : WerewolfOptions.of(c).places().seats()) names.add(seat.name());
-        String name = "seat-" + next;
-        int coordsAt = 4;
-        if (args.length > 4 && !args[4].matches("-?[0-9.]+")) {
-          name = args[4];
-          coordsAt = 5;
-        } else while (names.contains(name)) name = "seat-" + (++next);
-        var at = here(sender, args, coordsAt, id, sit);
-        final String chosen = name;
-        plugin.admin.change(
-            id,
-            j ->
-                j.getAsJsonObject("places")
-                    .getAsJsonArray("seats")
-                    .add(ArenaManager.JSON.toJsonTree(new Seat(chosen, at, sit))));
-        say(sender, "Seat " + chosen + (sit ? " (sit)" : " (stand)") + " added: " + (WerewolfOptions.of(c).places().seats().size() + 1) + " seats");
-      }
-      case "set" -> {
-        need(args, 3, "/ww place set circle [x y z]");
-        if (!args[2].equalsIgnoreCase("circle")) throw new IllegalArgumentException("Use circle");
-        var at = here(sender, args, 3, id, false);
-        plugin.admin.change(id, j -> j.getAsJsonObject("places").add("circle", ArenaManager.JSON.toJsonTree(at)));
-        say(sender, "circle set");
-      }
-      case "list" -> {
-        var p = WerewolfOptions.of(c).places();
-        for (var seat : p.seats())
-          say(sender, seat.name() + " " + (seat.sit() ? "sit" : "stand") + " " + coords(seat.at()));
-        say(sender, "circle " + (p.circle() == null ? "-" : coords(p.circle())));
-      }
-      case "remove" -> {
-        need(args, 3, "/ww place remove <name>");
-        String name = args[2];
-        if (WerewolfOptions.of(c).places().seats().stream().noneMatch(seat -> seat.name().equals(name)))
-          throw new IllegalArgumentException("No seat called " + name);
-        plugin.admin.change(
-            id,
-            j -> {
-              var array = j.getAsJsonObject("places").getAsJsonArray("seats");
-              for (int i = 0; i < array.size(); i++)
-                if (array.get(i).getAsJsonObject().get("name").getAsString().equals(name)) {
-                  array.remove(i);
-                  break;
-                }
-            });
-        say(sender, "Seat " + name + " removed");
-      }
-      case "tp" -> {
-        need(args, 3, "/ww place tp <name>");
-        if (!(sender instanceof Player p)) throw new IllegalArgumentException("Players only");
-        var seat = WerewolfOptions.of(c).places().seats().stream().filter(x -> x.name().equals(args[2])).findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("No seat called " + args[2]));
-        p.teleportAsync(new Location(Bukkit.getWorld(c.worldName()), seat.at().x(), seat.at().y(), seat.at().z(), seat.at().yaw(), seat.at().pitch()));
-      }
-      case "clear" -> {
-        plugin.admin.change(id, j -> j.add("places", ArenaManager.JSON.toJsonTree(Places.defaults())));
-        say(sender, "Places cleared");
-      }
-      default -> throw new IllegalArgumentException("Use add, set, list, remove, tp or clear");
-    }
-  }
-
-  private static String coords(ArenaConfig.Spawn s) {
-    return String.format(Locale.ROOT, "(%.1f, %.1f, %.1f)", s.x(), s.y(), s.z());
+    String problem = plugin.werewolf.stage.problem(Math.max(c.minPlayers(), PlatformLayout.MIN_PLAYERS));
+    say(
+        sender,
+        problem == null
+            ? "Sky platform: ready (world " + SkyWorld.NAME + ")"
+            : "Not ready: " + problem);
+    if (problem != null && plugin.werewolf.skyError() != null)
+      sender.sendMessage(Component.text(plugin.werewolf.skyError(), NamedTextColor.RED));
   }
 
   // --------------------------------------------------------------------- cast

@@ -22,8 +22,9 @@ import win.vampyuyu.arena.CompassMenuHolder;
 import win.vampyuyu.arena.GameHooks;
 import win.vampyuyu.arena.NexusArenaEngine;
 import win.vampyuyu.werewolf.ambience.WerewolfPresentation;
+import win.vampyuyu.werewolf.sky.PlatformHandle;
 
-/** What Werewolf adds around the arena life cycle: scenery, places, bots, menus and the journal. */
+/** What Werewolf adds around the arena life cycle: scenery, the sky platform, bots, menus and the journal. */
 public final class WerewolfHooks implements GameHooks {
   private final NexusArenaEngine plugin;
   private final WerewolfModule module;
@@ -37,7 +38,7 @@ public final class WerewolfHooks implements GameHooks {
 
   @Override
   public String canStart(ArenaSession s) {
-    return WerewolfOptions.of(s.config).places().missing(s.players.size());
+    return module.stage.problem(s.players.size());
   }
 
   @Override
@@ -50,6 +51,10 @@ public final class WerewolfHooks implements GameHooks {
     w.ambienceFinale = false;
     w.seats.clear();
     w.placed.clear();
+    // A platform whose stop never finished must not keep its slot for ever.
+    PlatformHandle leftover = w.platform;
+    w.platform = null;
+    if (leftover != null) module.stage.close(leftover);
   }
 
   @Override
@@ -76,7 +81,12 @@ public final class WerewolfHooks implements GameHooks {
 
   @Override
   public CompletableFuture<Void> opening(ArenaSession s) {
-    return module.places.prepare(s).thenCompose(v -> module.places.present(s, "WAITING"));
+    // The platform is built first; nobody is moved before it stands.
+    return module
+        .stage
+        .open(s.players.size(), platform -> WerewolfSession.of(s).platform = platform)
+        .thenCompose(platform -> module.places.prepare(s, platform))
+        .thenCompose(v -> module.places.present(s, "WAITING"));
   }
 
   @Override
@@ -148,7 +158,35 @@ public final class WerewolfHooks implements GameHooks {
 
   @Override
   public CompletableFuture<Void> released(ArenaSession s) {
-    return module.places.restore(s);
+    WerewolfSession w = WerewolfSession.of(s);
+    // The players are back: only now the platform under them can go and its slot be reused.
+    return module
+        .places
+        .restore(s)
+        .handle((v, e) -> e)
+        .thenCompose(
+            error -> {
+              PlatformHandle platform = w.platform;
+              w.platform = null;
+              return module
+                  .stage
+                  .close(platform)
+                  .handle(
+                      (v, e) -> {
+                        // A platform that cannot be cleared keeps its slot; it never fails the stop.
+                        if (e != null)
+                          w.journal.log(
+                              "ERROR", "Platform not cleared: " + NexusArenaEngine.reason(e));
+                        if (error != null) throw new java.util.concurrent.CompletionException(error);
+                        return (Void) null;
+                      });
+            });
+  }
+
+  @Override
+  public boolean hosts(ArenaSession s, org.bukkit.Location where) {
+    PlatformHandle platform = WerewolfSession.of(s).platform;
+    return platform != null && platform.covers(where);
   }
 
   @Override

@@ -5,13 +5,14 @@ import com.google.gson.JsonObject;
 import win.vampyuyu.arena.ArenaConfig;
 
 /**
- * The Werewolf side of an arena's {@linkplain ArenaConfig#options() options}: the rules, the places
- * and the phase timers, parsed (and validated against the zone) once per configuration. Files keep
- * these flat beside the generic fields: {@code werewolf}, {@code places}, {@code
- * discussionSeconds}, {@code voteSeconds}, {@code nightSeconds}.
+ * The Werewolf side of an arena's {@linkplain ArenaConfig#options() options}: the rules and the
+ * phase timers, parsed once per configuration. Files keep these flat beside the generic fields:
+ * {@code werewolf}, {@code discussionSeconds}, {@code voteSeconds}, {@code nightSeconds}. A {@code
+ * places} key written by older versions is ignored here and kept untouched in the file (the seats
+ * now come from the sky platform).
  */
 public record WerewolfOptions(
-    WerewolfRules rules, Places places, int discussionSeconds, int voteSeconds, int nightSeconds) {
+    WerewolfRules rules, int discussionSeconds, int voteSeconds, int nightSeconds) {
   private static final Gson GSON = new Gson();
 
   public static final int DISCUSSION = 60, VOTE = 30, NIGHT = 30;
@@ -22,16 +23,6 @@ public record WerewolfOptions(
   }
 
   private static WerewolfOptions parse(ArenaConfig c, JsonObject json) {
-    Places places = json.has("places") ? GSON.fromJson(json.get("places"), Places.class) : null;
-    places = places == null ? Places.defaults() : places;
-    for (var p : places.points())
-      if (!Double.isFinite(p.x())
-          || !Double.isFinite(p.y())
-          || !Double.isFinite(p.z())
-          || !Float.isFinite(p.yaw())
-          || !Float.isFinite(p.pitch())
-          || !c.bounds().contains(p.x(), p.y(), p.z()))
-        throw new IllegalArgumentException("Places must be inside the arena");
     WerewolfRules rules =
         json.has("werewolf") ? GSON.fromJson(json.get("werewolf"), WerewolfRules.class) : null;
     rules = rules == null ? WerewolfRules.defaults() : rules;
@@ -52,7 +43,7 @@ public record WerewolfOptions(
       throw new IllegalArgumentException("Invalid phase durations");
     // Werewolf is a social deduction game; PvP must not bypass the secret ballot.
     if (c.allowPvP()) throw new IllegalArgumentException("Werewolf requires PvP disabled");
-    return new WerewolfOptions(rules, places, discussion, vote, night);
+    return new WerewolfOptions(rules, discussion, vote, night);
   }
 
   private static int number(JsonObject json, String key, int fallback) {

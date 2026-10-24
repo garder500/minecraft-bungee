@@ -49,7 +49,7 @@ export type Config = {
     daypoint?: Spawn;
     doors: { x: number; y: number; z: number }[];
   };
-  /** Places set up in game with /ww place; only the plugin understands them, the panel passes them through. */
+  /** Seats and vote circle of older arena files; ignored by the plugin now, passed through untouched by the panel. */
   places?: unknown;
   rewards?: { participation: number; victory: number };
   /** Opaque game-specific settings owned by the plugin; always round-tripped untouched. */

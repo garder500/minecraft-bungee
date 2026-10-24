@@ -80,10 +80,7 @@ public final class WerewolfPreset implements ArenaPreset {
                 ? WerewolfOptions.DISCUSSION
                 : timer.equals("voteSeconds") ? WerewolfOptions.VOTE : WerewolfOptions.NIGHT);
     if (!out.has("werewolf")) out.add("werewolf", GSON.toJsonTree(WerewolfRules.defaults()));
-    if (!out.has("places")) out.add("places", GSON.toJsonTree(Places.defaults()));
-    // The admin tools append to the list: it must be there. Unknown keys stay untouched.
-    if (out.get("places") instanceof JsonObject places && !places.has("seats"))
-      places.add("seats", new JsonArray());
+    // A "places" block of an older file is left exactly as it is: nothing here reads it any more.
     return out;
   }
 
@@ -94,7 +91,6 @@ public final class WerewolfPreset implements ArenaPreset {
     o.addProperty("voteSeconds", WerewolfOptions.VOTE);
     o.addProperty("nightSeconds", WerewolfOptions.NIGHT);
     o.add("werewolf", GSON.toJsonTree(WerewolfRules.defaults()));
-    o.add("places", GSON.toJsonTree(Places.defaults()));
     return o;
   }
 }

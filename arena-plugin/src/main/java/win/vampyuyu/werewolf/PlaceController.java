@@ -7,13 +7,13 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.*;
 import org.bukkit.entity.*;
 import org.bukkit.potion.*;
-import win.vampyuyu.arena.ArenaConfig;
 import win.vampyuyu.arena.ArenaSession;
 import win.vampyuyu.arena.NexusArenaEngine;
+import win.vampyuyu.werewolf.sky.PlatformHandle;
 
 /**
- * Owns the spatial side of a game: seats around the vote circle (sit or stand), the wolves' den,
- * night spots, the practice bots' bodies, and the night effects. Game state stays Bukkit-free.
+ * Owns the spatial side of a game: the seats around the campfire of the sky platform (sit or
+ * stand), the practice bots' bodies, and the night effects. Game state stays Bukkit-free.
  */
 public final class PlaceController {
   private final NexusArenaEngine plugin;
@@ -78,57 +78,6 @@ public final class PlaceController {
     return null;
   }
 
-  private static String where(String what, double x, double y, double z) {
-    return String.format(Locale.ROOT, "%s (%.0f, %.0f, %.0f)", what, x, y, z);
-  }
-
-  /** Everything that would make the places unusable, found without moving anyone. */
-  public CompletableFuture<List<String>> problems(ArenaConfig c) {
-    var places = WerewolfOptions.of(c).places();
-    World w = Bukkit.getWorld(c.worldName());
-    if (w == null)
-      return CompletableFuture.completedFuture(List.of("World " + c.worldName() + " is not loaded"));
-    List<CompletableFuture<String>> checks = new ArrayList<>();
-    java.util.function.BiConsumer<String, ArenaConfig.Spawn> point =
-        (name, p) -> {
-          if (p == null) return;
-          checks.add(
-              region(
-                  w,
-                  p.x(),
-                  p.z(),
-                  () -> {
-                    String why = unsafe(new Location(w, p.x(), p.y(), p.z()));
-                    return why == null ? null : where(name, p.x(), p.y(), p.z()) + ": " + why;
-                  }));
-        };
-    for (var seat : places.seats()) point.accept("Seat " + seat.name(), seat.at());
-    point.accept("Vote circle", places.circle());
-    return CompletableFuture.allOf(checks.toArray(CompletableFuture[]::new))
-        .thenApply(
-            v -> checks.stream().map(CompletableFuture::join).filter(Objects::nonNull).toList());
-  }
-
-  /**
-   * Height above the block's base where someone sits (or stands) on it: half a block on bottom
-   * slabs and bottom stairs, a whole block on top ones and full blocks, the collision height otherwise.
-   */
-  public static double surface(org.bukkit.block.Block block, boolean sit) {
-    var data = block.getBlockData();
-    if (data instanceof org.bukkit.block.data.type.Stairs stairs)
-      return sit ? (stairs.getHalf() == org.bukkit.block.data.Bisected.Half.BOTTOM ? 0.5 : 1.0) : 1.0;
-    if (data instanceof org.bukkit.block.data.type.Slab slab)
-      return slab.getType() == org.bukkit.block.data.type.Slab.Type.BOTTOM ? 0.5 : 1.0;
-    double top = 0;
-    for (var box : block.getCollisionShape().getBoundingBoxes()) top = Math.max(top, box.getMaxY());
-    return top > 0 ? top : 1.0;
-  }
-
-  /** The seat or stand spot on the top of a block: its centre, at the surface height. */
-  public static ArenaConfig.Spawn onBlock(org.bukkit.block.Block block, boolean sit) {
-    return new ArenaConfig.Spawn(block.getX() + 0.5, block.getY() + surface(block, sit), block.getZ() + 0.5, 0f, 0f);
-  }
-
   public boolean sleeping(Player p) {
     var s = plugin.arenas.session(p.getUniqueId());
     return s != null
@@ -157,46 +106,35 @@ public final class PlaceController {
         && !releasing.contains(p.getUniqueId());
   }
 
-  /** Assigns the seats at random and checks they are usable. */
-  public CompletableFuture<Void> prepare(ArenaSession s) {
-    var places = WerewolfOptions.of(s.config).places();
+  /** Assigns the platform's seats at random and gives the practice bots their bodies. */
+  public CompletableFuture<Void> prepare(ArenaSession s, PlatformHandle platform) {
     WerewolfSession.of(s).seats.clear();
     WerewolfSession.of(s).placed.clear();
-    if (places.seats().isEmpty() || !(s.game instanceof WerewolfGame))
+    if (!(s.game instanceof WerewolfGame wolf))
       return CompletableFuture.completedFuture(null);
-    String missing = places.missing(s.players.size());
-    if (missing != null)
-      return CompletableFuture.failedFuture(new IllegalArgumentException(missing));
-    return problems(s.config)
-        .thenCompose(
-            found -> {
-              if (!found.isEmpty())
-                return CompletableFuture.<Void>failedFuture(
-                    new IllegalArgumentException(
-                        "Places problems: "
-                            + String.join("; ", found.stream().limit(4).toList())
-                            + (found.size() > 4 ? " (+" + (found.size() - 4) + " more)" : "")));
-              List<Seat> pool = new ArrayList<>(places.seats());
-              Collections.shuffle(pool);
-              int i = 0;
-              for (UUID id : s.players.keySet()) WerewolfSession.of(s).seats.put(id, pool.get(i++));
-              // The table order around the circle is the order of the configured seats.
-              List<UUID> ring = new ArrayList<>(WerewolfSession.of(s).seats.keySet());
-              ring.sort(Comparator.comparingInt(id -> places.seats().indexOf(WerewolfSession.of(s).seats.get(id))));
-              if (s.game instanceof WerewolfGame wolf) wolf.ring(ring);
-              return spawnBodies(s);
-            });
+    SeatPlan plan;
+    try {
+      plan =
+          SeatPlan.assign(
+              s.players.keySet(),
+              platform.seats().stream().map(at -> new SeatSpot(at, true)).toList(),
+              new Random());
+    } catch (IllegalArgumentException e) {
+      return CompletableFuture.failedFuture(e);
+    }
+    WerewolfSession.of(s).seats.putAll(plan.seats());
+    wolf.ring(plan.ring());
+    return spawnBodies(s);
   }
 
   /** Practice bots get a mannequin at their seat: something to look at and click. */
   private CompletableFuture<Void> spawnBodies(ArenaSession s) {
-    World w = Bukkit.getWorld(s.config.worldName());
-    if (w == null) return CompletableFuture.completedFuture(null);
     List<CompletableFuture<?>> tasks = new ArrayList<>();
     for (UUID bot : s.bots) {
-      Seat seat = WerewolfSession.of(s).seats.get(bot);
+      SeatSpot seat = WerewolfSession.of(s).seats.get(bot);
       if (seat == null) continue;
-      Location at = faced(s, seat.at(), w);
+      Location at = seat.at().clone();
+      World w = at.getWorld();
       String name = s.players.getOrDefault(bot, "Bot");
       tasks.add(
           region(
@@ -225,17 +163,6 @@ public final class PlaceController {
     return CompletableFuture.allOf(tasks.toArray(CompletableFuture[]::new));
   }
 
-  /** A seat's position turned towards the vote circle, when there is one. */
-  public Location faced(ArenaSession s, ArenaConfig.Spawn p, World w) {
-    float yaw = p.yaw();
-    var circle = WerewolfOptions.of(s.config).places().circle();
-    if (circle != null) {
-      double dx = circle.x() - p.x(), dz = circle.z() - p.z();
-      if (dx * dx + dz * dz > 0.25) yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
-    }
-    return new Location(w, p.x(), p.y(), p.z(), yaw, circle != null ? 0f : p.pitch());
-  }
-
   /** Removes the bots' bodies and the chairs; safe to call twice. */
   public CompletableFuture<Void> restore(ArenaSession s) {
     List<CompletableFuture<?>> tasks = new ArrayList<>();
@@ -253,7 +180,9 @@ public final class PlaceController {
 
   private CompletableFuture<Void> removeEntity(Entity e) {
     CompletableFuture<Void> f = new CompletableFuture<>();
-    e.getScheduler()
+    // run() returns null (and calls neither callback) for an entity that is already gone, e.g. a
+    // practice body whose chunk unloaded once the last human left the sky world.
+    var handle = e.getScheduler()
         .run(
             plugin,
             t -> {
@@ -261,6 +190,7 @@ public final class PlaceController {
               f.complete(null);
             },
             () -> f.complete(null));
+    if (handle == null) f.complete(null);
     return f;
   }
 
@@ -314,14 +244,28 @@ public final class PlaceController {
   }
 
   private CompletableFuture<Void> goTo(Player p, ArenaSession s, UUID id) {
-    World w = Bukkit.getWorld(s.config.worldName());
     var seat = WerewolfSession.of(s).seats.get(id);
-    if (w == null || seat == null) return CompletableFuture.completedFuture(null);
-    final Location destination = faced(s, seat.at(), w);
+    var platform = WerewolfSession.of(s).platform;
+    if (seat == null || platform == null) return CompletableFuture.completedFuture(null);
+    final Location destination = seat.at().clone();
     final boolean seatIt = seat.sit();
     return release(s, p)
+        // The player's own border follows them first: the zone's border would refuse the sky.
+        .thenCompose(v -> plugin.onPlayer(p, () -> fence(p, platform)))
         .thenCompose(v -> teleport(p, s, destination))
         .thenCompose(v -> seatIt ? sitDown(p, s, destination) : CompletableFuture.completedFuture(null));
+  }
+
+  /** A border inside the platform, only this player sees it (the snapshot restore removes it). */
+  private Void fence(Player p, PlatformHandle platform) {
+    WorldBorder border = Bukkit.createWorldBorder();
+    border.setCenter(platform.slot().centreX() + 0.5, platform.slot().centreZ() + 0.5);
+    // A safety net inside the rim: seated players do not move, but nobody may reach the edge.
+    border.setSize((platform.platformRadius() - 1.5) * 2);
+    border.setWarningDistance(0);
+    border.setDamageAmount(0);
+    p.setWorldBorder(border);
+    return null;
   }
 
   /** Gets the player off their chair, if they are on one. */
