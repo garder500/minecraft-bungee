@@ -35,7 +35,7 @@ final class CourtModule implements RoleModule {
   public int weight(WerewolfGame g, UUID voter) {
     if (!g.phase().equals("DAY_VOTE") && !g.phase().equals("TRIAL")) return 1;
     return switch (g.roleOf(voter)) {
-      case MAYOR -> 2;
+      case MAYOR -> g.living().contains(voter) ? 2 : 1;
       case PACIFIST -> 0;
       case null, default -> 1;
     };
@@ -47,6 +47,15 @@ final class CourtModule implements RoleModule {
     List<UUID> pool = new ArrayList<>(candidates);
     pool.remove(voter);
     return pool.isEmpty() ? null : pool.get(g.random().nextInt(pool.size()));
+  }
+
+  @Override
+  public boolean spares(WerewolfGame g, WerewolfGame.Kill kill) {
+    UUID victim = kill.victim();
+    return kill.source().equals("VOTE")
+        && !princeRevealed
+        && g.living().contains(victim)
+        && g.roleOf(victim) == WerewolfGame.Role.PRINCE;
   }
 
   @Override
@@ -122,10 +131,9 @@ final class CourtModule implements RoleModule {
   public void bot(WerewolfGame g, WerewolfGame.Phase phase, UUID bot, Random random) {
     if (!g.actors().contains(bot)) return;
     if (phase == WerewolfGame.Phase.MARTYR) {
-      UUID condemned = g.condemned();
-      if (condemned == null) return;
-      int odds = WerewolfGame.wolf(g.roleOf(condemned)) ? 5 : 25;
-      if (random.nextInt(100) < odds) g.use(bot, "sacrifice");
+      if (g.condemned() == null) return;
+      // One flat chance: a bot knows nothing about the condemned player's real role.
+      if (random.nextInt(100) < 25) g.use(bot, "sacrifice");
     } else if (phase == WerewolfGame.Phase.TROUBLE) {
       if (g.nightNumber() > 1 && random.nextInt(100) < 15) g.use(bot, "stir");
     }
