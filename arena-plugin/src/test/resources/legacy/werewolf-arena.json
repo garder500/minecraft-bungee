@@ -1,0 +1,52 @@
+{
+  "id": "werewolf",
+  "name": "Moonlit village",
+  "worldName": "world",
+  "preset": "werewolf",
+  "bounds": {
+    "minX": 1241.0,
+    "minY": -64.0,
+    "minZ": -982.0,
+    "maxX": 1315.0,
+    "maxY": 320.0,
+    "maxZ": -887.0
+  },
+  "spawn": {
+    "x": 1286.5,
+    "y": 91.0,
+    "z": -944.5,
+    "yaw": 0.0,
+    "pitch": 0.0
+  },
+  "allowedBreakBlocks": [],
+  "allowedPlaceBlocks": [],
+  "allowPvP": false,
+  "allowChests": false,
+  "allowDoors": true,
+  "gameMode": "ADVENTURE",
+  "durationSeconds": 1800,
+  "minPlayers": 4,
+  "maxPlayers": 20,
+  "discussionSeconds": 60,
+  "voteSeconds": 30,
+  "nightSeconds": 30,
+  "werewolf": {
+    "roles": {},
+    "cupidSeconds": 15,
+    "witchSeconds": 15,
+    "hunterSeconds": 15
+  },
+  "freeplay": {
+    "objective": "SANDBOX",
+    "targetScore": 10,
+    "pointsPerEvent": 1,
+    "allowFlight": false,
+    "hunger": false,
+    "personalTime": -1,
+    "weather": "WORLD",
+    "kit": {},
+    "effects": {},
+    "checkpoints": [],
+    "instructions": "Enjoy the arena. Use your compass to follow the game or leave."
+  }
+}

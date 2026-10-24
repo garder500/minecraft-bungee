@@ -9,7 +9,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Durable outbox: retain exact payloads until the central transaction acknowledges them. */
-final class EventRewards {
+public final class EventRewards {
   private final NexusArenaEngine plugin;
   private final Path directory, active;
   private final String bridge, token;
@@ -18,7 +18,7 @@ final class EventRewards {
   private final AtomicBoolean flushing = new AtomicBoolean();
   private volatile long lastWarning;
 
-  EventRewards(NexusArenaEngine plugin, String token) throws Exception {
+  public EventRewards(NexusArenaEngine plugin, String token) throws Exception {
     this.plugin = plugin;
     this.token = token;
     bridge = System.getenv().getOrDefault("ROLE_BRIDGE_URL", "http://panel:8083");
@@ -36,7 +36,7 @@ final class EventRewards {
     }
   }
 
-  CompletableFuture<Void> begin(ArenaSession s) {
+  public CompletableFuture<Void> begin(ArenaSession s) {
     String payload = payload(s, "INTERRUPTED");
     return plugin.io(
         () -> {
@@ -60,13 +60,7 @@ final class EventRewards {
 
   private String payload(ArenaSession s, String reason) {
     GamePreset game = s.game;
-    Set<UUID> winners = new HashSet<>();
-    if (game instanceof WerewolfGame wolf) winners.addAll(wolf.winners());
-    else
-      try {
-        winners.add(UUID.fromString(game.winner()));
-      } catch (IllegalArgumentException ignored) {
-      }
+    Set<UUID> winners = new HashSet<>(game.winners());
     List<Map<String, Object>> entries = new ArrayList<>();
     for (UUID id : s.roster.keySet()) {
       String result = s.practice ? "PRACTICE" : s.abandoned.contains(id) ? "ABANDONED" : reason;
@@ -99,7 +93,7 @@ final class EventRewards {
             entries));
   }
 
-  CompletableFuture<Void> enqueue(ArenaSession s, String reason) {
+  public CompletableFuture<Void> enqueue(ArenaSession s, String reason) {
     if (s.resultQueued) return CompletableFuture.completedFuture(null);
     GamePreset game = s.game;
     if (game == null) return CompletableFuture.completedFuture(null);
@@ -123,7 +117,7 @@ final class EventRewards {
             });
   }
 
-  void flush() {
+  public void flush() {
     if (!flushing.compareAndSet(false, true)) return;
     plugin
         .io(

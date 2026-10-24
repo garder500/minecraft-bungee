@@ -5,14 +5,14 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.NamespacedKey;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.*;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -20,9 +20,9 @@ import org.bukkit.plugin.java.JavaPlugin;
  * puts its buttons in the player's slots, and everything is handed back when the menu closes, the
  * player quits, the plugin stops, or - after a crash - the player next joins.
  */
-final class MenuVault implements Listener {
+public final class MenuVault implements Listener {
   /** Marker for every chest menu that may use the bottom half of the window. */
-  interface Menu extends InventoryHolder {}
+  public interface Menu extends InventoryHolder {}
 
   private static final int SLOTS = 36;
   private final JavaPlugin plugin;
@@ -32,7 +32,7 @@ final class MenuVault implements Listener {
   /** Players whose previous menu is being replaced by the one we are opening right now. */
   private final Set<UUID> opening = ConcurrentHashMap.newKeySet();
 
-  MenuVault(JavaPlugin plugin) {
+  public MenuVault(JavaPlugin plugin) {
     this.plugin = plugin;
     button = new NamespacedKey(plugin, "vault-button");
     dir = plugin.getDataFolder().toPath().resolve("vault");
@@ -45,13 +45,13 @@ final class MenuVault implements Listener {
   }
 
   /** Player-inventory index behind a raw slot below a chest window of {@code top} slots. */
-  static int inventoryIndex(int top, int raw) {
+  public static int inventoryIndex(int top, int raw) {
     int n = raw - top;
     return n < 27 ? n + 9 : n - 27;
   }
 
   /** Raw slot of hotbar button {@code i} (0-8) in a chest window of {@code top} slots. */
-  static int hotbar(int top, int i) {
+  public static int hotbar(int top, int i) {
     return top + 27 + i;
   }
 
@@ -60,7 +60,7 @@ final class MenuVault implements Listener {
   }
 
   /** Saves the inventory once, clears it, then opens the menu and fills the lower half. */
-  void show(Player p, Inventory menu, Map<Integer, ItemStack> lower) {
+  public void show(Player p, Inventory menu, Map<Integer, ItemStack> lower) {
     take(p);
     opening.add(p.getUniqueId());
     try {
@@ -84,7 +84,7 @@ final class MenuVault implements Listener {
   }
 
   /** Gives the inventory back and closes a vault menu left open; used before other plugins read it. */
-  void release(Player p) {
+  public void release(Player p) {
     if (p.getOpenInventory().getTopInventory().getHolder() instanceof Menu) p.closeInventory();
     give(p);
   }
@@ -109,7 +109,7 @@ final class MenuVault implements Listener {
   }
 
   /** Hands the real inventory back; safe to call when nothing is held. */
-  void give(Player p) {
+  public void give(Player p) {
     UUID id = p.getUniqueId();
     ItemStack[] saved = held.remove(id);
     try {
@@ -124,7 +124,7 @@ final class MenuVault implements Listener {
     }
   }
 
-  void giveAll() {
+  public void giveAll() {
     for (Player p : plugin.getServer().getOnlinePlayers()) give(p);
   }
 

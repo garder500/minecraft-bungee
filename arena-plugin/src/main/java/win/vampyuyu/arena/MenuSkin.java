@@ -25,18 +25,18 @@ import org.bukkit.plugin.java.JavaPlugin;
  * Tracks which players loaded the optional Vampyuyu menu pack (offered by the network plugin) so
  * admin menus can use the painted layout for them and the plain glass-pane layout for everyone else.
  */
-final class MenuSkin implements Listener {
-  static final Key FONT = Key.key("vampyuyu", "menus");
+public final class MenuSkin implements Listener {
+  public static final Key FONT = Key.key("vampyuyu", "menus");
   /** First tile of each background (see resource-pack/layout.py); each has COLS x rows tiles. */
-  static final char SETUP = '\uE200';
-  static final char COMPASS = '\uE600';
-  static final char ALEMBIC = '\uE800';
-  static final char LIST = '\uE300';
-  static final char DETAIL = '\uE400';
-  static final char CONFIRM = '\uE500';
-  static final int COLS = 4;
-  static final int ROWS_27 = 4;
-  static final int ROWS_54 = 6;
+  public static final char SETUP = '\uE200';
+  public static final char COMPASS = '\uE600';
+  public static final char ALEMBIC = '\uE800';
+  public static final char LIST = '\uE300';
+  public static final char DETAIL = '\uE400';
+  public static final char CONFIRM = '\uE500';
+  public static final int COLS = 4;
+  public static final int ROWS_27 = 4;
+  public static final int ROWS_54 = 6;
   private static final char SHIFT_BACK = '\uE000';
   private static final char SHIFT_FORWARD = '\uE001';
   private static final char ROW_BACK = '\uE002';
@@ -45,17 +45,17 @@ final class MenuSkin implements Listener {
   private final UUID id;
   private final Set<UUID> loaded = ConcurrentHashMap.newKeySet();
 
-  MenuSkin(String sha1) {
+  public MenuSkin(String sha1) {
     id = packId(sha1);
   }
 
   /** Same derivation as the network plugin, so both plugins react to the one pack the client holds. */
-  static UUID packId(String sha1) {
+  public static UUID packId(String sha1) {
     if (sha1 == null || !sha1.matches("[0-9a-f]{40}")) throw new IllegalArgumentException("invalid SHA-1");
     return UUID.nameUUIDFromBytes(("vampyuyu-menus:" + sha1).getBytes(StandardCharsets.UTF_8));
   }
 
-  static MenuSkin load(JavaPlugin plugin) {
+  public static MenuSkin load(JavaPlugin plugin) {
     Path file =
         Path.of(System.getenv().getOrDefault("MENU_PACK_SHA1_FILE", "/opt/vampyuyu-menus.sha1"));
     if (!Files.isRegularFile(file)) return null;
@@ -69,7 +69,7 @@ final class MenuSkin implements Listener {
     }
   }
 
-  boolean active(Player p) {
+  public boolean active(Player p) {
     return loaded.contains(p.getUniqueId());
   }
 
@@ -93,7 +93,7 @@ final class MenuSkin implements Listener {
    * Full-window background drawn from font tiles, then the dynamic title text. The tiles carry the
    * custom font on their own component; the text stays a sibling so it keeps the default font.
    */
-  static Component title(char base, int rows, Component after) {
+  public static Component title(char base, int rows, Component after) {
     StringBuilder tiles = new StringBuilder().append(SHIFT_BACK);
     for (int r = 0; r < rows; r++) {
       for (int c = 0; c < COLS; c++) {
@@ -109,7 +109,7 @@ final class MenuSkin implements Listener {
         .build();
   }
 
-  static ItemStack icon(ItemStack item, String name, boolean glow) {
+  public static ItemStack icon(ItemStack item, String name, boolean glow) {
     ItemMeta meta = item.getItemMeta();
     meta.setItemModel(new NamespacedKey("vampyuyu", "icon/" + name));
     if (glow) meta.setEnchantmentGlintOverride(true);
@@ -118,7 +118,7 @@ final class MenuSkin implements Listener {
   }
 
   /** Themed icon for the Bukkit material a menu entry was written with. */
-  static String iconFor(Material material, String title) {
+  public static String iconFor(Material material, String title) {
     String t = title.toLowerCase(java.util.Locale.ROOT);
     return switch (material) {
       case MAP -> "map";

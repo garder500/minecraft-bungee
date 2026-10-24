@@ -3,6 +3,7 @@ package win.vampyuyu.arena;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
+import win.vampyuyu.werewolf.WerewolfMenus;
 
 public class CompassSlotsTest {
   @Test

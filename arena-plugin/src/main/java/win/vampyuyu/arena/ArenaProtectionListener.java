@@ -75,16 +75,8 @@ public final class ArenaProtectionListener implements Listener {
       e.setCancelled(true);
       return;
     }
-    if (s.game instanceof FreeplayGame && e.getFinalDamage() >= victim.getHealth()) {
-      e.setCancelled(true);
-      if (attacker != null && !attacker.getUniqueId().equals(victim.getUniqueId()))
-        s.game.event(attacker.getUniqueId(), "PVP");
-      plugin.arenas.respawn(victim);
-      return;
-    }
-    if (s.game == null
-        || s.config.preset().equals("werewolf")
-        || e.getFinalDamage() >= victim.getHealth()) e.setCancelled(true);
+    if (s.hooks.onDamage(s, victim, attacker, e)) return;
+    if (s.game == null || e.getFinalDamage() >= victim.getHealth()) e.setCancelled(true);
   }
 
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -145,9 +137,7 @@ public final class ArenaProtectionListener implements Listener {
     if (s == null || plugin.arenas.teleporting(e.getPlayer().getUniqueId()) || e.getTo() == null)
       return;
     if (!(e instanceof PlayerTeleportEvent)
-        && (plugin.places.sleeping(e.getPlayer())
-            || plugin.places.pinned(e.getPlayer())
-            || !s.presentation.isDone())
+        && (s.hooks.frozen(s, e.getPlayer()) || !s.presentation.isDone())
         && e.hasChangedPosition()) {
       e.setTo(e.getFrom());
       return;
@@ -170,10 +160,9 @@ public final class ArenaProtectionListener implements Listener {
   public void command(PlayerCommandPreprocessEvent e) {
     if (plugin.arenas.locked(e.getPlayer().getUniqueId())) {
       String command = e.getMessage().trim().toLowerCase(java.util.Locale.ROOT);
+      ArenaSession s = arena(e.getPlayer());
       if (!command.equals("/arena")
-          && !command.startsWith("/ww vote ")
-          && !command.startsWith("/ww hud")
-          && !command.equals("/ww abstain")
+          && (s == null || !s.hooks.allowsCommand(command))
           && !command.equals("/arena leave")
           && !command.equals("/nexusarenaengine:arena leave")) {
         e.setCancelled(true);
@@ -219,8 +208,7 @@ public final class ArenaProtectionListener implements Listener {
   public void food(FoodLevelChangeEvent e) {
     if (e.getEntity() instanceof Player p) {
       ArenaSession s = arena(p);
-      if (s != null && (!s.config.preset().equals("freeplay") || !s.config.freeplay().hunger()))
-        e.setCancelled(true);
+      if (s != null && !s.hooks.hunger(s)) e.setCancelled(true);
     }
   }
 
@@ -252,22 +240,13 @@ public final class ArenaProtectionListener implements Listener {
     GamePreset game = s.game;
     UUID from = e.getPlayer().getUniqueId();
     boolean alive = game == null || game.alive().contains(from);
-    if (game instanceof WerewolfGame wolf) {
-      String typed =
-          net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
-              .serialize(e.message());
-      if (wolf.chat(from, typed)) return; // A role took the message (a ghost's letter).
-      if (alive && wolf.silenced(from)) {
-        plugin.message(e.getPlayer(), "You cannot speak today.");
-        return;
-      }
-    }
-    boolean night = game instanceof WerewolfGame wolf && wolf.night();
-    if (night && alive) {
-      plugin.message(
-          e.getPlayer(), "The village is asleep. Your menu opens when your role wakes up.");
-      return;
-    }
+    // The game may take the message first (a ghost's letter), or refuse it (a silenced player).
+    if (game != null
+        && s.hooks.onChat(
+            s,
+            e.getPlayer(),
+            net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                .serialize(e.message()))) return;
     Component message =
         Component.text(
                 (!alive ? "[Spectators] " : "[Arena] ")
@@ -292,8 +271,10 @@ public final class ArenaProtectionListener implements Listener {
   /** A seated player stays on their chair until the game moves or releases them. */
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void dismount(org.bukkit.event.entity.EntityDismountEvent e) {
-    if (e.isCancellable() && e.getEntity() instanceof Player p && plugin.places.seated(p))
-      e.setCancelled(true);
+    if (e.isCancellable() && e.getEntity() instanceof Player p) {
+      ArenaSession s = arena(p);
+      if (s != null && s.hooks.holds(s, p)) e.setCancelled(true);
+    }
   }
 
   @EventHandler

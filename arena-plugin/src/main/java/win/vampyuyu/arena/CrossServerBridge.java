@@ -20,7 +20,7 @@ public final class CrossServerBridge implements Listener {
   private final Path banFile;
   private final LinkedHashMap<String, Boolean> seen = new LinkedHashMap<>();
 
-  CrossServerBridge(NexusArenaEngine plugin) throws Exception {
+  public CrossServerBridge(NexusArenaEngine plugin) throws Exception {
     this.plugin = plugin;
     banFile = plugin.getDataFolder().toPath().resolve("network-bans.json");
     if (Files.isRegularFile(banFile)) {
@@ -120,7 +120,7 @@ public final class CrossServerBridge implements Listener {
           "Redis is unavailable; cross-server operation was not sent");
   }
 
-  void receive(String channel, String payload) {
+  public void receive(String channel, String payload) {
     try {
       JsonObject obj = JsonParser.parseString(payload).getAsJsonObject();
       if (channel.equals("server:moderation")) {
@@ -224,7 +224,7 @@ public final class CrossServerBridge implements Listener {
                     }));
   }
 
-  void arrived(Player p) {
+  public void arrived(Player p) {
     if (plugin.redis == null || !plugin.redis.connected()) return;
     plugin
         .io(() -> plugin.redis.takeTransfer(p.getUniqueId().toString()))

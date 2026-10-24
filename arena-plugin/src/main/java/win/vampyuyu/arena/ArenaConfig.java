@@ -1,8 +1,26 @@
 package win.vampyuyu.arena;
 
+import com.google.gson.*;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.*;
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import org.bukkit.*;
 
+/**
+ * A zone and its life-cycle limits; nothing here knows what game runs inside. Whatever is specific
+ * to a game (Werewolf rules, free-play objectives, places, timers) lives in {@link Options}, which
+ * the game's {@link ArenaPreset} parses and validates.
+ *
+ * <p>On disk and on the wire the options sit flat beside the generic fields, exactly as every file
+ * written so far (top-level {@code werewolf}, {@code freeplay}, {@code places}, {@code
+ * discussionSeconds}...): old files load unchanged and old readers can still read new ones. A
+ * nested {@code options} object is accepted too; a flat key wins over it.
+ */
+@JsonAdapter(ArenaConfig.Codec.class)
 public record ArenaConfig(
     String id,
     String name,
@@ -19,107 +37,13 @@ public record ArenaConfig(
     int durationSeconds,
     int minPlayers,
     int maxPlayers,
-    int discussionSeconds,
-    int voteSeconds,
-    int nightSeconds,
-    GameRules.Werewolf werewolf,
-    GameRules.Freeplay freeplay,
-    Places places,
-    Rewards rewards) {
-  /** A named spot where a player sits or stands during the game. */
-  public record Seat(String name, Spawn at, boolean sit) {
-    public Seat {
-      if (name == null || !name.matches("[A-Za-z0-9_-]{1,32}"))
-        throw new IllegalArgumentException("Seat names use letters, digits, _ or - (32 maximum)");
-      if (at == null) throw new IllegalArgumentException("A seat needs a position");
-    }
-  }
-
-  /**
-   * Where the game puts players, once, when it starts: a seat each (sitting or standing, looking at the
-   * vote circle). Optional; without seats players stay where they spawn. Nobody is moved afterwards.
-   */
-  public record Places(List<Seat> seats, Spawn circle) {
-    public Places {
-      seats = seats == null ? List.of() : List.copyOf(seats);
-      if (seats.size() > 45) throw new IllegalArgumentException("At most 45 seats");
-      Set<String> names = new HashSet<>();
-      for (Seat seat : seats)
-        if (!names.add(seat.name())) throw new IllegalArgumentException("Seat names must be unique");
-    }
-
-    /** What still stops a game of this size from using the places, or null. */
-    public String missing(int players) {
-      if (seats.isEmpty()) return null; // No seats configured: players stay where they spawn.
-      return seats.size() < players
-          ? "Places are missing seats: " + seats.size() + "/" + players + " (one per player, bots included)"
-          : null;
-    }
-
-    public List<Spawn> points() {
-      List<Spawn> all = new ArrayList<>();
-      for (Seat seat : seats) all.add(seat.at());
-      if (circle != null) all.add(circle);
-      return all;
-    }
-
-    public static Places defaults() {
-      return new Places(List.of(), null);
-    }
-  }
-
+    Rewards rewards,
+    Options options) {
   public record Rewards(int participation, int victory) {
     public Rewards {
       if (participation < 0 || victory < 0 || participation > 100000 || victory > 100000)
         throw new IllegalArgumentException("Rewards must be 0–100000");
     }
-  }
-
-  // Compatibility for existing integrations and fixtures.
-  public ArenaConfig(
-      String id,
-      String name,
-      String worldName,
-      String preset,
-      Bounds bounds,
-      Spawn spawn,
-      Set<Material> allowedBreakBlocks,
-      Set<Material> allowedPlaceBlocks,
-      boolean allowPvP,
-      boolean allowChests,
-      boolean allowDoors,
-      GameMode gameMode,
-      int durationSeconds,
-      int minPlayers,
-      int maxPlayers,
-      int discussionSeconds,
-      int voteSeconds,
-      int nightSeconds,
-      GameRules.Werewolf werewolf,
-      GameRules.Freeplay freeplay) {
-    this(
-        id,
-        name,
-        worldName,
-        preset,
-        bounds,
-        spawn,
-        allowedBreakBlocks,
-        allowedPlaceBlocks,
-        allowPvP,
-        allowChests,
-        allowDoors,
-        gameMode,
-        durationSeconds,
-        minPlayers,
-        maxPlayers,
-        discussionSeconds,
-        voteSeconds,
-        nightSeconds,
-        werewolf,
-        freeplay,
-        null,
-        null);
   }
 
   public record Bounds(
@@ -167,52 +91,60 @@ public record ArenaConfig(
 
   public record Spawn(double x, double y, double z, float yaw, float pitch) {}
 
-  public ArenaConfig {
-    places = places == null ? Places.defaults() : places;
-    rewards = rewards == null ? new Rewards(10, 5) : rewards;
-    if (bounds != null) {
-      for (Spawn p : places.points())
-        if (!Double.isFinite(p.x())
-            || !Double.isFinite(p.y())
-            || !Double.isFinite(p.z())
-            || !Float.isFinite(p.yaw())
-            || !Float.isFinite(p.pitch())
-            || !bounds.contains(p.x(), p.y(), p.z()))
-          throw new IllegalArgumentException("Places must be inside the arena");
+  /**
+   * The game-specific settings of an arena: an opaque JSON object, plus a cache of the typed views
+   * the game parsed from it (so hot loops do not parse it again).
+   */
+  public static final class Options {
+    private final JsonObject json;
+    private final Map<Class<?>, Object> views = new ConcurrentHashMap<>();
+
+    public Options(JsonObject json) {
+      this.json = json == null ? new JsonObject() : json.deepCopy();
     }
 
-    werewolf = werewolf == null ? GameRules.Werewolf.defaults() : werewolf;
-    freeplay = freeplay == null ? GameRules.Freeplay.defaults() : freeplay;
-    if ("werewolf".equals(preset)
-        && !werewolf.roles().isEmpty()
-        && GameRules.Werewolf.wolves(werewolf.roles()) * 2 >= minPlayers)
-      throw new IllegalArgumentException(
-          "Wolves must be in the minority at the minimum player count");
-    if ("werewolf".equals(preset)
-        && !werewolf.roles().isEmpty()
-        && werewolf.roles().values().stream().mapToInt(Integer::intValue).sum() > minPlayers)
-      throw new IllegalArgumentException("Minimum players must cover the configured role counts");
-    if (preset != null && preset.equals("freeplay")) {
-      if (freeplay.objective().equals("PVP") && !allowPvP)
-        throw new IllegalArgumentException("PvP objectives require player combat enabled");
-      if (freeplay.objective().equals("BLOCK_BREAK")
-          && (allowedBreakBlocks == null || allowedBreakBlocks.isEmpty()))
-        throw new IllegalArgumentException("Choose which blocks score when broken");
-      if (freeplay.objective().equals("BLOCK_PLACE")
-          && (allowedPlaceBlocks == null || allowedPlaceBlocks.isEmpty()))
-        throw new IllegalArgumentException("Choose which blocks score when placed");
-      for (var point : freeplay.checkpoints())
-        if (bounds == null || !bounds.contains(point.x(), point.y(), point.z()))
-          throw new IllegalArgumentException("Checkpoints must be inside the arena");
-      for (int a = 0; a < freeplay.checkpoints().size(); a++)
-        for (int b = a + 1; b < freeplay.checkpoints().size(); b++) {
-          var p = freeplay.checkpoints().get(a);
-          var q = freeplay.checkpoints().get(b);
-          if (Math.pow(p.x() - q.x(), 2) + Math.pow(p.y() - q.y(), 2) + Math.pow(p.z() - q.z(), 2)
-              < Math.pow(p.radius() + q.radius(), 2))
-            throw new IllegalArgumentException("Checkpoint areas must not overlap");
-        }
+    public static Options empty() {
+      return new Options(null);
     }
+
+    /** A copy of the raw settings. */
+    public JsonObject json() {
+      return json.deepCopy();
+    }
+
+    public boolean has(String key) {
+      return json.has(key);
+    }
+
+    /** The typed view of these settings, parsed once; a failed parse throws and caches nothing. */
+    @SuppressWarnings("unchecked")
+    public <T> T view(Class<T> type, Function<JsonObject, T> parse) {
+      Object cached = views.get(type);
+      if (cached != null) return (T) cached;
+      T parsed = parse.apply(json.deepCopy());
+      Object raced = views.putIfAbsent(type, parsed);
+      return raced == null ? parsed : (T) raced;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return other instanceof Options o && json.equals(o.json);
+    }
+
+    @Override
+    public int hashCode() {
+      return json.hashCode();
+    }
+
+    @Override
+    public String toString() {
+      return json.toString();
+    }
+  }
+
+  public ArenaConfig {
+    rewards = rewards == null ? new Rewards(10, 5) : rewards;
+    options = options == null ? Options.empty() : options;
     if (id == null || !id.matches("[a-z0-9][a-z0-9_-]{0,39}"))
       throw new IllegalArgumentException(
           "Arena ID must use lowercase letters, digits, _ or - (40 characters maximum)");
@@ -241,16 +173,8 @@ public record ArenaConfig(
         || durationSeconds > 14400
         || minPlayers < 1
         || maxPlayers < minPlayers
-        || maxPlayers > 45
-        || (preset.equals("werewolf") && minPlayers < 4))
-      throw new IllegalArgumentException(
-          "Invalid duration or player limits (Werewolf needs at least 4 players)");
-    if (discussionSeconds < 5
-        || discussionSeconds > 600
-        || voteSeconds < 5
-        || voteSeconds > 300
-        || nightSeconds < 5
-        || nightSeconds > 300) throw new IllegalArgumentException("Invalid phase durations");
+        || maxPlayers > 45)
+      throw new IllegalArgumentException("Invalid duration or player limits");
     if (allowedBreakBlocks != null && allowedBreakBlocks.stream().anyMatch(Objects::isNull)
         || allowedPlaceBlocks != null && allowedPlaceBlocks.stream().anyMatch(Objects::isNull))
       throw new IllegalArgumentException("Unknown block material in allowlist");
@@ -262,14 +186,115 @@ public record ArenaConfig(
         || allowedPlaceBlocks.stream().anyMatch(m -> !m.isBlock()))
       throw new IllegalArgumentException(
           "Block allowlists must contain at most 128 block materials");
-    // Werewolf is a social deduction game; PvP must not bypass the secret ballot.
-    if (preset.equals("werewolf") && allowPvP)
-      throw new IllegalArgumentException("Werewolf requires PvP disabled");
+  }
+
+  /** The same arena with other options. */
+  public ArenaConfig withOptions(Options other) {
+    return new ArenaConfig(
+        id, name, worldName, preset, bounds, spawn, allowedBreakBlocks, allowedPlaceBlocks, allowPvP,
+        allowChests, allowDoors, gameMode, durationSeconds, minPlayers, maxPlayers, rewards, other);
   }
 
   public Location location() {
     World w = Bukkit.getWorld(worldName);
     if (w == null) throw new IllegalArgumentException("Arena world is not loaded");
     return new Location(w, spawn.x, spawn.y, spawn.z, spawn.yaw, spawn.pitch);
+  }
+
+  /** The generic fields; every other top-level key of a file is a game option. */
+  static final Set<String> GENERIC =
+      Set.of(
+          "id", "name", "worldName", "preset", "bounds", "spawn", "allowedBreakBlocks",
+          "allowedPlaceBlocks", "allowPvP", "allowChests", "allowDoors", "gameMode",
+          "durationSeconds", "minPlayers", "maxPlayers", "rewards", "options");
+
+  /** Reads and writes the flat file format (see the class comment). */
+  public static final class Codec implements TypeAdapterFactory {
+    private static final java.lang.reflect.Type BLOCKS =
+        new TypeToken<Set<Material>>() {}.getType();
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+      if (type.getRawType() != ArenaConfig.class) return null;
+      TypeAdapter<JsonElement> tree = gson.getAdapter(JsonElement.class);
+      return (TypeAdapter<T>)
+          new TypeAdapter<ArenaConfig>() {
+            @Override
+            public void write(JsonWriter out, ArenaConfig c) throws IOException {
+              if (c == null) {
+                out.nullValue();
+                return;
+              }
+              JsonObject o = new JsonObject();
+              o.addProperty("id", c.id);
+              o.addProperty("name", c.name);
+              o.addProperty("worldName", c.worldName);
+              o.addProperty("preset", c.preset);
+              o.add("bounds", gson.toJsonTree(c.bounds));
+              o.add("spawn", gson.toJsonTree(c.spawn));
+              o.add("allowedBreakBlocks", gson.toJsonTree(c.allowedBreakBlocks));
+              o.add("allowedPlaceBlocks", gson.toJsonTree(c.allowedPlaceBlocks));
+              o.addProperty("allowPvP", c.allowPvP);
+              o.addProperty("allowChests", c.allowChests);
+              o.addProperty("allowDoors", c.allowDoors);
+              o.add("gameMode", gson.toJsonTree(c.gameMode));
+              o.addProperty("durationSeconds", c.durationSeconds);
+              o.addProperty("minPlayers", c.minPlayers);
+              o.addProperty("maxPlayers", c.maxPlayers);
+              o.add("rewards", gson.toJsonTree(c.rewards));
+              for (var option : c.options.json().entrySet())
+                o.add(option.getKey(), option.getValue());
+              tree.write(out, o);
+            }
+
+            @Override
+            public ArenaConfig read(JsonReader in) throws IOException {
+              if (in.peek() == JsonToken.NULL) {
+                in.nextNull();
+                return null;
+              }
+              JsonObject o = tree.read(in).getAsJsonObject();
+              JsonObject options = new JsonObject();
+              if (o.get("options") instanceof JsonObject nested)
+                for (var option : nested.entrySet())
+                  if (!GENERIC.contains(option.getKey()))
+                    options.add(option.getKey(), option.getValue());
+              for (var entry : o.entrySet())
+                if (!GENERIC.contains(entry.getKey()))
+                  options.add(entry.getKey(), entry.getValue());
+              return new ArenaConfig(
+                  string(o, "id"),
+                  string(o, "name"),
+                  string(o, "worldName"),
+                  string(o, "preset"),
+                  gson.fromJson(o.get("bounds"), Bounds.class),
+                  gson.fromJson(o.get("spawn"), Spawn.class),
+                  gson.fromJson(o.get("allowedBreakBlocks"), BLOCKS),
+                  gson.fromJson(o.get("allowedPlaceBlocks"), BLOCKS),
+                  bool(o, "allowPvP"),
+                  bool(o, "allowChests"),
+                  bool(o, "allowDoors"),
+                  gson.fromJson(o.get("gameMode"), GameMode.class),
+                  number(o, "durationSeconds"),
+                  number(o, "minPlayers"),
+                  number(o, "maxPlayers"),
+                  gson.fromJson(o.get("rewards"), Rewards.class),
+                  new Options(options));
+            }
+          };
+    }
+
+    private static String string(JsonObject o, String key) {
+      return o.get(key) instanceof JsonPrimitive p && p.isString() ? p.getAsString() : null;
+    }
+
+    private static boolean bool(JsonObject o, String key) {
+      return o.get(key) instanceof JsonPrimitive p && p.getAsBoolean();
+    }
+
+    private static int number(JsonObject o, String key) {
+      return o.get(key) instanceof JsonPrimitive p && p.isNumber() ? p.getAsInt() : 0;
+    }
   }
 }

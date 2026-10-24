@@ -64,7 +64,7 @@ class PackTest(unittest.TestCase):
         vsh = (PACK / "assets/minecraft/shaders/core/text.vsh").read_text()
         self.assertIn("rgb.r == 78 && rgb.g == 92", vsh)
         self.assertTrue((PACK / "assets/minecraft/shaders/core/text.fsh").is_file())
-        plugin = (ROOT / "arena-plugin/src/main/java/win/vampyuyu/arena/WerewolfPresentation.java").read_text()
+        plugin = (ROOT / "arena-plugin/src/main/java/win/vampyuyu/werewolf/ambience/WerewolfPresentation.java").read_text()
         self.assertIn('FX_GLYPH = "\\uF100"', plugin)
         self.assertIn("78 << 16 | 92 << 8", plugin)
 
@@ -80,7 +80,7 @@ class PackTest(unittest.TestCase):
         self.assertEqual(names, layout.ICONS)
 
     def test_every_role_is_described_and_its_words_fit_the_hud(self):
-        java = (ROOT / "arena-plugin/src/main/java/win/vampyuyu/arena/WerewolfGame.java").read_text()
+        java = (ROOT / "arena-plugin/src/main/java/win/vampyuyu/werewolf/WerewolfGame.java").read_text()
         enum = re.search(r"public enum Role \{(.*?)\n  \}", java, re.S).group(1)
         names = re.findall(r"^\s+([A-Z_]+),?\s*(?://.*)?$", enum, re.M)
         roles = layout.roles()
@@ -163,7 +163,7 @@ class PackTest(unittest.TestCase):
         self.assertEqual(glyphs, {})
 
     def test_plugin_uses_the_pack_codepoints_and_icons(self):
-        java = ROOT / "arena-plugin/src/main/java/win/vampyuyu/arena"
+        java = ROOT / "arena-plugin/src/main/java/win/vampyuyu/werewolf"
         menus = (java / "WerewolfMenus.java").read_text()
         role_menus = re.findall(r'"(menu_\w+)", \'\\u([0-9A-F]{4})\'', menus)
         self.assertEqual(7, len(role_menus))
@@ -171,10 +171,10 @@ class PackTest(unittest.TestCase):
             self.assertEqual(int(code, 16), layout.BACKGROUNDS[name][0], name)
         village = re.search(r"VILLAGE = '\\u([0-9A-F]{4})'", menus)
         self.assertEqual(int(village.group(1), 16), layout.BACKGROUNDS["menu_village"][0])
-        hud = (java / "WerewolfHud.java").read_text()
+        hud = (java / "hud/WerewolfHud.java").read_text()
         self.assertIn("List.of(%s)" % ", ".join(f'"{c}"' for c in layout.CARDS), " ".join(hud.split()).replace("( ", "("))
         icons = {p.stem for p in (PACK / "assets/vampyuyu/items/icon").glob("*.json")}
-        source = menus + (java / "CompassGUI.java").read_text()
+        source = menus + (java / "WerewolfCompass.java").read_text()
         for icon in set(re.findall(r'"((?:potion-|mark-|card-)[a-z-]*|target|heart|shield|moon|lock|timer|skip)"', source)):
             if icon.endswith("-"):
                 continue  # a prefix completed at run time (card- + role)
@@ -190,9 +190,9 @@ class PackTest(unittest.TestCase):
     def test_every_werewolf_sound_the_plugin_plays_is_in_the_pack(self):
         sounds = json.loads((PACK / "assets/vampyuyu/sounds.json").read_text())
         subtitles = json.loads((PACK / "assets/vampyuyu/lang/en_us.json").read_text())
-        java = ROOT / "arena-plugin/src/main/java/win/vampyuyu/arena"
-        ambience = (java / "WerewolfAmbience.java").read_text()
-        presentation = (java / "WerewolfPresentation.java").read_text()
+        java = ROOT / "arena-plugin/src/main/java/win/vampyuyu/werewolf"
+        ambience = (java / "ambience/WerewolfAmbience.java").read_text()
+        presentation = (java / "ambience/WerewolfPresentation.java").read_text()
         clicks = presentation[presentation.index("static String actionSound"):]
         clicks = clicks[: clicks.index("\n  }\n")]
         played = set(re.findall(r'cue\(\s*\w+,\s*"(\w+)"', ambience)) | set(re.findall(r'"(\w+)"\s*[:;]', clicks))

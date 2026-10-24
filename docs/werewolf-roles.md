@@ -216,10 +216,10 @@ Read `RoleModule.java`: every hook is documented there and has a do-nothing defa
 
 ## 6. Writing and testing a module
 
-* Tests are JUnit 4 in `arena-plugin/src/test/java/win/vampyuyu/arena/<Module>Test.java`; build a
-  game with `new WerewolfGame(ids, 5, 5, 5, new Random(n), new GameRules.Werewolf(cast, 5, 5, 5))`
+* Tests are JUnit 4 in `arena-plugin/src/test/java/win/vampyuyu/werewolf/roles/<Module>Test.java`; build a
+  game with `new WerewolfGame(ids, 5, 5, 5, new Random(n), new WerewolfRules(cast, 5, 5, 5))`
   (see `NewRolesTest`). Use `Map.of("WEREWOLF", 1, "<ROLE>", 1)`-style casts and read roles back with
-  `g.role(p)`; `GameRules.Werewolf` accepts every role, at most `max` copies each.
+  `g.role(p)`; `WerewolfRules` accepts every role, at most `max` copies each.
 * Run `make plugin-build PLUGIN=arena` from your own checkout (about two minutes); it runs the whole
   suite. `FAST=1` skips the tests (compile only).
 * A bot hook must always leave the game able to continue: if it does nothing the clock ends the call.

@@ -14,12 +14,12 @@ import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.*;
 
-final class ArenaAdmin implements Listener {
+public final class ArenaAdmin implements Listener {
   private final NexusArenaEngine plugin;
   private final Map<UUID, Location[]> corners = new HashMap<>();
   private final Map<UUID, Input> inputs = new ConcurrentHashMap<>();
 
-  private interface Action {
+  public interface Action {
     void run() throws Exception;
   }
 
@@ -35,9 +35,9 @@ final class ArenaAdmin implements Listener {
     DETAIL(MenuSkin.DETAIL, 27, MenuSkin.ROWS_27),
     CONFIRM(MenuSkin.CONFIRM, 27, MenuSkin.ROWS_27);
 
-    final char glyph;
-    final int size;
-    final int rows;
+    public final char glyph;
+    public final int size;
+    public final int rows;
 
     Kind(char glyph, int size, int rows) {
       this.glyph = glyph;
@@ -47,14 +47,14 @@ final class ArenaAdmin implements Listener {
   }
 
   /** Painted menu when the viewer loaded the resource pack, glass-pane chest otherwise. */
-  private final class Menu implements MenuVault.Menu {
-    final UUID viewer;
-    final Inventory inventory;
-    final boolean skinned;
-    final Map<Integer, Action> actions = new HashMap<>();
-    final Map<Integer, ItemStack> lower = new HashMap<>();
+  public final class Menu implements MenuVault.Menu {
+    public final UUID viewer;
+    public final Inventory inventory;
+    public final boolean skinned;
+    public final Map<Integer, Action> actions = new HashMap<>();
+    public final Map<Integer, ItemStack> lower = new HashMap<>();
 
-    Menu(Player p, Kind kind, String title) {
+    public Menu(Player p, Kind kind, String title) {
       viewer = p.getUniqueId();
       skinned = plugin.skin != null && plugin.skin.active(p);
       if (skinned) {
@@ -72,16 +72,16 @@ final class ArenaAdmin implements Listener {
     }
 
     /** Navigation lives in the hotbar row (0-8), painted as part of the window. */
-    int hot(int i) {
+    public int hot(int i) {
       return MenuVault.hotbar(inventory.getSize(), i);
     }
 
-    void put(int slot, Material mat, String title, Action action, String... lore) {
+    public void put(int slot, Material mat, String title, Action action, String... lore) {
       place(slot, mat, null, false, title, action, lore);
     }
 
     /** A switch: the item glows when on, and the state is always in the tooltip. */
-    void toggle(int slot, Material mat, String title, boolean on, Action action, String... lore) {
+    public void toggle(int slot, Material mat, String title, boolean on, Action action, String... lore) {
       String[] all = new String[lore.length + 1];
       all[0] = on ? "State: ON" : "State: OFF";
       System.arraycopy(lore, 0, all, 1, lore.length);
@@ -89,11 +89,11 @@ final class ArenaAdmin implements Listener {
     }
 
     /** One action over several slots, so a painted button is clickable on its whole surface. */
-    void area(int[] slots, Material mat, String icon, String title, Action action, String... lore) {
+    public void area(int[] slots, Material mat, String icon, String title, Action action, String... lore) {
       for (int slot : slots) place(slot, mat, icon, false, title, action, lore);
     }
 
-    void place(
+    public void place(
         int slot, Material mat, String icon, boolean glow, String title, Action action, String... lore) {
       ItemStack item = CompassGUI.item(mat, title, lore);
       if (skinned) MenuSkin.icon(item, icon != null ? icon : MenuSkin.iconFor(mat, title), glow);
@@ -103,24 +103,24 @@ final class ArenaAdmin implements Listener {
     }
   }
 
-  final MenuVault vault;
+  public final MenuVault vault;
 
   private void show(Player p, Menu m) {
     vault.show(p, m.inventory, m.lower);
   }
 
-  ArenaAdmin(NexusArenaEngine plugin) {
+  public ArenaAdmin(NexusArenaEngine plugin) {
     this.plugin = plugin;
     vault = new MenuVault(plugin);
     Bukkit.getPluginManager().registerEvents(this, plugin);
   }
 
-  void authorize(Player p) {
+  public void authorize(Player p) {
     if (!p.hasPermission("nexusarena.admin") || plugin.arenas.locked(p.getUniqueId()))
       throw new IllegalArgumentException("Administrator access outside an arena required");
   }
 
-  ArenaSession editable(String id) {
+  public ArenaSession editable(String id) {
     ArenaSession s = plugin.arenas.require(id);
     if (!s.players.isEmpty()
         || s.game != null
@@ -130,7 +130,7 @@ final class ArenaAdmin implements Listener {
     return s;
   }
 
-  void change(String id, java.util.function.Consumer<JsonObject> edit) throws Exception {
+  public void change(String id, java.util.function.Consumer<JsonObject> edit) throws Exception {
     synchronized (plugin.arenas) {
       JsonObject json = ArenaManager.JSON.toJsonTree(editable(id).config).getAsJsonObject();
       edit.accept(json);
@@ -138,7 +138,7 @@ final class ArenaAdmin implements Listener {
     }
   }
 
-  ArenaConfig.Spawn point(Player p, String id) {
+  public ArenaConfig.Spawn point(Player p, String id) {
     ArenaConfig c = editable(id).config;
     Location l = p.getLocation();
     if (!l.getWorld().getName().equals(c.worldName()))
@@ -146,7 +146,7 @@ final class ArenaAdmin implements Listener {
     return new ArenaConfig.Spawn(l.getX(), l.getY(), l.getZ(), l.getYaw(), l.getPitch());
   }
 
-  boolean command(CommandSender sender, String sub, String[] args) throws Exception {
+  public boolean command(CommandSender sender, String sub, String[] args) throws Exception {
     if (!Set.of(
             "admin",
             "create",
@@ -168,7 +168,7 @@ final class ArenaAdmin implements Listener {
       }
       case "create" -> {
         if (args.length != 3)
-          throw new IllegalArgumentException("/arena create <id> <werewolf|freeplay>");
+          throw new IllegalArgumentException("/arena create <id> <" + presetNames() + ">");
         create(p, args[1], args[2]);
       }
       case "setup" -> {
@@ -183,7 +183,7 @@ final class ArenaAdmin implements Listener {
     if (args.length != n) throw new IllegalArgumentException(usage);
   }
 
-  boolean rewards(CommandSender sender, Command cmd, String label, String[] args) {
+  public boolean rewards(CommandSender sender, Command cmd, String label, String[] args) {
     try {
       if (!sender.hasPermission("nexusarena.admin"))
         throw new IllegalArgumentException("Arena administrator permission required");
@@ -199,20 +199,20 @@ final class ArenaAdmin implements Listener {
     return true;
   }
 
-  void capture(Player p, int index) {
+  public void capture(Player p, int index) {
     capture(p, index, p.getLocation());
   }
 
-  void capture(Player p, int index, Location where) {
+  public void capture(Player p, int index, Location where) {
     Location[] selected = corners.computeIfAbsent(p.getUniqueId(), key -> new Location[2]);
     selected[index] = where.clone();
   }
 
-  Location[] corners(Player p) {
+  public Location[] corners(Player p) {
     return corners.get(p.getUniqueId());
   }
 
-  ArenaConfig.Bounds bounds(Player p) {
+  public ArenaConfig.Bounds bounds(Player p) {
     var points = corners.get(p.getUniqueId());
     if (points == null || points[0] == null || points[1] == null)
       throw new IllegalArgumentException("Select /arena corner1 and /arena corner2 first");
@@ -231,8 +231,8 @@ final class ArenaAdmin implements Listener {
   private void create(Player p, String id, String preset) throws Exception {
     if (plugin.arenas.all().stream().anyMatch(s -> s.config.id().equals(id)))
       throw new IllegalArgumentException("Arena ID already exists");
-    if (!Set.of("werewolf", "freeplay").contains(preset))
-      throw new IllegalArgumentException("Use werewolf or freeplay");
+    ArenaPreset game = plugin.arenas.preset(preset);
+    if (game == null) throw new IllegalArgumentException("Use " + presetNames());
     var l = p.getLocation();
     ArenaConfig config =
         new ArenaConfig(
@@ -249,13 +249,10 @@ final class ArenaAdmin implements Listener {
             false,
             GameMode.ADVENTURE,
             900,
-            preset.equals("werewolf") ? 4 : 1,
+            game.defaultMinPlayers(),
             16,
-            60,
-            30,
-            30,
-            GameRules.Werewolf.defaults(),
-            GameRules.Freeplay.defaults());
+            null,
+            new ArenaConfig.Options(game.defaultOptions()));
     confirm(
         p,
         "Create " + id,
@@ -268,7 +265,12 @@ final class ArenaAdmin implements Listener {
         () -> list(p, 0));
   }
 
-  void list(Player p, int page) {
+  /** The registered games as "a|b|c", for usage messages. */
+  public String presetNames() {
+    return String.join("|", plugin.arenas.presets().stream().map(ArenaPreset::id).sorted().toList());
+  }
+
+  public void list(Player p, int page) {
     var arenas =
         plugin.arenas.all().stream().sorted(Comparator.comparing(s -> s.config.id())).toList();
     Menu m = new Menu(p, Kind.LIST, "Arenas");
@@ -313,16 +315,23 @@ final class ArenaAdmin implements Listener {
                 "New arena ID:",
                 id -> {
                   Menu choice = new Menu(p, Kind.DETAIL, "Choose preset");
-                  choice.put(11, Material.BONE, "Werewolf", () -> create(p, id, "werewolf"));
-                  choice.put(
-                      15, Material.GRASS_BLOCK, "Free play", () -> create(p, id, "freeplay"));
+                  Set<Integer> taken = new HashSet<>();
+                  for (var game :
+                      plugin.arenas.presets().stream()
+                          .sorted(Comparator.comparing(ArenaPreset::menuSlot).thenComparing(ArenaPreset::id))
+                          .toList()) {
+                    int slot = game.menuSlot();
+                    while (taken.contains(slot) && slot < 26) slot++;
+                    if (!taken.add(slot)) break;
+                    choice.put(slot, game.icon(), game.title(), () -> create(p, id, game.id()));
+                  }
                   show(p, choice);
                 }),
         "Select both corners, then stand at the spawn");
     show(p, m);
   }
 
-  void setup(Player p, String id) {
+  public void setup(Player p, String id) {
     var c = plugin.arenas.require(id).config;
     Menu m = new Menu(p, Kind.SETUP, c.name());
     // Row 0: the arena itself and its life cycle.
@@ -364,7 +373,7 @@ final class ArenaAdmin implements Listener {
           p.closeInventory();
           plugin.tools.give(p, id);
         },
-        "Items for corners, spawn, seats and the vote circle");
+        "Items for corners, spawn and the points of the game");
     m.put(
         6,
         Material.WRITABLE_BOOK,
@@ -382,49 +391,16 @@ final class ArenaAdmin implements Listener {
           p.closeInventory();
         });
     m.put(8, Material.RED_WOOL, "Stop & restore", () -> plugin.handle(p, plugin.arenas.stop(id)));
-    // Row 1: places (set them with /ww place, or the admin items).
-    m.put(
-        10,
-        Material.RED_BED,
-        "Places (" + c.places().seats().size() + " seats)",
-        () -> {
-          p.closeInventory();
-          plugin.tools.report(p, id);
-        },
-        "Seats and the vote circle: /ww place list");
-    if (c.preset().equals("werewolf"))
-      m.toggle(
-          15,
-          Material.NOTE_BLOCK,
-          "Immersive ambience",
-          c.werewolf().ambienceEnabled(),
-          () -> {
-            change(
-                id,
-                j ->
-                    j.getAsJsonObject("werewolf")
-                        .addProperty("ambienceEnabled", !c.werewolf().ambienceEnabled()));
-            setup(p, id);
-          },
-          "Native sounds and titles",
-          "Private instructions remain available when disabled");
-    // Row 2: limits.
-    String[] numbers = {
-      "minPlayers",
-      "maxPlayers",
-      "durationSeconds",
-      "discussionSeconds",
-      "voteSeconds",
-      "nightSeconds"
-    };
-    int[] values = {
-      c.minPlayers(),
-      c.maxPlayers(),
-      c.durationSeconds(),
-      c.discussionSeconds(),
-      c.voteSeconds(),
-      c.nightSeconds()
-    };
+    // Row 1: whatever the game adds (the Werewolf places and ambience, for instance).
+    plugin.arenas.require(id).hooks.setupMenu(this, m, p, c);
+    // Row 2: limits, then the game's own numbers.
+    Map<String, Integer> limits = new LinkedHashMap<>();
+    limits.put("minPlayers", c.minPlayers());
+    limits.put("maxPlayers", c.maxPlayers());
+    limits.put("durationSeconds", c.durationSeconds());
+    limits.putAll(plugin.arenas.require(id).hooks.numbers(c));
+    String[] numbers = limits.keySet().toArray(String[]::new);
+    int[] values = limits.values().stream().mapToInt(Integer::intValue).toArray();
     for (int i = 0; i < numbers.length; i++) {
       String key = numbers[i];
       m.put(

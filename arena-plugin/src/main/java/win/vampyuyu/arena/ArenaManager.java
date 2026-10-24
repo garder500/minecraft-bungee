@@ -5,6 +5,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Supplier;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
@@ -29,28 +30,35 @@ public final class ArenaManager {
   private final Set<UUID> teleports = ConcurrentHashMap.newKeySet();
   public static final Gson JSON = new GsonBuilder().setPrettyPrinting().create();
 
-  ArenaManager(NexusArenaEngine plugin) throws Exception {
+  public ArenaManager(NexusArenaEngine plugin) throws Exception {
     this.plugin = plugin;
-    registerPreset(new WerewolfPreset());
-    registerPreset(
-        new ArenaPreset() {
-          public String id() {
-            return "freeplay";
-          }
-
-          public GamePreset create(ArenaConfig c, Collection<UUID> ids) {
-            return new FreeplayGame(ids, c.freeplay());
-          }
-        });
+    registerPreset(new FreeplayPreset(plugin));
     configs = plugin.getDataFolder().toPath().resolve("arenas");
     Files.createDirectories(configs);
     snapshots = new PlayerSnapshotManager(plugin);
-    reload();
   }
 
+  /** Registers a game; do it before {@link #reload()} loads the arenas that use it. */
   public void registerPreset(ArenaPreset preset) {
     if (presets.putIfAbsent(preset.id(), preset) != null)
       throw new IllegalArgumentException("Preset already registered");
+  }
+
+  public ArenaPreset preset(String id) {
+    return presets.get(id);
+  }
+
+  public Collection<ArenaPreset> presets() {
+    return List.copyOf(presets.values());
+  }
+
+  private ArenaSession open(ArenaConfig c) {
+    return new ArenaSession(c, presets.get(c.preset()).hooks());
+  }
+
+  /** Every distinct set of hooks of the registered games (the panel API routes come from them). */
+  public List<GameHooks> allHooks() {
+    return presets.values().stream().map(ArenaPreset::hooks).distinct().toList();
   }
 
   public synchronized void reload() throws Exception {
@@ -63,10 +71,10 @@ public final class ArenaManager {
       for (Path file : files.filter(p -> p.toString().endsWith(".json")).sorted().toList()) {
         if (Files.isSymbolicLink(file) || Files.size(file) > 65536)
           throw new IOException("Invalid arena configuration file");
-        ArenaConfig c = JSON.fromJson(Files.readString(file), ArenaConfig.class);
+        ArenaConfig c = migrated(JSON.fromJson(Files.readString(file), ArenaConfig.class));
         validate(c, next.values());
         if (!file.getFileName().toString().equals(c.id() + ".json")
-            || next.put(c.id(), new ArenaSession(c)) != null)
+            || next.put(c.id(), open(c)) != null)
           throw new IllegalArgumentException("Duplicate or mismatched arena ID");
       }
     }
@@ -80,11 +88,7 @@ public final class ArenaManager {
       throw new IllegalArgumentException("Unregistered game preset");
     World w = Bukkit.getWorld(c.worldName());
     if (w == null) throw new IllegalArgumentException("Choose a loaded world");
-    if (!c.preset().equals("werewolf") && !c.places().seats().isEmpty())
-      throw new IllegalArgumentException("Seats and places require Werewolf");
-    if (c.preset().equals("freeplay") && c.freeplay().objective().equals("PVP") && !w.getPVP())
-      throw new IllegalArgumentException(
-          "This world has PvP disabled. Enable it in Server settings or choose another world.");
+    presets.get(c.preset()).validate(c, w);
     if (c.bounds().minY() < w.getMinHeight() || c.bounds().maxY() > w.getMaxHeight())
       throw new IllegalArgumentException("Y bounds exceed world height");
     for (var s : against)
@@ -94,7 +98,16 @@ public final class ArenaManager {
         throw new IllegalArgumentException("Arena overlaps " + s.config.name());
   }
 
-  public synchronized void save(ArenaConfig c) throws IOException {
+  /** The configuration completed with its game's defaults (files of earlier versions load as is). */
+  private ArenaConfig migrated(ArenaConfig c) {
+    ArenaPreset game = c == null ? null : presets.get(c.preset());
+    return game == null
+        ? c
+        : c.withOptions(new ArenaConfig.Options(game.migrate(c.options().json())));
+  }
+
+  public synchronized void save(ArenaConfig config) throws IOException {
+    ArenaConfig c = migrated(config);
     validate(c, sessions.values());
     ArenaSession old = sessions.get(c.id());
     if (old != null
@@ -116,7 +129,7 @@ public final class ArenaManager {
     } finally {
       Files.deleteIfExists(temp);
     }
-    sessions.put(c.id(), new ArenaSession(c));
+    sessions.put(c.id(), open(c));
   }
 
   public synchronized void delete(String id) throws IOException {
@@ -141,18 +154,18 @@ public final class ArenaManager {
   }
 
   /**
-   * Living players cannot walk out of a running werewolf game, except in a practice game: nobody
-   * else is waiting on them there, and the arena closes by itself once no human is left.
+   * Whether the game keeps this player from walking out (see {@link GameHooks#leaveBlocked}); a
+   * practice game never does: nobody else is waiting on them there, and the arena closes by itself
+   * once no human is left.
    */
   public boolean leaveBlocked(UUID id) {
     ArenaSession s = members.get(id);
     return s != null
         && s.bots.isEmpty()
-        && s.game instanceof WerewolfGame game
+        && s.game != null
         && !s.stopping
         && !s.finishing
-        && game.winner().isEmpty()
-        && game.alive().contains(id);
+        && s.hooks.leaveBlocked(s, id);
   }
 
   public boolean locked(UUID id) {
@@ -163,7 +176,7 @@ public final class ArenaManager {
     return busy.contains(id) || recovery.contains(id);
   }
 
-  void allowTeleport(UUID id, boolean allow) {
+  public void allowTeleport(UUID id, boolean allow) {
     if (allow) teleports.add(id);
     else teleports.remove(id);
   }
@@ -249,28 +262,7 @@ public final class ArenaManager {
                           border.setDamageAmount(0);
                           p.setWorldBorder(border);
                           plugin.gui.giveCompass(p);
-                          if (s.config.preset().equals("freeplay")) {
-                            var rules = s.config.freeplay();
-                            p.setAllowFlight(rules.allowFlight());
-                            if (rules.personalTime() >= 0)
-                              p.setPlayerTime(rules.personalTime(), false);
-                            if (!rules.weather().equals("WORLD"))
-                              p.setPlayerWeather(WeatherType.valueOf(rules.weather()));
-                            for (var item : rules.kit().entrySet())
-                              p.getInventory()
-                                  .addItem(
-                                      new org.bukkit.inventory.ItemStack(
-                                          Material.matchMaterial(item.getKey()), item.getValue()));
-                            for (var effect : rules.effects().entrySet())
-                              p.addPotionEffect(
-                                  new org.bukkit.potion.PotionEffect(
-                                      org.bukkit.potion.PotionEffectType.getByKey(
-                                          NamespacedKey.minecraft(effect.getKey())),
-                                      s.config.durationSeconds() * 20,
-                                      effect.getValue() - 1));
-                            p.sendMessage(
-                                Component.text(rules.instructions(), NamedTextColor.GOLD));
-                          }
+                          s.hooks.onJoin(s, p);
                           p.sendMessage(
                               Component.text(
                                   "Joined "
@@ -316,7 +308,7 @@ public final class ArenaManager {
             .onPlayer(
                 p,
                 () -> {
-                  plugin.ambience.clearNow(p, leaving);
+                  if (leaving != null) leaving.hooks.onLeave(leaving, p);
                   return null;
                 })
             .thenCompose(v -> snapshots.restore(p));
@@ -385,12 +377,12 @@ public final class ArenaManager {
       s = require(id);
       needsJoin = joining != null && !s.players.containsKey(joining.getUniqueId());
       int total = s.players.size() + count + (needsJoin ? 1 : 0);
-      if (!s.config.preset().equals("werewolf")
+      if (!s.hooks.practice()
           || s.game != null
           || s.stopping
           || s.finishing
           || !s.bots.isEmpty())
-        throw new IllegalArgumentException("Choose a waiting Werewolf arena for practice");
+        throw new IllegalArgumentException("Choose a waiting arena whose game offers practice");
       if (count < 1 || count > 44 || total < s.config.minPlayers() || total > s.config.maxPlayers())
         throw new IllegalArgumentException(
             "Real and practice players together must fit the arena player limits");
@@ -432,7 +424,7 @@ public final class ArenaManager {
     s.bots.clear();
   }
 
-  private long phaseMillis(ArenaSession s) {
+  public long phaseMillis(ArenaSession s) {
     return Math.min(s.game.seconds(), s.bots.isEmpty() ? s.config.durationSeconds() : 15) * 1000L;
   }
 
@@ -440,7 +432,7 @@ public final class ArenaManager {
   private void clock(ArenaSession s, String why) {
     GamePreset game = s.game;
     if (game != null)
-      s.journal.log("CLOCK", game.phase() + " timer: " + phaseMillis(s) / 1000 + "s (" + why + ")");
+      s.hooks.log(s, "CLOCK", game.phase() + " timer: " + phaseMillis(s) / 1000 + "s (" + why + ")");
   }
 
   public synchronized void start(String id) {
@@ -451,21 +443,15 @@ public final class ArenaManager {
         || s.players.size() < s.config.minPlayers()
         || s.players.keySet().stream().anyMatch(busy::contains))
       throw new IllegalArgumentException("Wait for enough fully joined players before starting");
-    String lacking = s.config.places().missing(s.players.size());
+    String lacking = s.hooks.canStart(s);
     if (lacking != null) throw new IllegalArgumentException(lacking);
     s.eventId = UUID.randomUUID().toString();
-    s.ambienceEpoch++;
-    s.ambienceNight = false;
-    s.ambiencePhase = "";
-    s.revealed.clear();
-    s.ambienceFinale = false;
+    s.hooks.beforeStart(s);
     s.resultQueued = false;
     s.finishing = false;
     s.practice = !s.bots.isEmpty();
     s.roster.clear();
     s.abandoned.clear();
-    s.seats.clear();
-    s.placed.clear();
     for (var entry : s.players.entrySet())
       if (!s.bots.contains(entry.getKey())) s.roster.put(entry.getKey(), entry.getValue());
     Map<UUID, String> forcedRoles = new HashMap<>();
@@ -478,23 +464,7 @@ public final class ArenaManager {
         presets
             .get(s.config.preset())
             .create(s.config, Set.copyOf(s.players.keySet()), Map.copyOf(forcedRoles));
-    s.botBrain = s.bots.isEmpty() ? null : new WerewolfBots(new Random());
-    s.observedTurn = s.game instanceof WerewolfGame game ? game.turnKey() : "";
-    s.journal.close();
-    s.journal = WerewolfJournal.SILENT;
-    if (s.game instanceof WerewolfGame wolf && plugin.werewolfLogs != null) {
-      s.journal = plugin.werewolfLogs.open(s.config.id(), s.eventId, Map.copyOf(s.players));
-      s.journal.log(
-          "START",
-          s.players.size()
-              + " players ("
-              + s.bots.size()
-              + " bots) · time limit "
-              + s.config.durationSeconds()
-              + "s"
-              + (s.bots.isEmpty() ? "" : " · practice: every phase capped at 15s"));
-      wolf.journal(s.journal);
-    }
+    s.hooks.onStart(s);
     s.startedAt = System.currentTimeMillis();
     s.phaseEndsAt = s.startedAt + phaseMillis(s);
     clock(s, "opening presentation");
@@ -503,8 +473,7 @@ public final class ArenaManager {
         plugin
             .rewards
             .begin(s)
-            .thenCompose(v -> plugin.places.prepare(s))
-            .thenCompose(v -> plugin.places.present(s, "WAITING"))
+            .thenCompose(v -> s.hooks.opening(s))
             .thenRun(
                 () -> {
                   if (s.game != null) {
@@ -512,11 +481,11 @@ public final class ArenaManager {
                     clock(s, "opening presentation over, the clock restarts");
                   }
                 })
-            .thenCompose(v -> plugin.ambience.enter(s, true));
+            .thenCompose(v -> s.hooks.entered(s, true));
     s.presentation.whenComplete(
         (v, e) -> {
           if (e != null) {
-            s.journal.log("ERROR", "Start failed: " + NexusArenaEngine.reason(e));
+            s.hooks.log(s, "ERROR", "Start failed: " + NexusArenaEngine.reason(e));
             plugin.getLogger().warning("Start failed: " + NexusArenaEngine.reason(e));
             tell(s, "The game could not start: " + NexusArenaEngine.reason(e));
             stop(s.config.id(), "INTERRUPTED");
@@ -524,9 +493,9 @@ public final class ArenaManager {
         });
     update(
         s,
-        s.game instanceof WerewolfGame
-            ? null
-            : "The game has begun. Open your compass to see your secret role.");
+        s.hooks.announcesInChat()
+            ? "The game has begun. Open your compass to see your secret role."
+            : null);
   }
 
   public CompletableFuture<Void> stop(String id) {
@@ -539,12 +508,11 @@ public final class ArenaManager {
     synchronized (this) {
       if (current.finishing) return current.stopFuture;
       current.finishing = true;
-      current.ambienceEpoch++;
+      current.hooks.epoch(current);
       completion = new CompletableFuture<>();
       current.stopFuture = completion;
     }
-    WerewolfJournal journal = current.journal;
-    journal.log("STOP", "Arena stopping: " + reason + " · restoring the players");
+    current.hooks.log(current, "STOP", "Arena stopping: " + reason + " · restoring the players");
     current
         .presentation
         .handle((ignored, error) -> (Void) null)
@@ -553,18 +521,13 @@ public final class ArenaManager {
                 current.game == null
                     ? CompletableFuture.completedFuture(null)
                     : plugin.rewards.enqueue(current, reason))
-        .thenCompose(v -> plugin.ambience.conclude(current, reason))
+        .thenCompose(v -> current.hooks.concluding(current, reason))
         .thenCompose(v -> stopPlayers(id))
-        .thenCompose(v -> plugin.places.restore(current))
+        .thenCompose(v -> current.hooks.released(current))
         .whenComplete(
             (v, e) -> {
               current.finishing = false;
-              journal.log(
-                  "STOP",
-                  e == null
-                      ? "Players restored, the arena is free"
-                      : "Restoration pending: " + NexusArenaEngine.reason(e));
-              journal.close();
+              current.hooks.onStop(current, e);
               if (e != null) {
                 plugin.getLogger().warning("Arena stop pending: " + NexusArenaEngine.reason(e));
                 completion.completeExceptionally(e);
@@ -606,7 +569,7 @@ public final class ArenaManager {
       if (now - s.startedAt >= s.config.durationSeconds() * 1000L || !s.game.winner().isEmpty()) {
         update(
             s,
-            s.game instanceof WerewolfGame
+            !s.hooks.announcesInChat()
                 ? null
                 : s.game.winner().isEmpty()
                     ? "Time is up. Returning to your original position."
@@ -615,16 +578,11 @@ public final class ArenaManager {
         continue;
       }
       boolean due = now >= s.phaseEndsAt;
-      if (due) s.journal.log("CLOCK", s.game.phase() + " timer expired");
-      if (s.game instanceof WerewolfGame werewolf && s.botBrain != null) {
-        String before = werewolf.turnKey();
-        bots(s, werewolf, now, due);
-        if (plugin.gui != null) plugin.gui.deliverNotices(s); // a nomination by a bot, a thumb...
-        // A bot ended the turn (the seer's vision, the pack agreeing, the witch going to sleep...).
-        if (!werewolf.turnKey().equals(before)) {
-          phaseChanged(s);
-          continue;
-        }
+      if (due) s.hooks.log(s, "CLOCK", s.game.phase() + " timer expired");
+      // The game may move on by itself (a practice bot ended the turn).
+      if (s.hooks.tickGame(s, now, due)) {
+        phaseChanged(s);
+        continue;
       }
       if (due) {
         s.game.advance();
@@ -633,54 +591,26 @@ public final class ArenaManager {
     }
   }
 
-  /**
-   * Lets the practice bots of a Werewolf game act. Their clicks go through the game like anyone's,
-   * so the game's journal already records each of them with the game's answer or refusal.
-   */
-  private void bots(ArenaSession s, WerewolfGame game, long now, boolean deadline) {
-    s.botBrain.think(game, Set.copyOf(s.bots), now, s.phaseEndsAt, deadline);
-  }
-
   public synchronized void phaseChanged(ArenaSession s) {
-    // Notices can come from a click, a bot or a timeout (e.g. Cupid running out of time).
+    // Notices can come from a click, a bot or a timeout (e.g. a role running out of time).
     if (plugin.gui != null) plugin.gui.deliverNotices(s);
     if (s.game == null || s.stopping || s.finishing) return;
     if (s.game.phase().equals(s.observedPhase)) {
-      // A new turn inside the same phase (one hunter's shot after another's) gets a fresh timer.
-      if (s.game instanceof WerewolfGame game && !game.turnKey().equals(s.observedTurn)) {
-        s.observedTurn = game.turnKey();
-        s.phaseEndsAt = System.currentTimeMillis() + phaseMillis(s);
-        // The troublemaker's second vote opens in the same phase: the first verdict plays first.
-        WerewolfGame.Verdict again = game.takeVerdict();
-        if (again != null) {
-          s.verdictShowing = true;
-          s.presentation =
-              s.presentation
-                  .thenCompose(v -> plugin.ambience.verdict(s, again))
-                  .whenComplete(
-                      (v, e) -> {
-                        s.verdictShowing = false;
-                        if (s.game != null) s.phaseEndsAt = System.currentTimeMillis() + phaseMillis(s);
-                      });
-        }
-      }
+      // A new turn inside the same phase (one player's turn after another's) gets a fresh timer.
+      s.hooks.onTurn(s);
       return;
     }
     String previous = s.observedPhase;
-    s.ambienceEpoch++;
+    s.hooks.epoch(s);
     s.observedPhase = s.game.phase();
-    if (s.game instanceof WerewolfGame game) s.observedTurn = game.turnKey();
     s.phaseEndsAt = System.currentTimeMillis() + phaseMillis(s);
     clock(s, previous + " → " + s.observedPhase + ", the presentation plays first");
     // Taken now: by the time the presentation reaches it, the game may have moved on.
-    WerewolfGame.Verdict verdict = s.game instanceof WerewolfGame game ? game.takeVerdict() : null;
-    if (verdict != null) s.verdictShowing = true;
+    Supplier<CompletableFuture<Void>> scene = s.hooks.onPhase(s, previous);
     CompletableFuture<Void> previousPresentation = s.presentation;
     s.presentation =
         previousPresentation
-            .thenCompose(v -> plugin.ambience.verdict(s, verdict))
-            .whenComplete((v, e) -> s.verdictShowing = false)
-            .thenCompose(v -> plugin.places.present(s, previous))
+            .thenCompose(v -> scene.get())
             .thenRun(
                 () -> {
                   if (s.game != null) {
@@ -688,11 +618,11 @@ public final class ArenaManager {
                     clock(s, "presentation over, the clock restarts");
                   }
                 })
-            .thenCompose(v -> plugin.ambience.enter(s, false));
+            .thenCompose(v -> s.hooks.entered(s, false));
     s.presentation.whenComplete(
         (v, e) -> {
           if (e != null) {
-            s.journal.log("ERROR", "Transition failed: " + NexusArenaEngine.reason(e));
+            s.hooks.log(s, "ERROR", "Transition failed: " + NexusArenaEngine.reason(e));
             plugin.getLogger().warning("Transition failed: " + NexusArenaEngine.reason(e));
             tell(s, "The game was interrupted: " + NexusArenaEngine.reason(e));
             stop(s.config.id(), "INTERRUPTED");
@@ -700,9 +630,9 @@ public final class ArenaManager {
         });
     update(
         s,
-        s.game instanceof WerewolfGame
-            ? null
-            : "Phase: " + s.game.phase() + ". Open your compass for the current actions.");
+        s.hooks.announcesInChat()
+            ? "Phase: " + s.game.phase() + ". Open your compass for the current actions."
+            : null);
   }
 
   /** Tells every real participant why the game ended, before they are restored. */
@@ -727,14 +657,14 @@ public final class ArenaManager {
               if (announcement != null)
                 p.sendMessage(Component.text(announcement, NamedTextColor.WHITE));
               if (s.game != null && !s.game.alive().contains(uuid)) {
-                if (s.game instanceof WerewolfGame wolf && wolf.actors().contains(uuid)) {
-                  // A pending hunter must still be able to click the shot menu.
+                if (s.hooks.keepsActing(s, uuid)) {
+                  // A player whose last action is pending must still be able to click its menu.
                   p.setGameMode(GameMode.ADVENTURE);
                   p.setAllowFlight(true);
                   p.setFlying(true);
                 } else p.setGameMode(GameMode.SPECTATOR);
               }
-              if (!s.verdictShowing
+              if (s.hooks.menuAllowed(s)
                   && p.getOpenInventory().getTopInventory().getHolder()
                       instanceof CompassMenuHolder) plugin.gui.open(p);
               return null;
@@ -797,6 +727,7 @@ public final class ArenaManager {
                           "score",
                           s.game == null ? 0 : s.game.scores().getOrDefault(e.getKey(), 0)))
               .toList());
+      row.putAll(s.hooks.stateForPanel(s));
       list.add(row);
     }
     return Map.of(

@@ -6,29 +6,26 @@ import java.util.concurrent.*;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
-import org.bukkit.command.*;
 import org.bukkit.NamespacedKey;
+import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
+import win.vampyuyu.werewolf.WerewolfModule;
 
 public final class NexusArenaEngine extends JavaPlugin {
   public ArenaManager arenas;
-  CompassGUI gui;
-  WerewolfAmbience ambience;
-  PlaceController places;
-  ClickControls controls;
-  VoteMarks votes;
-  CustomHud customHud;
-  ArenaAdmin admin;
-  ArenaTools tools;
-  MenuSkin skin;
-  EventRewards rewards;
-  WerewolfLogs werewolfLogs;
-  RedisManager redis;
-  CrossServerBridge bridge;
-  String serverId;
-  List<Map<String, Object>> worlds = List.of();
+  public CompassGUI gui;
+  /** The Werewolf game: its preset, hooks, scenery and command (see WerewolfModule). */
+  public WerewolfModule werewolf;
+  public ArenaAdmin admin;
+  public ArenaTools tools;
+  public MenuSkin skin;
+  public EventRewards rewards;
+  public RedisManager redis;
+  public CrossServerBridge bridge;
+  public String serverId;
+  public List<Map<String, Object>> worlds = List.of();
   private ArenaHttpApi api;
   private final ExecutorService worker =
       new ThreadPoolExecutor(
@@ -64,24 +61,18 @@ public final class NexusArenaEngine extends JavaPlugin {
                     return m;
                   })
               .toList();
-      werewolfLogs =
-          new WerewolfLogs(
-              getDataFolder().toPath().resolve("logs").resolve("werewolf"),
-              getLogger(),
-              !"false".equalsIgnoreCase(System.getenv().getOrDefault("WEREWOLF_LOG_CONSOLE", "")));
       arenas = new ArenaManager(this);
       gui = new CompassGUI(this);
-      ambience = new WerewolfAmbience(this);
-      places = new PlaceController(this);
+      werewolf = new WerewolfModule(this);
       admin = new ArenaAdmin(this);
       skin = MenuSkin.load(this);
       tools = new ArenaTools(this);
       bridge = new CrossServerBridge(this);
-      customHud = new CustomHud();
-      controls = new ClickControls(this);
-      votes = new VoteMarks(this);
+      // The games register before the arenas that use them are loaded.
+      arenas.registerPreset(werewolf.preset());
+      arenas.reload();
       getServer().getPluginManager().registerEvents(gui, this);
-      getServer().getPluginManager().registerEvents(controls, this);
+      getServer().getPluginManager().registerEvents(werewolf.controls, this);
       getServer().getPluginManager().registerEvents(new ArenaProtectionListener(this), this);
       getServer().getPluginManager().registerEvents(bridge, this);
       try {
@@ -105,9 +96,7 @@ public final class NexusArenaEngine extends JavaPlugin {
       api = new ArenaHttpApi(this, token);
       Objects.requireNonNull(getCommand("eventadmin")).setExecutor(admin::rewards);
       Objects.requireNonNull(getCommand("arena")).setExecutor(this::command);
-      WwCommand ww = new WwCommand(this);
-      Objects.requireNonNull(getCommand("ww")).setExecutor(ww);
-      Objects.requireNonNull(getCommand("ww")).setTabCompleter(ww);
+      werewolf.registerCommand();
       getCommand("arena")
           .setTabCompleter(
               (sender, cmd, alias, args) ->
@@ -124,7 +113,7 @@ public final class NexusArenaEngine extends JavaPlugin {
           () -> {
             try {
               arenas.tick();
-              for (ArenaSession session : arenas.all()) ambience.tick(session);
+              for (ArenaSession session : arenas.all()) session.hooks.tick(session);
               if (System.currentTimeMillis() / 1000 % 5 == 0) rewards.flush();
               for (Player p : Bukkit.getOnlinePlayers())
                 onPlayer(
@@ -143,18 +132,7 @@ public final class NexusArenaEngine extends JavaPlugin {
       clock.scheduleAtFixedRate(
           () -> {
             try {
-              for (Player p : Bukkit.getOnlinePlayers()) {
-                ArenaSession s = arenas.session(p.getUniqueId());
-                if (s == null || !(s.game instanceof WerewolfGame)) continue;
-                onPlayer(
-                    p,
-                    () -> {
-                      controls.sync(p, s);
-                      ambience.aim(s, p);
-                      return null;
-                    });
-              }
-              for (ArenaSession session : arenas.all()) votes.tick(session);
+              for (ArenaSession session : arenas.all()) session.hooks.fastTick(session);
             } catch (Exception e) {
               getLogger().warning("Arena controls: " + reason(e));
             }
@@ -223,12 +201,12 @@ public final class NexusArenaEngine extends JavaPlugin {
   }
 
   /** The player's HUD size choice: auto (follows the window), large, medium or small. */
-  String hudSize(Player p) {
+  public String hudSize(Player p) {
     String size = p.getPersistentDataContainer().get(hudKey(), PersistentDataType.STRING);
     return size == null ? "auto" : size;
   }
 
-  void hudSize(Player p, String size) {
+  public void hudSize(Player p, String size) {
     p.getPersistentDataContainer().set(hudKey(), PersistentDataType.STRING, size);
   }
 
@@ -249,7 +227,7 @@ public final class NexusArenaEngine extends JavaPlugin {
         });
   }
 
-  static String reason(Throwable e) {
+  public static String reason(Throwable e) {
     while (e.getCause() != null) e = e.getCause();
     return e.getMessage() == null ? "Arena operation failed" : e.getMessage();
   }
@@ -340,9 +318,7 @@ public final class NexusArenaEngine extends JavaPlugin {
     if (redis != null) redis.close();
     if (arenas != null) {
       for (ArenaSession session : arenas.all()) {
-        session.ambienceEpoch++;
-        session.journal.log("STOP", "The server is shutting down");
-        session.journal.close();
+        session.hooks.shutdown(session);
       }
       // Paper shutdown runs on its main thread. Folia snapshots are intentionally
       // retained for recovery on login; never mutate foreign-region entities here.
@@ -363,7 +339,8 @@ public final class NexusArenaEngine extends JavaPlugin {
               arenas.allowTeleport(p.getUniqueId(), true);
               if (!p.teleport(arenas.snapshots.origin(y)))
                 throw new IllegalStateException("Return teleport was refused");
-              ambience.clearNow(p, arenas.session(p.getUniqueId()));
+              var leaving = arenas.session(p.getUniqueId());
+              if (leaving != null) leaving.hooks.onLeave(leaving, p);
               arenas.snapshots.apply(p, y);
               p.saveData();
               arenas.snapshots.delete(p.getUniqueId());

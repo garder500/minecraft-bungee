@@ -16,42 +16,41 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
 /** Hotbar items that configure the selected arena by right/left-clicking in the world. */
-final class ArenaTools implements Listener {
-  private enum Tool {
-    SELECT(Material.MAP, "Arena selector", "Right-click: next arena", "Left-click: previous arena"),
-    WAND(
-        Material.GOLDEN_AXE,
-        "Bounds wand",
-        "Left-click a block: corner 1",
-        "Right-click a block: corner 2",
-        "Sneak + right-click: apply to the arena",
-        "Height gets 5 blocks of headroom"),
-    SPAWN(Material.COMPASS, "Arena spawn", "Right-click: set the spawn where you stand"),
-    SEAT(
-        Material.RED_BED,
-        "Seats",
-        "Right-click a block: a sitting seat on it (stairs and slabs work)",
-        "Sneak + right-click a block: a standing spot on it",
-        "Left-click a seat's block: remove it"),
-    CIRCLE(Material.SUNFLOWER, "Vote circle", "Right-click the block at the centre of the table"),
-    STATUS(
-        Material.WRITABLE_BOOK,
-        "Readiness checklist",
-        "Right-click: what is still missing",
-        "Sneak + right-click: open the setup menu");
+public final class ArenaTools implements Listener {
+  /** One hotbar tool; the engine's own, plus those a game adds. */
+  private record Tool(String name, Material material, String title, String... lore) {}
 
-    final Material material;
-    final String title;
-    final String[] lore;
+  private static final Tool SELECT =
+      new Tool("SELECT", Material.MAP, "Arena selector", "Right-click: next arena", "Left-click: previous arena");
+  private static final Tool WAND =
+      new Tool(
+          "WAND",
+          Material.GOLDEN_AXE,
+          "Bounds wand",
+          "Left-click a block: corner 1",
+          "Right-click a block: corner 2",
+          "Sneak + right-click: apply to the arena",
+          "Height gets 5 blocks of headroom");
+  private static final Tool SPAWN =
+      new Tool("SPAWN", Material.COMPASS, "Arena spawn", "Right-click: set the spawn where you stand");
+  private static final Tool STATUS =
+      new Tool(
+          "STATUS",
+          Material.WRITABLE_BOOK,
+          "Readiness checklist",
+          "Right-click: what is still missing",
+          "Sneak + right-click: open the setup menu");
 
-    Tool(Material material, String title, String... lore) {
-      this.material = material;
-      this.title = title;
-      this.lore = lore;
-    }
+  /** The tools of an arena: the engine's, with its game's between the spawn and the checklist. */
+  private List<Tool> kit(String arenaId) {
+    List<Tool> kit = new ArrayList<>(List.of(SELECT, WAND, SPAWN));
+    if (arenaId != null)
+      for (var extra : plugin.arenas.require(arenaId).hooks.tools())
+        kit.add(new Tool(extra.id(), extra.material(), extra.title(), extra.lore()));
+    kit.add(STATUS);
+    return kit;
   }
 
-  private static final double NEAREST_SEAT = 3.0;
   private static final int HEADROOM = 5;
   private final Map<UUID, Block[]> marked = new ConcurrentHashMap<>();
 
@@ -60,7 +59,7 @@ final class ArenaTools implements Listener {
   private final Map<UUID, String> selected = new ConcurrentHashMap<>();
   private final Set<UUID> visualizing = ConcurrentHashMap.newKeySet();
 
-  ArenaTools(NexusArenaEngine plugin) {
+  public ArenaTools(NexusArenaEngine plugin) {
     this.plugin = plugin;
     key = new NamespacedKey(plugin, "arena-tool");
     Bukkit.getPluginManager().registerEvents(this, plugin);
@@ -68,7 +67,7 @@ final class ArenaTools implements Listener {
 
   // ---------------------------------------------------------------- commands
 
-  void command(Player p, String sub, String[] args) {
+  public void command(Player p, String sub, String[] args) {
     if (sub.equals("select")) {
       if (args.length != 2) throw new IllegalArgumentException("/arena select <id>");
       select(p, args[1]);
@@ -90,16 +89,16 @@ final class ArenaTools implements Listener {
     report(p, id);
   }
 
-  void give(Player p, String id) {
+  public void give(Player p, String id) {
     if (id != null) {
       plugin.arenas.require(id);
       selected.put(p.getUniqueId(), id);
     } else if (current(p) == null) {
       throw new IllegalArgumentException(
-          "No arena yet. Use the corner wand, then /arena create <id> <werewolf|freeplay>");
+          "No arena yet. Use the corner wand, then /arena create <id> <" + plugin.admin.presetNames() + ">");
     }
     int added = 0;
-    for (Tool t : Tool.values()) {
+    for (Tool t : kit(current(p))) {
       if (has(p, t)) continue;
       var left = p.getInventory().addItem(make(t));
       if (!left.isEmpty()) {
@@ -130,7 +129,7 @@ final class ArenaTools implements Listener {
   }
 
   private ItemStack make(Tool t) {
-    ItemStack item = CompassGUI.item(t.material, t.title, t.lore);
+    ItemStack item = CompassGUI.item(t.material(), t.title(), t.lore());
     var meta = item.getItemMeta();
     meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, t.name());
     item.setItemMeta(meta);
@@ -141,15 +140,13 @@ final class ArenaTools implements Listener {
     if (item == null || !item.hasItemMeta()) return null;
     String name = item.getItemMeta().getPersistentDataContainer().get(key, PersistentDataType.STRING);
     if (name == null) return null;
-    try {
-      return Tool.valueOf(name);
-    } catch (IllegalArgumentException e) {
-      return null;
-    }
+    for (Tool t : List.of(SELECT, WAND, SPAWN, STATUS)) if (t.name().equals(name)) return t;
+    // A tool of a game: only its id matters from here on.
+    return new Tool(name, item.getType(), "");
   }
 
   private boolean has(Player p, Tool t) {
-    for (ItemStack it : p.getInventory().getContents()) if (tool(it) == t) return true;
+    for (ItemStack it : p.getInventory().getContents()) { Tool held = tool(it); if (held != null && held.name().equals(t.name())) return true; }
     return false;
   }
 
@@ -169,7 +166,7 @@ final class ArenaTools implements Listener {
     return plugin.arenas.all().stream().anyMatch(s -> s.config.id().equals(id));
   }
 
-  private String needArena(Player p) {
+  public String needArena(Player p) {
     String id = current(p);
     if (id == null)
       throw new IllegalArgumentException(
@@ -180,7 +177,7 @@ final class ArenaTools implements Listener {
   // ------------------------------------------------------------------ report
 
   /** Sends a ✔/✘ checklist of everything the arena needs before it can start. */
-  void report(Player p, String id) {
+  public void report(Player p, String id) {
     ArenaConfig c = plugin.arenas.require(id).config;
     List<String> lines = new ArrayList<>();
     lines.add("§6━━ " + c.name() + " (" + id + ", " + c.preset() + ") ━━");
@@ -196,60 +193,33 @@ final class ArenaTools implements Listener {
                 c.worldName())));
     lines.add(ok(true, "Spawn " + coords(c.spawn())));
     lines.add(ok(true, "Players " + c.minPlayers() + "–" + c.maxPlayers()));
-    String missing = null;
-    if (c.preset().equals("werewolf")) {
-      var v = c.places();
-      lines.add(
-          ok(
-              !v.seats().isEmpty(),
-              "Seats "
-                  + v.seats().size()
-                  + " / "
-                  + c.minPlayers()
-                  + " needed (none: players stay where they spawn)"));
-      lines.add(ok(v.circle() != null, "Vote circle" + at(v.circle())));
-      missing = v.missing(c.minPlayers());
-    }
+    String missing = plugin.arenas.require(id).hooks.report(this, p, c, lines);
     lines.add(
         missing == null
             ? "§a★ Ready to start once " + c.minPlayers() + " players have joined."
             : "§c✘ Not ready: " + missing + ".");
     for (String line : lines) p.sendMessage(Component.text(line));
-    if (c.preset().equals("werewolf") && !c.places().seats().isEmpty())
-      plugin
-          .places
-          .problems(c)
-          .thenAccept(
-              found ->
-                  plugin.onPlayer(
-                      p,
-                      () -> {
-                        if (found.isEmpty())
-                          p.sendMessage(Component.text("§a✔ §fSafety check: every place is usable"));
-                        for (String problem : found)
-                          p.sendMessage(Component.text("§c✘ §f" + problem));
-                        return null;
-                      }));
+    plugin.arenas.require(id).hooks.reportMore(this, p, c);
   }
 
-  private static String ok(boolean good, String text) {
+  public static String ok(boolean good, String text) {
     return (good ? "§a✔ §f" : "§c✘ §f") + text;
   }
 
-  private static String at(ArenaConfig.Spawn s) {
+  public static String at(ArenaConfig.Spawn s) {
     return s == null ? " §c(not set)" : " " + coords(s);
   }
 
-  private static String coords(ArenaConfig.Spawn s) {
+  public static String coords(ArenaConfig.Spawn s) {
     return String.format(Locale.ROOT, "§7(%.0f, %.0f, %.0f)", s.x(), s.y(), s.z());
   }
 
-  private void feedback(Player p, String text) {
+  public void feedback(Player p, String text) {
     p.sendMessage(Component.text("§a✔ " + text));
     p.sendActionBar(Component.text(text, NamedTextColor.GREEN));
   }
 
-  private void warn(Player p, String text) {
+  public void warn(Player p, String text) {
     p.sendMessage(Component.text("§c✘ " + text));
     p.sendActionBar(Component.text(text, NamedTextColor.RED));
   }
@@ -275,32 +245,26 @@ final class ArenaTools implements Listener {
     boolean left = e.getAction().isLeftClick();
     boolean sneak = p.isSneaking();
     Block block = e.getClickedBlock();
-    switch (t) {
-      case SELECT -> cycle(p, left ? -1 : 1);
-      case WAND -> wand(p, left, sneak, block);
-      case SPAWN -> {
+    switch (t.name()) {
+      case "SELECT" -> cycle(p, left ? -1 : 1);
+      case "WAND" -> wand(p, left, sneak, block);
+      case "SPAWN" -> {
         if (left) return;
         String id = needArena(p);
         var position = plugin.admin.point(p, id);
         plugin.admin.change(id, j -> j.add("spawn", ArenaManager.JSON.toJsonTree(position)));
         feedback(p, "Spawn of " + id + " set " + coords(position));
       }
-      case SEAT -> seat(p, left, sneak, block);
-      case CIRCLE -> {
-        if (left) return;
-        if (block == null) throw new IllegalArgumentException("Right-click the block at the centre of the table");
-        String id = needArena(p);
-        plugin.admin.point(p, id); // checks the arena and the world
-        var position = PlaceController.onBlock(block, false);
-        plugin.admin.change(id, j -> j.getAsJsonObject("places").add("circle", ArenaManager.JSON.toJsonTree(position)));
-        feedback(p, "Vote circle set for " + id);
-        report(p, id);
-      }
-      case STATUS -> {
+      case "STATUS" -> {
         if (left) return;
         String id = needArena(p);
         if (sneak) plugin.admin.setup(p, id);
         else report(p, id);
+      }
+      default -> {
+        // A tool of the selected arena's game.
+        String id = needArena(p);
+        plugin.arenas.require(id).hooks.useTool(this, p, t.name(), left, sneak, block);
       }
     }
   }
@@ -365,75 +329,6 @@ final class ArenaTools implements Listener {
         Locale.ROOT, "%.0f × %.0f × %.0f", b.maxX() - b.minX(), b.maxY() - b.minY(), b.maxZ() - b.minZ());
   }
 
-  private void seat(Player p, boolean left, boolean sneak, Block block) throws Exception {
-    String id = needArena(p);
-    var c = plugin.arenas.require(id).config;
-    var seats = c.places().seats();
-    if (!left) {
-      if (block == null) throw new IllegalArgumentException("Right-click the block to sit on (stairs and slabs work)");
-      plugin.admin.point(p, id);
-      var position = PlaceController.onBlock(block, !sneak);
-      int n = seats.size() + 1;
-      Set<String> names = new HashSet<>();
-      for (var seat : seats) names.add(seat.name());
-      while (names.contains("seat-" + n)) n++;
-      final String chosen = "seat-" + n;
-      final boolean sit = !sneak;
-      plugin.admin.change(
-          id,
-          j ->
-              j.getAsJsonObject("places")
-                  .getAsJsonArray("seats")
-                  .add(ArenaManager.JSON.toJsonTree(new ArenaConfig.Seat(chosen, position, sit))));
-      var after = plugin.arenas.require(id).config;
-      feedback(
-          p,
-          "Seat "
-              + chosen
-              + (sit ? " (sit)" : " (stand)")
-              + " added: "
-              + after.places().seats().size()
-              + "/"
-              + c.minPlayers()
-              + " needed ("
-              + c.maxPlayers()
-              + " for a full lobby)");
-      return;
-    }
-    String nearest = nearestSeat(p, seats, block);
-    if (nearest == null)
-      throw new IllegalArgumentException("No seat within " + (int) NEAREST_SEAT + " blocks");
-    plugin.admin.change(
-        id,
-        j -> {
-          var array = j.getAsJsonObject("places").getAsJsonArray("seats");
-          for (int i = 0; i < array.size(); i++)
-            if (array.get(i).getAsJsonObject().get("name").getAsString().equals(nearest)) {
-              array.remove(i);
-              break;
-            }
-        });
-    feedback(p, "Seat " + nearest + " removed (" + (seats.size() - 1) + " left)");
-  }
-
-  private String nearestSeat(Player p, List<ArenaConfig.Seat> seats, Block block) {
-    String best = null;
-    double bestDistance = (block != null ? 1.5 : NEAREST_SEAT) * (block != null ? 1.5 : NEAREST_SEAT);
-    Location at = block != null ? block.getLocation().add(0.5, 0.5, 0.5) : p.getLocation();
-    for (var seat : seats) {
-      var s = seat.at();
-      double d =
-          Math.pow(s.x() - at.getX(), 2)
-              + Math.pow(s.y() - at.getY(), 2)
-              + Math.pow(s.z() - at.getZ(), 2);
-      if (d <= bestDistance) {
-        best = seat.name();
-        bestDistance = d;
-      }
-    }
-    return best;
-  }
-
   /** Right-clicking air with a tool should not require a target block, so cancel containers. */
   @EventHandler
   public void drop(PlayerDropItemEvent e) {
@@ -483,9 +378,7 @@ final class ArenaTools implements Listener {
     if (!p.getWorld().getName().equals(c.worldName())) return;
     var w = p.getWorld();
     dot(p, w, c.spawn(), Particle.CLOUD);
-    for (var seat : c.places().seats())
-      dot(p, w, seat.at(), seat.sit() ? Particle.HAPPY_VILLAGER : Particle.CRIT);
-    dot(p, w, c.places().circle(), Particle.END_ROD);
+    plugin.arenas.require(id).hooks.draw(this, p, c);
     var dust = new Particle.DustOptions(Color.fromRGB(0xe9, 0xd9, 0x9b), 1.2f);
     var b = c.bounds();
     double[][] corners = {
@@ -516,7 +409,7 @@ final class ArenaTools implements Listener {
     return Math.abs(x - l.getX()) < 32 && Math.abs(z - l.getZ()) < 32 && Math.abs(y - l.getY()) < 24;
   }
 
-  private void dot(Player p, World w, ArenaConfig.Spawn s, Particle particle) {
+  public void dot(Player p, World w, ArenaConfig.Spawn s, Particle particle) {
     if (s == null || !near(p, s.x(), s.y(), s.z())) return;
     p.spawnParticle(particle, s.x(), s.y() + 1, s.z(), 8, .25, .6, .25, 0.01);
   }

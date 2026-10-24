@@ -37,4 +37,51 @@ public class ArenaConfigTest {
     assertTrue(b.overlaps(new ArenaConfig.Bounds(10, 0, 10, 30, 30, 30)));
     assertFalse(b.overlaps(new ArenaConfig.Bounds(20, 0, 0, 40, 30, 20)));
   }
+
+  private static final String ZONE =
+      "{id:'zone',name:'Zone',worldName:'world',preset:'anything',"
+          + "bounds:{minX:0,minY:0,minZ:0,maxX:20,maxY:30,maxZ:20},"
+          + "spawn:{x:10,y:5,z:10,yaw:0,pitch:0},gameMode:'ADVENTURE',durationSeconds:600,"
+          + "minPlayers:2,maxPlayers:8,mySetting:{a:1},other:true}";
+
+  @Test
+  public void anyKeyThatIsNotGenericIsAnOpaqueOption() {
+    var gson = new com.google.gson.Gson();
+    var c = gson.fromJson(ZONE, ArenaConfig.class);
+    assertEquals("zone", c.id());
+    assertTrue(c.options().has("mySetting"));
+    assertTrue(c.options().has("other"));
+    assertFalse(c.options().has("minPlayers"));
+    var written = gson.toJsonTree(c).getAsJsonObject();
+    assertEquals(1, written.getAsJsonObject("mySetting").get("a").getAsInt());
+    assertEquals(c, gson.fromJson(written, ArenaConfig.class));
+  }
+
+  @Test
+  public void optionViewsAreParsedOnce() {
+    var c = new com.google.gson.Gson().fromJson(ZONE, ArenaConfig.class);
+    int[] parses = {0};
+    for (int i = 0; i < 3; i++)
+      assertEquals(
+          "a",
+          c.options()
+              .view(
+                  String.class,
+                  json -> {
+                    parses[0]++;
+                    return "a";
+                  }));
+    assertEquals(1, parses[0]);
+  }
+
+  @Test
+  public void theZoneStillRejectsWhatIsNotAZone() {
+    var gson = new com.google.gson.Gson();
+    assertThrows(
+        RuntimeException.class, () -> gson.fromJson(ZONE.replace("maxPlayers:8", "maxPlayers:99"), ArenaConfig.class));
+    assertThrows(
+        RuntimeException.class, () -> gson.fromJson(ZONE.replace("id:'zone'", "id:'Bad Id'"), ArenaConfig.class));
+    assertThrows(
+        RuntimeException.class, () -> gson.fromJson(ZONE.replace("x:10", "x:99"), ArenaConfig.class));
+  }
 }

@@ -51,29 +51,10 @@ final class ArenaHttpApi implements AutoCloseable {
         return;
       }
       String path = request.getRequestURI().getPath();
-      if (request.getRequestMethod().equals("GET") && path.equals("/arenas/logs")) {
-        reply(request, 200, Map.of("logs", plugin.werewolfLogs.list()));
-        return;
-      }
-      if (request.getRequestMethod().equals("GET") && path.startsWith("/arenas/logs/")) {
-        java.nio.file.Path file;
-        try {
-          file = plugin.werewolfLogs.file(path.substring("/arenas/logs/".length()));
-        } catch (NoSuchElementException missing) {
-          reply(request, 404, Map.of("error", missing.getMessage()));
-          return;
-        }
-        // A running game's journal is sent as far as it is written.
-        byte[] text = java.nio.file.Files.readAllBytes(file);
-        request.getResponseHeaders().set("Content-Type", "text/plain; charset=utf-8");
-        request.getResponseHeaders().set("Cache-Control", "no-store");
-        request
-            .getResponseHeaders()
-            .set("Content-Disposition", "attachment; filename=\"" + file.getFileName() + "\"");
-        request.sendResponseHeaders(200, text.length);
-        request.getResponseBody().write(text);
-        return;
-      }
+      // Endpoints the games add (for instance the Werewolf play-by-play logs).
+      for (GameHooks hooks : plugin.arenas.allHooks())
+        for (GameHooks.Route route : hooks.extraRoutes())
+          if (route.handle(request, request.getRequestMethod(), path)) return;
       if (!request.getRequestMethod().equals("POST")
           || !request.getRequestURI().getPath().equals("/arenas/action")) {
         reply(request, 404, Map.of("error", "Unknown arena endpoint"));
@@ -181,11 +162,7 @@ final class ArenaHttpApi implements AutoCloseable {
   }
 
   private void reply(HttpExchange exchange, int status, Object value) throws IOException {
-    byte[] bytes = ArenaManager.JSON.toJson(value).getBytes(StandardCharsets.UTF_8);
-    exchange.getResponseHeaders().set("Content-Type", "application/json");
-    exchange.getResponseHeaders().set("Cache-Control", "no-store");
-    exchange.sendResponseHeaders(status, bytes.length);
-    exchange.getResponseBody().write(bytes);
+    GameHooks.Route.reply(exchange, status, value);
   }
 
   @Override

@@ -49,10 +49,24 @@ public interface GamePreset {
 
   default void visit(UUID player, double x, double y, double z) {}
 
-  /** Private messages the game wants delivered right now, once (e.g. Cupid's arrow). */
+  /** Private messages the game wants delivered right now, once (e.g. a role's secret). */
   default Map<UUID, String> drainNotices() {
     return Map.of();
   }
 
   default void finish() {}
+
+  /** The players who won, when the game has individual winners (the winner is a player id). */
+  default Set<UUID> winners() {
+    try {
+      return Set.of(UUID.fromString(winner()));
+    } catch (IllegalArgumentException notAPlayer) {
+      return Set.of();
+    }
+  }
+
+  /** Identifies the current turn inside a phase; it changes when the turn passes to someone else. */
+  default String turnKey() {
+    return "";
+  }
 }

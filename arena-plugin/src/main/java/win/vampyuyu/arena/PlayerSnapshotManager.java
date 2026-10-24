@@ -16,7 +16,7 @@ public final class PlayerSnapshotManager {
   private final NexusArenaEngine plugin;
   private final Path directory;
 
-  PlayerSnapshotManager(NexusArenaEngine plugin) throws IOException {
+  public PlayerSnapshotManager(NexusArenaEngine plugin) throws IOException {
     this.plugin = plugin;
     directory = plugin.getDataFolder().toPath().resolve("snapshots");
     Files.createDirectories(directory);
