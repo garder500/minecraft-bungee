@@ -79,7 +79,8 @@ final class ProtectionModule implements RoleModule {
   public boolean saves(WerewolfGame g, WerewolfGame.Kill kill) {
     UUID victim = kill.victim();
     String source = kill.source();
-    if (blessed.contains(victim) && !source.equals("OTHER")) {
+    // A blessing guards against the NEXT attempt: wounds already given (DELAYED) are not one.
+    if (blessed.contains(victim) && !source.equals("OTHER") && !source.equals("DELAYED")) {
       blessed.remove(victim);
       g.notify(victim, "A blessing protected you.");
       return true;
