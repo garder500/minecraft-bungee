@@ -56,7 +56,7 @@ final class WerewolfBots {
     if (!key.equals(game.turnKey())) return log;
     try {
       switch (game.phase()) {
-        case "NIGHT", "VAMPIRE" -> followPack(game, bots, log, deadline);
+        case "NIGHT", "VAMPIRE", "MINION" -> followPack(game, bots, log, deadline);
         case "DAY_VOTE" -> {
           if (deadline) settleTie(game, bots, log);
         }
@@ -128,6 +128,16 @@ final class WerewolfBots {
       }
       case "DAY_VOTE" -> dayVote(game, bot, log);
       case "DISCUSSION" -> nominate(game, bot, log);
+      case "ELECTION" -> election(game, bot, log);
+      case "MINION" -> {
+        if (!WerewolfGame.isWolf(role)) return;
+        List<UUID> pool = new ArrayList<>(game.alive());
+        pool.removeIf(p -> WerewolfGame.isWolf(game.role(p)) || game.isMinion(p) || game.exiled(p));
+        UUID target = packChoice(game, bot);
+        if (target == null || !pool.contains(target)) target = pick(pool, List.of());
+        if (target == null) return;
+        vote(game, bot, target, log, "picks as minion");
+      }
       case "TRIAL" -> trial(game, bot, log);
       case "HUNTER_SHOT" -> {
         List<UUID> pool = new ArrayList<>(game.alive());
@@ -208,6 +218,20 @@ final class WerewolfBots {
       target = leader;
     if (target == null) target = pick(pool, List.of());
     vote(game, bot, target, log, "votes against");
+  }
+
+  /** The election of the mayor: a bot points at a random living player (itself excluded). */
+  private void election(WerewolfGame game, UUID bot, List<Action> log) {
+    if (!game.alive().contains(bot) || game.exiled(bot)) return;
+    List<UUID> pool = without(new ArrayList<>(game.alive()), bot);
+    pool.removeIf(game::exiled);
+    List<UUID> tied = game.candidates();
+    if (tied != null) pool.retainAll(tied);
+    // A bot likes its lover and its pack.
+    UUID friend = game.partner(bot);
+    UUID target = friend != null && pool.contains(friend) && random.nextInt(100) < 50 ? friend : pick(pool, List.of());
+    if (target == null) return;
+    vote(game, bot, target, log, "votes for the mayor");
   }
 
   /** Nominated voting, during the debate: a bot seconds a nomination it likes or makes its own. */

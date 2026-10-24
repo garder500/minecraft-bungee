@@ -176,6 +176,8 @@ final class CustomHud {
     List<String> out = new ArrayList<>();
     if (!game.alive().contains(viewer)) return out;
     if (game.inLove(viewer)) out.add("lover");
+    if (viewer.equals(game.mayor())) out.add("mayor");
+    if (game.silenced(viewer) && !game.exiled(viewer)) out.add("silenced");
     // Only what the player believes they are: a drunk witch has no potions to show before he wakes.
     String believed = game.selfRoleName(viewer);
     if (believed.equals("WITCH") && game.lifePotion(viewer)) out.add("life");
@@ -203,7 +205,7 @@ final class CustomHud {
                 ? "sleep"
                 : neutralPause ? "vote"
                 : turn != null ? RoleInfo.of(turn).palette()
-                : phase.equals("DAY_VOTE") || phase.equals("TRIAL") ? "vote" : "villager";
+                : phase.equals("DAY_VOTE") || phase.equals("TRIAL") || phase.equals("ELECTION") ? "vote" : "villager";
     String label;
     if (phase.equals("FINISHED")) label = "game over";
     else if (phase.equals("HUNTER_SHOT")) label = night && !actor ? "sleeping" : "last shot";
@@ -211,6 +213,7 @@ final class CustomHud {
       label =
           switch (phase) {
             case "DAY_VOTE" -> "vote";
+            case "ELECTION" -> "election";
             case "DEFENSE" -> "defense";
             case "TRIAL" -> "trial";
             default -> "debate";
@@ -231,9 +234,10 @@ final class CustomHud {
             }
           };
     if (phase.equals("MARTYR")) label = actor ? RoleInfo.of("MARTYR").call().label() : "vote";
+    if (game.exiled(viewer) && !night && !phase.equals("FINISHED")) label = "away";
     double fraction = boss.timer() && game.seconds() > 0 ? Math.max(0, Math.min(1, seconds / (double) game.seconds())) : 1;
     String rolePalette = dead ? "dead" : RoleInfo.of(role).palette();
-    String team = dead ? "out" : RoleInfo.of(role).teamWord();
+    String team = dead ? "out" : game.isMinion(viewer) ? "wolf side" : RoleInfo.of(role).teamWord();
     return new State(
         palette,
         phase.equals("DAY_VOTE") ? "vote" : night ? "moon" : "sun",

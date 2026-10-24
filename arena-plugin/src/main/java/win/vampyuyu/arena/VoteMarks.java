@@ -35,6 +35,8 @@ final class VoteMarks {
   static final class Tag {
     volatile Entity entity;
     volatile boolean dead;
+    UUID owner;
+    boolean shownAll;
     int count;
     final Set<UUID> shown = ConcurrentHashMap.newKeySet();
   }
@@ -100,6 +102,7 @@ final class VoteMarks {
     }
 
     accused(s, game);
+    mayor(s, game);
 
     // Frames: only the voter sees theirs.
     // Whoever voted always sees their own pick, even when the running count is secret.
@@ -119,6 +122,50 @@ final class VoteMarks {
       }
     }
     for (var pick : picks.entrySet()) frame(s, pick.getKey(), pick.getValue(), color);
+  }
+
+  /** The elected mayor wears a crown for everybody: a gold "♛ Mayor" floating above their head. */
+  private void mayor(ArenaSession s, WerewolfGame game) {
+    UUID mayor = game.mayor();
+    Tag tag = s.mayorTag;
+    if (tag != null && (mayor == null || !mayor.equals(tag.owner) || !game.alive().contains(mayor))) {
+      s.mayorTag = null;
+      retire(tag);
+      tag = null;
+    }
+    if (mayor == null || !game.alive().contains(mayor)) return;
+    if (tag == null) {
+      Location at = where(s, mayor);
+      if (at == null) return;
+      tag = new Tag();
+      tag.owner = mayor;
+      s.mayorTag = tag;
+      final Tag created = tag;
+      double lift = seated(s, mayor) ? 2.35 : 2.85;
+      spawn(
+          at.clone().add(0, lift, 0),
+          loc ->
+              loc.getWorld()
+                  .spawn(
+                      loc,
+                      TextDisplay.class,
+                      t -> {
+                        base(t);
+                        t.setBillboard(Display.Billboard.CENTER);
+                        t.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
+                        t.setShadowed(true);
+                        t.setTransformation(scale(1.3f));
+                        t.text(Component.text("♛ Mayor", TextColor.color(GOLD)));
+                      }),
+          e -> adopt(created, e));
+      return;
+    }
+    if (tag.entity == null || tag.shownAll) return;
+    tag.shownAll = true;
+    for (UUID id : s.players.keySet()) {
+      Player p = Bukkit.getPlayer(id);
+      if (p != null) show(p, tag.entity);
+    }
   }
 
   /** Nominated voting: a red frame, seen by every player, around whoever is nominated or on trial. */
@@ -401,11 +448,14 @@ final class VoteMarks {
 
   /** Removes every marker of the session; safe to call again and again. */
   void clear(ArenaSession s) {
-    if (s.voteTags.isEmpty() && s.voteGlows.isEmpty() && s.accusedGlow == null) return;
+    if (s.voteTags.isEmpty() && s.voteGlows.isEmpty() && s.accusedGlow == null && s.mayorTag == null)
+      return;
     for (var tag : List.copyOf(s.voteTags.values())) retire(tag);
     for (var glow : List.copyOf(s.voteGlows.values())) retire(glow);
     if (s.accusedGlow != null) retire(s.accusedGlow);
     s.accusedGlow = null;
+    if (s.mayorTag != null) retire(s.mayorTag);
+    s.mayorTag = null;
     s.voteTags.clear();
     s.voteGlows.clear();
   }

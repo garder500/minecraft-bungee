@@ -12,6 +12,8 @@ export type WerewolfRules = {
   dice?: boolean;
   amulet?: boolean;
   voting?: string;
+  mayor?: string;
+  minion?: string;
 };
 export type FreeplayRules = {
   objective: string;
@@ -37,6 +39,8 @@ export const defaultWerewolf: WerewolfRules = {
   dice: false,
   amulet: false,
   voting: "POINT",
+  mayor: "DEALT",
+  minion: "DEALT",
 };
 export const defaultFreeplay: FreeplayRules = {
   objective: "SANDBOX",
@@ -281,6 +285,30 @@ export function ArenaRulesEditor({
                 <option value="NOMINATE">
                   Nominate, second, defend, thumbs up or down
                 </option>
+              </select>
+            </label>
+            <label>
+              The mayor
+              <select
+                value={ww.mayor || "DEALT"}
+                onChange={(e) =>
+                  onPatch({ werewolf: { ...ww, mayor: e.target.value } })
+                }
+              >
+                <option value="DEALT">A secret card (Mayor role)</option>
+                <option value="ELECTED">Elected by the village on day one</option>
+              </select>
+            </label>
+            <label>
+              The minion
+              <select
+                value={ww.minion || "DEALT"}
+                onChange={(e) =>
+                  onPatch({ werewolf: { ...ww, minion: e.target.value } })
+                }
+              >
+                <option value="DEALT">A card (Minion role)</option>
+                <option value="PICKED">Picked by the wolves on night one</option>
               </select>
             </label>
             <label>

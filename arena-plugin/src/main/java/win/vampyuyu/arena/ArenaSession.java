@@ -40,6 +40,9 @@ public final class ArenaSession {
   /** The frame everybody sees around a nominated player (nominated voting), and who it is on. */
   volatile VoteMarks.Glow accusedGlow;
 
+  /** The crown over the elected mayor, seen by every player. */
+  volatile VoteMarks.Tag mayorTag;
+
   final Map<UUID, String> roster = new ConcurrentHashMap<>();
   final Set<UUID> abandoned = ConcurrentHashMap.newKeySet();
   volatile CompletableFuture<Void> presentation = CompletableFuture.completedFuture(null);

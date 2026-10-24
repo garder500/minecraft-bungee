@@ -40,7 +40,7 @@ export const werewolfRoles: WerewolfRole[] = [
   {"id": "DRUNK", "name": "Drunk", "team": "village", "impact": -3, "max": 1, "icon": "♙", "blurb": "You think you are a plain villager and sleep through the nights."},
   {"id": "WEREWOLF", "name": "Werewolf", "team": "wolves", "impact": -6, "max": 20, "icon": "☾", "blurb": "At night, vote with the pack for a non-wolf."},
   {"id": "SORCERER", "name": "Sorcerer", "team": "wolves", "impact": -3, "max": 1, "icon": "☾", "blurb": "You are on the wolves' side but do not wake with them."},
-  {"id": "MINION", "name": "Minion", "team": "wolves", "impact": -6, "max": 1, "icon": "☾", "blurb": "You are on the wolves' side."},
+  {"id": "MINION", "name": "Minion", "team": "wolves", "impact": -6, "max": 1, "icon": "☾", "blurb": "You play for the wolves but do not wake with them."},
   {"id": "ALPHA_WOLF", "name": "Alpha wolf", "team": "wolves", "impact": -8, "max": 1, "icon": "☾", "blurb": "At night, vote with the pack for a non-wolf."},
   {"id": "INFECTOR", "name": "Infector", "team": "wolves", "impact": -8, "max": 1, "icon": "☾", "blurb": "At night, vote with the pack."},
   {"id": "WOLF_CUB", "name": "Wolf cub", "team": "wolves", "impact": -8, "max": 1, "icon": "☾", "blurb": "At night, vote with the pack."},

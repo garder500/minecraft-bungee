@@ -59,7 +59,10 @@ public class SocialModuleTest {
     toPhase(g, "DISCUSSION");
     assertTrue(g.silenced(target));
     assertTrue("a silenced player still votes", g.actors().contains(target));
-    assertFalse(g.drainNotices().containsKey(target));
+    // He is told in private, and the table is told who is silent today.
+    var news = g.drainNotices();
+    assertTrue(news.get(target), news.get(target).contains("silences you"));
+    assertTrue(news.get(caster), news.get(caster).contains("is silenced by a spell today"));
   }
 
   @Test
@@ -104,8 +107,11 @@ public class SocialModuleTest {
     toPhase(g, "HAG");
     g.drainNotices();
     g.select(hag, target);
+    // The hag's call is the last of the night: the dawn follows at once, and the whole table is told
+    // who was sent away (that is visible in the game), the player himself first.
     Map<UUID, String> notices = g.drainNotices();
-    assertEquals(Set.of(target), notices.keySet());
+    assertTrue(notices.get(target), notices.get(target).contains("sent you away"));
+    for (String text : notices.values()) assertTrue(text, text.contains("is away from the village today"));
     assertTrue(g.exiled(target));
     assertTrue(g.silenced(target));
     toPhase(g, "DISCUSSION");

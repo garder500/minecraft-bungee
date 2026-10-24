@@ -17,7 +17,25 @@ public final class GameRules {
       String ballots,
       Boolean dice,
       Boolean amulet,
-      String voting) {
+      String voting,
+      String mayor,
+      String minion) {
+    public Werewolf(
+        Map<String, Integer> roles,
+        int cupidSeconds,
+        int witchSeconds,
+        int hunterSeconds,
+        Boolean ambienceEnabled,
+        String reveal,
+        String ballots,
+        Boolean dice,
+        Boolean amulet,
+        String voting) {
+      this(
+          roles, cupidSeconds, witchSeconds, hunterSeconds, ambienceEnabled, reveal, ballots, dice,
+          amulet, voting, "DEALT", "DEALT");
+    }
+
     public Werewolf(
         Map<String, Integer> roles, int cupidSeconds, int witchSeconds, int hunterSeconds) {
       this(roles, cupidSeconds, witchSeconds, hunterSeconds, true);
@@ -31,7 +49,7 @@ public final class GameRules {
         Boolean ambienceEnabled) {
       this(
           roles, cupidSeconds, witchSeconds, hunterSeconds, ambienceEnabled, "FULL", "OPEN",
-          false, false, "POINT");
+          false, false, "POINT", "DEALT", "DEALT");
     }
 
     /** What a death tells the table: FULL role, TEAM only, WOLF or not, or NONE. */
@@ -43,10 +61,21 @@ public final class GameRules {
     /** How the village eliminates: POINT (everybody points, the most pointed at falls) or NOMINATE. */
     public static final List<String> VOTINGS = List.of("POINT", "NOMINATE");
 
+    /** Where the mayor comes from: DEALT (a card, secret) or ELECTED (by the village, publicly). */
+    public static final List<String> MAYORS = List.of("DEALT", "ELECTED");
+
+    /** Where the minion comes from: DEALT (a card) or PICKED (by the wolves on the first night). */
+    public static final List<String> MINIONS = List.of("DEALT", "PICKED");
+
     public Werewolf {
       ambienceEnabled = ambienceEnabled == null ? true : ambienceEnabled;
       reveal = reveal == null ? "FULL" : reveal.toUpperCase(Locale.ROOT);
       ballots = ballots == null ? "OPEN" : ballots.toUpperCase(Locale.ROOT);
+      mayor = mayor == null ? "DEALT" : mayor.toUpperCase(Locale.ROOT);
+      minion = minion == null ? "DEALT" : minion.toUpperCase(Locale.ROOT);
+      if (!MAYORS.contains(mayor)) throw new IllegalArgumentException("Mayor must be one of " + MAYORS);
+      if (!MINIONS.contains(minion))
+        throw new IllegalArgumentException("Minion must be one of " + MINIONS);
       voting = voting == null ? "POINT" : voting.toUpperCase(Locale.ROOT);
       if (!VOTINGS.contains(voting))
         throw new IllegalArgumentException("Voting must be one of " + VOTINGS);

@@ -45,7 +45,8 @@ public class RulesFuzzTest {
   }
 
   private static String describe(int seed, Map<String, Integer> cast, GameRules.Werewolf rules) {
-    return "seed " + seed + " cast " + cast + " voting " + rules.voting() + " reveal "
+    return "seed " + seed + " cast " + cast + " voting " + rules.voting() + " mayor " + rules.mayor()
+        + " minion " + rules.minion() + " reveal "
         + rules.reveal() + " ballots " + rules.ballots() + " dice " + rules.dice()
         + " amulet " + rules.amulet();
   }
@@ -64,7 +65,9 @@ public class RulesFuzzTest {
               r.nextInt(4) == 0 ? "SECRET" : "OPEN",
               r.nextInt(3) == 0,
               r.nextInt(3) == 0,
-              r.nextInt(3) == 0 ? "NOMINATE" : "POINT");
+              r.nextInt(3) == 0 ? "NOMINATE" : "POINT",
+              r.nextInt(3) == 0 ? "ELECTED" : "DEALT",
+              r.nextInt(3) == 0 ? "PICKED" : "DEALT");
       String label = describe(seed, cast, rules);
       var ids = ids(seed, n);
       WerewolfGame game;

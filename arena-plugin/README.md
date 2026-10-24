@@ -205,9 +205,11 @@ Roles: Villager, Werewolf, Seer, Witch, Hunter, Cupid, Guard and new in 1.6 **Al
 | `reveal` | `full` | What a death tells the table: the `full` role, the `team`, only `wolf` or not, or `none`. With anything but `full` the dead roles are still called every night, for a few seconds, so the silence tells nothing. |
 | `ballots` | `open` | `secret`: nobody sees the running count; the ballots are opened when the vote closes. |
 | `dice` | off | Every dawn two dice pick a twist: the next victim becomes a wolf (2), a lightning vote at three ballots (3), two eliminations (4), the seer's last look is named (5), nothing (6-8), same as yesterday (9), secret ballots (10), a silent day (11), the next victim only loses their power (12). |
+| `mayor` | `dealt` | `dealt`: the Mayor is a secret card. `elected`: no mayor card; the village votes for one on the first day (and again whenever the mayor dies), a crown floats over the elected mayor, and their vote counts twice in the vote and at the trial. |
+| `minion` | `dealt` | `dealt`: the Minion is a card. `picked`: the standard rule, no card: on the first night the wolves agree on a player, who plays for the wolves, learns the pack, does not wake with it, keeps their own role and looks like a villager to the Seer. |
 | `amulet` | off | A hidden player (never a wolf) holds the Amulet of Protection: it saves them once from any death, and they may pass it on each night; a player who already held it destroys it, and so does an unused amulet that saved a life. |
 
-What the board game asks a moderator to judge is adapted: the mason taboo is not enforced; the ghost's letter is one letter typed in the chat; the old hag's and the spellcaster's targets are away or silent for the day (chat blocked, hidden from the table); the mayor is dealt, not elected; the minion is dealt, not chosen by the wolves.
+What the board game asks a moderator to judge is adapted: the mason taboo is not enforced; the ghost's letter is one letter typed in the chat. A player the old hag sends away really leaves the table for the day: black screen, invisible to the others, no chat and no vote, until nightfall, and everybody is told who is away. A player the spellcaster silences cannot chat but still votes and can gesture (move, crouch, look), and the table is told who is silent.
 
 ### Testing every role
 

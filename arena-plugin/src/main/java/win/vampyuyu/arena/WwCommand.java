@@ -357,8 +357,9 @@ final class WwCommand implements CommandExecutor, TabCompleter {
     var w = plugin.arenas.require(id).config.werewolf();
     if (args.length < 3) {
       say(sender, "voting " + w.voting() + " · reveal " + w.reveal() + " · ballots " + w.ballots()
-          + " · dice " + (w.dice() ? "on" : "off") + " · amulet " + (w.amulet() ? "on" : "off"));
-      say(sender, "Change with /ww rules voting point|nominate, reveal full|team|wolf|none, ballots open|secret, dice on|off, amulet on|off");
+          + " · dice " + (w.dice() ? "on" : "off") + " · amulet " + (w.amulet() ? "on" : "off")
+          + " · mayor " + w.mayor() + " · minion " + w.minion());
+      say(sender, "Change with /ww rules voting point|nominate, reveal full|team|wolf|none, ballots open|secret, dice on|off, amulet on|off, mayor dealt|elected, minion dealt|picked");
       return;
     }
     String key = args[1].toLowerCase(Locale.ROOT), value = args[2].toLowerCase(Locale.ROOT);
@@ -373,6 +374,16 @@ final class WwCommand implements CommandExecutor, TabCompleter {
           throw new IllegalArgumentException("Use point or nominate");
         plugin.admin.change(id, j -> j.getAsJsonObject("werewolf").addProperty("voting", value.toUpperCase(Locale.ROOT)));
       }
+      case "mayor" -> {
+        if (!GameRules.Werewolf.MAYORS.contains(value.toUpperCase(Locale.ROOT)))
+          throw new IllegalArgumentException("Use dealt or elected");
+        plugin.admin.change(id, j -> j.getAsJsonObject("werewolf").addProperty("mayor", value.toUpperCase(Locale.ROOT)));
+      }
+      case "minion" -> {
+        if (!GameRules.Werewolf.MINIONS.contains(value.toUpperCase(Locale.ROOT)))
+          throw new IllegalArgumentException("Use dealt or picked");
+        plugin.admin.change(id, j -> j.getAsJsonObject("werewolf").addProperty("minion", value.toUpperCase(Locale.ROOT)));
+      }
       case "ballots" -> {
         if (!GameRules.Werewolf.BALLOTS.contains(value.toUpperCase(Locale.ROOT)))
           throw new IllegalArgumentException("Use open or secret");
@@ -382,7 +393,7 @@ final class WwCommand implements CommandExecutor, TabCompleter {
         if (!value.equals("on") && !value.equals("off")) throw new IllegalArgumentException("Use on or off");
         plugin.admin.change(id, j -> j.getAsJsonObject("werewolf").addProperty(key, value.equals("on")));
       }
-      default -> throw new IllegalArgumentException("Use voting, reveal, ballots, dice or amulet");
+      default -> throw new IllegalArgumentException("Use voting, reveal, ballots, dice, amulet, mayor or minion");
     }
     say(sender, key + " = " + value);
   }

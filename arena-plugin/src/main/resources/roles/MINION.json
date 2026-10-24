@@ -7,7 +7,14 @@
  "palette": "wolf",
  "icon": "minion",
  "word": "MINION",
- "help": "You are on the wolves' side. On the first night you learn who they are, but you do not wake with them. The Seer sees you as a villager.",
+ "help": "You play for the wolves but do not wake with them. You learn who they are on the first night. The Seer sees you as a villager. (With the picked minion setting the wolves choose a player instead of dealing this card.)",
  "teamWord": "WOLF SIDE",
- "seerSees": "VILLAGER"
+ "seerSees": "VILLAGER",
+ "call": {
+  "phase": "MINION",
+  "label": "PICK MINION",
+  "title": "Wolves, choose your minion",
+  "subtitle": "Pick a player to serve the pack",
+  "instruction": "Right-click the player you pick as your minion (the wolves must agree)"
+ }
 }

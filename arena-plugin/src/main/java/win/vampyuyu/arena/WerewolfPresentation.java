@@ -74,6 +74,8 @@ final class WerewolfPresentation {
       if (phase.equals("FINISHED"))
         return new Boss("Game over · " + result(game.winner()), VOTE, false);
       boolean actor = game.actors().contains(viewer);
+      if (game.exiled(viewer) && !game.night())
+        return new Boss("☀ Day " + round + " · Away from the village · " + clock(seconds), INK_DIM, true);
       if (game.night()) {
         String head = "☾ Night " + round + " · ";
         // With a hidden reveal the clock of a call tells whether anybody living answers it: hide it.
@@ -96,6 +98,7 @@ final class WerewolfPresentation {
       return switch (phase) {
         case "DISCUSSION" -> new Boss(head + "Debate · " + clock(seconds), VILLAGER, true);
         case "DAY_VOTE" -> new Boss(head + "Village vote · " + clock(seconds), VOTE, true);
+        case "ELECTION" -> new Boss(head + "Electing the mayor · " + clock(seconds), VOTE, true);
         case "DEFENSE" -> new Boss(head + "The accused speaks · " + clock(seconds), VOTE, true);
         case "TRIAL" -> new Boss(head + "Thumbs up or down · " + clock(seconds), VOTE, true);
         case "MARTYR" ->
@@ -131,6 +134,7 @@ final class WerewolfPresentation {
       if (role == null)
         return switch (phase) {
           case "DAY_VOTE" -> new Line("☀ Village vote" + time, VOTE);
+          case "ELECTION" -> new Line("☀ Electing the mayor" + time, VOTE);
           case "DEFENSE" -> new Line("☀ The accused speaks" + time, VOTE);
           case "TRIAL" -> new Line("☀ Thumbs up or down" + time, VOTE);
           default -> new Line("☀ Debate" + time, VILLAGER);
@@ -182,7 +186,7 @@ final class WerewolfPresentation {
       case "CUPID" -> "CUPID";
       case "GUARD" -> "GUARD";
       case "SEER" -> "SEER";
-      case "NIGHT" -> "WEREWOLF";
+      case "NIGHT", "MINION" -> "WEREWOLF"; // the minion's pick is the wolves' call
       case "WITCH" -> "WITCH";
       case "HUNTER_SHOT" -> "HUNTER";
       default -> {
@@ -283,9 +287,12 @@ final class WerewolfPresentation {
       boolean actor = game.actors().contains(viewer);
       if (game.night() && !actor)
         return new View("The village sleeps", "Zzz… You sleep until dawn", false, false);
+      if (game.exiled(viewer) && !phase.equals("FINISHED"))
+        return new View("Away", "You are away from the village today. You come back at nightfall.", false, true);
       String label =
           switch (phase) {
             case "DISCUSSION" -> "Day · Discussion";
+            case "ELECTION" -> "Day · Election";
             case "DAY_VOTE" -> "Day · Voting";
             case "DEFENSE" -> "Day · Defense";
             case "MARTYR" -> actor ? "Martyr's choice" : "Day · Verdict";
@@ -308,6 +315,7 @@ final class WerewolfPresentation {
               ? switch (phase) {
                 case "DISCUSSION" -> "Talk it over: who are the wolves?";
                 case "DAY_VOTE" -> "Right-click a player to vote, or use Skip";
+                case "ELECTION" -> "Right-click the player you want as mayor: their vote will count twice";
                 case "DEFENSE" -> "The accused speaks: the thumbs come next";
                 case "TRIAL" -> "Thumbs up to let them live, thumbs down to eliminate them";
                 case "AMULET" -> "Right-click a player to pass the amulet on, or go back to sleep";

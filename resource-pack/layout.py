@@ -151,14 +151,14 @@ HUD_NEG_BASE = 0xF000    # negative-advance twin of every sprite: sprite index +
 HUD_PHASE_WORDS = unique(
     (r["call"]["label"] for r in roles().values() if "call" in r),
     ["DEBATE", "VOTE", "SLEEPING", "CUPID AWAKE", "GUARD AWAKE", "SEER AWAKE",
-     "WOLVES HUNT", "WITCH AWAKE", "LAST SHOT", "GAME OVER", "WAITING", "DEFENSE", "TRIAL", "AMULET"])
+     "WOLVES HUNT", "WITCH AWAKE", "LAST SHOT", "GAME OVER", "WAITING", "DEFENSE", "TRIAL", "AMULET", "ELECTION", "AWAY"])
 HUD_ROLE_WORDS = unique((r["word"] for r in roles().values()), []) + ["FALLEN"]
 HUD_TEAM_WORDS = unique((team_word(r) for r in roles().values()), []) + ["OUT"]
 HUD_TOP_ICONS = ["moon", "sun", "vote"]
 HUD_ROLE_ICONS = unique((r["icon"] for r in roles().values()), []) + ["dead"]
 HUD_SEATS = 20          # seats of the table strip; the first ones are drawn on bigger tables
 HUD_DOTS = ["alive", "dead", "me", "ballot", "mate"]   # what a seat of the strip can show
-HUD_BADGES = ["lover", "life", "death", "infect", "guard"]   # status badges (4 fit the panel)
+HUD_BADGES = ["lover", "life", "death", "infect", "guard", "mayor", "silenced"]   # status badges (4 fit the panel)
 
 
 def hud_sprites():

@@ -74,6 +74,7 @@ final class SocialModule implements RoleModule {
       throw new IllegalArgumentException("You already silenced that player once");
     spelled.add(target);
     g.mute(target);
+    if (!target.equals(actor)) g.notify(target, "A spell silences you for the day: you may only vote and gesture.");
     g.done(actor);
     return target + " will be silent tomorrow.";
   }

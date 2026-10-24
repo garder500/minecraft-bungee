@@ -116,11 +116,14 @@ Read `RoleModule.java`: every hook is documented there and has a do-nothing defa
 * **Mason** (+2, up to 3): on the first night (`deal`/`nightfall`) every mason gets a private notice
   naming the other masons. Adapted: the rulebook's "never speak of the masons" taboo is not
   enforced.
-* **Mayor** (+2): his day ballot counts twice (`weight`). Secret. Adapted: the Mayor is dealt, not
-  elected.
+* **Mayor** (+2): his day ballot counts twice (`weight`). Secret. With the setting `mayor elected`
+  there is no card: the village votes for a mayor in the ELECTION phase that opens the first day (and
+  every day after the mayor died); the mayor is public, wears a crown and counts twice in the day vote
+  and at the trial.
 * **Old hag** (+1, `HAG`): each night picks a player (not herself) who is away for the next day:
-  `g.exile`. An exiled player cannot chat, vote or be voted for, cannot be shot by the hunter; the
-  plugin hides them from the table.
+  `g.exile`. An exiled player cannot chat, vote or be voted for, cannot be shot by the hunter; he
+  sleeps through the day (black screen, hidden from the table, `sleeping()` is true) and the table is
+  told who is away.
 * **Old man** (0): dies at the dawn of night number *(living wolves + 1)*, recounted every night (a
   wolf falling brings his death closer), `dawn` hook, `slay` ("died of old age").
 * **P.I.** (+3, `PI`): once per game picks a player and learns whether a werewolf (`wolf(role)`) is
@@ -132,7 +135,7 @@ Read `RoleModule.java`: every hook is documented there and has a do-nothing defa
 * **Prince** (+3): the first time the village condemns him (`saves` on source `VOTE`) he is revealed
   (`notifyLiving`) and spared; the day ends as after any verdict.
 * **Spellcaster** (+1, `SPELL`): each night silences a player for the next day (`g.mute`): no chat,
-  may still vote. May silence himself, never the same player twice in a game.
+  may still vote and gesture; he is told, and so is the table. May silence himself, never the same player twice in a game.
 * **Tough guy** (+3): if the wolves attack him he survives the night (`saves`, `g.doom(...)`) and
   dies at the next dawn, in addition to that night's victim. The village is told nobody died. Source
   `DELAYED` is never saved by him.
@@ -146,7 +149,10 @@ Read `RoleModule.java`: every hook is documented there and has a do-nothing defa
 * **Sorcerer** (-3, `SORCERER`): wolves' team, does not wake with the pack; each night picks a player
   and learns whether they are the Seer. The Seer sees him as a villager. The wolves do not know him.
 * **Minion** (-6): wolves' team, does not wake with the pack; on the first night he learns who the
-  wolves are (private notice). The Seer sees him as a villager; the wolves do not know him.
+  wolves are (private notice). The Seer sees him as a villager; the wolves do not know him. With the
+  setting `minion picked` no card is dealt: the wolves agree on a player in the MINION call that
+  follows their hunt on the first night; that player keeps their role, plays for the wolves (wins and
+  loses with them, counts on neither side at parity) and is told who the wolves are.
 * **Lone wolf** (-5, solo): hunts with the pack (`wolf(role)`), wins only if he is the last player
   alive, or one of the last two with a non-wolf-side player (`teamWin` returns `LONE_WOLF`).
 
@@ -203,6 +209,7 @@ Read `RoleModule.java`: every hook is documented there and has a do-nothing defa
 * **A drunk's death**: before night 3 a drunk still plays his real role's death powers (a drunk
   hunter shoots) and is announced with it; a doppelganger who copies a sleeping drunk copies the
   real role.
+* **Election and minion pick** (`mayor elected`, `minion picked`): see the plugin README.
 * **Skipped on purpose**: the moderator's own variants (two-player nominations, the process of
   elimination, role changes, banning, alternating villages), "variable roles", the magician (the
   witch), the bodyguard (the guard), and the amulet's extra role card.

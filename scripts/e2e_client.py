@@ -294,7 +294,8 @@ def _call_phases():
     """The night calls of the roles of the Ultimate Werewolf set, from the plugin's role files."""
     roles = ROOT / "arena-plugin/src/main/resources/roles"
     return {json.loads(f.read_text())["call"]["phase"] for f in roles.glob("*.json")
-            if "call" in json.loads(f.read_text()) and json.loads(f.read_text())["call"]["phase"] != "MARTYR"}
+            if "call" in json.loads(f.read_text())
+            and json.loads(f.read_text())["call"]["phase"] not in ("MARTYR", "MINION")}
 
 
 NIGHT = {"CUPID", "GUARD", "SEER", "NIGHT", "WITCH"} | _call_phases()
@@ -412,7 +413,7 @@ CALL_PLAY = {"HOODLUM": ("pick", 2), "TROUBLEMAKER": ("button", "stir"), "GHOST"
 def ultimate_checks(role, rcon, failures, tools, shots):
     me = "E2EBot"
     info = _role_files()[role]
-    call = info.get("call")
+    call = info.get("call") if role != "MINION" else None  # the minion's call exists only when picked
     any_bot = lambda exclude=(): bot_with(rcon, lambda r: True, exclude)
     if role == "MARTYR":
         if not wait_phase("DAY_VOTE", 120): return failures.append("MARTYR: no day vote")
