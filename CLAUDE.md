@@ -90,6 +90,11 @@ ring of grass, cottages, trees and lamp posts around it; the block cap is `maxBl
 freeze with `save-off` + `save-all flush`, restore with rollback), `internal/panel/backups.go` (streaming proxy),
 `web/src/Backups.tsx`. Test: `go test ./internal/...`; the controller test uses a fake Docker. Restores stop
 the server: do not try them on a server with players.
+Daily schedule, retention and Google Drive: `internal/control/backupplan*.go` (settings file, scheduler, routes),
+`backupsched.go`, `gdrive.go` (stdlib OAuth + resumable upload client; tests use a fake Google), panel side
+`internal/panel/drive.go` (the OAuth callback is unauthenticated on purpose: SameSite=Strict cookies are not sent
+on Google's redirect, so a single-use `state` row ties it to the admin), UI `web/src/BackupPlan.tsx`. Real
+Google (consent, upload, refresh) is only testable with real credentials.
 
 ## Conventions
 

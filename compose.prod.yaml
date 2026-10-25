@@ -99,6 +99,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       # Server ZIPs made, uploaded and restored from the panel (same folder as `make zip`).
       - ${BACKUPS_DIR:-./backups}:/backups
+      # The backup schedule and the Google Drive grant (backup-settings.json, mode 0600).
+      - ${STATE_DIR:-./state}/controller:/state
       - ${STATE_DIR:-./state}/velocity:/servers/velocity:ro
       - ${STATE_DIR:-./state}/lobby:/servers/lobby
       - ${STATE_DIR:-./state}/creative:/servers/creative

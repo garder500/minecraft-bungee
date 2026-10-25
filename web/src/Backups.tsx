@@ -2,6 +2,7 @@ import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import { api, APIError } from "./api";
 import { useConfirm } from "./ConfirmDialog";
 import { bytes } from "./ServerTools";
+import { BackupPlan, type PlanView } from "./BackupPlan";
 
 type Backup = {
   name: string;
@@ -16,7 +17,7 @@ type Backup = {
 };
 type Job = {
   id: string;
-  kind: "backup" | "restore";
+  kind: "backup" | "restore" | "upload";
   server: string;
   file?: string;
   state: "running" | "done" | "failed";
@@ -30,6 +31,7 @@ const SERVERS = ["lobby", "creative", "survival"] as const;
 const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,119}\.zip$/;
 const KINDS: Record<string, string> = {
   export: "MANUAL",
+  auto: "AUTOMATIC",
   "before-restore": "BEFORE RESTORE",
   "before-import": "BEFORE IMPORT",
   uploaded: "UPLOADED",
@@ -53,6 +55,29 @@ export function Backups({
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [job, setJob] = useState<Job | null>(null);
+  const [drive, setDrive] = useState(false);
+  const [onDrive, setOnDrive] = useState<Set<string>>(new Set());
+  const [landing] = useState(() => {
+    // Google sends the browser back here with ?drive=<result>.
+    const result = new URLSearchParams(window.location.search).get("drive");
+    if (result)
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.hash,
+      );
+    return (
+      (
+        {
+          connected: "Google Drive connected.",
+          denied: "Google Drive access was not granted.",
+          expired: "That connection attempt expired. Try again.",
+          error:
+            "Google Drive could not be connected. Check the client ID, the secret and the redirect URI.",
+        } as Record<string, string>
+      )[result ?? ""] ?? ""
+    );
+  });
   const [progress, setProgress] = useState<number | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const failure = useRef(onError);
@@ -97,7 +122,9 @@ export function Backups({
             setNotice(
               next.kind === "backup"
                 ? `Backup of ${next.server} saved as ${next.file}.`
-                : `${next.server} restored from ${next.file}. The previous state was saved first.`,
+                : next.kind === "upload"
+                  ? `${next.file} is on Google Drive.`
+                  : `${next.server} restored from ${next.file}. The previous state was saved first.`,
             );
           void load();
         }
@@ -107,6 +134,38 @@ export function Backups({
     }, 1500);
     return () => window.clearInterval(timer);
   }, [jobId, load]);
+
+  // Which backups already sit on Drive (a failure only hides the badges).
+  const listed = data?.backups.length ?? 0;
+  const jobState = job?.state;
+  useEffect(() => {
+    if (!drive) {
+      setOnDrive(new Set());
+      return;
+    }
+    api<{ name: string }[]>("/drive/files").then(
+      (files) => alive.current && setOnDrive(new Set(files.map((f) => f.name))),
+      () => undefined,
+    );
+  }, [drive, listed, jobState]);
+
+  async function toDrive(b: Backup) {
+    setBusy(true);
+    setNotice("");
+    try {
+      setJob(
+        await api<Job>(
+          `/backups/${encodeURIComponent(b.name)}/drive`,
+          "POST",
+          csrf,
+        ),
+      );
+    } catch (e) {
+      onError(e);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function create() {
     setBusy(true);
@@ -272,6 +331,12 @@ export function Backups({
           </button>
         </div>
       </div>
+      <BackupPlan
+        csrf={csrf}
+        onError={onError}
+        onView={(v: PlanView) => setDrive(v.drive.connected)}
+        notice={landing}
+      />
       <div className="plugin-upload">
         <label>
           Upload a backup ZIP
@@ -302,7 +367,12 @@ export function Backups({
           className={job.state === "failed" ? "error" : "management-notice"}
           role={job.state === "failed" ? "alert" : "status"}
         >
-          {job.kind === "backup" ? "Backup" : "Restore"} of {job.server}:{" "}
+          {job.kind === "backup"
+            ? `Backup of ${job.server}`
+            : job.kind === "restore"
+              ? `Restore of ${job.server}`
+              : "Upload to Drive"}
+          :{" "}
           {job.state === "running"
             ? `${job.step}…`
             : `failed. ${job.error ?? ""}`}
@@ -357,6 +427,11 @@ export function Backups({
                       <span className="tag">
                         {KINDS[b.kind] ?? b.kind.toUpperCase()}
                       </span>{" "}
+                      {onDrive.has(b.name) && (
+                        <>
+                          <span className="tag">ON DRIVE</span>{" "}
+                        </>
+                      )}
                       {b.files ? `${b.files} files` : ""}
                       {b.minecraft ? ` · Minecraft ${b.minecraft}` : ""}
                     </small>
@@ -378,6 +453,21 @@ export function Backups({
                       >
                         Download
                       </a>
+                      {drive && (
+                        <button
+                          disabled={
+                            locked || !!b.problem || onDrive.has(b.name)
+                          }
+                          title={
+                            onDrive.has(b.name)
+                              ? "Already on Google Drive"
+                              : "Send a copy to Google Drive"
+                          }
+                          onClick={() => toDrive(b)}
+                        >
+                          Drive
+                        </button>
+                      )}
                       <button
                         disabled={locked || !!reason}
                         title={reason || `Replace ${b.server} with this backup`}

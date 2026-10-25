@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
 	"github.com/garder500/minecraft-bungee/internal/control"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
+	_ "time/tzdata" // the runtime image has no zoneinfo; the backup schedule needs named time zones
 )
 
 func main() {
@@ -27,7 +31,10 @@ func main() {
 	if project == "" {
 		log.Fatal("STACK_ID required")
 	}
-	s := control.Server{GameToken: gameToken, DataRoot: "/servers", Docker: control.NewDocker("/var/run/docker.sock", project), Token: token, Passwords: pw, BackupDir: "/backups", Version: os.Getenv("MC_VERSION")}
+	s := control.Server{GameToken: gameToken, DataRoot: "/servers", Docker: control.NewDocker("/var/run/docker.sock", project), Token: token, Passwords: pw, BackupDir: "/backups", Version: os.Getenv("MC_VERSION"), StateDir: "/state"}
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
+	go s.RunScheduler(ctx)
 	if err := control.Listen(":8081", s.Handler()); err != nil {
 		log.Fatal(err)
 	}

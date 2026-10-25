@@ -6,7 +6,7 @@
 * scripts/plugins.sh: install/status/clear against a temporary state directory, with a stub `docker`
   that reports every server as stopped.
 """
-import os, pathlib, subprocess, tempfile, time, unittest
+import json, os, pathlib, subprocess, tempfile, time, unittest
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 START = (ROOT / "infra" / "start.sh").read_text()
@@ -68,6 +68,26 @@ case "$*" in
 esac
 exit 0
 """
+
+
+class UpScriptTest(unittest.TestCase):
+    def test_controller_folders_are_created_even_when_the_path_has_a_space(self):
+        """scripts/up.sh makes the bind-mounted backups and state folders before compose could create them as root."""
+        text = (ROOT / "scripts" / "up.sh").read_text().splitlines()
+        begin = next(i for i, l in enumerate(text) if l.startswith("# (Also done for --check"))
+        end = next(i for i, l in enumerate(text) if l.startswith('[[ "$check_only" == --check ]]'))
+        block = "\n".join(text[begin:end])
+        base = pathlib.Path(tempfile.mkdtemp()) / "My Network"
+        base.mkdir()
+        config = json.dumps({"services": {"controller": {"user": f"{os.getuid()}:{os.getgid()}", "volumes": [
+            {"target": "/var/run/docker.sock", "source": "/var/run/docker.sock"},
+            {"target": "/backups", "source": str(base / "backups")},
+            {"target": "/state", "source": str(base / "state" / "controller")}]}}})
+        subprocess.run(["bash", "-c", "set -euo pipefail\n" + f"config={json.dumps(config)}\n" + block], check=True)
+        for sub in ("backups", "state/controller"):
+            self.assertTrue((base / sub).is_dir(), sub)
+            self.assertEqual((base / sub).stat().st_mode & 0o777, 0o700)
+        self.assertEqual(sorted(p.name for p in base.parent.iterdir()), ["My Network"], "nothing may be created next to it")
 
 
 class PluginsScriptTest(unittest.TestCase):

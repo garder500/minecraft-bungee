@@ -164,7 +164,7 @@ func (s *Server) freeze(ctx context.Context, id string) (func(), error) {
 	return thaw, nil
 }
 
-func (s *Server) runBackup(job Job) {
+func (s *Server) runBackup(job Job, kind string) {
 	ctx := context.Background()
 	s.jobs.step(job.ID, "saving the world")
 	thaw, e := s.freeze(ctx, job.Server)
@@ -173,7 +173,7 @@ func (s *Server) runBackup(job Job) {
 		return
 	}
 	s.jobs.step(job.ID, "writing the ZIP")
-	info, e := backup.Create(s.dataDir(job.Server), job.Server, s.Version, s.BackupDir, "export")
+	info, e := backup.Create(s.dataDir(job.Server), job.Server, s.Version, s.BackupDir, kind)
 	thaw()
 	if e != nil {
 		slog.Warn("backup failed", "server", job.Server, "error", e)
@@ -287,7 +287,7 @@ func (s *Server) backupRoutes(mux *http.ServeMux) {
 			JSON(w, 409, map[string]string{"error": e.Error()})
 			return
 		}
-		go s.runBackup(job)
+		go s.runBackup(job, "export")
 		JSON(w, 202, job)
 	})
 	mux.HandleFunc("POST /servers/{id}/restore/{name}", func(w http.ResponseWriter, r *http.Request) {

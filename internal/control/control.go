@@ -17,6 +17,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -194,6 +195,13 @@ type Server struct {
 	BackupDir string
 	Version   string
 	jobs      jobBoard
+	// StateDir holds backup-settings.json (schedule, retention, Google Drive grant); empty keeps it in memory.
+	StateDir string
+	Drive    *Drive
+	Now      func() time.Time
+	plan     planStore
+	planOnce sync.Once
+	planOn   atomic.Bool
 }
 
 func (s *Server) Handler() http.Handler {
@@ -202,6 +210,7 @@ func (s *Server) Handler() http.Handler {
 	s.pluginRoutes(mux)
 	s.gameRoutes(mux)
 	s.backupRoutes(mux)
+	s.planRoutes(mux)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
 	mux.HandleFunc("GET /servers", func(w http.ResponseWriter, r *http.Request) {
 		out := []Status{}

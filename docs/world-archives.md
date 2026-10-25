@@ -35,6 +35,24 @@ The **Backups** page of the panel does the same for Lobby, Creative and Survival
 - **Restore** checks the ZIP first (paths, checksums, server, exact Minecraft version), stops the server, saves its current state as a `before-restore` ZIP, swaps the data in with rollback, and restarts the server if it was running. Players are disconnected. If the old files cannot be deleted afterwards (root-owned), the restore still counts and the page names the leftover `.archive-staging-*` folder.
 - Panel database ZIPs (`make export-panel`) are listed but restored only with `make import-panel`.
 
+### Automatic daily backups and Google Drive
+
+The same page can run a backup every day and keep a copy on Google Drive.
+
+- **Schedule**: a time (HH:MM) in a chosen time zone, and which servers to back up. Each run backs up the selected servers one after the other, with the same live-safe method as a manual backup, then uploads, then cleans up. A run missed because the controller was down is made up the same day; turning the schedule on (or moving its hour) after today's hour does not start a backup at once. **Run now** does the whole thing on demand.
+- **Retention** (how many to keep, per server): *on this machine* and *on Drive*. Only automatic backups (`<server>-auto-<stamp>.zip`) are deleted to respect it: manual backups, uploads and the `before-restore` copies are never removed automatically. Drive files are cleaned only after the new upload succeeded, and only files this app tagged as automatic.
+- **Guard rails**: a server is skipped (and the failure shown on the page) when the free disk space is below the size of its last backup plus a margin, because the backups share the servers' disk. A server busy with a restore or a manual backup is retried the same day.
+- **Settings** live in `state/<stack>/controller/backup-settings.json` (mode 0600, on the controller only). The panel never gets the Google client secret or the token back; the secret field is write-only (empty keeps the saved one).
+
+Google setup (once):
+
+1. In the [Google Cloud console](https://console.cloud.google.com/) create a project and enable the **Google Drive API**.
+2. *OAuth consent screen*: configure it and **publish it ("In production")**. While it is in *Testing*, Google expires the refresh token after 7 days and the daily upload would silently stop (the page then says "connect again"). The only permission requested is `drive.file` (files the app creates itself), which needs no Google verification.
+3. *Credentials → Create credentials → OAuth client ID*, type **Web application**, with the authorised redirect URI exactly `https://panel.vampyuyu.win/api/v1/drive/callback` (plus `http://localhost:5173/api/v1/drive/callback` for the local stack).
+4. In the panel paste the client ID and secret, **Save**, then **Connect Google Drive** and accept. A personal Drive holds 15 GB and one Creative backup is about 1.5 GB: keep *Keep on Drive* small. A quota error from Google is shown as is.
+
+`scripts/up.sh` (run by `make up` and by `scripts/deploy.sh`) creates `backups/` and the controller's state folder owned by the controller's user, which Docker would otherwise create as root.
+
 The controller needs the `backups/` folder mounted (`BACKUPS_DIR`, default `./backups`) and `MC_VERSION`; both Compose files already do this. Every create, download, upload, restore and delete is written to the panel's audit log.
 
 ## Inspect and restore

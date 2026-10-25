@@ -21,6 +21,20 @@ for name in ("lobby","creative","survival"):
  if not marker.exists() or marker.read_text().strip()!=version:sys.exit(name+": run offline configure with the selected Minecraft version first")
  if not (data/"config/paper-global.yml").is_file():sys.exit(name+": forwarding configuration missing")
 ' <<< "$config"
+# (Also done for --check: scripts/deploy.sh only calls this script with --check before it recreates services.)
+# The controller runs as PUID:PGID. Docker would create a missing bind-mounted folder owned by root, and one
+# made earlier by a root-run `make backup` is root's too: either way the controller could not write the
+# backups or its settings. Create them, and hand them to the controller's user when run as root.
+while read -r owner dir; do
+ [[ -n $dir ]] || continue
+ install -d -m 700 "$dir"
+ if [[ $(id -u) -eq 0 ]]; then chown -R "$owner" "$dir"; fi
+done < <(python3 -c '
+import json,sys
+c=json.load(sys.stdin)["services"]["controller"]
+for v in c["volumes"]:
+ if v.get("target") in ("/backups","/state"): print(c.get("user","1000:1000"),v["source"])
+' <<< "$config")
 [[ "$check_only" == --check ]] && exit 0
 if [[ "$compose" == compose.local.yaml ]]; then
  # A rebuilt image must not stay shadowed by an older hotfix: say which overrides still win.
