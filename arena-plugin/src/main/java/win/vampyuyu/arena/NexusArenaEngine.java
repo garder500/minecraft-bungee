@@ -51,6 +51,7 @@ public final class NexusArenaEngine extends JavaPlugin {
   public void onEnable() {
     try {
       Files.createDirectories(getDataFolder().toPath());
+      win.vampyuyu.werewolf.DataFiles.init(getDataFolder().toPath());
       serverId = System.getenv().getOrDefault("SERVER_ID", "creative");
       for (String resource : List.of("presets/werewolf.json", "presets/freeplay.json"))
         if (!Files.exists(getDataFolder().toPath().resolve(resource)))

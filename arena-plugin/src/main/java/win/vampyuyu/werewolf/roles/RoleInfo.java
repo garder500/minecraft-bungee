@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import win.vampyuyu.werewolf.DataFiles;
 import win.vampyuyu.werewolf.WerewolfGame;
 
 /**
@@ -44,23 +45,37 @@ public record RoleInfo(
   }
 
   private static final Gson GSON = new Gson();
-  private static final Map<String, RoleInfo> ROLES = new LinkedHashMap<>();
-  private static final Map<String, RoleInfo> BY_PHASE = new HashMap<>();
+  /** The loaded tables, swapped as one so a reload never shows half old and half new roles. */
+  private record Tables(Map<String, RoleInfo> roles, Map<String, RoleInfo> byPhase) {}
 
-  static {
+  private static volatile Tables tables = read();
+
+  private static Tables read() {
+    Map<String, RoleInfo> roles = new LinkedHashMap<>();
+    Map<String, RoleInfo> byPhase = new HashMap<>();
     for (WerewolfGame.Role role : WerewolfGame.Role.values()) {
       RoleInfo info = load(role.name());
-      ROLES.put(role.name(), info);
-      if (info.call() != null) BY_PHASE.put(info.call().phase(), info);
+      roles.put(role.name(), info);
+      if (info.call() != null) byPhase.put(info.call().phase(), info);
     }
+    return new Tables(roles, byPhase);
+  }
+
+  /**
+   * Re-reads every role (jar defaults and overrides). A broken file throws and leaves the old
+   * roles in place. Games already running keep the values they read.
+   */
+  public static void reload() {
+    tables = read();
   }
 
   private static RoleInfo load(String id) {
     Raw raw = new Raw();
-    try (InputStream in = RoleInfo.class.getResourceAsStream("/roles/" + id + ".json")) {
+    try (InputStream in = DataFiles.open(RoleInfo.class, "/roles/" + id + ".json")) {
       if (in != null) raw = GSON.fromJson(new InputStreamReader(in, StandardCharsets.UTF_8), Raw.class);
-    } catch (IOException e) {
-      throw new java.io.UncheckedIOException(e);
+    } catch (IOException | com.google.gson.JsonParseException e) {
+      // No cause: the command prints the root cause, and the role id is what tells which file is broken.
+      throw new IllegalArgumentException("roles/" + id + ".json: " + e.getMessage());
     }
     String name = raw.name != null ? raw.name : fallbackName(id);
     String team = raw.team != null ? raw.team : "village";
@@ -107,16 +122,16 @@ public record RoleInfo(
 
   /** The role by its enum name; an unknown name reads as a plain villager. */
   public static RoleInfo of(String role) {
-    RoleInfo found = role == null ? null : ROLES.get(role);
-    return found != null ? found : ROLES.get("VILLAGER");
+    RoleInfo found = role == null ? null : tables.roles().get(role);
+    return found != null ? found : tables.roles().get("VILLAGER");
   }
 
   /** The role that owns a night call, or null when the phase is not a role's call. */
   public static RoleInfo byPhase(String phase) {
-    return BY_PHASE.get(phase);
+    return tables.byPhase().get(phase);
   }
 
   public static Collection<RoleInfo> all() {
-    return Collections.unmodifiableCollection(ROLES.values());
+    return Collections.unmodifiableCollection(tables.roles().values());
   }
 }

@@ -93,9 +93,9 @@ public final class DecorConfig {
     return maxBlocks;
   }
 
-  /** Loads the decor shipped inside the jar. */
+  /** Loads the decor: overrides/werewolf/decor/default.json when present, else the jar's copy. */
   public static DecorConfig loadDefault() {
-    try (InputStream in = DecorConfig.class.getResourceAsStream(DEFAULT_RESOURCE)) {
+    try (InputStream in = win.vampyuyu.werewolf.DataFiles.open(DecorConfig.class, DEFAULT_RESOURCE)) {
       if (in == null) throw new IllegalStateException("Missing resource " + DEFAULT_RESOURCE);
       return parse(new String(in.readAllBytes(), StandardCharsets.UTF_8));
     } catch (IOException e) {

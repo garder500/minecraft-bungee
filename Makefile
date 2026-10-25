@@ -6,7 +6,7 @@ ZIP ?=
 OUT ?=
 export COMPOSE SERVER WORLD ZIP OUT
 
-.PHONY: hud-sheet export-all zip-all help status up stop configure export zip import restore inspect export-panel import-panel backup test-archives pack art test-pack e2e-pack plugin plugin-prod plugin-build plugin-test plugin-clear plugin-clear-prod plugin-status plugin-status-prod test-plugins
+.PHONY: dev-server hotswap dev-stop hud-sheet export-all zip-all help status up stop configure export zip import restore inspect export-panel import-panel backup test-archives pack art test-pack e2e-pack plugin plugin-prod plugin-build plugin-test plugin-clear plugin-clear-prod plugin-status plugin-status-prod test-plugins reload-data reload-data-prod reload-data-clear reload-data-clear-prod
 help: ## Show operator commands
 	@python3 scripts/world_archive.py help
 status: ## Show container status
@@ -67,3 +67,18 @@ plugin-status-prod: ## List production plugin overrides
 	@scripts/plugins.sh remote status
 test-plugins: ## Test plugin overrides (start.sh) and the hotfix script without Docker
 	@python3 scripts/test_plugins.py
+dev-server: ## Boot the local Paper 26.3 dev server with JDWP open (no client); keeps running
+	@python3 scripts/e2e_client.py --scenario dev
+hotswap: ## Build PLUGIN (arena|network) without tests and redefine the changed classes in the running dev server, no restart
+	@python3 scripts/hotswap.py $(PLUGIN)
+dev-stop: ## Stop the dev server
+	@python3 scripts/hotswap.py stop
+FILES ?=
+reload-data: ## Push changed werewolf data (roles, ambience, decor) and /ww reload, no restart [FILES="roles/SEER.json ..."] [SERVERS=...]
+	@scripts/plugins.sh data $(FILES) $(if $(SERVERS),-s $(SERVERS))
+reload-data-prod: ## Same on production over SSH
+	@scripts/plugins.sh remote data $(FILES) $(if $(SERVERS),-s $(SERVERS))
+reload-data-clear: ## Drop the data overrides and /ww reload [SERVERS=...]
+	@scripts/plugins.sh data-clear $(SERVERS)
+reload-data-clear-prod: ## Same on production
+	@scripts/plugins.sh remote data-clear $(SERVERS)

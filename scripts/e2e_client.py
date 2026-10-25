@@ -21,6 +21,8 @@ WORK = ROOT / ".e2e"
 PAPER = ("26.3", "218", "cdd56d33f27e77110e6f8b43cf6d9571c3854c9ae099986b24a3c18c5904cc11")
 MC_PORT, RCON_PORT, HTTP_PORT, DISPLAY = 25599, 25598, 25597, ":99"
 RCON_PASSWORD = "e2e-only"
+DEBUG_PORT = 25596
+DEBUG = False
 GLYPH = ""
 PRISM = pathlib.Path(os.environ.get("PRISM_DIR", "~/.local/share/PrismLauncher")).expanduser()
 INSTANCE = os.environ.get("PRISM_INSTANCE", "26.3")
@@ -143,7 +145,7 @@ ARENA = {
 }
 
 
-def start_server(zip_path, sha1, plugin=False):
+def start_server(zip_path, sha1, plugin=False, pack_required=True):
     server = WORK / "server"
     shutil.rmtree(server, ignore_errors=True)
     server.mkdir(parents=True)
@@ -170,12 +172,14 @@ def start_server(zip_path, sha1, plugin=False):
         (data / "arenas" / "e2e.json").write_text(json.dumps(ARENA, indent=1))
         (server / "token").write_text(API_TOKEN)
         env.update(ROLE_BRIDGE_TOKEN_FILE=str(server / "token"), SERVER_ID="survival",
-                   MENU_PACK_BASE_URL=f"http://127.0.0.1:{HTTP_PORT}", MENU_PACK_REQUIRED="true",
+                   MENU_PACK_BASE_URL=f"http://127.0.0.1:{HTTP_PORT}", MENU_PACK_REQUIRED="true" if pack_required else "false",
                    MENU_PACK_SHA1_FILE=str(WORK / "pack" / "vampyuyu-menus.sha1"),
                    ROLE_BRIDGE_URL="http://127.0.0.1:9", ARENA_REDIS_HOST="127.0.0.1",
                    WEREWOLF_LOG_CONSOLE="false")
     log = open(server / "console.log", "w")
-    command = [java25(), "-Xmx1G", "-jar", str(paper_jar()), "--nogui"]
+    # DEBUG_PORT: JDWP for scripts/hotswap.py (class redefinition without a restart).
+    debug = [f"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=127.0.0.1:{DEBUG_PORT}"] if DEBUG else []
+    command = [java25(), "-Xmx1G", *debug, "-jar", str(paper_jar()), "--nogui"]
     if plugin:
         # The network plugin only reads /run/secrets/role_bridge_token: give a private mount
         # namespace its own tmpfs there, so nothing on the real /run is touched.
@@ -919,14 +923,32 @@ def werewolf_scenario(ctx):
 
 
 
+def dev_server():
+    """Server only (arena + network jars, JDWP open): the target of scripts/hotswap.py. No client, no pack check."""
+    import fcntl
+    global DEBUG
+    DEBUG = True
+    WORK.mkdir(exist_ok=True)
+    lock = open("/tmp/vampyuyu-e2e.lock", "w")
+    fcntl.flock(lock, fcntl.LOCK_EX)
+    stop_stale()
+    (WORK / "hotswap-stamps.json").unlink(missing_ok=True)  # a fresh boot loads the jars: nothing swapped yet
+    pack_dir = WORK / "pack"
+    zip_path, sha1 = build_pack.build(pack_dir)
+    start_server(zip_path, sha1, plugin=True, pack_required=False)
+    say(f"dev server up: Minecraft :{MC_PORT}, rcon :{RCON_PORT} ({RCON_PASSWORD}), JDWP :{DEBUG_PORT}")
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
     ap.add_argument("--shots", default=str(WORK / "shots"))
     args = ap.parse_args()
+    if args.scenario == "dev":
+        return dev_server()
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)

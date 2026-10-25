@@ -63,6 +63,7 @@ DOCKER_STUB = """#!/bin/sh
 log="$STUB_LOG"; echo "$*" >> "$log"
 case "$*" in
  *" ps "*) [ -n "$RUNNING" ] && echo "$RUNNING" ;;
+ *" exec "*"ww reload"*) if [ "$RELOAD" = FAIL ]; then echo "roles/SEER.json: End of input"; else echo "Arenas, roles, ambience and decor reloaded"; fi ;;
  *" exec "*"arena list"*) [ "$ARENAS" = FAIL ] && exit 1; echo "$ARENAS" ;;
 esac
 exit 0
@@ -92,6 +93,49 @@ class PluginsScriptTest(unittest.TestCase):
         if ok:
             self.assertEqual(r.returncode, 0, r.stderr)
         return r
+
+    def data_root(self):
+        root = self.tmp / "data"
+        (root / "roles").mkdir(parents=True)
+        self.env["DATA_ROOT"] = str(root)
+        return root
+
+    def test_data_installs_the_files_and_reloads_without_restarting(self):
+        (self.data_root() / "roles" / "SEER.json").write_text('{"name":"Oracle"}')
+        self.env.update(RUNNING="creative")
+        self.sh("data", "roles/SEER.json", "-s", "creative", "lobby")
+        for server in ("creative", "lobby"):
+            self.assertEqual((self.state / server / "plugins/NexusArenaEngine/overrides/roles/SEER.json").read_text(), '{"name":"Oracle"}')
+        log = self.log.read_text()
+        self.assertIn("exec -T creative rcon-cli ww reload", log)
+        self.assertNotIn("exec -T lobby", log)  # stopped: applies at its next start
+        self.assertNotIn("restart", log)
+        self.assertFalse((self.state / "survival").exists())
+
+    def test_data_refuses_bad_json_and_foreign_paths_before_touching_a_server(self):
+        root = self.data_root()
+        (root / "roles" / "SEER.json").write_text("{broken")
+        self.assertNotEqual(self.sh("data", "roles/SEER.json", ok=False).returncode, 0)
+        self.assertNotEqual(self.sh("data", "../etc/passwd", ok=False).returncode, 0)
+        self.assertNotEqual(self.sh("data", "presets/werewolf.json", ok=False).returncode, 0)
+        self.assertFalse(self.state.exists())
+
+    def test_data_fails_when_the_plugin_refuses_the_file(self):
+        root = self.data_root()
+        (root / "roles" / "SEER.json").write_text("{}")
+        self.env.update(RUNNING="creative", RELOAD="FAIL")
+        r = self.sh("data", "roles/SEER.json", "-s", "creative", ok=False)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("refused", r.stderr)
+
+    def test_data_clear_drops_the_overrides_and_reloads(self):
+        target = self.state / "creative" / "plugins/NexusArenaEngine/overrides/roles"
+        target.mkdir(parents=True)
+        (target / "SEER.json").write_text("{}")
+        self.env.update(RUNNING="creative")
+        self.sh("data-clear", "creative")
+        self.assertFalse((self.state / "creative" / "plugins/NexusArenaEngine/overrides").exists())
+        self.assertIn("exec -T creative rcon-cli ww reload", self.log.read_text())
 
     def test_install_targets_every_server_carrying_the_plugin(self):
         self.sh("install", "arena", str(self.jar))

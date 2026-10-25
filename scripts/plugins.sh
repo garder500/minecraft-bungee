@@ -9,7 +9,9 @@
 #   scripts/plugins.sh install <plugin> <jar> [server...]  Install a built jar here and restart
 #   scripts/plugins.sh clear   [server...]                 Drop overrides; the image's jars come back
 #   scripts/plugins.sh status                              List active overrides
-#   scripts/plugins.sh remote  push|clear|status [...]     Same on production over SSH (.env.remote)
+#   scripts/plugins.sh data    [file...] [-s server...]    Push werewolf data (roles, ambience, decor) and /ww reload, NO restart
+#   scripts/plugins.sh data-clear [server...]              Drop the data overrides and /ww reload (back to the jar's copy)
+#   scripts/plugins.sh remote  push|clear|status|data|data-clear [...]   Same on production over SSH (.env.remote)
 #
 # Plugins: network, arena, lobby, claims. Servers default to every server that carries the plugin.
 # COMPOSE=compose.prod.yaml selects production. FAST=1 skips tests. FORCE=1 restarts even while an
@@ -151,6 +153,66 @@ clear_overrides() {
  done
 }
 
+# Werewolf data a running server re-reads on "/ww reload" (see DataFiles.java): paths relative to the
+# arena resources, installed under <server>/plugins/NexusArenaEngine/overrides/ on the same relative path.
+DATA_ROOT=${DATA_ROOT:-arena-plugin/src/main/resources}
+data_allowed() { [[ $1 =~ ^roles/[A-Z_]+\.json$ || $1 == werewolf/ambience.json || $1 == werewolf/decor/default.json ]]; }
+
+# Reloads the data on a running server and fails when the plugin refuses a file.
+reload_data() {
+ local server=$1 out
+ running "$server" || { echo "$server is stopped; the files apply at its next start" >&2; return 0; }
+ out=$(dc exec -T "$server" rcon-cli ww reload 2>&1) || { echo "$server: /ww reload did not run: $out" >&2; return 1; }
+ out=$(sed 's/\xc2\xa7.//g; s/§.//g' <<< "$out")
+ if grep -qi 'reloaded' <<< "$out"; then echo "$server: $out" >&2; else echo "$server refused the data: $out" >&2; return 1; fi
+}
+
+# data [file...] [-s server...]: no file means the data files that differ from git HEAD. Files are checked
+# (allowed path, valid JSON) before any server is touched; servers default to every one carrying the plugin.
+push_data() {
+ local files=() servers=() state server file dest failed=0
+ while (($#)); do
+  if [[ $1 == -s ]]; then shift; servers=("$@"); break; fi
+  files+=("${1#"$DATA_ROOT"/}"); shift
+ done
+ if ((${#files[@]} == 0)); then
+  while IFS= read -r file; do
+   file=${file#"$DATA_ROOT"/}
+   data_allowed "$file" && files+=("$file")
+  done < <(git diff --name-only HEAD -- "$DATA_ROOT" 2> /dev/null; git ls-files --others --exclude-standard -- "$DATA_ROOT" 2> /dev/null)
+ fi
+ ((${#files[@]})) || { echo "No changed data file under $DATA_ROOT (roles/*.json, werewolf/ambience.json, werewolf/decor/default.json); pass files explicitly." >&2; return 1; }
+ for file in "${files[@]}"; do
+  data_allowed "$file" || { echo "Not reloadable data: $file" >&2; return 1; }
+  python3 -c 'import json,sys; json.load(open(sys.argv[1]))' "$DATA_ROOT/$file" || { echo "Invalid JSON: $file" >&2; return 1; }
+ done
+ state=$(state_dir)
+ ((${#servers[@]})) || read -ra servers <<< "$(plugin_servers arena)"
+ for server in "${servers[@]}"; do
+  grep -qw "$server" <<< "$(plugin_servers arena)" || { echo "arena does not run on $server" >&2; return 1; }
+  for file in "${files[@]}"; do
+   dest="$state/$server/plugins/NexusArenaEngine/overrides/$file"
+   mkdir -p "$(dirname "$dest")"
+   cp "$DATA_ROOT/$file" "$dest"
+  done
+  echo "$server: ${files[*]}" >&2
+  reload_data "$server" || failed=1
+ done
+ return $failed
+}
+
+clear_data() {
+ local state server servers=("$@") failed=0
+ state=$(state_dir)
+ ((${#servers[@]})) || read -ra servers <<< "$(plugin_servers arena)"
+ for server in "${servers[@]}"; do
+  rm -rf "$state/$server/plugins/NexusArenaEngine/overrides"
+  echo "$server: data overrides cleared" >&2
+  reload_data "$server" || failed=1
+ done
+ return $failed
+}
+
 # Lists active overrides on stderr (empty output when none); used by scripts/up.sh before a rebuild.
 warn_active() {
  local state jar
@@ -198,12 +260,35 @@ remote() {
    scp -q -P "$PROD_PORT" -o BatchMode=yes "$jar" "$PROD_HOST:$PROD_PATH/$upload"
    "${ssh[@]}" "cd $path && test -x scripts/plugins.sh || { echo 'Update the production clone first (git pull)' >&2; exit 1; }; $env scripts/plugins.sh install $(printf '%q ' "$1" "$upload" "${@:2}")"
    ;;
+  data)
+   # Same file selection as locally, resolved here; the files travel, the clone only needs this script.
+   local list=() f
+   local -a rest=()
+   while (($#)) && [[ $1 != -s ]]; do list+=("${1#"$DATA_ROOT"/}"); shift; done
+   rest=("$@")
+   if ((${#list[@]} == 0)); then
+    while IFS= read -r f; do f=${f#"$DATA_ROOT"/}; data_allowed "$f" && list+=("$f"); done < <(git diff --name-only HEAD -- "$DATA_ROOT"; git ls-files --others --exclude-standard -- "$DATA_ROOT")
+   fi
+   ((${#list[@]})) || { echo 'No changed data file; pass files explicitly.' >&2; exit 1; }
+   for f in "${list[@]}"; do data_allowed "$f" || { echo "Not reloadable data: $f" >&2; exit 1; }; done
+   "${ssh[@]}" "rm -rf $path/.data-upload && mkdir -p $path/.data-upload"
+   for f in "${list[@]}"; do
+    "${ssh[@]}" "mkdir -p $path/.data-upload/$(dirname "$f")"
+    scp -q -P "$PROD_PORT" -o BatchMode=yes "$DATA_ROOT/$f" "$PROD_HOST:$PROD_PATH/.data-upload/$f"
+   done
+   "${ssh[@]}" "cd $path && test -x scripts/plugins.sh || { echo 'Update the production clone first (git pull)' >&2; exit 1; }; $env DATA_ROOT=.data-upload scripts/plugins.sh data $(printf '%q ' "${list[@]}" "${rest[@]}")"
+   ;;
+  data-clear)
+   local dargs=
+   (($#)) && dargs=$(printf '%q ' "$@")
+   "${ssh[@]}" "cd $path && $env scripts/plugins.sh data-clear $dargs"
+   ;;
   clear | status)
    local args=
    (($#)) && args=$(printf '%q ' "$@")
    "${ssh[@]}" "cd $path && $env scripts/plugins.sh $action $args"
    ;;
-  *) echo 'usage: plugins.sh remote push|clear|status [...]' >&2; exit 1 ;;
+  *) echo 'usage: plugins.sh remote push|clear|status|data|data-clear [...]' >&2; exit 1 ;;
  esac
 }
 
@@ -219,6 +304,8 @@ case $action in
  install) [[ $# -ge 2 ]] || { echo 'usage: plugins.sh install <plugin> <jar> [server...]' >&2; exit 1; }
   install_jar "$@" ;;
  clear) clear_overrides "$@" ;;
+ data) push_data "$@" ;;
+ data-clear) clear_data "$@" ;;
  status) status ;;
  warn-active) warn_active ;;
  remote) remote "$@" ;;

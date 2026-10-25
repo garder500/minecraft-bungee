@@ -9,11 +9,18 @@ All user-facing text is English (menus, HUD, chat); the user talks to Claude in 
 
 1. **Unit tests**: `make plugin-test PLUGIN=arena [TEST=SomeTestClass]` (docker maven, silent when green).
    Pack and HUD: `make test-pack` (also `python3 scripts/test_hud_sheet.py`).
-2. **Build and deploy to the local stack** (WARNING: the docker stack runs Paper 1.21.9 per `.env`, while the
-   plugins declare `api-version: 26.3`: they do NOT load there ("Unsupported API version 26.3"). Test the plugins
-   with `scripts/e2e_client.py` (own Paper 26.3), not on the docker stack.): `make plugin PLUGIN=arena` builds the jar, overrides it on
+2. **Build and deploy to the local stack** (Paper 26.3 + Velocity 4.3.0 in docker, same version as
+   `scripts/e2e_client.py`): `make plugin PLUGIN=arena` builds the jar, overrides it on
    lobby/creative/survival and restarts them. `make pack` rebuilds `resource-pack/dist/vampyuyu-menus.zip`
    (the servers read it at start, so restart them after a pack change). `make up` starts the local stack.
+   **Edit-test loop without restart** (dev only, RCON-only server, no client): `make dev-server` boots Paper 26.3
+   with the arena and network jars and JDWP on :25596; after each edit `make hotswap PLUGIN=arena` (or
+   `network`) builds the jar without tests and redefines the changed classes in about 7 s. Method bodies
+   only: a new or removed field, method or lambda is refused as a whole ("NEEDS RESTART", nothing applied),
+   classes not loaded yet stay pending (the script warns), jar resources (`roles/*.json`, decor) are not
+   refreshed, lobby and claims are not loaded. Check results over RCON (`scripts/e2e_client.py` `Rcon`).
+   `make dev-stop` stops it; an e2e run kills it too. Production still restarts a container
+   (`scripts/plugins.sh`). See `scripts/hotswap.py`.
 3. **Real screenshots are required for anything visible** (HUD, village, outline, cards, effects). A
    description or the HUD mock is not enough. Use the isolated headless client:
    `python3 scripts/e2e_client.py --scenario werewolf --shots <dir>` (also `shader`, `roles`, `tooltip`,
@@ -42,6 +49,18 @@ All user-facing text is English (menus, HUD, chat); the user talks to Claude in 
 - Only `WerewolfAmbience.aim` writes the action bar (every 200 ms, resent only when it changes): a second
   writer made the timer flicker.
 
+## Data overrides (no rebuild, no restart)
+
+Role cards, the ambience profile and the platform decor ship in the jar as defaults. A file with the same
+path under `plugins/NexusArenaEngine/overrides/` wins: `roles/<ROLE>.json`, `werewolf/ambience.json`,
+`werewolf/decor/default.json` (`win.vampyuyu.werewolf.DataFiles`). Nothing is copied out of the jar, so a
+plugin update still changes every file that is not overridden. `make reload-data` (or `-prod`) copies the data
+files you changed (git diff against HEAD, or `FILES="roles/SEER.json"`) to the servers' override folder and
+runs `/ww reload` on the running ones, with no restart; `make reload-data-clear` goes back to the jar's copy.
+Code changes still need `make plugin PLUGIN=... SERVERS=<only the ones you need>`. `/ww reload` re-reads all three (and lists
+the overrides in use); a broken file is refused with its name and the old data stays. Running games keep
+what they read, the next platform uses the new decor.
+
 ## HUD and pack
 
 - The HUD is glyphs coloured `(78, 100 + element, parameter)` in the action bar; the core shader moves them
@@ -64,6 +83,13 @@ ring of grass, cottages, trees and lamp posts around it; the block cap is `maxBl
   unchecked on 26.x.
 - Game rules were renamed (keep_inventory, advance_time...): the old string API throws "Unknown gamerule".
   `ManagementApi.BOOLEAN_RULES` maps the panel's stable ids to the typed `org.bukkit.GameRules`.
+
+## Backups in the panel
+
+`internal/backup` (ZIP format shared with `scripts/world_archive.py`), `internal/control/backups.go` (jobs, live
+freeze with `save-off` + `save-all flush`, restore with rollback), `internal/panel/backups.go` (streaming proxy),
+`web/src/Backups.tsx`. Test: `go test ./internal/...`; the controller test uses a fake Docker. Restores stop
+the server: do not try them on a server with players.
 
 ## Conventions
 

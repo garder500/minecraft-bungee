@@ -14,9 +14,21 @@ public final class SkyStage {
   private final SkyWorld sky;
   private final Supplier<SkyInstance> instance;
 
+  private final Runnable decorReload;
+
   public SkyStage(SkyWorld sky, Supplier<SkyInstance> instance) {
+    this(sky, instance, () -> {});
+  }
+
+  private SkyStage(SkyWorld sky, Supplier<SkyInstance> instance, Runnable decorReload) {
     this.sky = sky;
     this.instance = instance;
+    this.decorReload = decorReload;
+  }
+
+  /** Re-reads the decor for the next platform (override or jar); a broken file throws and changes nothing. */
+  public void reloadDecor() {
+    decorReload.run();
   }
 
   /** The production wiring: the shipped decor, blocks written on the owning region. */
@@ -30,6 +42,12 @@ public final class SkyStage {
             if (cached[0] == null)
               cached[0] = SkyInstance.forPlugin(plugin, sky.world(), DecorConfig.loadDefault());
             return cached[0];
+          }
+        },
+        () -> {
+          DecorConfig decor = DecorConfig.loadDefault();
+          synchronized (cached) {
+            if (cached[0] != null) cached[0].setDecor(decor);
           }
         });
   }

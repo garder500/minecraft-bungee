@@ -36,7 +36,7 @@ public final class SkyInstance {
   private final World world;
   private final ChunkRunner runner;
   private final BlockWriter writer;
-  private final DecorConfig decor;
+  private volatile DecorConfig decor;
   private final Map<Integer, List<Pos>> placed = new ConcurrentHashMap<>();
 
   public SkyInstance(World world, ChunkRunner runner, BlockWriter writer, DecorConfig decor) {
@@ -47,6 +47,11 @@ public final class SkyInstance {
   }
 
   /** The production wiring: region scheduler per chunk, plain setType without physics. */
+  /** Decor for the platforms built from now on; the ones standing are not touched. */
+  public void setDecor(DecorConfig decor) {
+    this.decor = decor;
+  }
+
   public static SkyInstance forPlugin(Plugin plugin, World world, DecorConfig decor) {
     ChunkRunner runner =
         (cx, cz, task) -> Bukkit.getRegionScheduler().run(plugin, world, cx, cz, scheduled -> task.run());

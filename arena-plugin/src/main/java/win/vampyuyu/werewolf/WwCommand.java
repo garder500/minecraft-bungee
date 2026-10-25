@@ -1,5 +1,6 @@
 package win.vampyuyu.werewolf;
 
+import win.vampyuyu.werewolf.sky.DecorConfig;
 import com.google.gson.JsonObject;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -59,6 +60,16 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
   /** Every role name, for the completion of /ww debug force. */
   static List<String> roleNames() {
     return Arrays.stream(WerewolfGame.Role.values()).map(r -> r.name().toLowerCase(Locale.ROOT)).toList();
+  }
+
+  /** " (overrides: roles/SEER.json, ...)" for the files read from the data folder, else "". */
+  private static String overridden() {
+    List<String> files = new ArrayList<>();
+    for (WerewolfGame.Role role : WerewolfGame.Role.values())
+      if (DataFiles.override("/roles/" + role.name() + ".json") != null) files.add("roles/" + role.name() + ".json");
+    for (String resource : List.of("/werewolf/ambience.json", DecorConfig.DEFAULT_RESOURCE))
+      if (DataFiles.override(resource) != null) files.add(resource.substring(1));
+    return files.isEmpty() ? "" : " (overrides: " + String.join(", ", files) + ")";
   }
 
   // ------------------------------------------------------------------ plumbing
@@ -157,7 +168,11 @@ public final class WwCommand implements CommandExecutor, TabCompleter {
         case "check" -> check(sender);
         case "reload" -> {
           plugin.arenas.reload();
-          say(sender, "Arenas reloaded");
+          // Loaded first, applied together: a broken file stops here and leaves everything as it was.
+          win.vampyuyu.werewolf.roles.RoleInfo.reload();
+          win.vampyuyu.werewolf.ambience.AmbienceProfile.reload();
+          plugin.werewolf.stage.reloadDecor();
+          say(sender, "Arenas, roles, ambience and decor reloaded" + overridden());
         }
         case "act" -> act(sender, args);
         case "click" -> click(sender, args);

@@ -34,7 +34,7 @@ public final class WerewolfAmbience {
   /** The ambient bed each player hears now, and when its current pass started. */
   private final Map<UUID, AmbienceDirector.Bed> beds = new ConcurrentHashMap<>();
 
-  private static final AmbienceDirector DIRECTOR = new AmbienceDirector(AmbienceProfile.defaults());
+  private static final AmbienceDirector DIRECTOR = new AmbienceDirector(AmbienceProfile::defaults);
 
   /** Ticks between two story beats in the centre of the screen. */
   public static final long BEAT = 45;

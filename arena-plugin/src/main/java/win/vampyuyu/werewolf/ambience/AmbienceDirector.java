@@ -36,19 +36,24 @@ public final class AmbienceDirector {
           "death", "trial",
           "game_over", "finale");
 
-  private final AmbienceProfile profile;
+  private final java.util.function.Supplier<AmbienceProfile> source;
 
   public AmbienceDirector(AmbienceProfile profile) {
-    this.profile = profile;
+    this(() -> profile);
+  }
+
+  /** Reads the profile at each decision, so a reload takes effect at once. */
+  public AmbienceDirector(java.util.function.Supplier<AmbienceProfile> source) {
+    this.source = source;
   }
 
   /** The profile entry that governs this moment of the game. */
   public AmbienceProfile.Entry entry(String phase, boolean night, boolean finale) {
-    if (finale || "FINISHED".equals(phase)) return profile.forPhase("finale", night);
+    if (finale || "FINISHED".equals(phase)) return source.get().forPhase("finale", night);
     if (phase == null || phase.isEmpty() || phase.equals("LOBBY") || phase.equals("WAITING"))
-      return profile.forPhase("lobby", night);
-    if (phase.equals("ELECTION")) return profile.forPhase("vote", night);
-    return profile.forPhase(phase, night);
+      return source.get().forPhase("lobby", night);
+    if (phase.equals("ELECTION")) return source.get().forPhase("vote", night);
+    return source.get().forPhase(phase, night);
   }
 
   /**
@@ -81,6 +86,6 @@ public final class AmbienceDirector {
   /** The pack sting for a cue name, or null when the profile has none for it. */
   public AmbienceProfile.Sting sting(String name) {
     String key = STING_KEYS.get(name);
-    return key == null ? null : profile.forPhase(key, false).sting();
+    return key == null ? null : source.get().forPhase(key, false).sting();
   }
 }

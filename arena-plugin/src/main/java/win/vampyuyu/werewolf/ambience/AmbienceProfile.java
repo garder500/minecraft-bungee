@@ -36,17 +36,20 @@ public final class AmbienceProfile {
 
   private static final Pattern VANILLA_SOUND = Pattern.compile("minecraft:[a-z0-9_./]+");
 
-  private static final class Defaults {
-    static final AmbienceProfile INSTANCE = loadResource();
+  private static volatile AmbienceProfile current;
 
-    private static AmbienceProfile loadResource() {
-      try (InputStream in = AmbienceProfile.class.getResourceAsStream(RESOURCE)) {
-        if (in == null) throw new IllegalStateException("missing " + RESOURCE);
-        return load(in);
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
+  private static AmbienceProfile loadResource() {
+    try (InputStream in = win.vampyuyu.werewolf.DataFiles.open(AmbienceProfile.class, RESOURCE)) {
+      if (in == null) throw new IllegalStateException("missing " + RESOURCE);
+      return load(in);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
     }
+  }
+
+  /** Re-reads the profile (override or jar); a broken file throws and keeps the current one. */
+  public static synchronized AmbienceProfile reload() {
+    return current = loadResource();
   }
 
   private final Map<String, Entry> entries;
@@ -55,9 +58,10 @@ public final class AmbienceProfile {
     this.entries = entries;
   }
 
-  /** The profile shipped with the plugin (werewolf/ambience.json). */
+  /** The active profile: overrides/werewolf/ambience.json when present, else the jar's copy. */
   public static AmbienceProfile defaults() {
-    return Defaults.INSTANCE;
+    AmbienceProfile profile = current;
+    return profile != null ? profile : reload();
   }
 
   /**
