@@ -26,6 +26,7 @@ haproxy-protocol = false
 tcp-fast-open = false
 bungee-plugin-message-channel = true
 show-ping-requests = false
+sample-players-in-ping = true
 failover-on-unexpected-server-disconnect = true
 log-command-executions = false
 log-player-connections = true

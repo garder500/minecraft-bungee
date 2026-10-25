@@ -23,7 +23,9 @@ final class ManagementApi implements AutoCloseable {
     private final Gson json = new GsonBuilder().disableHtmlEscaping().serializeNulls().create();
     private final HttpServer http;
     private final ThreadPoolExecutor executor = new ThreadPoolExecutor(2,2,0,TimeUnit.SECONDS,new ArrayBlockingQueue<>(16),r->{Thread t=new Thread(r,"vampyuyu-management");t.setDaemon(true);return t;},new ThreadPoolExecutor.AbortPolicy());
-    private static final List<String> BOOLEAN_RULES=List.of("keepInventory","mobGriefing","doDaylightCycle","doWeatherCycle","doMobSpawning","doFireTick","showDeathMessages","doInsomnia","announceAdvancements");
+    // 26.x renamed the game rules (keep_inventory, advance_time...): the panel keeps stable ids and maps them to the typed rules.
+    private static final Map<String,org.bukkit.GameRule<Boolean>> BOOLEAN_RULES=new LinkedHashMap<>();
+    static{BOOLEAN_RULES.put("keepInventory",org.bukkit.GameRules.KEEP_INVENTORY);BOOLEAN_RULES.put("mobGriefing",org.bukkit.GameRules.MOB_GRIEFING);BOOLEAN_RULES.put("advanceTime",org.bukkit.GameRules.ADVANCE_TIME);BOOLEAN_RULES.put("advanceWeather",org.bukkit.GameRules.ADVANCE_WEATHER);BOOLEAN_RULES.put("spawnMobs",org.bukkit.GameRules.SPAWN_MOBS);BOOLEAN_RULES.put("fireDamage",org.bukkit.GameRules.FIRE_DAMAGE);BOOLEAN_RULES.put("showDeathMessages",org.bukkit.GameRules.SHOW_DEATH_MESSAGES);BOOLEAN_RULES.put("spawnPhantoms",org.bukkit.GameRules.SPAWN_PHANTOMS);BOOLEAN_RULES.put("showAdvancementMessages",org.bukkit.GameRules.SHOW_ADVANCEMENT_MESSAGES);}
     ManagementApi(JavaPlugin plugin,String token) throws IOException {
         this.plugin=plugin;this.token=token;inventories=new PlayerInventoryStore(plugin);
         for(World world:plugin.getServer().getWorlds()){String key="world-pvp."+world.getUID();if(plugin.getConfig().contains(key))world.setPVP(plugin.getConfig().getBoolean(key));}
@@ -68,7 +70,7 @@ final class ManagementApi implements AutoCloseable {
         List<Map<String,Object>> worlds=new ArrayList<>();
         for(World world:plugin.getServer().getWorlds()){
             Map<String,Object> row=new LinkedHashMap<>();row.put("uuid",world.getUID().toString());row.put("name",world.getName());row.put("environment",world.getEnvironment().name());row.put("difficulty",world.getDifficulty().name());row.put("time",world.getTime());row.put("weather",world.isThundering()?"thunder":world.hasStorm()?"rain":"clear");row.put("pvp",world.getPVP());row.put("players",world.getPlayers().size());row.put("loadedChunks",world.getLoadedChunks().length);row.put("entities",world.getEntityCount());
-            Map<String,Object> rules=new LinkedHashMap<>();for(String name:BOOLEAN_RULES)rules.put(name,world.getGameRuleValue(name));rules.put("randomTickSpeed",world.getGameRuleValue("randomTickSpeed"));row.put("rules",rules);
+            Map<String,Object> rules=new LinkedHashMap<>();for(var rule:BOOLEAN_RULES.entrySet())rules.put(rule.getKey(),String.valueOf(world.getGameRuleValue(rule.getValue())));rules.put("randomTickSpeed",String.valueOf(world.getGameRuleValue(org.bukkit.GameRules.RANDOM_TICK_SPEED)));row.put("rules",rules);
             var spawn=world.getSpawnLocation();row.put("spawn",Map.of("x",spawn.getX(),"y",spawn.getY(),"z",spawn.getZ()));worlds.add(row);
         }
         List<Map<String,Object>> whitelist=new ArrayList<>();for(OfflinePlayer p:plugin.getServer().getWhitelistedPlayers())whitelist.add(identity(p));
@@ -89,7 +91,7 @@ final class ManagementApi implements AutoCloseable {
                 case "time"->world.setTime(integer(in,"value",0,23999));
                 case "weather"->{String value=text(in,"value",16);if(!List.of("clear","rain","thunder").contains(value))throw new IllegalArgumentException("Invalid weather");world.setStorm(!value.equals("clear"));world.setThundering(value.equals("thunder"));}
                 case "pvp"->{boolean enabled=bool(in,"enabled");world.setPVP(enabled);plugin.getConfig().set("world-pvp."+world.getUID(),enabled);plugin.saveConfig();}
-                case "gamerule"->{String rule=text(in,"rule",64);String value;if(rule.equals("randomTickSpeed"))value=Integer.toString(integer(in,"value",0,20));else{if(!BOOLEAN_RULES.contains(rule))throw new IllegalArgumentException("Unsupported game rule");value=Boolean.toString(bool(in,"enabled"));}if(!world.setGameRuleValue(rule,value))throw new IllegalArgumentException("Game rule rejected");}
+                case "gamerule"->{String rule=text(in,"rule",64);boolean ok;if(rule.equals("randomTickSpeed"))ok=world.setGameRule(org.bukkit.GameRules.RANDOM_TICK_SPEED,integer(in,"value",0,20));else{org.bukkit.GameRule<Boolean> typed=BOOLEAN_RULES.get(rule);if(typed==null)throw new IllegalArgumentException("Unsupported game rule");ok=world.setGameRule(typed,bool(in,"enabled"));}if(!ok)throw new IllegalArgumentException("Game rule rejected");}
             }return;
         }
         UUID id=uuid(text(in,"uuid",36));OfflinePlayer offline=plugin.getServer().getOfflinePlayer(id);
@@ -100,8 +102,8 @@ final class ManagementApi implements AutoCloseable {
             case "whitelist-add"->offline.setWhitelisted(true);
             case "whitelist-remove"->offline.setWhitelisted(false);
             case "kick"->online(id).kick(Component.text(text(in,"reason",160)));
-            case "ban"->{String name=offline.getName();if(name==null)throw new IllegalArgumentException("Player profile is unknown on this server");int hours=integer(in,"hours",0,8760);plugin.getServer().getBanList(BanList.Type.NAME).addBan(name,text(in,"reason",160),hours==0?null:Date.from(Instant.now().plusSeconds(hours*3600L)),"Network panel");Player p=plugin.getServer().getPlayer(id);if(p!=null)p.kick(Component.text("You have been banned: "+text(in,"reason",160)));}
-            case "pardon"->{String name=offline.getName();if(name==null)throw new IllegalArgumentException("Player profile is unknown");plugin.getServer().getBanList(BanList.Type.NAME).pardon(name);}
+            case "ban"->{String name=offline.getName();if(name==null&&in.has("name"))name=text(in,"name",16);if(name==null)throw new IllegalArgumentException("Player profile is unknown on this server");int hours=integer(in,"hours",0,8760);plugin.getServer().getBanList(BanList.Type.NAME).addBan(name,text(in,"reason",160),hours==0?null:Date.from(Instant.now().plusSeconds(hours*3600L)),"Network panel");Player p=plugin.getServer().getPlayer(id);if(p!=null)p.kick(Component.text("You have been banned: "+text(in,"reason",160)));}
+            case "pardon"->{String name=offline.getName();if(name==null&&in.has("name"))name=text(in,"name",16);if(name==null)throw new IllegalArgumentException("Player profile is unknown");plugin.getServer().getBanList(BanList.Type.NAME).pardon(name);}
             case "heal"->{Player p=online(id);p.setHealth(Objects.requireNonNull(p.getAttribute(Objects.requireNonNull(Registry.ATTRIBUTE.get(NamespacedKey.minecraft("max_health"))))).getValue());p.setFireTicks(0);}
             case "feed"->{Player p=online(id);p.setFoodLevel(20);p.setSaturation(20);}
             case "clear-effects"->{Player p=online(id);for(var effect:p.getActivePotionEffects())p.removePotionEffect(effect.getType());}

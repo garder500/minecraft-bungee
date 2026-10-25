@@ -31,7 +31,12 @@ final class PlayerInventoryStore {
     record Edit(String container, String revision, int slot, String material, int amount) {}
     static class Conflict extends IllegalArgumentException { Conflict(String message) { super(message); } }
     PlayerInventoryStore(JavaPlugin plugin) { this.plugin = plugin; }
-    private Path file(UUID uuid) { return plugin.getServer().getWorlds().get(0).getWorldFolder().toPath().resolve("playerdata").resolve(uuid + ".dat"); }
+    /** Player data: world/players/data on 26.x, world/playerdata before; the folder that exists wins. */
+    private Path file(UUID uuid) {
+        Path world = plugin.getServer().getWorlds().get(0).getWorldFolder().toPath();
+        Path modern = world.resolve("players").resolve("data");
+        return (java.nio.file.Files.isDirectory(modern) ? modern : world.resolve("playerdata")).resolve(uuid + ".dat");
+    }
     private static int size(String container) { if (container.equals("inventory")) return 41; if (container.equals("ender")) return 27; throw new IllegalArgumentException("Choose inventory or ender chest"); }
     private static Inventory inventory(Player player, String container) { return container.equals("ender") ? player.getEnderChest() : player.getInventory(); }
     static int fromNbtSlot(int slot, boolean ender) { if (ender) return slot; if (slot == -106 || slot == 150) return 40; if (slot >= 100 && slot <= 103) return slot - 64; return slot; }

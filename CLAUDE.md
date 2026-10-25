@@ -9,7 +9,9 @@ All user-facing text is English (menus, HUD, chat); the user talks to Claude in 
 
 1. **Unit tests**: `make plugin-test PLUGIN=arena [TEST=SomeTestClass]` (docker maven, silent when green).
    Pack and HUD: `make test-pack` (also `python3 scripts/test_hud_sheet.py`).
-2. **Build and deploy to the local stack**: `make plugin PLUGIN=arena` builds the jar, overrides it on
+2. **Build and deploy to the local stack** (WARNING: the docker stack runs Paper 1.21.9 per `.env`, while the
+   plugins declare `api-version: 26.3`: they do NOT load there ("Unsupported API version 26.3"). Test the plugins
+   with `scripts/e2e_client.py` (own Paper 26.3), not on the docker stack.): `make plugin PLUGIN=arena` builds the jar, overrides it on
    lobby/creative/survival and restarts them. `make pack` rebuilds `resource-pack/dist/vampyuyu-menus.zip`
    (the servers read it at start, so restart them after a pack change). `make up` starts the local stack.
 3. **Real screenshots are required for anything visible** (HUD, village, outline, cards, effects). A
@@ -54,6 +56,14 @@ All user-facing text is English (menus, HUD, chat); the user talks to Claude in 
 Every game builds a flying platform in `ww_sky` (`werewolf/sky/`, decor in
 `src/main/resources/werewolf/decor/default.json`, `DecorConfig.java`). `village.width` (0 disables) adds a
 ring of grass, cottages, trees and lamp posts around it; the block cap is `maxBlocks` (18000).
+
+## Paper 26.x notes
+
+- Player data lives in `world/players/data/<uuid>.dat` (not `world/playerdata/`): `PlayerInventoryStore.file`
+  picks the folder that exists. The scripts that still use `playerdata` (world_archive, smoke tests) are
+  unchecked on 26.x.
+- Game rules were renamed (keep_inventory, advance_time...): the old string API throws "Unknown gamerule".
+  `ManagementApi.BOOLEAN_RULES` maps the panel's stable ids to the typed `org.bukkit.GameRules`.
 
 ## Conventions
 

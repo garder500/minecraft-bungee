@@ -338,6 +338,37 @@ export function PlayerDetails({
       setBusy(false);
     }
   }
+  /** Ban or pardon on every server of the network (each server keeps its own ban list). */
+  async function networkAction(action: "ban" | "pardon", extra: Record<string, unknown> = {}) {
+    if (!(await discard())) return;
+    if (
+      !(await confirm(
+        action === "ban"
+          ? `Ban ${player.name} on ALL servers (${Object.values(worlds).join(", ")})?`
+          : `Remove the ban of ${player.name} on ALL servers?`,
+      ))
+    )
+      return;
+    setBusy(true);
+    setError("");
+    const failed: string[] = [];
+    for (const id of Object.keys(worlds)) {
+      try {
+        await api(`/servers/${id}/game/action`, "POST", csrf, {
+          action,
+          uuid: player.uuid,
+          name: player.name,
+          ...extra,
+        });
+      } catch (e) {
+        failed.push(`${worlds[id as keyof typeof worlds]}: ${e instanceof Error ? e.message : "failed"}`);
+      }
+    }
+    if (failed.length) setError(`Not applied on: ${failed.join("; ")}`);
+    else setNotice(action === "ban" ? "Banned on all servers." : "Ban removed on all servers.");
+    await refresh();
+    setBusy(false);
+  }
   const selectedLabel = useItemLabel(slot?.amount ? slot.material : "");
   const renderSlot = (index: number) => {
     const item = view?.slots.find((s) => s.slot === index);
@@ -809,8 +840,19 @@ export function PlayerDetails({
               Remove ban
             </button>
           </div>
+          <div className="player-action-row">
+            <button
+              disabled={busy || !reason.trim()}
+              onClick={() => void networkAction("ban", { reason, hours })}
+            >
+              Ban on ALL servers
+            </button>
+            <button disabled={busy} onClick={() => void networkAction("pardon")}>
+              Remove ban on ALL servers
+            </button>
+          </div>
           <p className="console-note">
-            Moderation affects this server. OP and dashboard access remain
+            Moderation affects this server unless you use the ALL servers buttons. OP and dashboard access remain
             separate from role command grants.
           </p>
         </section>
