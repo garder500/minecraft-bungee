@@ -207,6 +207,8 @@ type Server struct {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	s.metricsRoute(mux)
+	s.logRoutes(mux)
+	s.chatRoutes(mux)
 	s.pluginRoutes(mux)
 	s.gameRoutes(mux)
 	s.backupRoutes(mux)
@@ -219,22 +221,6 @@ func (s *Server) Handler() http.Handler {
 			out = append(out, v)
 		}
 		JSON(w, 200, out)
-	})
-	mux.HandleFunc("GET /servers/{id}/logs", func(w http.ResponseWriter, r *http.Request) {
-		id := r.PathValue("id")
-		if !Valid(id) {
-			JSON(w, 404, map[string]string{"error": "unknown server"})
-			return
-		}
-		v, e := s.Docker.Logs(r.Context(), id)
-		if e != nil {
-			JSON(w, 503, map[string]string{"error": e.Error()})
-			return
-		}
-		for i := range v {
-			v[i] = s.redact(v[i])
-		}
-		JSON(w, 200, v)
 	})
 	mux.HandleFunc("POST /servers/{id}/{action}", func(w http.ResponseWriter, r *http.Request) {
 		id, action := r.PathValue("id"), r.PathValue("action")

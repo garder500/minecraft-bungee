@@ -1,5 +1,6 @@
 import { useConfirm } from "./ConfirmDialog";
 import { PlayerSkin } from "./PlayerSkin";
+import { StaffChat } from "./StaffChat";
 import { useEffect, useRef, useState } from "react";
 import { api, APIError } from "./api";
 import {
@@ -339,7 +340,10 @@ export function PlayerDetails({
     }
   }
   /** Ban or pardon on every server of the network (each server keeps its own ban list). */
-  async function networkAction(action: "ban" | "pardon", extra: Record<string, unknown> = {}) {
+  async function networkAction(
+    action: "ban" | "pardon",
+    extra: Record<string, unknown> = {},
+  ) {
     if (!(await discard())) return;
     if (
       !(await confirm(
@@ -361,11 +365,18 @@ export function PlayerDetails({
           ...extra,
         });
       } catch (e) {
-        failed.push(`${worlds[id as keyof typeof worlds]}: ${e instanceof Error ? e.message : "failed"}`);
+        failed.push(
+          `${worlds[id as keyof typeof worlds]}: ${e instanceof Error ? e.message : "failed"}`,
+        );
       }
     }
     if (failed.length) setError(`Not applied on: ${failed.join("; ")}`);
-    else setNotice(action === "ban" ? "Banned on all servers." : "Ban removed on all servers.");
+    else
+      setNotice(
+        action === "ban"
+          ? "Banned on all servers."
+          : "Ban removed on all servers.",
+      );
     await refresh();
     setBusy(false);
   }
@@ -597,7 +608,10 @@ export function PlayerDetails({
                         </div>
                         <div className="mc-player">
                           <PlayerSkin uuid={player.uuid} name={player.name} />
-                          <McText className="mc-player-name" text={player.name} />
+                          <McText
+                            className="mc-player-name"
+                            text={player.name}
+                          />
                           <McText
                             className="mc-player-level"
                             text={`Level ${view.player.level}`}
@@ -847,15 +861,27 @@ export function PlayerDetails({
             >
               Ban on ALL servers
             </button>
-            <button disabled={busy} onClick={() => void networkAction("pardon")}>
+            <button
+              disabled={busy}
+              onClick={() => void networkAction("pardon")}
+            >
               Remove ban on ALL servers
             </button>
           </div>
           <p className="console-note">
-            Moderation affects this server unless you use the ALL servers buttons. OP and dashboard access remain
-            separate from role command grants.
+            Moderation affects this server unless you use the ALL servers
+            buttons. OP and dashboard access remain separate from role command
+            grants.
           </p>
         </section>
+        <StaffChat
+          key={`${server}:${player.uuid}`}
+          server={server}
+          uuid={player.uuid}
+          name={player.name}
+          csrf={csrf}
+          onError={onError}
+        />
       </section>
     </div>
   );

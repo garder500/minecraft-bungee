@@ -1,10 +1,11 @@
 import { useConfirm, ConfirmProvider } from "./ConfirmDialog";
-import React, { FormEvent, useEffect, useRef, useState } from "react";
+import React, { FormEvent, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
 import { api, APIError } from "./api";
 import { Players } from "./Players";
 import { ServerTools } from "./ServerTools";
+import { Console } from "./Console";
 import { Backups } from "./Backups";
 import { WerewolfSessions } from "./WerewolfSessions";
 import { Zones } from "./Zones";
@@ -73,13 +74,7 @@ function App() {
     [error, setError] = useState("");
   const [servers, setServers] = useState<Server[]>([]),
     [selected, setSelected] = useState("creative"),
-    [lines, setLines] = useState<string[]>([]),
-    [stream, setStream] = useState("Connecting"),
-    [busy, setBusy] = useState(""),
-    [command, setCommand] = useState(""),
-    [output, setOutput] = useState(""),
-    [follow, setFollow] = useState(true);
-  const logWindow = useRef<HTMLDivElement>(null);
+    [busy, setBusy] = useState("");
   function report(e: unknown) {
     if (e instanceof APIError && e.status === 401) setSession(null);
     setError(e instanceof Error ? e.message : "Something went wrong");
@@ -110,42 +105,6 @@ function App() {
       clearInterval(id);
     };
   }, [session]);
-  useEffect(() => {
-    if (!session || view !== "overview") return;
-    setLines([]);
-    setOutput("");
-    setStream("Connecting");
-    const events = new EventSource(`/api/v1/servers/${selected}/console`);
-    events.addEventListener("snapshot", (e) => {
-      try {
-        const data = JSON.parse((e as MessageEvent).data);
-        if (Array.isArray(data)) {
-          setLines(data.slice(-200));
-          setStream("Live");
-        }
-      } catch {
-        setStream("Invalid console response");
-      }
-    });
-    events.addEventListener("unavailable", () =>
-      setStream("Server unavailable · retrying"),
-    );
-    events.addEventListener("expired", () => {
-      events.close();
-      setSession(null);
-    });
-    events.onerror = () => {
-      setStream("Reconnecting");
-      api<Session>("/session").catch((e) => {
-        if (e instanceof APIError && e.status === 401) setSession(null);
-      });
-    };
-    return () => events.close();
-  }, [session, selected, view]);
-  useEffect(() => {
-    if (follow && logWindow.current)
-      logWindow.current.scrollTop = logWindow.current.scrollHeight;
-  }, [lines, follow]);
   async function login(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
@@ -178,26 +137,6 @@ function App() {
     try {
       await api(`/servers/${selected}/${action}`, "POST", session.csrf);
       setServers(await api<Server[]>("/servers"));
-    } catch (e) {
-      report(e);
-    } finally {
-      setBusy("");
-    }
-  }
-  async function send(e: FormEvent) {
-    e.preventDefault();
-    if (!session || !command.trim()) return;
-    setBusy("command");
-    setError("");
-    try {
-      const v = await api<{ output: string }>(
-        `/servers/${selected}/command`,
-        "POST",
-        session.csrf,
-        { command },
-      );
-      setOutput(v.output || "Command sent.");
-      setCommand("");
     } catch (e) {
       report(e);
     } finally {
@@ -575,71 +514,15 @@ function App() {
                   </button>
                 </div>
               </div>
-              <div className="console">
-                <div className="console-toolbar">
-                  <div>
-                    <span className={stream === "Live" ? "dot" : ""} />
-                    <span>{stream}</span>
-                  </div>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={follow}
-                      onChange={(e) => setFollow(e.target.checked)}
-                    />{" "}
-                    Auto-scroll
-                  </label>
-                  <span>Last 200 lines</span>
-                </div>
-                <div
-                  className="log-window"
-                  ref={logWindow}
-                  role="log"
-                  aria-label={`${names[selected]} console`}
-                  tabIndex={0}
-                >
-                  {lines.length ? (
-                    lines.map((line, i) => (
-                      <div className="log-line" key={i}>
-                        <span className="line-number">{i + 1}</span>
-                        <span>{line}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="empty-log">Waiting for server output…</div>
-                  )}
-                </div>
-                <form className="command-bar" onSubmit={send}>
-                  <span>❯</span>
-                  <input
-                    aria-label="Server command"
-                    placeholder={
-                      selected === "velocity"
-                        ? "Proxy command submission is not available"
-                        : "Enter a Minecraft command…"
-                    }
-                    value={command}
-                    maxLength={2048}
-                    onChange={(e) => setCommand(e.target.value)}
-                    disabled={!running || selected === "velocity" || !!busy}
-                  />
-                  <button
-                    disabled={
-                      !running ||
-                      selected === "velocity" ||
-                      !!busy ||
-                      !command.trim()
-                    }
-                  >
-                    Send ↵
-                  </button>
-                </form>
-              </div>
-              {output && (
-                <pre className="command-output" aria-live="polite">
-                  {output}
-                </pre>
-              )}
+              <Console
+                key={selected}
+                server={selected}
+                name={names[selected]}
+                running={running}
+                csrf={session.csrf}
+                onError={report}
+                onExpired={() => setSession(null)}
+              />
               <div className="console-note">
                 <span>ⓘ</span> Commands run with console privileges. Server
                 changes may disconnect players.

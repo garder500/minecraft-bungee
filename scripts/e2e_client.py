@@ -710,6 +710,75 @@ def showcase_scenario(ctx):
             failures.append("server: " + line.strip()[:200])
 
 
+def offline_uuid(name):
+    """The UUID an offline-mode server gives a player (Java's nameUUIDFromBytes of "OfflinePlayer:<name>")."""
+    raw = bytearray(hashlib.md5(("OfflinePlayer:" + name).encode()).digest())
+    raw[6] = raw[6] & 0x0F | 0x30
+    raw[8] = raw[8] & 0x3F | 0x80
+    return str(uuid.UUID(bytes=bytes(raw)))
+
+
+def staffchat_scenario(ctx):
+    """The private staff<->player channel through the network plugin's management API, with a real client:
+    staff write to the bot, the bot answers by typing in the chat box, and /exitchat leaves."""
+    tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
+    xdo = tools["xdotool"]
+    me = offline_uuid("E2EBot")
+
+    def chat(**body):
+        request = urllib.request.Request("http://127.0.0.1:8084/chat", method="POST",
+                                         data=json.dumps({"uuid": me, **body}).encode(),
+                                         headers={"Authorization": f"Bearer {API_TOKEN}", "Content-Type": "application/json"})
+        with urllib.request.urlopen(request, timeout=20) as response:
+            return json.load(response)
+
+    def type_in_chat(text, key="t"):
+        subprocess.run([xdo, "key", key], env=env)
+        time.sleep(1)
+        subprocess.run([xdo, "type", "--delay", "60", text], env=env)
+        time.sleep(0.5)
+        subprocess.run([xdo, "key", "Return"], env=env)
+
+    for _ in range(60):
+        try:
+            chat(action="read")
+            break
+        except Exception:
+            time.sleep(2)
+    else:
+        failures.append("the management API never answered")
+        return
+    state = chat(action="open", staff="Admin")
+    if not state["open"]:
+        failures.append(f"open did not open the channel: {state}")
+    chat(action="send", staff="Admin", message="Hello from staff: this is private.")
+    time.sleep(1.5)
+    shot(tools, shots / "staffchat-1-from-staff.png")
+    public = "the bot said this out loud"
+    type_in_chat("hi staff, only you can read this")
+    time.sleep(2)
+    shot(tools, shots / "staffchat-2-bot-types.png")
+    state = chat(action="read", since=0)
+    said = [m["text"] for m in state["messages"] if m["from"] == "player"]
+    if said != ["hi staff, only you can read this"]:
+        failures.append(f"the player's chat did not reach the channel: {state['messages']}")
+    if "hi staff, only you can read this" in (server / "console.log").read_text(errors="replace").replace("\n", " ").split("Done (")[-1].replace("[Staff]", "").replace("[You → Staff]", ""):
+        # The line may only be there as the plugin's own echo, which the console does not print.
+        failures.append("the private message leaked to the public chat log")
+    type_in_chat("exitchat", key="slash")
+    time.sleep(2)
+    shot(tools, shots / "staffchat-3-left.png")
+    state = chat(action="read", since=0)
+    if state["open"] or not any("left the channel" in m["text"] for m in state["messages"] if m["from"] == "system"):
+        failures.append(f"/exitchat did not close the channel: {state}")
+    type_in_chat(public)
+    time.sleep(1.5)
+    if public not in (server / "console.log").read_text(errors="replace"):
+        failures.append("after leaving, the bot's chat is not public again")
+    shot(tools, shots / "staffchat-4-public-again.png")
+    say("staffchat: " + str(len(state["messages"])) + " messages in the channel")
+
+
 def debughud_scenario(ctx):
     """/ww debug hud: synthetic HUD states drawn for the bot with no game running."""
     tools, shots, client_log, failures, server = (ctx[k] for k in
@@ -941,7 +1010,7 @@ def dev_server():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -971,7 +1040,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -1002,7 +1071,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             for i in range(60):
                 if client_log.read_text(errors="replace").count("Reloading ResourceManager") >= 2:
@@ -1031,6 +1100,8 @@ def main():
             debughud_scenario(ctx)
         elif args.scenario == "showcase":
             showcase_scenario(ctx)
+        elif args.scenario == "staffchat":
+            staffchat_scenario(ctx)
         else:
             shader_scenario(ctx)
     finally:
