@@ -54,9 +54,12 @@ public class DecorConfigTest {
     // One bench log behind every seat.
     long logs = blocks.stream().filter(b -> b.material() == Material.SPRUCE_LOG || b.material() == Material.STRIPPED_SPRUCE_LOG).count();
     assertEquals(n, logs);
-    // The underside tapers: it never reaches past the platform radius.
+    // The underside tapers: it never reaches past the platform radius plus half the village ring (16 wide).
     for (var b : blocks.stream().filter(b -> b.dy() < 0).toList())
-      assertTrue(Math.hypot(b.dx(), b.dz()) <= layout.platformRadius());
+      assertTrue(Math.hypot(b.dx(), b.dz()) <= layout.platformRadius() + 8);
+    // The village: cottages (oak planks, dark oak roofs) and trees stand around the platform.
+    assertTrue(blocks.stream().anyMatch(b -> b.material() == Material.DARK_OAK_PLANKS));
+    assertTrue(blocks.stream().anyMatch(b -> b.material() == Material.OAK_LEAVES));
     // No seat stands inside a block: the cell above the floor at each seat is free.
     Set<String> solid = new HashSet<>();
     for (var b : blocks) if (b.dy() >= 1) solid.add(b.dx() + "," + b.dz());

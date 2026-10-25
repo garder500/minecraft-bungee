@@ -27,8 +27,8 @@ import win.vampyuyu.werewolf.WerewolfSession;
 /**
  * What a ballot looks like in the world, with no plugin on the client: a counter over every player
  * who has votes against them ("✖ 3", it pops and chimes when it grows) seen by whoever may see the
- * tally, and a glowing frame around the player each voter picked, seen by that voter alone. All
- * of it is display entities hidden by default and shown per viewer, so it needs no packets.
+ * tally, and a glowing outline of the player each voter picked, seen by that voter alone. All of it
+ * is entities hidden by default and shown per viewer, so it needs no packets.
  */
 public final class VoteMarks {
   private static final int GOLD = 0xffd36e, HUNT = 0xff5a5a;
@@ -46,7 +46,7 @@ public final class VoteMarks {
     public final Set<UUID> shown = ConcurrentHashMap.newKeySet();
   }
 
-  /** The glowing frame one voter sees around their pick. */
+  /** The outline one voter sees around their pick. */
   public static final class Glow {
     public volatile Entity entity;
     public volatile boolean dead;
@@ -172,7 +172,7 @@ public final class VoteMarks {
     }
   }
 
-  /** Nominated voting: a red frame, seen by every player, around whoever is nominated or on trial. */
+  /** Nominated voting: an outline, seen by every player, around whoever is nominated or on trial. */
   private void accused(ArenaSession s, WerewolfGame game) {
     UUID nominee =
         game.nominating() && game.alive().contains(game.nominee() == null ? new UUID(0, 0) : game.nominee())
@@ -192,27 +192,8 @@ public final class VoteMarks {
       glow.target = nominee;
       WerewolfSession.of(s).accusedGlow = glow;
       final Glow created = glow;
-      float height = seated(s, nominee) ? 1.5f : 2.0f;
-      spawn(
-          at,
-          loc ->
-              loc.getWorld()
-                  .spawn(
-                      loc,
-                      BlockDisplay.class,
-                      b -> {
-                        base(b);
-                        b.setBlock(Material.RED_STAINED_GLASS.createBlockData());
-                        b.setTransformation(
-                            new Transformation(
-                                new Vector3f(-0.4f, -0.05f, -0.4f),
-                                new AxisAngle4f(),
-                                new Vector3f(0.8f, height, 0.8f),
-                                new AxisAngle4f()));
-                        b.setGlowing(true);
-                        b.setGlowColorOverride(Color.fromRGB(HUNT));
-                      }),
-          e -> adopt(created, e));
+      boolean sits = seated(s, nominee);
+      spawn(at, loc -> outline(loc, sits), e -> adopt(created, e));
       return;
     }
     if (glow.entity == null || glow.shown) return;
@@ -338,27 +319,7 @@ public final class VoteMarks {
       WerewolfSession.of(s).voteGlows.put(voter, glow);
       final Glow created = glow;
       boolean sits = seated(s, target);
-      float height = sits ? 1.5f : 2.0f;
-      spawn(
-          at,
-          loc ->
-              loc.getWorld()
-                  .spawn(
-                      loc,
-                      BlockDisplay.class,
-                      b -> {
-                        base(b);
-                        b.setBlock(Material.YELLOW_STAINED_GLASS.createBlockData());
-                        b.setTransformation(
-                            new Transformation(
-                                new Vector3f(-0.4f, -0.05f, -0.4f),
-                                new AxisAngle4f(),
-                                new Vector3f(0.8f, height, 0.8f),
-                                new AxisAngle4f()));
-                        b.setGlowing(true);
-                        b.setGlowColorOverride(Color.fromRGB(color));
-                      }),
-          e -> adopt(created, e));
+      spawn(at, loc -> outline(loc, sits), e -> adopt(created, e));
       return;
     }
     if (glow.entity == null || glow.shown) return;
@@ -366,6 +327,31 @@ public final class VoteMarks {
     if (p == null) return;
     glow.shown = true;
     show(p, glow.entity);
+  }
+
+  /**
+   * The outline of a pick, like the one a spectral arrow draws: an invisible, glowing mannequin
+   * standing where the player is, so only the silhouette's outline shows. Hidden by default and shown to
+   * the voter alone (everybody for an accused player).
+   */
+  private static Entity outline(Location at, boolean sits) {
+    Location where = at.clone().add(0, sits ? -0.45 : 0, 0);
+    return where.getWorld()
+        .spawn(
+            where,
+            org.bukkit.entity.Mannequin.class,
+            m -> {
+              m.setVisibleByDefault(false);
+              m.setPersistent(false);
+              m.setInvulnerable(true);
+              m.setGravity(false);
+              m.setAI(false);
+              m.setSilent(true);
+              m.setImmovable(true);
+              m.setDescription(Component.empty());
+              m.setInvisible(true);
+              m.setGlowing(true);
+            });
   }
 
   // ------------------------------------------------------------------ entities

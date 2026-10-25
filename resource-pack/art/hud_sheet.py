@@ -39,7 +39,7 @@ NIGHT_PHASES = {"CUPID", "GUARD", "SEER", "NIGHT", "WITCH", "MINION", "AMULET", 
 
 @dataclass(frozen=True)
 class State:
-    """CustomHud.State, without `fraction` (the draining bar no longer exists)."""
+    """CustomHud.State; `fraction` is the draining bar (1 = full turn left)."""
     palette: str
     top_icon: str
     round: int
@@ -56,6 +56,7 @@ class State:
     seats: tuple
     badges: tuple
     against: int
+    fraction: float = 1.0
 
 
 @dataclass
@@ -218,6 +219,7 @@ def render(s, md=78, sprites=None, elements=None, strict=False):
     glyph("round", "s" + str(max(0, min(9, s.round))))
     glyph("label", "label_" + word(s.label))
     if s.timed:
+        glyph("fill", "fill_" + plate, int(round(max(0.0, min(1.0, s.fraction)) * 255)))
         clock = "%d%02d" % (t // 60, t % 60)
         glyph("t1", kind + clock[0])
         glyph("tcolon", kind + "colon")
@@ -274,7 +276,7 @@ def place(element, md, scale):
     """Screen box (x0, y0, x1, y1) in GUI px of an element: anchor + round((box + corner) * f)."""
     _, anchor, x, y, w, h = ELEMENTS[element]
     gx, gy = gui_size(scale)
-    f = factor(md, scale)
+    f = factor(md, scale) * (layout.HUD_PANEL_SCALE if anchor == 1 else 1.0)
     ax, ay = (gx // 2, 0) if anchor == 0 else (gx, gy // 2)
     return ax + rnd(x * f), ay + rnd(y * f), ax + rnd((x + w) * f), ay + rnd((y + h) * f)
 

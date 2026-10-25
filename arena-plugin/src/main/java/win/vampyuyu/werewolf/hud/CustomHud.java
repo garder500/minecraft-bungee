@@ -93,12 +93,14 @@ public final class CustomHud {
     String plate = danger && t % 2 == 0 ? "danger" : s.palette();
     String clockKind = danger ? "x" : "d";
     Component out = Component.empty();
-    // Top plate: phase medallion, round, label and the clock (the time is shown once, as digits).
+    // Top plate: phase medallion, round, label and the clock (the time as digits and a bar that drains).
     out = out.append(glyph(mode, "frame", "frame_" + plate, 0));
     out = out.append(glyph(mode, "icon", "icon_" + s.topIcon(), 0));
     out = out.append(glyph(mode, "round", "s" + Math.max(0, Math.min(9, s.round())), 0));
     out = out.append(glyph(mode, "label", "label_" + word(s.label()), 0));
     if (s.timed()) {
+      // The draining bar: the shader stretches it to the blue channel's share of its full width.
+      out = out.append(glyph(mode, "fill", "fill_" + plate, (int) Math.round(Math.max(0, Math.min(1, s.fraction())) * 255)));
       String clock = String.format(Locale.ROOT, "%d%02d", t / 60, t % 60);
       out = out.append(glyph(mode, "t1", clockKind + clock.charAt(0), 0));
       out = out.append(glyph(mode, "tcolon", clockKind + "colon", 0));

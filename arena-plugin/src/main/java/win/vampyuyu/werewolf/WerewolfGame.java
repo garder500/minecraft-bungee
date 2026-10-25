@@ -617,7 +617,7 @@ public final class WerewolfGame implements GamePreset {
       throw new IllegalArgumentException(
           switch (ability) {
             case "heal" -> "Life potion unavailable";
-            case "poison" -> "Right-click a player to poison first";
+            case "poison" -> "Left-click a player to poison first";
             case "bind" -> "Pick two lovers first";
             case "shoot" -> "Pick your target first";
             case "infect" -> "You can only infect once, at night";
@@ -674,9 +674,9 @@ public final class WerewolfGame implements GamePreset {
           if (m.abilities(this, p).containsKey(ability)) return m.use(this, p, ability);
         // skip
         ballots.remove(p);
-        if (abstained.remove(p)) return "You may vote again: right-click a player.";
+        if (abstained.remove(p)) return "You may vote again: left-click a player.";
         abstained.add(p);
-        return "You skip this vote. Right-click a player if you change your mind.";
+        return "You skip this vote. Left-click a player if you change your mind.";
       }
     }
   }
@@ -713,7 +713,7 @@ public final class WerewolfGame implements GamePreset {
     if (picks.remove(target)) return "Removed " + target + ".";
     if (picks.size() >= max) {
       if (max > 1)
-        throw new IllegalArgumentException("Two lovers are already picked: right-click one to remove them");
+        throw new IllegalArgumentException("Two lovers are already picked: left-click one to remove them");
       picks.clear();
     }
     picks.add(target);
@@ -1497,7 +1497,7 @@ public final class WerewolfGame implements GamePreset {
       nominator = voter;
       journal.log("NOMINATE", who(voter) + " nominates " + who(target));
       notifyLiving(
-          voter + " nominates " + target + ". Right-click " + target
+          voter + " nominates " + target + ". Left-click " + target
               + " to second the nomination, or nominate somebody else.");
       return "You nominate " + target + ". Somebody must second it.";
     }

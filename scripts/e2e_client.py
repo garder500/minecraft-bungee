@@ -621,6 +621,91 @@ def roles_scenario(ctx, only):
 DEBUG_HUDS = ["night-seer", "day-day_vote-2", "role-witch", "danger-4"]
 
 
+def showcase_scenario(ctx):
+    """Screenshots of the controls: a practice game, then aim at a bot, left-click it (the outline), a far bot,
+    a panorama of the village and the role card. Look at the PNGs in --shots."""
+    tools, shots, env, failures, server = (ctx[k] for k in ("tools", "shots", "env", "failures", "server"))
+    for _ in range(60):
+        try:
+            state = api("GET", "/arenas")
+            break
+        except Exception:
+            time.sleep(2)
+    else:
+        failures.append("the plugin's private API never answered")
+        return
+    me = next(p["uuid"] for p in state["onlinePlayers"] if p["name"] == "E2EBot")
+    rcon = Rcon()
+    rcon.command("time set noon")
+    rcon.command("tp E2EBot 12.5 -60 12.5")
+    api("POST", "/arenas/action", {"action": "arena-practice-start", "arenaId": "e2e", "uuid": me, "botCount": 11})
+    xdo = tools["xdotool"]
+    # The role card (slot 9): open the inventory once the opening presentation is over and hover it.
+    time.sleep(14)
+    subprocess.run([xdo, "mousemove", "640", "360", "click", "1"], env=env)  # grab the mouse
+    time.sleep(1)
+    subprocess.run([xdo, "key", "e"], env=env)
+    time.sleep(1.5)
+    subprocess.run([xdo, "mousemove", "783", "494"], env=env)
+    time.sleep(1.5)
+    shot(tools, shots / "sc-07-role-card-tooltip.png")
+    subprocess.run([xdo, "key", "Escape"], env=env)
+    for _ in range(120):
+        if api("GET", "/arenas")["arenas"][0]["phase"] == "DAY_VOTE":
+            break
+        time.sleep(2)
+    else:
+        failures.append("the game never reached the day vote")
+        return
+    time.sleep(4)
+
+    def face(which):
+        rcon.command(f"execute as E2EBot at @s anchored eyes run rotate @s facing entity @e[type=minecraft:mannequin,sort={which},limit=1] eyes")
+        time.sleep(1)
+
+    def click(grab=False):
+        # Moving the pointer turns the camera once the window has grabbed the mouse: only the first click moves it.
+        if grab:
+            subprocess.run([xdo, "mousemove", "640", "360"], env=env)
+        subprocess.run([xdo, "click", "1"], env=env)
+        time.sleep(2)
+
+    shot(tools, shots / "sc-00-day-vote.png")
+    for q in ("data get entity E2EBot Pos", "data get entity E2EBot Rotation",
+              "data get entity @e[type=minecraft:mannequin,sort=nearest,limit=1] Pos",
+              "data get entity @e[type=minecraft:mannequin,sort=furthest,limit=1] Pos"):
+        say(q + " -> " + rcon.command(q).strip()[:120])
+    face("nearest")
+    say("after face nearest: " + rcon.command("data get entity E2EBot Rotation").strip())
+    shot(tools, shots / "sc-01-aiming-nearest.png")
+    click()
+    for q in ("execute if entity @e[type=minecraft:mannequin]",
+              "execute if entity @e[type=minecraft:mannequin,nbt={Glowing:1b}]",
+              "execute if entity @e[type=minecraft:mannequin,nbt={Invisible:1b}]",
+              "execute if entity @e[type=minecraft:mannequin,nbt={Glowing:1b,Invisible:1b}]"):
+        say(q[-70:] + " -> " + rcon.command(q).strip()[:140])
+    shot(tools, shots / "sc-02-after-left-click-nearest.png")
+    for q in ("data get entity @e[type=minecraft:mannequin,nbt={Glowing:1b},limit=1] Pos",
+              "execute as @e[type=minecraft:mannequin,nbt={Glowing:1b},limit=1] at @s run data get entity @e[type=minecraft:mannequin,nbt=!{Glowing:1b},sort=nearest,limit=1] Pos"):
+        say("ghost: " + rcon.command(q).strip()[:200])
+    rcon.command("execute as E2EBot at @s anchored eyes run rotate @s facing entity @e[type=minecraft:mannequin,nbt={Glowing:1b},limit=1] eyes")
+    time.sleep(1.5)
+    shot(tools, shots / "sc-02b-facing-the-outline.png")
+    face("furthest")
+    say("after face furthest: " + rcon.command("data get entity E2EBot Rotation").strip())
+    shot(tools, shots / "sc-03-aiming-far.png")
+    click()
+    shot(tools, shots / "sc-04-after-left-click-far.png")
+    for i, yaw in enumerate((0, 90, 180, 270)):
+        rcon.command(f"rotate E2EBot {yaw} -8")
+        time.sleep(1)
+        shot(tools, shots / f"sc-05-panorama-{yaw}.png")
+    console = (server / "console.log").read_text(errors="replace")
+    for line in console.splitlines():
+        if ("win.vampyuyu" in line or "NexusArena" in line) and ("Exception" in line or "SEVERE" in line):
+            failures.append("server: " + line.strip()[:200])
+
+
 def debughud_scenario(ctx):
     """/ww debug hud: synthetic HUD states drawn for the bot with no game running."""
     tools, shots, client_log, failures, server = (ctx[k] for k in
@@ -836,7 +921,7 @@ def werewolf_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -864,7 +949,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -895,7 +980,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             for i in range(60):
                 if client_log.read_text(errors="replace").count("Reloading ResourceManager") >= 2:
@@ -922,6 +1007,8 @@ def main():
             tooltip_scenario(ctx)
         elif args.scenario == "debughud":
             debughud_scenario(ctx)
+        elif args.scenario == "showcase":
+            showcase_scenario(ctx)
         else:
             shader_scenario(ctx)
     finally:

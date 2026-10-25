@@ -48,7 +48,12 @@ public final class DecorConfig {
   /** One block of the decor, relative to the campfire centre. */
   public record Placement(int dx, int dy, int dz, Material material) {}
 
+  /** The village around the platform: houses, trees and lamps on a grassy ring {@code width} blocks wide. */
+  record Village(int width, Material ground, Material path, Material wall, Material log, Material roof,
+      Material glass, Material leaves, Material fence, Material lamp) {}
+
   private final int maxBlocks;
+  private Village village;
   private final Material floorInner, floorOuter, campfire, railing, lantern;
   private final double innerMargin;
   private final List<Material> bench, underside;
@@ -112,7 +117,7 @@ public final class DecorConfig {
     } catch (RuntimeException e) {
       throw new IllegalArgumentException("Decor is not a valid JSON object: " + e.getMessage(), e);
     }
-    only(root, "decor", "version", "maxBlocks", "floor", "campfire", "bench", "railing", "lanterns", "underside");
+    only(root, "decor", "version", "maxBlocks", "floor", "campfire", "bench", "railing", "lanterns", "underside", "village");
     if (root.has("version") && integer(root, "version", 1, 1) != 1)
       throw new IllegalArgumentException("Unsupported decor version " + root.get("version"));
     int cap = root.has("maxBlocks") ? integer(root, "maxBlocks", 1, HARD_CAP) : 8000;
@@ -161,6 +166,24 @@ public final class DecorConfig {
     }
     DecorConfig config =
         new DecorConfig(cap, inner, outer, margin, fireBlock, bench, rail, lamp, every, under, factor, minD, maxD);
+    if (root.has("village")) {
+      JsonObject o = object(root, "village");
+      only(o, "village", "width", "ground", "path", "wall", "log", "roof", "glass", "leaves", "fence", "lamp");
+      int width = o.has("width") ? integer(o, "width", 0, 24) : 16;
+      if (width > 0)
+        config.village =
+            new Village(
+                width,
+                o.has("ground") ? block(o, "ground") : Material.GRASS_BLOCK,
+                o.has("path") ? block(o, "path") : Material.DIRT_PATH,
+                o.has("wall") ? block(o, "wall") : Material.OAK_PLANKS,
+                o.has("log") ? block(o, "log") : Material.OAK_LOG,
+                o.has("roof") ? block(o, "roof") : Material.DARK_OAK_PLANKS,
+                o.has("glass") ? block(o, "glass") : Material.GLASS,
+                o.has("leaves") ? block(o, "leaves") : Material.OAK_LEAVES,
+                o.has("fence") ? block(o, "fence") : Material.OAK_FENCE,
+                o.has("lamp") ? block(o, "lamp") : Material.LANTERN);
+    }
     // Fail at load time rather than at the first game: the biggest platform must fit under the cap.
     config.generate(PlatformLayout.MAX_PLAYERS);
     return config;
@@ -186,9 +209,11 @@ public final class DecorConfig {
 
     // Underside: the floating island, narrowing layer by layer.
     if (!underside.isEmpty()) {
-      int depth = (int) Math.max(minDepth, Math.min(maxDepth, Math.round(radius * depthFactor)));
+      // With a village the island carries it too, but its rock only reaches half way out.
+      double rock = village == null ? radius : radius + village.width() * 0.5;
+      int depth = (int) Math.max(minDepth, Math.min(maxDepth, Math.round(rock * depthFactor)));
       for (int k = 1; k <= depth; k++) {
-        double r = radius * (1 - k / (depth + 1.0));
+        double r = rock * (1 - k / (depth + 1.0));
         int span = (int) Math.ceil(r);
         for (int x = -span; x <= span; x++)
           for (int z = -span; z <= span; z++)
@@ -237,10 +262,70 @@ public final class DecorConfig {
         }
       }
     }
+    if (village != null) village(blocks, radius, players);
     if (blocks.size() > maxBlocks)
       throw new IllegalArgumentException(
           "Decor for " + players + " players needs " + blocks.size() + " blocks, over the cap of " + maxBlocks);
     return List.copyOf(blocks.values());
+  }
+
+  /** Grass, a lane, houses facing the fire, trees and lamp posts on a ring around the platform. */
+  private void village(Map<Long, Placement> blocks, double radius, int players) {
+    Village v = village;
+    double outer = radius + v.width();
+    int reach = (int) Math.ceil(outer);
+    for (int x = -reach; x <= reach; x++)
+      for (int z = -reach; z <= reach; z++) {
+        double d = Math.hypot(x, z);
+        if (d <= radius || d > outer) continue;
+        put(blocks, x, 0, z, d <= radius + 3.5 && d > radius + 1.5 ? v.path() : v.ground());
+        // A low fence closes the island's rim.
+        if (d > outer - 1) put(blocks, x, 1, z, v.fence());
+      }
+    // Houses 12 blocks apart at least, trees and lamp posts in between.
+    double homes = radius + v.width() * 0.6;
+    int n = (int) Math.max(5, Math.min(24, Math.floor(2 * Math.PI * homes / 12)));
+    for (int i = 0; i < n; i++) {
+      double a = 2 * Math.PI * i / n;
+      house(blocks, (int) Math.round(homes * Math.sin(a)), (int) Math.round(homes * Math.cos(a)), v);
+      double b = 2 * Math.PI * (i + 0.5) / n;
+      tree(blocks, (int) Math.round(homes * Math.sin(b)), (int) Math.round(homes * Math.cos(b)), v);
+      int lx = (int) Math.round((radius + 2.5) * Math.sin(b)), lz = (int) Math.round((radius + 2.5) * Math.cos(b));
+      put(blocks, lx, 1, lz, v.fence());
+      put(blocks, lx, 2, lz, v.fence());
+      put(blocks, lx, 3, lz, v.lamp());
+    }
+  }
+
+  /** A 5x5 cottage with a stepped roof; its door faces the campfire. */
+  private static void house(Map<Long, Placement> blocks, int cx, int cz, Village v) {
+    boolean doorOnX = Math.abs(cx) > Math.abs(cz);
+    int doorX = doorOnX ? (cx > 0 ? -2 : 2) : 0, doorZ = doorOnX ? 0 : (cz > 0 ? -2 : 2);
+    for (int dx = -2; dx <= 2; dx++)
+      for (int dz = -2; dz <= 2; dz++) {
+        boolean wall = Math.abs(dx) == 2 || Math.abs(dz) == 2;
+        put(blocks, cx + dx, 0, cz + dz, v.wall());
+        if (!wall) continue;
+        boolean corner = Math.abs(dx) == 2 && Math.abs(dz) == 2;
+        for (int y = 1; y <= 3; y++) {
+          if (dx == doorX && dz == doorZ && y <= 2) continue; // the doorway
+          boolean window = y == 2 && !corner && (dx == 0 || dz == 0);
+          put(blocks, cx + dx, y, cz + dz, corner ? v.log() : window ? v.glass() : v.wall());
+        }
+      }
+    for (int layer = 0; layer < 4; layer++) {
+      int half = 3 - layer;
+      for (int dx = -half; dx <= half; dx++)
+        for (int dz = -half; dz <= half; dz++) put(blocks, cx + dx, 4 + layer, cz + dz, v.roof());
+    }
+  }
+
+  private static void tree(Map<Long, Placement> blocks, int cx, int cz, Village v) {
+    for (int dx = -2; dx <= 2; dx++)
+      for (int dy = 3; dy <= 6; dy++)
+        for (int dz = -2; dz <= 2; dz++)
+          if (dx * dx + (dy - 4.5) * (dy - 4.5) * 1.3 + dz * dz <= 5.2) put(blocks, cx + dx, dy, cz + dz, v.leaves());
+    for (int y = 1; y <= 5; y++) put(blocks, cx, y, cz, v.log());
   }
 
   private static boolean inDisc(int x, int z, double radius) {

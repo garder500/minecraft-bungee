@@ -214,6 +214,7 @@ public final class WerewolfAmbience {
                                     + " · "
                                     + WerewolfPresentation.team(role),
                                 WerewolfPresentation.color(role)));
+                        target.sendMessage(Component.text("How to play it: " + roleHelp(s, game, id), INK_MUTED));
                         if (enabled) sound(target, Sound.ITEM_BOOK_PAGE_TURN, .6f, 1f);
                         hud(s, target);
                       });
@@ -265,7 +266,7 @@ public final class WerewolfAmbience {
                 } else if (phase.equals("ELECTION")) {
                   player.sendMessage(
                       Component.text(
-                          "The election opens: right-click the player you want as mayor, or skip.",
+                          "The election opens: left-click the player you want as mayor, or skip.",
                           TextColor.color(WerewolfPresentation.VOTE)));
                   header =
                       target -> {
@@ -275,11 +276,11 @@ public final class WerewolfAmbience {
                 } else if (phase.equals("DAY_VOTE")) {
                   player.sendMessage(
                       Component.text(
-                          "The village vote opens: right-click a player to vote, or skip.",
+                          "The village vote opens: left-click a player to vote, or skip.",
                           TextColor.color(WerewolfPresentation.VOTE)));
                   header =
                       target -> {
-                        title(target, "Village vote", "Right-click a player, or skip", VOTE);
+                        title(target, "Village vote", "Left-click a player, or skip", VOTE);
                         if (enabled) cue(target, "vote", Sound.BLOCK_NOTE_BLOCK_HAT, .2f, 1f);
                       };
                 }
@@ -541,6 +542,13 @@ public final class WerewolfAmbience {
     }
   }
 
+  /** What the role does, with player names in place of ids. */
+  public static String roleHelp(ArenaSession s, WerewolfGame game, UUID viewer) {
+    String help = game.help(viewer);
+    for (var entry : s.players.entrySet()) help = help.replace(entry.getKey().toString(), entry.getValue());
+    return help;
+  }
+
   /** Action bar: what to do now, who the crosshair is on, and the screen effect's marker glyph. */
   private Component actionBar(ArenaSession s, Player p, WerewolfGame game, long now) {
     UUID me = p.getUniqueId();
@@ -595,15 +603,25 @@ public final class WerewolfAmbience {
 
   /** Refreshes the action bar several times a second so the crosshair target feels live. */
   public void aim(ArenaSession s, Player p) {
-    if (s.game instanceof WerewolfGame game && s.presentation.isDone() && !s.finishing)
-      p.sendActionBar(actionBar(s, p, game, System.currentTimeMillis()));
+    if (!(s.game instanceof WerewolfGame game) || !s.presentation.isDone() || s.finishing) return;
+    long now = System.currentTimeMillis();
+    Component bar = actionBar(s, p, game, now);
+    // Only this path writes the action bar: a second writer made the timer flicker. A send resets the
+    // client's fade, so an unchanged bar is only repeated before the vanilla one runs out.
+    var before = sentBars.get(p.getUniqueId());
+    if (before != null && before.bar().equals(bar) && now - before.at() < 2000) return;
+    sentBars.put(p.getUniqueId(), new SentBar(bar, now));
+    p.sendActionBar(bar);
   }
+
+  private record SentBar(Component bar, long at) {}
+
+  private final Map<UUID, SentBar> sentBars = new ConcurrentHashMap<>();
 
   /** Action bar and bossbar: what this player must do now. The bossbar carries the phase and the time. */
   private void hud(ArenaSession s, Player p) {
     if (!(s.game instanceof WerewolfGame game)) return;
     long now = System.currentTimeMillis();
-    p.sendActionBar(actionBar(s, p, game, now));
     if (WerewolfOptions.of(s.config).rules().ambienceEnabled())
       bed(s, p, game.phase(), game.night(), WerewolfSession.of(s).ambienceFinale, now);
     screen.show(

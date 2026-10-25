@@ -34,6 +34,8 @@ COMMON_VS = f"""    int fx = 0;
         float fit = min(gui.x / 640.0, gui.y / 360.0);
         float f = rgb.r == 79 ? 1.0 : rgb.r == 80 ? 0.75 : rgb.r == 81 ? 0.5 : (fit >= 0.9 ? 1.0 : fit >= 0.65 ? 0.75 : 0.5);
         vec2 anchor = HUD_ANCHOR[e] == 0 ? vec2(floor(gui.x * 0.5), 0.0) : vec2(gui.x, floor(gui.y * 0.5));
+        // The role panel (right side) is drawn a little smaller than the top plate.
+        if (HUD_ANCHOR[e] == 1) f *= {layout.HUD_PANEL_SCALE};
         vec4 box = HUD_BOX[e];
         float w = e == HUD_FILL ? max(1.0, floor(box.z * float(rgb.b) / 255.0 + 0.5)) : box.z;
         int k = gl_VertexIndex % 4;

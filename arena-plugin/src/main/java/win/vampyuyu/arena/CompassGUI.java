@@ -89,7 +89,7 @@ public final class CompassGUI implements Listener {
     if (s == null) return;
     if (s.hooks.inGame(s)) {
       // No double chest during a game: look at a player and right-click.
-      p.sendActionBar(Component.text("Look at a player and right-click", TextColor.color(GOLD.value())));
+      p.sendActionBar(Component.text("Look at a player and left-click", TextColor.color(GOLD.value())));
       return;
     }
     boolean skinned = plugin.skin != null && plugin.skin.active(p);

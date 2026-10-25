@@ -144,6 +144,7 @@ HUD_ELEMENTS = [
     ("v1", 1, -44, 64, 12, 17),
     ("v2", 1, -31, 64, 12, 17),
 ]
+HUD_PANEL_SCALE = 1.0    # the right-hand role panel: a non-integer scale mangles its pixel-art text (tried 0.85 and 0.75)
 HUD_ID_BASE = 100        # the green channel of an element's colour is HUD_ID_BASE + its index
 HUD_SPRITE_BASE = 0xE000
 HUD_NEG_BASE = 0xF000    # negative-advance twin of every sprite: sprite index + HUD_NEG_BASE

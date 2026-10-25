@@ -316,17 +316,17 @@ public final class WerewolfPresentation {
           actor
               ? switch (phase) {
                 case "DISCUSSION" -> "Talk it over: who are the wolves?";
-                case "DAY_VOTE" -> "Right-click a player to vote, or use Skip";
-                case "ELECTION" -> "Right-click the player you want as mayor: their vote will count twice";
+                case "DAY_VOTE" -> "Left-click a player to vote, or use Skip";
+                case "ELECTION" -> "Left-click the player you want as mayor: their vote will count twice";
                 case "DEFENSE" -> "The accused speaks: the thumbs come next";
                 case "TRIAL" -> "Thumbs up to let them live, thumbs down to eliminate them";
-                case "AMULET" -> "Right-click a player to pass the amulet on, or go back to sleep";
-                case "CUPID" -> "Right-click two players, then use Bind";
-                case "GUARD" -> "Right-click a player to protect them tonight";
-                case "SEER" -> "Right-click a player to see their role";
-                case "NIGHT" -> "Right-click a player to choose your prey";
+                case "AMULET" -> "Left-click a player to pass the amulet on, or go back to sleep";
+                case "CUPID" -> "Left-click two players, then use Bind";
+                case "GUARD" -> "Left-click a player to protect them tonight";
+                case "SEER" -> "Left-click a player to see their role";
+                case "NIGHT" -> "Left-click a player to choose your prey";
                 case "WITCH" -> "Life saves, Death poisons the player you picked, Sleep ends your turn";
-                case "HUNTER_SHOT" -> "Right-click a target, then use Shoot";
+                case "HUNTER_SHOT" -> "Left-click a target, then use Shoot";
                 case "FINISHED" -> "The game has ended";
                 default -> {
                   RoleInfo info = RoleInfo.byPhase(phase);
@@ -340,10 +340,10 @@ public final class WerewolfPresentation {
 
   public static Cue awakening(String phase) {
     return switch (phase) {
-      case "CUPID" -> new Cue("Cupid, bind two hearts", "Right-click two players");
+      case "CUPID" -> new Cue("Cupid, bind two hearts", "Left-click two players");
       case "GUARD" -> new Cue("Guard, awaken", "Choose someone to protect");
       case "SEER" -> new Cue("Seer, awaken", "Discover one player's secret");
-      case "NIGHT" -> new Cue("Wolves, awaken", "Right-click your victim");
+      case "NIGHT" -> new Cue("Wolves, awaken", "Left-click your victim");
       case "WITCH" -> new Cue("Witch, awaken", "Your potions may change their fate");
       case "HUNTER_SHOT" -> new Cue("Hunter, take your final shot", "Choose your last target");
       case "AMULET" -> new Cue("Amulet holder, awaken", "Pass the amulet on, or keep it");

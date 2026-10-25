@@ -36,7 +36,7 @@ class HudPortTest(unittest.TestCase):
         f = H.Facts(phase="DISCUSSION", role="VILLAGER", round=2, seconds=87, alive=10, total=12,
                     seats=("alive", "dead", "alive", "me"))
         self.assertEqual(seq(f), [
-            "frame:frame_villager", "icon:icon_sun", "round:s2", "label:label_debate",
+            "frame:frame_villager", "icon:icon_sun", "round:s2", "label:label_debate", "fill:fill_villager",
             "t1:d1", "tcolon:dcolon", "t3:d2", "t4:d7",
             "pframe:pframe_villager", "picon:picon_villager", "plabel:plabel_villager", "pteam:pteam_village",
             "a1:d1", "a2:d0", "aslash:dslash", "a3:d1", "a4:d2",
@@ -48,7 +48,7 @@ class HudPortTest(unittest.TestCase):
         # so the plate keeps the seer palette (it only flashes on even seconds). alive " 9" -> dblank, d9.
         f = H.Facts(phase="SEER", role="SEER", night=True, actor=True, round=1, seconds=3, alive=9, total=12)
         self.assertEqual(seq(f), [
-            "frame:frame_seer", "icon:icon_moon", "round:s1", "label:label_seer_awake",
+            "frame:frame_seer", "icon:icon_moon", "round:s1", "label:label_seer_awake", "fill:fill_seer",
             "t1:x0", "tcolon:xcolon", "t3:x0", "t4:x3",
             "pframe:pframe_seer", "picon:picon_seer", "plabel:plabel_seer", "pteam:pteam_village",
             "a1:dblank", "a2:d9", "aslash:dslash", "a3:d1", "a4:d2"])
@@ -60,7 +60,7 @@ class HudPortTest(unittest.TestCase):
         f = H.Facts(phase="DAY_VOTE", role="WITCH", round=3, seconds=45, alive=7, total=8,
                     seats=("me", "alive"), badges=("life", "death"), votes_against=3)
         self.assertEqual(seq(f), [
-            "frame:frame_vote", "icon:icon_vote", "round:s3", "label:label_vote",
+            "frame:frame_vote", "icon:icon_vote", "round:s3", "label:label_vote", "fill:fill_vote",
             "t1:d0", "tcolon:dcolon", "t3:d4", "t4:d5",
             "pframe:pframe_witch", "picon:picon_witch", "plabel:plabel_witch", "pteam:pteam_village",
             "a1:dblank", "a2:d7", "aslash:dslash", "a3:dblank", "a4:d8",
@@ -83,7 +83,7 @@ class HudPortTest(unittest.TestCase):
         f = H.Facts(phase="DISCUSSION", role="VILLAGER", exiled=True, minion=True, round=12, seconds=600,
                     alive=6, total=7, seats=("mate",))
         self.assertEqual(seq(f), [
-            "frame:frame_sleep", "icon:icon_sun", "round:s9", "label:label_away",
+            "frame:frame_sleep", "icon:icon_sun", "round:s9", "label:label_away", "fill:fill_sleep",
             "t1:d9", "tcolon:dcolon", "t3:d5", "t4:d9",
             "pframe:pframe_villager", "picon:picon_villager", "plabel:plabel_villager", "pteam:pteam_wolf_side",
             "a1:dblank", "a2:d6", "aslash:dslash", "a3:dblank", "a4:d7", "m0:dot_mate"])

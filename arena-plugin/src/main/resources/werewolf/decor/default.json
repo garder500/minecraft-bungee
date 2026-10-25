@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maxBlocks": 8000,
+  "maxBlocks": 18000,
   "floor": { "inner": "spruce_planks", "outer": "stone_bricks", "innerMargin": 2.5 },
   "campfire": { "block": "campfire" },
   "bench": { "blocks": ["stripped_spruce_log", "spruce_log"] },
@@ -11,5 +11,6 @@
     "depthFactor": 0.6,
     "minDepth": 4,
     "maxDepth": 14
-  }
+  },
+  "village": { "width": 16 }
 }

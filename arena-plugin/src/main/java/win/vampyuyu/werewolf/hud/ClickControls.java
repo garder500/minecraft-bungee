@@ -21,11 +21,12 @@ import win.vampyuyu.arena.NexusArenaEngine;
 import win.vampyuyu.werewolf.WerewolfCompass;
 import win.vampyuyu.werewolf.WerewolfGame;
 import win.vampyuyu.werewolf.WerewolfSession;
+import win.vampyuyu.werewolf.ambience.WerewolfAmbience;
 import win.vampyuyu.werewolf.ambience.WerewolfPresentation;
 
 /**
  * How a player acts during a werewolf game, with no chest menu: look at a player (or a practice
- * bot's body) and right-click to pick them; the other actions (skip the vote, life and death
+ * bot's body) and left-click (as if breaking a block) to pick them; the other actions (skip the vote, life and death
  * potions, bind, shoot, protect yourself, infect...) are hotbar items with a tooltip.
  */
 public final class ClickControls implements Listener {
@@ -80,7 +81,7 @@ public final class ClickControls implements Listener {
     if (!(s.game instanceof WerewolfGame game)) return;
     boolean live = WerewolfCompass.inGame(s) && s.presentation.isDone() && game.alive().contains(p.getUniqueId());
     Map<String, String> abilities = live ? game.abilities(p.getUniqueId()) : Map.of();
-    String signature = String.join(",", abilities.keySet()) + "|" + String.join(",", abilities.values());
+    String signature = live + ":" + (live ? game.selfRoleName(p.getUniqueId()) + game.help(p.getUniqueId()) : "") + ":" + String.join(",", abilities.keySet()) + "|" + String.join(",", abilities.values());
     if (signature.equals(shown.get(p.getUniqueId()))) return;
     shown.put(p.getUniqueId(), signature);
     var inventory = p.getInventory();
@@ -97,6 +98,19 @@ public final class ClickControls implements Listener {
       item.setItemMeta(meta);
       inventory.setItem(slot++, item);
     }
+    // The role card: a paper in the last slot whose tooltip says what the role does.
+    if (live) {
+      String role = game.selfRoleName(p.getUniqueId());
+      ItemStack card =
+          CompassGUI.item(
+              Material.PAPER,
+              WerewolfPresentation.roleName(role) + " · " + WerewolfPresentation.team(role),
+              WerewolfAmbience.roleHelp(s, game, p.getUniqueId()));
+      var meta = card.getItemMeta();
+      meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, "card");
+      card.setItemMeta(meta);
+      inventory.setItem(8, card);
+    }
     if (slot > 0) inventory.setHeldItemSlot(0);
   }
 
@@ -109,11 +123,47 @@ public final class ClickControls implements Listener {
 
   // --------------------------------------------------------------- targeting
 
-  /** The participant the player is looking at, or null. */
+  /**
+   * The participant nearest the crosshair, or null. The exact-hitbox ray of getTargetEntity misses a
+   * small body across the platform, so this takes whoever the line of sight passes close to, with a
+   * tolerance that grows with the distance.
+   */
   public UUID lookingAt(Player p, ArenaSession s) {
-    Entity e = p.getTargetEntity((int) RANGE, false);
-    if (e == null) return null;
-    return participant(s, e);
+    var eye = p.getEyeLocation();
+    var dir = eye.getDirection();
+    UUID best = null;
+    double bestScore = Double.MAX_VALUE;
+    List<Entity> candidates = new ArrayList<>();
+    for (UUID id : s.players.keySet()) {
+      Player other = org.bukkit.Bukkit.getPlayer(id);
+      if (other != null && !other.equals(p)) candidates.add(other);
+    }
+    candidates.addAll(WerewolfSession.of(s).bodies.values());
+    for (Entity e : candidates) {
+      if (!e.getWorld().equals(eye.getWorld())) continue;
+      // The body is a column: the ray may pass near its feet, chest or head.
+      double height = e.getHeight(), off = Double.MAX_VALUE, along = 0;
+      for (double k : new double[] {0.1, 0.35, 0.6, 0.9}) {
+        var v = e.getLocation().add(0, height * k, 0).toVector().subtract(eye.toVector());
+        double a = v.dot(dir);
+        if (a <= 0 || a > RANGE) continue;
+        double o = v.clone().subtract(dir.clone().multiply(a)).length();
+        if (o < off) {
+          off = o;
+          along = a;
+        }
+      }
+      if (off == Double.MAX_VALUE) continue;
+      double tolerance = 0.4 + along * 0.025;
+      if (off > tolerance) continue;
+      double score = off / tolerance;
+      if (score >= bestScore) continue;
+      UUID id = participant(s, e);
+      if (id == null) continue;
+      best = id;
+      bestScore = score;
+    }
+    return best;
   }
 
   public UUID participant(ArenaSession s, Entity e) {
@@ -144,6 +194,7 @@ public final class ClickControls implements Listener {
   /** Right-click on a hotbar control. */
   public boolean useItem(Player p, ArenaSession s, String ability) {
     if (!(s.game instanceof WerewolfGame game) || !WerewolfCompass.inGame(s) || !s.presentation.isDone()) return false;
+    if (ability.equals("card")) return false;
     plugin.werewolf.compass.act(p, s, game, "use:" + ability);
     return true;
   }
@@ -156,23 +207,27 @@ public final class ClickControls implements Listener {
 
   // ------------------------------------------------------------------ events
 
+  /** Left-click (as if breaking a block) picks the player under the crosshair; right-click uses the held button. */
   @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
   public void interact(PlayerInteractEvent e) {
     if (e.getHand() != EquipmentSlot.HAND) return;
-    if (e.getAction() != Action.RIGHT_CLICK_AIR && e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
     Player p = e.getPlayer();
     ArenaSession s = plugin.arenas.session(p.getUniqueId());
     if (s == null || !(s.game instanceof WerewolfGame)) return;
+    Action action = e.getAction();
+    boolean left = action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK;
+    boolean right = action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK;
+    if (!left && !right) return;
     String ability = ability(e.getItem());
-    if (ability == null && !WerewolfCompass.inGame(s)) return;
+    if (!WerewolfCompass.inGame(s)) return;
     e.setCancelled(true);
     if (debounce(p)) return;
-    if (ability != null) {
+    if (left) {
+      UUID target = lookingAt(p, s);
+      if (target != null) pickPlayer(p, s, target);
+    } else if (ability != null) {
       useItem(p, s, ability);
-      return;
     }
-    UUID target = lookingAt(p, s);
-    if (target != null) pickPlayer(p, s, target);
   }
 
   @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
@@ -184,19 +239,19 @@ public final class ClickControls implements Listener {
     e.setCancelled(true);
     if (debounce(p)) return;
     String ability = ability(p.getInventory().getItemInMainHand());
-    if (ability != null) {
-      useItem(p, s, ability);
-      return;
-    }
-    UUID target = participant(s, e.getRightClicked());
-    if (target != null) pickPlayer(p, s, target);
+    if (ability != null) useItem(p, s, ability);
   }
 
-  /** Hitting a player or a body does nothing; the game is not a fight. */
-  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+  /** Hitting a player or a body picks them; the game is not a fight. */
+  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
   public void hit(org.bukkit.event.entity.EntityDamageByEntityEvent e) {
-    if (e.getDamager() instanceof Player p && plugin.arenas.session(p.getUniqueId()) != null
-        && plugin.arenas.session(p.getUniqueId()).game instanceof WerewolfGame) e.setCancelled(true);
+    if (!(e.getDamager() instanceof Player p)) return;
+    ArenaSession s = plugin.arenas.session(p.getUniqueId());
+    if (s == null || !(s.game instanceof WerewolfGame)) return;
+    e.setCancelled(true);
+    if (!WerewolfCompass.inGame(s) || debounce(p)) return;
+    UUID target = participant(s, e.getEntity());
+    if (target != null) pickPlayer(p, s, target);
   }
 
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
