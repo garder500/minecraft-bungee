@@ -61,6 +61,13 @@ public final class SkyStage {
    */
   public CompletableFuture<PlatformHandle> open(
       int players, java.util.function.Consumer<PlatformHandle> remember) {
+    return open(players, remember, fraction -> {});
+  }
+
+  public CompletableFuture<PlatformHandle> open(
+      int players,
+      java.util.function.Consumer<PlatformHandle> remember,
+      java.util.function.DoubleConsumer progress) {
     SkySlot slot = sky.allocate();
     boolean remembered = false;
     try {
@@ -71,7 +78,7 @@ public final class SkyStage {
       PlatformHandle handle = new PlatformHandle(slot, players, seats, spawn, layout.platformRadius());
       remember.accept(handle);
       remembered = true;
-      return blocks.build(slot, players).thenApply(v -> handle);
+      return blocks.build(slot, players, progress).thenApply(v -> handle);
     } catch (RuntimeException e) {
       if (!remembered) sky.release(slot);
       return CompletableFuture.failedFuture(e);

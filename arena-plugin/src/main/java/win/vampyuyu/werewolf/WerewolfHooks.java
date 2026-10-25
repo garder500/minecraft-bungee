@@ -82,9 +82,13 @@ public final class WerewolfHooks implements GameHooks {
   @Override
   public CompletableFuture<Void> opening(ArenaSession s) {
     // The platform is built first; nobody is moved before it stands.
+    long began = System.currentTimeMillis();
     return module
         .stage
-        .open(s.players.size(), platform -> WerewolfSession.of(s).platform = platform)
+        .open(
+            s.players.size(),
+            platform -> WerewolfSession.of(s).platform = platform,
+            fraction -> module.ambience.building(s, fraction, began))
         .thenCompose(platform -> module.places.prepare(s, platform))
         .thenCompose(v -> module.places.present(s, "WAITING"));
   }

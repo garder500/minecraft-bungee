@@ -61,6 +61,11 @@ public final class SkyInstance {
    * @throws IllegalArgumentException when the player count is out of range
    */
   public CompletableFuture<Void> build(SkySlot slot, int players) {
+    return build(slot, players, fraction -> {});
+  }
+
+  /** Same, reporting the share of chunk tasks done (0..1) every time one finishes. */
+  public CompletableFuture<Void> build(SkySlot slot, int players, java.util.function.DoubleConsumer progress) {
     List<DecorConfig.Placement> decorBlocks = decor.generate(players);
     List<Pos> positions = new ArrayList<>(decorBlocks.size());
     Map<Long, List<Runnable>> byChunk = new TreeMap<>();
@@ -72,7 +77,7 @@ public final class SkyInstance {
     }
     if (placed.putIfAbsent(slot.index(), positions) != null)
       throw new IllegalStateException("Sky slot " + slot.index() + " is already built");
-    return dispatch(byChunk);
+    return dispatch(byChunk, progress);
   }
 
   /** Removes every block {@link #build} placed for this slot; harmless when nothing was built. */
@@ -122,6 +127,12 @@ public final class SkyInstance {
 
   /** One scheduler task per chunk; the returned future completes when the last one finished. */
   private CompletableFuture<Void> dispatch(Map<Long, List<Runnable>> byChunk) {
+    return dispatch(byChunk, fraction -> {});
+  }
+
+  private CompletableFuture<Void> dispatch(
+      Map<Long, List<Runnable>> byChunk, java.util.function.DoubleConsumer progress) {
+    final int total = byChunk.size();
     CompletableFuture<Void> done = new CompletableFuture<>();
     if (byChunk.isEmpty()) {
       done.complete(null);
@@ -133,7 +144,13 @@ public final class SkyInstance {
     AtomicReference<Throwable> failure = new AtomicReference<>();
     Runnable finished =
         () -> {
-          if (left.decrementAndGet() != 0) return;
+          int remaining = left.decrementAndGet();
+          try {
+            progress.accept(total == 0 ? 1.0 : (total - remaining) / (double) total);
+          } catch (RuntimeException ignored) {
+            // Progress is cosmetic.
+          }
+          if (remaining != 0) return;
           Throwable first = failure.get();
           if (first != null) done.completeExceptionally(first);
           else done.complete(null);

@@ -542,6 +542,25 @@ public final class WerewolfAmbience {
     }
   }
 
+  /**
+   * While the platform and its village are being built nobody is moved: everyone sees a progress line
+   * with a timer instead of an empty screen.
+   */
+  public void building(ArenaSession s, double fraction, long began) {
+    int percent = (int) Math.round(Math.max(0, Math.min(1, fraction)) * 100);
+    long seconds = (System.currentTimeMillis() - began) / 1000;
+    Component line =
+        Component.text(
+            "Building the village… " + percent + "% · " + seconds + "s", TextColor.color(WerewolfPresentation.VOTE));
+    for (UUID id : s.players.keySet()) {
+      Player p = Bukkit.getPlayer(id);
+      if (p != null) plugin.onPlayer(p, () -> {
+        p.sendActionBar(line);
+        return null;
+      });
+    }
+  }
+
   /** What the role does, with player names in place of ids. */
   public static String roleHelp(ArenaSession s, WerewolfGame game, UUID viewer) {
     String help = game.help(viewer);

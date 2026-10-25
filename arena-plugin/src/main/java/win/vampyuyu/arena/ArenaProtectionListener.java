@@ -145,8 +145,30 @@ public final class ArenaProtectionListener implements Listener {
     }
     if (!inside(s, e.getTo())) {
       if (inside(s, e.getFrom())) e.setTo(e.getFrom());
-      else if (!(e instanceof PlayerTeleportEvent))
+      else if (!(e instanceof PlayerTeleportEvent)) {
+        // The usual cause: a player who fell off the platform (or out of the zone) is sent back.
+        var at = e.getTo();
+        plugin
+            .getLogger()
+            .warning(
+                e.getPlayer().getName()
+                    + " left the bounds of arena "
+                    + s.config.id()
+                    + " at "
+                    + at.getWorld().getName()
+                    + " "
+                    + Math.round(at.getX())
+                    + " "
+                    + Math.round(at.getY())
+                    + " "
+                    + Math.round(at.getZ())
+                    + " (phase "
+                    + (s.game == null ? "none" : s.game.phase())
+                    + "): restoring them");
+        s.hooks.log(s, "LEFT", e.getPlayer().getName() + " left the arena bounds at " + at.getWorld().getName()
+            + " " + Math.round(at.getX()) + " " + Math.round(at.getY()) + " " + Math.round(at.getZ()));
         plugin.handle(e.getPlayer(), plugin.arenas.leaveArena(e.getPlayer()));
+      }
       else e.setCancelled(true);
     }
   }

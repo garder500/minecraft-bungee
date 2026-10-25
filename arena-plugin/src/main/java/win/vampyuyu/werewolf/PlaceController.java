@@ -371,17 +371,27 @@ public final class PlaceController {
     }
   }
 
-  private CompletableFuture<Void> teleport(Player p, ArenaSession s, Location to) {
+  /** The destination once its floor stands: the blocks of a big platform can land a moment after the build future. */
+  private CompletableFuture<Location> safe(Location to, int attempts) {
     return region(
             to.getWorld(),
             to.getX(),
             to.getZ(),
-            () -> {
-              String problem = unsafe(to);
-              if (problem != null)
-                throw new IllegalArgumentException("Unsafe place: " + problem);
-              return to;
-            })
+            () -> unsafe(to))
+        .thenCompose(
+            problem -> {
+              if (problem == null) return CompletableFuture.completedFuture(to);
+              if (attempts <= 0)
+                return CompletableFuture.<Location>failedFuture(
+                    new IllegalArgumentException("Unsafe place: " + problem));
+              return CompletableFuture.supplyAsync(
+                      () -> null, CompletableFuture.delayedExecutor(250, java.util.concurrent.TimeUnit.MILLISECONDS))
+                  .thenCompose(v -> safe(to, attempts - 1));
+            });
+  }
+
+  private CompletableFuture<Void> teleport(Player p, ArenaSession s, Location to) {
+    return safe(to, 40)
         .thenCompose(
             l -> {
               if (s.stopping || s.game == null)
