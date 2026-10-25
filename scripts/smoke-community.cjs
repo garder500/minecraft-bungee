@@ -296,7 +296,7 @@ async function main() {
       temp,
     ]);
   fs.copyFileSync(
-    path.join(source, "paper-26.3-218.jar"),
+    path.join(source, "paper-26.3-223.jar"),
     path.join(temp, "paper.jar"),
   );
   fs.copyFileSync(path.join(source, "eula.txt"), path.join(temp, "eula.txt"));

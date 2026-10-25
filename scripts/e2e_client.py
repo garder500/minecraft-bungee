@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import build_pack
 
 WORK = ROOT / ".e2e"
-PAPER = ("26.3", "218", "cdd56d33f27e77110e6f8b43cf6d9571c3854c9ae099986b24a3c18c5904cc11")
+PAPER = ("26.3", "223", "f8e684a4fef2a8b46d03aac049b49d59275e9ce5367dba7c6075cb5780f38470")
 MC_PORT, RCON_PORT, HTTP_PORT, DISPLAY = 25599, 25598, 25597, ":99"
 RCON_PASSWORD = "e2e-only"
 DEBUG_PORT = 25596

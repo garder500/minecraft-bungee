@@ -51,7 +51,7 @@ docker compose -f compose.local.yaml build tools
 docker compose -f compose.local.yaml run --rm --no-deps tools secrets
 ```
 
-The sample `MC_VERSION=26.3`, `PAPER_BUILD=218`, Velocity `4.3.0` build `44`, and Java 25 images are a pinned **disposable development baseline**, not a decision to upgrade the Creative server. Before using the real archive, follow the next section. For a new development world, configure that baseline:
+The sample `MC_VERSION=26.3`, `PAPER_BUILD=223`, Velocity `4.3.0` build `44`, and Java 25 images are a pinned **disposable development baseline**, not a decision to upgrade the Creative server. Before using the real archive, follow the next section. For a new development world, configure that baseline:
 
 ```bash
 docker compose -f compose.local.yaml run --rm --no-deps tools configure --version 26.3
@@ -114,7 +114,7 @@ Existing YAML settings are preserved and original YAML is saved once as `*.befor
 
 ### Imported local Creative server
 
-The supplied `yuyu-mc.zip` was imported locally and then upgraded in place to **Paper 26.3 build 218 / Java 25** (Velocity 4.3.0 build 44). The active local `.env` uses `STATE_DIR=./state/yuyu-local`, `MC_VERSION=26.3`, and `PAPER_BUILD=218`. Connect using a Java Edition **26.3** client at `localhost:25565`; the panel remains at `http://localhost:5173`.
+The supplied `yuyu-mc.zip` was imported locally and then upgraded in place to **Paper 26.3 build 223 / Java 25** (Velocity 4.3.0 build 44). The active local `.env` uses `STATE_DIR=./state/yuyu-local`, `MC_VERSION=26.3`, and `PAPER_BUILD=223`. Connect using a Java Edition **26.3** client at `localhost:25565`; the panel remains at `http://localhost:5173`.
 
 The original ZIP and a SHA-256 manifest are preserved under ignored `archives/`; the reviewed import excludes only the outer deployment Compose and obsolete runtime artifacts. Worlds, player data, whitelist, OP entries, and claims are retained. Unused imported plugins and their configuration were discarded at the operator’s request; the original ZIP retains their source copies. Creative uses Creative mode as configured by the network. Its original whitelist remains enabled.
 

@@ -143,7 +143,7 @@ npm install --prefix /tmp/community-smoke-node --no-save minecraft-protocol@1.68
 NODE_PATH=/tmp/community-smoke-node/node_modules node scripts/smoke-community.cjs
 ```
 
-`SMOKE_PAPER_DIR` defaults to `state/yuyu-local/survival`: it supplies cached Paper 26.3 build 218 runtime files and an already accepted EULA. The script copies them into a fresh temporary directory, creates an isolated Docker network, SQLite bridge, world and six forwarded clients (including vote timeout, reward and crash/restart recovery checks), and exposes test access only on loopback. It never starts or edits the existing stack/worlds. Containers and network are removed afterward; temporary world/logs remain for inspection. Real authenticated Velocity routing and Folia runtime validation remain separate checks.
+`SMOKE_PAPER_DIR` defaults to `state/yuyu-local/survival`: it supplies cached Paper 26.3 build 223 runtime files and an already accepted EULA. The script copies them into a fresh temporary directory, creates an isolated Docker network, SQLite bridge, world and six forwarded clients (including vote timeout, reward and crash/restart recovery checks), and exposes test access only on loopback. It never starts or edits the existing stack/worlds. Containers and network are removed afterward; temporary world/logs remain for inspection. Real authenticated Velocity routing and Folia runtime validation remain separate checks.
 
 ## Immersive Werewolf ambience (1.4)
 
