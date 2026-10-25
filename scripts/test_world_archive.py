@@ -15,7 +15,7 @@ def string(text):
     return struct.pack(">H", len(b)) + b
 
 
-def level(version="1.21.9"):
+def level(version="26.3"):
     return gzip.compress(
         b"\x0a\0\0\x0a"
         + string("Data")
@@ -48,7 +48,7 @@ class Archives(unittest.TestCase):
         self.zip = self.root / "creative.zip"
 
     def export(self):
-        return a.write_zip(self.data, "creative", "1.21.9", self.zip)
+        return a.write_zip(self.data, "creative", "26.3", self.zip)
 
     def test_roundtrip_preserves_world_claims_and_target_network_settings(self):
         m = self.export()
@@ -56,7 +56,7 @@ class Archives(unittest.TestCase):
         self.assertNotIn("plugins/network-display.jar", m["files"])
         self.assertIn("plugins/claim.jar", m["files"])
         self.assertEqual(stat.S_IMODE(self.zip.stat().st_mode), 0o600)
-        plan = a.inspect_zip(self.zip, "creative", "1.21.9")
+        plan = a.inspect_zip(self.zip, "creative", "26.3")
         stage = self.data / ".archive-staging-test"
         stage.mkdir()
         a.stage_zip(self.zip, plan, stage)
@@ -78,8 +78,8 @@ class Archives(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.export()
         with self.assertRaises(ValueError):
-            a.write_zip(self.data, "creative", "1.21.9", self.data / "world/bad.zip")
-        for server, version in [("lobby", "1.21.9"), ("creative", "1.21.4")]:
+            a.write_zip(self.data, "creative", "26.3", self.data / "world/bad.zip")
+        for server, version in [("lobby", "26.3"), ("creative", "26.2")]:
             with self.assertRaises(ValueError):
                 a.inspect_zip(self.zip, server, version)
 
@@ -91,7 +91,7 @@ class Archives(unittest.TestCase):
             with zipfile.ZipFile(p, "w") as z:
                 z.writestr(name, b"bad")
             with self.assertRaises(ValueError):
-                a.inspect_zip(p, "creative", "1.21.9")
+                a.inspect_zip(p, "creative", "26.3")
         for kind in [stat.S_IFLNK, stat.S_IFIFO]:
             p = self.root / f"{kind}.zip"
             info = zipfile.ZipInfo("world/link")
@@ -99,27 +99,27 @@ class Archives(unittest.TestCase):
             with zipfile.ZipFile(p, "w") as z:
                 z.writestr(info, b"../escape")
             with self.assertRaises(ValueError):
-                a.inspect_zip(p, "creative", "1.21.9")
+                a.inspect_zip(p, "creative", "26.3")
         p = self.root / "duplicate.zip"
         with zipfile.ZipFile(p, "w") as z:
             z.writestr("world/a", b"a")
             z.writestr("world/A", b"b")
         with self.assertRaises(ValueError):
-            a.inspect_zip(p, "creative", "1.21.9")
+            a.inspect_zip(p, "creative", "26.3")
 
     def test_raw_world_zip_reads_real_version_and_changes_only_selected_world(self):
         p = self.root / "raw.zip"
         with zipfile.ZipFile(p, "w") as z:
             z.writestr("My World/level.dat", level())
             z.writestr("My World/region/chunk.mca", b"world")
-        plan = a.inspect_zip(p, "creative", "1.21.9", "world")
+        plan = a.inspect_zip(p, "creative", "26.3", "world")
         self.assertEqual(plan["kind"], "world")
         with self.assertRaises(ValueError):
-            a.inspect_zip(p, "creative", "1.21.4")
+            a.inspect_zip(p, "creative", "26.2")
         with self.assertRaises(ValueError):
-            a.inspect_zip(p, "creative", "1.21.9", "config")
+            a.inspect_zip(p, "creative", "26.3", "config")
         with self.assertRaises(ValueError):
-            a.inspect_zip(p, "creative", "1.21.9", "server.properties")
+            a.inspect_zip(p, "creative", "26.3", "server.properties")
 
     def test_checksum_corruption_rejected_before_swap(self):
         self.export()
@@ -130,7 +130,7 @@ class Archives(unittest.TestCase):
                 if f.filename.endswith("user.dat"):
                     raw = b"corrupted"
                 z.writestr(f, raw)
-        plan = a.inspect_zip(corrupt, "creative", "1.21.9")
+        plan = a.inspect_zip(corrupt, "creative", "26.3")
         stage = self.root / "stage"
         stage.mkdir()
         with self.assertRaises(ValueError):
@@ -141,7 +141,7 @@ class Archives(unittest.TestCase):
 
     def test_failed_install_rolls_back_original_world(self):
         self.export()
-        plan = a.inspect_zip(self.zip, "creative", "1.21.9")
+        plan = a.inspect_zip(self.zip, "creative", "26.3")
         stage = self.data / ".archive-test"
         stage.mkdir()
         a.stage_zip(self.zip, plan, stage)
@@ -174,11 +174,11 @@ class Archives(unittest.TestCase):
             data.mkdir()
             (data / "world").mkdir()
             (data / "world/level.dat").write_bytes(level())
-            (data / ".network-version").write_text("1.21.9")
+            (data / ".network-version").write_text("26.3")
             cfg = {
                 "services": {
                     "tools": {"volumes": [{"source": str(folder), "target": "/state"}]},
-                    "creative": {"environment": {"VERSION": "1.21.9"}},
+                    "creative": {"environment": {"VERSION": "26.3"}},
                 }
             }
             calls = []
@@ -216,11 +216,11 @@ class Archives(unittest.TestCase):
         self.export()
         self.data.rename(self.root / "creative")
         self.data = self.root / "creative"
-        (self.data / ".network-version").write_text("1.21.9")
+        (self.data / ".network-version").write_text("26.3")
         cfg = {
             "services": {
                 "tools": {"volumes": [{"source": str(self.root), "target": "/state"}]},
-                "creative": {"environment": {"VERSION": "1.21.9"}},
+                "creative": {"environment": {"VERSION": "26.3"}},
             }
         }
         calls = []

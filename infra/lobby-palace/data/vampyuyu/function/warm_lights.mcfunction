@@ -181,7 +181,7 @@ execute if block 9 65 -25 minecraft:polished_blackstone_bricks run setblock 9 65
 execute if block 9 66 -25 minecraft:air run setblock 9 66 -25 minecraft:red_carpet
 execute if block 18 65 -25 minecraft:polished_blackstone_bricks run setblock 18 65 -25 minecraft:shroomlight
 execute if block 18 66 -25 minecraft:air run setblock 18 66 -25 minecraft:red_carpet
-gamerule doDaylightCycle false
-gamerule doWeatherCycle false
+gamerule advance_time false
+gamerule advance_weather false
 time set 13500
 weather clear

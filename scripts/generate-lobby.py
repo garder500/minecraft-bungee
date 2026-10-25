@@ -165,7 +165,7 @@ for cx in (-13,0,13):
  for dx,dz in [(-2,0),(2,0),(0,-2),(0,2)]:glow(cx+dx,74,-28+dz,'lantern[hanging=true]')
 for x in (-18,-9,9,18):
  glow(x,65,-25,'shroomlight');glow(x,66,-25,'red_carpet')
-lighting += ['gamerule doDaylightCycle false','gamerule doWeatherCycle false','time set 13500','weather clear']
+lighting += ['gamerule advance_time false','gamerule advance_weather false','time set 13500','weather clear']
 # Palace furnishings: guarded, block-only update with an unobstructed central aisle.
 furniture=[]
 def furnish(x,y,z,material):
@@ -303,10 +303,10 @@ for cx,top,cz,turn in [(-21,91,5,False),(21,94,8,True),(0,90,29,False),(-29,97,2
  # A second underside light keeps each silhouette visible from the courtyard below.
  x,z=(cx+1,cz) if turn else (cx,cz+1)
  skyblock(x,top-2,z,'shroomlight')
-sky += ['gamerule doDaylightCycle false','gamerule doWeatherCycle false','time set 13500','weather clear']
+sky += ['gamerule advance_time false','gamerule advance_weather false','time set 13500','weather clear']
 # Static invisible safety shell, in addition to the visible native world border.
 for side in (-49,49):box(side,58,-49,side,112,49,'barrier');box(-49,58,side,49,112,side,'barrier')
-commands += ['setworldspawn 0 65 12 180 0','worldborder center 0 0','worldborder set 100','gamerule doMobSpawning false','gamerule doMobLoot false','gamerule doEntityDrops false','gamerule mobGriefing false','gamerule doDaylightCycle false','gamerule doWeatherCycle false','gamerule doFireTick false','time set 13500','weather clear','data modify storage vampyuyu:lobby built set value 1b']
+commands += ['setworldspawn 0 65 12 180 0','worldborder center 0 0','worldborder set 100','gamerule spawn_mobs false','gamerule mob_drops false','gamerule entity_drops false','gamerule mob_griefing false','gamerule advance_time false','gamerule advance_weather false','gamerule fire_spread_radius_around_player 0','time set 13500','weather clear','data modify storage vampyuyu:lobby built set value 1b']
 func=out/'data/vampyuyu/function';func.mkdir(parents=True,exist_ok=True)
 (func/'build_once.mcfunction').write_text('# Original Vampyuyu Sanctum · reproducible block-only build\n'+'\n'.join(commands)+'\n')
 (func/'night_sky.mcfunction').write_text('# Guarded illuminated sky bats and fixed early night; block-only.\n'+'\n'.join(sky)+'\n')
@@ -315,7 +315,7 @@ func=out/'data/vampyuyu/function';func.mkdir(parents=True,exist_ok=True)
 (func/'warm_lights.mcfunction').write_text('# Guarded lighting upgrade for an existing Sanctum; never rebuilds terrain.\n'+'\n'.join(lighting)+'\n')
 (func/'install.mcfunction').write_text('execute unless data storage vampyuyu:lobby built run function vampyuyu:build_once\n')
 tag=out/'data/minecraft/tags/function';tag.mkdir(parents=True,exist_ok=True);(tag/'load.json').write_text(json.dumps({'values':['vampyuyu:install']},indent=2)+'\n')
-(out/'pack.mcmeta').write_text(json.dumps({'pack':{'description':'Vampyuyu Sanctum · burgundy, ivory & gold lobby','min_format':[88,0],'max_format':[88,0]}},indent=2)+'\n')
+(out/'pack.mcmeta').write_text(json.dumps({'pack':{'description':'Vampyuyu Sanctum · burgundy, ivory & gold lobby','min_format':[121,0],'max_format':[121,0]}},indent=2)+'\n')
 # Preview source excludes invisible barrier blocks, using actual final voxel positions.
 preview=[[*p,m] for p,m in blocks.items() if m!='barrier']
 Path('/tmp/vampyuyu-lobby-voxels.json').write_text(json.dumps(preview,separators=(',',':')))

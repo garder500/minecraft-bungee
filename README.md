@@ -51,10 +51,10 @@ docker compose -f compose.local.yaml build tools
 docker compose -f compose.local.yaml run --rm --no-deps tools secrets
 ```
 
-The sample `MC_VERSION=1.21.9`, `PAPER_BUILD=59`, Velocity `3.4.0-SNAPSHOT` build `563`, and Java 21 image are a pinned **disposable development baseline**, not a decision to upgrade the Creative server. Before using the real archive, follow the next section. For a new development world, configure that baseline:
+The sample `MC_VERSION=26.3`, `PAPER_BUILD=218`, Velocity `4.3.0` build `44`, and Java 25 images are a pinned **disposable development baseline**, not a decision to upgrade the Creative server. Before using the real archive, follow the next section. For a new development world, configure that baseline:
 
 ```bash
-docker compose -f compose.local.yaml run --rm --no-deps tools configure --version 1.21.9
+docker compose -f compose.local.yaml run --rm --no-deps tools configure --version 26.3
 ```
 
 Read the [Minecraft EULA](https://www.minecraft.net/eula). Set `EULA=TRUE` in `.env` only if you accept it. It defaults to `FALSE`; the setup does not accept it on your behalf.
@@ -96,7 +96,7 @@ The JSON report includes the server root, detected Minecraft version and Java re
 5. Import with the exact detected version, for example:
 
 ```bash
-docker compose -f compose.local.yaml run --rm --no-deps tools import --zip /archives/creative.zip --version 1.21.9
+docker compose -f compose.local.yaml run --rm --no-deps tools import --zip /archives/creative.zip --version 26.3
 ```
 
 Extraction is staged next to the destination, bounded to 40 GiB and 200,000 entries. Absolute paths, traversal, backslashes, links, duplicate entries, and multiple server roots are rejected. Files outside a nested server root require repacking. The ZIP remains intact. Worlds, UUID files, plugins, and settings are copied without rewriting them. A pre-existing destination is rejected. Adjust the reviewed expansion limit in source if the actual server is larger.
@@ -105,7 +105,7 @@ Extraction is staged next to the destination, bounded to 40 GiB and 200,000 entr
 7. Apply configuration offline, using the selected version:
 
 ```bash
-docker compose -f compose.local.yaml run --rm --no-deps tools configure --version 1.21.9
+docker compose -f compose.local.yaml run --rm --no-deps tools configure --version 26.3
 ```
 
 Existing YAML settings are preserved and original YAML is saved once as `*.before-network`; comments may be normalized. Version markers prevent accidental changes on later starts. Version history mismatches abort configuration. This command must run while servers are stopped. It writes the matching secret for Velocity and all three backends. Rotating it requires configuring and restarting all four services together.
@@ -114,13 +114,13 @@ Existing YAML settings are preserved and original YAML is saved once as `*.befor
 
 ### Imported local Creative server
 
-The supplied `yuyu-mc.zip` was imported locally as **Paper 1.21.9 build 59 / Java 21**, matching all three saved dimensions. The active local `.env` uses `STATE_DIR=./state/yuyu-local`, `MC_VERSION=1.21.9`, and `PAPER_BUILD=59`. Connect using a Java Edition **1.21.9** client at `localhost:25565`; the panel remains at `http://localhost:5173`.
+The supplied `yuyu-mc.zip` was imported locally and then upgraded in place to **Paper 26.3 build 218 / Java 25** (Velocity 4.3.0 build 44). The active local `.env` uses `STATE_DIR=./state/yuyu-local`, `MC_VERSION=26.3`, and `PAPER_BUILD=218`. Connect using a Java Edition **26.3** client at `localhost:25565`; the panel remains at `http://localhost:5173`.
 
-The original ZIP and a SHA-256 manifest are preserved under ignored `archives/`; the reviewed import excludes only the outer deployment Compose and obsolete 1.21.8 runtime artifacts. Worlds, player data, whitelist, OP entries, and claims are retained. Unused imported plugins and their configuration were discarded at the operator’s request; the original ZIP retains their source copies. Creative uses Creative mode as configured by the network. Its original whitelist remains enabled.
+The original ZIP and a SHA-256 manifest are preserved under ignored `archives/`; the reviewed import excludes only the outer deployment Compose and obsolete runtime artifacts. Worlds, player data, whitelist, OP entries, and claims are retained. Unused imported plugins and their configuration were discarded at the operator’s request; the original ZIP retains their source copies. Creative uses Creative mode as configured by the network. Its original whitelist remains enabled.
 
 Creative intentionally runs only **SimpleClaimSystem 1.13.1** and **VampyuyuNetwork 0.4.1**. The claim plugin was updated from the archive’s 1.12.3.2 after observing an obsolete Paper API call during respawn; its stopped database/configuration snapshot is recorded in the ignored import report under `archives/`. Database record counts were verified after the update. The network plugin supplies `/menu`, cosmetic roles, chat names, and TAB formatting. EssentialsX, EssentialsChat, LuckPerms, Vault, WorldEdit, TAB, and voice-chat plugins were removed, including the set-aside copies. The original ZIP remains intact. SimpleClaimSystem has no mandatory plugin dependency; its economy integration is disabled so claims work without Vault or an economy provider. Existing claims and worlds remain in place. Regular players use the claim plugin's native default permissions and configured default limits; former LuckPerms group overrides are inactive. Gameplay and claim protection still require verification with an authenticated Minecraft client.
 
-Lobby and Survival were aligned from 1.21.4 to 1.21.9 in copies of their existing data. The former complete state remains in `state/smoke`, and the stopped pre-import backup is `backups/network-20261019T213304Z.tar.gz`. To roll back locally, stop the entire stack, restore `.env` to `STATE_DIR=./state/smoke`, `MC_VERSION=1.21.4`, `PAPER_BUILD=232`, and restart. This switches back to the preserved old data; **never start the imported Creative or upgraded world copies with 1.21.4**. New play progress after the switch belongs to its respective state directory.
+The upgrade to 26.3 rewrote the worlds in place and cannot be undone by starting an older server. The full network state as it was just before the upgrade is `backups/network-20261025T142341Z.tar.gz` (stop the stack, restore `state/` and `secrets/` from it, and put the previous `.env` baseline back to roll back).
 
 ## Fast plugin iteration
 
@@ -252,7 +252,7 @@ The player workspace provides administrator game-mode changes, heal/feed, clear 
 
 **Server settings** shows Minecraft version, online players and game modes, TPS (1/5/15-minute averages), average tick duration, dimensions, loaded chunk/entity counts, and spawn positions. Administrators can save players/worlds, broadcast a server announcement, manage whitelist/bans, set per-dimension difficulty, time and weather, toggle PvP, and edit a finite set of common game rules. Random tick speed is limited to 0–20. World state/rules use Minecraft persistence; per-world PvP overrides are stored in the network plugin configuration. **Activity** shows the latest 100 audited changes, filters by server, and paginates older events. Inventory contents, credentials, uploaded JAR contents and console command text are excluded from audit records.
 
-VampyuyuNetwork’s managed build now requires Java 21 and Paper 1.21.4+; the imported local network remains pinned to Minecraft 1.21.9. Its authenticated management listener uses backend TCP 8084 on the private game network, never a published host port. The controller resolves only fixed labeled game containers, forwards only allowlisted operations, does not follow redirects, and never exposes arbitrary Docker/shell/file execution. The public API retains administrator sessions, same-origin checks and CSRF protection. A complete stopped pre-upgrade network backup is `backups/network-20261019T220824Z.tar.gz`.
+VampyuyuNetwork’s managed build now requires Java 25 and Paper 26.3; the local network is pinned to Minecraft 26.3. Its authenticated management listener uses backend TCP 8084 on the private game network, never a published host port. The controller resolves only fixed labeled game containers, forwards only allowlisted operations, does not follow redirects, and never exposes arbitrary Docker/shell/file execution. The public API retains administrator sessions, same-origin checks and CSRF protection. A complete stopped pre-upgrade network backup is `backups/network-20261019T220824Z.tar.gz`.
 
 ## Resources, plugins, and operators
 
@@ -316,7 +316,7 @@ docker build --target controller -t minecraft-bungee-controller:test .
 docker build --target server -t minecraft-bungee-server:test .
 docker build --target lobby -t minecraft-bungee-lobby:test .
 python3 scripts/smoke.py
-# Against the running disposable 1.21.9 network:
+# Against the running disposable 26.3 network:
 python3 scripts/check-forwarding.py
 ```
 
@@ -356,7 +356,7 @@ A native 100-block world border and invisible perimeter prevent escapes. Falling
 
 For maintenance, an OP explicitly enables `/lobbybuild on` (or **Server settings → Lobby → Build & inventory access** in the panel). This permits block editing and inventory management; it still forbids item drops, pickup and entity spawning. Finish with `/lobbybuild off`. Build access resets on disconnect/restart and cannot be enabled during an arena session.
 
-`python3 scripts/generate-lobby.py` regenerates the reviewed vanilla datapack in `infra/lobby-palace`. The Lobby image includes it; `infra/start.sh` installs it only when creating a fresh Lobby world, with Minecraft **1.21.9** and an empty flat generator. Its load function builds once, tracked by `vampyuyu:lobby` storage. Normal restarts preserve edits. Existing worlds are never replaced automatically; on any other version `infra/start.sh` only removes the palace datapack it installed earlier (its 1.21.9 `gamerule` syntax no longer parses), keeping the built world. To replace an old Lobby, stop it, archive its complete data, move its world folders aside, then start a new Lobby. Never apply the build function to an inhabited world. The local pre-palace world is preserved under `backups/lobby-before-palace-*`.
+`python3 scripts/generate-lobby.py` regenerates the reviewed vanilla datapack in `infra/lobby-palace`. The Lobby image includes it; `infra/start.sh` installs it only when creating a fresh Lobby world, with an empty flat generator. Its load function builds once, tracked by `vampyuyu:lobby` storage. Normal restarts preserve edits. Existing worlds are never replaced automatically; at each start `infra/start.sh` only refreshes the palace datapack it installed earlier from the image, keeping the built world. To replace an old Lobby, stop it, archive its complete data, move its world folders aside, then start a new Lobby. Never apply the build function to an inhabited world. The local pre-palace world is preserved under `backups/lobby-before-palace-*`.
 
 ### Creative warps and global profile (VampyuyuNetwork 0.5)
 
@@ -374,4 +374,4 @@ Creative players can publish one public warp by default. `/warp` asks for a name
 * `MENU_PACK_REQUIRED=true` forces the download: the client must accept the pack or is disconnected from the server. Leave it off until `MENU_PACK_BASE_URL` is reachable by players, otherwise nobody can join. When forced, nobody ever sees the plain fallback menus.
 * The panel serves the ZIP publicly, and only by content hash: `GET /pack/<sha1>.zip` (immutable, cacheable). `make pack` builds the same reproducible ZIP locally; `make art` repaints the PNGs (needs headless Chrome, or `CHROME=/path/to/chrome`, and Pillow; the werewolf decors, icons and cards come from `resource-pack/art/werewolf/`); `python3 resource-pack/art/sounds.py` re-encodes the werewolf sounds (needs ffmpeg with libvorbis); `make test-pack` validates the structure. `make e2e-pack` (add `--scenario werewolf` through `python3 scripts/e2e_client.py` for a whole practice game with the arena and network plugins: phases, night effect, restoration) boots a creative-only Paper 26.3 and a headless vanilla 26.3 client (Prism offline, Xvfb, software Vulkan) with the real pack, fails on any resource reload or shader error, and checks on screenshots that the night effect darkens the screen (work files and screenshots in `.e2e/`; accepts the Minecraft EULA for its throw-away server, needs Java 25 and the Prism 26.3 instance; `python3 scripts/test_shaders.py` compiles the shaders with glslang).
 * Painted: `/menu`, the arena setup/list/houses/doors/detail/confirm menus (`/arena admin`) and the warp list/detail/confirmation. The arena compass (heads on a council ring) and `/profil` are painted too.
-* Rendering inside the game client is not covered by automated tests. After changing art or fonts, open each menu once on a 1.21.9 client.
+* Rendering inside the game client is not covered by automated tests. After changing art or fonts, open each menu once on a 26.3 client.

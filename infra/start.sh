@@ -6,19 +6,20 @@ case "$1" in
    echo 'Startup refused: run offline configure with the selected Minecraft version.' >&2; exit 1;
   }
   test -s /data/config/paper-global.yml || { echo 'Forwarding configuration missing' >&2; exit 1; }
-  if [ "${SERVER_ID:-}" = lobby ] && [ ! -f /data/world/level.dat ] && [ "$VERSION" != 1.21.9 ]; then
-   echo "Bundled lobby palace is built for Minecraft 1.21.9; starting an empty lobby on $VERSION" >&2
-  elif [ "${SERVER_ID:-}" = lobby ] && [ ! -f /data/world/level.dat ]; then
+  if [ "${SERVER_ID:-}" = lobby ] && [ ! -f /data/world/level.dat ]; then
    mkdir -p /data/world/datapacks
    mkdir -p /data/world/datapacks/vampyuyu-palace
    cp -R /opt/vampyuyu-lobby-palace/. /data/world/datapacks/vampyuyu-palace/
    touch /data/.vampyuyu-palace
+   # This script runs as root: hand the copy to the data owner so panel restores can replace it.
+   chown -R "$(stat -c %u:%g /data)" /data/world/datapacks /data/.vampyuyu-palace
   fi
-  # The bundled palace datapack uses 1.21.9 command syntax (e.g. gamerule doDaylightCycle); newer versions
-  # refuse to parse it. A lobby built by it keeps its blocks and settings, so retire only our own copy.
-  if [ "${SERVER_ID:-}" = lobby ] && [ "$VERSION" != 1.21.9 ] && [ -f /data/.vampyuyu-palace ] && [ -d /data/world/datapacks/vampyuyu-palace ]; then
+  # A lobby built by the palace keeps its blocks and settings; only our own copy of the datapack follows the image.
+  if [ "${SERVER_ID:-}" = lobby ] && [ -f /data/.vampyuyu-palace ] && [ -d /data/world/datapacks/vampyuyu-palace ]; then
    rm -rf /data/world/datapacks/vampyuyu-palace
-   echo "Retired the 1.21.9 lobby palace datapack on $VERSION; the built world is kept" >&2
+   mkdir -p /data/world/datapacks/vampyuyu-palace
+   cp -R /opt/vampyuyu-lobby-palace/. /data/world/datapacks/vampyuyu-palace/
+   chown -R "$(stat -c %u:%g /data)" /data/world/datapacks/vampyuyu-palace
   fi
   # Claims exist only on Creative; the jar comes from the image, claim data stays in /data.
   if [ "${SERVER_ID:-}" = creative ]; then

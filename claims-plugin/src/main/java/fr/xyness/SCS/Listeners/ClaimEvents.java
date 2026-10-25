@@ -403,7 +403,7 @@ public class ClaimEvents implements Listener {
             	blockIterator.remove();
             }
         }
-        if (instance.getMinecraftVersion().contains("1.21") && event.getEntityType() == EntityType.WIND_CHARGE) {
+        if (event.getEntityType() == EntityType.WIND_CHARGE) {
         	Projectile wind = (Projectile) event.getEntity();
         	if(wind.getShooter() instanceof Player player) {
         		Chunk chunk = event.getEntity().getLocation().getChunk();
@@ -470,7 +470,7 @@ public class ClaimEvents implements Listener {
     @EventHandler
     public void onProjectileHit(ProjectileHitEvent event) {
     	WorldMode mode = instance.getSettings().getWorldMode(event.getEntity().getWorld().getName());
-		if (instance.getMinecraftVersion().contains("1.21") && event.getEntityType() == EntityType.WIND_CHARGE) {
+		if (event.getEntityType() == EntityType.WIND_CHARGE) {
             if (event.getHitBlock() != null) {
             	Block block = event.getHitBlock();
             	Chunk chunk = block.getLocation().getChunk();

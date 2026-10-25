@@ -20,7 +20,7 @@ Werewolf plays the whole Ultimate Werewolf role set (40 roles, see [docs/werewol
 
 The slot-8 compass is marked with a persistent-data tag. Its menu shows living player heads, visible vote totals, a private role reminder, phase timer and leave button. Drag/drop/hotbar/swap paths are protected; all drops and pickups are blocked during participation. Commands are restricted to the arena menu and leaving, so `/menu`, `/fly` and teleport commands cannot bypass the session. Operators can still deliberately override game state through the server console.
 
-The virtual world border uses Paper's [`Player.setWorldBorder`](https://jd.papermc.io/paper/1.21.4/org/bukkit/entity/Player.html), backed by client border packets. The global world border is never changed. Minecraft can display only a square border: the visual square encloses the box, and server movement checks enforce the exact rectangular X/Y/Z limits. Other players keep their normal border and gameplay. PvP is blocked across arena boundaries; Werewolf always disables direct combat. World-space isolation does not hide participants from nonparticipants or undo environmental changes by unrelated players; use existing claims to protect the build itself.
+The virtual world border uses Paper's [`Player.setWorldBorder`](https://jd.papermc.io/paper/26.3/org/bukkit/entity/Player.html), backed by client border packets. The global world border is never changed. Minecraft can display only a square border: the visual square encloses the box, and server movement checks enforce the exact rectangular X/Y/Z limits. Other players keep their normal border and gameplay. PvP is blocked across arena boundaries; Werewolf always disables direct combat. World-space isolation does not hide participants from nonparticipants or undo environmental changes by unrelated players; use existing claims to protect the build itself.
 
 ## Persistence and recovery
 
@@ -28,7 +28,7 @@ Before clearing any belongings, the engine atomically writes and fsyncs a journa
 
 The journal records the exact Minecraft version and refuses restoration under another version. Stop occupied arenas and verify their journals are gone **before updating Minecraft or rolling back images**. Stop servers and Redis for a consistent backup of the existing state directory, which includes JSON configurations, journals, local ban caches, Redis AOF and worlds. Do not restore only a stale player journal after that player has resumed ordinary play.
 
-The engine is compiled for Java 21 / Paper API 1.21.4 and is exercised on the stack's Paper 1.21.9 servers. It uses [entity schedulers and asynchronous teleportation](https://docs.papermc.io/paper/dev/folia-support/) for player mutations, and pure synchronized game state for timers/votes. The plugin declares Folia support; a real Folia runtime validation remains required before switching this network to Folia. Existing VampyuyuNetwork/Lobby plugins and claims require their own Folia compatibility review. On Folia shutdown, journals are retained for login recovery instead of touching entities owned by other regions. The stack remains Paper.
+The engine is compiled for Java 25 / Paper API 26.3 and is exercised on the stack's Paper 26.3 servers. It uses [entity schedulers and asynchronous teleportation](https://docs.papermc.io/paper/dev/folia-support/) for player mutations, and pure synchronized game state for timers/votes. The plugin declares Folia support; a real Folia runtime validation remains required before switching this network to Folia. Existing VampyuyuNetwork/Lobby plugins and claims require their own Folia compatibility review. On Folia shutdown, journals are retained for login recovery instead of touching entities owned by other regions. The stack remains Paper.
 
 ## Redis and cross-server operations
 
@@ -134,7 +134,7 @@ Authenticated private `POST /bridge/profile`, `/bridge/events` and `/bridge/mone
 
 ### Isolated integration verification
 
-Build both plugins with `mvn clean package`. The smoke fixture uses `vampyuyu-arena-build:latest` as its Java 21 runtime image. Prepare its test-only bridge binary and protocol client:
+Build both plugins with `mvn clean package`. The smoke fixture uses `vampyuyu-arena-build:latest` as its Java 25 runtime image. Prepare its test-only bridge binary and protocol client:
 
 ```sh
 docker run --rm -v "$PWD:/src" -v /tmp/community-smoke-bin:/out -w /src \
@@ -143,7 +143,7 @@ npm install --prefix /tmp/community-smoke-node --no-save minecraft-protocol@1.68
 NODE_PATH=/tmp/community-smoke-node/node_modules node scripts/smoke-community.cjs
 ```
 
-`SMOKE_PAPER_DIR` defaults to `state/yuyu-local/survival`: it supplies cached Paper 1.21.9 build 59 runtime files and an already accepted EULA. The script copies them into a fresh temporary directory, creates an isolated Docker network, SQLite bridge, world and six forwarded clients (including vote timeout, reward and crash/restart recovery checks), and exposes test access only on loopback. It never starts or edits the existing stack/worlds. Containers and network are removed afterward; temporary world/logs remain for inspection. Real authenticated Velocity routing and Folia runtime validation remain separate checks.
+`SMOKE_PAPER_DIR` defaults to `state/yuyu-local/survival`: it supplies cached Paper 26.3 build 218 runtime files and an already accepted EULA. The script copies them into a fresh temporary directory, creates an isolated Docker network, SQLite bridge, world and six forwarded clients (including vote timeout, reward and crash/restart recovery checks), and exposes test access only on loopback. It never starts or edits the existing stack/worlds. Containers and network are removed afterward; temporary world/logs remain for inspection. Real authenticated Velocity routing and Folia runtime validation remain separate checks.
 
 ## Immersive Werewolf ambience (1.4)
 

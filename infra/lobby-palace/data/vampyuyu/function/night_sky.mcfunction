@@ -189,7 +189,7 @@ execute if block 30 94 -6 minecraft:air run setblock 30 94 -6 minecraft:polished
 execute if block 31 94 -6 minecraft:air run setblock 31 94 -6 minecraft:polished_blackstone_bricks
 execute if block 28 93 -6 minecraft:air run setblock 28 93 -6 minecraft:polished_blackstone_bricks
 execute if block 28 96 -5 minecraft:air run setblock 28 96 -5 minecraft:shroomlight
-gamerule doDaylightCycle false
-gamerule doWeatherCycle false
+gamerule advance_time false
+gamerule advance_weather false
 time set 13500
 weather clear

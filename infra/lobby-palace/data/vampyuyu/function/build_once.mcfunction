@@ -3079,13 +3079,13 @@ fill -49 110 49 49 112 49 minecraft:barrier
 setworldspawn 0 65 12 180 0
 worldborder center 0 0
 worldborder set 100
-gamerule doMobSpawning false
-gamerule doMobLoot false
-gamerule doEntityDrops false
-gamerule mobGriefing false
-gamerule doDaylightCycle false
-gamerule doWeatherCycle false
-gamerule doFireTick false
+gamerule spawn_mobs false
+gamerule mob_drops false
+gamerule entity_drops false
+gamerule mob_griefing false
+gamerule advance_time false
+gamerule advance_weather false
+gamerule fire_spread_radius_around_player 0
 time set 13500
 weather clear
 data modify storage vampyuyu:lobby built set value 1b

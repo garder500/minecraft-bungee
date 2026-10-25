@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Negative forwarding probes against the disposable Paper 1.21.4 stack.
+"""Negative forwarding probes against the disposable Paper 26.3 stack.
 
 Requires local Docker-host access. Does not log in as a real player or change data.
 """
@@ -79,7 +79,7 @@ def check_icon(protocol):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--container", default="vampyuyu-local-creative-1")
-    parser.add_argument("--protocol", type=int, default=769, help="769 = Minecraft 1.21.4")
+    parser.add_argument("--protocol", type=int, default=777, help="777 = Minecraft 26.3")
     args = parser.parse_args()
     check_icon(args.protocol)
     info = json.loads(subprocess.check_output(["docker", "inspect", args.container]))[0]

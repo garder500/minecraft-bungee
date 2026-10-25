@@ -16,7 +16,7 @@ func TestConfigurePreservesAndGuardsVersion(t *testing.T) {
 	original := []byte("custom-setting: keep\nproxies:\n  velocity:\n    enabled: false\n")
 	filename := filepath.Join(root, "creative", "config", "paper-global.yml")
 	os.WriteFile(filename, original, 0640)
-	if e := configure(root, secrets, "1.21.4"); e != nil {
+	if e := configure(root, secrets, "26.2"); e != nil {
 		t.Fatal(e)
 	}
 	b, _ := os.ReadFile(filename)
@@ -32,7 +32,7 @@ func TestConfigurePreservesAndGuardsVersion(t *testing.T) {
 	if string(backup) != string(original) {
 		t.Fatal("original not preserved")
 	}
-	if e := configure(root, secrets, "1.21.5"); e == nil {
+	if e := configure(root, secrets, "26.3"); e == nil {
 		t.Fatal("version change accepted")
 	}
 	after, _ := os.ReadFile(filename)

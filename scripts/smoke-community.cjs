@@ -1,4 +1,4 @@
-/* Isolated Paper 1.21.9 feature smoke. No existing servers/worlds are started or modified.
+/* Isolated Paper 26.3 feature smoke. No existing servers/worlds are started or modified.
  * Requires minecraft-protocol@1.68.0, built plugin JARs, and the Go bridge test binary.
  * Usage: NODE_PATH=/tmp/community-smoke-node/node_modules node scripts/smoke-community.cjs
  * BRIDGE_FIXTURE_BIN defaults to /tmp/community-smoke-bin/bridge.test.
@@ -11,7 +11,7 @@ const fs = require("node:fs"),
   crypto = require("node:crypto"),
   mc = require("minecraft-protocol");
 const ambienceSmoke = process.env.AMBIENCE_SMOKE_ONLY === "1";
-const soundNames = require("minecraft-data")("1.21.9").sounds;
+const soundNames = require("minecraft-data")("26.3").sounds;
 const root = process.cwd(),
   temp = fs.mkdtempSync(path.join(os.tmpdir(), "community-smoke-"));
 const name = "community-smoke-" + crypto.randomBytes(4).toString("hex");
@@ -94,7 +94,7 @@ async function connect(i) {
   const client = mc.createClient({
     host: "127.0.0.1",
     port: gamePort,
-    version: process.env.SMOKE_MC_VERSION || "1.21.9",
+    version: process.env.SMOKE_MC_VERSION || "26.3",
     username: "FeatureTest" + i,
     auth: "offline",
   });
@@ -296,7 +296,7 @@ async function main() {
       temp,
     ]);
   fs.copyFileSync(
-    path.join(source, "paper-1.21.9-59.jar"),
+    path.join(source, "paper-26.3-218.jar"),
     path.join(temp, "paper.jar"),
   );
   fs.copyFileSync(path.join(source, "eula.txt"), path.join(temp, "eula.txt"));

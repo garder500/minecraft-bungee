@@ -27,23 +27,23 @@ func fixture(t *testing.T, entries map[string]string) string {
 	return p
 }
 func good() map[string]string {
-	return map[string]string{"Server/server.properties": "online-mode=true\n", "Server/config/paper-global.yml": "proxies: {}\n", "Server/version_history.json": `{"currentVersion":"1.21.4-232-12d8fe0"}`, "Server/world/level.dat": "world", "Server/world/playerdata/player.dat": "uuid", "Server/plugins/plugin.jar": "plugin"}
+	return map[string]string{"Server/server.properties": "online-mode=true\n", "Server/config/paper-global.yml": "proxies: {}\n", "Server/version_history.json": `{"currentVersion":"26.2-232-12d8fe0"}`, "Server/world/level.dat": "world", "Server/world/playerdata/player.dat": "uuid", "Server/plugins/plugin.jar": "plugin"}
 }
 func TestImportPreservesAndRefusesOverwrite(t *testing.T) {
 	zipfile := fixture(t, good())
 	r, e := Inspect(zipfile)
-	if e != nil || !r.Compatible || r.Version != "1.21.4" || r.Java != 21 {
+	if e != nil || !r.Compatible || r.Version != "26.2" || r.Java != 25 {
 		t.Fatal(r, e)
 	}
 	dest := filepath.Join(t.TempDir(), "creative")
-	if _, e = Import(zipfile, dest, "1.21.4"); e != nil {
+	if _, e = Import(zipfile, dest, "26.2"); e != nil {
 		t.Fatal(e)
 	}
 	b, e := os.ReadFile(filepath.Join(dest, "server.properties"))
 	if e != nil || string(b) != "online-mode=true\n" {
 		t.Fatal(string(b), e)
 	}
-	if _, e = Import(zipfile, dest, "1.21.4"); e == nil {
+	if _, e = Import(zipfile, dest, "26.2"); e == nil {
 		t.Fatal("overwritten")
 	}
 	if _, e = os.Stat(zipfile); e != nil {
@@ -66,13 +66,13 @@ func TestIncompatibleAndMismatch(t *testing.T) {
 	delete(entries, "Server/config/paper-global.yml")
 	zipfile := fixture(t, entries)
 	dest := filepath.Join(t.TempDir(), "creative")
-	if _, e := Import(zipfile, dest, "1.21.4"); e == nil {
+	if _, e := Import(zipfile, dest, "26.2"); e == nil {
 		t.Fatal("non-Paper imported")
 	}
 	if _, e := os.Stat(dest); !os.IsNotExist(e) {
 		t.Fatal("destination modified")
 	}
-	if _, e := Import(fixture(t, good()), dest, "1.21.5"); e == nil {
+	if _, e := Import(fixture(t, good()), dest, "26.3"); e == nil {
 		t.Fatal("version mismatch accepted")
 	}
 }
@@ -103,7 +103,7 @@ func TestDependencyVersionsAreNotMinecraftVersions(t *testing.T) {
 	entries["Server/libraries/spark-paper-1.10.119.jar"] = "dependency"
 	entries["Server/plugins/.paper-remapped/internal.jar"] = "cache"
 	report, err := Inspect(fixture(t, entries))
-	if err != nil || !report.Compatible || report.Version != "1.21.4" || len(report.Plugins) != 1 {
+	if err != nil || !report.Compatible || report.Version != "26.2" || len(report.Plugins) != 1 {
 		t.Fatal(report, err)
 	}
 }

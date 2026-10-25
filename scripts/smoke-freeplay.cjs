@@ -92,7 +92,7 @@ async function connect(id, name, server = "survival") {
   const client = mc.createClient({
     host: Object.values(info.NetworkSettings.Networks)[0].IPAddress,
     port: 25565,
-    version: process.env.SMOKE_MC_VERSION || "1.21.9",
+    version: process.env.SMOKE_MC_VERSION || "26.3",
     username: name,
     auth: "offline",
     clientSettings: { viewDistance: 2, chatFlags: 0 },
