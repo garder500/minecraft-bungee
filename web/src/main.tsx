@@ -5,6 +5,7 @@ import "./style.css";
 import { api, APIError } from "./api";
 import { Players } from "./Players";
 import { ServerTools } from "./ServerTools";
+import { Backups } from "./Backups";
 import { WerewolfSessions } from "./WerewolfSessions";
 import { Zones } from "./Zones";
 import { Operations, Activity } from "./Operations";
@@ -35,6 +36,7 @@ function App() {
     | "overview"
     | "players"
     | "plugins"
+    | "backups"
     | "settings"
     | "activity"
     | "zones"
@@ -46,6 +48,7 @@ function App() {
       "overview",
       "players",
       "plugins",
+      "backups",
       "settings",
       "activity",
       "zones",
@@ -294,6 +297,7 @@ function App() {
               ["zones", "✦", "Zones"],
               ["werewolf", "☾", "Werewolf"],
               ["plugins", "♧", "Plugins"],
+              ["backups", "▣", "Backups"],
               ["settings", "⚙", "Server settings"],
               ["activity", "≡", "Activity"],
             ] as const
@@ -358,6 +362,7 @@ function App() {
                 overview: "Overview",
                 players: "Players & roles",
                 plugins: "Plugins",
+                backups: "Backups",
                 settings: "Server settings",
                 activity: "Activity",
               }[view]
@@ -380,6 +385,7 @@ function App() {
                   overview: "Network overview",
                   players: "Players & roles",
                   plugins: "Server plugins",
+                  backups: "Backups",
                   settings: "Server settings",
                   activity: "Administration activity",
                 }[view]
@@ -397,6 +403,8 @@ function App() {
                     players:
                       "Inventories, game modes, roles and care for your community.",
                     plugins: "Install and manage the plugins for each world.",
+                    backups:
+                      "Save, download, upload and restore a world with its data.",
                     settings:
                       "World rules, access and everyday server controls.",
                     activity: "Follow the changes made across your network.",
@@ -424,6 +432,8 @@ function App() {
           <Players csrf={session.csrf} onError={report} />
         ) : view === "activity" ? (
           <Activity onError={report} />
+        ) : view === "backups" ? (
+          <Backups csrf={session.csrf} onError={report} />
         ) : view === "plugins" || view === "settings" ? (
           <>
             <div className="page-server-selector">

@@ -26,6 +26,17 @@ A server ZIP contains:
 
 Java/server runtimes, logs, Minecraft download caches, Paper remapping caches and the managed network/lobby/arena plugin JARs are excluded. Managed plugins are supplied by the selected Docker images on startup. Network configuration (`server.properties`, Paper forwarding config), forwarding/RCON secrets, root `.env` and the panel database are **not** copied by a world ZIP. Plugin data can itself contain credentials: treat every ZIP as private and transfer it over SSH.
 
+## From the panel
+
+The **Backups** page of the panel does the same for Lobby, Creative and Survival, with the same ZIP format and the same `backups/` folder, so a ZIP made there restores with `make restore` and the other way round:
+
+- **Create** works on a running server without stopping it or disconnecting anyone: autosave is paused over RCON, the worlds are flushed, the ZIP is written, autosave is turned back on. A stopped server is zipped as it is.
+- **Download** streams the ZIP (resumable); **Upload** takes a ZIP made by the panel or by `make zip` (up to 40 GiB, checked for a manifest). Names use letters, digits, dot, dash and underscore.
+- **Restore** checks the ZIP first (paths, checksums, server, exact Minecraft version), stops the server, saves its current state as a `before-restore` ZIP, swaps the data in with rollback, and restarts the server if it was running. Players are disconnected. If the old files cannot be deleted afterwards (root-owned), the restore still counts and the page names the leftover `.archive-staging-*` folder.
+- Panel database ZIPs (`make export-panel`) are listed but restored only with `make import-panel`.
+
+The controller needs the `backups/` folder mounted (`BACKUPS_DIR`, default `./backups`) and `MC_VERSION`; both Compose files already do this. Every create, download, upload, restore and delete is written to the panel's audit log.
+
 ## Inspect and restore
 
 ```bash

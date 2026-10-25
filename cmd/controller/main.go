@@ -27,7 +27,7 @@ func main() {
 	if project == "" {
 		log.Fatal("STACK_ID required")
 	}
-	s := control.Server{GameToken: gameToken, DataRoot: "/servers", Docker: control.NewDocker("/var/run/docker.sock", project), Token: token, Passwords: pw}
+	s := control.Server{GameToken: gameToken, DataRoot: "/servers", Docker: control.NewDocker("/var/run/docker.sock", project), Token: token, Passwords: pw, BackupDir: "/backups", Version: os.Getenv("MC_VERSION")}
 	if err := control.Listen(":8081", s.Handler()); err != nil {
 		log.Fatal(err)
 	}

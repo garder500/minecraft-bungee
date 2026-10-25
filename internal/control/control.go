@@ -190,6 +190,10 @@ type Server struct {
 	Token     string
 	Passwords map[string]string
 	locks     [4]sync.Mutex
+	// BackupDir holds the server ZIPs and Version is the Minecraft version they must match; empty disables backups.
+	BackupDir string
+	Version   string
+	jobs      jobBoard
 }
 
 func (s *Server) Handler() http.Handler {
@@ -197,6 +201,7 @@ func (s *Server) Handler() http.Handler {
 	s.metricsRoute(mux)
 	s.pluginRoutes(mux)
 	s.gameRoutes(mux)
+	s.backupRoutes(mux)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
 	mux.HandleFunc("GET /servers", func(w http.ResponseWriter, r *http.Request) {
 		out := []Status{}
@@ -291,6 +296,11 @@ func JSON(w http.ResponseWriter, status int, v any) {
 
 // RCON reads all output packets by following the command with a sentinel request.
 func RCON(ctx context.Context, addr, password, command string) (string, error) {
+	return RCONWait(ctx, addr, password, command, 8*time.Second)
+}
+
+// RCONWait is RCON with a longer budget, for commands that block until the server is done (save-all flush).
+func RCONWait(ctx context.Context, addr, password, command string, wait time.Duration) (string, error) {
 	if len(password) < 32 {
 		return "", errors.New("missing password")
 	}
@@ -299,7 +309,7 @@ func RCON(ctx context.Context, addr, password, command string) (string, error) {
 		return "", e
 	}
 	defer c.Close()
-	deadline := time.Now().Add(8 * time.Second)
+	deadline := time.Now().Add(wait)
 	if d, ok := ctx.Deadline(); ok && d.Before(deadline) {
 		deadline = d
 	}

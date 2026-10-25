@@ -91,9 +91,14 @@ services:
     image: ${IMAGE_REPOSITORY:?Set IMAGE_REPOSITORY}-controller:${CONTROLLER_IMAGE_TAG:-${IMAGE_TAG:?Set IMAGE_TAG}}
     user: "${PUID:-1000}:${PGID:-1000}"
     group_add: ["${DOCKER_GID:?Set DOCKER_GID to the Docker socket group}"]
-    environment: {STACK_ID: "${STACK_ID:-vampyuyu-local}"}
+    environment:
+      STACK_ID: "${STACK_ID:-vampyuyu-local}"
+      # Backups only restore onto worlds of exactly this Minecraft version.
+      MC_VERSION: ${MC_VERSION:?Set MC_VERSION explicitly}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      # Server ZIPs made, uploaded and restored from the panel (same folder as `make zip`).
+      - ${BACKUPS_DIR:-./backups}:/backups
       - ${STATE_DIR:-./state}/velocity:/servers/velocity:ro
       - ${STATE_DIR:-./state}/lobby:/servers/lobby
       - ${STATE_DIR:-./state}/creative:/servers/creative

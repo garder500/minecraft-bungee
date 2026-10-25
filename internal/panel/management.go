@@ -23,6 +23,7 @@ func (s *Server) auditRelay(w http.ResponseWriter, r *http.Request, v session, s
 	s.DB.Exec("UPDATE audit SET result=? WHERE id=?", status, id)
 }
 func (s *Server) managementRoutes(mux *http.ServeMux, protected func(func(http.ResponseWriter, *http.Request, session)) http.HandlerFunc) {
+	s.backupRoutes(mux, protected)
 	directory := &players.Service{DB: s.DB}
 	mux.HandleFunc("GET /api/v1/role-commands", protected(func(w http.ResponseWriter, r *http.Request, v session) {
 		commands, e := directory.RoleCommands()

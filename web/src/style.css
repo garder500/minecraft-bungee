@@ -2072,7 +2072,8 @@ body.confirmation-open {
   margin-right: auto;
   color: var(--muted);
 }
-.game-logs a.button {
+.game-logs a.button,
+.player-table a.button {
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--ink);
@@ -2080,7 +2081,8 @@ body.confirmation-open {
   padding: 9px 15px;
   text-decoration: none;
 }
-.game-logs a.button:hover {
+.game-logs a.button:hover,
+.player-table a.button:hover {
   border-color: var(--accent-hover);
 }
 @media (max-width: 900px) {
@@ -2220,4 +2222,25 @@ body.confirmation-open {
   .arena-game-rules {
     padding: 16px;
   }
+}
+
+.plugin-upload progress {
+  flex-basis: 100%;
+  height: 8px;
+  accent-color: var(--accent-hover);
+}
+.backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.backup-actions .button,
+.backup-actions button {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.player-table .backup-problem {
+  display: block;
+  margin-top: 4px;
+  color: var(--danger, #9b2c2c);
 }
