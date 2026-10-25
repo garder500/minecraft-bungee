@@ -32,6 +32,9 @@ commands:
     description: View an online player's inventory (read-only)
     usage: /invsee <player>
     permission: vampyuyu.invsee
+  exitchat:
+    description: Leave a private channel with staff
+    usage: /exitchat
   vampyuyuoperator:
     description: Console-only operator management by UUID
 permissions:

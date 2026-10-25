@@ -434,7 +434,7 @@ func (s *Server) console(w http.ResponseWriter, r *http.Request, v session) {
 			return
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-		res, e := s.upstream(ctx, "GET", "/servers/"+id+"/logs", nil)
+		res, e := s.upstream(ctx, "GET", "/servers/"+id+"/logs?tail=1000", nil)
 		event := "snapshot"
 		data := []byte(`{"error":"console unavailable; reconnecting"}`)
 		if e == nil {

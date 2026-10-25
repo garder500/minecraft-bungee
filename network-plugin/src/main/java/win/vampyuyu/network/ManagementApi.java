@@ -22,12 +22,13 @@ final class ManagementApi implements AutoCloseable {
     private final PlayerInventoryStore inventories;
     private final Gson json = new GsonBuilder().disableHtmlEscaping().serializeNulls().create();
     private final HttpServer http;
+    private final StaffChannel chat;
     private final ThreadPoolExecutor executor = new ThreadPoolExecutor(2,2,0,TimeUnit.SECONDS,new ArrayBlockingQueue<>(16),r->{Thread t=new Thread(r,"vampyuyu-management");t.setDaemon(true);return t;},new ThreadPoolExecutor.AbortPolicy());
     // 26.x renamed the game rules (keep_inventory, advance_time...): the panel keeps stable ids and maps them to the typed rules.
     private static final Map<String,org.bukkit.GameRule<Boolean>> BOOLEAN_RULES=new LinkedHashMap<>();
     static{BOOLEAN_RULES.put("keepInventory",org.bukkit.GameRules.KEEP_INVENTORY);BOOLEAN_RULES.put("mobGriefing",org.bukkit.GameRules.MOB_GRIEFING);BOOLEAN_RULES.put("advanceTime",org.bukkit.GameRules.ADVANCE_TIME);BOOLEAN_RULES.put("advanceWeather",org.bukkit.GameRules.ADVANCE_WEATHER);BOOLEAN_RULES.put("spawnMobs",org.bukkit.GameRules.SPAWN_MOBS);BOOLEAN_RULES.put("fireDamage",org.bukkit.GameRules.FIRE_DAMAGE);BOOLEAN_RULES.put("showDeathMessages",org.bukkit.GameRules.SHOW_DEATH_MESSAGES);BOOLEAN_RULES.put("spawnPhantoms",org.bukkit.GameRules.SPAWN_PHANTOMS);BOOLEAN_RULES.put("showAdvancementMessages",org.bukkit.GameRules.SHOW_ADVANCEMENT_MESSAGES);}
     ManagementApi(JavaPlugin plugin,String token) throws IOException {
-        this.plugin=plugin;this.token=token;inventories=new PlayerInventoryStore(plugin);
+        this.plugin=plugin;this.token=token;inventories=new PlayerInventoryStore(plugin);chat=new StaffChannel(plugin);
         for(World world:plugin.getServer().getWorlds()){String key="world-pvp."+world.getUID();if(plugin.getConfig().contains(key))world.setPVP(plugin.getConfig().getBoolean(key));}
         http=HttpServer.create(new InetSocketAddress("0.0.0.0",8084),16);http.setExecutor(executor);http.createContext("/",this::handle);http.start();
     }
@@ -62,6 +63,7 @@ final class ManagementApi implements AutoCloseable {
             if(method.equals("PUT"))return inventories.edit(id,new PlayerInventoryStore.Edit(container,text(body,"revision",64),integer(body,"slot",0,40),text(body,"material",128),integer(body,"amount",0,99)));
         }
         if(method.equals("POST")&&path.equals("/action")){action(body);return Map.of("ok",true);}
+        if(method.equals("POST")&&path.equals("/chat")){UUID id=uuid(text(body,"uuid",36));return chat.handle(body,plugin.getServer().getPlayer(id),id);}
         throw new FileNotFoundException("Unknown management endpoint");
     }
     private boolean lobbyBuild(Player player){try{var lobby=plugin.getServer().getPluginManager().getPlugin("VampyuyuLobby");return lobby!=null&&(Boolean)lobby.getClass().getMethod("isBuildMode",Player.class).invoke(lobby,player);}catch(ReflectiveOperationException e){return false;}}

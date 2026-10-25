@@ -453,19 +453,148 @@ header {
 }
 .log-line {
   display: flex;
-  gap: 20px;
+  gap: 12px;
   padding: 0 20px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.line-number {
+.log-window.nowrap .log-line {
+  white-space: pre;
+  overflow-wrap: normal;
+  width: max-content;
+  min-width: 100%;
+}
+.line-time {
   color: var(--console-muted);
-  min-width: 25px;
-  text-align: right;
+  min-width: 56px;
+  user-select: none;
+  flex: none;
+}
+.line-thread {
+  min-width: 42px;
+  flex: none;
+  font-size: 9px;
+  letter-spacing: 0.5px;
   user-select: none;
 }
-.log-line > span:last-child {
+.line-text {
   min-width: 0;
+}
+.log-line.level-WARN {
+  color: #f0c36a;
+  background: rgba(240, 195, 106, 0.07);
+}
+.log-line.level-ERROR {
+  color: #ff8d86;
+  background: rgba(255, 110, 100, 0.1);
+}
+.log-line.level-DEBUG {
+  color: var(--console-muted);
+}
+.log-line.cont .line-text {
+  opacity: 0.85;
+}
+.log-line mark {
+  background: rgba(212, 175, 85, 0.45);
+  color: inherit;
+  border-radius: 2px;
+}
+.console-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 9px 15px;
+  background: var(--console-raised);
+  border-bottom: 1px solid var(--console-line);
+}
+.console-filter input {
+  flex: 1 1 220px;
+  min-width: 0;
+  background: var(--console);
+  border: 1px solid var(--console-line);
+  color: var(--ivory);
+  font: 11px ui-monospace, monospace;
+  padding: 7px 10px;
+  border-radius: 5px;
+}
+.console-filter input.invalid {
+  border-color: #ff8d86;
+}
+.console-filter button,
+.console-filter a.button,
+.console-banner button,
+.journal-head button,
+.journal-entry button {
+  border: 1px solid var(--console-line);
+  background: transparent;
+  color: var(--console-text);
+  padding: 5px 9px;
+  font-size: 10px;
+  border-radius: 5px;
+  text-decoration: none;
+}
+.console-filter button.on,
+.console-filter button.chip.on {
+  background: var(--sidebar-active);
+  color: var(--ivory);
+}
+.console-filter button.chip span {
+  opacity: 0.6;
+  margin-left: 3px;
+}
+.console-filter button.chip.level-WARN.on {
+  color: #f0c36a;
+}
+.console-filter button.chip.level-ERROR.on {
+  color: #ff8d86;
+}
+.console-banner {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 17px;
+  font-size: 11px;
+  color: var(--console-text);
+  background: rgba(212, 175, 85, 0.12);
+  border-bottom: 1px solid var(--console-line);
+}
+.console-banner.warn {
+  color: #ff8d86;
+  background: rgba(255, 110, 100, 0.1);
+}
+.command-journal {
+  margin-top: 14px;
+  border: 1px solid var(--console-line);
+  border-radius: 8px;
+  background: var(--console);
+  color: var(--console-text);
+  font-size: 11px;
+}
+.journal-head,
+.journal-entry > div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.journal-head {
+  justify-content: space-between;
+  padding: 9px 14px;
+  background: var(--console-raised);
+}
+.journal-entry {
+  padding: 9px 14px;
+  border-top: 1px solid var(--console-line);
+}
+.journal-entry pre {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 11px/1.6 ui-monospace, monospace;
+}
+.journal-entry.failed pre {
+  color: #ff8d86;
 }
 .empty-log {
   color: var(--console-muted);
@@ -2243,4 +2372,68 @@ body.confirmation-open {
   display: block;
   margin-top: 4px;
   color: var(--danger, #9b2c2c);
+}
+.staff-chat {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.staff-chat-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.staff-chat-head h3 {
+  margin-right: auto;
+}
+.staff-chat-log {
+  height: 220px;
+  overflow: auto;
+  margin: 14px 0 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.staff-chat-log .bubble {
+  max-width: 78%;
+  padding: 7px 11px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.staff-chat-log .bubble small {
+  font-size: 9px;
+  opacity: 0.6;
+}
+.staff-chat-log .bubble.staff {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #fff;
+}
+.staff-chat-log .bubble.player {
+  align-self: flex-start;
+  background: var(--accent-soft);
+}
+.staff-chat-log .bubble.system {
+  align-self: center;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-style: italic;
+}
+.staff-chat-form {
+  display: flex;
+  gap: 8px;
+}
+.staff-chat-form input {
+  flex: 1;
 }

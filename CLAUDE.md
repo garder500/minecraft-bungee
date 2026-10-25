@@ -91,6 +91,18 @@ freeze with `save-off` + `save-all flush`, restore with rollback), `internal/pan
 `web/src/Backups.tsx`. Test: `go test ./internal/...`; the controller test uses a fake Docker. Restores stop
 the server: do not try them on a server with players.
 
+## Console and staff channel (panel)
+
+- Console: `web/src/Console.tsx` + `consoleLog.ts` (parse Paper/Velocity/image lines, level colours, filters, search,
+  history); the controller's `GET /servers/{id}/logs` (`internal/control/logs.go`) takes `tail`, `q`, `regex`, `case`,
+  `level`, `max` and always redacts a line BEFORE matching it (a search must not become a secret oracle);
+  `/logs/download` streams the whole kept history. Without `q`/`level`/`max` it still returns a plain array (the SSE
+  stream asks for `tail=1000`).
+- Staff channel: `network-plugin/.../StaffChannel.java` (in-memory, one channel per player, cancels the player's chat
+  at LOW priority so menu input at LOWEST still wins, `/exitchat`), reached through `POST /chat` of the management API,
+  `POST /servers/{id}/chat` of the controller and the panel (staff name = the session user, messages never audited).
+  Real check: `python3 scripts/e2e_client.py --scenario staffchat` (screenshots of the in-game messages).
+
 ## Conventions
 
 - Commit only when asked. Commit messages end with the Co-Authored-By line given by the harness.
