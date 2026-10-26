@@ -10,7 +10,7 @@ python3 -c '
 import json,sys,pathlib,re,platform
 c=json.load(sys.stdin);s=c["services"]
 if s["creative"]["environment"]["EULA"].upper()!="TRUE":sys.exit("Set EULA=TRUE after accepting the Minecraft EULA")
-if "caddy" in s:
+if sys.argv[1]=="compose.prod.yaml":
  if platform.machine()!="x86_64":sys.exit("Production images currently target linux/amd64")
  if not re.fullmatch(r".*:(src-)?[0-9a-f]{40}",s["panel"]["image"]):sys.exit("Set IMAGE_TAG to a published 40-character commit SHA")
  if not s["panel"]["environment"]["PUBLIC_ORIGIN"].startswith("https://"):sys.exit("Production PUBLIC_ORIGIN must use HTTPS")
@@ -20,7 +20,7 @@ for name in ("lobby","creative","survival"):
  marker=data/".network-version"
  if not marker.exists() or marker.read_text().strip()!=version:sys.exit(name+": run offline configure with the selected Minecraft version first")
  if not (data/"config/paper-global.yml").is_file():sys.exit(name+": forwarding configuration missing")
-' <<< "$config"
+' "$compose" <<< "$config"
 # (Also done for --check: scripts/deploy.sh only calls this script with --check before it recreates services.)
 # The controller runs as PUID:PGID. Docker would create a missing bind-mounted folder owned by root, and one
 # made earlier by a root-run `make backup` is root's too: either way the controller could not write the

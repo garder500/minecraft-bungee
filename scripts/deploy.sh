@@ -32,7 +32,6 @@ if [[ "$previous" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$previous^{commit}" 2
  changed=$(git diff --name-only "$previous" "$commit" -- infra)
  grep -qx 'infra/start.sh' <<< "$changed" && force+=(velocity lobby creative survival)
  grep -qxE 'infra/(velocity\.toml|server-icon\.png)' <<< "$changed" && force+=(velocity)
- grep -qx 'infra/Caddyfile' <<< "$changed" && force+=(caddy)
  grep -qx 'infra/redis-start.sh' <<< "$changed" && force+=(redis)
 fi
 
@@ -50,7 +49,7 @@ done
 # From here on a failure leaves the new tags in .env; rerunning the deployment finishes it.
 trap - ERR
 running=$(docker compose -f "$compose" ps --status running --services)
-for service in redis controller panel caddy velocity lobby creative survival; do
+for service in redis controller panel velocity lobby creative survival; do
  flags=(--no-deps)
  [[ " ${force[*]} " == *" $service "* ]] && flags+=(--force-recreate)
  case $service in

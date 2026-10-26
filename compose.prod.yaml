@@ -77,6 +77,13 @@ services:
       - ${STATE_DIR:-./state}/panel:/state
     secrets: [controller_token, role_bridge_token]
     networks: [web, control, game]
+    # Routed by the shared Traefik stack (/home/ubuntu/traefik), which joins this network.
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${COMPOSE_PROJECT_NAME:-vampyuyu-prod}_web
+      - traefik.http.routers.panel.rule=Host(`panel.vampyuyu.win`)
+      - traefik.http.routers.panel.entrypoints=websecure
+      - traefik.http.services.panel.loadbalancer.server.port=8080
     depends_on: [controller]
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
@@ -209,18 +216,6 @@ services:
       - ${SECRETS_DIR:-./secrets}:/secrets
       - ${ARCHIVES_DIR:-./archives}:/archives:ro
 
-  caddy:
-    image: caddy:2-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
-    ports: ["443:443"]
-    volumes:
-      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
-      - ${TLS_DIR:-./secrets/tls}:/run/tls:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    networks: [web]
-    depends_on: [panel]
-    restart: unless-stopped
-
 networks:
   game: {}
   web: {}
@@ -239,7 +234,3 @@ secrets:
     file: ${SECRETS_DIR:-./secrets}/creative_rcon
   survival_rcon:
     file: ${SECRETS_DIR:-./secrets}/survival_rcon
-
-volumes:
-  caddy-data: {}
-  caddy-config: {}

@@ -22,7 +22,7 @@ Keep all panel interface copy in English. Use the Vampyuyu reference palette: de
 | Panel | Go API, SQLite sessions/audit/player roles, embedded React production UI, private role bridge | Local development: loopback 8080; bridge 8083 is never published |
 | Frontend | Vite development server, API proxy | Local development: loopback 5173 |
 | Controller | Fixed Docker lifecycle/log operations and private RCON | None |
-| Caddy | Cloudflare origin TLS and panel reverse proxy | Production: TCP 443 |
+| Traefik (external stack, `/home/ubuntu/traefik`) | Cloudflare origin TLS and panel reverse proxy, routed by the `traefik.*` labels on `panel` | Production: TCP 443 |
 | Tools | Offline secrets, ZIP inspection/import, forwarding configuration | None |
 
 Only the controller mounts the Docker socket. Its API requires a secret and accepts only the four fixed server IDs, fixed actions, and containers bearing this stack's two labels. Docker socket access still grants host-level authority if the controller is compromised; run this on a dedicated trusted host. The panel cannot create containers, mount host paths, or execute host shell commands.
@@ -174,13 +174,13 @@ docker compose -f compose.prod.yaml run --rm --no-deps tools secrets
 # Inspect/import the archive and configure as above, substituting compose.prod.yaml.
 ```
 
-Generate a Cloudflare Origin CA certificate covering `panel.vampyuyu.win`. Save its PEM certificate to `secrets/tls/origin.pem` and private key to `secrets/tls/origin-key.pem` (or the configured `TLS_DIR`). Keep the private key mode `600`. Caddy mounts these files; they never enter an image. Then configure:
+Generate a Cloudflare Origin CA certificate covering `panel.vampyuyu.win`. Save its PEM certificate to `secrets/tls/origin.pem` and private key to `secrets/tls/origin-key.pem` (or the configured `TLS_DIR`). Keep the private key mode `600`. The shared Traefik stack mounts this folder (`dynamic/certs.yml`); the files never enter an image. Then configure:
 
 - Cloudflare `panel` A record → host IP, **proxied**; SSL/TLS mode **Full (strict)**.
 - Cloudflare `play` A record → host IP, **DNS-only**. Ordinary Cloudflare HTTP proxying does not carry Minecraft Java TCP.
 - Add AAAA records only if IPv6 routing and firewall rules are configured.
 - Host/provider firewall: allow TCP 25565 for players; allow TCP 443 from current Cloudflare IP ranges; restrict SSH to trusted sources. Account for Docker's firewall chains: ordinary UFW rules alone may not restrict published Docker ports. Do not expose 8080, 8081, 8083, 25575, or backend ports. No port 80 is required for the Origin CA setup.
-- Disable Cloudflare caching for `/api/*`; preserve streaming with SSE. Caddy flushes streamed responses immediately. Origin CA certificates are for Cloudflare-to-origin traffic, so directly browsing the origin is not expected to show a publicly trusted certificate.
+- Disable Cloudflare caching for `/api/*`; preserve streaming with SSE. Traefik flushes streamed responses immediately. Origin CA certificates are for Cloudflare-to-origin traffic, so directly browsing the origin is not expected to show a publicly trusted certificate.
 
 Create the administrator before first login:
 
@@ -234,7 +234,7 @@ To restore: stop the stack; verify and extract a trusted backup into an **empty 
 
 For an application update: make a backup, select a passing published commit in `IMAGE_TAG`, check out its infrastructure files, pull, and start only intended services. Use a previous application image tag to roll back only when its schema/configuration remains compatible. This initial version uses additive SQLite initialization; future migrations must document their rollback requirements. **Do not downgrade Minecraft binaries against newer worlds.** World/runtime upgrades require separate compatibility review and a full restore point; startup version markers intentionally refuse silent changes.
 
-Game containers use `restart: "no"`, so panel stops stay stopped and game services also remain stopped after a host reboot. Start intended services manually. The panel/controller/Caddy restart automatically. Stop/restart requests allow 60 seconds for Docker shutdown; Compose allows 75 seconds. Monitor service health, disk space, Java memory, server logs, and failed audit actions. Do not automatically restart a server into repeated world corruption errors.
+Game containers use `restart: "no"`, so panel stops stay stopped and game services also remain stopped after a host reboot. Start intended services manually. The panel/controller restart automatically. Stop/restart requests allow 60 seconds for Docker shutdown; Compose allows 75 seconds. Monitor service health, disk space, Java memory, server logs, and failed audit actions. Do not automatically restart a server into repeated world corruption errors.
 
 ## Player inventories and administration workspaces
 
@@ -292,7 +292,7 @@ Authenticated same-origin API under `/api/v1`:
 | `POST /players/{uuid}/operator` | JSON `server`, `enabled`; known UUID, Paper only |
 | `GET /servers/{id}/console` | SSE `snapshot`, `unavailable`, or `expired` events |
 
-All mutations require the configured `Origin`; authenticated mutations also require `X-CSRF-Token`. Sessions expire after 24 hours and survive panel restarts. Login permits eight attempts per five minutes per direct peer; behind Caddy this is intentionally a shared administrator limit. The backend does not trust spoofable client IP headers. Audit records live in SQLite; command text and credentials are never audited. Operational Docker logs rotate at 3 × 10 MB per game container.
+All mutations require the configured `Origin`; authenticated mutations also require `X-CSRF-Token`. Sessions expire after 24 hours and survive panel restarts. Login permits eight attempts per five minutes per direct peer; behind the reverse proxy this is intentionally a shared administrator limit. The backend does not trust spoofable client IP headers. Audit records live in SQLite; command text and credentials are never audited. Operational Docker logs rotate at 3 × 10 MB per game container.
 
 Console SSE refreshes a bounded snapshot every two seconds, containing up to 200 lines with at most 8 KiB per line. Heartbeats keep idle streams alive. Reconnection replaces the snapshot to avoid duplicate appended lines. This is an operational tail, not a durable lossless log feed; bursts exceeding 200 lines require the server's persistent logs. Console output is rendered as React text, never HTML. The controller redacts its known secrets from returned logs and command responses. Other plugin-specific secrets may still be emitted by plugins; access is administrator-only.
 
