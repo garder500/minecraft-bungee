@@ -1,0 +1,90 @@
+# Utility feature: quality-of-life commands. Every key falls back to the value shown here when missing.
+
+teleport:
+  # Seconds the player must stand still before any teleport happens (0 disables the warm-up).
+  # Players with vampyuyu.sb.utility.bypass.warmup skip it.
+  warmup-seconds: 3
+  # Moving more than this many blocks from the start spot cancels the teleport.
+  move-tolerance: 0.6
+  # Taking damage cancels the teleport.
+  cancel-on-damage: true
+  # Show a title countdown during the warm-up (chat only when false).
+  show-title: true
+
+combat:
+  # Teleports are refused for a while after being hit. vampyuyu.sb.utility.bypass.combat ignores it.
+  enabled: true
+  tag-seconds: 10
+  # Also tag when the damage comes from a mob (not only from players).
+  include-mobs: true
+
+homes:
+  # Homes a player gets without a vampyuyu.sb.utility.homes.<n> permission.
+  default-limit: 3
+  # Upper bound of what a permission node can grant; vampyuyu.sb.utility.homes.unlimited grants exactly this.
+  max-limit: 100
+  max-name-length: 16
+  # Name used by /home and /sethome without an argument.
+  default-name: home
+
+tpa:
+  expire-seconds: 60
+  # Seconds a player must wait between two requests they send (stops spam).
+  send-cooldown-seconds: 10
+  # Open requests one player can have waiting for an answer.
+  max-pending-per-target: 5
+  # Seconds after a successful /tpa or /tpahere teleport before the same player may be teleported by one again.
+  teleport-cooldown-seconds: 5
+
+spawn:
+  # World used by /spawn outside Skyblock worlds. Blank = the first loaded world.
+  world: ""
+
+rtp:
+  enabled: true
+  # The vanilla survival world. Blank = the first loaded world. Players must be in it to use /rtp.
+  world: ""
+  cooldown-seconds: 600
+  min-radius: 200
+  max-radius: 5000
+  # Centre of the search area; use-world-spawn true centres it on the world spawn instead.
+  use-world-spawn: true
+  center-x: 0
+  center-z: 0
+  # Random points tried before giving up (the cooldown is not used when nothing was found).
+  max-attempts: 12
+  # Seconds before an unfinished search is abandoned.
+  search-timeout-seconds: 20
+
+# Portable blocks. public: true gives the permission to everybody, false to operators only (or whoever you grant it to).
+# Permission: vampyuyu.sb.utility.<name>. Never usable inside a dungeon.
+portable:
+  ec:
+    public: true
+  workbench:
+    public: true
+  anvil:
+    public: false
+  grindstone:
+    public: false
+  stonecutter:
+    public: false
+  loom:
+    public: false
+
+sit:
+  # Interaction entity height; the player's feet end up at (floor + seat-offset) + seat-height - 0.6.
+  seat-height: 0.6
+  # Vertical offset of the seat from the floor, tune it if the player floats or sinks.
+  seat-offset: -0.2
+
+trash:
+  # Items with these custom ids are handed back on close instead of being destroyed.
+  keep-ids:
+    - wings
+  # Custom items of this rarity or better are handed back too (COMMON ... SPECIAL, blank disables).
+  keep-rarity: LEGENDARY
+
+near:
+  default-radius: 100
+  max-radius: 250

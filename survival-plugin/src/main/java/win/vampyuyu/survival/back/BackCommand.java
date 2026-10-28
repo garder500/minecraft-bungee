@@ -14,9 +14,15 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 
 public final class BackCommand implements CommandExecutor, Listener {
     private final BackService back;
+    private final TeleportGate gate;
 
     public BackCommand(BackService back) {
+        this(back, TeleportGate.DIRECT);
+    }
+
+    public BackCommand(BackService back, TeleportGate gate) {
         this.back = back;
+        this.gate = gate;
     }
 
     @EventHandler
@@ -50,11 +56,15 @@ public final class BackCommand implements CommandExecutor, Listener {
                     player.sendMessage("Your death spot is unsafe (lava, fire or void). Clear it first; the cooldown was not used.");
                     return true;
                 }
-                player.teleportAsync(target).thenAccept(done -> {
-                    if (done) {
-                        back.confirm(player.getUniqueId(), bypass);
-                        player.sendMessage("Returned to your last death location.");
-                    }
+                String denial = gate.denial(player, target);
+                if (denial != null) {
+                    player.sendMessage(denial);
+                    return true;
+                }
+                // The cooldown starts when the teleport really happens, not when the command is typed.
+                gate.teleport(player, "back", target, () -> {
+                    back.confirm(player.getUniqueId(), bypass);
+                    player.sendMessage("Returned to your last death location.");
                 });
             }
         }
