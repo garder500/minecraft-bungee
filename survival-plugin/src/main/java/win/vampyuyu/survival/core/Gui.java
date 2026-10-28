@@ -41,7 +41,7 @@ public final class Gui implements InventoryHolder {
         /** Closes the menu at the start of the next tick (closing inside the click event is unsafe). */
         public void close() {
             gui.guis.scheduler.nextTick(() -> {
-                if (player.getOpenInventory().getTopInventory().getHolder() == gui) {
+                if (Guis.holderOf(player.getOpenInventory().getTopInventory()) == gui) {
                     player.closeInventory();
                 }
             });
@@ -129,7 +129,7 @@ public final class Gui implements InventoryHolder {
         return this;
     }
 
-    /** Sets what happens when the menu is closed by the player (not when you replace it with another menu). */
+    /** Runs when the menu is closed, by the player or because another inventory replaced it (not on a plugin disable that never closes it). */
     public Gui onClose(Consumer<Player> handler) {
         this.closeHandler = handler;
         return this;
@@ -165,6 +165,9 @@ public final class Gui implements InventoryHolder {
      */
     public <T> Pager<T> paginate(List<T> items, int[] slots, Function<T, ItemStack> icon,
             BiConsumer<Click, T> onItem, int prevSlot, int nextSlot) {
+        if (slots.length == 0) {
+            throw new IllegalArgumentException("paginate needs at least one content slot");
+        }
         Pager<T> pager = new Pager<>(this, List.copyOf(items), slots, icon, onItem, prevSlot, nextSlot);
         pager.render();
         return pager;

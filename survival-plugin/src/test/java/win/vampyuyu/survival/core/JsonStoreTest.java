@@ -71,4 +71,36 @@ public class JsonStoreTest {
     public void pathTraversalIsRejected() throws Exception {
         store().write("../escape.json", new Doc());
     }
+
+    @Test
+    public void concurrentWritesOfTheSamePathStayWholeAndLeaveNoTmpFiles() throws Exception {
+        JsonStore store = store();
+        List<Thread> threads = new ArrayList<>();
+        List<Throwable> errors = java.util.Collections.synchronizedList(new ArrayList<>());
+        for (int t = 0; t < 8; t++) {
+            int id = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    for (int i = 0; i < 50; i++) {
+                        Doc doc = new Doc();
+                        doc.count = id * 1000 + i;
+                        store.write("shared.json", doc);
+                    }
+                } catch (Throwable e) {
+                    errors.add(e);
+                }
+            });
+            threads.add(thread);
+            thread.start();
+        }
+        for (Thread thread : threads) {
+            thread.join();
+        }
+        assertTrue(errors.toString(), errors.isEmpty());
+        Doc last = store.read("shared.json", Doc.class, () -> null);
+        assertNotNull(last);
+        try (var files = Files.list(tmp.getRoot().toPath())) {
+            assertEquals(List.of("shared.json"), files.map(p -> p.getFileName().toString()).toList());
+        }
+    }
 }

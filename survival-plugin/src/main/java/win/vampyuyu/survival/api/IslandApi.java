@@ -24,6 +24,12 @@ public interface IslandApi {
     /** Teleports the player to their island spawn. False when they have no island or the teleport was refused. */
     boolean teleportHome(Player player);
 
+    /**
+     * Teleports the player to the {@code sb_hub} spawn. Only the {@code island} feature owns that world, so any
+     * hub navigation or join routing (the {@code menu} feature) goes through here. False when the hub is not ready.
+     */
+    boolean teleportHub(Player player);
+
     /** Every known island (snapshot). */
     Collection<IslandInfo> all();
 }

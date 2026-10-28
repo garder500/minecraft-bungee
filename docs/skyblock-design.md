@@ -10,7 +10,9 @@ needed change (new `Stat`, new API method, new event) in your final report and t
 1. **Every user-facing string is English** (chat, menus, lore, item names, titles, boss bars, errors). Code comments
    and docs are English too. The user talks to the assistant in French; the game never does.
 2. **You only ADD new files, and only inside your own package** (`win.vampyuyu.survival.<feature>`) plus your own test
-   package (`src/test/java/win/vampyuyu/survival/<feature>/`). You never edit an existing file. The shared files are:
+   package (`src/test/java/win/vampyuyu/survival/<feature>/`). You never edit an existing file, with ONE exception: the
+   two stub files already in your own package (`<Feature>Feature.java` and `package-info.java`) are yours to rewrite
+   (the `utility` feature also owns `back/**`). The shared files are:
    `core/**`, `api/**`, `SurvivalPlugin.java`, `back/**`, `src/main/resources/plugin.yml`, `config.yml`, `pom.xml`,
    `docs/skyblock-design.md`, `Makefile`, `scripts/**`, and every other feature's files.
 3. **No plugin.yml edits.** Commands go through `core.commands()`, permissions through `core.permissions()` (a command
@@ -30,14 +32,14 @@ needed change (new `Stat`, new API method, new event) in your final report and t
 | Package | Feature id | Owns | API implemented (`api/`) | Profile section keys |
 |---|---|---|---|---|
 | `utility` (+ `back`) | `utility` | `/back` (unchanged) and small QoL commands | none | `utility` |
-| `island` | `island` | island grid, protection, co-op, home, `sb_hub`/`sb_world`/`sb_nether`/`sb_end` creation | `IslandApi` | `island` |
+| `island` | `island` | island grid, protection, co-op, home, `sb_hub`/`sb_world`/`sb_nether`/`sb_end` creation and the hub spawn (`IslandApi.teleportHub`) | `IslandApi` | `island` |
 | `economy` | `economy` | coins, bank, shops, NPC merchants | `EconomyApi` | `economy` |
 | `items` | `items` | stats engine, enchants, reforges, pets, accessories, damage formula | `StatsApi` | `items`, `pets`, `accessories` |
 | `skills` | `skills` | 8 skills, levels, stat rewards | `SkillsApi` | `skills` |
 | `wings` | `wings` | the Wings item, flight, flight energy, once-per-player grant | `WingsApi` | `wings` |
 | `boss` | `boss` | bosses, arenas, summon items, loot | `BossApi` | `boss` |
 | `minions` | `minions` | placeable minions | `MinionApi` | `minions` |
-| `menu` | `menu` | `/menu` Skyblock menu, quests, fairy souls, hub navigation, cross-server handoff | none | `menu`, `quests`, `fairy_souls` |
+| `menu` | `menu` | `/menu` Skyblock menu, quests, fairy souls, hub navigation, cross-server handoff and the ONLY join router (decides hub, island or dungeon on join; no other feature teleports on join) | none | `menu`, `quests`, `fairy_souls` |
 | `dungeon` | `dungeon` | dungeon runs in `sb_dungeon_*` worlds | `DungeonApi` | `dungeon` |
 | `core` | (foundation) | `Feature`, `Core`, services | none | none |
 | `api` | (foundation) | contracts, events | none | none |
@@ -61,6 +63,11 @@ disable in reverse. A service is available once its feature's `enable()` returne
   Listeners registered straight through `Bukkit.getPluginManager()` are not rolled back either: always use `core.listen`.
 * Publish your API implementation with `core.register(IslandApi.class, impl)` once it is fully initialised (last
   step of `enable()`), not before.
+* There is no "all features enabled" callback. Anything that must register WITH a later feature (for example
+  `BossApi.registerLootHook`) can only be done by a feature that enables AFTER it (`minions`, `menu`, `dungeon`). The
+  reverse direction is a pull at use time: the Wings drop is awarded by the `boss` feature, which calls
+  `core.service(WingsApi.class).ifPresent(w -> w.grantOnce(player, "boss:<id>"))` when the boss dies. `wings` never
+  hooks into `boss`.
 
 ## 3. Core reference (`win.vampyuyu.survival.core`)
 
@@ -89,7 +96,8 @@ sends MiniMessage you wrote. Static formatters: `Msg.number(1234) -> "1.2k"` (tr
 
 ### JSON files (`JsonStore`, `core.store()`)
 Root = the plugin data folder. `read(rel, Class, Supplier defaults)`, `write(rel, obj)`, `exists`, `delete`. Writes go to
-`<file>.tmp` then `ATOMIC_MOVE`. A corrupt file is logged, copied to `<file>.corrupt`, and the defaults are returned.
+a uniquely named `<file>.<random>.tmp` (fsynced) then `ATOMIC_MOVE`; two threads writing the same path never corrupt it,
+but the last write wins, so serialise read-modify-write cycles yourself. A corrupt file is logged, copied to `<file>.corrupt`, and the defaults are returned.
 `JsonStore.GSON` is the shared Gson. Paths may not escape the data folder.
 
 ### Player data (`PlayerProfiles`, `core.profiles()`)
@@ -183,7 +191,7 @@ All interfaces are documented with Javadoc in the source; this is the summary. I
 | `StatsApi` | `double stat(Player, Stat)`; `addModifier(UUID, String source, Stat, double)` (replaces the same source+stat); `removeModifiers(UUID, String source)`; `recompute(Player)` (main thread) |
 | `EconomyApi` | `double coins(UUID)`; `has(UUID, double)`; `boolean take(UUID, double, String reason)`; `add(UUID, double, String reason)`; `addTransactionListener(Consumer<Transaction>)`; thread safe |
 | `SkillsApi` | `addXp(Player, Skill, double, String source)`; `int level(UUID, Skill)`; `double xp(UUID, Skill)`; `int maxLevel(Skill)` |
-| `IslandApi` | `Optional<IslandInfo> islandAt(Location)`; `islandOf(UUID)`; `isSkyblockWorld(World)`; `canBuild(Player, Location)`; `teleportHome(Player)`; `Collection<IslandInfo> all()` |
+| `IslandApi` | `Optional<IslandInfo> islandAt(Location)`; `islandOf(UUID)`; `isSkyblockWorld(World)`; `canBuild(Player, Location)`; `teleportHome(Player)`; `teleportHub(Player)`; `Collection<IslandInfo> all()` |
 | `WingsApi` | `ItemStack create()`; `isWings(ItemStack)`; `isWearing(Player)`; `boolean grantOnce(Player, String source)`; `hasReceived(UUID)` |
 | `BossApi` | `boolean spawn(String bossId, Location, @Nullable Player)`; `Collection<String> bossIds()`; `registerLootHook(BossLootHook)` |
 | `MinionApi` | `int slotsFor(UUID)`; `int placedCount(UUID)` |
@@ -240,7 +248,8 @@ ADD files whose path contains your feature name:
   its layer textures `assets/vampyuyu/textures/entity/equipment/**/<feature>_<name>.png`
 * new generator scripts: `resource-pack/art/<feature>_*.py`, not wired into any shared script.
 
-Never edit `pack.mcmeta`, shaders, fonts, lang files, `blank.json` or another feature's files. Check with
+Never edit `pack.mcmeta`, shaders, fonts, lang files, `sounds.json`, `blank.json` or another feature's files (so
+custom sounds and translated names are out of reach for feature agents: use vanilla sounds and `CustomItemDef` names). Check with
 `make test-pack`. Remember servers read the pack at start.
 
 ## 9. Permissions
@@ -312,7 +321,7 @@ Mechanism the `menu` feature must use:
    message for server `survival` (register the outgoing `BungeeCord` channel first:
    `getServer().getMessenger().registerOutgoingPluginChannel(plugin, "BungeeCord")`).
 3. On the survival side, in `PlayerJoinEvent`: `GETDEL sb:transfer:<uuid>` off the main thread (use `core.scheduler().async`),
-   parse, then teleport (the island feature's `IslandApi.teleportHome` or `sb_hub` spawn) on the main thread. A missing
+   parse, then teleport (`IslandApi.teleportHome` or `IslandApi.teleportHub`) on the main thread. A missing
    key means a normal join: send the player to `sb_hub`. Ignore a payload older than 30 s (`ts`).
 4. Connection settings: host from `System.getenv("ARENA_REDIS_HOST")` (default `redis`), port 6379, password from the file
    named by `ARENA_REDIS_PASSWORD_FILE` (default `/run/secrets/arena_redis_password`), connection timeout 2 s, socket

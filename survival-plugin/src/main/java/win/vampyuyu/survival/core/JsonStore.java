@@ -9,14 +9,15 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * Atomic JSON files under a root folder (the plugin's data folder). Writes go to a temporary file then
- * {@code ATOMIC_MOVE}, so a crash never leaves a half-written file. A file that does not parse is copied to
- * {@code <name>.corrupt}, logged, and replaced by the defaults in memory. Thread safe (no shared state).
+ * {@code ATOMIC_MOVE}, so a crash never leaves a half-written file (the temporary name is unique per write). A file that does not parse is copied to
+ * {@code <name>.corrupt}, logged, and replaced by the defaults in memory. Thread safe (no shared state; concurrent writes of the same path are whole-file, last one wins).
  * Paths are relative to the root and may not escape it.
  */
 public final class JsonStore {
@@ -92,16 +93,30 @@ public final class JsonStore {
         writeText(relative, GSON.toJson(value));
     }
 
-    /** Atomically writes text (already serialised JSON). */
+    /**
+     * Atomically writes text (already serialised JSON). The temporary file name is unique per call, so two threads
+     * writing the same path never share a half-written file (the last move wins); the data is fsynced before the move.
+     */
     public void writeText(String relative, String text) throws IOException {
         Path path = resolve(relative);
         Files.createDirectories(path.getParent());
-        Path tmp = path.resolveSibling(path.getFileName() + ".tmp");
-        Files.writeString(tmp, text, StandardCharsets.UTF_8);
+        Path tmp = path.resolveSibling(path.getFileName() + "." + java.util.UUID.randomUUID() + ".tmp");
         try {
-            Files.move(tmp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-        } catch (AtomicMoveNotSupportedException e) {
-            Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING);
+            try (java.nio.channels.FileChannel channel = java.nio.channels.FileChannel.open(tmp,
+                    StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+                java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(text.getBytes(StandardCharsets.UTF_8));
+                while (buffer.hasRemaining()) {
+                    channel.write(buffer);
+                }
+                channel.force(true);
+            }
+            try {
+                Files.move(tmp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            Files.deleteIfExists(tmp);
         }
     }
 

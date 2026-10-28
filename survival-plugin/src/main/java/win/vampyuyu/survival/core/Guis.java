@@ -76,14 +76,32 @@ public final class Guis implements Listener {
     public void closeAll() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             Inventory top = player.getOpenInventory().getTopInventory();
-            if (top != null && top.getHolder() instanceof Gui) {
+            if (guiOf(top) != null) {
                 player.closeInventory();
             }
         }
     }
 
+    /** Set once if the server (MockBukkit) does not implement {@code getHolder(boolean)}. */
+    private static volatile boolean snapshotHolderOnly;
+
+    /**
+     * The holder without building a block state snapshot of real chests (Paper's {@code getHolder(false)}), which
+     * matters because this runs for EVERY inventory click, drag and close on the server.
+     */
+    static org.bukkit.inventory.InventoryHolder holderOf(Inventory inventory) {
+        if (!snapshotHolderOnly) {
+            try {
+                return inventory.getHolder(false);
+            } catch (RuntimeException | AbstractMethodError e) {
+                snapshotHolderOnly = true;
+            }
+        }
+        return inventory.getHolder();
+    }
+
     private static Gui guiOf(Inventory top) {
-        return top.getHolder() instanceof Gui gui ? gui : null;
+        return top != null && holderOf(top) instanceof Gui gui ? gui : null;
     }
 
     @EventHandler(priority = EventPriority.HIGH)

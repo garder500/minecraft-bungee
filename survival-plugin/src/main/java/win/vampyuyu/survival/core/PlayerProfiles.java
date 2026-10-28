@@ -120,7 +120,7 @@ public final class PlayerProfiles implements Listener {
                 name = doc.has("name") ? doc.get("name").getAsString() : "";
                 lastSeen = doc.has("lastSeen") ? doc.get("lastSeen").getAsLong() : 0;
             }
-        } catch (IOException | JsonParseException | IllegalStateException | UnsupportedOperationException e) {
+        } catch (IOException | RuntimeException e) {
             store.quarantine(store.resolve(path(id)), e);
             raw = new JsonObject();
         }

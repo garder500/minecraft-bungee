@@ -4,7 +4,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
- * Skyblock coins. Separate from the network currency (see docs/skyblock-design.md, section 7).
+ * Skyblock coins. Separate from the network currency (see docs/skyblock-design.md, section 11).
  * Implemented by the {@code economy} feature; balances live in the profile section {@code "economy"}.
  * Every method is safe to call from any thread.
  */
