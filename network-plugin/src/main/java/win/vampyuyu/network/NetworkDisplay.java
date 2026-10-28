@@ -58,6 +58,7 @@ public final class NetworkDisplay extends JavaPlugin implements Listener {
     private volatile List<Identity> operators = List.of();
     private RoleAccess access;
     private MenuVault vault;
+    private WorldSelector selector;
     private ManagementApi management;
     private volatile long lastPolicySync;
     private String server;
@@ -97,7 +98,7 @@ public final class NetworkDisplay extends JavaPlugin implements Listener {
         }
         MenuPack pack = MenuPack.load(this);
         if (pack != null) getServer().getPluginManager().registerEvents(pack, this);
-        new WorldSelector(this, pack);
+        selector = new WorldSelector(this, pack, server);
         vault = new MenuVault(this);
         try { new CommunityFeatures(this, server, bridge, token, pack, vault); }
         catch (Exception e) {
@@ -263,6 +264,7 @@ public final class NetworkDisplay extends JavaPlugin implements Listener {
     public void onDisable() {
         active = false;
         if (vault != null) vault.giveAll();
+        if (selector != null) selector.close();
         worker.shutdownNow();
         if (access != null) access.close();
         if (management != null) management.close();

@@ -31,6 +31,22 @@ ROOT_FILES = {
 }
 MANAGED_JARS = {"lobby-selector.jar", "network-display.jar", "nexus-arena-engine.jar"}
 LIMIT, MAX_FILES = 40 << 30, 200000
+# Skyblock dungeon runs live in throw-away worlds the survival plugin creates and deletes (sb_dungeon_<run>):
+# never archived. sb_hub, sb_world, sb_nether and sb_end are ordinary worlds and ARE archived. On Paper 26.x a
+# plugin-made world is stored inside the main world, as <root>/dimensions/<namespace>/<name>/ (like ww_sky), so
+# it is skipped by path; a top-level folder with a level.dat (older layout) is skipped as a root.
+TRANSIENT_WORLD_PREFIXES = ("sb_dungeon_",)
+
+
+def transient_world_path(rel):
+    """True for a path (relative to the server data, "/" separated) inside a Skyblock dungeon world."""
+    parts = rel.split("/")
+    if parts[0].startswith(TRANSIENT_WORLD_PREFIXES):
+        return True
+    return any(
+        part == "dimensions" and i + 2 < len(parts) and parts[i + 2].startswith(TRANSIENT_WORLD_PREFIXES)
+        for i, part in enumerate(parts)
+    )
 
 
 def require(ok, message):
@@ -76,7 +92,10 @@ def roots_for(data, server):
     worlds = [
         p.name
         for p in data.iterdir()
-        if p.is_dir() and not p.is_symlink() and (p / "level.dat").is_file()
+        if p.is_dir()
+        and not p.is_symlink()
+        and not p.name.startswith(TRANSIENT_WORLD_PREFIXES)
+        and (p / "level.dat").is_file()
     ]
     return sorted(
         set(worlds)
@@ -127,6 +146,8 @@ def write_zip(data, server, version, output):
                         [base, *sorted(base.rglob("*"))] if base.is_dir() else [base]
                     )
                     for p in entries:
+                        if transient_world_path(p.relative_to(data).as_posix()):
+                            continue
                         require(
                             not p.is_symlink(),
                             "Symlinks cannot be exported: " + str(p.relative_to(data)),

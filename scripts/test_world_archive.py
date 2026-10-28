@@ -73,6 +73,28 @@ class Archives(unittest.TestCase):
         )
         self.assertTrue(self.zip.exists())
 
+    def test_skyblock_worlds_are_archived_but_dungeon_runs_are_not(self):
+        # Paper 26.x keeps plugin-made worlds inside the main world: world/dimensions/<namespace>/<name>/
+        for name in ("sb_hub", "sb_world", "sb_nether", "sb_end", "sb_dungeon_a1b2"):
+            (self.data / "world/dimensions/minecraft" / name / "data").mkdir(parents=True)
+            (self.data / "world/dimensions/minecraft" / name / "data/chunks.dat").write_bytes(name.encode())
+        # older layout: top-level world folders
+        for name in ("sb_old", "sb_dungeon_c3d4", "sb_dungeons"):
+            (self.data / name / "region").mkdir(parents=True)
+            (self.data / name / "level.dat").write_bytes(level())
+            (self.data / name / "region/r.0.0.mca").write_bytes(name.encode())
+        self.assertEqual(
+            a.roots_for(self.data, "survival"), ["plugins", "sb_dungeons", "sb_old", "world"]
+        )
+        manifest = a.write_zip(self.data, "survival", "26.3", self.zip)
+        for name in ("sb_hub", "sb_world", "sb_nether", "sb_end"):
+            self.assertIn(f"world/dimensions/minecraft/{name}/data/chunks.dat", manifest["files"])
+        self.assertIn("sb_old/level.dat", manifest["files"])
+        self.assertFalse([f for f in manifest["files"] if "sb_dungeon_" in f], manifest["files"])
+        self.assertTrue(a.transient_world_path("world/dimensions/x/sb_dungeon_1/data"))
+        self.assertFalse(a.transient_world_path("world/dimensions/minecraft/sb_hub/data"))
+        self.assertFalse(a.transient_world_path("plugins/VampyuyuSurvival/sb_dungeon_1/run.json"))
+
     def test_refuse_existing_output_internal_output_wrong_server_and_version(self):
         self.export()
         with self.assertRaises(ValueError):
