@@ -57,3 +57,368 @@ bank:
     - {name: Super Deluxe, capacity: 500000000, rate: 2.5, max-interest: 12500000, cost: 80000000}
     - {name: Premier, capacity: 2500000000, rate: 2.5, max-interest: 62500000, cost: 400000000}
     - {name: Prestige, capacity: 10000000000, rate: 3.0, max-interest: 300000000, cost: 2000000000}
+
+sell:
+  # true = "Sell everything" and /sellall leave the 9 hotbar slots alone.
+  protect-hotbar: false
+
+buyback:
+  # Items sold to a merchant stay buyable for what they paid.
+  size: 18
+  seconds: 300
+
+pressure:
+  # Server-wide sell pressure: every item sold to an NPC lowers that item's sell price for everybody, and the effect
+  # fades. multiplier = 1 / (1 + pressure / soft-cap), never below min-multiplier. Stops endless farms.
+  enabled: true
+  soft-cap: 20000
+  half-life-hours: 2
+  min-multiplier: 0.2
+
+# ----------------------------------------------------------------------------------------------------------
+# NPC merchants. Place them with /sbnpc create <shop id>.
+# Item keys: UPPER CASE = vanilla material, lower case = custom item id registered by another feature
+# (for example "boss_grave_key"). Unknown ids are skipped silently, so you can list custom items before the
+# feature that registers them is installed. buy = what the player pays, sell = what the merchant pays.
+# Always keep buy above sell for the same item (the test suite checks the shipped tables for craft loops).
+# ----------------------------------------------------------------------------------------------------------
+shops:
+  farmer:
+    name: "Farmer"
+    npc-name: "<green>Farmer"
+    icon: WHEAT
+    profession: FARMER
+    npc-type: VILLAGER
+    description: "Crops, seeds and farming supplies."
+    items:
+      WHEAT: {buy: 8, sell: 2}
+      WHEAT_SEEDS: {buy: 6, sell: 0.5}
+      CARROT: {buy: 6, sell: 1.5}
+      POTATO: {buy: 6, sell: 1.5}
+      BAKED_POTATO: {sell: 3}
+      POISONOUS_POTATO: {sell: 0.5}
+      BEETROOT: {buy: 6, sell: 1.5}
+      BEETROOT_SEEDS: {buy: 6, sell: 0.5}
+      PUMPKIN: {buy: 12, sell: 3}
+      PUMPKIN_SEEDS: {buy: 8, sell: 0.5}
+      MELON_SLICE: {buy: 4, sell: 1}
+      MELON: {sell: 8}
+      MELON_SEEDS: {buy: 8, sell: 0.5}
+      SUGAR_CANE: {buy: 8, sell: 2}
+      CACTUS: {buy: 8, sell: 2}
+      COCOA_BEANS: {buy: 10, sell: 2.5}
+      NETHER_WART: {buy: 12, sell: 2.5}
+      BROWN_MUSHROOM: {buy: 10, sell: 2.5}
+      RED_MUSHROOM: {buy: 10, sell: 2.5}
+      SWEET_BERRIES: {buy: 6, sell: 1.5}
+      GLOW_BERRIES: {buy: 8, sell: 2}
+      BAMBOO: {buy: 3, sell: 0.5}
+      APPLE: {buy: 12, sell: 3}
+      HAY_BLOCK: {sell: 16}
+      BREAD: {sell: 5}
+      BONE_MEAL: {buy: 5, sell: 0.5}
+      PUMPKIN_PIE: {sell: 9}
+      COOKIE: {sell: 1.5}
+      CAKE: {sell: 18}
+      GOLDEN_CARROT: {sell: 8}
+      SUGAR: {sell: 1}
+      IRON_HOE: {buy: 70}
+      WOODEN_HOE: {buy: 8}
+      BUCKET: {buy: 70}
+      SHEARS: {buy: 70}
+  miner:
+    name: "Miner"
+    npc-name: "<gray>Miner"
+    icon: IRON_PICKAXE
+    profession: TOOLSMITH
+    npc-type: VILLAGER
+    description: "Ores, gems and mining gear."
+    items:
+      COBBLESTONE: {buy: 2, sell: 0.5}
+      STONE: {sell: 0.75}
+      COBBLED_DEEPSLATE: {sell: 0.6}
+      DEEPSLATE: {sell: 0.6}
+      GRAVEL: {sell: 0.4}
+      SAND: {buy: 2, sell: 0.5}
+      RED_SAND: {sell: 0.5}
+      NETHERRACK: {sell: 0.3}
+      FLINT: {buy: 6, sell: 1}
+      CLAY_BALL: {buy: 4, sell: 1}
+      COAL: {buy: 12, sell: 3}
+      CHARCOAL: {sell: 2.5}
+      COAL_BLOCK: {sell: 27}
+      RAW_IRON: {sell: 3.5}
+      IRON_INGOT: {buy: 20, sell: 5}
+      IRON_NUGGET: {sell: 0.5}
+      IRON_BLOCK: {sell: 45}
+      RAW_GOLD: {sell: 5}
+      GOLD_INGOT: {buy: 28, sell: 7}
+      GOLD_NUGGET: {sell: 0.7}
+      GOLD_BLOCK: {sell: 63}
+      RAW_COPPER: {sell: 1.2}
+      COPPER_INGOT: {buy: 8, sell: 2}
+      COPPER_BLOCK: {sell: 18}
+      REDSTONE: {buy: 8, sell: 2}
+      REDSTONE_BLOCK: {sell: 18}
+      LAPIS_LAZULI: {buy: 8, sell: 2}
+      LAPIS_BLOCK: {sell: 18}
+      DIAMOND: {buy: 96, sell: 24}
+      DIAMOND_BLOCK: {sell: 216}
+      EMERALD: {buy: 72, sell: 18}
+      EMERALD_BLOCK: {sell: 162}
+      QUARTZ: {buy: 16, sell: 4}
+      QUARTZ_BLOCK: {sell: 16}
+      AMETHYST_SHARD: {sell: 3}
+      OBSIDIAN: {buy: 60, sell: 12}
+      GLOWSTONE_DUST: {buy: 12, sell: 3}
+      GLOWSTONE: {sell: 12}
+      ANCIENT_DEBRIS: {sell: 120}
+      NETHERITE_SCRAP: {sell: 300}
+      NETHERITE_INGOT: {sell: 1500}
+      WOODEN_PICKAXE: {buy: 10}
+      STONE_PICKAXE: {buy: 25}
+      IRON_PICKAXE: {buy: 100}
+      DIAMOND_PICKAXE: {buy: 320}
+      IRON_SHOVEL: {buy: 50}
+      TORCH: {buy: 4}
+      LANTERN: {buy: 35}
+  lumberjack:
+    name: "Lumberjack"
+    npc-name: "<gold>Lumberjack"
+    icon: IRON_AXE
+    profession: TOOLSMITH
+    npc-type: VILLAGER
+    description: "Logs, planks and saplings."
+    items:
+      OAK_LOG: {buy: 8, sell: 2}
+      SPRUCE_LOG: {buy: 8, sell: 2}
+      BIRCH_LOG: {buy: 8, sell: 2}
+      JUNGLE_LOG: {buy: 10, sell: 2.5}
+      ACACIA_LOG: {buy: 8, sell: 2}
+      DARK_OAK_LOG: {buy: 10, sell: 2.5}
+      MANGROVE_LOG: {buy: 10, sell: 2.5}
+      CHERRY_LOG: {buy: 12, sell: 3}
+      CRIMSON_STEM: {sell: 3}
+      WARPED_STEM: {sell: 3}
+      OAK_PLANKS: {buy: 3, sell: 0.5}
+      SPRUCE_PLANKS: {buy: 3, sell: 0.5}
+      BIRCH_PLANKS: {buy: 3, sell: 0.5}
+      JUNGLE_PLANKS: {buy: 3, sell: 0.6}
+      ACACIA_PLANKS: {buy: 3, sell: 0.5}
+      DARK_OAK_PLANKS: {buy: 3, sell: 0.6}
+      STICK: {buy: 1.5, sell: 0.2}
+      OAK_SAPLING: {buy: 6, sell: 0.5}
+      SPRUCE_SAPLING: {buy: 6, sell: 0.5}
+      BIRCH_SAPLING: {buy: 6, sell: 0.5}
+      JUNGLE_SAPLING: {buy: 6, sell: 0.5}
+      ACACIA_SAPLING: {buy: 6, sell: 0.5}
+      DARK_OAK_SAPLING: {buy: 6, sell: 0.5}
+      CHERRY_SAPLING: {buy: 8, sell: 0.5}
+      MANGROVE_PROPAGULE: {buy: 8, sell: 0.5}
+      WOODEN_AXE: {buy: 10}
+      STONE_AXE: {buy: 25}
+      IRON_AXE: {buy: 100}
+      DIAMOND_AXE: {buy: 320}
+      CRAFTING_TABLE: {buy: 16}
+      CHEST: {buy: 28}
+      BARREL: {buy: 28}
+      LADDER: {buy: 6}
+  fisherman:
+    name: "Fisherman"
+    npc-name: "<aqua>Fisherman"
+    icon: FISHING_ROD
+    profession: FISHERMAN
+    npc-type: VILLAGER
+    description: "Fish, sea loot and fishing gear."
+    items:
+      COD: {buy: 8, sell: 2}
+      SALMON: {buy: 10, sell: 2.5}
+      TROPICAL_FISH: {sell: 6}
+      PUFFERFISH: {sell: 5}
+      COOKED_COD: {sell: 4}
+      COOKED_SALMON: {sell: 5}
+      INK_SAC: {sell: 2}
+      GLOW_INK_SAC: {sell: 6}
+      KELP: {buy: 5, sell: 1}
+      DRIED_KELP: {buy: 6, sell: 1.2}
+      DRIED_KELP_BLOCK: {sell: 10.5}
+      LILY_PAD: {buy: 12, sell: 3}
+      PRISMARINE_SHARD: {sell: 5}
+      PRISMARINE_CRYSTALS: {sell: 6}
+      NAUTILUS_SHELL: {sell: 20}
+      SPONGE: {sell: 25}
+      SEA_PICKLE: {sell: 4}
+      TURTLE_SCUTE: {sell: 40}
+      NAME_TAG: {sell: 30}
+      SADDLE: {sell: 40}
+      HEART_OF_THE_SEA: {sell: 500}
+      BOWL: {buy: 2, sell: 0.2}
+      FISHING_ROD: {buy: 60}
+      STRING: {buy: 6, sell: 1.5}
+      WATER_BUCKET: {buy: 80}
+  mob_hunter:
+    name: "Mob Hunter"
+    npc-name: "<red>Mob Hunter"
+    icon: IRON_SWORD
+    profession: WEAPONSMITH
+    npc-type: VILLAGER
+    description: "Drops from monsters."
+    items:
+      ROTTEN_FLESH: {sell: 1}
+      BONE: {buy: 6, sell: 1.5}
+      SPIDER_EYE: {sell: 3}
+      GUNPOWDER: {buy: 12, sell: 3}
+      ENDER_PEARL: {buy: 60, sell: 15}
+      BLAZE_ROD: {buy: 48, sell: 12}
+      BLAZE_POWDER: {sell: 5.5}
+      GHAST_TEAR: {sell: 40}
+      SLIME_BALL: {buy: 16, sell: 4}
+      SLIME_BLOCK: {sell: 34}
+      MAGMA_CREAM: {sell: 6}
+      PHANTOM_MEMBRANE: {sell: 8}
+      ARROW: {buy: 3, sell: 0.5}
+      SHULKER_SHELL: {sell: 80}
+      SKELETON_SKULL: {sell: 100}
+      WITHER_SKELETON_SKULL: {sell: 500}
+      NETHER_STAR: {sell: 1500}
+      ENDER_EYE: {sell: 25}
+      BREEZE_ROD: {sell: 15}
+      WIND_CHARGE: {sell: 2}
+      GOAT_HORN: {sell: 60}
+  alchemist:
+    name: "Alchemist"
+    npc-name: "<light_purple>Alchemist"
+    icon: BREWING_STAND
+    profession: CLERIC
+    npc-type: VILLAGER
+    description: "Potion ingredients and brewing gear."
+    items:
+      GLASS_BOTTLE: {buy: 5, sell: 1}
+      FERMENTED_SPIDER_EYE: {sell: 5}
+      RABBIT_FOOT: {buy: 40, sell: 8}
+      GLISTERING_MELON_SLICE: {sell: 6}
+      DRAGON_BREATH: {sell: 60}
+      EXPERIENCE_BOTTLE: {sell: 15}
+      BREWING_STAND: {buy: 100}
+      CAULDRON: {buy: 170}
+      GLASS: {buy: 4, sell: 0.6}
+      GLASS_PANE: {sell: 0.2}
+      SPECTRAL_ARROW: {sell: 0.5}
+      PAPER: {buy: 4, sell: 1}
+      BOOK: {buy: 24, sell: 6}
+      ENCHANTING_TABLE: {buy: 700}
+      ANVIL: {buy: 420}
+      GRINDSTONE: {buy: 70}
+      POPPY: {buy: 4, sell: 1}
+      DANDELION: {buy: 4, sell: 1}
+      ALLIUM: {buy: 6, sell: 1.5}
+      LILY_OF_THE_VALLEY: {buy: 6, sell: 1.5}
+  adventurer:
+    name: "Adventurer"
+    npc-name: "<yellow>Adventurer"
+    icon: COMPASS
+    profession: CARTOGRAPHER
+    npc-type: VILLAGER
+    description: "Travel gear and treasures."
+    items:
+      COMPASS: {buy: 60}
+      CLOCK: {buy: 90}
+      MAP: {buy: 45}
+      SPYGLASS: {buy: 90}
+      LEAD: {buy: 30}
+      SHIELD: {buy: 90}
+      FIREWORK_ROCKET: {buy: 12, sell: 2}
+      ENDER_CHEST: {buy: 300}
+      GOLDEN_APPLE: {buy: 420, sell: 90}
+      TOTEM_OF_UNDYING: {sell: 400}
+      ECHO_SHARD: {sell: 150}
+      DISC_FRAGMENT_5: {sell: 100}
+      COOKED_BEEF: {sell: 6}
+      COOKED_PORKCHOP: {sell: 6}
+      HONEY_BOTTLE: {sell: 6}
+  weaponsmith:
+    name: "Weaponsmith"
+    npc-name: "<dark_red>Weaponsmith"
+    icon: DIAMOND_SWORD
+    profession: WEAPONSMITH
+    npc-type: VILLAGER
+    description: "Weapons and armor (buy only)."
+    items:
+      WOODEN_SWORD: {buy: 10}
+      STONE_SWORD: {buy: 30}
+      IRON_SWORD: {buy: 150}
+      GOLDEN_SWORD: {buy: 200}
+      DIAMOND_SWORD: {buy: 520}
+      BOW: {buy: 80}
+      CROSSBOW: {buy: 140}
+      IRON_HELMET: {buy: 150}
+      IRON_CHESTPLATE: {buy: 240}
+      IRON_LEGGINGS: {buy: 210}
+      IRON_BOOTS: {buy: 120}
+      DIAMOND_HELMET: {buy: 600}
+      DIAMOND_CHESTPLATE: {buy: 960}
+      DIAMOND_LEGGINGS: {buy: 840}
+      DIAMOND_BOOTS: {buy: 480}
+      LEATHER_HELMET: {buy: 40}
+      LEATHER_CHESTPLATE: {buy: 64}
+      LEATHER_LEGGINGS: {buy: 56}
+      LEATHER_BOOTS: {buy: 32}
+  builder:
+    name: "Builder"
+    npc-name: "<blue>Builder"
+    icon: BRICKS
+    profession: MASON
+    npc-type: VILLAGER
+    description: "Blocks for building."
+    items:
+      STONE_BRICKS: {buy: 5, sell: 1}
+      BRICK: {buy: 6, sell: 1.5}
+      BRICKS: {buy: 24, sell: 5}
+      SANDSTONE: {buy: 9, sell: 2}
+      SMOOTH_STONE: {buy: 5, sell: 1}
+      NETHER_BRICKS: {buy: 12, sell: 3}
+      END_STONE: {buy: 12, sell: 2}
+      TERRACOTTA: {buy: 10, sell: 2}
+      WHITE_CONCRETE: {buy: 8, sell: 1.5}
+      WHITE_WOOL: {buy: 14, sell: 3}
+      DIRT: {buy: 1, sell: 0.2}
+      GRASS_BLOCK: {buy: 2, sell: 0.3}
+      PODZOL: {buy: 3, sell: 0.5}
+      MOSS_BLOCK: {buy: 6, sell: 1}
+      SEA_LANTERN: {buy: 70, sell: 20}
+      FURNACE: {buy: 28}
+      BLAST_FURNACE: {buy: 260}
+      OAK_DOOR: {buy: 10}
+      OAK_FENCE: {buy: 6}
+      WHITE_BED: {buy: 60}
+      BOOKSHELF: {buy: 70}
+      PAINTING: {buy: 15}
+      ITEM_FRAME: {buy: 20}
+      FLOWER_POT: {buy: 10}
+      SCAFFOLDING: {buy: 8}
+  rancher:
+    name: "Rancher"
+    npc-name: "<#c0924f>Rancher"
+    icon: LEATHER
+    profession: SHEPHERD
+    npc-type: VILLAGER
+    description: "Animal products and ranching gear."
+    items:
+      BEEF: {buy: 10, sell: 2.5}
+      PORKCHOP: {buy: 10, sell: 2.5}
+      CHICKEN: {buy: 8, sell: 2}
+      MUTTON: {buy: 10, sell: 2.5}
+      RABBIT: {buy: 12, sell: 3}
+      COOKED_CHICKEN: {sell: 4}
+      COOKED_MUTTON: {sell: 5}
+      COOKED_RABBIT: {sell: 5.5}
+      EGG: {buy: 5, sell: 1.2}
+      LEATHER: {buy: 12, sell: 3}
+      FEATHER: {buy: 6, sell: 1.5}
+      RABBIT_HIDE: {sell: 1}
+      HONEYCOMB: {buy: 16, sell: 4}
+      LEATHER_HORSE_ARMOR: {buy: 60}
+      IRON_HORSE_ARMOR: {buy: 320}
+      GOLDEN_HORSE_ARMOR: {buy: 480}
+      DIAMOND_HORSE_ARMOR: {buy: 1200}
+      BEEHIVE: {buy: 120}

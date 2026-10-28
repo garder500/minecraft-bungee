@@ -15,6 +15,10 @@ public final class EconomyFeature implements Feature {
     private EconomyService economy;
     private Bank bank;
     private Scheduler.Handle bankTask;
+    private Scheduler.Handle pressureTask;
+    private ShopService shops;
+    private PricePressure pressure;
+    private NpcManager npcs;
 
     @Override
     public String id() {
@@ -37,6 +41,19 @@ public final class EconomyFeature implements Feature {
         new EconomyAdmin(core, economy, audit, this::reload).register();
         bankTask = core.scheduler().repeating(1200, 1200, bank::tick);
 
+        ItemKeys keys = new ItemKeys(core);
+        pressure = new PricePressure();
+        pressure.load(core.store().read(PRESSURE_FILE, PricePressure.State.class, PricePressure.State::new));
+        shops = new ShopService(core, economy, keys, pressure);
+        shops.reload(config);
+        ShopUi shopUi = new ShopUi(core, economy, keys, shops);
+        shopUi.register();
+        npcs = new NpcManager(core, shops, shopUi);
+        npcs.enable();
+        new NpcCommand(core, npcs, shops).register();
+        core.listen(new SessionListener(shops));
+        pressureTask = core.scheduler().repeating(12_000, 12_000, this::savePressure);
+
         core.register(EconomyApi.class, economy);
     }
 
@@ -44,12 +61,33 @@ public final class EconomyFeature implements Feature {
         YamlConfiguration config = core.featureConfig("economy");
         economy.settings(EconomySettings.load(config));
         bank.reload(config);
+        shops.reload(config);
+        npcs.refreshAll();
+    }
+
+    private static final String PRESSURE_FILE = "economy/pressure.json";
+
+    private void savePressure() {
+        try {
+            core.store().write(PRESSURE_FILE, pressure.export(System.currentTimeMillis()));
+        } catch (java.io.IOException e) {
+            core.getPlugin().getLogger().warning("Could not save the sell pressure: " + e.getMessage());
+        }
     }
 
     @Override
     public void disable() {
         if (bankTask != null) {
             bankTask.cancel();
+        }
+        if (pressureTask != null) {
+            pressureTask.cancel();
+        }
+        if (npcs != null) {
+            npcs.disable();
+        }
+        if (pressure != null) {
+            savePressure();
         }
         if (economy != null) {
             economy.close();
