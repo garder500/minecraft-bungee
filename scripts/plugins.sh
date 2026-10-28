@@ -13,7 +13,7 @@
 #   scripts/plugins.sh data-clear [server...]              Drop the data overrides and /ww reload (back to the jar's copy)
 #   scripts/plugins.sh remote  push|clear|status|data|data-clear [...]   Same on production over SSH (.env.remote)
 #
-# Plugins: network, arena, lobby, claims. Servers default to every server that carries the plugin.
+# Plugins: network, arena, lobby, claims, survival. Servers default to every server that carries the plugin.
 # COMPOSE=compose.prod.yaml selects production. FAST=1 skips tests. FORCE=1 restarts even while an
 # arena game is running. Overrides live in <state>/<server>/plugin-overrides and are applied by
 # infra/start.sh at each start; scripts/deploy.sh clears them so a deployment never stays shadowed.
@@ -23,19 +23,20 @@ compose=${COMPOSE:-compose.local.yaml}
 [[ $compose == compose.local.yaml || $compose == compose.prod.yaml ]] || { echo "Invalid COMPOSE: $compose" >&2; exit 1; }
 
 # plugin -> source dir, built jar (relative to it), installed jar name, servers carrying it
-plugin_dir() { case $1 in network) echo network-plugin ;; arena) echo arena-plugin ;; lobby) echo lobby ;; claims) echo claims-plugin ;; *) return 1 ;; esac; }
+plugin_dir() { case $1 in network) echo network-plugin ;; arena) echo arena-plugin ;; lobby) echo lobby ;; claims) echo claims-plugin ;; survival) echo survival-plugin ;; *) return 1 ;; esac; }
 plugin_jar() {
  case $1 in
   network) echo target/network-display.jar ;;
   arena) echo target/nexus-arena-engine.jar ;;
   lobby) echo target/lobby-selector.jar ;;
+  survival) echo target/survival-plugin.jar ;;
   # The image renames the versioned shadow jar; read the version from the Dockerfile so both agree.
   claims) echo "build/libs/$(grep -o 'SimpleClaimSystem-[0-9.]*\.jar' Dockerfile | head -n 1)" ;;
  esac
 }
-plugin_name() { case $1 in network) echo network-display.jar ;; arena) echo nexus-arena-engine.jar ;; lobby) echo lobby-selector.jar ;; claims) echo SimpleClaimSystem.jar ;; esac; }
-plugin_servers() { case $1 in network | arena) echo lobby creative survival ;; lobby) echo lobby ;; claims) echo creative ;; esac; }
-known() { plugin_dir "$1" > /dev/null 2>&1 || { echo "Unknown plugin '$1' (network, arena, lobby, claims)" >&2; exit 1; }; }
+plugin_name() { case $1 in network) echo network-display.jar ;; arena) echo nexus-arena-engine.jar ;; lobby) echo lobby-selector.jar ;; claims) echo SimpleClaimSystem.jar ;; survival) echo survival-plugin.jar ;; esac; }
+plugin_servers() { case $1 in network | arena) echo lobby creative survival ;; lobby) echo lobby ;; claims) echo creative ;; survival) echo survival ;; esac; }
+known() { plugin_dir "$1" > /dev/null 2>&1 || { echo "Unknown plugin '$1' (network, arena, lobby, claims, survival)" >&2; exit 1; }; }
 
 state_dir() {
  local dir=${PLUGIN_STATE_DIR:-}

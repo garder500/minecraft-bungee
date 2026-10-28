@@ -27,6 +27,11 @@ case "$1" in
    rm -f /data/plugins/SimpleClaimSystem*.jar
    cp /opt/claims/SimpleClaimSystem.jar /plugins/SimpleClaimSystem.jar
   fi
+  # The survival plugin (Skyblock, /back, The Wings) exists only on Survival.
+  if [ "${SERVER_ID:-}" = survival ]; then
+   rm -f /data/plugins/survival-plugin*.jar
+   cp /opt/survival/survival-plugin.jar /plugins/survival-plugin.jar
+  fi
   # Plugin hotfixes (scripts/plugins.sh) replace an image jar of the same name until the next deployment.
   overrides=${PLUGIN_OVERRIDES:-/data/plugin-overrides}
   image_plugins=${IMAGE_PLUGINS:-/plugins}

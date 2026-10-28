@@ -49,7 +49,7 @@ hud-sheet: ## Render every HUD state to resource-pack/dist/hud-sheet/ (index.htm
 	@python3 resource-pack/art/hud_sheet.py --scale $(or $(SCALE),3) --mode $(or $(MODE),auto)
 PLUGIN ?=
 SERVERS ?=
-plugin: ## Build PLUGIN=network|arena|lobby|claims, override it locally, restart only its servers [SERVERS=...] [FAST=1] [FORCE=1]
+plugin: ## Build PLUGIN=network|arena|lobby|claims|survival, override it locally, restart only its servers [SERVERS=...] [FAST=1] [FORCE=1]
 	@scripts/plugins.sh push $(PLUGIN) $(SERVERS)
 plugin-prod: ## Same on production over SSH (.env.remote: PROD_HOST, PROD_PATH)
 	@scripts/plugins.sh remote push $(PLUGIN) $(SERVERS)

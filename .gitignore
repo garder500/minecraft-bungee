@@ -17,6 +17,7 @@ __pycache__/
 
 arena-plugin/target/
 network-plugin/target/
+survival-plugin/target/
 resource-pack/dist/
 claims-plugin/build/
 claims-plugin/.gradle/

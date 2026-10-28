@@ -65,6 +65,12 @@ COPY arena-plugin/pom.xml ./
 RUN mvn --batch-mode --quiet dependency:go-offline
 COPY arena-plugin/src ./src
 RUN mvn --batch-mode package
+FROM maven:3-eclipse-temurin-25@sha256:9b5f82b7166db6112eb123ba310a9e010ec3fe95022ac0728f491121563dfbab AS survival-build
+WORKDIR /build
+COPY survival-plugin/pom.xml ./
+RUN mvn --batch-mode --quiet dependency:go-offline
+COPY survival-plugin/src ./src
+RUN mvn --batch-mode package
 FROM gradle:jdk25@sha256:ca424744a6a45a575f333edea680696d980999c461be38b1574a4c70d5455f24 AS claims-build
 WORKDIR /build
 COPY claims-plugin/ ./
@@ -77,6 +83,7 @@ COPY --from=network-build /build/target/network-display.jar /plugins/network-dis
 COPY --from=arena-build /build/target/nexus-arena-engine.jar /plugins/nexus-arena-engine.jar
 FROM server-base AS server
 COPY --from=claims-build /build/build/libs/SimpleClaimSystem-1.13.1.jar /opt/claims/SimpleClaimSystem.jar
+COPY --from=survival-build /build/target/survival-plugin.jar /opt/survival/survival-plugin.jar
 FROM server-base AS lobby
 COPY --from=lobby-build /build/target/lobby-selector.jar /plugins/lobby-selector.jar
 

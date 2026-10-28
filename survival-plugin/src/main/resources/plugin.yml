@@ -1,0 +1,16 @@
+name: VampyuyuSurvival
+version: 0.1.0
+main: win.vampyuyu.survival.SurvivalPlugin
+api-version: '26.3'
+description: Survival and Skyblock features, /back and The Wings.
+commands:
+  back:
+    description: Return to the place where you last died
+    usage: /back
+permissions:
+  vampyuyu.back:
+    description: Use /back
+    default: true
+  vampyuyu.back.bypass:
+    description: Ignore the /back cooldown
+    default: op

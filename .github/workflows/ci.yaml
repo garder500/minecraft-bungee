@@ -41,6 +41,7 @@ jobs:
             network: [network-plugin/**]
             arena: [arena-plugin/**]
             claims: [claims-plugin/**]
+            survival: [survival-plugin/**]
       - name: Plugins to build
         id: plugins
         env:
@@ -49,12 +50,14 @@ jobs:
           NETWORK: ${{ steps.filter.outputs.network }}
           ARENA: ${{ steps.filter.outputs.arena }}
           CLAIMS: ${{ steps.filter.outputs.claims }}
+          SURVIVAL: ${{ steps.filter.outputs.survival }}
         run: |
           stages=()
           [[ $ALL == true || $LOBBY == true ]] && stages+=(lobby-build)
           [[ $ALL == true || $NETWORK == true ]] && stages+=(network-build)
           [[ $ALL == true || $ARENA == true ]] && stages+=(arena-build)
           [[ $ALL == true || $CLAIMS == true ]] && stages+=(claims-build)
+          [[ $ALL == true || $SURVIVAL == true ]] && stages+=(survival-build)
           echo "stages=$(jq -cn '$ARGS.positional' --args "${stages[@]}")" >> "$GITHUB_OUTPUT"
   go:
     needs: changes
@@ -211,6 +214,7 @@ jobs:
             type=gha,scope=network-build
             type=gha,scope=arena-build
             type=gha,scope=claims-build
+            type=gha,scope=survival-build
             type=gha,scope=lobby-build
           cache-to: type=gha,mode=max,scope=${{ matrix.target }}
   # Runs scripts/deploy.sh on the production host. Connection settings are Actions variables; only the
