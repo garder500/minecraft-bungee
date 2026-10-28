@@ -12,6 +12,10 @@ import org.bukkit.Tag;
 public final class QuestMatcher {
     private QuestMatcher() {}
 
+    /**
+     * True when the definition target accepts the subject. A subject may list alternatives separated by {@code |}
+     * (a command and its aliases); any of them can match.
+     */
     public static boolean matches(String defTarget, String subject) {
         if (defTarget == null || defTarget.isBlank() || defTarget.equalsIgnoreCase("ANY")) {
             return true;
@@ -19,6 +23,18 @@ public final class QuestMatcher {
         if (subject == null) {
             return false;
         }
+        if (subject.indexOf('|') >= 0) {
+            for (String alternative : subject.split("\\|")) {
+                if (matchesOne(defTarget, alternative)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return matchesOne(defTarget, subject);
+    }
+
+    private static boolean matchesOne(String defTarget, String subject) {
         String want = defTarget.trim().toUpperCase(Locale.ROOT);
         String have = subject.trim().toUpperCase(Locale.ROOT);
         if (want.equals(have)) {
