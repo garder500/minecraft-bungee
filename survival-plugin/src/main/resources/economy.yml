@@ -1,0 +1,59 @@
+# Skyblock economy (feature "economy"). Amounts are in coins unless a key says otherwise.
+# Edit this file, then run /economy reload (shops, prices, bank, bazaar and auction settings reload live;
+# currency/ledger-file needs a restart).
+
+currency:
+  # No balance (purse or bank) can ever exceed this. Extra coins are refused, never destroyed.
+  max-balance: 1000000000000
+  # Purse changes remembered per player (used by /economy ledger and the audit chain check).
+  ledger-size: 50
+  bank-history-size: 40
+  # Also append every purse change to plugins/VampyuyuSurvival/economy/ledger/<day>.log (needs a restart).
+  ledger-file: false
+
+pay:
+  enabled: true
+  min: 1
+  max: 100000000
+  # Payments above this need "/pay confirm" within 30 seconds.
+  confirm-over: 50000
+  cooldown-seconds: 5
+  # Total a player may send per UTC day (anti alt-funnelling).
+  daily-limit: 250000000
+  # Percent of each payment that disappears (0 disables).
+  tax-percent: 0
+
+death:
+  # pvp = only when killed by another player, any = every death, never = off.
+  cause: pvp
+  # Share of the purse lost (the bank is never touched) and the most that can be lost in one death.
+  percent: 50
+  max: 1000000
+  # Purses below this lose nothing.
+  min-balance: 100
+  # false = the coins are destroyed (default, an alt cannot farm a killer reward). true = the killer receives them.
+  drop-to-killer: false
+
+baltop:
+  cache-seconds: 300
+  size: 100
+
+safety:
+  # Save the player's data right after an item is escrowed into the bazaar or auction house, so a crash cannot
+  # bring the item back while the order still exists.
+  save-player-data: true
+
+bank:
+  # Real time between interest payments, in hours (interest is also paid for the time spent offline).
+  interest-period-hours: 8
+  # Offline catch-up is limited to this many periods; the rest is forfeited.
+  max-catchup-periods: 12
+  # capacity = most coins the bank can hold, rate = percent per period, max-interest = cap per period,
+  # cost = price of reaching this tier (paid from the purse).
+  tiers:
+    - {name: Starter, capacity: 5000000, rate: 2.0, max-interest: 100000, cost: 0}
+    - {name: Gold, capacity: 20000000, rate: 2.0, max-interest: 400000, cost: 2000000}
+    - {name: Deluxe, capacity: 100000000, rate: 2.0, max-interest: 2000000, cost: 15000000}
+    - {name: Super Deluxe, capacity: 500000000, rate: 2.5, max-interest: 12500000, cost: 80000000}
+    - {name: Premier, capacity: 2500000000, rate: 2.5, max-interest: 62500000, cost: 400000000}
+    - {name: Prestige, capacity: 10000000000, rate: 3.0, max-interest: 300000000, cost: 2000000000}

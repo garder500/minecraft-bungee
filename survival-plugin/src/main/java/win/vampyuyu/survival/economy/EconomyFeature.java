@@ -1,10 +1,21 @@
 package win.vampyuyu.survival.economy;
 
+import org.bukkit.configuration.file.YamlConfiguration;
+import win.vampyuyu.survival.api.EconomyApi;
 import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.Feature;
+import win.vampyuyu.survival.core.Scheduler;
 
-/** Entry point of the {@code economy} feature (see package-info). Foundation stub: replace the body of enable(). */
+/**
+ * Skyblock coins: the purse, the bank, NPC merchants, the bazaar and the auction house.
+ * See docs/skyblock-notes/economy.md.
+ */
 public final class EconomyFeature implements Feature {
+    private Core core;
+    private EconomyService economy;
+    private Bank bank;
+    private Scheduler.Handle bankTask;
+
     @Override
     public String id() {
         return "economy";
@@ -12,6 +23,36 @@ public final class EconomyFeature implements Feature {
 
     @Override
     public void enable(Core core) {
-        core.debug("economy feature stub enabled");
+        this.core = core;
+        YamlConfiguration config = core.featureConfig("economy");
+        economy = new EconomyService(core, EconomySettings.load(config));
+        bank = new Bank(core, economy, config);
+        BalTop balTop = new BalTop(core, economy);
+        EconomyAudit audit = new EconomyAudit(core, economy);
+
+        CoinCommands coins = new CoinCommands(core, economy, balTop);
+        coins.register();
+        core.listen(new PurseListener(core, economy, coins));
+        new BankUi(core, economy, bank).register();
+        new EconomyAdmin(core, economy, audit, this::reload).register();
+        bankTask = core.scheduler().repeating(1200, 1200, bank::tick);
+
+        core.register(EconomyApi.class, economy);
+    }
+
+    private void reload() {
+        YamlConfiguration config = core.featureConfig("economy");
+        economy.settings(EconomySettings.load(config));
+        bank.reload(config);
+    }
+
+    @Override
+    public void disable() {
+        if (bankTask != null) {
+            bankTask.cancel();
+        }
+        if (economy != null) {
+            economy.close();
+        }
     }
 }
