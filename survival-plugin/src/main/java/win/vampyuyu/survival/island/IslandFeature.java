@@ -10,7 +10,7 @@ import win.vampyuyu.survival.core.SkyblockWorlds;
 import win.vampyuyu.survival.api.IslandApi;
 
 /**
- * The {@code island} feature: the four void worlds, the hub, the island grid with protection, co-op, upgrades and
+ * The {@code island} feature: the two void worlds and the island grid with protection, co-op, upgrades and
  * levels, the {@code /island}, {@code /hub} and {@code /islandadmin} commands. The APIs are published last.
  */
 public final class IslandFeature implements Feature {
@@ -42,7 +42,6 @@ public final class IslandFeature implements Feature {
 
         service.start();
         service.recover();
-        new HubManager(core, service).start();
         if (cfg.levelAutoMinutes > 0) {
             long period = cfg.levelAutoMinutes * 60L * 20L;
             levelTask = core.scheduler().repeating(period, period, service::autoLevelOnline);
@@ -57,12 +56,9 @@ public final class IslandFeature implements Feature {
     private static void setupWorlds(Core core, IslandConfig cfg) {
         WorldSetup setup = new WorldSetup(core.getPlugin().getLogger());
         int islandSpawnY = cfg.islandY + 1;
-        prepare(setup, cfg, "hub", SkyblockWorlds.HUB, World.Environment.NORMAL, Biome.PLAINS, cfg.hubY + 1,
-            HubPlan.SPAWN_X, HubPlan.SPAWN_Z);
         prepare(setup, cfg, "world", SkyblockWorlds.WORLD, World.Environment.NORMAL, Biome.PLAINS, islandSpawnY, 0, 0);
         prepare(setup, cfg, "nether", SkyblockWorlds.NETHER, World.Environment.NETHER, Biome.NETHER_WASTES,
             islandSpawnY, 0, 0);
-        prepare(setup, cfg, "end", SkyblockWorlds.END, World.Environment.THE_END, Biome.THE_END, islandSpawnY, 0, 0);
     }
 
     private static void prepare(WorldSetup setup, IslandConfig cfg, String key, String name, World.Environment env,

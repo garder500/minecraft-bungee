@@ -42,6 +42,7 @@ public class DungeonRunTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         svc = plugin.core().require(DungeonService.class);
         server.addSimpleWorld("main_world"); // the fallback exit when there is no island feature
         world = server.addSimpleWorld("sb_dungeon_501");
@@ -62,6 +63,7 @@ public class DungeonRunTest {
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 

@@ -1,17 +1,14 @@
-# Skyblock "menu" feature: join router, Skyblock Menu item, warps, quests, fairy souls, sidebar, settings.
-# Everything here is read at start and by "/sbmenu reload" (permission vampyuyu.sb.menu.admin).
-# All player-visible text is English.
+# Simple Skyblock network routing. The active settings are join.redis and join.max-age-seconds.
+# Historical menu/quest/fairy/sidebar fields remain for data and test compatibility; their systems do not load.
+# /sbmenu opens the island menu. A fresh Skyblock selection automatically creates a personal island.
 
 # ------------------------------------------------------------------ join router
 join:
-  # What to do with a player who joins WITHOUT a valid cross-server key (sb:transfer:<uuid> in Redis):
-  #   hub  = a normal join: send them to sb_hub (docs/skyblock-design.md section 12.3), unless they already stand
-  #          in a Skyblock world (returning players are never moved)   <- default
-  #   stay = do not move them (plain survival players keep their spawn)
-  no-key: hub
+  # Legacy compatibility setting: keyless reconnects always keep their saved mode.
+  no-key: stay
   # A key whose "ts" (epoch millis, optional) is older than this is ignored.
   max-age-seconds: 30
-  # Command the "create island" prompt runs when a player arrives in the hub without an island.
+  # Legacy setting, ignored: personal islands are created automatically.
   create-island-command: "island create"
   redis:
     enabled: true

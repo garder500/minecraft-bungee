@@ -45,6 +45,8 @@ public class UtilityFeatureTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        // Utility rules are tested in isolation; mode boundary integration lives in SimpleSkyblockTest.
+        org.bukkit.event.HandlerList.unregisterAll(plugin.core().modes());
         world = server.addSimpleWorld("world");
         teleports = plugin.core().service(TeleportService.class).orElseThrow();
         // MockBukkit implements neither async chunk loading nor teleportAsync.
@@ -418,7 +420,7 @@ public class UtilityFeatureTest {
         // no IslandApi: a clear message and no teleport
         p.performCommand("spawn");
         ticks(2);
-        assertTrue(drain(p).contains("hub is not available"));
+        assertTrue(drain(p).contains("island is not available"));
         int[] calls = {0};
         plugin.core().replace(IslandApi.class, new StubIslands(new boolean[] {true}) {
             @Override

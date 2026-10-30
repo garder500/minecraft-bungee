@@ -27,6 +27,7 @@ public class BossSessionTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         world = server.addSimpleWorld("sb_world");
         world.getChunkAt(world.getSpawnLocation()).load();
         manager = runningFeature().manager();
@@ -38,7 +39,7 @@ public class BossSessionTest {
         try {
             java.lang.reflect.Field field = win.vampyuyu.survival.core.FeatureManager.class.getDeclaredField("running");
             field.setAccessible(true);
-            for (Object feature : (java.util.List<?>) field.get(plugin.features())) {
+            for (Object feature : (java.util.List<?>) field.get(win.vampyuyu.survival.LegacyFeatureFixture.features(plugin))) {
                 if (feature instanceof BossFeature boss) {
                     return boss;
                 }
@@ -51,6 +52,7 @@ public class BossSessionTest {
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 

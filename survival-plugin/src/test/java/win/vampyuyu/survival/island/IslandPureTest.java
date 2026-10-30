@@ -469,8 +469,8 @@ public class IslandPureTest {
         assertFalse(toNether.home());
         assertTrue(PortalMapper.route(SkyblockWorlds.NETHER, TeleportCause.NETHER_PORTAL, true, true).home());
         assertEquals(SkyblockWorlds.WORLD, PortalMapper.route(SkyblockWorlds.NETHER, TeleportCause.NETHER_PORTAL, true, true).world());
-        assertEquals(SkyblockWorlds.END, PortalMapper.route(SkyblockWorlds.WORLD, TeleportCause.END_PORTAL, true, true).world());
-        assertEquals(SkyblockWorlds.WORLD, PortalMapper.route(SkyblockWorlds.END, TeleportCause.END_PORTAL, true, true).world());
+        assertNull(PortalMapper.route(SkyblockWorlds.WORLD, TeleportCause.END_PORTAL, true, true));
+        assertNull(PortalMapper.route(SkyblockWorlds.END, TeleportCause.END_PORTAL, true, true));
         // never anywhere else
         assertNull(PortalMapper.route(SkyblockWorlds.HUB, TeleportCause.NETHER_PORTAL, true, true));
         assertNull(PortalMapper.route(SkyblockWorlds.END, TeleportCause.NETHER_PORTAL, true, true));

@@ -48,6 +48,7 @@ public class SlayerManagerTest {
     public void setUp() throws Exception {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         wallet = new Wallet();
         plugin.core().replace(EconomyApi.class, wallet);
         BossConfig config;
@@ -60,6 +61,7 @@ public class SlayerManagerTest {
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 
@@ -126,9 +128,11 @@ public class SlayerManagerTest {
 
     @Test
     public void withoutAnEconomyNothingStarts() throws Exception {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         // the real economy feature is loaded now: take its service away to model a network without an economy
         java.lang.reflect.Field services = win.vampyuyu.survival.core.Core.class.getDeclaredField("services");
         services.setAccessible(true);

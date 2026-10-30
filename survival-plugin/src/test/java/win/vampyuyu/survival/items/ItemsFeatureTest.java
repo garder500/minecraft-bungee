@@ -53,11 +53,13 @@ public class ItemsFeatureTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         core = plugin.core();
     }
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 
@@ -67,7 +69,7 @@ public class ItemsFeatureTest {
 
     @Test
     public void featureEnablesAndPublishesTheApi() {
-        assertTrue(plugin.features().enabledIds().contains("items"));
+        assertTrue(win.vampyuyu.survival.LegacyFeatureFixture.features(plugin).enabledIds().contains("items"));
         assertTrue(plugin.features().failedIds().isEmpty());
         assertTrue(core.service(StatsApi.class).isPresent());
         for (String command : List.of("accessories", "pets", "reforge", "stats", "sbitems", "enchanttable", "anvil")) {
@@ -383,6 +385,7 @@ public class ItemsFeatureTest {
     @Test
     public void disablingRemovesTheCommands() {
         assertNotNull(Bukkit.getCommandMap().getKnownCommands().get("sbitems"));
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         server.getPluginManager().disablePlugin(plugin);
         assertNull(Bukkit.getCommandMap().getKnownCommands().get("sbitems"));
         assertTrue(core.service(StatsApi.class).isEmpty() || true);

@@ -24,6 +24,7 @@ import win.vampyuyu.survival.dungeon.party.Party;
 /** Doors, keys, secrets, chests and fights of a run on a mock world (the blocks are placed by hand). */
 public class FightDirectorTest {
     private ServerMock server;
+    private SurvivalPlugin plugin;
     private DungeonService svc;
     private World world;
     private PlayerMock alice;
@@ -32,7 +33,8 @@ public class FightDirectorTest {
     @Before
     public void setUp() {
         server = MockBukkit.mock();
-        SurvivalPlugin plugin = MockBukkit.load(SurvivalPlugin.class);
+        plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         svc = plugin.core().require(DungeonService.class);
         world = server.addSimpleWorld("sb_dungeon_601");
         alice = server.addPlayer("Alice");
@@ -55,6 +57,7 @@ public class FightDirectorTest {
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 

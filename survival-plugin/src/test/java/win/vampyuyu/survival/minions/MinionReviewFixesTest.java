@@ -45,6 +45,7 @@ public class MinionReviewFixesTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         core = plugin.core();
         items = core.items();
         // the real island feature already created sb_world at boot: reuse it (a second one of the same name is never returned by Bukkit.getWorld)
@@ -81,6 +82,7 @@ public class MinionReviewFixesTest {
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 

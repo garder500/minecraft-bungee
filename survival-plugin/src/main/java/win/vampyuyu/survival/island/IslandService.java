@@ -274,11 +274,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
     }
 
     public Location hubLocation() {
-        World hub = world(SkyblockWorlds.HUB);
-        if (hub == null) {
-            return null;
-        }
-        return new Location(hub, HubPlan.SPAWN_X + 0.5, cfg.hubY + 1, HubPlan.SPAWN_Z + 0.5, 180, 0);
+        return null; // Retained API compatibility; the hub is no longer a destination.
     }
 
     /** True when the feet and head blocks are free and there is something solid underneath. */
@@ -327,26 +323,20 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
 
     @Override
     public boolean teleportHome(Player player) {
-        Island island = registry.ofPlayer(player.getUniqueId()).orElse(null);
+        Island island = ensurePersonalIsland(player);
         if (island == null || island.state() != Island.State.READY) {
             return false;
         }
-        Location home = overworldHome(island);
+        Location home = safeFallback(player);
         if (home == null) {
             return false;
         }
-        teleport(player, home);
-        return true;
+        return core.modes().enter(player, home);
     }
 
     @Override
     public boolean teleportHub(Player player) {
-        Location hub = hubLocation();
-        if (hub == null || !hubPadBuilt) {
-            return false;
-        }
-        teleport(player, hub);
-        return true;
+        return teleportHome(player);
     }
 
     // ---------------------------------------------------------------- player-initiated teleports
@@ -389,15 +379,15 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
             return Result.fail(DUNGEON_REFUSAL);
         }
         if (!teleportHub(player)) {
-            return Result.fail("The hub is not ready yet. Try again in a moment.");
+            return Result.fail("Your island is not ready yet. Try again in a moment.");
         }
-        return Result.ok("Going to the hub...");
+        return Result.ok("Going to your island...");
     }
 
-    /** /is nether and /is end: straight to the platform of the player's own island, no portal needed. */
+    /** /is nether goes to the personal Nether platform. The End shortcut is retired. */
     public Result shortcut(Player player, boolean nether) {
         String where = nether ? "Nether" : "End";
-        if (!cfg.shortcuts || !(nether ? cfg.netherPortals : cfg.endPortals)) {
+        if (!nether || !cfg.shortcuts || !cfg.netherPortals) {
             return Result.fail("The " + where + " shortcut is disabled.");
         }
         if (inDungeon(player)) {
@@ -612,16 +602,16 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         return safeFallback(player);
     }
 
-    /** Own island home, else the hub. */
+    /** Safe personal island home; never a Survival fallback. */
     public Location safeFallback(Player player) {
-        Island own = registry.ofPlayer(player.getUniqueId()).orElse(null);
+        Island own = ensurePersonalIsland(player);
         if (own != null && own.state() == Island.State.READY) {
             Location home = overworldHome(own);
             if (home != null) {
-                return home;
+                if (win.vampyuyu.survival.utility.SafeSpot.isSafe(home)) return home;
             }
         }
-        return hubPadBuilt ? hubLocation() : null;
+        return emergencyHome(player);
     }
 
     /** Sends every online player that matches out of an island (to their own home, or the hub). */
@@ -634,12 +624,11 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
     }
 
     /**
-     * Moves one player out of an island: to their own island, else the hub, else (nothing built yet: hub disabled
-     * or failed) the server's default world spawn as a last resort. False when there was nowhere at all to go.
+     * Moves a player to their personal island, creating a safe landing if necessary. Never crosses modes.
      */
     public boolean evictPlayer(Player player, Island island, String message) {
         Location target = null;
-        Island own = registry.ofPlayer(player.getUniqueId()).orElse(null);
+        Island own = ensurePersonalIsland(player);
         if (own != null && own != island && own.state() == Island.State.READY) {
             target = overworldHome(own);
         }
@@ -647,7 +636,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
             target = hubLocation();
         }
         if (target == null) {
-            target = lastResortSpawn();
+            target = emergencyHome(player);
         }
         if (target == null) {
             return false;
@@ -658,20 +647,25 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
     }
 
     /**
-     * The spawn of the first world that is not one of ours (normally the server's default world): the island worlds
-     * spawn over the void, so they are no use as a last resort.
+     * Finds safe ground on the personal island without replacing existing player blocks.
      */
-    private Location lastResortSpawn() {
-        try {
-            for (World w : Bukkit.getWorlds()) {
-                if (!SkyblockWorlds.isSkyblock(w.getName())) {
-                    return w.getSpawnLocation();
-                }
-            }
-        } catch (RuntimeException e) {
-            log.log(Level.WARNING, "No last resort spawn", e);
-        }
-        return null;
+    private Location emergencyHome(Player player) {
+        Island own = ensurePersonalIsland(player);
+        if (own == null) return null;
+        Location at = defaultSpawn(own);
+        if (at == null) return null;
+        return win.vampyuyu.survival.core.ModeTravel.safeLanding(at);
+    }
+
+    /** Creates a missing personal island without altering existing memberships or islands. */
+    public Island ensurePersonalIsland(Player player) {
+        Island owned = registry.ownedBy(player.getUniqueId()).orElse(null);
+        if (owned != null) return owned;
+        IslandConfig.TemplateCfg template = cfg.templates.values().stream().filter(IslandConfig.TemplateCfg::enabled)
+            .findFirst().orElse(null);
+        if (template == null) return null;
+        create(player, template.id());
+        return registry.ownedBy(player.getUniqueId()).orElse(null);
     }
 
     /** Online players standing in any of the island's three cells. */
@@ -787,8 +781,8 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
 
     public Result create(Player player, String templateId) {
         UUID id = player.getUniqueId();
-        if (registry.hasIsland(id)) {
-            return Result.fail("You already belong to an island. Use /island home.");
+        if (registry.ownedBy(id).isPresent()) {
+            return Result.fail("You already own an island. Use /island home.");
         }
         IslandConfig.TemplateCfg template = templateId == null ? null : cfg.templates.get(templateId.toLowerCase(Locale.ROOT));
         if (template == null || !template.enabled() || !IslandTemplates.exists(template.id())) {
@@ -802,6 +796,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         if (world(SkyblockWorlds.WORLD) == null) {
             return Result.fail("The island world is not available right now.");
         }
+        core.modes().awaitIsland(player);
         Island island = registry.create(id, player.getName(), template.id(), now());
         cfg.flagDefaults.forEach(island::flag);
         // The first-time kit is only OWED here; the player is marked as having received it when the island is READY.
@@ -812,14 +807,13 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         data.islandsCreated++;
         data.lastIsland = island.id.toString();
         dirty(id);
-        invites.dropTarget(id);
         build(island, template, ++island.generation, 0, id);
         return Result.ok("Building your " + template.name() + " island... you will be teleported when it is ready.");
     }
 
     /**
      * Generates the overworld island of build {@code gen}; it becomes READY when that succeeds (a failure is retried
-     * a few times with a growing delay), and the Nether and End platforms follow.
+     * a few times with a growing delay), and the Nether platform follow.
      */
     private void build(Island island, IslandConfig.TemplateCfg template, int gen, int attempt, UUID notify) {
         if (!current(island, gen)) {
@@ -878,11 +872,11 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
     }
 
     private boolean canAutoTeleport(Player player) {
-        return !inDungeon(player);
+        return !inDungeon(player) && core.modes().awaitingIsland(player);
     }
 
     /**
-     * Generates the Nether and End platforms of build {@code gen}. Their seeds depend only on (island, generation), so
+     * Generates the Nether platform of build {@code gen}. Their seeds depend only on (island, generation), so
      * a retry draws exactly the same plan over whatever the failed attempt left.
      */
     private void buildPlatforms(Island island, int gen, int attempt) {
@@ -890,9 +884,8 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
             return;
         }
         World nether = world(SkyblockWorlds.NETHER);
-        World end = world(SkyblockWorlds.END);
-        if (nether == null || end == null) {
-            log.warning("Nether/End worlds missing: island " + island.id + " has no platforms");
+        if (nether == null) {
+            log.warning("Skyblock Nether missing: island " + island.id + " has no platform");
             return;
         }
         int ox = grid.centerOf(island.cellX);
@@ -900,12 +893,9 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         boolean loot = island.lootOwed;
         BlockPlan netherPlan = IslandTemplates.nether(IslandTemplates.random(island.id, gen, 1),
             loot ? cfg.netherChest : List.of());
-        BlockPlan endPlan = IslandTemplates.end(IslandTemplates.random(island.id, gen, 2), loot ? cfg.endChest : List.of());
         CompletableFuture<Boolean> a = runner.submit(lane(SkyblockWorlds.NETHER, island.cellX, island.cellZ),
             jobs.plan("island " + island.id + " nether", nether, netherPlan, ox, cfg.islandY, oz));
-        CompletableFuture<Boolean> b = runner.submit(lane(SkyblockWorlds.END, island.cellX, island.cellZ),
-            jobs.plan("island " + island.id + " end", end, endPlan, ox, cfg.islandY, oz));
-        a.thenCombine(b, (x, y) -> x && y).thenAccept(ok -> {
+        a.thenAccept(ok -> {
             if (!current(island, gen)) {
                 return;
             }
@@ -917,18 +907,18 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
                 }
                 registry.changed();
             } else if (attempt < cfg.buildRetries) {
-                log.warning("The Nether/End platforms of island " + island.id + " failed (attempt " + (attempt + 1)
+                log.warning("The Nether platform of island " + island.id + " failed (attempt " + (attempt + 1)
                     + "), retrying");
                 core.scheduler().later(retryDelay(attempt), () -> buildPlatforms(island, gen, attempt + 1));
             } else {
-                log.warning("The Nether/End platforms of island " + island.id + " could not be generated; "
+                log.warning("The Nether platform of island " + island.id + " could not be generated; "
                     + "/islandadmin platforms or a restart retries");
             }
         });
     }
 
     /**
-     * Admin / recovery: generates the Nether and End platforms of a READY island again (wiping them first, the
+     * Admin / recovery: generates the Nether platform of a READY island again (wiping them first, the
      * overworld stays untouched).
      */
     public Result rebuildPlatforms(Island island) {
@@ -944,8 +934,8 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         evict(island, p -> {
             String at = p.getWorld().getName();
             return SkyblockWorlds.NETHER.equals(at) || SkyblockWorlds.END.equals(at);
-        }, "The Nether and End of this island are being rebuilt.");
-        wipeWithRetry(() -> wipeDims(island, SkyblockWorlds.NETHER, SkyblockWorlds.END), () -> current(island, gen), 0,
+        }, "The Nether of this island is being rebuilt.");
+        wipeWithRetry(() -> wipeDims(island, SkyblockWorlds.NETHER), () -> current(island, gen), 0,
             ok -> {
                 if (ok) {
                     buildPlatforms(island, gen, 0);
@@ -981,7 +971,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
     }
 
     private CompletableFuture<Boolean> wipeAll(Island island) {
-        return wipeDims(island, SkyblockWorlds.WORLD, SkyblockWorlds.NETHER, SkyblockWorlds.END);
+        return wipeDims(island, SkyblockWorlds.WORLD, SkyblockWorlds.NETHER);
     }
 
     /**
@@ -1057,6 +1047,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         island.kitFor = id;
         island.lootFor = id;
         int gen = ++island.generation; // drops every callback of the island's earlier builds, platform jobs and scans
+        core.modes().awaitIsland(player);
         island.state(Island.State.RESETTING);
         island.lastResetAt = now();
         island.template = template.id();
@@ -1146,13 +1137,13 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
 
     /**
      * Called at enable: cleans cells left dirty by a crash, regenerates unfinished islands and gives READY islands
-     * whose Nether/End platforms never finished another go.
+     * whose Nether platform never finished another go.
      */
     void recover() {
         for (int[] cell : registry.dirtyCells()) {
             wipeWithRetry(() -> {
                 CompletableFuture<Boolean> all = CompletableFuture.completedFuture(true);
-                for (String name : List.of(SkyblockWorlds.WORLD, SkyblockWorlds.NETHER, SkyblockWorlds.END)) {
+                for (String name : List.of(SkyblockWorlds.WORLD, SkyblockWorlds.NETHER)) {
                     all = all.thenCombine(cellWipe(name, cell), (x, y) -> x && y);
                 }
                 return all;
@@ -1167,7 +1158,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
                 log.info("Recovering unfinished island " + island.id);
                 rebuild(island);
             } else if (!island.platformsReady) {
-                log.info("Regenerating the Nether/End platforms of island " + island.id);
+                log.info("Regenerating the Nether platform of island " + island.id);
                 rebuildPlatforms(island);
             }
         }
@@ -1323,7 +1314,9 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
     // ---------------------------------------------------------------- co-op
 
     private Island own(Player actor) {
-        return registry.ofPlayer(actor.getUniqueId()).orElse(null);
+        Island here = islandAtLocation(actor.getLocation());
+        return here != null && here.roleOf(actor.getUniqueId()).isCoop() ? here
+            : registry.ofPlayer(actor.getUniqueId()).orElse(null);
     }
 
     public Result invite(Player actor, UUID target) {
@@ -1341,8 +1334,8 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         if (online == null) {
             return Result.fail("That player must be online to be invited.");
         }
-        if (registry.hasIsland(target)) {
-            return Result.fail(online.getName() + " already belongs to an island.");
+        if (island.coop().contains(target)) {
+            return Result.fail(online.getName() + " already belongs to this island.");
         }
         if (island.banned.contains(target)) {
             return Result.fail(online.getName() + " is banned from your island. Unban them first.");
@@ -1383,9 +1376,6 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         if (invite == null) {
             return Result.fail("You have no pending invitation" + (fromName == null ? "" : " from " + fromName) + ".");
         }
-        if (registry.hasIsland(id)) {
-            return Result.fail("You already belong to an island.");
-        }
         Island island = registry.byId(invite.island()).orElse(null);
         if (island == null || island.state() != Island.State.READY) {
             return Result.fail("That invitation is no longer valid.");
@@ -1406,7 +1396,8 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         if (tracker != null) {
             tracker.refreshPlayer(player);
         }
-        return Result.ok("You joined " + registry.nameOf(island.owner) + "'s island! Use /island home.");
+        visit(player, island, false);
+        return Result.ok("You joined " + registry.nameOf(island.owner) + "'s island. Your personal island is preserved.");
     }
 
     public Result deny(Player player, String fromName) {
@@ -1705,6 +1696,9 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         return Math.min(Math.max(0, tier), tiers(type).size() - 1);
     }
 
+    /** Island expansion remains usable without the retired coins system. */
+    public double upgradeCost(Tier tier) { return core.service(EconomyApi.class).isPresent() ? tier.cost() : 0; }
+
     public Result upgrade(Player actor, Upgrade type) {
         Island island = own(actor);
         if (island == null) {
@@ -1722,13 +1716,13 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
             return Result.fail(type.label() + " is already at the maximum.");
         }
         Tier next = tiers.get(current + 1);
-        if (next.cost() > 0) {
+        if (upgradeCost(next) > 0) {
             EconomyApi economy = core.service(EconomyApi.class).orElse(null);
             if (economy == null) {
                 return Result.fail("Coins are not available right now, try again later.");
             }
-            if (!economy.take(actor.getUniqueId(), next.cost(), "island:upgrade:" + type.name().toLowerCase(Locale.ROOT))) {
-                return Result.fail("You need " + Msg.coins(next.cost()) + " for this upgrade.");
+            if (!economy.take(actor.getUniqueId(), upgradeCost(next), "island:upgrade:" + type.name().toLowerCase(Locale.ROOT))) {
+                return Result.fail("You need " + Msg.coins(upgradeCost(next)) + " for this upgrade.");
             }
         }
         switch (type) {

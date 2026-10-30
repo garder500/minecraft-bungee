@@ -44,6 +44,8 @@ abstract class MenuTestBase {
         plugin = MockBukkit.createMockPlugin();
         core = new Core(plugin);
         core.start();
+        // These unit tests exercise retired menu components in isolation from the live mode boundary.
+        org.bukkit.event.HandlerList.unregisterAll(core.modes());
         rt = new MenuRuntime(core, shipped());
     }
 

@@ -54,8 +54,6 @@ public final class IslandCommands {
         {"transfer", "transfer <player>", "Give the island to a member (confirm)"},
         {"border", "border", "Show or hide the island border for you"},
         {"nether", "nether", "Go to your island's Nether platform"},
-        {"end", "end", "Go to your island's End platform"},
-        {"hub", "hub", "Go to the hub"},
         {"help", "help", "This list"},
     };
 
@@ -72,7 +70,7 @@ public final class IslandCommands {
     }
 
     public void register() {
-        core.commands().command("island").aliases("is", "sb-island")
+        core.commands().command("island").aliases("is", "sb-island", "sbmenu")
             .description("Manage your Skyblock island")
             .usage("/island [create|home|visit|invite|settings|upgrades|top|warp|help]")
             .permission(USE, PermissionDefault.TRUE)
@@ -174,7 +172,7 @@ public final class IslandCommands {
                 }
             }
             case "nether" -> reply(player, service.shortcut(player, true));
-            case "end" -> reply(player, service.shortcut(player, false));
+            case "end" -> err(player, "Skyblock has no End.");
             case "sethome" -> reply(player, service.setHome(player));
             case "visit", "v" -> visit(player, args);
             case "invite" -> target(player, args, 1).ifPresent(t -> reply(player, service.invite(player, t)));

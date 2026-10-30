@@ -26,6 +26,7 @@ abstract class SkillsBase {
     public void boot() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         core = plugin.core();
         service = (SkillsService) core.require(win.vampyuyu.survival.api.SkillsApi.class);
         stats = new Fakes.Stats();
@@ -59,6 +60,7 @@ abstract class SkillsBase {
 
     @After
     public void shutdown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 }

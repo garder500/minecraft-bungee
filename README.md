@@ -2,6 +2,8 @@
 
 Velocity → Lobby → Creative / Survival, with a Go + React administration panel.
 
+The Survival server also hosts [simple Skyblock](docs/skyblock-simple.md): personal islands, a separate Nether, and independent respawn points for each mode.
+
 - **Minecraft:** `play.vampyuyu.win:25565`, Java Edition, official accounts.
 - **Production panel:** `https://panel.vampyuyu.win`, administrator login.
 - **Local panel:** `http://localhost:5173`.

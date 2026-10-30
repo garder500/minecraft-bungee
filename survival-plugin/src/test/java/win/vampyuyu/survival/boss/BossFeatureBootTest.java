@@ -21,16 +21,18 @@ public class BossFeatureBootTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
     }
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 
     @Test
     public void bossFeatureEnabledAndPublishesTheApi() {
-        assertTrue(plugin.features().enabledIds().contains("boss"));
+        assertTrue(win.vampyuyu.survival.LegacyFeatureFixture.features(plugin).enabledIds().contains("boss"));
         assertFalse(plugin.features().failedIds().contains("boss"));
         BossApi api = plugin.core().service(BossApi.class).orElseThrow();
         assertTrue(api.bossIds().containsAll(List.of("voidwyrm", "magma_warden", "frost_revenant",
@@ -61,6 +63,7 @@ public class BossFeatureBootTest {
 
     @Test
     public void disableUnregistersEverything() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         server.getPluginManager().disablePlugin(plugin);
         assertNull(Bukkit.getCommandMap().getKnownCommands().get("slayer"));
     }

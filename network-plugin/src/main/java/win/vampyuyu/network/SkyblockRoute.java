@@ -19,8 +19,8 @@ import org.bukkit.plugin.java.JavaPlugin;
  * <ul>
  *   <li><b>Skyblock from lobby or creative</b>: write {@code sb:transfer:<uuid>} (async), then, back on the main thread,
  *       send {@code Connect survival}. The key is written BEFORE the connect. If Redis is known to be down, or fails,
- *       the player is still connected, without a key.
- *   <li><b>Any other card</b> (Survival, Creative, Lobby): delete a pending Skyblock key (async), THEN connect. Without
+ *       the player stays put until routing recovers.
+ *   <li><b>Survival</b>: write its own explicit mode key before connecting. Creative/Lobby clear the pending key. Without
  *       this a key from a click that failed (survival restarting) would route the player to Skyblock up to 30 s later.
  *   <li><b>Skyblock from survival itself</b>: a connect is a no-op there (no join event), so the request is handed to the
  *       local survival plugin ({@link SkyblockHandoff#notifyLocal}). No Redis is involved.
@@ -37,7 +37,7 @@ final class SkyblockRoute {
     enum Dest {
         SKYBLOCK("skyblock", "Skyblock", "Welcome aboard"),
         ISLAND("island", "your island", "Heading home"),
-        HUB("hub", "the Skyblock hub", "Setting sail");
+        HUB("hub", "your island", "Heading home");
 
         private final String id;
         private final String label;
@@ -124,15 +124,38 @@ final class SkyblockRoute {
     void leave(Player player, String targetServer, String label) {
         UUID id = player.getUniqueId();
         if (!begin(player)) return;
-        if (handoff == null || !handoff.available()) { // nothing could have been written
-            finishPlain(id, targetServer, label);
+        if (SURVIVAL.equals(server) && SURVIVAL.equals(targetServer) && handoff != null) {
+            inFlight.remove(id);
+            finishedAt.put(id, System.currentTimeMillis());
+            if (handoff.notifyLocal(player, "survival", System.currentTimeMillis()) == SkyblockHandoff.Local.NONE)
+                unavailable(player, "Survival");
+            player.closeInventory();
+            return;
+        }
+        if (handoff == null || !handoff.available()) {
+            if (SURVIVAL.equals(targetServer)) {
+                inFlight.remove(id);
+                finishedAt.put(id, System.currentTimeMillis());
+                unavailable(player, label);
+            } else finishPlain(id, targetServer, label);
             return;
         }
         async(() -> {
+            boolean selected = !SURVIVAL.equals(targetServer);
             try {
-                handoff.discard(id);
+                if (SURVIVAL.equals(targetServer)) selected = handoff.write(id, System.currentTimeMillis(), "survival");
+                else handoff.discard(id);
             } finally {
-                runSync(() -> finishPlain(id, targetServer, label));
+                boolean success = selected;
+                runSync(() -> {
+                    if (success) finishPlain(id, targetServer, label);
+                    else {
+                        inFlight.remove(id);
+                        finishedAt.put(id, System.currentTimeMillis());
+                        Player online = Bukkit.getPlayer(id);
+                        if (online != null) unavailable(online, label);
+                    }
+                });
             }
         }, id);
     }
@@ -186,7 +209,8 @@ final class SkyblockRoute {
         }
         if (!written) {
             player.sendMessage(WorldSelector.prefix().append(WorldSelector.text(
-                    "Skyblock routing is unavailable, so you will be sent to the Survival server instead.", WorldSelector.MUTED)));
+                    "Skyblock routing is unavailable. Please try again shortly.", WorldSelector.MUTED)));
+            return;
         }
         if (!WorldSelector.connect(plugin, player, SURVIVAL)) {
             if (written) discardAsync(id);
@@ -201,6 +225,11 @@ final class SkyblockRoute {
         player.sendMessage(WorldSelector.prefix().append(WorldSelector.text("Connecting to ", WorldSelector.IVORY))
                 .append(WorldSelector.text(written ? dest.label() : "Survival", written ? WorldSelector.SKY : WorldSelector.GOLD))
                 .append(WorldSelector.text("… If unavailable, please try again shortly.", WorldSelector.MUTED)));
+    }
+
+    private void unavailable(Player player, String label) {
+        player.sendMessage(WorldSelector.prefix().append(WorldSelector.text(
+            label + " routing is unavailable. Please try again shortly.", WorldSelector.MUTED)));
     }
 
     private void discardAsync(UUID id) {

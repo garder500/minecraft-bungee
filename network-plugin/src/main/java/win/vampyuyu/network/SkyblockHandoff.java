@@ -151,8 +151,8 @@ final class SkyblockHandoff implements AutoCloseable {
         available = false;
         if (!warned) {
             warned = true;
-            plugin.getLogger().log(Level.WARNING, "Skyblock handoff: Redis unavailable; the Skyblock card falls back to a plain"
-                    + " connection to the survival server" + (failure == null ? "" : " (" + failure.getClass().getSimpleName() + ")"));
+            plugin.getLogger().log(Level.WARNING, "Skyblock handoff: Redis unavailable; mode selections wait for routing to recover; no"
+                    + " fallback connection is attempted" + (failure == null ? "" : " (" + failure.getClass().getSimpleName() + ")"));
         }
     }
 
@@ -221,7 +221,7 @@ final class SkyblockHandoff implements AutoCloseable {
             return handoff;
         } catch (IOException | RuntimeException | LinkageError failure) { // LinkageError: a broken shaded Jedis must not take the plugin down
             String why = failure.getClass().getSimpleName() + ": " + failure.getMessage();
-            plugin.getLogger().warning("Skyblock handoff disabled (" + why + "); the Skyblock card connects to the survival server directly");
+            plugin.getLogger().warning("Skyblock handoff disabled (" + why + "); mode selections stay put until routing recovers");
             return new SkyblockHandoff(plugin, null, why);
         }
     }

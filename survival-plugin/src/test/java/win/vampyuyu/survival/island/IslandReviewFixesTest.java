@@ -127,6 +127,13 @@ public class IslandReviewFixesTest {
             throw new AssertionError("no overworld plan was generated");
         }
 
+        List<IslandConfig.ItemSpec> lastOverworldChest(Island island) {
+            for (int i = planLabels.size() - 1; i >= 0; i--)
+                if (planLabels.get(i).equals("island " + island.id + " overworld"))
+                    return plans.get(i).chests().get(0).items();
+            throw new AssertionError("no overworld plan for " + island.id);
+        }
+
         long count(String prefixOrSuffix) {
             return planLabels.stream().filter(l -> l.endsWith(prefixOrSuffix)).count();
         }
@@ -338,14 +345,14 @@ public class IslandReviewFixesTest {
         assertEquals(Island.State.READY, island.state());
         assertTrue("the resetter is the one marked as served", service.data(resetter.getUniqueId()).starterClaimed);
         assertTrue(service.data(resetter.getUniqueId()).lootClaimed);
-        assertTrue(has(fake.lastOverworldChest(), Material.ICE));
-        // so handing the island back and resetting again gives only the repeat chest
-        service.registry().transfer(island, resetter.getUniqueId());
+        assertTrue(has(fake.lastOverworldChest(island), Material.ICE));
+        // The former owner now owns a personal fallback island. Never overwrite it by transferring back.
+        assertFalse(service.registry().transfer(island, resetter.getUniqueId()));
         island.lastResetAt = 0;
-        resetter.performCommand("island reset");
-        resetter.performCommand("island reset");
+        member.performCommand("island reset");
+        member.performCommand("island reset");
         tick(30);
-        assertFalse(has(fake.lastOverworldChest(), Material.ICE));
+        assertFalse(has(fake.lastOverworldChest(island), Material.ICE));
     }
 
     @Test
@@ -544,7 +551,7 @@ public class IslandReviewFixesTest {
         // the dungeon / menu features take players out through the api
         assertTrue(service.teleportHub(runner));
         tick(3);
-        assertEquals(SkyblockWorlds.HUB, runner.getWorld().getName());
+        assertEquals(SkyblockWorlds.WORLD, runner.getWorld().getName());
         // others are not affected
         assertTrue(service.goHub(host).ok());
     }
@@ -715,7 +722,7 @@ public class IslandReviewFixesTest {
         PlayerMock owner = player("Host2");
         PlayerMock visitor = player("Dumper");
         Island island = readyIsland(owner);
-        visitor.teleport(new Location(Bukkit.getWorld(SkyblockWorlds.HUB), 0, 120, 0));
+        visitor.teleport(new Location(overworld, 0, 120, 0));
         Item item = dropped(center(island), null);
         PlayerDropItemEvent ownDrop = new PlayerDropItemEvent(owner, item);
         owner.teleport(center(island));
@@ -759,10 +766,10 @@ public class IslandReviewFixesTest {
         Location below = new Location(overworld, 3, overworld.getMinHeight() - 40, 3);
         nobody.teleport(below);
         service.hubState(false, false);
-        assertFalse("no island and no hub: nowhere to send them", tracker().rescue(nobody, below));
+        assertTrue("a missing personal island is created for rescue", tracker().rescue(nobody, below));
         EntityDamageEvent noTarget = new EntityDamageEvent(nobody, EntityDamageEvent.DamageCause.VOID, 4.0);
         server.getPluginManager().callEvent(noTarget);
-        assertFalse("they die instead of falling forever", noTarget.isCancelled());
+        assertTrue("rescue stays within Skyblock", noTarget.isCancelled());
 
         service.hubState(true, true);
         EntityDamageEvent saved = new EntityDamageEvent(nobody, EntityDamageEvent.DamageCause.VOID, 4.0);
@@ -784,7 +791,8 @@ public class IslandReviewFixesTest {
         island.banned.add(banned.getUniqueId());
         assertTrue(service.evictPlayer(banned, island, "Out."));
         tick(3);
-        assertFalse(SkyblockWorlds.isSkyblock(banned.getWorld().getName()));
+        assertEquals(SkyblockWorlds.WORLD,banned.getWorld().getName());
+        assertNotEquals(island.id,service.islandAtLocation(banned.getLocation()).id);
     }
 
     @Test
@@ -797,7 +805,8 @@ public class IslandReviewFixesTest {
         island.banned.add(griefer.getUniqueId());
         assertEquals(SkyblockWorlds.WORLD, griefer.getWorld().getName());
         tick(service.config().joinCheckTicks + 5);
-        assertEquals("the join check queued by the login moved them out", SkyblockWorlds.HUB, griefer.getWorld().getName());
+        assertEquals(SkyblockWorlds.WORLD, griefer.getWorld().getName());
+        assertNotEquals("entry check moved them to their own island", island.id,service.islandAtLocation(griefer.getLocation()).id);
         assertTrue(said(griefer).contains("banned"));
         // and the check itself, called directly, does nothing to someone who is allowed
         island.banned.clear();

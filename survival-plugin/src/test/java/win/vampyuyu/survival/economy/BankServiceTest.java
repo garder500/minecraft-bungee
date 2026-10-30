@@ -26,6 +26,7 @@ public class BankServiceTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         eco = (EconomyService) plugin.core().service(EconomyApi.class).orElseThrow();
         bank = new Bank(plugin.core(), eco, plugin.core().featureConfig("economy"));
         alice = server.addPlayer("Alice");
@@ -34,6 +35,7 @@ public class BankServiceTest {
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 

@@ -15,7 +15,7 @@ import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
 import org.bukkit.block.Biome;
 
-/** Creates the four void worlds and applies their game rules, border and fixed time. Every tweak is best effort. */
+/** Creates the island void worlds and applies their game rules, border and fixed time. Every tweak is best effort. */
 public final class WorldSetup {
     private static final double MAX_BORDER = 59_999_968;
 

@@ -33,6 +33,7 @@ public class InstantTradeDurabilityTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         eco = (EconomyService) plugin.core().service(EconomyApi.class).orElseThrow();
         keys = new ItemKeys(plugin.core());
         env = new BazaarServiceTest.Manual();
@@ -44,6 +45,7 @@ public class InstantTradeDurabilityTest {
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 

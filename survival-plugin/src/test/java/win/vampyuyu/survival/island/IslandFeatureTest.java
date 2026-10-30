@@ -133,13 +133,14 @@ public class IslandFeatureTest {
         assertTrue(plugin.features().enabledIds().contains("island"));
         assertSame(service, plugin.core().require(IslandAltarApi.class));
         assertSame(service, plugin.core().require(IslandUpgradesApi.class));
-        for (String name : List.of(SkyblockWorlds.HUB, SkyblockWorlds.WORLD, SkyblockWorlds.NETHER, SkyblockWorlds.END)) {
+        for (String name : List.of(SkyblockWorlds.WORLD, SkyblockWorlds.NETHER)) {
             World world = Bukkit.getWorld(name);
             assertNotNull(name, world);
             assertTrue(service.isSkyblockWorld(world));
         }
         assertEquals(World.Environment.NETHER, Bukkit.getWorld(SkyblockWorlds.NETHER).getEnvironment());
-        assertEquals(World.Environment.THE_END, Bukkit.getWorld(SkyblockWorlds.END).getEnvironment());
+        assertNull(Bukkit.getWorld(SkyblockWorlds.END));
+        assertNull(Bukkit.getWorld(SkyblockWorlds.HUB));
         assertFalse(service.isSkyblockWorld(null));
     }
 
@@ -182,7 +183,7 @@ public class IslandFeatureTest {
         p.performCommand("island info");
         assertTrue(said(p).contains("do not have an island"));
         p.performCommand("island home");
-        assertTrue(said(p).contains("do not have an island"));
+        assertTrue(service.registry().ownedBy(p.getUniqueId()).isPresent());
         p.performCommand("island kick Nobody");
         assertTrue(said(p).contains("Unknown player"));
     }
@@ -262,7 +263,7 @@ public class IslandFeatureTest {
         assertEquals(IslandRole.MEMBER, island.roleOf(guest.getUniqueId()));
         guest.performCommand("island leave");
         assertEquals(IslandRole.VISITOR, island.roleOf(guest.getUniqueId()));
-        assertFalse(service.registry().hasIsland(guest.getUniqueId()));
+        assertTrue(service.registry().ownedBy(guest.getUniqueId()).isPresent());
 
         // owner cannot leave, kick works
         owner.performCommand("island leave");
@@ -413,14 +414,15 @@ public class IslandFeatureTest {
     }
 
     @Test
-    public void upgradesChargeOnceAndNeverWithoutCoins() {
+    public void expansionsAreFreeWithoutTheRetiredEconomyAndChargeOnlyWhenAnEconomyIsProvided() {
         PlayerMock owner = player("Buyer");
         Island island = readyIsland(owner);
         int radiusBefore = service.config().radiusFor(island);
-        plugin.core().unpublish(EconomyApi.class); // the real economy feature is enabled now: simulate it being off
+        plugin.core().unpublish(EconomyApi.class);
         owner.performCommand("island upgrade radius");
-        assertTrue("no economy: refused", said(owner).contains("not available"));
-        assertEquals(0, island.radiusTier);
+        assertTrue("simple Skyblock expansion stays usable", said(owner).contains("upgraded"));
+        assertEquals(1, island.radiusTier);
+        island.radiusTier = 0; // The remaining assertions exercise the optional legacy economy provider.
 
         FakeEconomy economy = new FakeEconomy();
         plugin.core().replace(EconomyApi.class, economy);
@@ -538,9 +540,7 @@ public class IslandFeatureTest {
         Location inNether = new Location(nether, center(island).getX(), 65, center(island).getZ());
         assertEquals("same cell in the Nether", island.id, service.islandAt(inNether).orElseThrow().id());
         assertEquals(1, service.all().size());
-        assertTrue(service.dragonAltar(island.id).isPresent());
-        assertEquals(SkyblockWorlds.END, service.dragonAltar(island.id).orElseThrow().getWorld().getName());
-        assertEquals(center(island).getX(), service.dragonAltar(island.id).orElseThrow().getX(), 0.6);
+        assertTrue(service.dragonAltar(island.id).isEmpty());
         assertEquals(SkyblockWorlds.NETHER, service.netherSpawn(island.id).orElseThrow().getWorld().getName());
         assertTrue(service.dragonAltarAt(inNether).isEmpty());
     }
@@ -561,7 +561,7 @@ public class IslandFeatureTest {
 
         PlayerPortalEvent end = new PlayerPortalEvent(owner, from, from.clone(), TeleportCause.END_PORTAL);
         server.getPluginManager().callEvent(end);
-        assertEquals(SkyblockWorlds.END, end.getTo().getWorld().getName());
+        assertTrue(end.isCancelled());
 
         // from the island Nether back to the overworld home
         Location nether = event.getTo();
@@ -570,7 +570,7 @@ public class IslandFeatureTest {
         assertEquals(SkyblockWorlds.WORLD, back.getTo().getWorld().getName());
 
         // gateway and portals in the hub lead nowhere
-        Location hub = new Location(Bukkit.getWorld(SkyblockWorlds.HUB), 0, 100, 0);
+        Location hub = new Location(server.addSimpleWorld(SkyblockWorlds.HUB), 0, 100, 0);
         PlayerPortalEvent inHub = new PlayerPortalEvent(owner, hub, hub.clone(), TeleportCause.NETHER_PORTAL);
         server.getPluginManager().callEvent(inHub);
         assertTrue(inHub.isCancelled());
@@ -656,25 +656,21 @@ public class IslandFeatureTest {
     // ---------------------------------------------------------------- hub
 
     @Test
-    public void hubTeleportNeedsTheHubToBeReady() {
+    public void legacyHubCommandUsesPersonalIsland() {
         PlayerMock p = player("Visitor");
-        service.hubState(false, false);
-        assertFalse(service.teleportHub(p));
-        p.performCommand("hub");
-        assertTrue(said(p).contains("not ready"));
-        service.hubState(true, true);
+        Island island = readyIsland(p);
         assertTrue(service.teleportHub(p));
-        server.getScheduler().performTicks(3);
-        assertEquals(SkyblockWorlds.HUB, p.getWorld().getName());
-        assertTrue(service.hubSpawn().isPresent());
-        assertEquals(HubPlan.PADS.size(), service.hubPads().size());
+        assertEquals(SkyblockWorlds.WORLD,p.getWorld().getName());
+        assertEquals(island.id,service.islandAtLocation(p.getLocation()).id);
+        assertTrue(service.hubSpawn().isEmpty());
+        assertTrue(service.hubPads().isEmpty());
     }
 
     @Test
     public void teleportHomeWorksOnlyForReadyIslands() {
         PlayerMock owner = player("Homebody");
         assertFalse(service.teleportHome(owner));
-        Island island = service.registry().create(owner.getUniqueId(), "Homebody", "classic", 1);
+        Island island = service.registry().ownedBy(owner.getUniqueId()).orElseThrow();
         island.state(Island.State.BUILDING);
         assertFalse(service.teleportHome(owner));
         island.state(Island.State.READY);

@@ -78,7 +78,7 @@ public final class IslandRegistry {
                 continue;
             }
             if (byId.containsKey(island.id) || byCell.containsKey(IslandGrid.key(island.cellX, island.cellZ))
-                    || memberIndex.containsKey(island.owner)) {
+                    || ownedBy(island.owner).isPresent()) {
                 log.warning("Skipping duplicate island " + island.id + " (cell " + island.cellX + "," + island.cellZ + ")");
                 continue;
             }
@@ -141,8 +141,11 @@ public final class IslandRegistry {
 
     /** The island a player owns or belongs to. */
     public Optional<Island> ofPlayer(UUID player) {
-        UUID id = memberIndex.get(player);
-        return id == null ? Optional.empty() : Optional.ofNullable(byId.get(id));
+        return ownedBy(player).or(() -> byId.values().stream().filter(i -> i.members.containsKey(player)).findFirst());
+    }
+
+    public Optional<Island> ownedBy(UUID player) {
+        return byId.values().stream().filter(i -> i.owner.equals(player)).findFirst();
     }
 
     public Optional<Island> byCell(int cellX, int cellZ) {
@@ -159,7 +162,7 @@ public final class IslandRegistry {
     }
 
     public boolean hasIsland(UUID player) {
-        return memberIndex.containsKey(player);
+        return ofPlayer(player).isPresent();
     }
 
     // ---------------------------------------------------------------- names
@@ -227,7 +230,7 @@ public final class IslandRegistry {
      * @throws IllegalStateException when the player already belongs to an island
      */
     public Island create(UUID owner, String ownerName, String template, long now) {
-        if (memberIndex.containsKey(owner)) {
+        if (ownedBy(owner).isPresent()) {
             throw new IllegalStateException("player already has an island");
         }
         int[] cell = allocateCell();
@@ -248,7 +251,7 @@ public final class IslandRegistry {
 
     /** Adds a member. Fails (false) when the player already belongs to an island. */
     public boolean addMember(Island island, UUID player, IslandRole role) {
-        if (memberIndex.containsKey(player) || role == IslandRole.OWNER || !role.isCoop()) {
+        if (island.owner.equals(player) || island.members.containsKey(player) || role == IslandRole.OWNER || !role.isCoop()) {
             return false;
         }
         island.members.put(player, role.name());
@@ -269,7 +272,7 @@ public final class IslandRegistry {
 
     /** Gives the island to a co-op member; the old owner becomes a co-owner. */
     public boolean transfer(Island island, UUID newOwner) {
-        if (!island.members.containsKey(newOwner)) {
+        if (!island.members.containsKey(newOwner) || ownedBy(newOwner).isPresent()) {
             return false;
         }
         UUID old = island.owner;

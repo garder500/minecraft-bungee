@@ -31,6 +31,7 @@ public class ShopServiceTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         eco = (EconomyService) plugin.core().service(EconomyApi.class).orElseThrow();
         plugin.core().items().register(CustomItemDef.builder("test_gem", "Test Gem", Rarity.RARE, Material.EMERALD).build());
         keys = new ItemKeys(plugin.core());
@@ -52,6 +53,7 @@ public class ShopServiceTest {
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 

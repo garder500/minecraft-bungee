@@ -48,6 +48,7 @@ public class BazaarServiceTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         eco = (EconomyService) plugin.core().service(EconomyApi.class).orElseThrow();
         keys = new ItemKeys(plugin.core());
         alice = server.addPlayer("Alice");
@@ -63,6 +64,7 @@ public class BazaarServiceTest {
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 

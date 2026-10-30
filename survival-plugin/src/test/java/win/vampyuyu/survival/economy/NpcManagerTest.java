@@ -30,6 +30,7 @@ public class NpcManagerTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         EconomyService eco = (EconomyService) plugin.core().service(EconomyApi.class).orElseThrow();
         ItemKeys keys = new ItemKeys(plugin.core());
         ShopService shops = new ShopService(plugin.core(), eco, keys, new PricePressure());
@@ -45,6 +46,7 @@ public class NpcManagerTest {
     @After
     public void tearDown() {
         npcs.disable();
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 

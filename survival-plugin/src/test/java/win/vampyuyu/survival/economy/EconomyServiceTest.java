@@ -29,12 +29,14 @@ public class EconomyServiceTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         api = plugin.core().service(EconomyApi.class).orElseThrow();
         alice = server.addPlayer("Alice");
     }
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 

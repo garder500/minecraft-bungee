@@ -73,7 +73,9 @@ public final class IslandMenus {
     }
 
     private Island islandOf(Player player) {
-        return registry.ofPlayer(player.getUniqueId()).orElse(null);
+        Island here = service.islandAtLocation(player.getLocation());
+        return here != null && here.roleOf(player.getUniqueId()).isCoop() ? here
+            : registry.ofPlayer(player.getUniqueId()).orElse(null);
     }
 
     private static String onOff(boolean value) {
@@ -137,13 +139,6 @@ public final class IslandMenus {
                 service.toggleBorder(click.player());
                 main(click.player());
             });
-        gui.set(30, Guis.icon(Material.NETHER_STAR, "<white>Hub", "<gray>Go to the Skyblock hub"), click -> {
-            Result result = service.goHub(click.player());
-            if (!result.ok()) {
-                service.core().msg().error(click.player(), result.message());
-            }
-            click.close();
-        });
         gui.set(32, Guis.icon(Material.LECTERN, "<aqua>Public warp",
             island.warp == null ? "<gray>No warp set" : "<gray>Warp: <white>" + esc(island.warp.name),
             "<gray>Left-click: set the warp where you stand", "<gray>Right-click: remove the warp"), click -> {
@@ -308,7 +303,7 @@ public final class IslandMenus {
         if (current + 1 < tiers.size()) {
             Tier next = tiers.get(current + 1);
             lore.add("<gray>Next: <white>" + next.value() + " " + unit);
-            lore.add("<gray>Cost: <gold>" + (next.cost() > 0 ? Msg.coins(next.cost()) : "free"));
+            lore.add("<gray>Cost: <gold>" + (service.upgradeCost(next) > 0 ? Msg.coins(service.upgradeCost(next)) : "free"));
         } else {
             lore.add("<green>Maximum reached");
         }
@@ -316,7 +311,7 @@ public final class IslandMenus {
         for (int i = 0; i < tiers.size(); i++) {
             Tier tier = tiers.get(i);
             lore.add((i <= current ? "<green>✔ " : "<dark_gray>• ") + tier.value() + " " + unit
-                + (i > current && tier.cost() > 0 ? " <dark_gray>(" + Msg.number(tier.cost()) + ")" : ""));
+                + (i > current && service.upgradeCost(tier) > 0 ? " <dark_gray>(" + Msg.number(service.upgradeCost(tier)) + ")" : ""));
         }
         if (current + 1 < tiers.size()) {
             lore.add("");

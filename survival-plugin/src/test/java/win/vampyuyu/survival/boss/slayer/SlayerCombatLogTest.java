@@ -31,6 +31,7 @@ public class SlayerCombatLogTest {
     public void setUp() throws Exception {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         BossConfig config;
         try (var reader = new InputStreamReader(getClass().getResourceAsStream("/boss.yml"), StandardCharsets.UTF_8)) {
             config = BossConfig.load(YamlConfiguration.loadConfiguration(reader));
@@ -45,6 +46,7 @@ public class SlayerCombatLogTest {
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 

@@ -25,6 +25,7 @@ public class ForgeTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         svc = plugin.core().require(DungeonService.class);
         server.addSimpleWorld("main_world");
         alice = server.addPlayer("Alice");
@@ -32,6 +33,7 @@ public class ForgeTest {
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 

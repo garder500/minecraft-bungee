@@ -172,8 +172,8 @@ final class WorldSelector implements Listener {
             List<Component> lore = new ArrayList<>(List.of(
                     text("Build your island in the sky.", IVORY),
                     Component.empty(),
-                    text("Skills, minions, bosses and dungeons", MUTED),
-                    text("in one co-op adventure.", MUTED),
+                    text("Your own island, a separate Nether,", MUTED),
+                    text("invitations, visits and public warps.", MUTED),
                     Component.empty()));
             if (online > 0) {
                 lore.add(text(online + (online == 1 ? " player" : " players") + " online on the network", SKY));
@@ -181,12 +181,12 @@ final class WorldSelector implements Listener {
             }
             if (!routing) {
                 lore.add(text("Skyblock routing is offline right now:", ROSE));
-                lore.add(text("you will join the Survival server instead.", ROSE));
+                lore.add(text("please try again shortly.", ROSE));
                 lore.add(Component.empty());
             }
             lore.add(text("Left-click to enter →", GOLD));
             lore.add(text("Shift-click: go to my island", MUTED));
-            lore.add(text("Right-click: visit the hub", MUTED));
+            lore.add(text("Right-click: go to my island", MUTED));
             return item(Material.GRASS_BLOCK, text("SKYBLOCK", SKY).decorate(TextDecoration.BOLD), lore.toArray(Component[]::new));
         }
 
@@ -198,6 +198,7 @@ final class WorldSelector implements Listener {
 
     private final JavaPlugin plugin;
     private final MenuPack pack;
+    private final String server;
     private final SkyblockHandoff handoff;
     private final SkyblockRoute skyblock;
     private volatile IntSupplier online = () -> -1;
@@ -208,6 +209,7 @@ final class WorldSelector implements Listener {
 
     WorldSelector(JavaPlugin plugin, MenuPack pack, String server, SkyblockHandoff handoff) {
         this.plugin = plugin;
+        this.server = server;
         this.pack = pack;
         this.handoff = handoff;
         this.skyblock = new SkyblockRoute(plugin, server, handoff, SkyblockRoute.COOLDOWN_MS);
@@ -223,7 +225,7 @@ final class WorldSelector implements Listener {
         this.online = Objects.requireNonNull(supplier);
     }
 
-    /** {@code /menu [creative|survival|skyblock|lobby] [hub|island]}: the menu, or straight to a world. */
+    /** {@code /menu [creative|survival|skyblock|lobby] [island]}: the menu, or straight to a world. */
     private boolean command(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Use this command in game.");
@@ -236,7 +238,7 @@ final class WorldSelector implements Listener {
         Target target = Target.parse(args[0]);
         SkyblockRoute.Dest dest = args.length > 1 ? parseDest(args[1]) : SkyblockRoute.Dest.SKYBLOCK;
         if (target == null || args.length > 2 || (args.length == 2 && (target != Target.SKYBLOCK || dest == null))) {
-            player.sendMessage(prefix().append(text("Usage: /menu [creative|survival|skyblock|lobby] [hub|island]", ROSE)));
+            player.sendMessage(prefix().append(text("Usage: /menu [creative|survival|skyblock|lobby] [island]", ROSE)));
             return true;
         }
         travel(player, target, dest);
@@ -246,7 +248,7 @@ final class WorldSelector implements Listener {
     private List<String> complete(CommandSender sender, Command command, String alias, String[] args) {
         String prefix = args.length == 0 ? "" : args[args.length - 1].toLowerCase(Locale.ROOT);
         List<String> options = args.length == 1 ? List.of("creative", "survival", "skyblock", "lobby")
-                : args.length == 2 && "skyblock".equalsIgnoreCase(args[0]) ? List.of("hub", "island") : List.of();
+                : args.length == 2 && "skyblock".equalsIgnoreCase(args[0]) ? List.of("island") : List.of();
         return options.stream().filter(option -> option.startsWith(prefix)).toList();
     }
 
@@ -281,7 +283,9 @@ final class WorldSelector implements Listener {
     }
 
     private void open(Player player) {
-        player.openInventory(new Menu(pack != null && pack.active(player), handoff.available(), online.getAsInt()).getInventory());
+        boolean local = "survival".equals(server) && !Bukkit.getMessenger()
+            .getIncomingChannelRegistrations(SkyblockHandoff.CHANNEL).isEmpty();
+        player.openInventory(new Menu(pack != null && pack.active(player), local || handoff.available(), online.getAsInt()).getInventory());
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.35f, 1.1f);
     }
 

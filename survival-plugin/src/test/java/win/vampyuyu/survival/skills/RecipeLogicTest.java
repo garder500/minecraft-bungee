@@ -153,6 +153,7 @@ public class RecipeLogicTest extends SkillsBase {
     public void disablingTheFeatureRemovesRecipesAndItems() {
         NamespacedKey key = service.recipeKey("enchanted_diamond");
         assertNotNull(Bukkit.getRecipe(key));
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         server.getPluginManager().disablePlugin(plugin);
         assertNull(Bukkit.getRecipe(key));
         assertTrue(core.items().def("enchanted_diamond").isEmpty());

@@ -1,24 +1,9 @@
-# VampyuyuSurvival core configuration.
-# Each feature can be switched off here; a disabled feature registers no commands, listeners or services.
+# Simple Skyblock: historical progression modules are no longer loaded.
 debug: false
 features:
   utility:
     enabled: true
   island:
     enabled: true
-  economy:
-    enabled: true
-  items:
-    enabled: true
-  skills:
-    enabled: true
-  wings:
-    enabled: true
-  boss:
-    enabled: true
-  minions:
-    enabled: true
   menu:
-    enabled: true
-  dungeon:
     enabled: true

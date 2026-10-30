@@ -37,6 +37,7 @@ public class WingsReviewFixesTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         service = (WingsService) plugin.core().service(WingsApi.class).orElseThrow();
         flight = service.flight();
         alice = server.addPlayer("Alice");
@@ -44,6 +45,7 @@ public class WingsReviewFixesTest {
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 

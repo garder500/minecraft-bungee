@@ -1,176 +1,46 @@
 package win.vampyuyu.survival.menu;
 
+import com.google.gson.JsonParser;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerQuitEvent;
 import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.Feature;
-import win.vampyuyu.survival.core.Scheduler;
 
-/**
- * The menu feature: the only join router, the Skyblock Menu item, warps, quests, fairy souls, sidebar and settings. See docs/skyblock-notes/menu.md.
- */
+/** Only explicit network mode routing remains. /sbmenu is the simple island menu. */
 public final class MenuFeature implements Feature {
-    private MenuRuntime rt;
-    private SkyblockMenuItem item;
-    private MenuItemGuard guard;
-    private JoinFlow join;
+    private static final String CHANNEL = "vampyuyu:skyblock";
     private HandoffSource source;
-    private QuestService quests;
-    private WarpService warps;
-    private FairySouls fairy;
-    private SidebarService sidebar;
-    private Scheduler.Handle maintenance;
+    private Core core;
 
-    @Override
-    public String id() {
-        return "menu";
-    }
+    @Override public String id() { return "menu"; }
 
-    @Override
-    public void enable(Core core) {
-        try {
-            build(core);
-        } catch (RuntimeException e) {
-            disable(); // custom items, tasks and entities are not rolled back by the core
-            throw e;
-        }
-    }
-
-    private void build(Core core) {
-        MenuConfig config = new MenuConfig(core.featureConfig("menu"));
-        report(core, config);
-        rt = new MenuRuntime(core, config);
-
-        item = new SkyblockMenuItem(core);
-        item.register();
-        quests = new QuestService(rt);
-        QuestsGui questsGui = new QuestsGui(rt, quests);
-        warps = new WarpService(rt);
-        WarpsGui warpsGui = new WarpsGui(rt, warps);
-        fairy = new FairySouls(rt, quests);
-        sidebar = new SidebarService(rt, quests);
-        SettingsGui settingsGui = new SettingsGui(rt, sidebar::refresh);
-        FairyGui fairyGui = new FairyGui(rt, fairy);
-        LeaderboardsGui boardsGui = new LeaderboardsGui(rt);
-        MainMenu mainMenu = new MainMenu(rt, quests, questsGui, warpsGui, settingsGui, fairyGui, boardsGui);
-        questsGui.backTo(mainMenu.opener());
-        warpsGui.backTo(mainMenu.opener());
-        warpsGui.runWith(mainMenu::run);
-        settingsGui.backTo(mainMenu.opener());
-        fairyGui.backTo(mainMenu.opener());
-        boardsGui.backTo(mainMenu.opener());
-        boardsGui.runWith(mainMenu::run);
-        guard = new MenuItemGuard(rt, item, mainMenu.opener());
-        source = config.redisEnabled ? RedisHandoffSource.fromEnvironment(core.getPlugin().getLogger(),
-            config.redisHost, config.redisPort, config.redisPasswordFile, config.redisConnectTimeoutMs,
-            config.redisSocketTimeoutMs, config.redisBackoffMs) : null;
-        join = new JoinFlow(rt, source, this::arrive);
-
-        core.listen(guard);
+    @Override public void enable(Core core) {
+        this.core = core;
+        MenuConfig cfg = new MenuConfig(core.featureConfig("menu"));
+        MenuRuntime rt = new MenuRuntime(core, cfg);
+        source = cfg.redisEnabled ? RedisHandoffSource.fromEnvironment(core.getPlugin().getLogger(),
+            cfg.redisHost, cfg.redisPort, cfg.redisPasswordFile, cfg.redisConnectTimeoutMs,
+            cfg.redisSocketTimeoutMs, cfg.redisBackoffMs) : null;
+        JoinFlow join = new JoinFlow(rt, source, player -> {});
         core.listen(join);
-        core.listen(new QuestListener(rt, quests));
-        core.listen(fairy);
-        core.listen(sidebar);
-        core.listen(new Cleanup());
-
-        new MenuCommands(rt, mainMenu, questsGui, quests, warpsGui, warps, settingsGui, fairy, () -> reload(core))
-            .register();
-
-        fairy.start();
-        sidebar.start();
-        // Housekeeping: keeps the menu item in place, rolls the quest day over, re-checks island and skill quests.
-        maintenance = core.scheduler().repeating(100, 100, () -> {
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                guard.sync(player);
-            }
-        });
-        core.scheduler().repeating(600, 600, () -> {
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                if (MenuRuntime.inSkyblock(player.getWorld())) {
-                    quests.sync(player);
+        core.getPlugin().getServer().getMessenger().registerIncomingPluginChannel(core.getPlugin(), CHANNEL,
+            (channel, player, bytes) -> {
+                try {
+                    String raw = new String(bytes, StandardCharsets.UTF_8);
+                    String nonce = JsonParser.parseString(raw).getAsJsonObject().get("nonce").getAsString();
+                    boolean trusted = player.getMetadata(CHANNEL).stream().anyMatch(value ->
+                        value.getOwningPlugin().getName().equals("VampyuyuNetwork") && nonce.equals(value.asString()));
+                    if (trusted) join.route(player, HandoffPayload.parse(raw));
+                } catch (RuntimeException ignored) {
+                    // Client-originated or malformed messages never authorize mode changes.
                 }
-            }
-        });
-        // players already online (plugin reload)
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            core.scheduler().nextTick(() -> arrive(player));
-        }
+            });
     }
 
-    private static void report(Core core, MenuConfig config) {
-        for (String problem : config.problems()) {
-            core.getPlugin().getLogger().warning("menu.yml: " + problem);
-        }
+    @Override public void disable() {
+        if (source != null) source.close();
+        if (core != null) core.getPlugin().getServer().getMessenger().unregisterIncomingPluginChannel(core.getPlugin(), CHANNEL);
     }
 
-    /** Re-reads menu.yml. Returns false when the file had problems (it still applies what was valid). */
-    private boolean reload(Core core) {
-        MenuConfig fresh = new MenuConfig(core.featureConfig("menu"));
-        report(core, fresh);
-        rt.reload(fresh);
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            guard.sync(player);
-            sidebar.refresh(player);
-        }
-        return fresh.problems().isEmpty();
-    }
-
-    /** Everything that depends on the player being settled in the world after a join and its routing. */
-    void arrive(Player player) {
-        if (!player.isOnline()) {
-            return;
-        }
-        guard.sync(player);
-        if (MenuRuntime.inSkyblock(player.getWorld())) {
-            quests.record(player, QuestType.VISIT_WORLD, MenuConfig.worldToken(player.getWorld().getName()), 1);
-        }
-        quests.sync(player);
-        fairy.onArrive(player);
-        join.welcome(player);
-        sidebar.refresh(player);
-    }
-
-    @Override
-    public void disable() {
-        if (maintenance != null) {
-            maintenance.cancel();
-            maintenance = null;
-        }
-        if (sidebar != null) {
-            sidebar.stop();
-        }
-        if (fairy != null) {
-            fairy.stop();
-        }
-        if (warps != null) {
-            warps.shutdown();
-        }
-        if (guard != null) {
-            guard.stripEveryone();
-        }
-        if (source != null) {
-            source.close();
-        }
-        if (item != null) {
-            item.unregister();
-        }
-    }
-
-    /** Per-player cleanup on quit. */
-    private final class Cleanup implements Listener {
-        @EventHandler
-        public void onQuit(PlayerQuitEvent event) {
-            warps.forget(event.getPlayer().getUniqueId());
-            sidebar.clear(event.getPlayer());
-        }
-    }
-
-    /** For tests: the commands every instance of the feature registers. */
-    static List<String> commandNames() {
-        return List.of("sbmenu", "quests", "fairy", "sbwarps", "sbsettings");
-    }
+    static List<String> commandNames() { return List.of("sbmenu"); }
 }

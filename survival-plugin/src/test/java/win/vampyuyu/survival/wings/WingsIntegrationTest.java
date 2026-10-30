@@ -59,6 +59,7 @@ public class WingsIntegrationTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         service = (WingsService) plugin.core().service(WingsApi.class).orElseThrow();
         flight = service.flight();
         alice = server.addPlayer("Alice");
@@ -67,6 +68,7 @@ public class WingsIntegrationTest {
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 
@@ -111,7 +113,7 @@ public class WingsIntegrationTest {
 
     @Test
     public void featureIsEnabledAndPublishesTheApi() {
-        assertTrue(plugin.features().enabledIds().contains("wings"));
+        assertTrue(win.vampyuyu.survival.LegacyFeatureFixture.features(plugin).enabledIds().contains("wings"));
         assertNotNull(Bukkit.getCommandMap().getCommand("wings"));
         assertTrue(plugin.core().items().ids().contains("wings_1"));
         assertTrue(plugin.core().items().ids().contains("wings_10"));
@@ -710,6 +712,7 @@ public class WingsIntegrationTest {
         equip(alice);
         tick(alice, System.currentTimeMillis());
         assertTrue(alice.getAllowFlight());
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         server.getPluginManager().disablePlugin(plugin);
         assertFalse(alice.getAllowFlight());
         assertNull(Bukkit.getCommandMap().getKnownCommands().get("wings"));

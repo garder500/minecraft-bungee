@@ -45,6 +45,7 @@ public class MinionFeatureTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         core = plugin.core();
         items = core.items();
         world = server.addSimpleWorld("sb_world");
@@ -65,6 +66,7 @@ public class MinionFeatureTest {
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 

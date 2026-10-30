@@ -18,7 +18,7 @@ final class UtilityHelp {
         new Entry("/sethome [name]", "Save your position as a home", Perms.HOME),
         new Entry("/delhome <name>", "Delete a home", Perms.HOME),
         new Entry("/homes", "Menu with all your homes", Perms.HOME),
-        new Entry("/spawn", "Go to the spawn (the hub in Skyblock)", Perms.SPAWN),
+        new Entry("/spawn", "Go to the spawn (your island in Skyblock)", Perms.SPAWN),
         new Entry("/back", "Return to where you died (5 minute cooldown)", "vampyuyu.back"),
         new Entry("/tpa <player>", "Ask to teleport to a player", Perms.TPA),
         new Entry("/tpahere <player>", "Ask a player to teleport to you", Perms.TPA),

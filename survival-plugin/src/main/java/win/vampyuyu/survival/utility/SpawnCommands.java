@@ -30,7 +30,7 @@ final class SpawnCommands {
     }
 
     void register() {
-        core.commands().command("spawn").description("Go to the spawn (the hub when you are in Skyblock)")
+        core.commands().command("spawn").description("Go to the spawn (your island when you are in Skyblock)")
             .usage("/spawn").permission(Perms.SPAWN, PermissionDefault.TRUE).executor(this::spawn).register();
         core.commands().command("setspawn").description("Set the spawn of the survival world")
             .usage("/setspawn").permission(Perms.ADMIN, PermissionDefault.OP).executor(this::setSpawn).register();
@@ -41,7 +41,7 @@ final class SpawnCommands {
         String name = config.get().spawnWorld();
         if (name != null && !name.isBlank()) {
             World configured = Bukkit.getWorld(name.trim());
-            if (configured != null) {
+            if (configured != null && !SkyblockWorlds.isSkyblock(configured.getName())) {
                 return configured;
             }
         }
@@ -60,7 +60,7 @@ final class SpawnCommands {
         }
         boolean inSkyblock = SkyblockWorlds.isSkyblock(player.getWorld().getName());
         if (inSkyblock) {
-            teleports.start(player, "the hub", this::hub, () -> msg.ok(player, "Welcome to the hub."));
+            teleports.start(player, "your island", this::hub, () -> msg.ok(player, "Welcome to your island."));
         } else {
             teleports.start(player, "spawn", this::vanillaSpawn, () -> msg.ok(player, "Teleported to spawn."));
         }
@@ -71,11 +71,11 @@ final class SpawnCommands {
         IslandApi islands = core.service(IslandApi.class).orElse(null);
         if (islands == null) {
             return CompletableFuture.completedFuture(new TeleportService.Outcome.Fail(
-                "The hub is not available right now."));
+                "Your island is not available right now."));
         }
         boolean moved = islands.teleportHub(player);
         return CompletableFuture.completedFuture(moved ? new TeleportService.Outcome.Handled()
-            : new TeleportService.Outcome.Fail("The hub is not available right now."));
+            : new TeleportService.Outcome.Fail("Your island is not available right now."));
     }
 
     private CompletableFuture<TeleportService.Outcome> vanillaSpawn(Player player) {

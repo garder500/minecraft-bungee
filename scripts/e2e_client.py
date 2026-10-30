@@ -114,7 +114,8 @@ def wait_for(path, needle, seconds, procs=()):
 
 def stop_stale():
     """Leftovers of an interrupted run would hold our ports."""
-    for pattern in ("[.]e2e/paper", "[p]rismlauncher -d", "[X]vfb " + DISPLAY):
+    pack_server = r"[p]ython.*-m http.server " + str(HTTP_PORT) + r" .*--directory " + re.escape(str(WORK / "pack"))
+    for pattern in ("[.]e2e/paper", "[p]rismlauncher -d", "[X]vfb " + DISPLAY, pack_server):
         subprocess.run(["pkill", "-9", "-f", pattern], check=False)
     time.sleep(1)
 
@@ -161,7 +162,7 @@ def start_server(zip_path, sha1, plugin=False, pack_required=True):
         *([] if plugin else [
             f"resource-pack=http://127.0.0.1:{HTTP_PORT}/{zip_path.name}",
             f"resource-pack-sha1={sha1}", "require-resource-pack=true"]),
-        "motd=e2e", "level-name=world", ""]))
+        "motd=Isolated Skyblock test", "server-ip=127.0.0.1", "level-name=world", ""]))
     env = dict(os.environ)
     if plugin:
         data = server / "plugins" / "NexusArenaEngine"
@@ -183,7 +184,7 @@ def start_server(zip_path, sha1, plugin=False, pack_required=True):
     log = open(server / "console.log", "w")
     # DEBUG_PORT: JDWP for scripts/hotswap.py (class redefinition without a restart).
     debug = [f"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=127.0.0.1:{DEBUG_PORT}"] if DEBUG else []
-    command = [java25(), "-Xmx1G", *debug, "-jar", str(paper_jar()), "--nogui"]
+    command = [java25(), "-Dterminal.jline=false", "-Dterminal.ansi=false", "-Xmx1G", *debug, "-jar", str(paper_jar()), "--nogui"]
     if plugin:
         # The network plugin only reads /run/secrets/role_bridge_token: give a private mount
         # namespace its own tmpfs there, so nothing on the real /run is touched.
@@ -1066,97 +1067,94 @@ def back_scenario(ctx):
 
 
 def skyblock_scenario(ctx):
-    """Skyblock of the survival plugin with a real client: /menu card, island creation, the Wings worn,
-    the Nether platform and a boss. Screenshots only prove what is visible; state is checked over RCON."""
+    """Simple Skyblock on an isolated Paper: explicit modes, two beds, Nether death, blocked cross-mode TP."""
     tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
-    xdo = tools["xdotool"]
-    rcon = Rcon()
+    xdo, rcon = tools["xdotool"], Rcon()
 
-    def type_command(text):
+    def command(text):
         subprocess.run([xdo, "key", "slash"], env=env)
-        time.sleep(1)
-        subprocess.run([xdo, "type", "--delay", "60", text], env=env)
-        time.sleep(0.5)
+        time.sleep(.5)
+        subprocess.run([xdo, "type", "--delay", "35", text], env=env)
         subprocess.run([xdo, "key", "Return"], env=env)
         time.sleep(3)
 
-    def as_bot(command):
-        return rcon.command("execute as E2EBot at E2EBot run " + command)
+    def as_bot(text):
+        return rcon.command("execute as E2EBot at E2EBot run " + text)
 
     def dimension():
         return rcon.command("data get entity E2EBot Dimension")
 
-    def wait_dimension(name, seconds):
+    def wait_dimension(name, seconds=60):
         for _ in range(seconds):
-            if name in dimension():
-                return True
+            if name in dimension(): return True
             time.sleep(1)
+        failures.append("expected dimension " + name + ": " + dimension())
         return False
+
+    def make_bed():
+        import math
+        pos = player_state(rcon)["pos"]
+        x, y, z = math.floor(pos[0]) + 5, math.floor(pos[1]), math.floor(pos[2])
+        as_bot(f"fill {x-2} {y-1} {z-2} {x+2} {y-1} {z+3} stone")
+        as_bot(f"fill {x-2} {y} {z-2} {x+2} {y+2} {z+3} air")
+        as_bot(f"setblock {x} {y} {z} red_bed[facing=north,part=foot]")
+        as_bot(f"setblock {x} {y} {z-1} red_bed[facing=north,part=head]")
+        as_bot(f"tp @s {x+.5} {y} {z+2.5} 180 28")
+        time.sleep(2)
+        subprocess.run([xdo, "click", "3"], env=env)
+        time.sleep(2)
+        return x, y, z
 
     rcon.command("op E2EBot")
     rcon.command("gamemode survival E2EBot")
-    time.sleep(1)
-    type_command("menu")
-    shot(tools, shots / "sb-1-menu.png")
+    rcon.command("gamerule immediate_respawn true")
+    rcon.command("gamerule spawn_mobs false")
+    rcon.command("kill @e[type=slime]")
+    command("menu")
+    shot(tools, shots / "sb-1-mode-selector.png")
     subprocess.run([xdo, "key", "Escape"], env=env)
-    time.sleep(1)
-
-    type_command("island create classic")
-    if not wait_dimension("sb_world", 150):
-        failures.append("the island was never entered after /island create: " + dimension())
-    time.sleep(10)  # chunks and the island blocks arrive
-    shot(tools, shots / "sb-2-island.png")
-    type_command("island info")
-    shot(tools, shots / "sb-3-island-info.png")
-
-    type_command("sbgive wings_3")
-    time.sleep(1)
-    inventory = rcon.command("data get entity E2EBot Inventory")
-    import re
-    found = re.search(r"Slot: (\d+)b, id: \"minecraft:elytra\"", inventory)
-    say("skyblock: inventory after sbgive: " + inventory[:300])
-    if not found:
-        failures.append("no Wings item in the inventory after /sbgive wings_3")
-    else:
-        slot = int(found.group(1))
-        if slot > 8:
-            rcon.command(f"item replace entity E2EBot hotbar.0 from entity E2EBot container.{slot - 9}")
-            slot = 0
-        # A player puts a chestplate on with a right-click: select the slot and use it.
-        subprocess.run([xdo, "key", str(slot + 1)], env=env)
-        time.sleep(1)
-        subprocess.run([xdo, "click", "3"], env=env)
-        time.sleep(2)
-        chest = rcon.command("data get entity E2EBot equipment.chest")
-        if "wings" not in chest.lower() and "elytra" not in chest.lower():
-            failures.append("the Wings did not end up in the chest slot: " + chest[:200])
-        time.sleep(2)
-        abilities = rcon.command("data get entity E2EBot abilities.mayfly")
-        say("skyblock: mayfly after wearing: " + abilities.strip())
-        if "1b" not in abilities:
-            failures.append("wearing the Wings did not allow flight: " + abilities.strip())
-        subprocess.run([xdo, "key", "F5"], env=env)
-        time.sleep(2)
-        shot(tools, shots / "sb-4-wings-third-person.png")
-        subprocess.run([xdo, "key", "F5"], env=env)
-        subprocess.run([xdo, "key", "F5"], env=env)
-        time.sleep(1)
-        subprocess.run([xdo, "key", "F5"], env=env)
-        time.sleep(1)
-
-    type_command("island nether")
+    command("menu skyblock")
+    if not wait_dimension("sb_world", 150): return
     time.sleep(8)
-    if "sb_nether" not in dimension():
-        failures.append("/island nether did not reach sb_nether: " + dimension())
-    shot(tools, shots / "sb-5-nether.png")
-    type_command("island home")
+    shot(tools, shots / "sb-2-personal-island.png")
+    command("sbmenu")
+    shot(tools, shots / "sb-3-island-menu.png")
+    subprocess.run([xdo, "key", "Escape"], env=env)
+    sb_bed = make_bed()
+    as_bot("gamerule immediate_respawn true")
+    command("menu survival")
+    if not wait_dimension('minecraft:overworld'): return
+    normal_bed = make_bed()
+    command("menu skyblock")
+    wait_dimension("sb_world")
+    command("island nether")
+    if not wait_dimension("sb_nether"): return
+    shot(tools, shots / "sb-4-isolated-nether.png")
+    as_bot("gamerule immediate_respawn true")
+    rcon.command("kill E2EBot")
     time.sleep(5)
-
-    type_command("boss spawn voidwyrm")
-    time.sleep(6)
-    shot(tools, shots / "sb-6-boss.png")
-    rcon.command("boss kill all")
-    say("skyblock: done, dimension " + dimension().strip())
+    wait_dimension("sb_world")
+    sky_respawn = player_state(rcon)["pos"]
+    if abs(sky_respawn[0]-sb_bed[0]) > 3 or abs(sky_respawn[2]-sb_bed[2]) > 3:
+        failures.append(f"Skyblock Nether death missed the Skyblock bed: {sky_respawn}, bed={sb_bed}")
+    shot(tools, shots / "sb-5-skyblock-bed-respawn.png")
+    # Even an operator's cross-world /tp must be rejected outside the mode selector.
+    as_bot("execute in minecraft:overworld run tp @s 0 -60 0")
+    if "sb_world" not in dimension(): failures.append("cross-mode /tp escaped Skyblock")
+    command("menu survival")
+    if not wait_dimension('minecraft:overworld'): return
+    rcon.command("kill E2EBot")
+    time.sleep(5)
+    wait_dimension('minecraft:overworld')
+    normal_respawn = player_state(rcon)["pos"]
+    if abs(normal_respawn[0]-normal_bed[0]) > 3 or abs(normal_respawn[2]-normal_bed[2]) > 3:
+        failures.append(f"Survival death missed the independent Survival bed: {normal_respawn}, bed={normal_bed}")
+    shot(tools, shots / "sb-6-survival-bed-respawn.png")
+    if any((base / name).exists() for base in (server, server / "world/dimensions/minecraft")
+           for name in ("sb_hub", "sb_end")):
+        failures.append("retired Skyblock hub or End was generated")
+    rcon.command("gamemode creative E2EBot")
+    say(f"skyblock: two beds checked; Skyblock={sky_respawn}, Survival={normal_respawn}")
 
 
 def main():
@@ -1273,6 +1271,13 @@ def main():
                     p.kill()
             stop_stale()
         http_server.shutdown()
+    http_server.server_close()
+    if args.keep:
+        # Keep the optional pack available for a human joining the isolated server after the run.
+        pack_log = open(WORK / "pack-server.log", "a")
+        subprocess.Popen([sys.executable, "-m", "http.server", str(HTTP_PORT), "--bind", "127.0.0.1",
+                          "--directory", str(pack_dir)], stdout=pack_log, stderr=subprocess.STDOUT,
+                         start_new_session=True)
     if failures:
         sys.exit("E2E FAILED:\n  " + "\n  ".join(failures))
     say("E2E OK")

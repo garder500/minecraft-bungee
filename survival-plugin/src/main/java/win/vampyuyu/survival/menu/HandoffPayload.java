@@ -6,29 +6,11 @@ import com.google.gson.JsonParser;
 import java.util.Locale;
 import java.util.Optional;
 
-/**
- * The value stored under {@code sb:transfer:<uuid>} by whoever sends a player to the survival server.
- *
- * <h2>Accepted formats</h2>
- * <ul>
- *   <li>JSON object {@code {"dest":"skyblock","arg":"hub","ts":1730000000000}}: only {@code dest} is needed.
- *       {@code arg} and {@code ts} (epoch millis) are optional.</li>
- *   <li>A bare word that is not JSON, e.g. {@code skyblock} or {@code dungeon}: same as {@code {"dest":"word"}}.</li>
- * </ul>
- *
- * <h2>Destinations</h2>
- * <ul>
- *   <li>{@code skyblock} (also {@code hub}, {@code island}, {@code home}): the Skyblock mode. {@code arg} may force
- *       {@code hub} or {@code island}; with no arg the player goes to their island, or to the hub when they have none.</li>
- *   <li>{@code dungeon}: rejoin a dungeon run, only honoured when the dungeon feature says the player is in one.</li>
- *   <li>Anything else, an empty value or a JSON value of another shape: treated as {@code skyblock} (the key prefix
- *       {@code sb:} is reserved for Skyblock, so a present key means "this player comes for Skyblock").</li>
- * </ul>
- * A payload whose {@code ts} is older than the configured maximum age is stale and ignored by the router.
- */
+/** Explicit mode selection from the network. Legacy hub/home landings resolve to the personal island.
+ * Malformed or unknown destinations never authorize a mode change. */
 public record HandoffPayload(Dest dest, String arg, long timestamp) {
     /** What the sender wants. */
-    public enum Dest { SKYBLOCK, HUB, ISLAND, DUNGEON }
+    public enum Dest { SKYBLOCK, HUB, ISLAND, DUNGEON, SURVIVAL }
 
     public static final long NO_TIMESTAMP = -1;
 
@@ -60,15 +42,18 @@ public record HandoffPayload(Dest dest, String arg, long timestamp) {
                 dest = "";
             }
         }
-        return Optional.of(new HandoffPayload(destOf(dest), arg, ts));
+        Dest destination = destOf(dest);
+        return destination == null ? Optional.empty() : Optional.of(new HandoffPayload(destination, arg, ts));
     }
 
     private static Dest destOf(String dest) {
         return switch (dest == null ? "" : dest.trim().toLowerCase(Locale.ROOT)) {
+            case "survival" -> Dest.SURVIVAL;
             case "hub" -> Dest.HUB;
             case "island", "home" -> Dest.ISLAND;
             case "dungeon" -> Dest.DUNGEON;
-            default -> Dest.SKYBLOCK;
+            case "skyblock" -> Dest.SKYBLOCK;
+            default -> null;
         };
     }
 

@@ -2,7 +2,7 @@
 # Keys missing from this file fall back to the copy shipped in the jar.
 
 grid:
-  # Distance between island centres, in blocks. Every island also owns the same cell in sb_nether and sb_end.
+  # Distance between island centres, in blocks. Every island also owns the same cell in the separate sb_nether.
   cell-size: 400
   # World Y of the top layer of every island (players stand one block higher).
   island-y: 64
@@ -12,6 +12,7 @@ grid:
 worlds:
   # time: DAY | NOON | SUNSET | NIGHT | MIDNIGHT | CYCLE (CYCLE = vanilla day/night)
   # gamerules: any name of org.bukkit.GameRules in lower case (keep_inventory, spawn_mobs, mob_griefing...).
+  # Legacy hub/end settings are retained for compatibility and never create these worlds.
   hub:
     time: DAY
     border: 200
@@ -54,6 +55,7 @@ worlds:
       keep_inventory: true
 
 hub:
+  # Legacy configuration only: the live Skyblock never builds a hub.
   enabled: true
   # World Y of the plaza surface.
   y: 100
@@ -204,8 +206,8 @@ platforms:
     - OBSIDIAN:6
     - END_ROD:4
     - COOKED_BEEF:8
-  # The overworld islands get a sealed "End gate" (12 End portal frames around a portal). True = already lit.
-  end-gate-lit: true
+  # Legacy field: End gates are no longer generated, regardless of this value.
+  end-gate-lit: false
 
 protection:
   # Trusted guests may open containers even when the island's visitor_chests setting is off.
@@ -241,20 +243,20 @@ border:
   enter-messages: true
 
 void:
-  # Falling below the world: teleport to the island (or hub) instead of dying.
+  # Falling below the world: return safely within Skyblock instead of dying.
   rescue: true
   # Tell the player.
   message: "You fell into the void and were pulled back to safety."
 
 respawn:
-  # Where a player who died in an island world or the hub respawns: HOME (island, hub as fallback) or HUB.
+  # Legacy field: per-mode beds and personal-island fallback now own all Skyblock respawns.
   mode: HOME
 
 portals:
-  # 1:1 coordinates between sb_world and sb_nether; the End portal leads to the island's own End.
+  # 1:1 coordinates between sb_world and sb_nether. Skyblock End portals are always blocked.
   nether: true
-  end: true
-  # /is nether and /is end shortcuts (no portal needed, the platforms must be ready). Cooldown in seconds.
+  end: false
+  # /is nether shortcut (no portal needed, the platforms must be ready). Cooldown in seconds.
   shortcuts: true
   shortcut-cooldown-seconds: 10
 

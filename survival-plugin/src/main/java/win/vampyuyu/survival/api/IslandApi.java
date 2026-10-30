@@ -21,13 +21,10 @@ public interface IslandApi {
     /** True when the player may place and break blocks at the location (island member, or admin bypass). */
     boolean canBuild(Player player, Location location);
 
-    /** Teleports the player to their island spawn. False when they have no island or the teleport was refused. */
+    /** Enters the personal island, creating it if missing. False while building or if refused. */
     boolean teleportHome(Player player);
 
-    /**
-     * Teleports the player to the {@code sb_hub} spawn. Only the {@code island} feature owns that world, so any
-     * hub navigation or join routing (the {@code menu} feature) goes through here. False when the hub is not ready.
-     */
+    /** Compatibility alias for personal island entry. No hub world is created or entered. */
     boolean teleportHub(Player player);
 
     /** Every known island (snapshot). */

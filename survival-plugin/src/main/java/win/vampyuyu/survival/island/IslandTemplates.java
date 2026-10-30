@@ -169,7 +169,6 @@ public final class IslandTemplates {
             Material.POPPY, Material.DANDELION}, 10);
         plan.chest(-5, 1, 2, "east", chest);
         plan.anchor("chest", -5, 1, 2);
-        endGate(plan, lit);
     }
 
     private static void desert(BlockPlan plan, Random rnd, List<ItemSpec> chest, String biome, boolean lit) {
@@ -211,7 +210,6 @@ public final class IslandTemplates {
         plan.set(px, 0, pz, Material.SANDSTONE);
         plan.chest(6, 1, 0, "west", chest);
         plan.anchor("chest", 6, 1, 0);
-        endGate(plan, lit);
     }
 
     private static void frozen(BlockPlan plan, Random rnd, List<ItemSpec> chest, String biome, boolean lit) {
@@ -250,7 +248,6 @@ public final class IslandTemplates {
         }
         plan.chest(-5, 1, 2, "east", chest);
         plan.anchor("chest", -5, 1, 2);
-        endGate(plan, lit);
     }
 
     private static void jungle(BlockPlan plan, Random rnd, List<ItemSpec> chest, String biome, boolean lit) {
@@ -286,7 +283,6 @@ public final class IslandTemplates {
         decorate(plan, rnd, Material.GRASS_BLOCK, new Material[] {Material.FERN, Material.SHORT_GRASS, Material.SHORT_GRASS}, 8);
         plan.chest(6, 1, -1, "west", chest);
         plan.anchor("chest", 6, 1, -1);
-        endGate(plan, lit);
     }
 
     private static void mushroom(BlockPlan plan, Random rnd, List<ItemSpec> chest, String biome, boolean lit) {
@@ -320,7 +316,6 @@ public final class IslandTemplates {
         decorate(plan, rnd, Material.MYCELIUM, new Material[] {Material.RED_MUSHROOM, Material.BROWN_MUSHROOM}, 10);
         plan.chest(-5, 1, 3, "east", chest);
         plan.anchor("chest", -5, 1, 3);
-        endGate(plan, lit);
     }
 
     // ---------------------------------------------------------------- Nether platform

@@ -98,13 +98,13 @@ public class SkyblockRouteTest {
     }
 
     @Test
-    public void whenRedisIsDownThePlayerIsStillConnectedAndToldWhy() {
+    public void whenRedisIsDownThePlayerStaysPutAndIsToldWhy() {
         store.failing = true;
         SkyblockRoute route = new SkyblockRoute(plugin, "creative", new SkyblockHandoff(plugin, store, null));
         Recorder player = join("alex");
         route.go(player);
         settle();
-        assertEquals(List.of("BungeeCord:Connect:survival"), events);
+        assertTrue(events.isEmpty());
         boolean told = false;
         Component message;
         while ((message = player.nextComponentMessage()) != null) told |= plain(message).contains("routing is unavailable");
@@ -112,11 +112,11 @@ public class SkyblockRouteTest {
     }
 
     @Test
-    public void withoutAnyRedisConfigurationItIsAPlainConnect() {
+    public void withoutRedisTheModeSelectionStaysPut() {
         SkyblockRoute route = new SkyblockRoute(plugin, "lobby", new SkyblockHandoff(plugin, null, "not configured"));
         route.go(join("alex"));
         settle();
-        assertEquals(List.of("BungeeCord:Connect:survival"), events);
+        assertTrue(events.isEmpty());
     }
 
     @Test
@@ -253,10 +253,27 @@ public class SkyblockRouteTest {
         assertEquals(List.of("alex"), received);
     }
 
+    @Test
+    public void survivalSelectionOnTheSameServerUsesTheAuthenticatedChannelWithoutRedis() {
+        List<String> received = new ArrayList<>();
+        Bukkit.getMessenger().registerIncomingPluginChannel(plugin, SkyblockHandoff.CHANNEL,
+            (channel, player, bytes) -> {
+                String raw = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+                assertTrue(player.hasMetadata(SkyblockHandoff.CHANNEL));
+                received.add(raw);
+            });
+        SkyblockRoute route = new SkyblockRoute(plugin, "survival", new SkyblockHandoff(plugin, null, "offline"));
+        route.leave(join("alex"), "survival", "Survival");
+        assertEquals(1, received.size());
+        assertTrue(received.get(0).contains("\"dest\":\"survival\""));
+        assertTrue(events.isEmpty());
+        assertTrue(store.calls.isEmpty());
+    }
+
     // ---- stale keys: a plain card clears a pending Skyblock key before it connects ----------------------------------
 
     @Test
-    public void survivalCardDeletesTheKeyBeforeTheConnect() {
+    public void survivalCardWritesItsModeBeforeTheConnect() {
         store.timeline = events;
         SkyblockRoute route = new SkyblockRoute(plugin, "lobby", new SkyblockHandoff(plugin, store, null));
         Recorder player = join("alex");
@@ -264,8 +281,8 @@ public class SkyblockRouteTest {
         settle();
         route.leave(player, "survival", "Survival");
         settle();
-        assertEquals(List.of("SETEX", "BungeeCord:Connect:survival", "DEL", "BungeeCord:Connect:survival"), events);
-        assertTrue(store.calls.contains("DEL sb:transfer:" + player.getUniqueId()));
+        assertEquals(List.of("SETEX", "BungeeCord:Connect:survival", "SETEX", "BungeeCord:Connect:survival"), events);
+        assertTrue(store.calls.stream().anyMatch(call -> call.contains("\"dest\":\"survival\"")));
     }
 
     @Test
@@ -276,12 +293,12 @@ public class SkyblockRouteTest {
     }
 
     @Test
-    public void leavingStillConnectsWhenTheDeleteFails() {
+    public void selectingSurvivalStaysPutWhenItsHandoffFails() {
         store.failing = true;
         SkyblockRoute route = new SkyblockRoute(plugin, "lobby", new SkyblockHandoff(plugin, store, null));
         route.leave(join("alex"), "survival", "Survival");
         settle();
-        assertEquals(List.of("BungeeCord:Connect:survival"), events);
+        assertTrue(events.isEmpty());
     }
 
     @Test
@@ -300,7 +317,7 @@ public class SkyblockRouteTest {
     public void aKnownDownRedisSkipsTheWriteSoThePlayerDoesNotWaitForATimeout() {
         SkyblockRoute route = new SkyblockRoute(plugin, "lobby", new SkyblockHandoff(plugin, null, "no redis"));
         route.go(join("alex"));
-        assertEquals(List.of("BungeeCord:Connect:survival"), events);
+        assertTrue(events.isEmpty());
     }
 
     @Test
@@ -355,9 +372,9 @@ public class SkyblockRouteTest {
         String offline = tooltip(WorldSelector.Menu.skyblockCard(false));
         assertFalse(online.contains("offline"));
         assertTrue(offline.contains("Skyblock routing is offline"));
-        assertTrue(offline.contains("Survival server instead"));
+        assertTrue(offline.contains("please try again shortly"));
         assertTrue(online.contains("SKYBLOCK") && online.contains("Left-click to enter"));
-        assertTrue(online.contains("Shift-click: go to my island") && online.contains("Right-click: visit the hub"));
+        assertTrue(online.contains("Shift-click: go to my island") && online.contains("Right-click: go to my island"));
         assertEquals(Material.GRASS_BLOCK, WorldSelector.Menu.skyblockCard(true).getType());
     }
 

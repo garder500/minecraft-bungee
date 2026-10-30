@@ -37,6 +37,7 @@ public final class Core {
     private final java.util.List<Class<?>> serviceOrder = new java.util.concurrent.CopyOnWriteArrayList<>();
     private final java.util.List<Listener> listeners = new java.util.concurrent.CopyOnWriteArrayList<>();
     private boolean started;
+    private final ModeTravel modes = new ModeTravel(this);
 
     public Core(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -56,6 +57,7 @@ public final class Core {
         Bukkit.getPluginManager().registerEvents(profiles, plugin);
         Bukkit.getPluginManager().registerEvents(guis, plugin);
         profiles.start(scheduler);
+        listen(modes);
         GiveCommand give = new GiveCommand(items, msg);
         permissions.register("vampyuyu.sb.admin", "Skyblock administration (give items, bosses...)", PermissionDefault.OP);
         commands.command("sbgive").description("Give a custom Skyblock item")
@@ -150,6 +152,8 @@ public final class Core {
     }
 
     // ---------------------------------------------------------------- shared services
+
+    public ModeTravel modes() { return modes; }
 
     public PlayerProfiles profiles() { return profiles; }
 

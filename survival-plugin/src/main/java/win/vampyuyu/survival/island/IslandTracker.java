@@ -361,26 +361,4 @@ public final class IslandTracker implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onRespawn(PlayerRespawnEvent event) {
-        Player player = event.getPlayer();
-        String died = player.getWorld().getName();
-        if (!SkyblockWorlds.isSkyblock(died) || SkyblockWorlds.isDungeon(died)) {
-            return;
-        }
-        if (event.isBedSpawn() || event.isAnchorSpawn()) {
-            return;
-        }
-        Location target = null;
-        if (cfg.respawnHome) {
-            target = service.safeFallback(player);
-        }
-        // never respawn someone over a hub that has no floor yet (they would fall, die and loop)
-        if (target == null && service.hubReady()) {
-            target = service.hubLocation();
-        }
-        if (target != null) {
-            event.setRespawnLocation(target);
-        }
-    }
 }

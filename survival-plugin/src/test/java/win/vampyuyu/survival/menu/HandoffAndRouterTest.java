@@ -42,13 +42,12 @@ public class HandoffAndRouterTest {
     }
 
     @Test
-    public void garbageNeverThrowsAndMeansSkyblock() {
+    public void garbageNeverAuthorizesAModeChange() {
         assertTrue(p(null).isEmpty());
         assertTrue(p("   ").isEmpty());
         for (String junk : new String[] {"{", "{\"dest\":", "[1,2]", "{\"dest\":{\"a\":1}}", "{\"dest\":\"mars\"}",
-                "{\"ts\":\"abc\",\"dest\":\"skyblock\"}", "\"quoted\"", "{}"}) {
-            HandoffPayload payload = p(junk).orElseThrow();
-            assertEquals(junk, HandoffPayload.Dest.SKYBLOCK, payload.dest());
+                "\"quoted\"", "{}"}) {
+            assertTrue(junk, p(junk).isEmpty());
         }
     }
 
@@ -69,8 +68,8 @@ public class HandoffAndRouterTest {
 
     @Test
     public void noKeyHubModeSendsToHubUnlessAlreadyInSkyblock() {
-        assertEquals(Action.HUB, JoinRouter.decide(ctx(null, true, false, false, NoKey.HUB)).action());
-        assertEquals(Action.HUB_CREATE_PROMPT, JoinRouter.decide(ctx(null, false, false, false, NoKey.HUB)).action());
+        assertEquals(Action.STAY, JoinRouter.decide(ctx(null, true, false, false, NoKey.HUB)).action());
+        assertEquals(Action.STAY, JoinRouter.decide(ctx(null, false, false, false, NoKey.HUB)).action());
         assertEquals(Action.STAY, JoinRouter.decide(ctx(null, true, false, true, NoKey.HUB)).action());
     }
 
@@ -83,19 +82,19 @@ public class HandoffAndRouterTest {
     @Test
     public void skyblockKeyGoesToIslandOrHubWithPrompt() {
         assertEquals(Action.ISLAND, JoinRouter.decide(ctx("{\"dest\":\"skyblock\"}", true, false, false, NoKey.STAY)).action());
-        assertEquals(Action.HUB_CREATE_PROMPT,
+        assertEquals(Action.ISLAND,
             JoinRouter.decide(ctx("{\"dest\":\"skyblock\"}", false, false, false, NoKey.STAY)).action());
-        assertEquals(Action.HUB,
+        assertEquals(Action.ISLAND,
             JoinRouter.decide(ctx("{\"dest\":\"skyblock\",\"arg\":\"hub\"}", true, false, false, NoKey.STAY)).action());
         assertEquals(Action.ISLAND, JoinRouter.decide(ctx("island", true, false, false, NoKey.STAY)).action());
-        assertEquals(Action.HUB_CREATE_PROMPT, JoinRouter.decide(ctx("island", false, false, false, NoKey.STAY)).action());
+        assertEquals(Action.ISLAND, JoinRouter.decide(ctx("island", false, false, false, NoKey.STAY)).action());
     }
 
     @Test
     public void dungeonKeyNeverMovesAndPlayersInRunsAreNeverMoved() {
         assertEquals(Action.STAY, JoinRouter.decide(ctx("dungeon", true, false, false, NoKey.STAY)).action());
         assertEquals(Action.STAY, JoinRouter.decide(ctx("dungeon", true, true, true, NoKey.STAY)).action());
-        assertEquals(Action.STAY, JoinRouter.decide(ctx("skyblock", true, true, true, NoKey.HUB)).action());
+        assertEquals(Action.ISLAND, JoinRouter.decide(ctx("skyblock", true, true, true, NoKey.HUB)).action());
         assertEquals(Action.STAY, JoinRouter.decide(ctx(null, false, true, true, NoKey.HUB)).action());
     }
 

@@ -124,6 +124,12 @@ public final class TeleportService implements TeleportGate, Listener {
                 && SkyblockWorlds.isDungeon(destination.getWorld().getName())) {
             return "You cannot teleport into a dungeon.";
         }
+        if (destination != null && destination.getWorld() != null
+                && (win.vampyuyu.survival.core.ModeTravel.retired(destination.getWorld())
+                    || SkyblockWorlds.isSkyblock(player.getWorld().getName())
+                       != SkyblockWorlds.isSkyblock(destination.getWorld().getName()))) {
+            return "Use /menu to select a game mode.";
+        }
         UtilityConfig cfg = config.get();
         if (cfg.combatEnabled() && !player.hasPermission(Perms.BYPASS_COMBAT)) {
             long left = combat.remaining(player.getUniqueId());

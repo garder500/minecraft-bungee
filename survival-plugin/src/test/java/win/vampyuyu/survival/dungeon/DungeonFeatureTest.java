@@ -27,11 +27,13 @@ public class DungeonFeatureTest {
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
+        win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         svc = plugin.core().require(DungeonService.class);
     }
 
     @After
     public void tearDown() {
+        win.vampyuyu.survival.LegacyFeatureFixture.disable(plugin);
         MockBukkit.unmock();
     }
 
@@ -51,7 +53,7 @@ public class DungeonFeatureTest {
 
     @Test
     public void featureIsEnabledAndPublishesTheApi() {
-        assertTrue(plugin.features().enabledIds().contains("dungeon"));
+        assertTrue(win.vampyuyu.survival.LegacyFeatureFixture.features(plugin).enabledIds().contains("dungeon"));
         assertTrue(plugin.features().failedIds().isEmpty());
         assertTrue(plugin.core().service(DungeonApi.class).isPresent());
         for (String c : List.of("dungeon", "party", "pc")) {

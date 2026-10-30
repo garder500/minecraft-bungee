@@ -29,8 +29,7 @@ public class SurvivalPluginTest {
 
     @Test
     public void everyFeatureEnablesInOrder() {
-        assertEquals(List.of("utility", "island", "economy", "items", "skills", "wings", "boss", "minions", "menu",
-            "dungeon"), plugin.features().enabledIds());
+        assertEquals(List.of("utility", "island", "menu"), plugin.features().enabledIds());
         assertTrue(plugin.features().failedIds().isEmpty());
         assertEquals(plugin.features().enabledIds(),
             SurvivalPlugin.featureList().stream().map(Feature::id).toList());

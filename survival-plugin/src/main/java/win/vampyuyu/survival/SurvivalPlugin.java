@@ -2,19 +2,12 @@ package win.vampyuyu.survival;
 
 import java.util.List;
 import org.bukkit.plugin.java.JavaPlugin;
-import win.vampyuyu.survival.boss.BossFeature;
 import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.Feature;
 import win.vampyuyu.survival.core.FeatureManager;
-import win.vampyuyu.survival.dungeon.DungeonFeature;
-import win.vampyuyu.survival.economy.EconomyFeature;
 import win.vampyuyu.survival.island.IslandFeature;
-import win.vampyuyu.survival.items.ItemsFeature;
 import win.vampyuyu.survival.menu.MenuFeature;
-import win.vampyuyu.survival.minions.MinionsFeature;
-import win.vampyuyu.survival.skills.SkillsFeature;
 import win.vampyuyu.survival.utility.UtilityFeature;
-import win.vampyuyu.survival.wings.WingsFeature;
 
 public class SurvivalPlugin extends JavaPlugin {
     private Core core;
@@ -25,17 +18,8 @@ public class SurvivalPlugin extends JavaPlugin {
      * Services are published during enable(), so a feature only sees services of features listed before it.
      */
     static List<Feature> featureList() {
-        return List.of(
-            new UtilityFeature(),
-            new IslandFeature(),
-            new EconomyFeature(),
-            new ItemsFeature(),
-            new SkillsFeature(),
-            new WingsFeature(),
-            new BossFeature(),
-            new MinionsFeature(),
-            new MenuFeature(),
-            new DungeonFeature());
+        // The simple Skyblock deliberately does not load the former progression systems.
+        return List.of(new UtilityFeature(), new IslandFeature(), new MenuFeature());
     }
 
     @Override

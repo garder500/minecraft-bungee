@@ -21,6 +21,7 @@ public final class JoinRouter {
     public enum Action {
         /** Leave the player where the server put them. */
         STAY,
+        SURVIVAL,
         /** Teleport to their island. */
         ISLAND,
         /** Teleport to the hub. */
@@ -38,40 +39,12 @@ public final class JoinRouter {
     private JoinRouter() {}
 
     public static Decision decide(Context ctx) {
-        if (ctx.inDungeon()) {
-            return new Decision(Action.STAY, "player is in a dungeon run");
-        }
         Optional<HandoffPayload> payload = ctx.payload().filter(p -> !p.isStale(ctx.nowMillis(), ctx.maxAgeMillis()));
-        if (payload.isEmpty()) {
-            String why = ctx.payload().isPresent() ? "stale handoff key" : "no handoff key";
-            if (ctx.noKey() == NoKey.HUB && !ctx.inSkyblockWorld()) {
-                return hub(ctx, why + ", no-key=hub");
-            }
-            return new Decision(Action.STAY, why);
-        }
-        HandoffPayload p = payload.get();
-        switch (p.dest()) {
-            case DUNGEON:
-                return new Decision(Action.STAY, "dungeon key but the player is not in a run");
-            case HUB:
-                return hub(ctx, "hub key");
-            case ISLAND:
-                return home(ctx, "island key");
-            case SKYBLOCK:
-            default:
-                if (p.arg().equals("hub")) {
-                    return hub(ctx, "skyblock key, arg hub");
-                }
-                return home(ctx, "skyblock key");
-        }
-    }
-
-    private static Decision hub(Context ctx, String why) {
-        return new Decision(ctx.hasIsland() ? Action.HUB : Action.HUB_CREATE_PROMPT, why);
-    }
-
-    private static Decision home(Context ctx, String why) {
-        return ctx.hasIsland() ? new Decision(Action.ISLAND, why)
-            : new Decision(Action.HUB_CREATE_PROMPT, why + ", no island yet");
+        if (payload.isEmpty()) return new Decision(Action.STAY, "no current explicit mode selection");
+        return switch (payload.get().dest()) {
+            case SURVIVAL -> new Decision(Action.SURVIVAL, "explicit Survival selection");
+            case DUNGEON -> new Decision(Action.STAY, "retired destination");
+            default -> new Decision(Action.ISLAND, "explicit Skyblock selection");
+        };
     }
 }
