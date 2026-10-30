@@ -132,6 +132,7 @@ Testing a plugin change does not need new images or a deployment. `make plugin P
 | `arena` | `nexus-arena-engine.jar` | lobby, creative, survival |
 | `lobby` | `lobby-selector.jar` | lobby |
 | `claims` | `SimpleClaimSystem.jar` | creative |
+| `survival` | `survival-plugin.jar` | survival |
 
 `SERVERS="creative"` narrows the targets, `FAST=1` skips the tests, `FORCE=1` restarts even while an arena game is running (otherwise refused: `/arena list` must show only `WAITING`). `make plugin-status` lists overrides, `make plugin-clear` drops them and restarts back onto the image's jars; `make up` warns while any override still shadows a rebuilt jar. For `arena` and `network`, a production hotfix restarts all three servers unless you pass `SERVERS=creative`. `infra/start.sh` applies overrides at every start and logs `PLUGIN OVERRIDE ACTIVE` for each.
 

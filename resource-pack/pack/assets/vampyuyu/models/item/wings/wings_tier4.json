@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "vampyuyu:item/wings/wings_tier4"
+  }
+}

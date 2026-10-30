@@ -100,6 +100,19 @@ for sign in (-1,1):
  box(x-2,64,-4,x+2,64,4,'chiseled_quartz_block');box(x,64,-3,x,64,3,'gold_block')
  # Wall signs attach to the gate pillars; text is set by the lobby plugin.
  box(sign*30,67,-5,sign*30,67,-5,'oak_wall_sign[facing='+('east' if sign<0 else 'west')+']')
+# Third gate: Skyblock, at the south end of the red avenue (the two world gates sit on the east-west avenue).
+# The same design turned a quarter, with lime glass. The lobby plugin treats the lime glass at (0,68,38) as "built".
+gate_start=len(commands)
+GZ=38  # clear of the avenue lamps (z=27, 34), the floor lights (z=24, 32) and the balustrade (z>=43)
+for x in (-5,5):box(x,65,GZ-1,x,72,GZ+1,'quartz_pillar');box(x,73,GZ-1,x,73,GZ+1,'gold_block')
+for y,width in [(73,4),(74,3),(75,2),(76,1),(77,0)]:
+ for x in set((-width,width)):box(x,y,GZ-1,x,y,GZ+1,'red_nether_bricks')
+box(-3,65,GZ,3,71,GZ,'lime_stained_glass')
+box(-4,64,GZ-2,4,64,GZ+2,'chiseled_quartz_block');box(-3,64,GZ,3,64,GZ,'gold_block')
+# Wall sign on the west pillar (text set by the lobby plugin); sea lanterns in the lintel light the floor.
+box(-5,67,GZ-2,-5,67,GZ-2,'oak_wall_sign[facing=north]')
+for x in (-4,4):box(x,72,GZ,x,72,GZ,'sea_lantern')
+gate_commands=commands[gate_start:]
 # Rose gardens, sealed reflective pools and custom blossom trees.
 for sx in (-1,1):
  for sz in (-1,1):
@@ -311,6 +324,7 @@ func=out/'data/vampyuyu/function';func.mkdir(parents=True,exist_ok=True)
 (func/'build_once.mcfunction').write_text('# Original Vampyuyu Sanctum · reproducible block-only build\n'+'\n'.join(commands)+'\n')
 (func/'night_sky.mcfunction').write_text('# Guarded illuminated sky bats and fixed early night; block-only.\n'+'\n'.join(sky)+'\n')
 (func/'cat_statue.mcfunction').write_text('# Guarded bat-to-cat replacement; restores former wing positions, no entities.\n'+'\n'.join(cat_patch)+'\n')
+(func/'skyblock_gate.mcfunction').write_text('# Skyblock gate for an existing Sanctum: block-only and idempotent (run: /function vampyuyu:skyblock_gate).\n'+'\n'.join(gate_commands)+'\n')
 (func/'furniture.mcfunction').write_text('# Guarded block-only palace furnishing upgrade.\n'+'\n'.join(furniture)+'\n')
 (func/'warm_lights.mcfunction').write_text('# Guarded lighting upgrade for an existing Sanctum; never rebuilds terrain.\n'+'\n'.join(lighting)+'\n')
 (func/'install.mcfunction').write_text('execute unless data storage vampyuyu:lobby built run function vampyuyu:build_once\n')

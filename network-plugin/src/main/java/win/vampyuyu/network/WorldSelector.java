@@ -3,7 +3,10 @@ package win.vampyuyu.network;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.function.IntSupplier;
 import java.util.Objects;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
@@ -11,11 +14,16 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemFlag;
@@ -25,18 +33,26 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 final class WorldSelector implements Listener {
     // Keep the in-game selector aligned with the panel's burgundy/ivory/gold palette.
-    private static final TextColor WINE = TextColor.color(0x8e2e35);
-    private static final TextColor ROSE = TextColor.color(0xd58b8e);
-    private static final TextColor IVORY = TextColor.color(0xf5e9cf);
-    private static final TextColor GOLD = TextColor.color(0xe9d99b);
-    private static final TextColor MUTED = TextColor.color(0xc5a69b);
+    static final TextColor WINE = TextColor.color(0x8e2e35);
+    static final TextColor ROSE = TextColor.color(0xd58b8e);
+    static final TextColor IVORY = TextColor.color(0xf5e9cf);
+    static final TextColor GOLD = TextColor.color(0xe9d99b);
+    static final TextColor MUTED = TextColor.color(0xc5a69b);
+    /** Skyblock's accent: the island's grass green. */
+    static final TextColor SKY = TextColor.color(0x8ee06e);
     private static final int CREATIVE_SLOT = 11;
+    private static final int SKYBLOCK_SLOT = 13;
     private static final int SURVIVAL_SLOT = 15;
     private static final int LOBBY_SLOT = 22;
     private static final int CLOSE_SLOT = 26;
 
-    private static Component text(String content, TextColor color) {
+    static Component text(String content, TextColor color) {
         return Component.text(content, color).decoration(TextDecoration.ITALIC, false);
+    }
+
+    /** "VAMPYUYU " in bold rose, the lead of every chat line of the selector. */
+    static Component prefix() {
+        return text("VAMPYUYU ", ROSE).decorate(TextDecoration.BOLD);
     }
 
     private static Component brand() {
@@ -54,29 +70,37 @@ final class WorldSelector implements Listener {
         return item;
     }
 
-    // Painted layout: each world is a 3x3 arch; the centre column is information and the lobby link.
-    private static final int[] CREATIVE_AREA = {0, 1, 2, 9, 10, 11, 18, 19, 20};
-    private static final int[] SURVIVAL_AREA = {6, 7, 8, 15, 16, 17, 24, 25, 26};
-    private static final int[] LOBBY_AREA = {21, 22, 23};
-    private static final int[] HUB_AREA = {3, 4, 5, 12, 13, 14};
+    // Painted layout: Creative and Survival are 3x3 arches; the 3x2 card between them is Skyblock, with the lobby link under it.
+    static final int[] CREATIVE_AREA = {0, 1, 2, 9, 10, 11, 18, 19, 20};
+    static final int[] SURVIVAL_AREA = {6, 7, 8, 15, 16, 17, 24, 25, 26};
+    static final int[] LOBBY_AREA = {21, 22, 23};
+    static final int[] SKYBLOCK_AREA = {3, 4, 5, 12, 13, 14};
 
     private static boolean in(int[] area, int slot) {
         for (int candidate : area) if (candidate == slot) return true;
         return false;
     }
 
-    private static final class Menu implements InventoryHolder {
+    static final class Menu implements InventoryHolder {
         private final Inventory inventory;
-        private final boolean skinned;
+        final boolean skinned;
 
-        Menu(boolean skinned) {
+        Menu(boolean skinned, boolean routing) {
+            this(skinned, routing, -1);
+        }
+
+        /**
+         * @param routing false when the Skyblock handoff is unreachable: the card then says so
+         * @param online players online on the network, or a negative number when unknown
+         */
+        Menu(boolean skinned, boolean routing, int online) {
             this.skinned = skinned;
             if (skinned) {
                 inventory = Bukkit.createInventory(this, 27, MenuPack.title(MenuPack.LOBBY, MenuPack.ROWS_27, Component.empty()));
                 fill(CREATIVE_AREA, creativeCard());
                 fill(SURVIVAL_AREA, survivalCard());
                 fill(LOBBY_AREA, lobbyCard());
-                fill(HUB_AREA, hubCard());
+                fill(SKYBLOCK_AREA, skyblockCard(routing, online));
                 return;
             }
             inventory = Bukkit.createInventory(this, 27, brand());
@@ -96,7 +120,7 @@ final class WorldSelector implements Listener {
             }
             inventory.setItem(4, gold);
             inventory.setItem(CREATIVE_SLOT, creativeCard());
-            inventory.setItem(13, hubCard());
+            inventory.setItem(SKYBLOCK_SLOT, skyblockCard(routing, online));
             inventory.setItem(SURVIVAL_SLOT, survivalCard());
             inventory.setItem(LOBBY_SLOT, item(Material.COMPASS,
                     text("LOBBY", ROSE).decorate(TextDecoration.BOLD),
@@ -140,13 +164,30 @@ final class WorldSelector implements Listener {
                     text("Click to return →", GOLD));
         }
 
-        private static ItemStack hubCard() {
-            return item(Material.NETHER_STAR,
-                    text("VAMPYUYU NETWORK", GOLD).decorate(TextDecoration.BOLD),
-                    text("Two worlds. Your next story.", IVORY),
+        static ItemStack skyblockCard(boolean routing) {
+            return skyblockCard(routing, -1);
+        }
+
+        static ItemStack skyblockCard(boolean routing, int online) {
+            List<Component> lore = new ArrayList<>(List.of(
+                    text("Build your island in the sky.", IVORY),
                     Component.empty(),
-                    text("Choose Creative or Survival", MUTED),
-                    text("to begin your adventure.", MUTED));
+                    text("Skills, minions, bosses and dungeons", MUTED),
+                    text("in one co-op adventure.", MUTED),
+                    Component.empty()));
+            if (online > 0) {
+                lore.add(text(online + (online == 1 ? " player" : " players") + " online on the network", SKY));
+                lore.add(Component.empty());
+            }
+            if (!routing) {
+                lore.add(text("Skyblock routing is offline right now:", ROSE));
+                lore.add(text("you will join the Survival server instead.", ROSE));
+                lore.add(Component.empty());
+            }
+            lore.add(text("Left-click to enter →", GOLD));
+            lore.add(text("Shift-click: go to my island", MUTED));
+            lore.add(text("Right-click: visit the hub", MUTED));
+            return item(Material.GRASS_BLOCK, text("SKYBLOCK", SKY).decorate(TextDecoration.BOLD), lore.toArray(Component[]::new));
         }
 
         @Override
@@ -157,24 +198,90 @@ final class WorldSelector implements Listener {
 
     private final JavaPlugin plugin;
     private final MenuPack pack;
+    private final SkyblockHandoff handoff;
+    private final SkyblockRoute skyblock;
+    private volatile IntSupplier online = () -> -1;
 
-    WorldSelector(JavaPlugin plugin, MenuPack pack) {
+    WorldSelector(JavaPlugin plugin, MenuPack pack, String server) {
+        this(plugin, pack, server, SkyblockHandoff.load(plugin));
+    }
+
+    WorldSelector(JavaPlugin plugin, MenuPack pack, String server, SkyblockHandoff handoff) {
         this.plugin = plugin;
         this.pack = pack;
+        this.handoff = handoff;
+        this.skyblock = new SkyblockRoute(plugin, server, handoff, SkyblockRoute.COOLDOWN_MS);
         plugin.getServer().getMessenger().registerOutgoingPluginChannel(plugin, "BungeeCord");
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
-        Objects.requireNonNull(plugin.getCommand("menu")).setExecutor((sender, command, label, args) -> {
-            if (sender instanceof Player player) {
-                open(player);
-            } else {
-                sender.sendMessage("Use this command in game.");
-            }
+        PluginCommand menu = Objects.requireNonNull(plugin.getCommand("menu"));
+        menu.setExecutor(this::command);
+        menu.setTabCompleter(this::complete);
+    }
+
+    /** Network players online, shown on the Skyblock card; a negative number hides the line. */
+    void online(IntSupplier supplier) {
+        this.online = Objects.requireNonNull(supplier);
+    }
+
+    /** {@code /menu [creative|survival|skyblock|lobby] [hub|island]}: the menu, or straight to a world. */
+    private boolean command(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Use this command in game.");
             return true;
-        });
+        }
+        if (args.length == 0) {
+            open(player);
+            return true;
+        }
+        Target target = Target.parse(args[0]);
+        SkyblockRoute.Dest dest = args.length > 1 ? parseDest(args[1]) : SkyblockRoute.Dest.SKYBLOCK;
+        if (target == null || args.length > 2 || (args.length == 2 && (target != Target.SKYBLOCK || dest == null))) {
+            player.sendMessage(prefix().append(text("Usage: /menu [creative|survival|skyblock|lobby] [hub|island]", ROSE)));
+            return true;
+        }
+        travel(player, target, dest);
+        return true;
+    }
+
+    private List<String> complete(CommandSender sender, Command command, String alias, String[] args) {
+        String prefix = args.length == 0 ? "" : args[args.length - 1].toLowerCase(Locale.ROOT);
+        List<String> options = args.length == 1 ? List.of("creative", "survival", "skyblock", "lobby")
+                : args.length == 2 && "skyblock".equalsIgnoreCase(args[0]) ? List.of("hub", "island") : List.of();
+        return options.stream().filter(option -> option.startsWith(prefix)).toList();
+    }
+
+    static SkyblockRoute.Dest parseDest(String word) {
+        return switch (word.toLowerCase(Locale.ROOT)) {
+            case "hub" -> SkyblockRoute.Dest.HUB;
+            case "island" -> SkyblockRoute.Dest.ISLAND;
+            case "skyblock" -> SkyblockRoute.Dest.SKYBLOCK;
+            default -> null;
+        };
+    }
+
+    /** Main thread. */
+    void travel(Player player, Target target, SkyblockRoute.Dest dest) {
+        if (!player.isOnline()) return;
+        if (target == Target.SKYBLOCK) skyblock.go(player, dest);
+        else skyblock.leave(player, target.server(), target.label());
+    }
+
+    /** What a click does: left enters Skyblock, shift goes to the island, right visits the hub; other clicks do nothing. */
+    static SkyblockRoute.Dest destFor(ClickType click) {
+        return switch (click) {
+            case LEFT -> SkyblockRoute.Dest.SKYBLOCK;
+            case SHIFT_LEFT, SHIFT_RIGHT -> SkyblockRoute.Dest.ISLAND;
+            case RIGHT -> SkyblockRoute.Dest.HUB;
+            default -> null;
+        };
+    }
+
+    void close() {
+        handoff.close();
     }
 
     private void open(Player player) {
-        player.openInventory(new Menu(pack != null && pack.active(player)).getInventory());
+        player.openInventory(new Menu(pack != null && pack.active(player), handoff.available(), online.getAsInt()).getInventory());
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.35f, 1.1f);
     }
 
@@ -191,39 +298,81 @@ final class WorldSelector implements Listener {
             plugin.getServer().getScheduler().runTask(plugin, () -> player.closeInventory());
             return;
         }
-        String server = destination(menu.skinned, slot);
-        if (server == null) {
+        Target target = destination(menu.skinned, slot);
+        SkyblockRoute.Dest dest = destFor(event.getClick());
+        if (target == null || dest == null) {
             return;
         }
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            if (!player.isOnline()) {
-                return;
-            }
-            try {
-                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-                DataOutputStream data = new DataOutputStream(bytes);
-                data.writeUTF("Connect");
-                data.writeUTF(server);
-                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.35f, 1.3f);
-                player.sendPluginMessage(plugin, "BungeeCord", bytes.toByteArray());
-                player.closeInventory();
-                String destination = server.equals("creative") ? "Creative" : server.equals("survival") ? "Survival" : "Lobby";
-                player.sendMessage(text("VAMPYUYU ", ROSE).decorate(TextDecoration.BOLD)
-                        .append(text("Connecting to ", IVORY))
-                        .append(text(destination, GOLD))
-                        .append(text("… If unavailable, please try again shortly.", MUTED)));
-            } catch (IOException exception) {
-                plugin.getLogger().warning("Unable to encode server selection");
-            }
-        });
+        plugin.getServer().getScheduler().runTask(plugin, () -> travel(player, target, target == Target.SKYBLOCK ? dest : SkyblockRoute.Dest.SKYBLOCK));
     }
 
-    /** Maps a clicked top-inventory slot to a backend, or null for decoration. */
-    static String destination(boolean skinned, int slot) {
-        if (skinned) {
-            return in(CREATIVE_AREA, slot) ? "creative" : in(SURVIVAL_AREA, slot) ? "survival" : in(LOBBY_AREA, slot) ? "lobby" : null;
+    /** What a card leads to. Skyblock lives on the survival server, so it shares the backend name with Survival. */
+    enum Target {
+        CREATIVE("creative", "Creative"),
+        SURVIVAL("survival", "Survival"),
+        SKYBLOCK("survival", "Skyblock"),
+        LOBBY("lobby", "Lobby");
+
+        private final String server;
+        private final String label;
+
+        Target(String server, String label) {
+            this.server = server;
+            this.label = label;
         }
-        return slot == CREATIVE_SLOT ? "creative" : slot == SURVIVAL_SLOT ? "survival" : slot == LOBBY_SLOT ? "lobby" : null;
+
+        String server() {
+            return server;
+        }
+
+        /** The card named by a /menu argument (case-insensitive), or null. */
+        static Target parse(String word) {
+            for (Target target : values()) if (target.name().equalsIgnoreCase(word)) return target;
+            return null;
+        }
+
+        String label() {
+            return label;
+        }
+    }
+
+    /** The BungeeCord "Connect" message body. */
+    static byte[] connectMessage(String server) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        DataOutputStream data = new DataOutputStream(bytes);
+        data.writeUTF("Connect");
+        data.writeUTF(server);
+        return bytes.toByteArray();
+    }
+
+    /** Sends the Connect message; false (and a log line) when it cannot be encoded. */
+    static boolean connect(JavaPlugin plugin, Player player, String server) {
+        try {
+            player.sendPluginMessage(plugin, "BungeeCord", connectMessage(server));
+            return true;
+        } catch (IOException exception) {
+            plugin.getLogger().warning("Unable to encode server selection");
+            return false;
+        }
+    }
+
+    /** Maps a clicked top-inventory slot to a card, or null for decoration. */
+    static Target destination(boolean skinned, int slot) {
+        if (skinned) {
+            return in(CREATIVE_AREA, slot) ? Target.CREATIVE
+                    : in(SURVIVAL_AREA, slot) ? Target.SURVIVAL
+                    : in(SKYBLOCK_AREA, slot) ? Target.SKYBLOCK
+                    : in(LOBBY_AREA, slot) ? Target.LOBBY : null;
+        }
+        return slot == CREATIVE_SLOT ? Target.CREATIVE
+                : slot == SURVIVAL_SLOT ? Target.SURVIVAL
+                : slot == SKYBLOCK_SLOT ? Target.SKYBLOCK
+                : slot == LOBBY_SLOT ? Target.LOBBY : null;
+    }
+
+    @EventHandler
+    public void quit(PlayerQuitEvent event) {
+        skyblock.forget(event.getPlayer().getUniqueId());
     }
 
     @EventHandler

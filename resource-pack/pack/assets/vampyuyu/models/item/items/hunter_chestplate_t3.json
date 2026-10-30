@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "vampyuyu:item/items/hunter_chestplate_t3"
+  }
+}

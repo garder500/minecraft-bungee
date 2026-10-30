@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "vampyuyu:item/economy/my_auctions"
+  }
+}

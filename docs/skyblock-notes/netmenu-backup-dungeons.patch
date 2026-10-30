@@ -1,0 +1,89 @@
+diff --git a/internal/backup/backup.go b/internal/backup/backup.go
+index f7d43e1..421f2a1 100644
+--- a/internal/backup/backup.go
++++ b/internal/backup/backup.go
+@@ -78,6 +78,21 @@ type Info struct {
+ 
+ func worldName(name string) bool { return worldRE.MatchString(name) && !reserved[name] }
+ 
++// transientWorld reports the throw-away Skyblock dungeon worlds (world/dimensions/<ns>/sb_dungeon_<run>, or a
++// top-level sb_dungeon_* folder on older layouts): a run creates and deletes them while a backup walks the tree.
++func transientWorld(rel string) bool {
++	parts := strings.Split(rel, "/")
++	if strings.HasPrefix(parts[0], "sb_dungeon_") {
++		return true
++	}
++	for i, part := range parts {
++		if part == "dimensions" && i+2 < len(parts) && strings.HasPrefix(parts[i+2], "sb_dungeon_") {
++			return true
++		}
++	}
++	return false
++}
++
+ func isRootFile(name string) bool {
+ 	for _, n := range rootFiles {
+ 		if n == name {
+@@ -231,7 +246,7 @@ func roots(dataDir string) ([]string, error) {
+ 			out = append(out, name)
+ 		case name == "plugins" && entry.Type().IsDir():
+ 			out = append(out, name)
+-		case entry.Type().IsDir() && worldName(name):
++		case entry.Type().IsDir() && worldName(name) && !transientWorld(name):
+ 			if st, e := os.Lstat(filepath.Join(dataDir, name, "level.dat")); e == nil && st.Mode().IsRegular() {
+ 				out = append(out, name)
+ 			}
+@@ -308,6 +323,12 @@ func Create(dataDir, server, version, outDir, kind string) (Info, error) {
+ 			}
+ 			rel, _ := filepath.Rel(dataDir, p)
+ 			rel = filepath.ToSlash(rel)
++			if transientWorld(rel) {
++				if d.IsDir() {
++					return filepath.SkipDir
++				}
++				return nil
++			}
+ 			if d.Type()&fs.ModeSymlink != 0 {
+ 				return fmt.Errorf("symlinks cannot be exported: %s", rel)
+ 			}
+diff --git a/internal/backup/backup_test.go b/internal/backup/backup_test.go
+index bfb0545..b13fe55 100644
+--- a/internal/backup/backup_test.go
++++ b/internal/backup/backup_test.go
+@@ -180,3 +180,36 @@ func TestNames(t *testing.T) {
+ 		}
+ 	}
+ }
++
++func TestDungeonWorldsAreSkipped(t *testing.T) {
++	data, out := server(t, "26.3"), t.TempDir()
++	write(t, filepath.Join(data, "world/dimensions/minecraft/sb_hub/region/r.0.0.mca"), []byte("hub"))
++	write(t, filepath.Join(data, "world/dimensions/minecraft/sb_dungeon_a1b2/region/r.0.0.mca"), []byte("run"))
++	write(t, filepath.Join(data, "world/dimensions/minecraft/sb_dungeon_a1b2/level.dat"), []byte("run"))
++	write(t, filepath.Join(data, "sb_dungeon_c3d4/level.dat"), levelDat("26.3"))
++	info, e := Create(data, "survival", "26.3", out, "export")
++	if e != nil {
++		t.Fatal(e)
++	}
++	zr, e := zip.OpenReader(filepath.Join(out, info.Name))
++	if e != nil {
++		t.Fatal(e)
++	}
++	defer zr.Close()
++	seen := map[string]bool{}
++	for _, f := range zr.File {
++		seen[f.Name] = true
++		if strings.Contains(f.Name, "sb_dungeon_") {
++			t.Fatal("a dungeon world was archived:", f.Name)
++		}
++	}
++	if !seen["payload/world/dimensions/minecraft/sb_hub/region/r.0.0.mca"] {
++		t.Fatal("the hub world must stay in the archive")
++	}
++	for _, rel := range []string{"sb_dungeon_c3d4", "sb_dungeon_c3d4/level.dat", "world/dimensions/minecraft/sb_dungeon_x", "world/sb_dungeonish"} {
++		want := strings.HasPrefix(rel, "world/sb_dungeonish")
++		if transientWorld(rel) == want {
++			t.Fatal("transientWorld", rel, "=", !want)
++		}
++	}
++}

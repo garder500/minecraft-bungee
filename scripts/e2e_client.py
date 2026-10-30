@@ -121,6 +121,8 @@ def stop_stale():
 
 ARENA_JAR = ROOT / "arena-plugin/target/nexus-arena-engine.jar"
 NETWORK_JAR = ROOT / "network-plugin/target/network-display.jar"
+SURVIVAL_JAR = ROOT / "survival-plugin/target/survival-plugin.jar"
+WITH_SURVIVAL = False  # set by the back scenario: also load the survival plugin
 API_PORT = 8085
 API_TOKEN = "e2e-token-" + "x" * 30
 
@@ -166,6 +168,8 @@ def start_server(zip_path, sha1, plugin=False, pack_required=True):
         (data / "arenas").mkdir(parents=True)
         shutil.copy(ARENA_JAR, server / "plugins" / ARENA_JAR.name)
         shutil.copy(NETWORK_JAR, server / "plugins" / NETWORK_JAR.name)  # offers the pack on join
+        if WITH_SURVIVAL:
+            shutil.copy(SURVIVAL_JAR, server / "plugins" / SURVIVAL_JAR.name)
         served = WORK / "pack" / "pack"
         served.mkdir(exist_ok=True)
         shutil.copy(zip_path, served / f"{sha1}.zip")
@@ -1008,9 +1012,156 @@ def dev_server():
     say(f"dev server up: Minecraft :{MC_PORT}, rcon :{RCON_PORT} ({RCON_PASSWORD}), JDWP :{DEBUG_PORT}")
 
 
+def back_scenario(ctx):
+    """/back of the survival plugin with a real client: die, respawn elsewhere, type /back, land on the death
+    spot; die again and meet the 5 minute cooldown."""
+    tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
+    xdo = tools["xdotool"]
+    rcon = Rcon()
+
+    def type_command(text):
+        subprocess.run([xdo, "key", "slash"], env=env)
+        time.sleep(1)
+        subprocess.run([xdo, "type", "--delay", "60", text], env=env)
+        time.sleep(0.5)
+        subprocess.run([xdo, "key", "Return"], env=env)
+        time.sleep(6)  # utility's /back warms up 3 s (stand still)
+
+    def pos():
+        return player_state(rcon)["pos"]
+
+    def near(a, b, r=3.0):
+        return abs(a[0] - b[0]) < r and abs(a[2] - b[2]) < r
+
+    def die_at(x, z):
+        rcon.command(f"tp E2EBot {x} -60 {z}")
+        time.sleep(2)
+        rcon.command("gamemode survival E2EBot")
+        time.sleep(1)
+        rcon.command("kill E2EBot")
+        time.sleep(4)  # immediate respawn is on: the bot is back at the world spawn
+
+    say("back: " + rcon.command("gamerule immediate_respawn true").strip())
+    first = (60, 60)
+    die_at(*first)
+    here = pos()
+    if near(here, (first[0], 0, first[1]), 10):
+        failures.append(f"the bot did not respawn away from its death spot: {here}")
+    shot(tools, shots / "back-1-respawned.png")
+    type_command("back")
+    after = pos()
+    shot(tools, shots / "back-2-returned.png")
+    if not near(after, (first[0], 0, first[1])):
+        failures.append(f"/back did not return to the death spot {first}: {after}")
+    die_at(-60, -60)
+    type_command("back")
+    again = pos()
+    shot(tools, shots / "back-3-cooldown.png")
+    if near(again, (-60, 0, -60), 10):
+        failures.append(f"/back worked during the cooldown: {again}")
+    saved = server / "plugins" / "VampyuyuSurvival" / "back.json"
+    if not saved.exists() or "lastUse" not in saved.read_text():
+        failures.append("back.json was not written")
+    say(f"back: respawn {here}, returned {after}, during cooldown {again}")
+
+
+def skyblock_scenario(ctx):
+    """Skyblock of the survival plugin with a real client: /menu card, island creation, the Wings worn,
+    the Nether platform and a boss. Screenshots only prove what is visible; state is checked over RCON."""
+    tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
+    xdo = tools["xdotool"]
+    rcon = Rcon()
+
+    def type_command(text):
+        subprocess.run([xdo, "key", "slash"], env=env)
+        time.sleep(1)
+        subprocess.run([xdo, "type", "--delay", "60", text], env=env)
+        time.sleep(0.5)
+        subprocess.run([xdo, "key", "Return"], env=env)
+        time.sleep(3)
+
+    def as_bot(command):
+        return rcon.command("execute as E2EBot at E2EBot run " + command)
+
+    def dimension():
+        return rcon.command("data get entity E2EBot Dimension")
+
+    def wait_dimension(name, seconds):
+        for _ in range(seconds):
+            if name in dimension():
+                return True
+            time.sleep(1)
+        return False
+
+    rcon.command("op E2EBot")
+    rcon.command("gamemode survival E2EBot")
+    time.sleep(1)
+    type_command("menu")
+    shot(tools, shots / "sb-1-menu.png")
+    subprocess.run([xdo, "key", "Escape"], env=env)
+    time.sleep(1)
+
+    type_command("island create classic")
+    if not wait_dimension("sb_world", 150):
+        failures.append("the island was never entered after /island create: " + dimension())
+    time.sleep(10)  # chunks and the island blocks arrive
+    shot(tools, shots / "sb-2-island.png")
+    type_command("island info")
+    shot(tools, shots / "sb-3-island-info.png")
+
+    type_command("sbgive wings_3")
+    time.sleep(1)
+    inventory = rcon.command("data get entity E2EBot Inventory")
+    import re
+    found = re.search(r"Slot: (\d+)b, id: \"minecraft:elytra\"", inventory)
+    say("skyblock: inventory after sbgive: " + inventory[:300])
+    if not found:
+        failures.append("no Wings item in the inventory after /sbgive wings_3")
+    else:
+        slot = int(found.group(1))
+        if slot > 8:
+            rcon.command(f"item replace entity E2EBot hotbar.0 from entity E2EBot container.{slot - 9}")
+            slot = 0
+        # A player puts a chestplate on with a right-click: select the slot and use it.
+        subprocess.run([xdo, "key", str(slot + 1)], env=env)
+        time.sleep(1)
+        subprocess.run([xdo, "click", "3"], env=env)
+        time.sleep(2)
+        chest = rcon.command("data get entity E2EBot equipment.chest")
+        if "wings" not in chest.lower() and "elytra" not in chest.lower():
+            failures.append("the Wings did not end up in the chest slot: " + chest[:200])
+        time.sleep(2)
+        abilities = rcon.command("data get entity E2EBot abilities.mayfly")
+        say("skyblock: mayfly after wearing: " + abilities.strip())
+        if "1b" not in abilities:
+            failures.append("wearing the Wings did not allow flight: " + abilities.strip())
+        subprocess.run([xdo, "key", "F5"], env=env)
+        time.sleep(2)
+        shot(tools, shots / "sb-4-wings-third-person.png")
+        subprocess.run([xdo, "key", "F5"], env=env)
+        subprocess.run([xdo, "key", "F5"], env=env)
+        time.sleep(1)
+        subprocess.run([xdo, "key", "F5"], env=env)
+        time.sleep(1)
+
+    type_command("island nether")
+    time.sleep(8)
+    if "sb_nether" not in dimension():
+        failures.append("/island nether did not reach sb_nether: " + dimension())
+    shot(tools, shots / "sb-5-nether.png")
+    type_command("island home")
+    time.sleep(5)
+
+    type_command("boss spawn voidwyrm")
+    time.sleep(6)
+    shot(tools, shots / "sb-6-boss.png")
+    rcon.command("boss kill all")
+    say("skyblock: done, dimension " + dimension().strip())
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -1018,6 +1169,8 @@ def main():
     args = ap.parse_args()
     if args.scenario == "dev":
         return dev_server()
+    global WITH_SURVIVAL
+    WITH_SURVIVAL = args.scenario in ("back", "skyblock")
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
@@ -1040,7 +1193,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -1071,8 +1224,10 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
+            time.sleep(4)
+            shot(tools, shots / "after-join.png")
             for i in range(60):
                 if client_log.read_text(errors="replace").count("Reloading ResourceManager") >= 2:
                     break
@@ -1102,6 +1257,10 @@ def main():
             showcase_scenario(ctx)
         elif args.scenario == "staffchat":
             staffchat_scenario(ctx)
+        elif args.scenario == "back":
+            back_scenario(ctx)
+        elif args.scenario == "skyblock":
+            skyblock_scenario(ctx)
         else:
             shader_scenario(ctx)
     finally:

@@ -1,0 +1,1097 @@
+# Skyblock economy (feature "economy"). Amounts are in coins unless a key says otherwise.
+# Edit this file, then run /economy reload (shops, prices, bank, bazaar and auction settings reload live;
+# currency/ledger-file needs a restart).
+
+currency:
+  # No balance (purse or bank) can ever exceed this. Extra coins are refused, never destroyed.
+  max-balance: 1000000000000
+  # Purse changes remembered per player (used by /economy ledger and the audit chain check).
+  ledger-size: 50
+  bank-history-size: 40
+  # Also append every purse change to plugins/VampyuyuSurvival/economy/ledger/<day>.log (needs a restart).
+  ledger-file: false
+
+pay:
+  enabled: true
+  min: 1
+  max: 100000000
+  # Payments above this need "/pay confirm" within 30 seconds.
+  confirm-over: 50000
+  cooldown-seconds: 5
+  # Total a player may send per UTC day (anti alt-funnelling).
+  daily-limit: 250000000
+  # Percent of each payment that disappears (0 disables).
+  tax-percent: 0
+
+death:
+  # pvp = only when killed by another player, any = every death, never = off.
+  cause: pvp
+  # Share of the purse lost (the bank is never touched) and the most that can be lost in one death.
+  percent: 50
+  max: 1000000
+  # Purses below this lose nothing.
+  min-balance: 100
+  # false = the coins are destroyed (default, an alt cannot farm a killer reward). true = the killer receives them.
+  drop-to-killer: false
+
+baltop:
+  cache-seconds: 300
+  size: 100
+
+safety:
+  # Save the player's data right after an item is escrowed into the bazaar or auction house, so a crash cannot
+  # bring the item back while the order still exists.
+  save-player-data: true
+
+bank:
+  # Real time between interest payments, in hours (interest is also paid for the time spent offline).
+  # Tuning note: 24 h x 0.5 % is about 0.5 % a day. Do not shorten the period or raise the rates without watching
+  # "/economy audit" (the faucet table shows bank:interest next to every other source of coins).
+  interest-period-hours: 24
+  # Offline catch-up is limited to this many periods; the rest is forfeited.
+  max-catchup-periods: 3
+  # capacity = most coins the bank can hold, rate = percent per period, max-interest = cap per period,
+  # cost = price of reaching this tier (paid from the purse).
+  tiers:
+    - {name: Starter, capacity: 5000000, rate: 0.5, max-interest: 25000, cost: 0}
+    - {name: Gold, capacity: 20000000, rate: 0.5, max-interest: 100000, cost: 2000000}
+    - {name: Deluxe, capacity: 100000000, rate: 0.6, max-interest: 600000, cost: 15000000}
+    - {name: Super Deluxe, capacity: 500000000, rate: 0.7, max-interest: 3500000, cost: 80000000}
+    - {name: Premier, capacity: 2500000000, rate: 0.8, max-interest: 20000000, cost: 400000000}
+    - {name: Prestige, capacity: 10000000000, rate: 1.0, max-interest: 100000000, cost: 2000000000}
+
+sell:
+  # true = "Sell everything" and /sellall leave the 9 hotbar slots alone.
+  protect-hotbar: false
+
+buyback:
+  # Items sold to a merchant stay buyable for what they paid.
+  size: 18
+  seconds: 300
+
+pressure:
+  # Server-wide sell pressure: every item sold to an NPC lowers that item's sell price for everybody, and the effect
+  # fades. multiplier = 1 / (1 + pressure / soft-cap), never below min-multiplier. Stops endless farms.
+  enabled: true
+  soft-cap: 20000
+  half-life-hours: 2
+  min-multiplier: 0.2
+  # Compacted items pool their pressure with the raw item they are made of: prefix -> how many raw items one
+  # compacted item counts for (the shop price ratio). minion_enchanted_wheat records into WHEAT x150, so selling
+  # 133 enchanted wheat moves the wheat price as much as selling 20000 raw wheat, and vice versa.
+  compact-prefixes:
+    minion_enchanted_: 150
+    minion_super_: 22500
+
+# ----------------------------------------------------------------------------------------------------------
+# NPC merchants. Place them with /sbnpc create <shop id>.
+# Item keys: UPPER CASE = vanilla material, lower case = custom item id registered by another feature
+# (for example "boss_grave_key"). Unknown ids are skipped silently, so you can list custom items before the
+# feature that registers them is installed. buy = what the player pays, sell = what the merchant pays.
+# Always keep buy above sell for the same item (the test suite checks the shipped tables for craft loops).
+# ----------------------------------------------------------------------------------------------------------
+shops:
+  farmer:
+    name: "Farmer"
+    npc-name: "<green>Farmer"
+    icon: WHEAT
+    profession: FARMER
+    npc-type: VILLAGER
+    description: "Crops, seeds and farming supplies."
+    items:
+      WHEAT: {buy: 8, sell: 2}
+      WHEAT_SEEDS: {buy: 6, sell: 0.5}
+      CARROT: {buy: 6, sell: 1.5}
+      POTATO: {buy: 6, sell: 1.5}
+      BAKED_POTATO: {sell: 3}
+      POISONOUS_POTATO: {sell: 0.5}
+      BEETROOT: {buy: 6, sell: 1.5}
+      BEETROOT_SEEDS: {buy: 6, sell: 0.5}
+      PUMPKIN: {buy: 12, sell: 3}
+      PUMPKIN_SEEDS: {buy: 8, sell: 0.5}
+      MELON_SLICE: {buy: 4, sell: 1}
+      MELON: {sell: 8}
+      MELON_SEEDS: {buy: 8, sell: 0.5}
+      SUGAR_CANE: {buy: 8, sell: 2}
+      CACTUS: {buy: 8, sell: 2}
+      COCOA_BEANS: {buy: 10, sell: 2.5}
+      NETHER_WART: {buy: 12, sell: 2.5}
+      BROWN_MUSHROOM: {buy: 10, sell: 2.5}
+      RED_MUSHROOM: {buy: 10, sell: 2.5}
+      SWEET_BERRIES: {buy: 6, sell: 1.5}
+      GLOW_BERRIES: {buy: 8, sell: 2}
+      BAMBOO: {buy: 3, sell: 0.5}
+      APPLE: {buy: 12, sell: 3}
+      HAY_BLOCK: {sell: 16}
+      BREAD: {sell: 5}
+      BONE_MEAL: {buy: 5, sell: 0.5}
+      PUMPKIN_PIE: {sell: 9}
+      COOKIE: {sell: 1.5}
+      CAKE: {sell: 18}
+      GOLDEN_CARROT: {sell: 8}
+      SUGAR: {sell: 1}
+      IRON_HOE: {buy: 70}
+      WOODEN_HOE: {buy: 8}
+      BUCKET: {buy: 70}
+      SHEARS: {buy: 70}
+      # Compacted minion items (feature minions): sell only, priced BELOW ratio x the raw item (ratio 160 in
+      # minions.yml, kept at 150 here). Never add a buy price or raise these above the raw equivalent, or
+      # compacting becomes a coin faucet.
+      minion_enchanted_wheat: {sell: 300}
+      minion_super_wheat: {sell: 45000}
+      minion_enchanted_wheat_seeds: {sell: 75}
+      minion_super_wheat_seeds: {sell: 11250}
+      minion_enchanted_carrot: {sell: 225}
+      minion_super_carrot: {sell: 33750}
+      minion_enchanted_potato: {sell: 225}
+      minion_super_potato: {sell: 33750}
+      minion_enchanted_baked_potato: {sell: 450}
+      minion_super_baked_potato: {sell: 67500}
+      minion_enchanted_poisonous_potato: {sell: 75}
+      minion_super_poisonous_potato: {sell: 11250}
+      minion_enchanted_pumpkin: {sell: 450}
+      minion_super_pumpkin: {sell: 67500}
+      minion_enchanted_melon_slice: {sell: 150}
+      minion_super_melon_slice: {sell: 22500}
+  miner:
+    name: "Miner"
+    npc-name: "<gray>Miner"
+    icon: IRON_PICKAXE
+    profession: TOOLSMITH
+    npc-type: VILLAGER
+    description: "Ores, gems and mining gear."
+    items:
+      COBBLESTONE: {buy: 2, sell: 0.5}
+      STONE: {sell: 0.75}
+      COBBLED_DEEPSLATE: {sell: 0.6}
+      DEEPSLATE: {sell: 0.6}
+      GRAVEL: {sell: 0.4}
+      SAND: {buy: 2, sell: 0.5}
+      RED_SAND: {sell: 0.5}
+      NETHERRACK: {sell: 0.3}
+      FLINT: {buy: 6, sell: 1}
+      CLAY_BALL: {buy: 4, sell: 1}
+      COAL: {buy: 12, sell: 3}
+      CHARCOAL: {sell: 2.5}
+      COAL_BLOCK: {sell: 27}
+      RAW_IRON: {sell: 3.5}
+      IRON_INGOT: {buy: 20, sell: 5}
+      IRON_NUGGET: {sell: 0.5}
+      IRON_BLOCK: {sell: 45}
+      RAW_GOLD: {sell: 5}
+      GOLD_INGOT: {buy: 28, sell: 7}
+      GOLD_NUGGET: {sell: 0.7}
+      GOLD_BLOCK: {sell: 63}
+      RAW_COPPER: {sell: 1.2}
+      COPPER_INGOT: {buy: 8, sell: 2}
+      COPPER_BLOCK: {sell: 18}
+      REDSTONE: {buy: 8, sell: 2}
+      REDSTONE_BLOCK: {sell: 18}
+      LAPIS_LAZULI: {buy: 8, sell: 2}
+      LAPIS_BLOCK: {sell: 18}
+      DIAMOND: {buy: 96, sell: 24}
+      DIAMOND_BLOCK: {sell: 216}
+      EMERALD: {buy: 72, sell: 18}
+      EMERALD_BLOCK: {sell: 162}
+      QUARTZ: {buy: 16, sell: 4}
+      QUARTZ_BLOCK: {sell: 16}
+      AMETHYST_SHARD: {sell: 3}
+      OBSIDIAN: {buy: 60, sell: 12}
+      GLOWSTONE_DUST: {buy: 12, sell: 3}
+      GLOWSTONE: {sell: 12}
+      ANCIENT_DEBRIS: {sell: 120}
+      NETHERITE_SCRAP: {sell: 300}
+      NETHERITE_INGOT: {sell: 1500}
+      WOODEN_PICKAXE: {buy: 10}
+      STONE_PICKAXE: {buy: 25}
+      IRON_PICKAXE: {buy: 100}
+      DIAMOND_PICKAXE: {buy: 320}
+      IRON_SHOVEL: {buy: 50}
+      TORCH: {buy: 4}
+      LANTERN: {buy: 35}
+      # Compacted minion items (feature minions): sell only, priced BELOW ratio x the raw item (ratio 160 in
+      # minions.yml, kept at 150 here). Never add a buy price or raise these above the raw equivalent, or
+      # compacting becomes a coin faucet.
+      minion_enchanted_cobblestone: {sell: 75}
+      minion_super_cobblestone: {sell: 11250}
+      minion_enchanted_stone: {sell: 112.5}
+      minion_super_stone: {sell: 16875}
+      minion_enchanted_sand: {sell: 75}
+      minion_super_sand: {sell: 11250}
+      minion_enchanted_clay_ball: {sell: 150}
+      minion_super_clay_ball: {sell: 22500}
+      minion_enchanted_coal: {sell: 450}
+      minion_super_coal: {sell: 67500}
+      minion_enchanted_charcoal: {sell: 375}
+      minion_super_charcoal: {sell: 56250}
+      minion_enchanted_iron_ingot: {sell: 750}
+      minion_super_iron_ingot: {sell: 112500}
+      minion_enchanted_gold_ingot: {sell: 1050}
+      minion_super_gold_ingot: {sell: 157500}
+      minion_enchanted_redstone: {sell: 300}
+      minion_super_redstone: {sell: 45000}
+      minion_enchanted_lapis_lazuli: {sell: 300}
+      minion_super_lapis_lazuli: {sell: 45000}
+      minion_enchanted_diamond: {sell: 3600}
+      minion_super_diamond: {sell: 540000}
+      minion_enchanted_emerald: {sell: 2700}
+      minion_super_emerald: {sell: 405000}
+  lumberjack:
+    name: "Lumberjack"
+    npc-name: "<gold>Lumberjack"
+    icon: IRON_AXE
+    profession: TOOLSMITH
+    npc-type: VILLAGER
+    description: "Logs, planks and saplings."
+    items:
+      OAK_LOG: {buy: 8, sell: 2}
+      SPRUCE_LOG: {buy: 8, sell: 2}
+      BIRCH_LOG: {buy: 8, sell: 2}
+      JUNGLE_LOG: {buy: 10, sell: 2.5}
+      ACACIA_LOG: {buy: 8, sell: 2}
+      DARK_OAK_LOG: {buy: 10, sell: 2.5}
+      MANGROVE_LOG: {buy: 10, sell: 2.5}
+      CHERRY_LOG: {buy: 12, sell: 3}
+      CRIMSON_STEM: {sell: 3}
+      WARPED_STEM: {sell: 3}
+      OAK_PLANKS: {buy: 3, sell: 0.5}
+      SPRUCE_PLANKS: {buy: 3, sell: 0.5}
+      BIRCH_PLANKS: {buy: 3, sell: 0.5}
+      JUNGLE_PLANKS: {buy: 3, sell: 0.6}
+      ACACIA_PLANKS: {buy: 3, sell: 0.5}
+      DARK_OAK_PLANKS: {buy: 3, sell: 0.6}
+      STICK: {buy: 1.5, sell: 0.2}
+      OAK_SAPLING: {buy: 6, sell: 0.5}
+      SPRUCE_SAPLING: {buy: 6, sell: 0.5}
+      BIRCH_SAPLING: {buy: 6, sell: 0.5}
+      JUNGLE_SAPLING: {buy: 6, sell: 0.5}
+      ACACIA_SAPLING: {buy: 6, sell: 0.5}
+      DARK_OAK_SAPLING: {buy: 6, sell: 0.5}
+      CHERRY_SAPLING: {buy: 8, sell: 0.5}
+      MANGROVE_PROPAGULE: {buy: 8, sell: 0.5}
+      WOODEN_AXE: {buy: 10}
+      STONE_AXE: {buy: 25}
+      IRON_AXE: {buy: 100}
+      DIAMOND_AXE: {buy: 320}
+      CRAFTING_TABLE: {buy: 16}
+      CHEST: {buy: 28}
+      BARREL: {buy: 28}
+      LADDER: {buy: 6}
+      # Compacted minion items (feature minions): sell only, priced BELOW ratio x the raw item (ratio 160 in
+      # minions.yml, kept at 150 here). Never add a buy price or raise these above the raw equivalent, or
+      # compacting becomes a coin faucet.
+      minion_enchanted_oak_log: {sell: 300}
+      minion_super_oak_log: {sell: 45000}
+      minion_enchanted_spruce_log: {sell: 300}
+      minion_super_spruce_log: {sell: 45000}
+      minion_enchanted_birch_log: {sell: 300}
+      minion_super_birch_log: {sell: 45000}
+  fisherman:
+    name: "Fisherman"
+    npc-name: "<aqua>Fisherman"
+    icon: FISHING_ROD
+    profession: FISHERMAN
+    npc-type: VILLAGER
+    description: "Fish, sea loot and fishing gear."
+    items:
+      COD: {buy: 8, sell: 2}
+      SALMON: {buy: 10, sell: 2.5}
+      TROPICAL_FISH: {sell: 6}
+      PUFFERFISH: {sell: 5}
+      COOKED_COD: {sell: 4}
+      COOKED_SALMON: {sell: 5}
+      INK_SAC: {sell: 2}
+      GLOW_INK_SAC: {sell: 6}
+      KELP: {buy: 5, sell: 1}
+      DRIED_KELP: {buy: 6, sell: 1.2}
+      DRIED_KELP_BLOCK: {sell: 10.5}
+      LILY_PAD: {buy: 12, sell: 3}
+      PRISMARINE_SHARD: {sell: 5}
+      PRISMARINE_CRYSTALS: {sell: 6}
+      NAUTILUS_SHELL: {sell: 20}
+      SPONGE: {sell: 25}
+      SEA_PICKLE: {sell: 4}
+      TURTLE_SCUTE: {sell: 40}
+      NAME_TAG: {sell: 30}
+      SADDLE: {sell: 40}
+      HEART_OF_THE_SEA: {sell: 500}
+      BOWL: {buy: 2, sell: 0.2}
+      FISHING_ROD: {buy: 60}
+      STRING: {buy: 6, sell: 1.5}
+      WATER_BUCKET: {buy: 80}
+      # Compacted minion items (feature minions): sell only, priced BELOW ratio x the raw item (ratio 160 in
+      # minions.yml, kept at 150 here). Never add a buy price or raise these above the raw equivalent, or
+      # compacting becomes a coin faucet.
+      minion_enchanted_cod: {sell: 300}
+      minion_super_cod: {sell: 45000}
+      minion_enchanted_salmon: {sell: 375}
+      minion_super_salmon: {sell: 56250}
+      minion_enchanted_tropical_fish: {sell: 900}
+      minion_super_tropical_fish: {sell: 135000}
+      minion_enchanted_pufferfish: {sell: 750}
+      minion_super_pufferfish: {sell: 112500}
+      minion_enchanted_cooked_cod: {sell: 600}
+      minion_super_cooked_cod: {sell: 90000}
+      minion_enchanted_cooked_salmon: {sell: 750}
+      minion_super_cooked_salmon: {sell: 112500}
+      minion_enchanted_ink_sac: {sell: 300}
+      minion_super_ink_sac: {sell: 45000}
+      minion_enchanted_sponge: {sell: 3750}
+      minion_super_sponge: {sell: 562500}
+  mob_hunter:
+    name: "Mob Hunter"
+    npc-name: "<red>Mob Hunter"
+    icon: IRON_SWORD
+    profession: WEAPONSMITH
+    npc-type: VILLAGER
+    description: "Drops from monsters."
+    items:
+      ROTTEN_FLESH: {sell: 1}
+      BONE: {buy: 6, sell: 1.5}
+      SPIDER_EYE: {sell: 3}
+      GUNPOWDER: {buy: 12, sell: 3}
+      ENDER_PEARL: {buy: 60, sell: 15}
+      BLAZE_ROD: {buy: 48, sell: 12}
+      BLAZE_POWDER: {sell: 5.5}
+      GHAST_TEAR: {sell: 40}
+      SLIME_BALL: {buy: 16, sell: 4}
+      SLIME_BLOCK: {sell: 34}
+      MAGMA_CREAM: {sell: 6}
+      PHANTOM_MEMBRANE: {sell: 8}
+      ARROW: {buy: 3, sell: 0.5}
+      SHULKER_SHELL: {sell: 80}
+      SKELETON_SKULL: {sell: 100}
+      WITHER_SKELETON_SKULL: {sell: 500}
+      NETHER_STAR: {sell: 1500}
+      ENDER_EYE: {sell: 25}
+      BREEZE_ROD: {sell: 15}
+      WIND_CHARGE: {sell: 2}
+      GOAT_HORN: {sell: 60}
+      # Compacted minion items (feature minions): sell only, priced BELOW ratio x the raw item (ratio 160 in
+      # minions.yml, kept at 150 here). Never add a buy price or raise these above the raw equivalent, or
+      # compacting becomes a coin faucet.
+      minion_enchanted_rotten_flesh: {sell: 150}
+      minion_super_rotten_flesh: {sell: 22500}
+      minion_enchanted_bone: {sell: 225}
+      minion_super_bone: {sell: 33750}
+      minion_enchanted_slime_ball: {sell: 600}
+      minion_super_slime_ball: {sell: 90000}
+      minion_enchanted_arrow: {sell: 75}
+      minion_super_arrow: {sell: 11250}
+      # Slayer drops (feature boss). Sell only: they are earned by fighting, never bought.
+      revenant_flesh: {sell: 150}
+      tarantula_web: {sell: 150}
+      ravager_tooth: {sell: 150}
+      null_sphere: {sell: 150}
+      tarantula_charm: {sell: 3500}
+      ravager_pelt: {sell: 3500}
+      void_conduit: {sell: 3500}
+      demon_core: {sell: 3500}
+  alchemist:
+    name: "Alchemist"
+    npc-name: "<light_purple>Alchemist"
+    icon: BREWING_STAND
+    profession: CLERIC
+    npc-type: VILLAGER
+    description: "Potion ingredients and brewing gear."
+    items:
+      GLASS_BOTTLE: {buy: 5, sell: 1}
+      FERMENTED_SPIDER_EYE: {sell: 5}
+      RABBIT_FOOT: {buy: 40, sell: 8}
+      GLISTERING_MELON_SLICE: {sell: 6}
+      DRAGON_BREATH: {sell: 60}
+      EXPERIENCE_BOTTLE: {sell: 15}
+      BREWING_STAND: {buy: 100}
+      CAULDRON: {buy: 170}
+      GLASS: {buy: 4, sell: 0.6}
+      GLASS_PANE: {sell: 0.2}
+      SPECTRAL_ARROW: {sell: 0.5}
+      PAPER: {buy: 4, sell: 1}
+      BOOK: {buy: 24, sell: 6}
+      ENCHANTING_TABLE: {buy: 700}
+      ANVIL: {buy: 420}
+      GRINDSTONE: {buy: 70}
+      POPPY: {buy: 4, sell: 1}
+      DANDELION: {buy: 4, sell: 1}
+      ALLIUM: {buy: 6, sell: 1.5}
+      LILY_OF_THE_VALLEY: {buy: 6, sell: 1.5}
+      # Reagents dropped by slayer bosses (feature boss). Sell only.
+      revenant_catalyst: {sell: 3500}
+      demon_ember: {sell: 150}
+  adventurer:
+    name: "Adventurer"
+    npc-name: "<yellow>Adventurer"
+    icon: COMPASS
+    profession: CARTOGRAPHER
+    npc-type: VILLAGER
+    description: "Travel gear and treasures."
+    items:
+      COMPASS: {buy: 60}
+      CLOCK: {buy: 90}
+      MAP: {buy: 45}
+      SPYGLASS: {buy: 90}
+      LEAD: {buy: 30}
+      SHIELD: {buy: 90}
+      FIREWORK_ROCKET: {buy: 12, sell: 2}
+      ENDER_CHEST: {buy: 300}
+      GOLDEN_APPLE: {buy: 420, sell: 90}
+      TOTEM_OF_UNDYING: {sell: 400}
+      ECHO_SHARD: {sell: 150}
+      DISC_FRAGMENT_5: {sell: 100}
+      COOKED_BEEF: {sell: 6}
+      COOKED_PORKCHOP: {sell: 6}
+      HONEY_BOTTLE: {sell: 6}
+      # Dungeon loot (feature dungeon). Sell only. Consumables and summon items are deliberately not priced.
+      dungeon_bone_fragment: {sell: 25}
+      dungeon_crypt_shard: {sell: 120}
+      dungeon_wither_essence: {sell: 600}
+      dungeon_spirit_dust: {sell: 3000}
+      dungeon_relic: {sell: 25000}
+      dungeon_dark_scroll: {sell: 150000}
+      # Boss materials (feature boss). Sell only. Weapons, summon items and the Wing Core are not priced.
+      voidwyrm_scale: {sell: 4000}
+      warden_heart: {sell: 4000}
+      frost_shard: {sell: 4000}
+      matriarch_silk: {sell: 4000}
+      leviathan_tooth: {sell: 4000}
+      lord_bone: {sell: 4000}
+      colossus_core: {sell: 30000}
+      roc_feather: {sell: 30000}
+  weaponsmith:
+    name: "Weaponsmith"
+    npc-name: "<dark_red>Weaponsmith"
+    icon: DIAMOND_SWORD
+    profession: WEAPONSMITH
+    npc-type: VILLAGER
+    description: "Weapons and armor (buy only)."
+    items:
+      WOODEN_SWORD: {buy: 10}
+      STONE_SWORD: {buy: 30}
+      IRON_SWORD: {buy: 150}
+      GOLDEN_SWORD: {buy: 200}
+      DIAMOND_SWORD: {buy: 520}
+      BOW: {buy: 80}
+      CROSSBOW: {buy: 140}
+      IRON_HELMET: {buy: 150}
+      IRON_CHESTPLATE: {buy: 240}
+      IRON_LEGGINGS: {buy: 210}
+      IRON_BOOTS: {buy: 120}
+      DIAMOND_HELMET: {buy: 600}
+      DIAMOND_CHESTPLATE: {buy: 960}
+      DIAMOND_LEGGINGS: {buy: 840}
+      DIAMOND_BOOTS: {buy: 480}
+      LEATHER_HELMET: {buy: 40}
+      LEATHER_CHESTPLATE: {buy: 64}
+      LEATHER_LEGGINGS: {buy: 56}
+      LEATHER_BOOTS: {buy: 32}
+  builder:
+    name: "Builder"
+    npc-name: "<blue>Builder"
+    icon: BRICKS
+    profession: MASON
+    npc-type: VILLAGER
+    description: "Blocks for building."
+    items:
+      STONE_BRICKS: {buy: 5, sell: 1}
+      BRICK: {buy: 6, sell: 1.5}
+      BRICKS: {buy: 24, sell: 5}
+      SANDSTONE: {buy: 9, sell: 2}
+      SMOOTH_STONE: {buy: 5, sell: 1}
+      NETHER_BRICKS: {buy: 12, sell: 3}
+      END_STONE: {buy: 12, sell: 2}
+      TERRACOTTA: {buy: 10, sell: 2}
+      WHITE_CONCRETE: {buy: 8, sell: 1.5}
+      WHITE_WOOL: {buy: 14, sell: 3}
+      DIRT: {buy: 1, sell: 0.2}
+      GRASS_BLOCK: {buy: 2, sell: 0.3}
+      PODZOL: {buy: 3, sell: 0.5}
+      MOSS_BLOCK: {buy: 6, sell: 1}
+      SEA_LANTERN: {buy: 70, sell: 20}
+      FURNACE: {buy: 28}
+      BLAST_FURNACE: {buy: 260}
+      OAK_DOOR: {buy: 10}
+      OAK_FENCE: {buy: 6}
+      WHITE_BED: {buy: 60}
+      BOOKSHELF: {buy: 70}
+      PAINTING: {buy: 15}
+      ITEM_FRAME: {buy: 20}
+      FLOWER_POT: {buy: 10}
+      SCAFFOLDING: {buy: 8}
+  rancher:
+    name: "Rancher"
+    npc-name: "<#c0924f>Rancher"
+    icon: LEATHER
+    profession: SHEPHERD
+    npc-type: VILLAGER
+    description: "Animal products and ranching gear."
+    items:
+      BEEF: {buy: 10, sell: 2.5}
+      PORKCHOP: {buy: 10, sell: 2.5}
+      CHICKEN: {buy: 8, sell: 2}
+      MUTTON: {buy: 10, sell: 2.5}
+      RABBIT: {buy: 12, sell: 3}
+      COOKED_CHICKEN: {sell: 4}
+      COOKED_MUTTON: {sell: 5}
+      COOKED_RABBIT: {sell: 5.5}
+      EGG: {buy: 5, sell: 1.2}
+      LEATHER: {buy: 12, sell: 3}
+      FEATHER: {buy: 6, sell: 1.5}
+      RABBIT_HIDE: {sell: 1}
+      HONEYCOMB: {buy: 16, sell: 4}
+      LEATHER_HORSE_ARMOR: {buy: 60}
+      IRON_HORSE_ARMOR: {buy: 320}
+      GOLDEN_HORSE_ARMOR: {buy: 480}
+      DIAMOND_HORSE_ARMOR: {buy: 1200}
+      BEEHIVE: {buy: 120}
+      # Compacted minion items (feature minions): sell only, priced BELOW ratio x the raw item (ratio 160 in
+      # minions.yml, kept at 150 here). Never add a buy price or raise these above the raw equivalent, or
+      # compacting becomes a coin faucet.
+      minion_enchanted_beef: {sell: 375}
+      minion_super_beef: {sell: 56250}
+      minion_enchanted_porkchop: {sell: 375}
+      minion_super_porkchop: {sell: 56250}
+      minion_enchanted_chicken: {sell: 300}
+      minion_super_chicken: {sell: 45000}
+      minion_enchanted_mutton: {sell: 375}
+      minion_super_mutton: {sell: 56250}
+      minion_enchanted_cooked_chicken: {sell: 600}
+      minion_super_cooked_chicken: {sell: 90000}
+      minion_enchanted_cooked_mutton: {sell: 750}
+      minion_super_cooked_mutton: {sell: 112500}
+      minion_enchanted_leather: {sell: 450}
+      minion_super_leather: {sell: 67500}
+      minion_enchanted_feather: {sell: 225}
+      minion_super_feather: {sell: 33750}
+
+bazaar:
+  enabled: true
+  # Percent of each sale kept by the market (taken from the seller on every fill, instant sells included).
+  tax-percent: 1.25
+  # Open orders a player may have (buy and sell together) and the largest single order.
+  max-orders: 14
+  max-amount: 71680
+  # Highest price per item, in coins.
+  max-price: 100000000
+  # Orders must stay within this factor of the 24h average price (5 = from 1/5 to 5 times; 1 or less disables it).
+  # Stops manipulation with absurd prices.
+  price-band: 5.0
+  # Hours of hourly price history kept per product (24..336).
+  history-hours: 72
+  # The market file is written this many ticks after a change; changes in the same window share one write.
+  persist-delay-ticks: 10
+  # Products by category. UPPER CASE = vanilla material, lower case = custom item id of another feature
+  # (unknown ids are skipped until that feature registers them). A product listed twice keeps its first category.
+  categories:
+    farming:
+      - WHEAT
+      - enchanted_wheat
+      - minion_enchanted_wheat
+      - minion_super_wheat
+      - CARROT
+      - enchanted_carrot
+      - minion_enchanted_carrot
+      - minion_super_carrot
+      - POTATO
+      - enchanted_potato
+      - minion_enchanted_potato
+      - minion_super_potato
+      - PUMPKIN
+      - enchanted_pumpkin
+      - minion_enchanted_pumpkin
+      - minion_super_pumpkin
+      - enchanted_melon_slice
+      - minion_enchanted_melon_slice
+      - minion_super_melon_slice
+      - SUGAR_CANE
+      - enchanted_sugar_cane
+      - minion_enchanted_sugar_cane
+      - minion_super_sugar_cane
+      - COCOA_BEANS
+      - enchanted_cocoa_beans
+      - minion_enchanted_cocoa_beans
+      - minion_super_cocoa_beans
+      - NETHER_WART
+      - enchanted_nether_wart
+      - minion_enchanted_nether_wart
+      - minion_super_nether_wart
+      - CACTUS
+      - enchanted_cactus
+      - minion_enchanted_cactus
+      - minion_super_cactus
+      - enchanted_mushroom
+      - minion_enchanted_mushroom
+      - minion_super_mushroom
+      - BROWN_MUSHROOM
+      - enchanted_brown_mushroom
+      - minion_enchanted_brown_mushroom
+      - minion_super_brown_mushroom
+      - RED_MUSHROOM
+      - enchanted_red_mushroom
+      - minion_enchanted_red_mushroom
+      - minion_super_red_mushroom
+      - BEETROOT
+      - enchanted_beetroot
+      - minion_enchanted_beetroot
+      - minion_super_beetroot
+      - SWEET_BERRIES
+      - enchanted_sweet_berries
+      - minion_enchanted_sweet_berries
+      - minion_super_sweet_berries
+      - KELP
+      - enchanted_kelp
+      - minion_enchanted_kelp
+      - minion_super_kelp
+      - BAMBOO
+      - enchanted_bamboo
+      - minion_enchanted_bamboo
+      - minion_super_bamboo
+      - WHEAT_SEEDS
+      - PUMPKIN_SEEDS
+      - MELON_SEEDS
+      - BEETROOT_SEEDS
+      - HAY_BLOCK
+      - APPLE
+      - EGG
+      - BONE_MEAL
+      - HONEYCOMB
+      - HONEY_BOTTLE
+      - GLOW_BERRIES
+      - SUGAR
+      - BREAD
+      - CAKE
+    mining:
+      - COBBLESTONE
+      - enchanted_cobblestone
+      - minion_enchanted_cobblestone
+      - minion_super_cobblestone
+      - COAL
+      - enchanted_coal
+      - minion_enchanted_coal
+      - minion_super_coal
+      - CHARCOAL
+      - enchanted_charcoal
+      - minion_enchanted_charcoal
+      - minion_super_charcoal
+      - IRON_INGOT
+      - enchanted_iron_ingot
+      - minion_enchanted_iron_ingot
+      - minion_super_iron_ingot
+      - GOLD_INGOT
+      - enchanted_gold_ingot
+      - minion_enchanted_gold_ingot
+      - minion_super_gold_ingot
+      - DIAMOND
+      - enchanted_diamond
+      - minion_enchanted_diamond
+      - minion_super_diamond
+      - EMERALD
+      - enchanted_emerald
+      - minion_enchanted_emerald
+      - minion_super_emerald
+      - LAPIS_LAZULI
+      - enchanted_lapis_lazuli
+      - minion_enchanted_lapis_lazuli
+      - minion_super_lapis_lazuli
+      - REDSTONE
+      - enchanted_redstone
+      - minion_enchanted_redstone
+      - minion_super_redstone
+      - QUARTZ
+      - enchanted_quartz
+      - minion_enchanted_quartz
+      - minion_super_quartz
+      - OBSIDIAN
+      - enchanted_obsidian
+      - minion_enchanted_obsidian
+      - minion_super_obsidian
+      - GLOWSTONE_DUST
+      - enchanted_glowstone_dust
+      - minion_enchanted_glowstone_dust
+      - minion_super_glowstone_dust
+      - GRAVEL
+      - enchanted_gravel
+      - minion_enchanted_gravel
+      - minion_super_gravel
+      - SAND
+      - enchanted_sand
+      - minion_enchanted_sand
+      - minion_super_sand
+      - END_STONE
+      - enchanted_end_stone
+      - minion_enchanted_end_stone
+      - minion_super_end_stone
+      - NETHERRACK
+      - enchanted_netherrack
+      - minion_enchanted_netherrack
+      - minion_super_netherrack
+      - ICE
+      - enchanted_ice
+      - minion_enchanted_ice
+      - minion_super_ice
+      - SNOWBALL
+      - enchanted_snowball
+      - minion_enchanted_snowball
+      - minion_super_snowball
+      - CLAY_BALL
+      - enchanted_clay_ball
+      - minion_enchanted_clay_ball
+      - minion_super_clay_ball
+      - COPPER_INGOT
+      - enchanted_copper_ingot
+      - minion_enchanted_copper_ingot
+      - minion_super_copper_ingot
+      - AMETHYST_SHARD
+      - enchanted_amethyst_shard
+      - minion_enchanted_amethyst_shard
+      - minion_super_amethyst_shard
+      - FLINT
+      - enchanted_flint
+      - minion_enchanted_flint
+      - minion_super_flint
+      - RAW_IRON
+      - RAW_GOLD
+      - RAW_COPPER
+      - COAL_BLOCK
+      - IRON_BLOCK
+      - GOLD_BLOCK
+      - DIAMOND_BLOCK
+      - EMERALD_BLOCK
+      - LAPIS_BLOCK
+      - REDSTONE_BLOCK
+      - NETHERITE_SCRAP
+      - ANCIENT_DEBRIS
+      - STONE
+      - COBBLED_DEEPSLATE
+      - MAGMA_BLOCK
+      - PRISMARINE_SHARD
+      - PRISMARINE_CRYSTALS
+      - QUARTZ_BLOCK
+      - BASALT
+      - BLACKSTONE
+      - TUFF
+      - DRIPSTONE_BLOCK
+      - POINTED_DRIPSTONE
+      - GLOW_INK_SAC
+    woods:
+      - OAK_LOG
+      - OAK_PLANKS
+      - OAK_SAPLING
+      - OAK_LEAVES
+      - SPRUCE_LOG
+      - SPRUCE_PLANKS
+      - SPRUCE_SAPLING
+      - SPRUCE_LEAVES
+      - BIRCH_LOG
+      - BIRCH_PLANKS
+      - BIRCH_SAPLING
+      - BIRCH_LEAVES
+      - JUNGLE_LOG
+      - JUNGLE_PLANKS
+      - JUNGLE_SAPLING
+      - JUNGLE_LEAVES
+      - ACACIA_LOG
+      - ACACIA_PLANKS
+      - ACACIA_SAPLING
+      - ACACIA_LEAVES
+      - DARK_OAK_LOG
+      - DARK_OAK_PLANKS
+      - DARK_OAK_SAPLING
+      - DARK_OAK_LEAVES
+      - MANGROVE_LOG
+      - MANGROVE_PLANKS
+      - MANGROVE_SAPLING
+      - MANGROVE_LEAVES
+      - CHERRY_LOG
+      - CHERRY_PLANKS
+      - CHERRY_SAPLING
+      - CHERRY_LEAVES
+      - PALE_OAK_LOG
+      - PALE_OAK_PLANKS
+      - PALE_OAK_SAPLING
+      - PALE_OAK_LEAVES
+      - STICK
+      - BAMBOO
+      - CRIMSON_STEM
+      - WARPED_STEM
+      - CRIMSON_FUNGUS
+      - WARPED_FUNGUS
+      - CHARCOAL
+      - VINE
+      - MOSS_BLOCK
+      - AZALEA
+      - FLOWERING_AZALEA
+      - minion_enchanted_oak_log
+      - minion_enchanted_spruce_log
+      - minion_enchanted_birch_log
+      - minion_enchanted_jungle_log
+      - minion_enchanted_acacia_log
+      - minion_enchanted_dark_oak_log
+      - minion_enchanted_oak_planks
+      - enchanted_oak_log
+      - enchanted_spruce_log
+      - enchanted_birch_log
+      - enchanted_jungle_log
+      - enchanted_acacia_log
+      - enchanted_dark_oak_log
+    combat:
+      - ROTTEN_FLESH
+      - BONE
+      - STRING
+      - SPIDER_EYE
+      - GUNPOWDER
+      - ENDER_PEARL
+      - BLAZE_ROD
+      - BLAZE_POWDER
+      - GHAST_TEAR
+      - SLIME_BALL
+      - MAGMA_CREAM
+      - PHANTOM_MEMBRANE
+      - SHULKER_SHELL
+      - NETHER_STAR
+      - WITHER_SKELETON_SKULL
+      - ARROW
+      - LEATHER
+      - FEATHER
+      - BEEF
+      - PORKCHOP
+      - CHICKEN
+      - MUTTON
+      - RABBIT_HIDE
+      - RABBIT_FOOT
+      - GOLD_NUGGET
+      - IRON_NUGGET
+      - DRAGON_BREATH
+      - ECHO_SHARD
+      - BREEZE_ROD
+      - WIND_CHARGE
+      - ARMADILLO_SCUTE
+      - TOTEM_OF_UNDYING
+      - HEART_OF_THE_SEA
+      - NAUTILUS_SHELL
+      - FIRE_CHARGE
+      - GLOWSTONE_DUST
+      - FERMENTED_SPIDER_EYE
+      - enchanted_rotten_flesh
+      - minion_enchanted_rotten_flesh
+      - minion_super_rotten_flesh
+      - enchanted_bone
+      - minion_enchanted_bone
+      - minion_super_bone
+      - enchanted_string
+      - minion_enchanted_string
+      - minion_super_string
+      - enchanted_spider_eye
+      - minion_enchanted_spider_eye
+      - minion_super_spider_eye
+      - enchanted_gunpowder
+      - minion_enchanted_gunpowder
+      - minion_super_gunpowder
+      - enchanted_ender_pearl
+      - minion_enchanted_ender_pearl
+      - minion_super_ender_pearl
+      - enchanted_blaze_rod
+      - minion_enchanted_blaze_rod
+      - minion_super_blaze_rod
+      - enchanted_slime_ball
+      - minion_enchanted_slime_ball
+      - minion_super_slime_ball
+      - enchanted_magma_cream
+      - minion_enchanted_magma_cream
+      - minion_super_magma_cream
+      - enchanted_leather
+      - minion_enchanted_leather
+      - minion_super_leather
+      - enchanted_feather
+      - minion_enchanted_feather
+      - minion_super_feather
+      # slayer drops and boss materials (feature boss)
+      - revenant_flesh
+      - revenant_catalyst
+      - tarantula_web
+      - tarantula_charm
+      - ravager_tooth
+      - ravager_pelt
+      - null_sphere
+      - void_conduit
+      - demon_ember
+      - demon_core
+      - voidwyrm_scale
+      - warden_heart
+      - frost_shard
+      - matriarch_silk
+      - leviathan_tooth
+      - lord_bone
+      - colossus_core
+      - roc_feather
+    fishing:
+      - COD
+      - SALMON
+      - TROPICAL_FISH
+      - PUFFERFISH
+      - COOKED_COD
+      - COOKED_SALMON
+      - INK_SAC
+      - GLOW_INK_SAC
+      - LILY_PAD
+      - PRISMARINE_SHARD
+      - PRISMARINE_CRYSTALS
+      - SPONGE
+      - WET_SPONGE
+      - NAUTILUS_SHELL
+      - HEART_OF_THE_SEA
+      - TURTLE_SCUTE
+      - SEAGRASS
+      - KELP
+      - DRIED_KELP
+      - BONE
+      - LEATHER
+      - STRING
+      - SADDLE
+      - NAME_TAG
+      - BOWL
+      - TRIPWIRE_HOOK
+      - FISHING_ROD
+      - BAMBOO
+      - STICK
+      - COD_BUCKET
+      - SALMON_BUCKET
+      - TROPICAL_FISH_BUCKET
+      - PUFFERFISH_BUCKET
+      - CORAL_BLOCK
+      - TUBE_CORAL
+      - BRAIN_CORAL
+      - BUBBLE_CORAL
+      - FIRE_CORAL
+      - HORN_CORAL
+      - enchanted_cod
+      - minion_enchanted_cod
+      - minion_super_cod
+      - enchanted_salmon
+      - minion_enchanted_salmon
+      - minion_super_salmon
+      - enchanted_pufferfish
+      - minion_enchanted_pufferfish
+      - minion_super_pufferfish
+      - enchanted_tropical_fish
+      - minion_enchanted_tropical_fish
+      - minion_super_tropical_fish
+      - enchanted_ink_sac
+      - minion_enchanted_ink_sac
+      - minion_super_ink_sac
+      - enchanted_sponge
+      - minion_enchanted_sponge
+      - minion_super_sponge
+      - enchanted_lily_pad
+      - minion_enchanted_lily_pad
+      - minion_super_lily_pad
+      - enchanted_prismarine_shard
+      - minion_enchanted_prismarine_shard
+      - minion_super_prismarine_shard
+      - CLAY_BALL
+      - enchanted_clay_ball
+      - minion_enchanted_clay_ball
+      - minion_super_clay_ball
+    misc:
+      # dungeon loot (feature dungeon)
+      - dungeon_bone_fragment
+      - dungeon_crypt_shard
+      - dungeon_wither_essence
+      - dungeon_spirit_dust
+      - dungeon_relic
+      - dungeon_dark_scroll
+      - EXPERIENCE_BOTTLE
+      - ENCHANTED_BOOK
+      # (the custom enchanted_book is NOT listed on purpose: it stores its enchantment in item data, which a
+      # re-created item would lose. Books trade through the Auction House.)
+      - ENCHANTED_GOLDEN_APPLE
+      - GOLDEN_APPLE
+      - GOLDEN_CARROT
+      - SADDLE
+      - NAME_TAG
+      - LEAD
+      - ELYTRA
+      - TRIDENT
+      - BUCKET
+      - WATER_BUCKET
+      - LAVA_BUCKET
+      - MILK_BUCKET
+      - COMPASS
+      - CLOCK
+      - SHEARS
+      - FLINT_AND_STEEL
+      - SPYGLASS
+      - MAP
+      - EMPTY_MAP
+      - BOOK
+      - PAPER
+      - BOOKSHELF
+      - TORCH
+      - LANTERN
+      - TNT
+      - SLIME_BLOCK
+      - HONEY_BLOCK
+      - OBSERVER
+      - PISTON
+      - STICKY_PISTON
+      - HOPPER
+      - DISPENSER
+      - DROPPER
+      - REPEATER
+      - COMPARATOR
+      - REDSTONE_TORCH
+      - LEVER
+      - MINECART
+      - RAIL
+      - POWERED_RAIL
+      - ENDER_CHEST
+      - SHULKER_BOX
+      - BEACON
+      - CONDUIT
+      - SCULK_SENSOR
+      - GLASS
+      - GLASS_BOTTLE
+      - POTION
+      - BLAZE_POWDER
+      - NETHER_WART
+      - MUSIC_DISC_CAT
+      - MUSIC_DISC_13
+      - MUSIC_DISC_PIGSTEP
+      - WHITE_WOOL
+      - LEATHER_HORSE_ARMOR
+      - DIAMOND_HORSE_ARMOR
+      - IRON_HORSE_ARMOR
+
+auction:
+  enabled: true
+  # Active listings per player.
+  max-listings: 7
+  # Starting bid / Buy It Now bounds, in coins.
+  min-price: 10
+  max-price: 1000000000
+  # Percent of the final price taken from the seller when an auction sells.
+  tax-percent: 1.0
+  # A bid must beat the top bid by this percent, and by at least bid-increment-min coins.
+  bid-increment-percent: 5
+  bid-increment-min: 1
+  # A bid in the last window seconds restarts the clock to "extend" seconds (anti sniping), max-extensions times.
+  anti-snipe-window-seconds: 120
+  anti-snipe-extend-seconds: 120
+  max-extensions: 10
+  # Hours a listing may last (the menu cycles through these) and the default.
+  durations-hours: [1, 6, 12, 24, 48]
+  default-duration-hours: 12
+  # Listing fee, paid up front and never refunded: price * (base-percent + per-day-percent * hours / 24) %,
+  # between min and max coins.
+  listing-fee:
+    base-percent: 1.0
+    per-day-percent: 0.5
+    min: 25
+    max: 5000000
+  # Finished sales kept for /ah history and the "recent price" line.
+  history-size: 300
+  # Items that can never be listed: vanilla materials or custom item ids. Wings are always refused.
+  blocked-materials: [BEDROCK, BARRIER, COMMAND_BLOCK, CHAIN_COMMAND_BLOCK, REPEATING_COMMAND_BLOCK, STRUCTURE_BLOCK, JIGSAW, DEBUG_STICK, KNOWLEDGE_BOOK, SPAWNER, TRIAL_SPAWNER, VAULT, REINFORCED_DEEPSLATE]
+  blocked-items: []
+  # Refuse an item whose serialised form is larger than this (stops giant shulker boxes bloating the file).
+  max-item-chars: 200000
+  persist-delay-ticks: 10

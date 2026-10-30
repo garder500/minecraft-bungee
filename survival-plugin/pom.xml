@@ -1,0 +1,19 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+ <modelVersion>4.0.0</modelVersion><groupId>win.vampyuyu</groupId><artifactId>survival-plugin</artifactId><version>0.1.0</version>
+ <properties><maven.compiler.release>25</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding></properties>
+ <repositories><repository><id>papermc</id><url>https://repo.papermc.io/repository/maven-public/</url></repository></repositories>
+ <dependencies><dependency><groupId>io.papermc.paper</groupId><artifactId>paper-api</artifactId><version>26.3.build.211-stable</version><scope>provided</scope></dependency><!-- Redis for the menu feature's cross-server handoff (docs/skyblock-design.md, section 8). Gson and SLF4J come from Paper. -->
+    <dependency><groupId>redis.clients</groupId><artifactId>jedis</artifactId><version>6.2.0</version><exclusions>
+      <exclusion><groupId>com.google.code.gson</groupId><artifactId>gson</artifactId></exclusion>
+      <exclusion><groupId>org.slf4j</groupId><artifactId>slf4j-api</artifactId></exclusion>
+    </exclusions></dependency>
+    <dependency><groupId>junit</groupId><artifactId>junit</artifactId><version>4.13.2</version><scope>test</scope></dependency>
+    <dependency><groupId>org.mockbukkit.mockbukkit</groupId><artifactId>mockbukkit-v26.3</artifactId><version>4.118.0</version><scope>test</scope></dependency></dependencies>
+ <build><finalName>survival-plugin</finalName><plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.14.0</version></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-shade-plugin</artifactId><version>3.6.1</version><executions><execution><phase>package</phase><goals><goal>shade</goal></goals><configuration><createDependencyReducedPom>false</createDependencyReducedPom><relocations>
+      <relocation><pattern>redis.clients</pattern><shadedPattern>win.vampyuyu.survival.lib.redis</shadedPattern></relocation>
+      <relocation><pattern>org.apache.commons.pool2</pattern><shadedPattern>win.vampyuyu.survival.lib.pool</shadedPattern></relocation>
+      <relocation><pattern>org.json</pattern><shadedPattern>win.vampyuyu.survival.lib.json</shadedPattern></relocation>
+    </relocations><filters><filter><artifact>*:*</artifact><excludes><exclude>META-INF/*.SF</exclude><exclude>META-INF/*.RSA</exclude><exclude>META-INF/*.DSA</exclude></excludes></filter></filters></configuration></execution></executions></plugin>
+  </plugins></build>
+</project>

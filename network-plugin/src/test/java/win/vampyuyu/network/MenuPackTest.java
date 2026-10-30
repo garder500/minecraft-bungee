@@ -59,12 +59,34 @@ public class MenuPackTest {
     }
 
     @Test
-    public void paintedLobbyRoutesWholeArches() {
-        assertEquals("creative", WorldSelector.destination(true, 10));
-        assertEquals("survival", WorldSelector.destination(true, 24));
-        assertEquals("lobby", WorldSelector.destination(true, 22));
-        assertNull(WorldSelector.destination(true, 13));
-        assertEquals("creative", WorldSelector.destination(false, 11));
+    public void paintedLobbyRoutesWholeArchesAndTheSkyblockCard() {
+        assertEquals(WorldSelector.Target.CREATIVE, WorldSelector.destination(true, 10));
+        assertEquals(WorldSelector.Target.SURVIVAL, WorldSelector.destination(true, 24));
+        assertEquals(WorldSelector.Target.LOBBY, WorldSelector.destination(true, 22));
+        for (int slot : new int[] {3, 4, 5, 12, 13, 14}) {
+            assertEquals("slot " + slot, WorldSelector.Target.SKYBLOCK, WorldSelector.destination(true, slot));
+        }
+        assertEquals(WorldSelector.Target.CREATIVE, WorldSelector.destination(false, 11));
+        assertEquals(WorldSelector.Target.SKYBLOCK, WorldSelector.destination(false, 13));
         assertNull(WorldSelector.destination(false, 10));
+        assertNull(WorldSelector.destination(false, 12));
+    }
+
+    @Test
+    public void everyPaintedSlotBelongsToExactlyOneCard() {
+        int cards = 0;
+        for (int slot = 0; slot < 27; slot++) {
+            if (WorldSelector.destination(true, slot) != null) cards++;
+        }
+        assertEquals(9 + 9 + 6 + 3, cards);
+        assertNull(WorldSelector.destination(true, -1));
+        assertNull(WorldSelector.destination(true, 27));
+    }
+
+    @Test
+    public void skyblockLivesOnTheSurvivalServer() {
+        assertEquals("survival", WorldSelector.Target.SKYBLOCK.server());
+        assertEquals("Skyblock", WorldSelector.Target.SKYBLOCK.label());
+        assertEquals("survival", WorldSelector.Target.SURVIVAL.server());
     }
 }

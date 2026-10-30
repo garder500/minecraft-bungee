@@ -1,0 +1,320 @@
+# Skyblock items feature: stats, combat, HUD, enchants, reforges, accessories, pets.
+# Every key has the same default in code, so deleting a key restores the value below.
+# Edit, then run /sbitems reload (numeric settings only; enchant and reforge definitions, catalog items need a restart).
+
+# ------------------------------------------------------------------------------------------------ menus
+menus:
+  replace-enchanting-table: true      # right-clicking an enchanting table opens the custom table (Skyblock worlds only)
+  replace-anvil: true                 # same for anvils
+  smithing-table-is-blacksmith: false # a smithing table opens the reforge blacksmith instead of vanilla smithing
+
+# ------------------------------------------------------------------------------------------------ stats engine
+stats:
+  # Item types (the word after the rarity) that count when held in the main hand. Armor always counts.
+  held-types: [SWORD, BOW, AXE, PICKAXE, SHOVEL, HOE, DRILL, ROD, STAFF, WAND, HOOK, TRIDENT, CROSSBOW]
+  # Item ids whose stats are provided by another feature (the Wings item gives flight energy through its own API).
+  ignore-item-ids: [wings]
+  flush-ticks: 2          # how often dirty players are recomputed (changes are debounced into one pass)
+  scan-ticks: 10          # full signature scan of all players; never faster than every 10 ticks
+  regen-percent-per-second: 1.5   # percent of max health regenerated each second (plus Rejuvenate)
+  cancel-vanilla-regen: true      # natural and saturation regeneration are replaced by the percent based one
+  skyblock-worlds-only: true      # stats are only applied in sb_* worlds; elsewhere the vanilla attributes are restored
+
+attributes:
+  max-health: 1024        # hard cap of the real max health attribute
+  health-scale: 40        # hearts drawn in the client (2 half-hearts per heart = 20 hearts)
+  max-speed-percent: 400
+  max-attack-speed-percent: 300
+  max-mining-speed-percent: 2000
+  zero-vanilla-armor: true   # custom gear never uses the vanilla armor bar; Defense replaces it
+
+# ------------------------------------------------------------------------------------------------ combat
+combat:
+  # damage = (weapon damage + damage-bonus) * (1 + Strength/100) * (1 + crit damage/100 on a crit) * enchant multipliers
+  damage-bonus: 5
+  vanilla-damage-multiplier: 3     # damage of a vanilla weapon in the formula = vanilla damage * this
+  mob-health-multiplier: 5         # natural mobs get this much more health in Skyblock worlds
+  scaled-spawn-reasons: [NATURAL, SPAWNER, CHUNK_GEN, JOCKEY, REINFORCEMENTS, PATROL, RAID, VILLAGE_INVASION, TRAP]
+  incoming-damage-scale:
+    default: 5                     # mob damage taken by players is multiplied by this before Defense applies
+    causes:
+      FALL: 5
+      FIRE: 3
+      FIRE_TICK: 2
+      LAVA: 8
+      DROWNING: 3
+      CONTACT: 3
+      SUFFOCATION: 3
+      HOT_FLOOR: 3
+      FREEZE: 2
+      LIGHTNING: 10
+  # True damage: percent of max health lost per hit; ignores Defense.
+  true-damage-percent-of-max-health:
+    VOID: 100
+    STARVATION: 2
+    SUICIDE: 100
+    KILL: 100
+    WORLD_BORDER: 100
+  crit-chance-cap: 100
+  use-attack-cooldown: true        # a half-charged swing deals less damage
+  ferocity-delay-ticks: 3          # delay between the extra Ferocity strikes
+  damage-indicators:
+    enabled: true
+    lifetime-ticks: 24
+    pool-size: 32
+  mob-health-bars: true            # "Zombie 120/500" in the name of hurt non boss mobs
+  ability-intelligence-divisor: 100  # ability damage * (1 + Intelligence / divisor)
+
+# ------------------------------------------------------------------------------------------------ mana and HUD
+mana:
+  regen-percent-per-second: 2.0
+  overflow:
+    max-percent: 100               # overflow mana cap, as percent of max mana
+    decay-percent-per-second: 2.0
+
+hud:
+  period-ticks: 5                  # 4 updates per second; a line is only resent when its text changed
+  keep-alive-ticks: 40             # resend an unchanged line this often so the client does not fade it
+  xp-popup-seconds: 3
+  # The XP popup shows "412/1,000" when SkillsApi has xpForLevel(Skill, int) or this curve reproduces the skills
+  # feature's levels (a curve that disagrees is never shown): XP to go from level-1 to level = base * growth^(level-1).
+  xp-curve:
+    enabled: false
+    base: 100
+    growth: 1.15
+
+# ------------------------------------------------------------------------------------------------ fortune
+fortune:
+  ores: [COAL_ORE, DEEPSLATE_COAL_ORE, IRON_ORE, DEEPSLATE_IRON_ORE, GOLD_ORE, DEEPSLATE_GOLD_ORE, COPPER_ORE,
+         DEEPSLATE_COPPER_ORE, LAPIS_ORE, DEEPSLATE_LAPIS_ORE, REDSTONE_ORE, DEEPSLATE_REDSTONE_ORE, DIAMOND_ORE,
+         DEEPSLATE_DIAMOND_ORE, EMERALD_ORE, DEEPSLATE_EMERALD_ORE, NETHER_QUARTZ_ORE, NETHER_GOLD_ORE, ANCIENT_DEBRIS,
+         GLOWSTONE, AMETHYST_CLUSTER]
+  crops: [WHEAT, CARROTS, POTATOES, BEETROOTS, NETHER_WART, COCOA, MELON, PUMPKIN, SUGAR_CANE, CACTUS, SWEET_BERRY_BUSH]
+  logs: []                         # empty = every block of the LOGS tag
+  placed-block-memory: 50000       # blocks remembered as player placed (no fortune, no farming exploit)
+
+# ------------------------------------------------------------------------------------------------ mobs
+mobs:
+  show-level: true                 # "[Lv3] Zombie 120/150" on hurt mobs
+  health-per-level: 0.15           # opt-in mobs (PDC vampyuyu:sb_level): health x (1 + level * this)
+  damage-per-level: 0.10           # attack damage x (1 + level * this)
+  # Natural mobs by entity type. health 0 = vanilla x combat.mob-health-multiplier, damage 0 = vanilla x level scaling.
+  table:
+    ZOMBIE: {level: 3, health: 150, damage: 0}
+    HUSK: {level: 4, health: 180, damage: 0}
+    DROWNED: {level: 4, health: 180, damage: 0}
+    SKELETON: {level: 3, health: 130, damage: 0}
+    STRAY: {level: 4, health: 160, damage: 0}
+    SPIDER: {level: 3, health: 120, damage: 0}
+    CAVE_SPIDER: {level: 4, health: 90, damage: 0}
+    CREEPER: {level: 5, health: 200, damage: 0}
+    WITCH: {level: 6, health: 260, damage: 0}
+    ENDERMAN: {level: 10, health: 800, damage: 0}
+    BLAZE: {level: 12, health: 500, damage: 0}
+    WITHER_SKELETON: {level: 14, health: 700, damage: 0}
+    GHAST: {level: 10, health: 250, damage: 0}
+
+# ------------------------------------------------------------------------------------------------ recipes
+# Vanilla crafting recipes for the starting gear. Only craftable in Skyblock worlds (when skyblock-only) and never with
+# custom items as ingredients. Armor tiers 2 and 3, pets, books and most weapons come from loot (see "loot").
+recipes:
+  enabled: true
+  skyblock-only: true
+  list:
+    rookie_sword: {result: rookie_sword, amount: 1, shape: ["C", "I", "S"], ingredients: {C: COPPER_INGOT, I: IRON_INGOT, S: STICK}}
+    warriors_blade: {result: warriors_blade, amount: 1, shape: ["I", "I", "B"], ingredients: {I: IRON_INGOT, B: BLAZE_ROD}}
+    miners_pickaxe: {result: miners_pickaxe, amount: 1, shape: ["IDI", " C ", " C "], ingredients: {I: IRON_INGOT, D: DIAMOND, C: COPPER_INGOT}}
+    farmers_hoe: {result: farmers_hoe, amount: 1, shape: ["II", " C", " C"], ingredients: {I: IRON_INGOT, C: COPPER_INGOT}}
+    diggers_shovel: {result: diggers_shovel, amount: 1, shape: ["I", "C", "C"], ingredients: {I: IRON_INGOT, C: COPPER_INGOT}}
+    grappling_hook: {result: grappling_hook, amount: 1, shape: ["  I", " IS", "I S"], ingredients: {I: IRON_INGOT, S: STRING}}
+    warp_pearl: {result: warp_pearl, amount: 1, shape: ["EC", "CE"], ingredients: {E: ENDER_PEARL, C: CHORUS_FRUIT}}
+    hot_potato_book: {result: hot_potato_book, amount: 1, shape: ["PGP", "GBG", "PGP"], ingredients: {P: BAKED_POTATO, G: GOLDEN_CARROT, B: BOOK}}
+    miner_helmet_t1: {result: miner_helmet_t1, amount: 1, shape: ["MMM", "M M"], ingredients: {M: COBBLESTONE}}
+    miner_chestplate_t1: {result: miner_chestplate_t1, amount: 1, shape: ["M M", "MMM", "MMM"], ingredients: {M: COBBLESTONE}}
+    miner_leggings_t1: {result: miner_leggings_t1, amount: 1, shape: ["MMM", "M M", "M M"], ingredients: {M: COBBLESTONE}}
+    miner_boots_t1: {result: miner_boots_t1, amount: 1, shape: ["M M", "M M"], ingredients: {M: COBBLESTONE}}
+    lumberjack_helmet_t1: {result: lumberjack_helmet_t1, amount: 1, shape: ["MMM", "M M"], ingredients: {M: OAK_LOG}}
+    lumberjack_chestplate_t1: {result: lumberjack_chestplate_t1, amount: 1, shape: ["M M", "MMM", "MMM"], ingredients: {M: OAK_LOG}}
+    lumberjack_leggings_t1: {result: lumberjack_leggings_t1, amount: 1, shape: ["MMM", "M M", "M M"], ingredients: {M: OAK_LOG}}
+    lumberjack_boots_t1: {result: lumberjack_boots_t1, amount: 1, shape: ["M M", "M M"], ingredients: {M: OAK_LOG}}
+    farmer_helmet_t1: {result: farmer_helmet_t1, amount: 1, shape: ["MMM", "M M"], ingredients: {M: WHEAT}}
+    farmer_chestplate_t1: {result: farmer_chestplate_t1, amount: 1, shape: ["M M", "MMM", "MMM"], ingredients: {M: WHEAT}}
+    farmer_leggings_t1: {result: farmer_leggings_t1, amount: 1, shape: ["MMM", "M M", "M M"], ingredients: {M: WHEAT}}
+    farmer_boots_t1: {result: farmer_boots_t1, amount: 1, shape: ["M M", "M M"], ingredients: {M: WHEAT}}
+    hunter_helmet_t1: {result: hunter_helmet_t1, amount: 1, shape: ["MMM", "M M"], ingredients: {M: BONE}}
+    hunter_chestplate_t1: {result: hunter_chestplate_t1, amount: 1, shape: ["M M", "MMM", "MMM"], ingredients: {M: BONE}}
+    hunter_leggings_t1: {result: hunter_leggings_t1, amount: 1, shape: ["MMM", "M M", "M M"], ingredients: {M: BONE}}
+    hunter_boots_t1: {result: hunter_boots_t1, amount: 1, shape: ["M M", "M M"], ingredients: {M: BONE}}
+    void_walker_helmet_t1: {result: void_walker_helmet_t1, amount: 1, shape: ["MMM", "M M"], ingredients: {M: END_STONE}}
+    void_walker_chestplate_t1: {result: void_walker_chestplate_t1, amount: 1, shape: ["M M", "MMM", "MMM"], ingredients: {M: END_STONE}}
+    void_walker_leggings_t1: {result: void_walker_leggings_t1, amount: 1, shape: ["MMM", "M M", "M M"], ingredients: {M: END_STONE}}
+    void_walker_boots_t1: {result: void_walker_boots_t1, amount: 1, shape: ["M M", "M M"], ingredients: {M: END_STONE}}
+    frostborne_helmet_t1: {result: frostborne_helmet_t1, amount: 1, shape: ["MMM", "M M"], ingredients: {M: SNOW_BLOCK}}
+    frostborne_chestplate_t1: {result: frostborne_chestplate_t1, amount: 1, shape: ["M M", "MMM", "MMM"], ingredients: {M: SNOW_BLOCK}}
+    frostborne_leggings_t1: {result: frostborne_leggings_t1, amount: 1, shape: ["MMM", "M M", "M M"], ingredients: {M: SNOW_BLOCK}}
+    frostborne_boots_t1: {result: frostborne_boots_t1, amount: 1, shape: ["M M", "M M"], ingredients: {M: SNOW_BLOCK}}
+
+# ------------------------------------------------------------------------------------------------ loot
+# Item loot of boss kills (registered with BossApi when the boss feature is loaded), natural mob kills and fishing.
+# chance is a percent per roll: multiplied by (1 + Magic Find / 100), pet rows by (1 + Pet Luck / 100). Row sources:
+# boss, boss:<id>, mob, mob:<ENTITY_TYPE>, fishing. Kinds: item (catalog id, @armor:N = random armor piece of tier N),
+# book (enchant id or @ultimate, level .. max-level) and pet (species id + rarity).
+loot:
+  enabled: true
+  chance-cap: 100                  # no roll is ever above this percent
+  mob-level-bonus: 0.05            # mob drops: chance x (1 + mob level * this)
+  mob-spawn-reasons: [NATURAL, CHUNK_GEN, PATROL, RAID, REINFORCEMENTS, VILLAGE_INVASION, JOCKEY, TRAP]
+  entries:
+    - {kind: book, id: sharpness, level: 6, chance: 0.12, sources: ["mob"]}
+    - {kind: book, id: power, level: 6, chance: 0.12, sources: ["mob"]}
+    - {kind: book, id: protection, level: 6, chance: 0.12, sources: ["mob"]}
+    - {kind: book, id: growth, level: 6, chance: 0.12, sources: ["mob"]}
+    - {kind: book, id: critical, level: 6, chance: 0.12, sources: ["mob"]}
+    - {kind: book, id: efficiency, level: 6, chance: 0.12, sources: ["mob"]}
+    - {kind: item, id: hot_potato_book, chance: 0.5, sources: ["mob"]}
+    - {kind: item, id: pet_candy, chance: 0.6, sources: ["mob"]}
+    - {kind: item, id: reforge_stone_fabled, chance: 0.06, sources: ["mob"]}
+    - {kind: item, id: recombobulator, chance: 0.015, sources: ["mob"]}
+    - {kind: item, id: warp_pearl, chance: 0.8, sources: ["mob:ENDERMAN"]}
+    - {kind: pet, id: wolf, rarity: COMMON, chance: 0.12, sources: ["mob:ZOMBIE", "mob:SKELETON", "mob:SPIDER"]}
+    - {kind: pet, id: enderman, rarity: RARE, chance: 0.1, sources: ["mob:ENDERMAN"]}
+    - {kind: pet, id: tiger, rarity: EPIC, chance: 0.04, sources: ["mob:BLAZE", "mob:WITHER_SKELETON"]}
+    - {kind: item, id: pet_candy, chance: 1, sources: ["fishing"]}
+    - {kind: item, id: warp_pearl, chance: 1.5, sources: ["fishing"]}
+    - {kind: item, id: reforge_stone_fabled, chance: 0.2, sources: ["fishing"]}
+    - {kind: item, id: rod_of_legends, chance: 0.03, sources: ["fishing"]}
+    - {kind: pet, id: turtle, rarity: UNCOMMON, chance: 0.4, sources: ["fishing"]}
+    - {kind: pet, id: rabbit, rarity: COMMON, chance: 0.25, sources: ["fishing"]}
+    - {kind: book, id: "@ultimate", max-level: 2, chance: 18, sources: ["boss"]}
+    - {kind: book, id: sharpness, level: 7, chance: 12, sources: ["boss"]}
+    - {kind: book, id: protection, level: 7, chance: 12, sources: ["boss"]}
+    - {kind: book, id: critical, level: 7, chance: 10, sources: ["boss"]}
+    - {kind: item, id: "@armor:2", chance: 20, sources: ["boss"]}
+    - {kind: item, id: "@armor:3", chance: 3, sources: ["boss"]}
+    - {kind: item, id: reforge_stone_withered, chance: 14, sources: ["boss"]}
+    - {kind: item, id: reforge_stone_ancient, chance: 5, sources: ["boss"]}
+    - {kind: item, id: reforge_stone_refined, chance: 1.5, sources: ["boss"]}
+    - {kind: item, id: recombobulator, chance: 6, sources: ["boss"]}
+    - {kind: item, id: drill_fuel_volta, chance: 10, sources: ["boss"]}
+    - {kind: item, id: wither_blade, chance: 0.7, sources: ["boss"]}
+    - {kind: item, id: titan_drill, chance: 0.5, sources: ["boss"]}
+    - {kind: pet, id: tiger, rarity: EPIC, chance: 4, sources: ["boss"]}
+    - {kind: pet, id: phoenix, rarity: EPIC, chance: 3, sources: ["boss"]}
+    - {kind: pet, id: ender_dragon, rarity: LEGENDARY, chance: 1.5, sources: ["boss"]}
+
+# ------------------------------------------------------------------------------------------------ costs
+costs:
+  require-economy: false           # true = menus refuse to work while the economy feature is unavailable
+  enchant-table:
+    base: 150                      # coins: base * growth^(level-1) * level
+    growth-per-level: 1.9
+    enchanting-xp-per-level: 12    # Enchanting skill XP per enchant level bought (through SkillsApi.addXp)
+    skill-levels-per-level: 5      # Enchanting level needed for level N of an enchant: (N-1) * this
+  anvil:
+    mode: coins                    # coins or levels
+    per-enchant-level: 250         # coins per resulting level (ultimates cost 4x)
+  reforge:
+    base: 400                      # price = base * (1 + rarity)^2 / 2
+  accessory-bag:
+    upgrade-base: 25000
+    upgrade-growth: 1.8
+
+hot-potato:
+  max: 10
+  weapon:
+    strength: 2
+  armor:
+    health: 4
+    defense: 2
+
+singularity:
+  fortune: 25
+
+# ------------------------------------------------------------------------------------------------ enchants and reforges
+# Overrides of the built in tables. Example:
+# enchants:
+#   sharpness: {max-level: 7, per-level: 5, table-max: 5}
+#   telekinesis: {enabled: false}
+enchants: {}
+reforges:
+  # Stat multiplier by rarity: COMMON, UNCOMMON, RARE, EPIC, LEGENDARY, MYTHIC, DIVINE, SPECIAL
+  rarity-multiplier: [1.0, 1.4, 1.9, 2.6, 3.5, 4.6, 6.0, 1.0]
+  disabled: []                     # reforge ids to remove
+
+# ------------------------------------------------------------------------------------------------ accessories
+accessories:
+  base-slots: 9
+  slots-per-upgrade: 3
+  max-slots: 45
+  # Magical Power by rarity of the counted accessories (one per family).
+  magical-power:
+    COMMON: 3
+    UNCOMMON: 5
+    RARE: 8
+    EPIC: 12
+    LEGENDARY: 16
+    MYTHIC: 22
+    DIVINE: 30
+    SPECIAL: 3
+  # Stats granted for every point of Magical Power.
+  per-magical-power:
+    HEALTH: 0.6
+    DEFENSE: 0.25
+    STRENGTH: 0.3
+    INTELLIGENCE: 0.35
+    CRIT_DAMAGE: 0.1
+    SPEED: 0.03
+
+# ------------------------------------------------------------------------------------------------ pets
+pets:
+  max-owned: 45
+  hide-from-owner: false           # true = the pet visual is hidden from its owner (others still see it)
+  xp-per-skill-xp: 1.0             # pet XP per skill XP of the pet's own skill
+  other-skill-share: 0.0           # pet XP per skill XP of the other skills
+  candy-xp: 5000
+  revive-cooldown-seconds: 300     # Phoenix
+  update-ticks: 2                  # how often the pet visual follows its owner
+  xp-curve:
+    base: 100                      # xp for level 1 -> 2 of a RARE pet; later levels grow by `growth`
+    growth: 1.075
+    rarity-multiplier:
+      COMMON: 0.4
+      UNCOMMON: 0.7
+      RARE: 1.0
+      EPIC: 1.6
+      LEGENDARY: 2.4
+      MYTHIC: 3.4
+  # Stat multiplier of the pet's rarity.
+  stat-multiplier:
+    COMMON: 0.5
+    UNCOMMON: 0.7
+    RARE: 1.0
+    EPIC: 1.35
+    LEGENDARY: 1.8
+    MYTHIC: 2.3
+
+# ------------------------------------------------------------------------------------------------ abilities
+abilities:
+  hit-animals: true                # abilities may damage passive animals
+  # Per ability overrides: mana, cooldown (seconds) and the numeric parameters shown in its description.
+  # instant_transmission: {mana: 50, range: 8}
+  # wither_impact: {mana: 150, cooldown: 3, damage: 800, radius: 6, range: 10, shield: 5}
+  wither_shield:
+    reduction: 0.7                 # fraction of damage blocked while the Wither Impact shield is active
+
+# ------------------------------------------------------------------------------------------------ armor sets
+# Parameters of the full set bonuses: sets.<set>.<key>
+sets:
+  lumberjack: {timber: 10, seconds: 8}
+  farmer: {chance: 12}
+  hunter: {lifesteal: 3}
+  void_walker: {cooldown: 30}
+  frostborne: {slow: 3, reduction: 10}
+
+# ------------------------------------------------------------------------------------------------ items
+# Any catalog item can be re-tuned: items.<id>.damage and items.<id>.stats.<stat key>, for example
+# items:
+#   void_blade:
+#     damage: 120
+#     stats: {strength: 80, crit_damage: 50}
+items: {}

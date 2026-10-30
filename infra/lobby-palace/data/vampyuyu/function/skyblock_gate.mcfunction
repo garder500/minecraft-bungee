@@ -1,0 +1,23 @@
+# Skyblock gate for an existing Sanctum: block-only and idempotent (run: /function vampyuyu:skyblock_gate).
+fill -5 65 37 -5 68 39 minecraft:quartz_pillar
+fill -5 69 37 -5 72 39 minecraft:quartz_pillar
+fill -5 73 37 -5 73 39 minecraft:gold_block
+fill 5 65 37 5 68 39 minecraft:quartz_pillar
+fill 5 69 37 5 72 39 minecraft:quartz_pillar
+fill 5 73 37 5 73 39 minecraft:gold_block
+fill -4 73 37 -4 73 39 minecraft:red_nether_bricks
+fill 4 73 37 4 73 39 minecraft:red_nether_bricks
+fill 3 74 37 3 74 39 minecraft:red_nether_bricks
+fill -3 74 37 -3 74 39 minecraft:red_nether_bricks
+fill 2 75 37 2 75 39 minecraft:red_nether_bricks
+fill -2 75 37 -2 75 39 minecraft:red_nether_bricks
+fill 1 76 37 1 76 39 minecraft:red_nether_bricks
+fill -1 76 37 -1 76 39 minecraft:red_nether_bricks
+fill 0 77 37 0 77 39 minecraft:red_nether_bricks
+fill -3 65 38 3 68 38 minecraft:lime_stained_glass
+fill -3 69 38 3 71 38 minecraft:lime_stained_glass
+fill -4 64 36 4 64 40 minecraft:chiseled_quartz_block
+fill -3 64 38 3 64 38 minecraft:gold_block
+fill -5 67 36 -5 67 36 minecraft:oak_wall_sign[facing=north]
+fill -4 72 38 -4 72 38 minecraft:sea_lantern
+fill 4 72 38 4 72 38 minecraft:sea_lantern

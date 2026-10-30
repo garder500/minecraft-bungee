@@ -1,0 +1,341 @@
+# Island feature configuration (plugins/VampyuyuSurvival/island.yml).
+# Keys missing from this file fall back to the copy shipped in the jar.
+
+grid:
+  # Distance between island centres, in blocks. Every island also owns the same cell in sb_nether and sb_end.
+  cell-size: 400
+  # World Y of the top layer of every island (players stand one block higher).
+  island-y: 64
+  # The biggest border radius is clamped to cell-size/2 minus this margin so two islands can never touch.
+  edge-margin: 16
+
+worlds:
+  # time: DAY | NOON | SUNSET | NIGHT | MIDNIGHT | CYCLE (CYCLE = vanilla day/night)
+  # gamerules: any name of org.bukkit.GameRules in lower case (keep_inventory, spawn_mobs, mob_griefing...).
+  hub:
+    time: DAY
+    border: 200
+    weather-clear: true
+    gamerules:
+      spawn_mobs: false
+      spawn_monsters: false
+      spawn_phantoms: false
+      spawn_patrols: false
+      spawn_wandering_traders: false
+      raids: false
+      fall_damage: false
+      keep_inventory: true
+      mob_griefing: false
+      fire_damage: false
+      pvp: false
+  world:
+    time: CYCLE
+    border: 60000000
+    weather-clear: false
+    gamerules:
+      spawn_phantoms: false
+      spawn_patrols: false
+      spawn_wandering_traders: false
+      spawn_wardens: false
+      raids: false
+      keep_inventory: true
+      advance_weather: false
+  nether:
+    time: CYCLE
+    border: 60000000
+    weather-clear: false
+    gamerules:
+      keep_inventory: true
+  end:
+    time: CYCLE
+    border: 60000000
+    weather-clear: false
+    gamerules:
+      keep_inventory: true
+
+hub:
+  enabled: true
+  # World Y of the plaza surface.
+  y: 100
+  # Hard cap on the number of blocks the hub generator may place (the generator stops adding when reached).
+  max-blocks: 45000
+  # false = no full hub: only the small spawn pad is built (islandless players and the void rescue still need it).
+  # Players may press buttons / open doors in the hub (never break or place).
+  allow-interact: true
+
+generation:
+  # Blocks placed (or cleared) per server tick by the batch builder, and a time ceiling per tick in milliseconds.
+  blocks-per-tick: 3000
+  max-millis-per-tick: 20
+  # A job that has waited this many ticks for chunks is abandoned.
+  chunk-timeout-ticks: 600
+  # A failed island build, platform build or wipe is retried this many times (0 = never), waiting
+  # retry-delay-ticks and doubling the wait each time. After that the island stays unfinished (RESETTING or
+  # BUILDING), the owner and online admins are told, and /islandadmin rebuild (or the next restart) retries.
+  retries: 3
+  retry-delay-ticks: 100
+
+upgrades:
+  # Border radius tiers. The first one is the starting radius (cost 0).
+  radius:
+    - { radius: 30, cost: 0 }
+    - { radius: 45, cost: 15000 }
+    - { radius: 60, cost: 60000 }
+    - { radius: 80, cost: 250000 }
+    - { radius: 100, cost: 1000000 }
+    - { radius: 130, cost: 5000000 }
+    - { radius: 160, cost: 20000000 }
+  # Maximum number of players in the co-op, owner included.
+  members:
+    - { slots: 3, cost: 0 }
+    - { slots: 5, cost: 20000 }
+    - { slots: 8, cost: 100000 }
+    - { slots: 12, cost: 500000 }
+  # The "Minion slots" upgrade is hidden and refused until the minions feature can read it (it needs an api/
+  # method that does not exist yet, see docs/skyblock-notes/island.md). Turn it on only when it does.
+  minions-enabled: false
+  # Extra minion slots granted by the island (read by the minions feature through IslandUpgradesApi).
+  minions:
+    - { slots: 0, cost: 0 }
+    - { slots: 2, cost: 50000 }
+    - { slots: 4, cost: 250000 }
+    - { slots: 6, cost: 1000000 }
+
+templates:
+  # Order of the list is the order in the /is create menu. biome is a Bukkit biome key (empty = leave as is).
+  classic:
+    enabled: true
+    name: "Classic"
+    icon: GRASS_BLOCK
+    biome: plains
+    description:
+      - "The traditional island: an oak tree,"
+      - "a patch of grass and a starter chest."
+    chest:
+      - ICE:2
+      - LAVA_BUCKET:1
+      - MELON_SLICE:4
+      - WHEAT_SEEDS:4
+      - BONE_MEAL:8
+      - OAK_SAPLING:2
+      - CRAFTING_TABLE:1
+  desert:
+    enabled: true
+    name: "Desert"
+    icon: SAND
+    biome: desert
+    description:
+      - "Sand, cacti and the ruins of a"
+      - "sandstone pyramid."
+    chest:
+      - ICE:2
+      - LAVA_BUCKET:1
+      - CACTUS:2
+      - SUGAR_CANE:2
+      - BONE_MEAL:6
+      - OAK_SAPLING:2
+      - WATER_BUCKET:1
+  frozen:
+    enabled: true
+    name: "Frozen"
+    icon: SNOW_BLOCK
+    biome: snowy_plains
+    description:
+      - "Snow, ice and a lonely spruce."
+      - "Bring a warm coat."
+    chest:
+      - ICE:3
+      - LAVA_BUCKET:1
+      - SWEET_BERRIES:4
+      - BONE_MEAL:6
+      - SPRUCE_SAPLING:2
+      - COAL:8
+  jungle:
+    enabled: true
+    name: "Jungle"
+    icon: JUNGLE_LOG
+    biome: jungle
+    description:
+      - "A tiny rain forest with cocoa pods"
+      - "and a bamboo grove."
+    chest:
+      - ICE:2
+      - LAVA_BUCKET:1
+      - COCOA_BEANS:4
+      - BAMBOO:8
+      - BONE_MEAL:10
+      - JUNGLE_SAPLING:2
+      - MELON_SEEDS:2
+  mushroom:
+    enabled: true
+    name: "Mushroom"
+    icon: RED_MUSHROOM_BLOCK
+    biome: mushroom_fields
+    description:
+      - "Mycelium and glowing fungi."
+      - "Hostile mobs never spawn here."
+    chest:
+      - ICE:2
+      - LAVA_BUCKET:1
+      - BROWN_MUSHROOM:3
+      - RED_MUSHROOM:3
+      - BONE_MEAL:8
+      - BOWL:2
+      - WHEAT_SEEDS:2
+
+starter-chest:
+  # Fill the starter chest (and the Nether/End ruin chests) only the first time a player gets an island, so
+  # "reset and recreate" cannot farm lava, ice or loot.
+  once-per-player: true
+  # What the chest holds on every later island.
+  repeat-items:
+    - OAK_SAPLING:1
+    - BONE_MEAL:3
+
+platforms:
+  nether-chest:
+    - OBSIDIAN:4
+    - FLINT_AND_STEEL:1
+    - NETHER_WART:3
+    - GOLD_INGOT:6
+    - BREAD:6
+  end-chest:
+    - ENDER_PEARL:2
+    - OBSIDIAN:6
+    - END_ROD:4
+    - COOKED_BEEF:8
+  # The overworld islands get a sealed "End gate" (12 End portal frames around a portal). True = already lit.
+  end-gate-lit: true
+
+protection:
+  # Trusted guests may open containers even when the island's visitor_chests setting is off.
+  trusted-containers: false
+  # Cooldown between two "you cannot do that" messages, in milliseconds.
+  message-cooldown-ms: 1500
+  # Visitors (and banned players) may pick up items lying on someone else's island (items they threw themselves
+  # are always theirs) / may drop items there.
+  visitor-pickup: false
+  visitor-drop: false
+  # A player who logs in standing on an island they may not enter (banned or the island was locked while they
+  # were offline) is moved out after this many ticks. Longer than the join router's cross-server handoff.
+  join-check-delay-ticks: 120
+  # Bypass permission: vampyuyu.sb.island.bypass (OP by default).
+
+flags:
+  # Defaults copied into every NEW island (existing islands keep their own values).
+  defaults:
+    pvp: false
+    visitor_interact: true
+    visitor_chests: false
+    mob_spawning: true
+    animals_spawning: true
+    fire_spread: false
+    tnt: false
+    weather: true
+
+border:
+  # Per-player visual border at the island radius (client side) and the server-side enforcement behind it.
+  visual: true
+  enforce: true
+  # Send a chat line when a player enters or leaves an island.
+  enter-messages: true
+
+void:
+  # Falling below the world: teleport to the island (or hub) instead of dying.
+  rescue: true
+  # Tell the player.
+  message: "You fell into the void and were pulled back to safety."
+
+respawn:
+  # Where a player who died in an island world or the hub respawns: HOME (island, hub as fallback) or HUB.
+  mode: HOME
+
+portals:
+  # 1:1 coordinates between sb_world and sb_nether; the End portal leads to the island's own End.
+  nether: true
+  end: true
+  # /is nether and /is end shortcuts (no portal needed, the platforms must be ready). Cooldown in seconds.
+  shortcuts: true
+  shortcut-cooldown-seconds: 10
+
+invites:
+  expire-seconds: 120
+  max-pending-per-player: 5
+
+reset:
+  # Minimum time between two resets of the same island.
+  cooldown-minutes: 60
+  # Time allowed to type the confirmation.
+  confirm-seconds: 30
+  # A reset, delete or rebuild always wipes (and the level scan always counts) the full world height.
+
+create:
+  # Cooldown before a player who lost their island may create a new one (minutes).
+  cooldown-minutes: 0
+
+level:
+  # level = floor(total weighted value / divisor)
+  divisor: 100.0
+  # Automatic re-scan of online owners' islands, in minutes (0 = off) and the cooldown for /is level in seconds.
+  auto-interval-minutes: 30
+  manual-cooldown-seconds: 300
+  # Chunk snapshots taken per tick.
+  chunks-per-tick: 2
+  # Blocks not listed count for this much.
+  default-weight: 0.0
+  # Value of ONE block of each material.
+  weights:
+    STONE: 0.2
+    COBBLESTONE: 0.1
+    STONE_BRICKS: 0.4
+    DEEPSLATE: 0.3
+    COBBLED_DEEPSLATE: 0.2
+    OAK_PLANKS: 0.3
+    SPRUCE_PLANKS: 0.3
+    BIRCH_PLANKS: 0.3
+    JUNGLE_PLANKS: 0.3
+    ACACIA_PLANKS: 0.3
+    DARK_OAK_PLANKS: 0.3
+    OAK_LOG: 0.4
+    GLASS: 0.3
+    BRICKS: 0.5
+    SANDSTONE: 0.2
+    QUARTZ_BLOCK: 1.0
+    PRISMARINE: 1.0
+    COAL_BLOCK: 3.0
+    IRON_BLOCK: 10.0
+    COPPER_BLOCK: 6.0
+    GOLD_BLOCK: 18.0
+    REDSTONE_BLOCK: 6.0
+    LAPIS_BLOCK: 6.0
+    EMERALD_BLOCK: 40.0
+    DIAMOND_BLOCK: 60.0
+    NETHERITE_BLOCK: 300.0
+    OBSIDIAN: 3.0
+    CRYING_OBSIDIAN: 8.0
+    GLOWSTONE: 1.5
+    SEA_LANTERN: 2.0
+    BOOKSHELF: 3.0
+    ENCHANTING_TABLE: 40.0
+    BEACON: 250.0
+    CONDUIT: 150.0
+    ANVIL: 8.0
+    BREWING_STAND: 8.0
+    CHEST: 1.0
+    BARREL: 1.0
+    HOPPER: 4.0
+    FURNACE: 0.5
+    SHULKER_BOX: 30.0
+    END_STONE: 0.3
+    PURPUR_BLOCK: 1.0
+    DRAGON_EGG: 500.0
+    BELL: 20.0
+
+warps:
+  max-name-length: 24
+  # Warps shown per page in the browser come from the menu size; this is the cooldown between warp teleports (seconds).
+  cooldown-seconds: 5
+
+commands:
+  # Seconds between two /is visit or /is warp teleports of the same player.
+  visit-cooldown-seconds: 3
