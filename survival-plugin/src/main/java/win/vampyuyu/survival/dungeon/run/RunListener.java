@@ -42,6 +42,7 @@ import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -122,13 +123,29 @@ public final class RunListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
         Player p = event.getPlayer();
-        manager.playerGone(p.getUniqueId());
-        ctx.parties.forget(p.getUniqueId());
         // A player that quits inside the dungeon would log back into a world that may soon be deleted. The menu
         // feature is the only join router, so the exit happens here, while the player is still known to the server.
+        // No later tick will come and an asynchronous teleport would not finish before the player is saved: move now,
+        // BEFORE leaving the run (the last one out closes the run, which would otherwise ask the hub for a teleport).
         if (RunManager.inDungeonWorld(p) && !admin(p)) {
-            RunManager.sendOut(ctx, p);
+            RunManager.sendOut(ctx, p, true);
         }
+        manager.playerGone(p.getUniqueId());
+        ctx.parties.forget(p.getUniqueId());
+    }
+
+    /**
+     * A player that logs into a dungeon world without being part of a run (a crash, an old save) is NOT teleported
+     * here (the menu feature is the only join router); they are told how to get out.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onJoin(PlayerJoinEvent event) {
+        Player p = event.getPlayer();
+        ctx.scheduler().later(40, () -> {
+            if (p.isOnline() && !admin(p) && manager.isStray(p)) {
+                ctx.core.msg().warn(p, "You are in a dungeon you are not part of. Type /dungeon leave to get out.");
+            }
+        });
     }
 
 
@@ -150,13 +167,6 @@ public final class RunListener implements Listener {
         if (victim instanceof Player vp) {
             if (attacker != null && attacker != vp) {
                 event.setCancelled(true); // no friendly fire
-                return;
-            }
-            if (mob != null) {
-                Double mult = ctx.keys.damageOf(mob);
-                if (mult != null) {
-                    event.setDamage(event.getDamage() * mult);
-                }
             }
             return;
         }
@@ -169,9 +179,24 @@ public final class RunListener implements Listener {
                 RunPlayer rp = runOf(attacker) == null ? null : runOf(attacker).player(attacker.getUniqueId());
                 if (rp != null && !rp.alive()) {
                     event.setCancelled(true);
-                    return;
                 }
             }
+        }
+    }
+
+    /**
+     * The floor multipliers. Runs from {@link #onDamage} (HIGHEST, after the items feature's damage formula at HIGH and
+     * before the lethal check) so the final number is what the death rules see.
+     */
+    private void scale(EntityDamageByEntityEvent event) {
+        Entity victim = event.getEntity();
+        if (victim instanceof Player) {
+            LivingEntity mob = mobOf(event.getDamager());
+            Double mult = mob == null ? null : ctx.keys.damageOf(mob);
+            if (mult != null) {
+                event.setDamage(event.getDamage() * mult);
+            }
+        } else if (ctx.keys.runOf(victim) != null && victim instanceof LivingEntity) {
             Double factor = ctx.keys.factorOf(victim);
             if (factor != null && factor > 1) {
                 event.setDamage(event.getDamage() / factor);
@@ -181,7 +206,13 @@ public final class RunListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onDamage(EntityDamageEvent event) {
-        if (!(event.getEntity() instanceof Player p) || !dungeonWorld(p.getWorld())) {
+        if (!dungeonWorld(event.getEntity().getWorld())) {
+            return;
+        }
+        if (event instanceof EntityDamageByEntityEvent byEntity) {
+            scale(byEntity);
+        }
+        if (!(event.getEntity() instanceof Player p)) {
             return;
         }
         DungeonRun run = active(p);

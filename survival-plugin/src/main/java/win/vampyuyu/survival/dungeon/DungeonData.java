@@ -43,6 +43,8 @@ public final class DungeonData {
     public long totalKills;
     public long totalDeaths;
     public long lastRunMillis;
+    /** Catacombs XP (see {@link Catacombs}); the level is derived from it. */
+    public long catacombsXp;
 
     public FloorStats floor(int n) {
         return floors.computeIfAbsent(Integer.toString(n), k -> new FloorStats());

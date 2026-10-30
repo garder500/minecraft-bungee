@@ -14,6 +14,7 @@ import org.bukkit.inventory.ItemStack;
 import win.vampyuyu.survival.api.Skill;
 import win.vampyuyu.survival.core.Guis;
 import win.vampyuyu.survival.core.Msg;
+import win.vampyuyu.survival.dungeon.Catacombs;
 import win.vampyuyu.survival.dungeon.DungeonConfig;
 import win.vampyuyu.survival.dungeon.DungeonData;
 import win.vampyuyu.survival.dungeon.Grade;
@@ -27,6 +28,27 @@ final class Finale {
     record Result(ScoreCalculator.Score score, Map<UUID, List<RewardTable.Drop>> drops, double coins, double xp) {}
 
     private final DungeonRun run;
+
+    /** How much a player brought to the run: kills, secrets (worth more) minus deaths. */
+    static int contribution(RunPlayer rp) {
+        return rp.kills + rp.secrets * 5 - rp.totalDeaths * 3;
+    }
+
+    /** The best player of a run with at least two members and some activity, else null. Ties go to the first. */
+    static RunPlayer mvp(java.util.Collection<RunPlayer> players) {
+        RunPlayer best = null;
+        int count = 0;
+        for (RunPlayer rp : players) {
+            if (rp.left) {
+                continue;
+            }
+            count++;
+            if (best == null || contribution(rp) > contribution(best)) {
+                best = rp;
+            }
+        }
+        return count >= 2 && best != null && contribution(best) > 0 ? best : null;
+    }
 
     Finale(DungeonRun run) {
         this.run = run;
@@ -53,6 +75,9 @@ final class Finale {
         double coins = ok ? RewardTable.coins(cfg, run.floor, grade) : 0;
         double xp = ok ? RewardTable.xp(cfg, run.floor, grade) : 0;
         Map<UUID, List<RewardTable.Drop>> drops = new LinkedHashMap<>();
+        Map<UUID, double[]> paid = new LinkedHashMap<>();
+        Map<UUID, int[]> levels = new LinkedHashMap<>();
+        final long catacombsGain = ok ? Catacombs.gain(cfg, xp) : 0;
         Random rng = new Random();
         for (RunPlayer rp : run.players.values()) {
             if (rp.left) {
@@ -62,25 +87,36 @@ final class Finale {
             final int secrets = rp.secrets;
             final int kills = rp.kills;
             final int deaths = rp.totalDeaths;
-            run.ctx.core.profiles().edit(rp.id, "dungeon", DungeonData.class, DungeonData::new,
-                d -> d.record(run.floorNumber(), ok, millis, score.total(), grade, secrets, kills, deaths));
+            long xpBefore = p == null ? 0 : run.ctx.core.profiles().section(rp.id, "dungeon", DungeonData.class,
+                DungeonData::new).catacombsXp;
+            run.ctx.core.profiles().edit(rp.id, "dungeon", DungeonData.class, DungeonData::new, d -> {
+                d.record(run.floorNumber(), ok, millis, score.total(), grade, secrets, kills, deaths);
+                d.catacombsXp += catacombsGain;
+            });
             if (!ok || rp.rewarded) {
                 continue;
             }
             rp.rewarded = true;
+            // the Catacombs level the run started with gives its percentage on top of coins and Combat XP
+            int levelBefore = Catacombs.level(cfg, xpBefore);
+            double mult = 1 + Catacombs.bonusPercent(cfg, levelBefore) / 100.0;
+            final double myCoins = Math.floor(coins * mult);
+            final double myXp = Math.floor(xp * mult);
+            paid.put(rp.id, new double[] {myCoins, myXp, Catacombs.bonusPercent(cfg, levelBefore)});
+            levels.put(rp.id, new int[] {levelBefore, Catacombs.level(cfg, xpBefore + catacombsGain)});
             List<RewardTable.Drop> mine = RewardTable.roll(cfg, run.floorNumber(), grade, rng);
             drops.put(rp.id, mine);
-            if (coins > 0) {
-                run.ctx.economy().ifPresent(e -> e.add(rp.id, coins, "dungeon:floor" + run.floorNumber()));
+            if (myCoins > 0) {
+                run.ctx.economy().ifPresent(e -> e.add(rp.id, myCoins, "dungeon:floor" + run.floorNumber()));
             }
-            if (xp > 0 && p != null) {
-                run.ctx.skills().ifPresent(s -> s.addXp(p, Skill.COMBAT, xp, "dungeon:floor" + run.floorNumber()));
+            if (myXp > 0 && p != null) {
+                run.ctx.skills().ifPresent(s -> s.addXp(p, Skill.COMBAT, myXp, "dungeon:floor" + run.floorNumber()));
             }
             for (RewardTable.Drop d : mine) {
                 RewardDelivery.give(run.ctx.core, rp.id, p, d.item(), d.amount());
             }
         }
-        announce(ok, reason, score, millis, coins, xp);
+        announce(ok, reason, score, millis, coins, xp, paid, levels);
         if (ok) {
             // the board writes a file: off the main thread, the rank is announced when it is known
             final ScoreCalculator.Score s = score;
@@ -94,12 +130,16 @@ final class Finale {
                     });
                 }
             });
-            run.later(50, () -> run.each(p -> recap(p, grade, coins, xp, drops.getOrDefault(p.getUniqueId(), List.of()))));
+            run.later(50, () -> run.each(p -> {
+                double[] mine = paid.get(p.getUniqueId());
+                recap(p, grade, mine == null ? coins : mine[0], mine == null ? xp : mine[1], drops.getOrDefault(p.getUniqueId(), List.of()));
+            }));
         }
         return new Result(score, drops, coins, xp);
     }
 
-    private void announce(boolean ok, String reason, ScoreCalculator.Score score, long millis, double coins, double xp) {
+    private void announce(boolean ok, String reason, ScoreCalculator.Score score, long millis, double coins, double xp,
+            Map<UUID, double[]> paid, Map<UUID, int[]> levels) {
         Grade g = score.grade();
         run.each(p -> {
             p.sendMessage(Msg.component("<dark_gray><strikethrough>                                                  "));
@@ -114,8 +154,29 @@ final class Finale {
                 score.speed(), score.exploration(), score.skill(), score.bonus())));
             p.sendMessage(Msg.component("<gray>  Score: <white>" + score.total() + " <gray>Grade: " + g.color() + "<bold>" + g.label()));
             if (ok) {
-                p.sendMessage(Msg.component("<gray>  Reward: <gold>" + Msg.coins(coins) + "<gray> and <aqua>" + Msg.number(xp)
+                double[] mine = paid.get(p.getUniqueId());
+                double myCoins = mine == null ? coins : mine[0];
+                double myXp = mine == null ? xp : mine[1];
+                p.sendMessage(Msg.component("<gray>  Reward: <gold>" + Msg.coins(myCoins) + "<gray> and <aqua>" + Msg.number(myXp)
                     + " Combat XP<gray> (the items are in your inventory)"));
+                if (mine != null && mine[2] > 0) {
+                    p.sendMessage(Msg.component("<gray>  Catacombs level bonus: <green>+" + String.format("%.0f", mine[2]) + "%"));
+                }
+                int[] lv = levels.get(p.getUniqueId());
+                if (lv != null && lv[1] > lv[0]) {
+                    p.sendMessage(Msg.component("<aqua><bold>  CATACOMBS LEVEL " + lv[1] + "<reset><gray> (was " + lv[0] + ")"));
+                    p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+                }
+            }
+            for (RunPlayer rp : run.players.values()) {
+                if (!rp.left) {
+                    p.sendMessage(Msg.plain("  " + rp.name + ": " + rp.kills + " kills, " + rp.secrets + " secrets, "
+                        + rp.totalDeaths + " deaths", net.kyori.adventure.text.format.NamedTextColor.GRAY));
+                }
+            }
+            RunPlayer star = mvp(run.players.values());
+            if (star != null) {
+                p.sendMessage(Msg.plain("  MVP: " + star.name, net.kyori.adventure.text.format.NamedTextColor.GOLD));
             }
             p.sendMessage(Msg.component("<dark_gray><strikethrough>                                                  "));
             p.showTitle(net.kyori.adventure.title.Title.title(

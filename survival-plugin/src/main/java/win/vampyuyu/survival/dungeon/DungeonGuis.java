@@ -88,6 +88,17 @@ public final class DungeonGuis {
                 c.close();
                 svc.core.getPlugin().getServer().dispatchCommand(c.player(), "dungeon stats");
             });
+        int level = Catacombs.level(cfg, data.catacombsXp);
+        gui.set(36, Guis.icon(Material.EXPERIENCE_BOTTLE, "<aqua>Catacombs level " + level,
+            "<gray>Reward bonus: <white>+" + String.format("%.0f", Catacombs.bonusPercent(cfg, level)) + "%",
+            level >= cfg.catacombsMaxLevel ? "<gray>Max level" : "<gray>Next level at <white>"
+                + Catacombs.xpForLevel(cfg, level + 1) + " <gray>XP (you have <white>" + data.catacombsXp + "<gray>)"));
+        gui.set(44, Guis.icon(Material.ANVIL, "<gold>Crypt Forge", "<gray>Trade dungeon materials for", "<gray>consumables, caches and coins",
+            "<yellow>Click to open"), c -> {
+                if (svc.runs.runOf(c.player().getUniqueId()) == null) {
+                    svc.forge.open(c.player());
+                }
+            });
         DungeonRun run = svc.runs.runOf(p.getUniqueId());
         if (run != null) {
             gui.set(40, Guis.icon(Material.RED_BED, "<red>Leave the dungeon", "<gray>Abandon the current run"), c -> {

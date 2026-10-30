@@ -64,6 +64,8 @@ public final class RunManager {
             creator.generator(new DungeonVoidGenerator(x, y, z));
             creator.environment(World.Environment.NORMAL);
             creator.generateStructures(false);
+            // no spawn chunks kept loaded and ticking for a world that is played in a few rooms at a time
+            creator.keepSpawnLoaded(net.kyori.adventure.util.TriState.FALSE);
             World w = creator.createWorld();
             if (w == null) {
                 return null;
@@ -103,6 +105,9 @@ public final class RunManager {
     }
 
     public synchronized List<DungeonRun> all() { return new ArrayList<>(runs.values()); }
+
+    /** The "Building floor" bars by run id (tests). */
+    Map<String, BossBar> progressBars() { return progressBars; }
 
     /** Runs alive plus those still being generated. */
     public synchronized int load() { return runs.size() + building; }
@@ -258,8 +263,10 @@ public final class RunManager {
         String name = SkyblockWorlds.dungeon(id);
         Pos spawn = built.spawn();
         World w;
+        long created = System.nanoTime();
         try {
             w = worlds.create(name, spawn.x(), spawn.y(), spawn.z());
+            ctx.core.debug("Dungeon: created world " + name + " in " + (System.nanoTime() - created) / 1_000_000 + " ms (main thread)");
         } catch (RuntimeException e) {
             ctx.log().warning("Dungeon: could not create world " + name + ": " + e);
             w = null;
@@ -287,10 +294,7 @@ public final class RunManager {
                 }
             },
             () -> {
-                BossBar b = progressBars.remove(id);
-                if (b != null) {
-                    run.each(p -> p.hideBossBar(b));
-                }
+                hideProgress(run, true);
                 if (run.state == RunState.GENERATING) {
                     run.begin(world);
                 }
@@ -324,26 +328,116 @@ public final class RunManager {
 
     // ------------------------------------------------------------------ destroy
 
+    /** How long a hub teleport may take before the fallback is used (ms). */
+    static final long EXIT_GRACE_MS = 2000;
+
     /** Sends a player out of the dungeon: to the hub when the island feature is there, else the main world. */
     static void sendOut(RunContext ctx, Player p) {
+        sendOut(ctx, p, false);
+    }
+
+    /**
+     * Sends a player out. {@code IslandApi.teleportHub} may be asynchronous (it reports true while the player is still
+     * in the dungeon world), so a true answer is trusted: the fallback only runs if the player is STILL in a dungeon
+     * world after {@link #EXIT_GRACE_MS}. {@code immediate} (quit, disable: no later tick will come) skips the hub
+     * request and moves the player synchronously.
+     */
+    static void sendOut(RunContext ctx, Player p, boolean immediate) {
         if (p == null || !p.isOnline()) {
             return;
         }
-        boolean ok = false;
+        UUID id = p.getUniqueId();
+        Long since = ctx.exiting.get(id);
+        long now = System.currentTimeMillis();
+        if (!immediate && since != null && now - since < EXIT_GRACE_MS) {
+            return; // a hub teleport is already on its way
+        }
         var islands = ctx.islands();
-        if (islands.isPresent()) {
-            ok = ctx.teleportWith(() -> {
+        if (!immediate && since == null && islands.isPresent()) {
+            boolean ok = ctx.teleportWith(() -> {
                 try {
                     return islands.get().teleportHub(p);
                 } catch (RuntimeException e) {
                     return false;
                 }
             });
+            if (ok) {
+                ctx.exiting.put(id, now);
+                ctx.scheduler().later(EXIT_GRACE_MS / 50 + 2, () -> verifyExit(ctx, p));
+                return;
+            }
         }
-        if (!ok || inDungeonWorld(p)) {
-            World main = Bukkit.getWorlds().stream().filter(x -> !SkyblockWorlds.isDungeon(x.getName())).findFirst().orElse(null);
-            if (main != null) {
-                ctx.teleport(p, main.getSpawnLocation());
+        ctx.exiting.remove(id);
+        fallbackExit(ctx, p);
+    }
+
+    /** The deferred check after a hub teleport: only a player who is still inside gets the fallback. */
+    private static void verifyExit(RunContext ctx, Player p) {
+        ctx.exiting.remove(p.getUniqueId());
+        if (p.isOnline() && inDungeonWorld(p)) {
+            fallbackExit(ctx, p);
+        }
+    }
+
+    /** Synchronous exit: the hub world's spawn when loaded, else the first world that is not a dungeon. */
+    private static void fallbackExit(RunContext ctx, Player p) {
+        if (!inDungeonWorld(p)) {
+            return;
+        }
+        World target = Bukkit.getWorld(SkyblockWorlds.HUB);
+        if (target == null) {
+            target = Bukkit.getWorlds().stream().filter(x -> !SkyblockWorlds.isDungeon(x.getName())).findFirst().orElse(null);
+        }
+        if (target != null) {
+            ctx.teleport(p, target.getSpawnLocation());
+        }
+    }
+
+    /**
+     * A player standing in a dungeon world who is not part of any run (reconnected after a crash, admin leftovers).
+     * Gives the normal state back and sends them out.
+     */
+    public boolean sendOutStray(Player p) {
+        if (!inDungeonWorld(p) || runOf(p.getUniqueId()) != null && runOf(p.getUniqueId()).isParticipant(p.getUniqueId())) {
+            return false;
+        }
+        try {
+            if (p.getGameMode() == org.bukkit.GameMode.ADVENTURE || p.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
+                p.setGameMode(org.bukkit.GameMode.SURVIVAL);
+            }
+            p.removePotionEffect(org.bukkit.potion.PotionEffectType.DARKNESS);
+            p.removePotionEffect(org.bukkit.potion.PotionEffectType.SLOWNESS);
+            var manager = Bukkit.getScoreboardManager();
+            if (manager != null) {
+                p.setScoreboard(manager.getMainScoreboard());
+            }
+        } catch (RuntimeException e) {
+            ctx.log().warning("Dungeon: could not reset " + p.getName() + ": " + e);
+        }
+        ctx.exiting.remove(p.getUniqueId());
+        sendOut(ctx, p, false);
+        return true;
+    }
+
+    /** True when the player has no run but stands in a dungeon world (see {@link #sendOutStray}). */
+    public boolean isStray(Player p) {
+        if (!inDungeonWorld(p)) {
+            return false;
+        }
+        DungeonRun r = runOf(p.getUniqueId());
+        return r == null || !r.isParticipant(p.getUniqueId());
+    }
+
+    /** Hides the "Building floor" bar from every member of the run that is online, left or not. */
+    private void hideProgress(DungeonRun run, boolean forget) {
+        BossBar bar = forget ? progressBars.remove(run.id) : progressBars.get(run.id);
+        if (bar == null) {
+            return;
+        }
+        for (UUID id : new ArrayList<>(run.players.keySet())) {
+            Player p = Bukkit.getPlayer(id);
+            if (p != null) {
+                p.hideBossBar(bar);
             }
         }
     }
@@ -367,7 +461,7 @@ public final class RunManager {
         Path folder = folderOf(world);
         String name = SkyblockWorlds.dungeon(run.id);
         BlockApplier applier = run.applier;
-        BossBar bar = progressBars.remove(run.id);
+        hideProgress(run, true);
         if (applier != null) {
             applier.cancel();
         }
@@ -377,9 +471,6 @@ public final class RunManager {
         run.dispose();
         if (world != null) {
             for (Player p : new ArrayList<>(world.getPlayers())) {
-                if (bar != null) {
-                    p.hideBossBar(bar);
-                }
                 sendOut(ctx, p);
             }
         }
@@ -403,7 +494,7 @@ public final class RunManager {
             return;
         }
         for (Player p : new ArrayList<>(world.getPlayers())) {
-            sendOut(ctx, p);
+            sendOut(ctx, p, attempt >= 1);
         }
         boolean ok;
         try {
@@ -515,7 +606,7 @@ public final class RunManager {
                 }
                 if (world != null) {
                     for (Player p : new ArrayList<>(world.getPlayers())) {
-                        sendOut(ctx, p);
+                        sendOut(ctx, p, true); // no later tick will come
                     }
                     if (applier != null) {
                         applier.releaseTickets();
@@ -540,6 +631,7 @@ public final class RunManager {
             byPlayer.clear();
         }
         progressBars.clear();
+        ctx.exiting.clear();
         Path container = container();
         if (container != null) {
             deleteOrphans(container, Bukkit.getWorlds().stream().map(World::getName).toList());
@@ -562,6 +654,10 @@ public final class RunManager {
         DungeonRun run = runOf(p.getUniqueId());
         if (run == null) {
             return false;
+        }
+        BossBar bar = progressBars.get(run.id);
+        if (bar != null) {
+            p.hideBossBar(bar);
         }
         run.leave(p.getUniqueId(), true);
         synchronized (this) {

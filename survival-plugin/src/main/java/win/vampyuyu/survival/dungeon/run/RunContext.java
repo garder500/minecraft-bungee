@@ -22,6 +22,8 @@ public final class RunContext {
     public final Leaderboard leaderboard;
     public final PartyService parties;
     public volatile DungeonConfig cfg;
+    /** Players with a hub teleport in flight (uuid -> start millis): see {@link RunManager#sendOut}. */
+    final java.util.Map<java.util.UUID, Long> exiting = new java.util.concurrent.ConcurrentHashMap<>();
     /** Set while the feature itself teleports a player, so the teleport guard lets it through. */
     private boolean teleporting;
 
@@ -38,14 +40,31 @@ public final class RunContext {
 
     public Logger log() { return core.getPlugin().getLogger(); }
 
+    private final java.util.Map<Class<?>, Optional<?>> overrides = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * TESTS ONLY: makes {@code type} resolve to {@code impl} (or to "absent" when null) for this feature, whatever the
+     * other features registered. {@code Core.register} refuses a second implementation, so tests of the dungeon cannot
+     * use it once the real island, economy or boss features are merged.
+     */
+    public <T> void override(Class<T> type, T impl) {
+        overrides.put(type, Optional.ofNullable(impl));
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> Optional<T> lookup(Class<T> type) {
+        Optional<?> forced = overrides.get(type);
+        return forced != null ? (Optional<T>) forced : core.service(type);
+    }
+
     // lazy lookups: a later feature may be absent or may have failed
-    public Optional<IslandApi> islands() { return core.service(IslandApi.class); }
+    public Optional<IslandApi> islands() { return lookup(IslandApi.class); }
 
-    public Optional<EconomyApi> economy() { return core.service(EconomyApi.class); }
+    public Optional<EconomyApi> economy() { return lookup(EconomyApi.class); }
 
-    public Optional<SkillsApi> skills() { return core.service(SkillsApi.class); }
+    public Optional<SkillsApi> skills() { return lookup(SkillsApi.class); }
 
-    public Optional<BossApi> bosses() { return core.service(BossApi.class); }
+    public Optional<BossApi> bosses() { return lookup(BossApi.class); }
 
     /** True while {@link #teleport} is running. */
     public boolean teleporting() { return teleporting; }

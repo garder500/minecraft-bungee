@@ -42,7 +42,7 @@ public final class DungeonFeature implements Feature {
             hint.tick();
         });
         core.register(DungeonService.class, service);
-        core.register(DungeonApi.class, new DungeonApiImpl());
+        core.register(DungeonApi.class, new DungeonApiImpl(service.runs));
     }
 
     @Override

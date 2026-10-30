@@ -20,7 +20,7 @@ import win.vampyuyu.survival.dungeon.run.RunListener;
 /** {@code /dungeon}: floor menu, start, leave, statistics, leaderboard, claim and the admin tools. */
 public final class DungeonCommand implements CommandExecutor, TabCompleter {
     public static final String ENTER = "vampyuyu.sb.dungeon.enter";
-    private static final List<String> SUB = List.of("start", "leave", "floors", "stats", "top", "claim", "help", "admin");
+    private static final List<String> SUB = List.of("start", "leave", "floors", "stats", "top", "claim", "forge", "help", "admin");
     private static final List<String> ADMIN = List.of("list", "abort", "start", "cleanup", "reload");
 
     private final DungeonService svc;
@@ -32,7 +32,7 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
     public void register() {
         svc.core.permissions().register(RunListener.ADMIN, "Dungeon administration", PermissionDefault.OP);
         svc.core.commands().command("dungeon").aliases("dg", "catacombs").description("Enter the Catacombs")
-            .usage("/dungeon [start <floor>|leave|floors|stats|top [floor]|claim|help]")
+            .usage("/dungeon [start <floor>|leave|floors|stats|top [floor]|claim|forge|help]")
             .permission(ENTER, PermissionDefault.TRUE).executor(this).tab(this).register();
     }
 
@@ -74,10 +74,12 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
                 }
             }
             case "leave", "quit" -> {
-                if (!svc.runs.leave(p)) {
-                    msg.error(p, "You are not in a dungeon run.");
-                } else {
+                if (svc.runs.leave(p)) {
                     msg.ok(p, "You left the dungeon.");
+                } else if (svc.runs.sendOutStray(p)) {
+                    msg.ok(p, "You were sent out of the dungeon.");
+                } else {
+                    msg.error(p, "You are not in a dungeon run.");
                 }
             }
             case "floors" -> svc.guis.floors(p);
@@ -90,6 +92,7 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
                 }
             }
             case "claim" -> claim(p);
+            case "forge", "shop" -> forge(p, args);
             default -> help(p);
         }
         return true;
@@ -112,6 +115,7 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
             "/dungeon start <floor> <dark_gray>- start a run with your party (or alone)",
             "/dungeon leave <dark_gray>- abandon the current run",
             "/dungeon floors | stats | top [floor] | claim",
+            "/dungeon forge <dark_gray>- trade dungeon materials (also <white>/dungeon forge buy <trade><dark_gray>)",
             "/party <dark_gray>- form a party of up to " + svc.parties.maxSize())) {
             msg.mini(to, "<gray>" + line);
         }
@@ -169,10 +173,39 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    private void forge(Player p, String[] args) {
+        Msg msg = svc.core.msg();
+        if (args.length >= 3 && args[1].equalsIgnoreCase("buy")) {
+            var trade = svc.forge.trade(args[2]);
+            if (trade == null) {
+                msg.error(p, "There is no trade called " + args[2] + ". Open /dungeon forge to see them.");
+                return;
+            }
+            var r = svc.forge.buy(p, trade);
+            if (r.ok()) {
+                msg.ok(p, r.message());
+            } else {
+                msg.error(p, r.message());
+            }
+            return;
+        }
+        if (svc.runs.runOf(p.getUniqueId()) != null) {
+            msg.error(p, "The forge is closed while you are in a dungeon run.");
+            return;
+        }
+        svc.forge.open(p);
+    }
+
     private void stats(Player p) {
         DungeonData d = svc.core.profiles().section(p.getUniqueId(), "dungeon", DungeonData.class, DungeonData::new);
         Msg msg = svc.core.msg();
         msg.mini(p, "<dark_red><bold>Your Catacombs record");
+        DungeonConfig cfg = svc.cfg();
+        int level = Catacombs.level(cfg, d.catacombsXp);
+        String next = level >= cfg.catacombsMaxLevel ? "max level"
+            : (Catacombs.xpForLevel(cfg, level + 1) - d.catacombsXp) + " XP to level " + (level + 1);
+        msg.mini(p, "<gray>Catacombs level: <white>" + level + " <dark_gray>(" + next + ")<gray>, reward bonus <white>+"
+            + String.format("%.0f", Catacombs.bonusPercent(cfg, level)) + "%");
         msg.mini(p, "<gray>Runs: <white>" + d.totalRuns + "<gray>  Clears: <white>" + d.totalClears
             + "<gray>  Highest floor: <white>" + d.highestFloorCleared);
         msg.mini(p, "<gray>Secrets: <white>" + d.totalSecrets + "<gray>  Kills: <white>" + d.totalKills
@@ -276,6 +309,7 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
             SUB.stream().filter(s -> s.startsWith(last) && (!s.equals("admin") || sender.hasPermission(RunListener.ADMIN))).forEach(out::add);
         } else if (args.length == 2) {
             switch (args[0].toLowerCase(Locale.ROOT)) {
+                case "forge", "shop" -> out.add("buy");
                 case "start", "top", "play" -> {
                     for (int f = 1; f <= svc.cfg().floorCount(); f++) {
                         if (Integer.toString(f).startsWith(last)) {
@@ -290,6 +324,10 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
                 }
                 default -> { }
             }
+        } else if (args.length == 3 && (args[0].equalsIgnoreCase("forge") || args[0].equalsIgnoreCase("shop"))
+                && args[1].equalsIgnoreCase("buy")) {
+            svc.cfg().forgeTrades.forEach(t -> out.add(t.id()));
+            out.removeIf(s -> !s.startsWith(last));
         } else if (args.length == 3 && args[0].equalsIgnoreCase("admin") && sender.hasPermission(RunListener.ADMIN)) {
             if (args[1].equalsIgnoreCase("abort")) {
                 out.add("all");

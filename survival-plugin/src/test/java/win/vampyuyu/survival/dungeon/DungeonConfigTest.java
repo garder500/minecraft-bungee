@@ -41,6 +41,31 @@ public class DungeonConfigTest {
         assertTrue(c.allowedCommands.contains("party"));
         assertEquals(3, c.maxConcurrentRuns);
         assertEquals(5, c.partyMaxSize);
+        // the Dungeon Gate pad of the hub (x=33, z=0, hub y 100): the hint must fire where the signposts point
+        assertEquals(33.5, c.entranceX, 0.0);
+        assertEquals(101.0, c.entranceY, 0.0);
+        assertEquals(0.5, c.entranceZ, 0.0);
+        assertEquals("the scripted floor-scaled boss is the default", 0, c.bossExternalFromFloor);
+    }
+
+    @Test
+    public void builtInEntranceEqualsTheShippedFile() {
+        DungeonConfig d = DungeonConfig.parse(null);
+        assertEquals(33.5, d.entranceX, 0.0);
+        assertEquals(101.0, d.entranceY, 0.0);
+        assertEquals(0.5, d.entranceZ, 0.0);
+        DungeonConfig partial = DungeonConfig.parse(yaml("entrance:\n  enabled: true\n"));
+        assertEquals(33.5, partial.entranceX, 0.0);
+        assertEquals(101.0, partial.entranceY, 0.0);
+        assertEquals(0.5, partial.entranceZ, 0.0);
+    }
+
+    @Test
+    public void externalBossFloorIsClamped() {
+        assertEquals(4, DungeonConfig.parse(yaml("boss-external-from-floor: 4")).bossExternalFromFloor);
+        DungeonConfig c = DungeonConfig.parse(yaml("boss-external-from-floor: -3"));
+        assertEquals(0, c.bossExternalFromFloor);
+        assertFalse(c.problems().isEmpty());
     }
 
     @Test

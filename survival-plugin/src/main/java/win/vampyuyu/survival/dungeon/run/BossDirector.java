@@ -16,8 +16,9 @@ import org.bukkit.util.Vector;
 import win.vampyuyu.survival.core.Msg;
 
 /**
- * The final fight. When the boss feature is present and knows {@code crypt_lord} it spawns the boss
- * (the kill is reported through {@code BossKillEvent}); otherwise a scripted Crypt Lord with phases takes over.
+ * The final fight. By default a scripted Crypt Lord with phases takes over (hp and damage follow the floor). From the
+ * floor named by {@code boss-external-from-floor}, when the boss feature is present and knows {@code crypt_lord}, that
+ * boss is spawned instead (the kill is reported through {@code BossKillEvent}; its hp does not follow the floor).
  */
 final class BossDirector {
     static final String BOSS_ID = "crypt_lord";
@@ -69,7 +70,8 @@ final class BossDirector {
         Player who = Bukkit.getPlayer(summoner);
         spawned = true;
         spawnedAtMillis = System.currentTimeMillis();
-        var api = run.ctx.bosses();
+        int from = run.ctx.cfg.bossExternalFromFloor;
+        var api = from > 0 && run.floorNumber() >= from ? run.ctx.bosses() : java.util.Optional.<win.vampyuyu.survival.api.BossApi>empty();
         if (api.isPresent()) {
             try {
                 if (api.get().bossIds().contains(BOSS_ID) && api.get().spawn(BOSS_ID, at, who)) {

@@ -343,6 +343,9 @@ public final class DungeonRun {
 
     /** The world exists and the blocks are placed: put the players in and start the countdown. */
     void begin(World w) {
+        if (state != RunState.GENERATING) {
+            return; // cancelled or closed while the blocks were being placed
+        }
         this.world = w;
         for (RoomBuild rb : built.rooms.values()) {
             rooms.put(rb.plan.index, new RoomRt(rb));
@@ -353,6 +356,9 @@ public final class DungeonRun {
         state = RunState.COUNTDOWN;
         Location spawn = loc(built.spawn());
         for (RunPlayer rp : new ArrayList<>(players.values())) {
+            if (rp.left) {
+                continue; // left while the crypt was being built: never touched, never teleported
+            }
             Player p = Bukkit.getPlayer(rp.id);
             if (p == null || !p.isOnline()) {
                 rp.left = true;
@@ -448,10 +454,14 @@ public final class DungeonRun {
             return;
         }
         Player p = Bukkit.getPlayer(playerId);
+        boolean played = state.active() && rp.prepared;
         if (p != null) {
             release(p, rp);
         }
         rp.left = true;
+        if (played) {
+            recordEarlyLeave(rp);
+        }
         if (p != null && sendOut && p.getWorld() == world) {
             ctx.scheduler().nextTick(() -> RunManager.sendOut(ctx, p));
         }
@@ -463,6 +473,17 @@ public final class DungeonRun {
         } else if (participants().isEmpty()) {
             closeRequest.run();
         }
+    }
+
+    /** Somebody who walks out of a run in progress has played it: it counts as a failed run for them. */
+    private void recordEarlyLeave(RunPlayer rp) {
+        final long millis = elapsedMillis();
+        final int secrets = rp.secrets;
+        final int kills = rp.kills;
+        final int deaths = rp.totalDeaths;
+        ctx.core.profiles().edit(rp.id, "dungeon", win.vampyuyu.survival.dungeon.DungeonData.class,
+            win.vampyuyu.survival.dungeon.DungeonData::new,
+            d -> d.record(floor.number(), false, millis, 0, win.vampyuyu.survival.dungeon.Grade.D, secrets, kills, deaths));
     }
 
     /** Players that can still fight: alive, or ghosts that will come back. */
@@ -513,6 +534,10 @@ public final class DungeonRun {
         } catch (RuntimeException e) {
             ctx.log().warning("Dungeon " + id + ": finale failed: " + e);
         }
+        if (participants().isEmpty()) {
+            closeRequest.run(); // nobody to watch the results: free the slot and the party now
+            return;
+        }
         long delay = ctx.cfg.closeDelaySeconds * 20L;
         tasks.add(ctx.scheduler().later(delay, closeRequest));
     }
@@ -548,6 +573,9 @@ public final class DungeonRun {
         tick += STEP;
         try {
             checkPlayers();
+            if (state == RunState.CLOSED || state == RunState.CLOSING) {
+                return; // a leaver was the last one and the run closed itself
+            }
             if (state == RunState.COUNTDOWN) {
                 countdown();
             }
@@ -684,13 +712,30 @@ public final class DungeonRun {
         return String.format("%02d:%02d", s / 60, s % 60);
     }
 
+    /** The sidebar status of a teammate: hearts while alive. */
+    private String teammateState(RunPlayer rp) {
+        if (rp.left) {
+            return "<dark_gray>left";
+        }
+        if (rp.eliminated) {
+            return "<red>dead";
+        }
+        if (rp.ghost) {
+            return "<aqua>ghost";
+        }
+        Player p = Bukkit.getPlayer(rp.id);
+        if (p == null || !p.isOnline()) {
+            return "<dark_gray>offline";
+        }
+        return "<red>\u2764 " + (int) Math.ceil(Math.max(0, p.getHealth()) / 2.0);
+    }
+
     void hud() {
         if (!ctx.cfg.sidebar) {
             return;
         }
         List<Component> lines = new ArrayList<>();
         lines.add(Msg.component("<dark_gray>" + floor.name()));
-        lines.add(Component.empty());
         lines.add(Msg.component("<gray>Time: <white>" + clock(elapsedMillis())
             + (state == RunState.COUNTDOWN ? " <gray>(starting)" : "")));
         lines.add(Msg.component("<gray>Rooms: <white>" + roomsVisited + "<dark_gray>/<white>" + layout.rooms().size()));
@@ -703,8 +748,7 @@ public final class DungeonRun {
             if (lines.size() >= 13) {
                 break;
             }
-            String state = rp.left ? "<dark_gray>left" : rp.eliminated ? "<red>dead" : rp.ghost ? "<aqua>ghost" : "<green>alive";
-            lines.add(Msg.component("<white>" + rp.name + " " + state));
+            lines.add(Msg.component("<white>" + rp.name + " " + teammateState(rp)));
         }
         each(p -> {
             RunPlayer rp = players.get(p.getUniqueId());

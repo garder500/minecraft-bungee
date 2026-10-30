@@ -20,6 +20,7 @@ public final class DungeonService {
     public final PartyService parties;
     public final Leaderboard leaderboard;
     public final DungeonGuis guis;
+    public final Forge forge;
     /** Set by the feature once the commands exist (the menus start runs through it). */
     public DungeonCommand command;
 
@@ -31,6 +32,7 @@ public final class DungeonService {
         this.ctx = new RunContext(core, cfg, new Keys(core.getPlugin()), leaderboard, parties);
         this.runs = new RunManager(ctx, worlds);
         this.guis = new DungeonGuis(this);
+        this.forge = new Forge(this);
     }
 
     public DungeonConfig cfg() { return ctx.cfg; }

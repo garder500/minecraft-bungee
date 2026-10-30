@@ -9,6 +9,11 @@ close-delay-seconds: 45
 run-timeout-minutes: 75
 # Time given to the party to kill the final boss once it spawned (minutes).
 boss-timeout-minutes: 12
+# Which Crypt Lord fights the party. 0 = always the scripted Crypt Lord of this feature (hp and damage follow the
+# floor multipliers and the party size). N > 0 = from floor N on, the boss feature's `crypt_lord` is used when that
+# feature is present (fixed 350000 HP in boss.yml, it does NOT follow the floor multipliers: the boss API has no
+# scaling parameter yet). Lower floors keep the scripted boss.
+boss-external-from-floor: 0
 # Seconds of countdown between the end of the generation and the moment the doors open.
 ready-countdown-seconds: 8
 # Wither key / blood key broadcast and sidebar can be turned off.
@@ -34,13 +39,15 @@ generation:
   blocks-per-check: 256
 
 # Where players stand to be reminded of the entrance (the island feature owns the hub; this is only a hint pad).
-# Stand within the radius and a clickable message tells you to type /dungeon. Hub signposts should point at x/y/z.
+# Stand within the radius and a clickable message tells you to type /dungeon. The defaults are the "Dungeon Gate"
+# pad of the island feature's hub (pad at x=33, z=0, hub y 100, so the block above it is y=101). If the island
+# feature moves the pad or the hub height, change x/y/z here.
 entrance:
   enabled: true
   world: sb_hub
-  x: 0.5
-  y: 80.0
-  z: 24.5
+  x: 33.5
+  y: 101.0
+  z: 0.5
   radius: 3.0
   hint-cooldown-seconds: 90
 
@@ -76,6 +83,27 @@ shop:
   # Healing Flask: percent of max health restored, and the pause between two uses (seconds).
   flask-heal-percent: 60
   flask-cooldown-seconds: 15
+
+# Catacombs level: cleared runs give Catacombs XP (a share of the Combat XP paid). Level n needs n^2 * level-base XP in
+# total. Each level adds reward-percent-per-level percent to the coins and Combat XP of every clear.
+catacombs:
+  level-base: 400
+  max-level: 50
+  xp-share: 0.5
+  reward-percent-per-level: 1.0
+
+# The Crypt Forge (/dungeon forge): dungeon materials are spent here. Each trade has a cost (item id -> amount, custom
+# ids or "mc:MATERIAL") and exactly ONE outcome: give (item id) + amount, cache-rolls (item rolls of the reward table at
+# cache-grade, on the highest floor the player cleared), or coins (needs the economy feature).
+forge:
+  trades:
+    - {id: spirit_leaf, name: "Spirit Leaf", icon: FERN, cost: {dungeon_bone_fragment: 16, dungeon_crypt_shard: 4}, give: dungeon_spirit_leaf, amount: 1}
+    - {id: healing_flasks, name: "Healing Flasks", icon: GLASS_BOTTLE, cost: {dungeon_bone_fragment: 12}, give: dungeon_healing_flask, amount: 3}
+    - {id: crypt_cache, name: "Crypt Cache", icon: ENDER_CHEST, cost: {dungeon_crypt_shard: 12, dungeon_wither_essence: 3}, cache-rolls: 4, cache-grade: B}
+    - {id: spirit_cache, name: "Spirit Cache", icon: SHULKER_BOX, cost: {dungeon_wither_essence: 12, dungeon_spirit_dust: 4}, cache-rolls: 5, cache-grade: S}
+    - {id: dark_scroll, name: "Dark Scroll", icon: PAPER, cost: {dungeon_relic: 5, dungeon_spirit_dust: 16}, give: dungeon_dark_scroll, amount: 1}
+    - {id: sell_bones, name: "Bone Market", icon: BONE, cost: {dungeon_bone_fragment: 64}, coins: 600}
+    - {id: sell_essence, name: "Essence Broker", icon: BLACK_DYE, cost: {dungeon_wither_essence: 10}, coins: 1500}
 
 scoring:
   # Seconds past the par time that cost one speed point.

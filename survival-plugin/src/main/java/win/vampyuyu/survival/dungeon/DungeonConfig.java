@@ -19,6 +19,13 @@ public final class DungeonConfig {
             double damage, int mobLevel, int parSeconds, int secretsNeededPercent, double reward,
             int minCombatLevel) {}
 
+    /**
+     * One trade of the Crypt Forge. {@code cost} maps item ids (custom id or {@code mc:MATERIAL}) to amounts. Exactly one
+     * outcome: {@code give} (+ {@code amount}), {@code cacheRolls} item rolls of a grade, or {@code coins}.
+     */
+    public record ForgeTrade(String id, String name, String icon, Map<String, Integer> cost, String give, int amount,
+            int cacheRolls, Grade cacheGrade, double coins) {}
+
     /** What a grade pays. */
     public record Tier(double coins, double xp, int rolls, String chest) {}
 
@@ -34,6 +41,8 @@ public final class DungeonConfig {
     public int closeDelaySeconds;
     public int runTimeoutMinutes;
     public int bossTimeoutMinutes;
+    /** From this floor on the boss feature's crypt_lord is used (0 = never, the scripted floor-scaled boss is used). */
+    public int bossExternalFromFloor;
     public int readyCountdownSeconds;
     public boolean sidebar;
     public boolean darknessEffect;
@@ -79,6 +88,12 @@ public final class DungeonConfig {
     public double speedDecaySeconds;
     public double deathPenalty;
     public final Map<Grade, Integer> thresholds = new EnumMap<>(Grade.class);
+
+    public long catacombsLevelBase;
+    public int catacombsMaxLevel;
+    public double catacombsXpShare;
+    public double catacombsRewardPercentPerLevel;
+    public final List<ForgeTrade> forgeTrades = new ArrayList<>();
 
     public final Map<Grade, Tier> tiers = new EnumMap<>(Grade.class);
     public final List<RewardEntry> rewardItems = new ArrayList<>();
@@ -127,6 +142,7 @@ public final class DungeonConfig {
         closeDelaySeconds = num(r, "close-delay-seconds", 45, 5, 3600);
         runTimeoutMinutes = num(r, "run-timeout-minutes", 75, 5, 600);
         bossTimeoutMinutes = num(r, "boss-timeout-minutes", 12, 1, 120);
+        bossExternalFromFloor = num(r, "boss-external-from-floor", 0, 0, 99);
         readyCountdownSeconds = num(r, "ready-countdown-seconds", 8, 0, 120);
         sidebar = r == null || r.getBoolean("sidebar", true);
         darknessEffect = r != null && r.getBoolean("darkness-effect", false);
@@ -147,9 +163,9 @@ public final class DungeonConfig {
         ConfigurationSection e = r == null ? null : r.getConfigurationSection("entrance");
         entranceEnabled = e == null || e.getBoolean("enabled", true);
         entranceWorld = e == null ? "sb_hub" : e.getString("world", "sb_hub");
-        entranceX = e == null ? 0.5 : e.getDouble("x", 0.5);
-        entranceY = e == null ? 80.0 : e.getDouble("y", 80.0);
-        entranceZ = e == null ? 24.5 : e.getDouble("z", 24.5);
+        entranceX = e == null ? 33.5 : e.getDouble("x", 33.5);
+        entranceY = e == null ? 101.0 : e.getDouble("y", 101.0);
+        entranceZ = e == null ? 0.5 : e.getDouble("z", 0.5);
         entranceRadius = dbl(e, "radius", 3.0, 1.0, 32.0);
         entranceHintCooldownSeconds = num(e, "hint-cooldown-seconds", 90, 5, 86400);
 
@@ -197,6 +213,12 @@ public final class DungeonConfig {
         ConfigurationSection rewards = r == null ? null : r.getConfigurationSection("rewards");
         readTiers(rewards == null ? null : rewards.getConfigurationSection("tiers"));
         readRewardItems(rewards);
+        ConfigurationSection cat = r == null ? null : r.getConfigurationSection("catacombs");
+        catacombsLevelBase = num(cat, "level-base", 400, 1, 1_000_000);
+        catacombsMaxLevel = num(cat, "max-level", 50, 1, 200);
+        catacombsXpShare = dbl(cat, "xp-share", 0.5, 0.0, 10.0);
+        catacombsRewardPercentPerLevel = dbl(cat, "reward-percent-per-level", 1.0, 0.0, 10.0);
+        readForge(r == null ? null : r.getConfigurationSection("forge"));
         readFloors(r == null ? null : r.getConfigurationSection("floors"));
     }
 
@@ -294,6 +316,68 @@ public final class DungeonConfig {
         if (rewardItems.isEmpty()) {
             problems.add("rewards.items has no valid entry, using the built-in table");
             rewardItems.addAll(DEFAULT_REWARDS);
+        }
+    }
+
+    /** The built-in Crypt Forge (mirrored in dungeon.yml, a test keeps them equal). */
+    public static final List<ForgeTrade> DEFAULT_TRADES = List.of(
+        new ForgeTrade("spirit_leaf", "Spirit Leaf", "FERN", costOf("dungeon_bone_fragment", 16, "dungeon_crypt_shard", 4),
+            "dungeon_spirit_leaf", 1, 0, Grade.D, 0),
+        new ForgeTrade("healing_flasks", "Healing Flasks", "GLASS_BOTTLE", costOf("dungeon_bone_fragment", 12),
+            "dungeon_healing_flask", 3, 0, Grade.D, 0),
+        new ForgeTrade("crypt_cache", "Crypt Cache", "ENDER_CHEST",
+            costOf("dungeon_crypt_shard", 12, "dungeon_wither_essence", 3), "", 0, 4, Grade.B, 0),
+        new ForgeTrade("spirit_cache", "Spirit Cache", "SHULKER_BOX",
+            costOf("dungeon_wither_essence", 12, "dungeon_spirit_dust", 4), "", 0, 5, Grade.S, 0),
+        new ForgeTrade("dark_scroll", "Dark Scroll", "PAPER", costOf("dungeon_relic", 5, "dungeon_spirit_dust", 16),
+            "dungeon_dark_scroll", 1, 0, Grade.D, 0),
+        new ForgeTrade("sell_bones", "Bone Market", "BONE", costOf("dungeon_bone_fragment", 64), "", 0, 0, Grade.D, 600),
+        new ForgeTrade("sell_essence", "Essence Broker", "BLACK_DYE", costOf("dungeon_wither_essence", 10), "", 0, 0,
+            Grade.D, 1500));
+
+    private static Map<String, Integer> costOf(Object... pairs) {
+        Map<String, Integer> m = new LinkedHashMap<>();
+        for (int i = 0; i < pairs.length; i += 2) {
+            m.put((String) pairs[i], (Integer) pairs[i + 1]);
+        }
+        return java.util.Collections.unmodifiableMap(m);
+    }
+
+    private void readForge(ConfigurationSection forge) {
+        if (forge == null || !forge.isList("trades")) {
+            forgeTrades.addAll(DEFAULT_TRADES);
+            return;
+        }
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (Map<?, ?> m : forge.getMapList("trades")) {
+            String id = String.valueOf(m.get("id")).trim().toLowerCase(Locale.ROOT);
+            if (!id.matches("[a-z0-9_]+") || !seen.add(id)) {
+                problems.add("forge.trades entry '" + id + "' has a missing, bad or duplicate id, skipped");
+                continue;
+            }
+            Map<String, Integer> cost = new LinkedHashMap<>();
+            if (m.get("cost") instanceof Map<?, ?> c) {
+                for (Map.Entry<?, ?> e : c.entrySet()) {
+                    int amount = intOf(e.getValue(), 0);
+                    if (amount >= 1 && amount <= 100_000 && !String.valueOf(e.getKey()).isBlank()) {
+                        cost.merge(String.valueOf(e.getKey()), amount, Integer::sum);
+                    }
+                }
+            }
+            String give = m.get("give") == null ? "" : String.valueOf(m.get("give")).trim();
+            int amount = Math.max(1, Math.min(2304, intOf(m.get("amount"), 1)));
+            int rolls = Math.max(0, Math.min(20, intOf(m.get("cache-rolls"), 0)));
+            double coins = m.get("coins") instanceof Number n ? Math.max(0, Math.min(1e9, n.doubleValue())) : 0;
+            int outcomes = (give.isEmpty() ? 0 : 1) + (rolls > 0 ? 1 : 0) + (coins > 0 ? 1 : 0);
+            if (cost.isEmpty() || outcomes != 1) {
+                problems.add("forge.trades entry " + id + " needs a cost and exactly one of give, cache-rolls, coins, skipped");
+                continue;
+            }
+            String name = m.get("name") == null ? id : String.valueOf(m.get("name"));
+            String icon = m.get("icon") == null ? "CHEST" : String.valueOf(m.get("icon")).toUpperCase(Locale.ROOT);
+            Grade grade = rolls > 0 ? Grade.parse(String.valueOf(m.get("cache-grade"))).orElse(Grade.B) : Grade.D;
+            forgeTrades.add(new ForgeTrade(id, name, icon, java.util.Collections.unmodifiableMap(cost), give, give.isEmpty() ? 0 : amount,
+                rolls, grade, coins));
         }
     }
 
