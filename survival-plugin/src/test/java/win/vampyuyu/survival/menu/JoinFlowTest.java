@@ -78,8 +78,14 @@ public class JoinFlowTest extends MenuTestBase {
             islands.give(probe.getUniqueId(), new Location(world("sb_world"), 100, 80, 100));
         }
         flow.onJoin(new org.bukkit.event.player.PlayerJoinEvent(probe, net.kyori.adventure.text.Component.empty()));
-        server.getScheduler().waitAsyncTasksFinished();
-        server.getScheduler().performTicks(30);
+        // The lookups run on worker threads and queue their routing with runTask. waitAsyncTasksFinished can return
+        // before a worker has queued it (seen when the whole plugin is loaded earlier in the same JVM), so a single
+        // wait + performTicks raced: pump ticks until both joins (the one MockBukkit fired and ours) have arrived.
+        long deadline = System.nanoTime() + 5_000_000_000L;
+        do {
+            server.getScheduler().waitAsyncTasksFinished();
+            server.getScheduler().performTicks(30);
+        } while (arrived.stream().filter(probe.getName()::equals).count() < 2 && System.nanoTime() < deadline);
         return probe;
     }
 

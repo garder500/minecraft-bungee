@@ -190,6 +190,11 @@ public final class Core {
         if (services.put(type, implementation) == null) serviceOrder.add(type);
     }
 
+    /** Test seam: withdraws a published service, as if its feature were disabled. */
+    public <T> void unpublish(Class<T> type) {
+        if (services.remove(type) != null) serviceOrder.remove(type);
+    }
+
     /** The service, or empty when its feature is disabled, failed, or has not enabled yet. */
     public <T> Optional<T> service(Class<T> type) {
         return Optional.ofNullable(type.cast(services.get(type)));
