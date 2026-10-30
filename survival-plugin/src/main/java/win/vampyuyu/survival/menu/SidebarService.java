@@ -140,7 +140,7 @@ final class SidebarService implements Listener {
             if (changed && !customNamesBroken) {
                 try {
                     line.customName(text.isEmpty() ? Component.text(" ") : Msg.component(text));
-                } catch (UnsupportedOperationException e) {
+                } catch (RuntimeException e) {
                     // A server without per-score display names: the lines stay blank instead of failing every second.
                     customNamesBroken = true;
                 }
