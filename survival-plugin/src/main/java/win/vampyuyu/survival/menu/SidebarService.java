@@ -143,6 +143,7 @@ final class SidebarService implements Listener {
                 } catch (RuntimeException e) {
                     // A server without per-score display names: the lines stay blank instead of failing every second.
                     customNamesBroken = true;
+                    rt.core.getPlugin().getLogger().warning("Sidebar: this server cannot set score display names (" + e + "); sidebar lines will be blank.");
                 }
             }
             if (i >= state.lines.size() || state.lines.size() != count) {

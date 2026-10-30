@@ -44,13 +44,17 @@ The player's guide through Skyblock and the only join router. Config: `menu.yml`
 
 | Command (aliases) | Permission | Default |
 | --- | --- | --- |
-| `/sbmenu` (`/skyblockmenu`, `/menu`), `/sbmenu reload` | `vampyuyu.sb.menu.use`, reload needs `vampyuyu.sb.menu.admin` | TRUE / OP |
+| `/sbmenu` (`/skyblockmenu`), `/sbmenu reload` | `vampyuyu.sb.menu.use`, reload needs `vampyuyu.sb.menu.admin` | TRUE / OP |
 | `/quests [tutorial\|daily\|track <id>\|list]` | `vampyuyu.sb.menu.quests` | TRUE |
 | `/fairy`, `/fairy admin add [id]\|remove <id>\|list` | `vampyuyu.sb.menu.fairy`, admin needs `vampyuyu.sb.menu.admin` | TRUE / OP |
-| `/warps [hub\|island\|nether\|end\|visit <p>\|public on\|off\|list [note]]`, `/hub` | `vampyuyu.sb.menu.warps` | TRUE |
+| `/sbwarps` (`/skyblockwarps`) `[hub\|island\|nether\|end\|visit <p>\|public on\|off\|list [note]]`, `/hub` | `vampyuyu.sb.menu.warps` | TRUE |
 | `/sbsettings [sidebar\|quest-tracker\|damage-indicators\|sounds] [on\|off]` | `vampyuyu.sb.menu.settings` | TRUE |
 
 Tab completion on all of them.
+
+Name clashes avoided on purpose: the network plugin (also loaded on the survival server) already owns `/menu` (world
+selector), `/warp` and `/warps` (creative warps), so this feature uses `/sbmenu` and `/sbwarps` and registers no
+`menu`, `warp` or `warps` alias. `/hub` is registered here (Velocity config defines no `/hub`).
 
 ## Handoff value format (`sb:transfer:<uuid>`)
 
@@ -105,4 +109,6 @@ other features can add their own objectives without this feature knowing them.
   and across world changes is untested live.
 * Quest objectives that depend on other features (minion crafted, bazaar and auction opened, enchanting) rely on
   generic Bukkit events or command dispatch and will only progress once those features are live.
+* No Fairy Souls are seeded in `sb_hub` (`fairy-souls.fixed: []`): the hub layout is not known to this feature, so an admin
+  places them standing on the spot with `/fairy admin add`. Island souls (8 offsets) work out of the box.
 * Damage indicators are display entities near the victim; performance under mass combat was not measured.

@@ -126,7 +126,7 @@ final class WarpsGui {
         gui.set(40, Guis.icon(Material.ARROW, "<green>Go Back", "<gray>To Warps"), click -> open(player));
         if (list.isEmpty()) {
             gui.set(22, Guis.icon(Material.BARRIER, "<red>No public islands yet",
-                "<gray>Open your own island from the", "<gray>Warps menu or with <yellow>/warps public on<gray>."));
+                "<gray>Open your own island from the", "<gray>Warps menu or with <yellow>/sbwarps public on<gray>."));
         }
         gui.open(player);
     }

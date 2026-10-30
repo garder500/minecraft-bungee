@@ -41,7 +41,7 @@ final class MenuCommands {
 
     void register() {
         rt.core.permissions().register(ADMIN, "Menu administration (reload, fairy souls)", PermissionDefault.OP);
-        rt.core.commands().command("sbmenu").aliases("skyblockmenu", "menu")
+        rt.core.commands().command("sbmenu").aliases("skyblockmenu")
             .description("Open the Skyblock Menu")
             .usage("/<command> [reload]")
             .permission(USE, PermissionDefault.TRUE)
@@ -57,7 +57,7 @@ final class MenuCommands {
             .usage("/<command> [admin add [id]|admin remove <id>|admin list]")
             .permission("vampyuyu.sb.menu.fairy", PermissionDefault.TRUE)
             .executor(this::fairy).tab(this::fairyTab).register();
-        rt.core.commands().command("warps").aliases("warp", "sbwarp")
+        rt.core.commands().command("sbwarps").aliases("skyblockwarps")
             .description("Travel around Skyblock")
             .usage("/<command> [hub|island|nether|end|visit <player>|public <on|off|list> [note]]")
             .permission("vampyuyu.sb.menu.warps", PermissionDefault.TRUE)
@@ -231,7 +231,7 @@ final class MenuCommands {
         return List.of();
     }
 
-    // ---------------------------------------------------------------- /warps
+    // ---------------------------------------------------------------- /sbwarps
 
     private boolean warps(CommandSender sender, Command command, String label, String[] args) {
         Optional<Player> who = player(sender);
@@ -261,7 +261,7 @@ final class MenuCommands {
                 }
             }
             case "public" -> publicCommand(player, args);
-            default -> rt.core.msg().error(player, "Unknown destination. Use /warps for the menu.");
+            default -> rt.core.msg().error(player, "Unknown destination. Use /sbwarps for the menu.");
         }
         return true;
     }
@@ -283,7 +283,7 @@ final class MenuCommands {
                 rt.core.msg().ok(player, "Your island is private.");
             }
             case "list" -> warpsGui.publicIslands(player);
-            default -> rt.core.msg().error(player, "Usage: /warps public <on [note]|off|list>");
+            default -> rt.core.msg().error(player, "Usage: /sbwarps public <on [note]|off|list>");
         }
     }
 

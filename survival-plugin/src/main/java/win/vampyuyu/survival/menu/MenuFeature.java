@@ -178,6 +178,6 @@ public final class MenuFeature implements Feature {
 
     /** For tests: the commands every instance of the feature registers. */
     static List<String> commandNames() {
-        return List.of("sbmenu", "quests", "fairy", "warps", "hub", "sbsettings");
+        return List.of("sbmenu", "quests", "fairy", "sbwarps", "hub", "sbsettings");
     }
 }
