@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "vampyuyu:item/items/frostborne_helmet_t1"
+  }
+}

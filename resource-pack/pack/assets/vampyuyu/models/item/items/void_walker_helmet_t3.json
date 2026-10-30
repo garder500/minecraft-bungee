@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "vampyuyu:item/items/void_walker_helmet_t3"
+  }
+}
