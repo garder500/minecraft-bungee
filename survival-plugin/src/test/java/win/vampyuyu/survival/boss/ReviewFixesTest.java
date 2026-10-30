@@ -274,7 +274,7 @@ public class ReviewFixesTest {
     @Test
     public void offlineParticipantStillGetsWingsXpAndPityAtLogin() {
         List<String> grants = new ArrayList<>();
-        plugin.core().register(WingsApi.class, new WingsApi() {
+        plugin.core().replace(WingsApi.class, new WingsApi() {
             @Override public ItemStack create() { return null; }
             @Override public boolean isWings(ItemStack stack) { return false; }
             @Override public boolean isWearing(Player player) { return false; }

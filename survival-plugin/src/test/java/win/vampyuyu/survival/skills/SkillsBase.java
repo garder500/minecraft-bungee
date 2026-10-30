@@ -28,8 +28,8 @@ abstract class SkillsBase {
         service = (SkillsService) core.require(win.vampyuyu.survival.api.SkillsApi.class);
         stats = new Fakes.Stats();
         economy = new Fakes.Economy();
-        core.register(win.vampyuyu.survival.api.StatsApi.class, stats);
-        core.register(win.vampyuyu.survival.api.EconomyApi.class, economy);
+        core.replace(win.vampyuyu.survival.api.StatsApi.class, stats);
+        core.replace(win.vampyuyu.survival.api.EconomyApi.class, economy);
         world = server.addSimpleWorld("sb_world");
         player = server.addPlayer("Miner");
         player.setLocation(new org.bukkit.Location(world, 0.5, 70, 0.5));

@@ -50,7 +50,7 @@ public class MinionReviewFixesTest {
         world = server.addSimpleWorld("sb_world");
         player = server.addPlayer();
         islands = new FakeIslands(player.getUniqueId());
-        core.register(IslandApi.class, islands);
+        core.replace(IslandApi.class, islands);
         manager = (MinionManager) core.require(MinionApi.class);
         manager.config().guiClickMillis = 0;
         for (int cx = -2; cx <= 2; cx++) {

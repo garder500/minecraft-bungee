@@ -209,7 +209,7 @@ public class UtilityFeatureTest {
         p.performCommand("sethome isle");
         assertTrue(data(p).homes.isEmpty());
         boolean[] canBuild = {false};
-        plugin.core().register(IslandApi.class, new StubIslands(canBuild));
+        plugin.core().replace(IslandApi.class, new StubIslands(canBuild));
         p.performCommand("sethome isle");
         assertTrue(data(p).homes.isEmpty());
         canBuild[0] = true;
@@ -365,7 +365,7 @@ public class UtilityFeatureTest {
     @Test
     public void dungeonApiIsHonouredEvenOutsideDungeonWorlds() {
         boolean[] inside = {true};
-        plugin.core().register(DungeonApi.class, player -> inside[0]);
+        plugin.core().replace(DungeonApi.class, player -> inside[0]);
         PlayerMock p = player("Max", Perms.BYPASS_WARMUP);
         stand(p, world, 0, 64, 0);
         p.performCommand("sethome h");
@@ -407,7 +407,7 @@ public class UtilityFeatureTest {
         ticks(2);
         assertTrue(drain(p).contains("hub is not available"));
         int[] calls = {0};
-        plugin.core().register(IslandApi.class, new StubIslands(new boolean[] {true}) {
+        plugin.core().replace(IslandApi.class, new StubIslands(new boolean[] {true}) {
             @Override
             public boolean teleportHub(Player player) {
                 calls[0]++;

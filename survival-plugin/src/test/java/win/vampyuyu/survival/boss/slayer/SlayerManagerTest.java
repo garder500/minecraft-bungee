@@ -49,7 +49,7 @@ public class SlayerManagerTest {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
         wallet = new Wallet();
-        plugin.core().register(EconomyApi.class, wallet);
+        plugin.core().replace(EconomyApi.class, wallet);
         BossConfig config;
         try (var reader = new java.io.InputStreamReader(getClass().getResourceAsStream("/boss.yml"),
                 java.nio.charset.StandardCharsets.UTF_8)) {

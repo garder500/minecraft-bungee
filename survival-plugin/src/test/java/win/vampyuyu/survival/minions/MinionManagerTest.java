@@ -42,7 +42,7 @@ public class MinionManagerTest {
         world = server.addSimpleWorld("sb_world");
         player = server.addPlayer();
         islands = new FakeIslands(player.getUniqueId());
-        core.register(IslandApi.class, islands);
+        core.replace(IslandApi.class, islands);
         manager = (MinionManager) core.require(MinionApi.class);
         for (int cx = -2; cx <= 2; cx++) {
             for (int cz = -2; cz <= 2; cz++) {

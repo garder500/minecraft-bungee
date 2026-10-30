@@ -182,6 +182,14 @@ public final class Core {
         serviceOrder.add(type);
     }
 
+    /**
+     * Publishes a service even when a feature already registered one. Test seam: a test boots the whole plugin and
+     * swaps a real service for a stand-in. Production code uses {@link #register}.
+     */
+    public <T> void replace(Class<T> type, T implementation) {
+        if (services.put(type, implementation) == null) serviceOrder.add(type);
+    }
+
     /** The service, or empty when its feature is disabled, failed, or has not enabled yet. */
     public <T> Optional<T> service(Class<T> type) {
         return Optional.ofNullable(type.cast(services.get(type)));

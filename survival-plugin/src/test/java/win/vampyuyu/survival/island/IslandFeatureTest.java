@@ -422,7 +422,7 @@ public class IslandFeatureTest {
         assertEquals(0, island.radiusTier);
 
         FakeEconomy economy = new FakeEconomy();
-        plugin.core().register(EconomyApi.class, economy);
+        plugin.core().replace(EconomyApi.class, economy);
         owner.performCommand("island upgrade radius");
         assertTrue(said(owner).contains("You need"));
         assertEquals(0, island.radiusTier);

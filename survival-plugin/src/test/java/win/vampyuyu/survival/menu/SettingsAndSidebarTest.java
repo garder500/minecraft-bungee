@@ -25,8 +25,8 @@ public class SettingsAndSidebarTest extends MenuTestBase {
     public void setUp() {
         economy = new FakeEconomy();
         islands = new FakeIslands();
-        core.register(EconomyApi.class, economy);
-        core.register(IslandApi.class, islands);
+        core.replace(EconomyApi.class, economy);
+        core.replace(IslandApi.class, islands);
         quests = new QuestService(rt);
         sidebar = new SidebarService(rt, quests);
         settings = new SettingsGui(rt, p -> changed.add(p.getName()));
@@ -225,7 +225,7 @@ public class SettingsAndSidebarTest extends MenuTestBase {
 
     @Test
     public void aDungeonApiRunInASkyblockWorldAlsoSkipsTheSidebar() {
-        core.register(win.vampyuyu.survival.api.DungeonApi.class, p -> true);
+        core.replace(win.vampyuyu.survival.api.DungeonApi.class, p -> true);
         player.teleport(new Location(world("sb_world"), 0, 64, 0));
         sidebar.refresh(player);
         assertSame(Bukkit.getScoreboardManager().getMainScoreboard(), player.getScoreboard());

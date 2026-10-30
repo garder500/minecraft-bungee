@@ -523,7 +523,7 @@ public class IslandReviewFixesTest {
 
     @Test
     public void playerTeleportsRefuseDuringADungeonRunButTheApiStaysOpen() {
-        plugin.core().register(DungeonApi.class, p -> p.getName().equals("Runner"));
+        plugin.core().replace(DungeonApi.class, p -> p.getName().equals("Runner"));
         PlayerMock runner = player("Runner");
         PlayerMock host = player("Host");
         Island runnerIsland = readyIsland(runner);

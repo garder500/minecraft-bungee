@@ -131,8 +131,8 @@ public class BossSessionTest {
     @Test
     public void killFiresTheEventPaysCoinsAndGrantsWings() {
         Spy spy = new Spy();
-        plugin.core().register(win.vampyuyu.survival.api.WingsApi.class, spy);
-        plugin.core().register(win.vampyuyu.survival.api.EconomyApi.class, spy);
+        plugin.core().replace(win.vampyuyu.survival.api.WingsApi.class, spy);
+        plugin.core().replace(win.vampyuyu.survival.api.EconomyApi.class, spy);
         java.util.List<win.vampyuyu.survival.api.event.BossKillEvent> events = new java.util.ArrayList<>();
         Bukkit.getPluginManager().registerEvents(new org.bukkit.event.Listener() {
             @org.bukkit.event.EventHandler
@@ -177,7 +177,7 @@ public class BossSessionTest {
     @Test
     public void endingTwiceNeverPaysTwice() {
         Spy spy = new Spy();
-        plugin.core().register(win.vampyuyu.survival.api.EconomyApi.class, spy);
+        plugin.core().replace(win.vampyuyu.survival.api.EconomyApi.class, spy);
         BossSession session = spawnCrypt().orElseThrow();
         PlayerMock p = server.addPlayer();
         p.teleport(session.entity().getLocation().add(2, 0, 0));

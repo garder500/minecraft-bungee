@@ -27,7 +27,7 @@ public class JoinFlowTest extends MenuTestBase {
     @Before
     public void setUp() {
         islands = new FakeIslands();
-        core.register(IslandApi.class, islands);
+        core.replace(IslandApi.class, islands);
         HandoffSource source = id -> {
             if (failing) {
                 throw new java.io.IOException("redis down");
@@ -151,7 +151,7 @@ public class JoinFlowTest extends MenuTestBase {
 
     @Test
     public void dungeonPlayersAreNeverMoved() {
-        core.register(DungeonApi.class, p -> true);
+        core.replace(DungeonApi.class, p -> true);
         PlayerMock player = joinWithKey("skyblock", true);
         assertTrue(islands.teleports.isEmpty());
         assertTrue(arrived.contains(player.getName()));

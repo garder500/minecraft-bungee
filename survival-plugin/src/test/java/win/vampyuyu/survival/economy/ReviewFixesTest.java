@@ -272,7 +272,7 @@ public class ReviewFixesTest {
     }
 
     private void wingsAreElytra() {
-        plugin.core().register(WingsApi.class, new WingsApi() {
+        plugin.core().replace(WingsApi.class, new WingsApi() {
             public ItemStack create() { return new ItemStack(Material.ELYTRA); }
             public boolean isWings(ItemStack stack) { return stack.getType() == Material.ELYTRA; }
             public boolean isWearing(org.bukkit.entity.Player player) { return false; }

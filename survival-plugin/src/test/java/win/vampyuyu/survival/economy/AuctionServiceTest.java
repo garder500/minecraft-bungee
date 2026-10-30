@@ -120,7 +120,7 @@ public class AuctionServiceTest {
         seller.getInventory().setItemInMainHand(new ItemStack(Material.BEDROCK));
         assertFalse(ah.list(seller, 10_000, false, 12).ok());
         ItemStack wings = new ItemStack(Material.ELYTRA);
-        plugin.core().register(WingsApi.class, new WingsApi() {
+        plugin.core().replace(WingsApi.class, new WingsApi() {
             public ItemStack create() { return wings.clone(); }
             public boolean isWings(ItemStack stack) { return stack.getType() == Material.ELYTRA; }
             public boolean isWearing(org.bukkit.entity.Player player) { return false; }

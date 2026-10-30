@@ -388,7 +388,7 @@ public class WingsIntegrationTest {
     @Test
     public void upgradeCostsCoinsWhenTheEconomyExists() {
         FakeEconomy eco = new FakeEconomy();
-        plugin.core().register(EconomyApi.class, eco);
+        plugin.core().replace(EconomyApi.class, eco);
         service.adminGive(alice, 2, "t");  // 2 -> 3: 3 tier 1 cores and 5000 coins
         give(alice, 1, 3);
         assertEquals(WingsService.UpgradeResult.MISSING_COINS, service.upgrade(alice).result());
@@ -432,7 +432,7 @@ public class WingsIntegrationTest {
     @Test
     public void claimForgesNewWingsOnceAndChargesTheCoins() {
         FakeEconomy eco = new FakeEconomy();
-        plugin.core().register(EconomyApi.class, eco);
+        plugin.core().replace(EconomyApi.class, eco);
         service.grantOnce(alice, "t");
         String old = service.data(alice.getUniqueId()).activeId;
         ItemStack lost = alice.getInventory().getContents()[service.findValidSlot(alice)].clone();
@@ -859,7 +859,7 @@ public class WingsIntegrationTest {
     @Test
     public void thePlayerStatModifierIsAppliedWhileWearing() {
         var applied = new java.util.concurrent.ConcurrentHashMap<win.vampyuyu.survival.api.Stat, Double>();
-        plugin.core().register(win.vampyuyu.survival.api.StatsApi.class, new win.vampyuyu.survival.api.StatsApi() {
+        plugin.core().replace(win.vampyuyu.survival.api.StatsApi.class, new win.vampyuyu.survival.api.StatsApi() {
             public double stat(org.bukkit.entity.Player p, win.vampyuyu.survival.api.Stat s) {
                 return s.base() + applied.getOrDefault(s, 0.0);
             }
@@ -1010,7 +1010,7 @@ public class WingsIntegrationTest {
     @Test
     public void menuClaimNeedsADoubleClick() {
         FakeEconomy eco = new FakeEconomy();
-        plugin.core().register(EconomyApi.class, eco);
+        plugin.core().replace(EconomyApi.class, eco);
         eco.add(alice.getUniqueId(), 100000, "t");
         service.grantOnce(alice, "t");
         alice.getInventory().clear();

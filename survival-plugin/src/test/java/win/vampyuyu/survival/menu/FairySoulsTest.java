@@ -60,9 +60,9 @@ public class FairySoulsTest extends MenuTestBase {
         economy = new FakeEconomy();
         stats = new FakeStats();
         islands = new FakeIslands();
-        core.register(EconomyApi.class, economy);
-        core.register(StatsApi.class, stats);
-        core.register(IslandApi.class, islands);
+        core.replace(EconomyApi.class, economy);
+        core.replace(StatsApi.class, stats);
+        core.replace(IslandApi.class, islands);
         fairy = new FairySouls(rt, new QuestService(rt), displays);
         player = playerIn("sb_hub");
     }
@@ -127,7 +127,7 @@ public class FairySoulsTest extends MenuTestBase {
         FairyData data = rt.fairy(player.getUniqueId());
         assertEquals(250, data.pendingCoins, 0);
         FakeEconomy late = new FakeEconomy();
-        core.register(EconomyApi.class, late);
+        core.replace(EconomyApi.class, late);
         fairy.payMilestones(player, data);
         fairy.payMilestones(player, data);
         assertEquals(250, late.coins(player.getUniqueId()), 0);

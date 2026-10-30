@@ -32,7 +32,7 @@ public class MainMenuTest extends MenuTestBase {
     @Before
     public void setUp() {
         islands = new FakeIslands();
-        core.register(IslandApi.class, islands);
+        core.replace(IslandApi.class, islands);
         QuestService quests = new QuestService(rt);
         QuestsGui questsGui = new QuestsGui(rt, quests);
         warpsGui = new WarpsGui(rt, new WarpService(rt));

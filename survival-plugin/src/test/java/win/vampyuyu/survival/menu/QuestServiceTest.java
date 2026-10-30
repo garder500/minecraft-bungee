@@ -34,9 +34,9 @@ public class QuestServiceTest extends MenuTestBase {
         economy = new FakeEconomy();
         skills = new FakeSkills();
         islands = new FakeIslands();
-        core.register(EconomyApi.class, economy);
-        core.register(SkillsApi.class, skills);
-        core.register(IslandApi.class, islands);
+        core.replace(EconomyApi.class, economy);
+        core.replace(SkillsApi.class, skills);
+        core.replace(IslandApi.class, islands);
         quests = new QuestService(rt);
         core.listen(new QuestListener(rt, quests));
         player = playerIn("sb_world");
@@ -100,7 +100,7 @@ public class QuestServiceTest extends MenuTestBase {
         core.start();
         rt = new MenuRuntime(core, shipped());
         quests = new QuestService(rt);
-        core.register(IslandApi.class, islands);
+        core.replace(IslandApi.class, islands);
         islands.give(player.getUniqueId(), new Location(world("sb_world"), 100, 80, 100));
         quests.sync(player);
         quests.record(player, QuestType.BREAK_BLOCK, "OAK_LOG", 8);
@@ -109,8 +109,8 @@ public class QuestServiceTest extends MenuTestBase {
         // the features come back
         FakeEconomy late = new FakeEconomy();
         FakeSkills lateSkills = new FakeSkills();
-        core.register(EconomyApi.class, late);
-        core.register(SkillsApi.class, lateSkills);
+        core.replace(EconomyApi.class, late);
+        core.replace(SkillsApi.class, lateSkills);
         quests.flushPending(player);
         quests.flushPending(player);
         assertEquals(150, late.coins(player.getUniqueId()), 0);
