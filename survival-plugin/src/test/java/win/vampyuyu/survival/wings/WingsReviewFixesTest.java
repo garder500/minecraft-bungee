@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -466,6 +467,8 @@ public class WingsReviewFixesTest {
 
     @Test
     public void theLandingBurstAbsorbsAFallOnceUntilTheCooldownEnds() {
+        // the real island feature makes sb_hub a safe zone (all damage cancelled): fight the fall elsewhere
+        alice.teleport((Bukkit.getWorld("world") != null ? Bukkit.getWorld("world") : server.addSimpleWorld("world")).getSpawnLocation());
         wear(alice, 7);
         long now = System.currentTimeMillis();
         tick(now);
