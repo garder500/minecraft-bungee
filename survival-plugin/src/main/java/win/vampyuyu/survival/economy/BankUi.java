@@ -192,7 +192,7 @@ final class BankUi {
         render(gui, player);
     }
 
-    private void history(Player player) {
+    void history(Player player) {
         List<EconomyData.BankEntry> entries = new ArrayList<>(economy.data(player.getUniqueId()).bankHistory);
         Collections.reverse(entries);
         Gui gui = core.guis().create(6, "<aqua>Bank history");
@@ -201,7 +201,7 @@ final class BankUi {
         fmt.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
         gui.paginate(entries, gui.innerSlots(), e -> {
             boolean gain = e.delta > 0;
-            return Ui.icon(gain ? Material.LIME_DYE : e.delta < 0 ? Material.RED_DYE : Material.GRAY_DYE,
+            return Ui.plain(gain ? Material.LIME_DYE : e.delta < 0 ? Material.RED_DYE : Material.GRAY_DYE,
                 (gain ? "<green>+" : e.delta < 0 ? "<red>" : "<gray>") + Money.coins(e.delta) + " <gray>" + Ui.esc(e.kind),
                 "<gray>Balance after: <gold>" + Money.coins(e.after), "<dark_gray>" + fmt.format(new Date(e.t)) + " UTC");
         }, (c, e) -> { }, 48, 50);

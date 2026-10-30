@@ -68,7 +68,7 @@ final class ShopUi {
         var all = new ArrayList<>(shops.catalog().shops().values());
         Gui gui = core.guis().create(Math.max(3, Math.min(6, 2 + (all.size() + 6) / 7)), "<gold>Merchants");
         gui.border(Ui.glass());
-        gui.paginate(all, gui.innerSlots(), shop -> Ui.icon(shop.icon(), "merchant", shop.npcName(),
+        gui.paginate(all, gui.innerSlots(), shop -> Ui.plain(shop.icon(), shop.npcName(),
             "<gray>" + shop.description(), "", "<yellow>Click to browse"), (c, shop) -> open(c.player(), shop),
             gui.size() - 9, gui.size() - 1);
         gui.open(player);
