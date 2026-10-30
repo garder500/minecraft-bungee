@@ -233,6 +233,11 @@ public final class WingsService implements WingsApi {
             ItemStack stack = contents[i];
             WingsItems.Tag tag = wingsItems.read(stack);
             if (tag == null) {
+                if (stack != null && (WingsGuard.isShulker(stack) || WingsGuard.isBundle(stack))
+                    && stripNested(player, stack)) {
+                    inv.setItem(i, stack);
+                    core.msg().warn(player, "The Wings cannot be stored in shulker boxes or bundles: they came back to you.");
+                }
                 continue;
             }
             if (tag.unbound()) {
@@ -285,6 +290,49 @@ public final class WingsService implements WingsApi {
                 core.msg().ok(player, "Your Wings found their way back to you.");
             }
         }
+    }
+
+    /**
+     * Removes Wings hidden inside a shulker box or a bundle (they could be traded inside it). The valid copy of the
+     * holder goes back to the owner, anything else is lost. Returns true when the stack was changed.
+     */
+    boolean stripNested(Player holder, ItemStack container) {
+        org.bukkit.inventory.meta.ItemMeta meta = container.getItemMeta();
+        List<ItemStack> found = new ArrayList<>();
+        if (meta instanceof org.bukkit.inventory.meta.BundleMeta bundle) {
+            List<ItemStack> keep = new ArrayList<>();
+            for (ItemStack inside : bundle.getItems()) {
+                (wingsItems.isWings(inside) ? found : keep).add(inside);
+            }
+            if (found.isEmpty()) {
+                return false;
+            }
+            bundle.setItems(keep);
+        } else if (meta instanceof org.bukkit.inventory.meta.BlockStateMeta bsm
+            && bsm.getBlockState() instanceof org.bukkit.block.ShulkerBox box) {
+            var inside = box.getInventory();
+            for (int i = 0; i < inside.getSize(); i++) {
+                ItemStack item = inside.getItem(i);
+                if (wingsItems.isWings(item)) {
+                    found.add(item);
+                    inside.setItem(i, null);
+                }
+            }
+            if (found.isEmpty()) {
+                return false;
+            }
+            bsm.setBlockState(box);
+        } else {
+            return false;
+        }
+        container.setItemMeta(meta);
+        for (ItemStack wings : found) {
+            WingsItems.Tag tag = wingsItems.read(wings);
+            if (tag != null && tag.owner() != null) {
+                returnToOwner(tag.owner(), tag.uuid(), wings);
+            }
+        }
+        return true;
     }
 
     /** Rebuilds the valid Wings of every online player (after a config reload changed the lore). */

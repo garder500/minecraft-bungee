@@ -95,9 +95,15 @@ public final class WingsItems {
         lore.add("<gray>Flight Energy: <light_purple>" + Math.round(capacity) + " <dark_gray>(~" + Math.round(seconds) + "s of flight)");
         lore.add("<gray>Recharge: <green>" + Msg.number(s.regenPerSecond(level, false)) + "/s <dark_gray>on the ground");
         lore.add("<gray>Flight speed: <aqua>" + Math.round(s.flySpeed(level) / 0.1f * 100) + "%");
+        lore.add("<gray>Gliding: <aqua>" + Msg.number(s.drainGlide * s.drainMultiplier(level)) + "/s <dark_gray>(rocket boost "
+            + Msg.number(s.fireworkCost) + ")");
+        s.statBonuses(level).forEach((stat, amount) -> lore.add("<gray>" + stat.displayName() + ": <green>+"
+            + Msg.number(amount)));
+        lore.addAll(abilityLines(s, level));
         lore.add("");
         lore.add("<dark_gray>Soulbound: cannot be crafted, traded or sold.");
         lore.add("<dark_gray>Disabled in dungeons, boss arenas and in combat.");
+        lore.add("<dark_gray>Gliding and rocket boosts cost Flight Energy.");
         lore.add("<dark_gray>Upgrade with Wing Cores: <gray>/wings");
         String model = tier == 1 ? "vampyuyu:wings/wings" : "vampyuyu:wings/wings_tier" + tier;
         return CustomItemDef.builder(wingsId(level), "The Wings", tier >= 5 ? Rarity.DIVINE : Rarity.MYTHIC, Material.ELYTRA)
@@ -110,6 +116,20 @@ public final class WingsItems {
             .glint(tier >= 3)
             .maxStackSize(1)
             .build();
+    }
+
+    /** The abilities the level has unlocked (and the next one to come) for lore and menu. */
+    static List<String> abilityLines(WingsSettings s, int level) {
+        List<String> out = new ArrayList<>();
+        if (s.dashEnabled) {
+            out.add(level >= s.dashLevel ? "<gray>Dash: <green>press F in the air <dark_gray>(" + Msg.number(s.dashCost) + " energy)"
+                : "<dark_gray>Dash: unlocks at level " + s.dashLevel);
+        }
+        out.add(level >= s.diveLevel ? "<gray>Dive recovery: <green>steep glides refill energy"
+            : "<dark_gray>Dive recovery: unlocks at level " + s.diveLevel);
+        out.add(level >= s.landingLevel ? "<gray>Landing burst: <green>wind cushions your falls"
+            : "<dark_gray>Landing burst: unlocks at level " + s.landingLevel);
+        return out;
     }
 
     private static CustomItemDef coreDef(WingsSettings s, int tier) {

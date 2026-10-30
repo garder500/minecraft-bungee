@@ -1,6 +1,7 @@
 package win.vampyuyu.survival.wings;
 
 import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
+import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,9 +11,12 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -28,6 +32,7 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.persistence.PersistentDataType;
@@ -78,6 +83,17 @@ public final class FlightManager implements Listener {
         String barTitle = "";
         float barProgress = -1;
         String lastWorld = "";
+        /** Last solid ground the player stood on (world name, so no World is kept alive). */
+        String safeWorld;
+        double safeX, safeY, safeZ;
+        float safeYaw, safeAngle;
+        /** Until when void damage is turned into a rescue (during and shortly after a slow fall). */
+        long rescueUntil;
+        boolean bossNear;
+        boolean noGroundBelow;
+        boolean gliding;
+        long lastDash;
+        long lastBurst;
 
         State(UUID id) {
             this.id = id;
@@ -116,7 +132,7 @@ public final class FlightManager implements Listener {
         for (State st : new ArrayList<>(states.values())) {
             Player p = Bukkit.getPlayer(st.id);
             if (p != null) {
-                finish(p, st, true);
+                finish(p, st, true, System.currentTimeMillis());
             }
         }
         states.clear();
@@ -165,6 +181,10 @@ public final class FlightManager implements Listener {
             return true;
         }
         if (!settings.noFlyTag.isEmpty() && p.getScoreboardTags().contains(settings.noFlyTag)) {
+            return true;
+        }
+        State st = states.get(p.getUniqueId());
+        if (st != null && st.bossNear) {
             return true;
         }
         if (settings.regions.isEmpty()) {
@@ -221,7 +241,7 @@ public final class FlightManager implements Listener {
                     emergencyTick(p, st, now);
                 }
                 if (!st.emergency) {
-                    finish(p, st, false);
+                    finish(p, st, true, now);  // the bar and the lockout survive the swap
                     states.remove(id);
                 }
             }
@@ -243,10 +263,17 @@ public final class FlightManager implements Listener {
         if (ticks % 10 == 0) {
             st.energy.setCapacity(capacity(p, level));
             st.onIsland = isOnIsland(p);
+            st.bossNear = nearBoss(p);
+        }
+        if (ticks % 5 == 0) {
+            recordSafeGround(p, st);
         }
         FlightRules.Verdict verdict = verdict(p, level, st, now);
         if (st.emergency) {
             emergencyTick(p, st, now);
+        }
+        if (p.isGliding() && glideRefused(verdict)) {
+            endGlide(p, st, verdict.reason(), now);
         }
 
         if (verdict == FlightRules.Verdict.OK) {
@@ -274,13 +301,119 @@ public final class FlightManager implements Listener {
         st.lastX = loc.getX();
         st.lastY = loc.getY();
         st.lastZ = loc.getZ();
+        st.gliding = p.isGliding();
         if (flying) {
             flyTick(p, st, level, dt, now);
+        } else if (st.gliding && !p.isOnGround()) {
+            st.wasFlying = false;
+            glideTick(p, st, level, dt, now);
         } else {
             st.wasFlying = false;
             restTick(p, st, level, dt, now);
         }
+        if (ticks % 10 == 0) {
+            st.noGroundBelow = (flying || st.gliding || st.emergency) && st.energy.fraction() < 0.35
+                && noGroundBelow(p);
+        }
         updateBar(p, st, verdict, now);
+    }
+
+    private static boolean glideRefused(FlightRules.Verdict v) {
+        return v == FlightRules.Verdict.WORLD || v == FlightRules.Verdict.ZONE || v == FlightRules.Verdict.COMBAT
+            || v == FlightRules.Verdict.EXHAUSTED;
+    }
+
+    /** Ends a running glide where the Wings must stay quiet; the reason decides whether a slow fall takes over. */
+    private void endGlide(Player p, State st, WingsSettings.Reason reason, long now) {
+        p.setGliding(false);
+        st.gliding = false;
+        if (st.ownsFlight) {  // the flight allowance must not end the slow fall on the next tick
+            st.ownsFlight = false;
+            st.wasFlying = false;
+            p.setFlying(false);
+            p.setAllowFlight(false);
+            p.setFlySpeed(0.1f);
+        }
+        if (reason == null) {
+            return;
+        }
+        if (settings.emergencyReasons.contains(reason) && !p.isOnGround()) {
+            startEmergency(p, st, now);  // a glide keeps the fall distance low, so do not test it
+        }
+        switch (reason) {
+            case ENERGY -> message(p, st, now, "Out of flight energy! A gentle wind carries you down.");
+            case COMBAT -> message(p, st, now, "Your Wings falter: you are in combat.");
+            case ZONE -> message(p, st, now, "You cannot glide in this area.");
+            case WORLD -> message(p, st, now, "The Wings lie dormant in this world.");
+            default -> { }
+        }
+    }
+
+    /** Gliding costs a little energy; a steep dive gives some back once the level allows it. */
+    private void glideTick(Player p, State st, int level, double dt, long now) {
+        st.lastFlight = now;  // the regeneration delay starts when the glide ends
+        double drain = settings.drainGlide * settings.drainMultiplier(level) * dt;
+        if (drain > 0 && st.energy.drain(drain)) {
+            endGlide(p, st, WingsSettings.Reason.ENERGY, now);
+            return;
+        }
+        if (level >= settings.diveLevel && settings.diveRegen > 0 && isDiving(p)) {
+            st.energy.regen(settings.diveRegen * dt, settings.resumeThreshold(st.energy.capacity()));
+        }
+        if (st.moved && service.data(p.getUniqueId()).trail && settings.trailEnabled) {
+            trail(p, level, false);
+        }
+    }
+
+    private static boolean isDiving(Player p) {
+        return p.getLocation().getPitch() > 25 && p.getVelocity().getY() < -0.4;
+    }
+
+    /** A boss (vanilla Boss or the boss scoreboard tag) close by counts as a no-fly zone. */
+    boolean nearBoss(Player p) {
+        int r = settings.noFlyBossRadius;
+        if (r <= 0) {
+            return false;
+        }
+        for (Entity e : p.getNearbyEntities(r, r, r)) {
+            if (e instanceof LivingEntity && !(e instanceof Player) && !e.isDead()
+                && (e instanceof org.bukkit.entity.Boss
+                || (!settings.bossTag.isEmpty() && e.getScoreboardTags().contains(settings.bossTag)))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** True when nothing solid lies below the player (the void): used for the warning and the rescue. */
+    boolean noGroundBelow(Player p) {
+        try {
+            Location l = p.getLocation();
+            if (l.getY() <= l.getWorld().getMinHeight()) {
+                return true;
+            }
+            return l.getWorld().rayTraceBlocks(l, new Vector(0, -1, 0), l.getY() - l.getWorld().getMinHeight(),
+                FluidCollisionMode.ALWAYS, true) == null;
+        } catch (RuntimeException e) {
+            return false;  // a server without ray tracing (test doubles): assume ground
+        }
+    }
+
+    private void recordSafeGround(Player p, State st) {
+        if (st.emergency || p.isFlying() || p.isGliding() || !p.isOnGround() || p.isInsideVehicle() || p.isInWater()
+            || p.isDead()) {
+            return;
+        }
+        Location l = p.getLocation();
+        if (l.getWorld() == null || l.getY() <= l.getWorld().getMinHeight() + 1) {
+            return;
+        }
+        st.safeWorld = l.getWorld().getName();
+        st.safeX = l.getX();
+        st.safeY = l.getY();
+        st.safeZ = l.getZ();
+        st.safeYaw = l.getYaw();
+        st.safeAngle = l.getPitch();
     }
 
     private void flyTick(Player p, State st, int level, double dt, long now) {
@@ -366,9 +499,20 @@ public final class FlightManager implements Listener {
         double capacity = capacity(p, level);
         WingsData data = service.data(p.getUniqueId());
         st.energy = new Energy(capacity);
-        if (data.energy >= 0) {
-            st.energy.restore(Math.min(capacity, data.energy));
+        if (data.energy >= 0 || data.exhausted) {
+            // the bar and the lockout come back as they were left, plus the time away at the ground recharge rate
+            st.energy.restore(data.energy >= 0 ? Math.min(capacity, data.energy) : 0, data.exhausted);
+            if (data.energySavedAt > 0 && now > data.energySavedAt) {
+                double away = Math.min(3600, (now - data.energySavedAt) / 1000.0);
+                st.energy.regen(away * settings.regenGround * settings.regenMultiplier(level),
+                    settings.resumeThreshold(capacity));
+            }
         }
+        data.energy = -1;  // consumed: the live bar is the truth until the Wings leave the chest slot again
+        data.exhausted = false;
+        data.energySavedAt = 0;
+        core.profiles().markDirty(p.getUniqueId());
+        st.bossNear = nearBoss(p);
         st.lastTick = now;
         st.lastWorld = p.getWorld().getName();
         st.onIsland = isOnIsland(p);
@@ -389,6 +533,7 @@ public final class FlightManager implements Listener {
     private void applyStats(Player p, State st) {
         core.service(StatsApi.class).ifPresent(api -> {
             api.addModifier(p.getUniqueId(), STAT_SOURCE, Stat.FLIGHT_ENERGY, settings.capacityBonus(st.level));
+            settings.statBonuses(st.level).forEach((stat, amount) -> api.addModifier(p.getUniqueId(), STAT_SOURCE, stat, amount));
             api.recompute(p);
             st.statsApplied = true;
         });
@@ -422,8 +567,12 @@ public final class FlightManager implements Listener {
     }
 
     private void startEmergency(Player p, State st, long now) {
+        if (st.emergency) {
+            return;
+        }
         st.emergency = true;
         st.emergencyStart = now;
+        st.rescueUntil = now + settings.emergencyMaxSeconds * 1000L + 5000L;
         noFallUntil.put(p.getUniqueId(), now + settings.emergencyMaxSeconds * 1000L + 3000L);
         PotionEffect existing = p.getPotionEffect(PotionEffectType.SLOW_FALLING);
         if (existing == null || existing.getDuration() < 40) {
@@ -436,9 +585,42 @@ public final class FlightManager implements Listener {
     private void emergencyTick(Player p, State st, long now) {
         boolean landed = p.isOnGround() || p.isInWater() || p.isClimbing() || p.isInsideVehicle();
         boolean timeout = now - st.emergencyStart > settings.emergencyMaxSeconds * 1000L;
+        if (settings.voidRescue && !landed && !st.ownsFlight && (p.getLocation().getY()
+            <= p.getWorld().getMinHeight() + 2 || (timeout && noGroundBelow(p)))) {
+            rescue(p, st, now);  // the void is below: never let the slow fall run out over it
+            return;
+        }
         if (st.ownsFlight || landed || timeout) {
             endEmergency(p, st, now);
         }
+    }
+
+    /**
+     * Brings a player who would fall into the void back to the last solid ground they stood on in this world, else
+     * to their island home, else to the world spawn. Returns false when nothing could be done.
+     */
+    boolean rescue(Player p, State st, long now) {
+        World world = p.getWorld();
+        boolean done = false;
+        if (st.safeWorld != null && st.safeWorld.equals(world.getName())) {
+            done = p.teleport(new Location(world, st.safeX, st.safeY, st.safeZ, st.safeYaw, st.safeAngle));
+        }
+        if (!done) {
+            done = core.service(IslandApi.class).map(api -> api.teleportHome(p)).orElse(false);
+        }
+        if (!done) {
+            done = p.teleport(world.getSpawnLocation());
+        }
+        if (!done) {
+            return false;
+        }
+        p.setFallDistance(0);
+        p.setVelocity(new Vector(0, 0, 0));
+        endEmergency(p, st, now);
+        noFallUntil.put(p.getUniqueId(), now + 3000L);
+        st.rescueUntil = now + 3000L;
+        core.msg().info(p, "The Wings caught you above the void and carried you to safety.");
+        return true;
     }
 
     private void endEmergency(Player p, State st, long now) {
@@ -447,11 +629,12 @@ public final class FlightManager implements Listener {
         }
         st.slowFallOurs = false;
         st.emergency = false;
+        st.rescueUntil = now + 4000L;
         noFallUntil.put(p.getUniqueId(), now + 1500L);  // the landing tick still reports the fall distance
     }
 
     /** Drops everything we set on the player: flight, speed, slow fall, bar, stat modifier. */
-    void finish(Player p, State st, boolean saveEnergy) {
+    void finish(Player p, State st, boolean saveEnergy, long now) {
         if (st.ownsFlight) {
             st.ownsFlight = false;
             p.setFlying(false);
@@ -476,6 +659,8 @@ public final class FlightManager implements Listener {
         if (saveEnergy) {
             WingsData data = service.data(p.getUniqueId());
             data.energy = st.energy.full() ? -1 : st.energy.value();
+            data.exhausted = st.energy.exhausted();
+            data.energySavedAt = now;
             core.profiles().markDirty(p.getUniqueId());
         }
     }
@@ -496,7 +681,7 @@ public final class FlightManager implements Listener {
 
     private void updateBar(Player p, State st, FlightRules.Verdict verdict, long now) {
         WingsData data = service.data(p.getUniqueId());
-        boolean busy = p.isFlying() || !st.energy.full();
+        boolean busy = p.isFlying() || st.gliding || !st.energy.full();
         if (st.energy.full() && st.fullSince == 0) {
             st.fullSince = now;
         }
@@ -521,10 +706,19 @@ public final class FlightManager implements Listener {
             title = "Recharging... " + Math.round(st.energy.value()) + "/" + Math.round(st.energy.capacity());
             color = BossBar.Color.PURPLE;
         } else {
-            title = "Flight Energy " + Math.round(st.energy.value()) + "/" + Math.round(st.energy.capacity())
-                + "  (Wings Lv " + st.level + ")";
+            title = "Flight Energy " + Math.round(st.energy.value()) + "/" + Math.round(st.energy.capacity());
+            double perSecond = p.isFlying() ? settings.drainPerSecond(st.level, p.isSprinting(), !st.moved, st.onIsland)
+                : (st.gliding ? settings.drainGlide * settings.drainMultiplier(st.level) : 0);
+            if (perSecond > 0) {
+                title += "  (~" + Math.round(st.energy.value() / perSecond) + "s left)";
+            }
+            title += "  (Wings Lv " + st.level + ")";
             double f = st.energy.fraction();
             color = f < settings.lowFraction ? BossBar.Color.RED : (f < 0.5 ? BossBar.Color.YELLOW : BossBar.Color.WHITE);
+            if (st.noGroundBelow) {
+                title = "NO GROUND BELOW! " + title;
+                color = BossBar.Color.RED;
+            }
         }
         float progress = (float) Math.max(0, Math.min(1, st.energy.fraction()));
         if (st.bar == null) {
@@ -566,9 +760,86 @@ public final class FlightManager implements Listener {
             return;
         }
         State st = states.get(p.getUniqueId());
-        if ((st != null && st.emergency) || noFallUntil.getOrDefault(p.getUniqueId(), 0L) > System.currentTimeMillis()) {
+        long now = System.currentTimeMillis();
+        if ((st != null && st.emergency) || noFallUntil.getOrDefault(p.getUniqueId(), 0L) > now) {
+            event.setCancelled(true);
+            return;
+        }
+        if (st != null && st.level >= settings.landingLevel && now - st.lastBurst >= settings.landingCooldownMillis
+            && service.wornLevel(p) > 0) {
+            st.lastBurst = now;  // landing burst: a cushion of wind absorbs the fall
+            event.setCancelled(true);
+            Location at = p.getLocation();
+            p.getWorld().spawnParticle(Particle.CLOUD, at, 24, 0.6, 0.1, 0.6, 0.05);
+            sound(p, Sound.ENTITY_PHANTOM_FLAP, 0.8f, 0.8f);
+            core.msg().info(p, "A burst of wind from your Wings cushions the landing.");
+        }
+    }
+
+    /** Void damage during or just after a slow fall becomes a rescue instead of a death. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onVoid(EntityDamageEvent event) {
+        if (event.getCause() != EntityDamageEvent.DamageCause.VOID || !(event.getEntity() instanceof Player p)
+            || !settings.voidRescue) {
+            return;
+        }
+        State st = states.get(p.getUniqueId());
+        long now = System.currentTimeMillis();
+        if (st != null && (st.emergency || st.rescueUntil > now) && rescue(p, st, now)) {
             event.setCancelled(true);
         }
+    }
+
+    /** Rocket boosts follow the same rules as gliding and cost energy. */
+    @EventHandler(ignoreCancelled = true)
+    public void onBoost(PlayerElytraBoostEvent event) {
+        Player p = event.getPlayer();
+        int level = service.wornLevel(p);
+        State st = states.get(p.getUniqueId());
+        if (level == 0 || st == null) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (glideRefused(verdict(p, level, st, now))) {
+            event.setCancelled(true);
+            message(p, st, now, "The Wings refuse the firework here.");
+            return;
+        }
+        if (st.energy.value() < settings.fireworkCost) {
+            event.setCancelled(true);
+            message(p, st, now, "Not enough flight energy for a rocket boost.");
+            return;
+        }
+        st.energy.drain(settings.fireworkCost);
+    }
+
+    /** Swap-hands key in the air: the dash (unlocked by level). Only consumes the key when it dashes or is on cooldown. */
+    @EventHandler(ignoreCancelled = true)
+    public void onSwap(PlayerSwapHandItemsEvent event) {
+        Player p = event.getPlayer();
+        State st = states.get(p.getUniqueId());
+        if (st == null || !settings.dashEnabled || st.level < settings.dashLevel
+            || (p.isOnGround() && !p.isFlying()) || p.isInsideVehicle()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (verdict(p, st.level, st, now) != FlightRules.Verdict.OK) {
+            return;
+        }
+        event.setCancelled(true);
+        if (now - st.lastDash < settings.dashCooldownMillis) {
+            message(p, st, now, "Your Wings are still recovering from the dash.");
+            return;
+        }
+        if (st.energy.value() < settings.dashCost + 1) {
+            message(p, st, now, "Not enough flight energy to dash.");
+            return;
+        }
+        st.lastDash = now;
+        st.energy.drain(settings.dashCost);
+        p.setVelocity(p.getLocation().getDirection().normalize().multiply(settings.dashPower));
+        sound(p, Sound.ENTITY_ENDER_DRAGON_FLAP, 0.6f, 1.5f);
+        p.getWorld().spawnParticle(Particle.CLOUD, p.getLocation().add(0, 1, 0), 12, 0.3, 0.3, 0.3, 0.05);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -635,7 +906,7 @@ public final class FlightManager implements Listener {
             return;
         }
         FlightRules.Verdict v = verdict(p, level, states.get(p.getUniqueId()), System.currentTimeMillis());
-        if (v == FlightRules.Verdict.WORLD || v == FlightRules.Verdict.ZONE || v == FlightRules.Verdict.COMBAT) {
+        if (glideRefused(v)) {
             event.setCancelled(true);
         }
     }
@@ -676,7 +947,9 @@ public final class FlightManager implements Listener {
         if (st != null) {
             WingsData data = service.data(p.getUniqueId());
             data.energy = -1;  // a respawn restores the bar
-            finish(p, st, false);
+            data.exhausted = false;
+            data.energySavedAt = 0;
+            finish(p, st, false, System.currentTimeMillis());
             states.remove(p.getUniqueId());
         }
         combatUntil.remove(p.getUniqueId());
@@ -720,7 +993,7 @@ public final class FlightManager implements Listener {
         Player p = event.getPlayer();
         State st = states.remove(p.getUniqueId());
         if (st != null) {
-            finish(p, st, true);
+            finish(p, st, true, System.currentTimeMillis());
         }
         combatUntil.remove(p.getUniqueId());
         noFallUntil.remove(p.getUniqueId());

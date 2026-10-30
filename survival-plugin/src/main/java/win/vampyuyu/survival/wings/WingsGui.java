@@ -62,14 +62,7 @@ public final class WingsGui {
 
         // ---- stats of the current level
         double capacity = Stat.FLIGHT_ENERGY.base() + s.capacityBonus(level);
-        gui.set(SLOT_STATS, Guis.icon(Material.AMETHYST_CLUSTER, "<light_purple>Level " + level + " <dark_gray>/ " + s.maxLevel,
-            "<gray>Flight Energy: <light_purple>" + Math.round(capacity),
-            "<gray>Flight time: <white>~" + Math.round(s.flightSeconds(capacity, level)) + "s",
-            "<gray>Sprint drain: <red>" + Msg.number(s.drainPerSecond(level, true, false, false)) + "/s",
-            "<gray>Recharge: <green>" + Msg.number(s.regenPerSecond(level, false)) + "/s <dark_gray>(x"
-                + Msg.number(s.regenIslandMultiplier) + " on islands)",
-            "<gray>Flight speed: <aqua>" + Math.round(s.flySpeed(level) / 0.1f * 100) + "%",
-            "<gray>Trail: <white>" + s.trail(level).particle().name().toLowerCase().replace('_', ' ')));
+        statsLore(gui, s, level, capacity);
 
         // ---- upgrade
         if (slot < 0) {
@@ -161,6 +154,26 @@ public final class WingsGui {
             "Off: start flying with /wings fly only.", v -> d.doubleJump = v);
         toggle(gui, player, TOGGLE_SLOTS[3], Material.NOTE_BLOCK, "Wing beat sounds", d.sounds,
             "Plays the flapping sound while you fly.", v -> d.sounds = v);
+    }
+
+    /** Appends the stat bonuses and the abilities to the level item (kept apart to keep render readable). */
+    private void statsLore(Gui gui, WingsSettings s, int level, double capacity) {
+        java.util.List<String> lore = new java.util.ArrayList<>();
+        lore.add("<gray>Flight Energy: <light_purple>" + Math.round(capacity));
+        lore.add("<gray>Flight time: <white>~" + Math.round(s.flightSeconds(capacity, level)) + "s");
+        lore.add("<gray>Sprint drain: <red>" + Msg.number(s.drainPerSecond(level, true, false, false)) + "/s");
+        lore.add("<gray>Recharge: <green>" + Msg.number(s.regenPerSecond(level, false)) + "/s <dark_gray>(x"
+            + Msg.number(s.regenIslandMultiplier) + " on islands)");
+        lore.add("<gray>Flight speed: <aqua>" + Math.round(s.flySpeed(level) / 0.1f * 100) + "%");
+        lore.add("<gray>Gliding: <aqua>" + Msg.number(s.drainGlide * s.drainMultiplier(level)) + "/s <dark_gray>(rocket "
+            + Msg.number(s.fireworkCost) + ")");
+        lore.add("<gray>Trail: <white>" + s.trail(level).particle().name().toLowerCase().replace('_', ' '));
+        s.statBonuses(level).forEach((stat, amount) -> lore.add("<gray>" + stat.displayName() + ": <green>+"
+            + Msg.number(amount)));
+        lore.add("");
+        lore.addAll(WingsItems.abilityLines(s, level));
+        gui.set(SLOT_STATS, Guis.icon(Material.AMETHYST_CLUSTER, "<light_purple>Level " + level + " <dark_gray>/ " + s.maxLevel,
+            lore.toArray(String[]::new)));
     }
 
     private void toggle(Gui gui, Player player, int slot, Material icon, String name, boolean on, String what,

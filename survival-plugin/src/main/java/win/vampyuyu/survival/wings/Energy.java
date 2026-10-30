@@ -74,7 +74,12 @@ public final class Energy {
 
     /** Restores a saved amount (clamped); an empty bar restores as exhausted. */
     public void restore(double saved) {
+        restore(saved, false);
+    }
+
+    /** Restores a saved amount and lockout: stays exhausted when it was saved exhausted, or when the bar is empty. */
+    public void restore(double saved, boolean wasExhausted) {
         value = Math.max(0, Math.min(capacity, saved));
-        exhausted = value <= 0;
+        exhausted = wasExhausted || value <= 0;
     }
 }

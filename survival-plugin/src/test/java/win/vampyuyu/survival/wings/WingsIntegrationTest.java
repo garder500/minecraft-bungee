@@ -858,21 +858,20 @@ public class WingsIntegrationTest {
 
     @Test
     public void thePlayerStatModifierIsAppliedWhileWearing() {
-        var applied = new java.util.concurrent.ConcurrentHashMap<UUID, Double>();
+        var applied = new java.util.concurrent.ConcurrentHashMap<win.vampyuyu.survival.api.Stat, Double>();
         plugin.core().register(win.vampyuyu.survival.api.StatsApi.class, new win.vampyuyu.survival.api.StatsApi() {
             public double stat(org.bukkit.entity.Player p, win.vampyuyu.survival.api.Stat s) {
-                return s.base() + applied.getOrDefault(p.getUniqueId(), 0.0);
+                return s.base() + applied.getOrDefault(s, 0.0);
             }
 
             public void addModifier(UUID p, String source, win.vampyuyu.survival.api.Stat s, double amount) {
                 assertEquals("wings", source);
-                assertEquals(win.vampyuyu.survival.api.Stat.FLIGHT_ENERGY, s);
-                applied.put(p, amount);
+                applied.put(s, amount);
             }
 
             public void removeModifiers(UUID p, String source) {
                 assertEquals("wings", source);
-                applied.remove(p);
+                applied.clear();
             }
 
             public void recompute(org.bukkit.entity.Player p) {}
@@ -881,11 +880,14 @@ public class WingsIntegrationTest {
         equip(alice);
         long now = System.currentTimeMillis();
         tick(alice, now);
-        assertEquals(120.0, applied.get(alice.getUniqueId()), 1e-9);
+        assertEquals(120.0, applied.get(win.vampyuyu.survival.api.Stat.FLIGHT_ENERGY), 1e-9);
+        assertEquals("level 3 defense", 6.0, applied.get(win.vampyuyu.survival.api.Stat.DEFENSE), 1e-9);
+        assertEquals("level 3 health", 5.0, applied.get(win.vampyuyu.survival.api.Stat.HEALTH), 1e-9);
+        assertNull("a zero bonus is not registered", applied.get(win.vampyuyu.survival.api.Stat.SPEED));
         assertEquals(220, flight.state(alice.getUniqueId()).energy.capacity(), 1e-9);
         alice.getInventory().setChestplate(null);
         tick(alice, now + 100);
-        assertNull(applied.get(alice.getUniqueId()));
+        assertTrue(applied.isEmpty());
     }
 
     @Test

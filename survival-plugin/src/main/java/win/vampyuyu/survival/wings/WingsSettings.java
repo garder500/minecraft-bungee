@@ -11,7 +11,7 @@ import java.util.Set;
 import org.bukkit.Particle;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
-import win.vampyuyu.survival.core.SkyblockWorlds;
+import win.vampyuyu.survival.api.Stat;
 import win.vampyuyu.survival.core.SkyblockWorlds;
 
 /** Immutable view of {@code wings.yml}. Built by {@link #from}; pure formulas live here so they can be unit tested. */
@@ -73,6 +73,21 @@ public final class WingsSettings {
     public final double claimCoins;
     public final long claimCooldownMillis;
     public final List<String> coreNames;
+    public final int noFlyBossRadius;
+    public final double drainGlide;
+    public final double fireworkCost;
+    public final double diveRegen;
+    public final boolean voidRescue;
+    public final boolean dashEnabled;
+    public final int dashLevel;
+    public final double dashCost;
+    public final long dashCooldownMillis;
+    public final double dashPower;
+    public final int diveLevel;
+    public final int landingLevel;
+    public final long landingCooldownMillis;
+    /** Extra stats granted by the Wings through the stat source "wings", one value per level. */
+    public final Map<Stat, double[]> statBonus;
 
     private WingsSettings(ConfigurationSection c) {
         allowedWorlds = Collections.unmodifiableSet(new HashSet<>(
@@ -112,7 +127,7 @@ public final class WingsSettings {
         bossMinHealth = c.getDouble("combat.boss-min-health", 300);
         Set<Reason> reasons = new HashSet<>();
         List<String> raw = c.contains("emergency.reasons") ? c.getStringList("emergency.reasons")
-            : List.of("ENERGY", "UNEQUIP", "WORLD", "ZONE");
+            : List.of("ENERGY", "UNEQUIP", "WORLD", "COMBAT", "ZONE");
         for (String name : raw) {
             try {
                 reasons.add(Reason.valueOf(name.trim().toUpperCase(Locale.ROOT)));
@@ -135,6 +150,20 @@ public final class WingsSettings {
         List<String> names = c.getStringList("cores.names");
         coreNames = names.size() >= 5 ? List.copyOf(names)
             : List.of("Feather Core", "Gilded Core", "Radiant Core", "Celestial Core", "Voidwyrm Core");
+        noFlyBossRadius = Math.max(0, Math.min(128, c.getInt("no-fly.boss-radius", 40)));
+        drainGlide = Math.max(0, c.getDouble("energy.drain-glide", 1.0));
+        fireworkCost = Math.max(0, c.getDouble("energy.firework-cost", 12.0));
+        diveRegen = Math.max(0, c.getDouble("energy.dive-regen", 3.0));
+        voidRescue = c.getBoolean("emergency.void-rescue", true);
+        dashEnabled = c.getBoolean("abilities.dash.enabled", true);
+        dashLevel = Math.max(1, c.getInt("abilities.dash.level", 4));
+        dashCost = Math.max(0, c.getDouble("abilities.dash.cost", 25.0));
+        dashCooldownMillis = (long) (Math.max(0, c.getDouble("abilities.dash.cooldown-seconds", 4.0)) * 1000L);
+        dashPower = clamp(c.getDouble("abilities.dash.power", 1.6), 0.2, 4.0);
+        diveLevel = Math.max(1, c.getInt("abilities.dive-recovery.level", 6));
+        landingLevel = Math.max(1, c.getInt("abilities.landing-burst.level", 8));
+        landingCooldownMillis = (long) (Math.max(0, c.getDouble("abilities.landing-burst.cooldown-seconds", 8.0)) * 1000L);
+        statBonus = parseStatBonus(c.getConfigurationSection("levels.stats"), maxLevel);
     }
 
     /** Builds the settings from any section. Missing keys use the shipped defaults. */
@@ -180,6 +209,18 @@ public final class WingsSettings {
         double base = sprinting ? drainSprint : (hovering ? drainHover : drainFly);
         double drain = base * drainMultiplier(level);
         return overIsland ? drain * islandDrainFactor : drain;
+    }
+
+    /** Extra stat values of a level (the stat source "wings"): only stats with a non zero value. */
+    public Map<Stat, Double> statBonuses(int level) {
+        Map<Stat, Double> out = new java.util.EnumMap<>(Stat.class);
+        for (Map.Entry<Stat, double[]> e : statBonus.entrySet()) {
+            double v = e.getValue()[clampLevel(level) - 1];
+            if (v != 0) {
+                out.put(e.getKey(), v);
+            }
+        }
+        return out;
     }
 
     /** Energy units gained per second while resting. */
@@ -246,6 +287,45 @@ public final class WingsSettings {
         double[] out = new double[size];
         for (int i = 0; i < size; i++) {
             out[i] = values.get(Math.min(i, values.size() - 1));
+        }
+        return out;
+    }
+
+    private static final Map<String, double[]> DEFAULT_STAT_BONUS = Map.of(
+        "DEFENSE", new double[] {2, 4, 6, 8, 10, 13, 16, 20, 25, 30},
+        "HEALTH", new double[] {0, 0, 5, 10, 15, 20, 25, 30, 40, 50},
+        "SPEED", new double[] {0, 0, 0, 2, 4, 6, 8, 10, 12, 15});
+
+    private static Map<Stat, double[]> parseStatBonus(ConfigurationSection section, int maxLevel) {
+        Map<Stat, double[]> out = new java.util.EnumMap<>(Stat.class);
+        if (section == null) {
+            DEFAULT_STAT_BONUS.forEach((name, values) -> out.put(Stat.valueOf(name), fit(values, maxLevel)));
+            return Collections.unmodifiableMap(out);
+        }
+        for (String key : section.getKeys(false)) {
+            Stat stat;
+            try {
+                stat = Stat.valueOf(key.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                continue;  // unknown stat names are skipped
+            }
+            List<Double> values = new ArrayList<>();
+            for (Object o : section.getList(key, List.of())) {
+                if (o instanceof Number n) {
+                    values.add(n.doubleValue());
+                }
+            }
+            if (!values.isEmpty()) {
+                out.put(stat, fit(values.stream().mapToDouble(Double::doubleValue).toArray(), maxLevel));
+            }
+        }
+        return Collections.unmodifiableMap(out);
+    }
+
+    private static double[] fit(double[] values, int size) {
+        double[] out = new double[size];
+        for (int i = 0; i < size; i++) {
+            out[i] = values[Math.min(i, values.length - 1)];
         }
         return out;
     }

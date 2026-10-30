@@ -19,6 +19,10 @@ public final class WingsData {
     public boolean pendingReturn;
     /** Flight energy when the player left (-1 = full). */
     public double energy = -1;
+    /** The "ran dry" lockout was still active when the Wings left the chest slot (kept until the bar refills). */
+    public boolean exhausted;
+    /** Epoch millis when {@link #energy} was saved (the time away is credited at the ground recharge rate). */
+    public long energySavedAt;
     /** Total number of Wing Cores consumed (statistics). */
     public int coresUsed;
     // Preferences.

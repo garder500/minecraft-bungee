@@ -3,21 +3,29 @@ package win.vampyuyu.survival.wings;
 import com.destroystokyo.paper.event.inventory.PrepareGrindstoneEvent;
 import java.util.Iterator;
 import java.util.UUID;
+import org.bukkit.Tag;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockDispenseEvent;
+import org.bukkit.event.block.CrafterCraftEvent;
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.inventory.PrepareSmithingEvent;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 /**
@@ -34,6 +42,112 @@ public final class WingsGuard implements Listener {
 
     private boolean wings(ItemStack stack) {
         return service.wingsItems().isWings(stack);
+    }
+
+    private boolean core(ItemStack stack) {
+        return service.wingsItems().coreTier(stack) > 0;
+    }
+
+    /** Wings may only live in a player inventory or an ender chest: that is what the scan and the claim check. */
+    static boolean storesWings(Inventory inv) {
+        InventoryType t = inv.getType();
+        return t == InventoryType.PLAYER || t == InventoryType.CRAFTING || t == InventoryType.ENDER_CHEST;
+    }
+
+    static boolean isBundle(ItemStack s) {
+        return s != null && s.getType().name().endsWith("BUNDLE");
+    }
+
+    static boolean isShulker(ItemStack s) {
+        return s != null && Tag.SHULKER_BOXES.isTagged(s.getType());
+    }
+
+    private void refuse(org.bukkit.entity.HumanEntity who) {
+        if (who instanceof Player p) {
+            service.core().msg().warn(p, "The Wings are bound to you: they cannot be stored in containers or bundles.");
+        }
+    }
+
+    // ---------------------------------------------------------------- containers, shulker boxes, bundles
+
+    /** Every way a click can put Wings into a foreign container, a shulker box or a bundle. */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onClick(InventoryClickEvent event) {
+        ItemStack cursor = event.getCursor();
+        ItemStack current = event.getCurrentItem();
+        if ((wings(cursor) && isBundle(current)) || (isBundle(cursor) && wings(current))
+            || (event.getClick() == ClickType.NUMBER_KEY && event.getHotbarButton() >= 0 && event.getWhoClicked() instanceof Player hp
+            && ((wings(hp.getInventory().getItem(event.getHotbarButton())) && isBundle(current))
+            || (isBundle(hp.getInventory().getItem(event.getHotbarButton())) && wings(current))))) {
+            event.setCancelled(true);
+            refuse(event.getWhoClicked());
+            return;
+        }
+        Inventory top = event.getView().getTopInventory();
+        if (storesWings(top)) {
+            return;
+        }
+        Inventory clicked = event.getClickedInventory();
+        if (clicked == null) {
+            return;
+        }
+        boolean into = false;
+        if (clicked.equals(top)) {
+            into = wings(cursor);
+            if (!into && event.getClick() == ClickType.NUMBER_KEY && event.getHotbarButton() >= 0
+                && event.getWhoClicked() instanceof Player p) {
+                into = wings(p.getInventory().getItem(event.getHotbarButton()));
+            }
+            if (!into && event.getClick() == ClickType.SWAP_OFFHAND && event.getWhoClicked() instanceof Player p) {
+                into = wings(p.getInventory().getItemInOffHand());
+            }
+        } else if (event.isShiftClick()) {
+            into = wings(current);  // shift click from the player's inventory goes to the top inventory
+        }
+        if (into) {
+            event.setCancelled(true);
+            refuse(event.getWhoClicked());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onDrag(InventoryDragEvent event) {
+        if (!wings(event.getOldCursor()) && !wings(event.getCursor())) {
+            return;
+        }
+        Inventory top = event.getView().getTopInventory();
+        if (storesWings(top)) {
+            return;
+        }
+        for (int raw : event.getRawSlots()) {
+            if (raw < top.getSize()) {
+                event.setCancelled(true);
+                refuse(event.getWhoClicked());
+                return;
+            }
+        }
+    }
+
+    /** Hoppers, droppers and minecarts never move Wings between containers. */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onMove(InventoryMoveItemEvent event) {
+        if (wings(event.getItem())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onCrafter(CrafterCraftEvent event) {
+        var inv = event.getBlock().getState() instanceof org.bukkit.block.Crafter c ? c.getInventory() : null;
+        if (inv == null) {
+            return;
+        }
+        for (ItemStack s : inv.getContents()) {
+            if (wings(s) || core(s)) {
+                event.setCancelled(true);
+                return;
+            }
+        }
     }
 
     // ---------------------------------------------------------------- dropped items
@@ -120,7 +234,7 @@ public final class WingsGuard implements Listener {
     public void onSmithing(PrepareSmithingEvent event) {
         var inv = event.getInventory();
         for (ItemStack s : inv.getContents()) {
-            if (wings(s)) {
+            if (wings(s) || core(s)) {  // cores are amethyst shards: they are also a trim material
                 event.setResult(null);
                 return;
             }
@@ -131,7 +245,7 @@ public final class WingsGuard implements Listener {
     public void onCraft(PrepareItemCraftEvent event) {
         var inv = event.getInventory();
         for (ItemStack s : inv.getMatrix()) {
-            if (wings(s)) {
+            if (wings(s) || core(s)) {  // cores are amethyst shards: no spyglass, tinted glass or block either
                 inv.setResult(null);
                 return;
             }
