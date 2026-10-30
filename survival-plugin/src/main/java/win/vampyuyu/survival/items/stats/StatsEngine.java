@@ -387,8 +387,10 @@ public final class StatsEngine implements StatsApi, Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        PlayerState st = state(player);
-        st.everApplied = false;
+        // No reset of everApplied here: the state is created fresh after a quit, and another feature (skills, at LOW)
+        // may already have recomputed during this join and consumed the remembered health. Resetting it would make the
+        // next recompute a "first" one again with nothing remembered, healing the player to full on every relog.
+        state(player);
         markDirty(player.getUniqueId(), true);
         core.scheduler().nextTick(() -> {
             if (player.isOnline()) {

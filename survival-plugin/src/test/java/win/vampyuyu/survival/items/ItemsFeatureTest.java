@@ -336,8 +336,15 @@ public class ItemsFeatureTest {
     @Test
     public void naturalMobsGetScaledHealthOnlyInSkyblockWorlds() {
         var world = server.addSimpleWorld("sb_world");
+        // The real island protection cancels natural spawns that no island covers (a cancelled spawn is never scaled),
+        // so the mobs spawn inside a ready island, which has monsters and animals on by default.
+        var islands = (win.vampyuyu.survival.island.IslandService) core.require(win.vampyuyu.survival.api.IslandApi.class);
+        var island = islands.registry().create(java.util.UUID.randomUUID(), "Owner", "classic", System.currentTimeMillis());
+        island.state(win.vampyuyu.survival.island.Island.State.READY);
+        double cx = islands.grid().centerOf(island.cellX);
+        double cz = islands.grid().centerOf(island.cellZ);
         var other = server.addSimpleWorld("plain_world");
-        var zombie = world.spawn(new org.bukkit.Location(world, 0, 64, 0), org.bukkit.entity.Zombie.class);
+        var zombie = world.spawn(new org.bukkit.Location(world, cx + 0, 64, cz + 0), org.bukkit.entity.Zombie.class);
         double before = zombie.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getBaseValue();
         server.getPluginManager().callEvent(new org.bukkit.event.entity.CreatureSpawnEvent(zombie,
             org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL));
@@ -353,14 +360,14 @@ public class ItemsFeatureTest {
         server.getPluginManager().callEvent(new org.bukkit.event.entity.CreatureSpawnEvent(plain,
             org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL));
         assertEquals(before, plain.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getBaseValue(), 1e-9);
-        var cow = world.spawn(new org.bukkit.Location(world, 6, 64, 6), org.bukkit.entity.Cow.class);
+        var cow = world.spawn(new org.bukkit.Location(world, cx + 6, 64, cz + 6), org.bukkit.entity.Cow.class);
         double cowBefore = cow.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getBaseValue();
         server.getPluginManager().callEvent(new org.bukkit.event.entity.CreatureSpawnEvent(cow,
             org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL));
         assertEquals(cowBefore * settings.mobHealthMultiplier,
             cow.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getBaseValue(), 1e-9);
         assertEquals(0, win.vampyuyu.survival.items.combat.MobScaling.levelOf(cow));
-        var custom = world.spawn(new org.bukkit.Location(world, 3, 64, 3), org.bukkit.entity.Zombie.class);
+        var custom = world.spawn(new org.bukkit.Location(world, cx + 3, 64, cz + 3), org.bukkit.entity.Zombie.class);
         server.getPluginManager().callEvent(new org.bukkit.event.entity.CreatureSpawnEvent(custom,
             org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.CUSTOM));
         assertEquals(before, custom.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getBaseValue(), 1e-9);

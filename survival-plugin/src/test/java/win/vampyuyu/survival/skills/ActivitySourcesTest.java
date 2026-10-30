@@ -54,7 +54,8 @@ public class ActivitySourcesTest extends SkillsBase {
     }
 
     @Test
-    public void spawnerAndPluginMobsGiveNothing() {
+    public void spawnerAndPluginMobsGiveNothing() throws Exception {
+        useUnprotectedWorld();
         Zombie spawned = zombie(1);
         server.getPluginManager().callEvent(new CreatureSpawnEvent(spawned, CreatureSpawnEvent.SpawnReason.SPAWNER));
         kill(spawned, new ItemStack(Material.ROTTEN_FLESH, 2));
@@ -112,7 +113,8 @@ public class ActivitySourcesTest extends SkillsBase {
     }
 
     @Test
-    public void grindingOneSpotDiminishes() {
+    public void grindingOneSpotDiminishes() throws Exception {
+        useUnprotectedWorld();
         double previous = Double.MAX_VALUE;
         double sum = 0;
         for (int i = 0; i < 60; i++) {
