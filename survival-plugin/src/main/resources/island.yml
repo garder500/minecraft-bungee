@@ -7,7 +7,7 @@ grid:
   # World Y of the top layer of every island (players stand one block higher).
   island-y: 64
   # The biggest border radius is clamped to cell-size/2 minus this margin so two islands can never touch.
-  edge-margin: 16
+  edge-margin: 2
 
 worlds:
   # time: DAY | NOON | SUNSET | NIGHT | MIDNIGHT | CYCLE (CYCLE = vanilla day/night)
@@ -79,14 +79,9 @@ generation:
 
 upgrades:
   # Border radius tiers. The first one is the starting radius (cost 0).
+  # Every island starts with the full 400 x 400 area (cell-size 400 minus a 2 block margin each side).
   radius:
-    - { radius: 30, cost: 0 }
-    - { radius: 45, cost: 15000 }
-    - { radius: 60, cost: 60000 }
-    - { radius: 80, cost: 250000 }
-    - { radius: 100, cost: 1000000 }
-    - { radius: 130, cost: 5000000 }
-    - { radius: 160, cost: 20000000 }
+    - { radius: 198, cost: 0 }
   # Maximum number of players in the co-op, owner included.
   members:
     - { slots: 3, cost: 0 }

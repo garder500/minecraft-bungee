@@ -16,7 +16,7 @@ import win.vampyuyu.survival.island.IslandConfig.ItemSpec;
  * everything is placed within 9.5 blocks of the centre.
  */
 public final class IslandTemplates {
-    public static final double RADIUS = 11.5;
+    public static final double RADIUS = 10;
     public static final int DEPTH = 5;
     /** Radius of the Nether and End platforms. */
     public static final double PLATFORM_RADIUS = 15;
