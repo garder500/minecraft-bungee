@@ -43,6 +43,7 @@ public class DungeonRunTest {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
         svc = plugin.core().require(DungeonService.class);
+        server.addSimpleWorld("main_world"); // the fallback exit when there is no island feature
         world = server.addSimpleWorld("sb_dungeon_501");
         alice = server.addPlayer("Alice");
         bob = server.addPlayer("Bob");
@@ -118,6 +119,60 @@ public class DungeonRunTest {
         assertEquals(GameMode.SURVIVAL, alice.getGameMode());
         assertNull(svc.runs.runOf(alice.getUniqueId()));
         assertNull("quitting also leaves the party", svc.parties.partyOf(alice.getUniqueId()));
+        assertNotEquals("the quitter is moved out of the dungeon world, not on the next login", world, alice.getWorld());
+        assertFalse(win.vampyuyu.survival.core.SkyblockWorlds.isDungeon(alice.getWorld().getName()));
+    }
+
+    @Test
+    public void quittingWhileGhostRestoresTheModeAndRemovesTheBody() {
+        running();
+        run.deaths.onLethal(alice);
+        assertEquals(GameMode.SPECTATOR, alice.getGameMode());
+        server.getPluginManager().callEvent(new PlayerQuitEvent(alice, net.kyori.adventure.text.Component.empty(),
+            PlayerQuitEvent.QuitReason.DISCONNECTED));
+        assertEquals(GameMode.SURVIVAL, alice.getGameMode());
+        assertNull(run.player(alice.getUniqueId()).bodyStand);
+    }
+
+    @Test
+    public void armorStandsCannotBeStrippedOrPosed() {
+        running();
+        org.bukkit.entity.ArmorStand stand = world.spawn(new Location(world, 5, 70, 5), org.bukkit.entity.ArmorStand.class);
+        var manipulate = new org.bukkit.event.player.PlayerArmorStandManipulateEvent(alice, stand,
+            new org.bukkit.inventory.ItemStack(Material.AIR), new org.bukkit.inventory.ItemStack(Material.LEATHER_CHESTPLATE),
+            org.bukkit.inventory.EquipmentSlot.CHEST);
+        server.getPluginManager().callEvent(manipulate);
+        assertTrue("no free chestplate or head from a ghost body", manipulate.isCancelled());
+        var at = new org.bukkit.event.player.PlayerInteractAtEntityEvent(alice, stand, new org.bukkit.util.Vector(0, 1, 0));
+        server.getPluginManager().callEvent(at);
+        assertTrue(at.isCancelled());
+        alice.setOp(true);
+        var admin = new org.bukkit.event.player.PlayerArmorStandManipulateEvent(alice, stand,
+            new org.bukkit.inventory.ItemStack(Material.AIR), new org.bukkit.inventory.ItemStack(Material.LEATHER_CHESTPLATE),
+            org.bukkit.inventory.EquipmentSlot.CHEST);
+        server.getPluginManager().callEvent(admin);
+        assertFalse(admin.isCancelled());
+    }
+
+    @Test
+    public void orphanCleanupKeepsLiveRunsAndLoadedWorlds() throws Exception {
+        java.nio.file.Path root = java.nio.file.Files.createTempDirectory("dungeon-orphans");
+        try {
+            for (String n : new String[] {"sb_dungeon_501", "sb_dungeon_700", "sb_dungeon_701", "world", "sb_dungeon_x"}) {
+                java.nio.file.Files.createDirectories(root.resolve(n).resolve("region"));
+                java.nio.file.Files.writeString(root.resolve(n).resolve("region").resolve("r.0.0.mca"), "x");
+            }
+            int removed = svc.runs.deleteOrphans(root, java.util.List.of("sb_dungeon_701"));
+            assertEquals(1, removed);
+            assertTrue("the live run 501 stays", java.nio.file.Files.exists(root.resolve("sb_dungeon_501")));
+            assertTrue("a loaded world stays", java.nio.file.Files.exists(root.resolve("sb_dungeon_701")));
+            assertFalse(java.nio.file.Files.exists(root.resolve("sb_dungeon_700")));
+            assertTrue("other folders are never touched", java.nio.file.Files.exists(root.resolve("world")));
+            assertTrue(java.nio.file.Files.exists(root.resolve("sb_dungeon_x")));
+        } finally {
+            win.vampyuyu.survival.dungeon.run.WorldFiles.deleteWorldFolder(root, root.resolve("sb_dungeon_501"));
+            win.vampyuyu.survival.dungeon.run.WorldFiles.deleteWorldFolder(root, root.resolve("sb_dungeon_701"));
+        }
     }
 
     @Test

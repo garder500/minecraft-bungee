@@ -105,7 +105,7 @@ final class DeathDirector {
                 s.setBasePlate(false);
                 s.setSilent(true);
                 s.setPersistent(false);
-                s.setMarker(false);
+                s.setMarker(true);
                 s.customName(Msg.component("<aqua>" + rp.name + "'s body <gray>(sneak next to it)"));
                 s.setCustomNameVisible(true);
                 s.getPersistentDataContainer().set(run.ctx.keys.run, PersistentDataType.STRING, run.id);
@@ -116,6 +116,14 @@ final class DeathDirector {
                 }
                 s.getEquipment().setHelmet(head);
                 s.getEquipment().setChestplate(new ItemStack(Material.LEATHER_CHESTPLATE));
+                // nobody can take the head or the chestplate off a body (no free items per death)
+                for (org.bukkit.inventory.EquipmentSlot slot : new org.bukkit.inventory.EquipmentSlot[] {
+                        org.bukkit.inventory.EquipmentSlot.HEAD, org.bukkit.inventory.EquipmentSlot.CHEST,
+                        org.bukkit.inventory.EquipmentSlot.LEGS, org.bukkit.inventory.EquipmentSlot.FEET,
+                        org.bukkit.inventory.EquipmentSlot.HAND, org.bukkit.inventory.EquipmentSlot.OFF_HAND}) {
+                    s.addEquipmentLock(slot, ArmorStand.LockType.ADDING_OR_CHANGING);
+                    s.addEquipmentLock(slot, ArmorStand.LockType.REMOVING_OR_CHANGING);
+                }
             });
             rp.bodyStand = stand.getUniqueId();
             run.props.add(stand.getUniqueId());

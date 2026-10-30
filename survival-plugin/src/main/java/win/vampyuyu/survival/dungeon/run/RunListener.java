@@ -37,10 +37,11 @@ import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -123,21 +124,13 @@ public final class RunListener implements Listener {
         Player p = event.getPlayer();
         manager.playerGone(p.getUniqueId());
         ctx.parties.forget(p.getUniqueId());
+        // A player that quits inside the dungeon would log back into a world that may soon be deleted. The menu
+        // feature is the only join router, so the exit happens here, while the player is still known to the server.
+        if (RunManager.inDungeonWorld(p) && !admin(p)) {
+            RunManager.sendOut(ctx, p);
+        }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onJoin(PlayerJoinEvent event) {
-        Player p = event.getPlayer();
-        // a player that logs in inside a dungeon world without a run (crash, quit mid-run) is sent out
-        ctx.scheduler().later(5, () -> {
-            if (p.isOnline() && RunManager.inDungeonWorld(p) && active(p) == null && !admin(p)) {
-                if (p.getGameMode() == GameMode.SPECTATOR && !admin(p)) {
-                    p.setGameMode(GameMode.SURVIVAL);
-                }
-                RunManager.sendOut(ctx, p);
-            }
-        });
-    }
 
     // ------------------------------------------------------------------ damage and death
 
@@ -486,6 +479,24 @@ public final class RunListener implements Listener {
         p.setHealth(Math.min(max.getValue(), p.getHealth() + max.getValue() * ctx.cfg.flaskHealPercent / 100.0));
         p.getWorld().playSound(p.getLocation(), org.bukkit.Sound.ENTITY_GENERIC_DRINK, 1f, 1.2f);
         return true;
+    }
+
+    /** Armor stand equipment swaps have their own events: nothing may be taken from or put on a stand. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onArmorStand(PlayerArmorStandManipulateEvent event) {
+        Player p = event.getPlayer();
+        if (dungeonWorld(p.getWorld()) && !admin(p)) {
+            event.setCancelled(true);
+        }
+    }
+
+    /** "Interact at" is a separate event from the plain entity click (own handler list). */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onInteractAt(PlayerInteractAtEntityEvent event) {
+        Player p = event.getPlayer();
+        if (dungeonWorld(p.getWorld()) && !admin(p)) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH)

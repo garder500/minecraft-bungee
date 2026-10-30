@@ -103,9 +103,16 @@ par-seconds, secrets-needed-percent, reward, min-combat-level). Invalid values a
   previous one on exit. If the menu refreshes its board by re-assigning it, the two will fight: an API to "suspend the
   sidebar while `inDungeon`" is the clean fix.
 
+* Join backstop: the menu router should send a login inside a dungeon world without a run (`DungeonApi.inDungeon`
+  true but no run) to the hub, and reset a leftover SPECTATOR game mode. The dungeon feature cannot do it itself.
+* Command labels `/dungeon` (`/dg`, `/catacombs`), `/party` (`/dparty`), `/pc` (`/partychat`): checked against the
+  `plugin.yml` commands of arena (`eventadmin`, `arena`, `ww`), lobby (`lobbybuild`) and network (`warp*`, `profil`,
+  `moneyadmin`, `menu`, `fly`, `invsee`, `exitchat`, `vampyuyuoperator`): no clash. No Velocity plugin source is in the
+  repo, so a proxy-side `/party` was not checked.
+
 ## Known gaps / NOT verified in game
 
-Everything below was only covered by unit and MockBukkit tests (160 tests, all green); none of it was played:
+Everything below was only covered by unit and MockBukkit tests (169 tests in the module, all green); none of it was played:
 
 * Real world creation with the custom void generator on Paper 26.3, the typed `GameRules`, `unloadWorld` and the folder
   layout of custom worlds on 26.x (the deletion looks for the actual world folder and, as a fallback, for the name under
@@ -117,8 +124,13 @@ Everything below was only covered by unit and MockBukkit tests (160 tests, all g
   priority may reorder).
 * Geometry by eye: doorways, lighting, the parkour pads, puzzle layouts, the reward cage, ghost bodies, boss bars and
   titles; no screenshots were taken.
-* Ghost spectating inside the dungeon (spectator teleports to other worlds are refused), rejoin after a crash (a player
-  logging in inside a dungeon world is sent to the hub 5 ticks later), the interplay with the menu feature's sidebar.
+* Ghost spectating inside the dungeon (spectator teleports to other worlds are refused) and the interplay with the menu
+  feature's sidebar.
+* Quitting mid-run: the player's game mode, sidebar and effects are restored and they are teleported out (hub through
+  `IslandApi`, else the first non-dungeon world's spawn) **inside `PlayerQuitEvent`**. A teleport during the quit event
+  is unverified on real Paper. The dungeon never teleports anybody on join (the menu feature is the only join router).
+* Crash case: a player saved as a SPECTATOR ghost inside a dungeon world whose folder is deleted at the next enable logs
+  into the default world still in spectator mode (nothing on the dungeon side can run at that time).
 * Party warp uses `teleportAsync` with no check of the island protection rules.
 * Balance (health, damage, scoring, prices) is a first pass: everything is in `dungeon.yml`.
 * Leaving a run early records nothing (neither a clear nor a failed run); only players still in at the end get stats.

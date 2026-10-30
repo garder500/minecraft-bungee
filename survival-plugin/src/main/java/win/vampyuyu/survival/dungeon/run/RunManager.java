@@ -340,7 +340,7 @@ public final class RunManager {
                 }
             });
         }
-        if (!ok) {
+        if (!ok || inDungeonWorld(p)) {
             World main = Bukkit.getWorlds().stream().filter(x -> !SkyblockWorlds.isDungeon(x.getName())).findFirst().orElse(null);
             if (main != null) {
                 ctx.teleport(p, main.getSpawnLocation());
@@ -464,9 +464,18 @@ public final class RunManager {
     /** Synchronous variant used by the tests and at disable. Returns the number of folders removed. */
     public int deleteOrphans(Path container, List<String> loadedWorlds) {
         int n = 0;
+        java.util.Set<String> known = new java.util.HashSet<>();
+        synchronized (this) {
+            for (String id : runs.keySet()) {
+                known.add(SkyblockWorlds.dungeon(id));
+            }
+            for (String id : cancelledBuilds.keySet()) {
+                known.add(SkyblockWorlds.dungeon(id)); // reserved for a build in progress
+            }
+        }
         for (Path folder : WorldFiles.findDungeonFolders(container, 4)) {
             String name = folder.getFileName().toString();
-            if (loadedWorlds.contains(name)) {
+            if (loadedWorlds.contains(name) || known.contains(name)) {
                 continue;
             }
             if (WorldFiles.deleteWorldFolder(container, folder)) {
