@@ -336,3 +336,16 @@ Mechanism the `menu` feature must use:
 
 Not verified end to end: the Redis path was read from the compose files and plugin code but not exercised from the
 survival container.
+
+## 13. Principle: the game happens on the island
+
+Decided by the owner (2026-10-30): Hypixel SkyBlock is an inspiration for systems (skills, minions, items, bosses,
+dungeons), not for its layout. Players progress ON their own island, not in external farming areas.
+
+* No gathering or farming worlds (no mining island, park, wilderness). Resources come from the island, its minions, and
+  its own Nether and End platforms (`sb_nether`, `sb_end` cells are per island).
+* `sb_hub` is a social and service hub only: merchants, banker, quests, menus, the world boss plaza. No ores, crops,
+  farmable mob spawns.
+* External places exist only for special content: dungeons (`sb_dungeon_*`, instanced), world boss events, summoned
+  bosses and slayers (they come to the player's island or a boss arena).
+* Any new feature that wants a dedicated zone must be justified as special content and approved first.
