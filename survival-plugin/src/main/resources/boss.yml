@@ -1,0 +1,861 @@
+# Skyblock bosses: framework settings, the six contract bosses, two world bosses, five slayers.
+#
+# Every number here is tunable and reloadable with /boss reload (running fights keep the definition they started with).
+# A broken entry is dropped and listed in the console as "boss.yml: <path>: <problem>"; the rest still loads.
+# All text is MiniMessage; keep it English. Durations in "cooldown", "telegraph", "duration" keys are SECONDS.
+#
+# Boss fields:   name, description, entity, health (virtual HP), damage (vanilla HP per hit, 2 = one heart),
+#                scale, speed (multiplier), knockback-resistance (0-1), bar {color, overlay}, arena {...}, phases [...],
+#                equipment {slot: MATERIAL or MATERIAL:#rrggbb for leather}, options {size, baby, glow, contact-radius},
+#                loot {...}, summon {...}, kind (boss | world)
+# Ability fields: type, cooldown, telegraph, damage (multiplier of the boss damage), target (nearest|random|top|far|all),
+#                from-tier (slayers only) plus ability parameters (radius, count, duration, speed ...)
+# Abilities: fireball_barrage ground_slam summon_minions lightning_strikes vacuum whirlpool poison_cloud wither_cloud
+#            breath_cloud lava_pools void_zones ice_spikes web_traps teleport_behind shield_crystals laser_beam
+#            charge_dash dive_bomb tidal_wave fire_ring bone_cage soul_drain blizzard
+# Loot drops: item (custom:<id> or vanilla:<MATERIAL>), chance, min, max, min-share (damage share needed),
+#            max-rank (worst rank allowed, 0 = anyone), magic-find (true), pity / pity-cap (bonus per dry kill)
+
+settings:
+  hp-scale: 1.0              # multiplies every boss health pool
+  damage-scale: 1.0          # multiplies every hit bosses deal to players
+  incoming-damage-scale: 1.0 # multiplies every hit players deal to bosses (calibrate to the items damage formula)
+  tick-period: 2             # ticks between two boss updates (1-10)
+  bar-range: 64              # players closer than this see the boss bar
+  visual-health: 300         # max health attribute of the entity (only mirrors the percentage)
+  hit-iframes: 6             # invulnerability ticks of a boss between two hits
+  magic-find-cap: 1000       # Magic Find above this is ignored
+  purge-orphans: true        # remove tagged boss entities left behind (bosses never persist across a restart)
+  scale-min-share: 0.01      # a player grows the boss health pool only after dealing this fraction of its base health
+  repeat-window-minutes: 60  # kills of the same boss inside this window lower the next payout (coins and combat xp)...
+  repeat-decay: 0.2          # ...by this fraction per earlier kill...
+  repeat-floor: 0.25         # ...down to this fraction (0 decay turns the damper off)
+  damage-numbers: true       # floating damage numbers on bosses (they take a token real hit, so the generic ones read 0)
+
+bosses:
+  # ----------------------------------------------------------------------------------------------------------
+  # The End boss. Dragon-style flyer: circle, breath clouds, dive bombs, crystal shield. Altar in the End island.
+  voidwyrm:
+    name: "<gradient:#8a2be2:#e0b0ff><bold>Voidwyrm</bold></gradient>"
+    description: "The dragon of the End. Dodge the dives, shatter the crystals, stay out of the breath."
+    entity: ENDER_DRAGON
+    health: 1500000
+    damage: 14
+    scale: 1.0
+    speed: 1.0
+    knockback-resistance: 1.0
+    bar: { color: PURPLE, overlay: NOTCHED_10 }
+    arena:
+      radius: 80
+      leash: 110
+      projectile-range: 90
+      no-fly: false
+      no-build: true
+      no-teleport: true
+      min-players: 1
+      scale-per-player: 0.35
+      scale-cap: 4.0
+      enrage-seconds: 900
+      enrage-damage: 1.5
+      enrage-growth: 0.25
+      idle-despawn-seconds: 90
+      time-limit-seconds: 1800
+      max-minions: 10
+    options: { glow: false, contact-radius: 9 }
+    phases:
+      - name: "Circling"
+        at: 1.0
+        abilities:
+          - { type: breath_cloud, cooldown: 14, telegraph: 1.5, damage: 0.8, target: random, count: 3 }
+          - { type: dive_bomb, cooldown: 18, telegraph: 2.0, damage: 2.2, target: random }
+      - name: "Shielded"
+        at: 0.70
+        title: "<light_purple><bold>THE VOIDWYRM SCREAMS"
+        subtitle: "<gray>Destroy the end crystals!"
+        damage: 1.15
+        enter:
+          - { type: shield_crystals, count: 4, radius: 22, height: 6, hits: 3, seconds: 45, heal: 0.004, nova: 8 }
+        abilities:
+          - { type: breath_cloud, cooldown: 12, telegraph: 1.5, damage: 0.9, target: random, count: 4 }
+          - { type: dive_bomb, cooldown: 16, telegraph: 1.8, damage: 2.4, target: top }
+          - { type: summon_minions, cooldown: 25, entity: ENDERMITE, count: 4, health: 60, radius: 8, name: "<dark_purple>Void Mite" }
+      - name: "Unbound"
+        at: 0.35
+        title: "<dark_purple><bold>THE VOID UNBOUND"
+        subtitle: "<gray>It stops holding back."
+        damage: 1.35
+        speed: 1.2
+        abilities:
+          - { type: void_zones, cooldown: 12, telegraph: 1.5, damage: 0.8, target: all, count: 5 }
+          - { type: breath_cloud, cooldown: 10, telegraph: 1.2, damage: 1.0, target: random, count: 5 }
+          - { type: dive_bomb, cooldown: 12, telegraph: 1.5, damage: 2.6, target: top }
+          - { type: lightning_strikes, cooldown: 16, telegraph: 1.4, damage: 1.6, target: all, count: 6 }
+    loot:
+      coins: 400000
+      combat-xp: 60000
+      min-share: 0.01
+      share-floor: 0.25
+      rank-bonus: [1.5, 1.25, 1.1]
+      wings-min-share: 0.05      # damage share needed for WingsApi.grantOnce(player, "boss:voidwyrm")
+      announce-below: 0.02
+      drops:
+        - { item: "custom:wing_core", chance: 1.0, min: 1, max: 1, min-share: 0.05, magic-find: false }
+        - { item: "custom:voidwyrm_scale", chance: 0.9, min: 3, max: 8 }
+        - { item: "custom:void_fang", chance: 0.04, min: 1, max: 1, min-share: 0.10, max-rank: 5, pity: 0.002, pity-cap: 0.04 }
+        - { item: "vanilla:DRAGON_EGG", chance: 0.01, min: 1, max: 1, min-share: 0.10, max-rank: 1 }
+    summon:
+      item: void_sigil
+      mode: altar
+      # Every island has its own altar in its End cell at (cellX * cell-size + 0.5, island-y + 1, cellZ * cell-size + 0.5)
+      # (island.yml grid.cell-size and grid.island-y). The one closest to the player is used, so x, y, z are those of
+      # cell 0,0 and cell-size repeats them. Set cell-size: 0 for a single fixed altar.
+      altar: { world: sb_end, x: 0.5, y: 65, z: 0.5, radius: 40, cell-size: 400 }
+      worlds: [sb_end]
+      cooldown-seconds: 300
+      global-cooldown-seconds: 0
+      require-island-member: false
+      max-concurrent: 1
+      refund-on-despawn: true
+
+  # ----------------------------------------------------------------------------------------------------------
+  # Nether island boss: lava pools to read, fire rings to jump, a ground slam to time.
+  magma_warden:
+    name: "<gradient:#ff4500:#ffd000><bold>Magma Warden</bold></gradient>"
+    description: "A molten giant. Jump the fire rings, leave the lava pools, punish it after the slam."
+    entity: MAGMA_CUBE
+    health: 500000
+    damage: 12
+    scale: 1.0
+    speed: 0.9
+    knockback-resistance: 1.0
+    bar: { color: RED, overlay: NOTCHED_6 }
+    arena:
+      radius: 40
+      leash: 55
+      projectile-range: 48
+      no-fly: true
+      min-players: 1
+      scale-per-player: 0.3
+      scale-cap: 3.5
+      enrage-seconds: 600
+      idle-despawn-seconds: 60
+      time-limit-seconds: 1200
+      max-minions: 8
+    options: { size: 12, glow: false, contact-radius: 5 }
+    phases:
+      - name: "Smoldering"
+        at: 1.0
+        abilities:
+          - { type: ground_slam, cooldown: 11, telegraph: 1.5, damage: 1.8, radius: 18, speed: 1.0 }
+          - { type: lava_pools, cooldown: 14, telegraph: 1.5, damage: 0.8, target: random, count: 3 }
+      - name: "Blazing"
+        at: 0.60
+        title: "<red><bold>THE FORGE ROARS"
+        subtitle: "<gray>Watch the floor."
+        damage: 1.2
+        enter:
+          - { type: fire_ring, cooldown: 8, telegraph: 1.2, damage: 1.5, gap: 60 }
+        abilities:
+          - { type: ground_slam, cooldown: 9, telegraph: 1.3, damage: 2.0, radius: 20, speed: 1.1 }
+          - { type: fire_ring, cooldown: 12, telegraph: 1.4, damage: 1.5, gap: 55 }
+          - { type: lava_pools, cooldown: 11, telegraph: 1.3, damage: 0.9, target: all, count: 4 }
+          - { type: summon_minions, cooldown: 24, entity: MAGMA_CUBE, count: 3, health: 80, radius: 7, name: "<gold>Ember Spawn" }
+      - name: "Meltdown"
+        at: 0.25
+        title: "<dark_red><bold>MELTDOWN"
+        subtitle: "<gray>Everything burns."
+        damage: 1.4
+        speed: 1.25
+        abilities:
+          - { type: fireball_barrage, cooldown: 9, telegraph: 1.0, damage: 1.2, count: 7, target: all }
+          - { type: fire_ring, cooldown: 9, telegraph: 1.1, damage: 1.7, gap: 45 }
+          - { type: ground_slam, cooldown: 8, telegraph: 1.0, damage: 2.2, radius: 22, speed: 1.2 }
+          - { type: lava_pools, cooldown: 9, telegraph: 1.2, damage: 1.0, target: all, count: 6 }
+    loot:
+      coins: 120000
+      combat-xp: 24000
+      rank-bonus: [1.5, 1.25, 1.1]
+      drops:
+        - { item: "custom:warden_heart", chance: 0.8, min: 1, max: 3 }
+        - { item: "custom:ember_blade", chance: 0.05, min: 1, max: 1, min-share: 0.08, max-rank: 5, pity: 0.003, pity-cap: 0.05 }
+        - { item: "vanilla:NETHERITE_SCRAP", chance: 0.35, min: 1, max: 2 }
+    equipment: {}
+    summon:
+      item: magma_core
+      mode: free
+      worlds: [sb_nether]
+      cooldown-seconds: 180
+      require-island-member: true
+      max-concurrent: 1
+      refund-on-despawn: true
+
+  # ----------------------------------------------------------------------------------------------------------
+  # Giant frozen knight. Ice spikes erupt where you stand, the blizzard punishes anyone away from the braziers.
+  frost_revenant:
+    name: "<gradient:#aef0ff:#4f9bff><bold>Frost Revenant</bold></gradient>"
+    description: "A frozen giant. Keep moving when the ice marks the ground, shelter in the blizzard."
+    entity: ZOMBIE
+    health: 450000
+    damage: 11
+    scale: 3.0
+    speed: 0.95
+    knockback-resistance: 1.0
+    bar: { color: BLUE, overlay: NOTCHED_12 }
+    arena:
+      radius: 40
+      leash: 55
+      projectile-range: 48
+      no-fly: false
+      min-players: 1
+      scale-per-player: 0.3
+      scale-cap: 3.5
+      enrage-seconds: 600
+      idle-despawn-seconds: 60
+      time-limit-seconds: 1200
+      max-minions: 8
+    options: { baby: false, glow: false, contact-radius: 4 }
+    equipment:
+      head: "LEATHER_HELMET:#9fd8ff"
+      chest: "LEATHER_CHESTPLATE:#6fb7f0"
+      legs: "LEATHER_LEGGINGS:#4f9bff"
+      feet: "LEATHER_BOOTS:#2f6fd0"
+      mainhand: "DIAMOND_SWORD"
+    phases:
+      - name: "Frozen"
+        at: 1.0
+        abilities:
+          - { type: ice_spikes, cooldown: 8, telegraph: 1.4, damage: 1.4, target: random, count: 4 }
+          - { type: charge_dash, cooldown: 14, telegraph: 1.5, damage: 1.8, distance: 20, speed: 1.4 }
+      - name: "Cold Snap"
+        at: 0.60
+        title: "<aqua><bold>THE FROST DEEPENS"
+        subtitle: "<gray>Its armor shatters, its rage does not."
+        damage: 1.2
+        abilities:
+          - { type: ice_spikes, cooldown: 7, telegraph: 1.2, damage: 1.5, target: all, count: 6 }
+          - { type: charge_dash, cooldown: 11, telegraph: 1.3, damage: 2.0, distance: 24, speed: 1.5 }
+          - { type: summon_minions, cooldown: 24, entity: STRAY, count: 3, health: 70, radius: 7, name: "<aqua>Frozen Thrall" }
+      - name: "Blizzard"
+        at: 0.30
+        title: "<white><bold>BLIZZARD"
+        subtitle: "<gray>Find the warm braziers!"
+        damage: 1.35
+        speed: 1.15
+        enter:
+          - { type: blizzard, cooldown: 30, duration: 12, shelters: 3, shelter-radius: 4.5 }
+        abilities:
+          - { type: blizzard, cooldown: 28, duration: 10, shelters: 3, shelter-radius: 4.2 }
+          - { type: ice_spikes, cooldown: 6, telegraph: 1.0, damage: 1.6, target: all, count: 7 }
+          - { type: charge_dash, cooldown: 9, telegraph: 1.1, damage: 2.2, distance: 26, speed: 1.6 }
+    loot:
+      coins: 110000
+      combat-xp: 22000
+      drops:
+        - { item: "custom:frost_shard", chance: 0.8, min: 2, max: 5 }
+        - { item: "custom:glacial_edge", chance: 0.05, min: 1, max: 1, min-share: 0.08, max-rank: 5, pity: 0.003, pity-cap: 0.05 }
+        - { item: "vanilla:BLUE_ICE", chance: 0.9, min: 8, max: 24, magic-find: false }
+    summon:
+      item: frost_heart
+      mode: free
+      worlds: [sb_world]
+      cooldown-seconds: 180
+      require-island-member: true
+      max-concurrent: 1
+      refund-on-despawn: true
+
+  # ----------------------------------------------------------------------------------------------------------
+  # Spider queen. Webs root you, the swarm pressures you, a teleport lands her behind the weakest link.
+  sylvan_matriarch:
+    name: "<gradient:#2e8b57:#9acd32><bold>Sylvan Matriarch</bold></gradient>"
+    description: "The spider queen of the forest. Break free of the webs, thin out the swarm, watch your back."
+    entity: SPIDER
+    health: 400000
+    damage: 10
+    scale: 4.0
+    speed: 1.15
+    knockback-resistance: 1.0
+    bar: { color: GREEN, overlay: NOTCHED_10 }
+    arena:
+      radius: 36
+      leash: 50
+      projectile-range: 44
+      min-players: 1
+      scale-per-player: 0.3
+      scale-cap: 3.5
+      enrage-seconds: 540
+      idle-despawn-seconds: 60
+      time-limit-seconds: 1200
+      max-minions: 14
+    options: { glow: false, contact-radius: 4.5 }
+    phases:
+      - name: "Lair"
+        at: 1.0
+        abilities:
+          - { type: web_traps, cooldown: 10, telegraph: 1.3, damage: 0.8, target: random, count: 4 }
+          - { type: summon_minions, cooldown: 16, entity: CAVE_SPIDER, count: 4, health: 30, radius: 6, name: "<green>Spiderling" }
+      - name: "Hunt"
+        at: 0.60
+        title: "<green><bold>THE MATRIARCH HUNTS"
+        subtitle: "<gray>Eyes on your back."
+        damage: 1.2
+        abilities:
+          - { type: web_traps, cooldown: 8, telegraph: 1.1, damage: 0.9, target: all, count: 5 }
+          - { type: teleport_behind, cooldown: 13, telegraph: 1.0, damage: 2.0, target: top }
+          - { type: summon_minions, cooldown: 14, entity: CAVE_SPIDER, count: 5, health: 35, radius: 7, name: "<green>Spiderling" }
+          - { type: poison_cloud, cooldown: 14, telegraph: 1.4, damage: 0.8, target: random, count: 3 }
+      - name: "Swarm"
+        at: 0.25
+        title: "<dark_green><bold>THE SWARM"
+        subtitle: "<gray>Kill the spiderlings fast."
+        damage: 1.4
+        speed: 1.2
+        abilities:
+          - { type: web_traps, cooldown: 7, telegraph: 1.0, damage: 1.0, target: all, count: 6 }
+          - { type: teleport_behind, cooldown: 10, telegraph: 0.9, damage: 2.2, target: random }
+          - { type: summon_minions, cooldown: 10, entity: CAVE_SPIDER, count: 6, health: 40, radius: 8, name: "<green>Spiderling" }
+          - { type: poison_cloud, cooldown: 11, telegraph: 1.2, damage: 1.0, target: all, count: 4 }
+    loot:
+      coins: 100000
+      combat-xp: 20000
+      drops:
+        - { item: "custom:matriarch_silk", chance: 0.8, min: 2, max: 5 }
+        - { item: "custom:venom_dagger", chance: 0.05, min: 1, max: 1, min-share: 0.08, max-rank: 5, pity: 0.003, pity-cap: 0.05 }
+        - { item: "vanilla:SPIDER_EYE", chance: 1.0, min: 8, max: 24, magic-find: false }
+    summon:
+      item: matriarch_egg
+      mode: free
+      worlds: [sb_world]
+      cooldown-seconds: 180
+      require-island-member: true
+      max-concurrent: 1
+      refund-on-despawn: true
+
+  # ----------------------------------------------------------------------------------------------------------
+  # Water boss. Needs water to be summoned; the whirlpool drags you in, the tidal wave must be jumped.
+  abyssal_leviathan:
+    name: "<gradient:#00758f:#46e0d0><bold>Abyssal Leviathan</bold></gradient>"
+    description: "The beast of the deep. Resist the whirlpool, jump the tidal wave, hit it while it surfaces."
+    entity: ELDER_GUARDIAN
+    health: 480000
+    damage: 11
+    scale: 2.0
+    speed: 1.0
+    knockback-resistance: 1.0
+    bar: { color: BLUE, overlay: NOTCHED_20 }
+    arena:
+      radius: 40
+      leash: 55
+      projectile-range: 48
+      min-players: 1
+      scale-per-player: 0.3
+      scale-cap: 3.5
+      enrage-seconds: 600
+      idle-despawn-seconds: 60
+      time-limit-seconds: 1200
+      max-minions: 10
+    options: { glow: false, contact-radius: 6 }
+    phases:
+      - name: "Surface"
+        at: 1.0
+        abilities:
+          - { type: whirlpool, cooldown: 16, telegraph: 1.5, damage: 1.6, radius: 22, duration: 3.5 }
+          - { type: lightning_strikes, cooldown: 14, telegraph: 1.4, damage: 1.2, target: random, count: 3 }
+      - name: "Tidal"
+        at: 0.60
+        title: "<aqua><bold>THE TIDE RISES"
+        subtitle: "<gray>Jump the wave!"
+        damage: 1.2
+        abilities:
+          - { type: tidal_wave, cooldown: 14, telegraph: 1.5, damage: 1.8, width: 46, height: 3.2, speed: 1.1, gap: 7 }
+          - { type: whirlpool, cooldown: 15, telegraph: 1.4, damage: 1.7, radius: 24, duration: 3.5 }
+          - { type: summon_minions, cooldown: 22, entity: DROWNED, count: 3, health: 80, radius: 8, name: "<dark_aqua>Drowned Servant", weapon: TRIDENT }
+      - name: "Abyss"
+        at: 0.25
+        title: "<dark_aqua><bold>FROM THE ABYSS"
+        subtitle: "<gray>The sea will not let you go."
+        damage: 1.4
+        speed: 1.2
+        abilities:
+          - { type: tidal_wave, cooldown: 10, telegraph: 1.2, damage: 2.0, width: 50, height: 3.4, speed: 1.3, gap: 6 }
+          - { type: whirlpool, cooldown: 12, telegraph: 1.2, damage: 1.8, radius: 26, duration: 4 }
+          - { type: laser_beam, cooldown: 13, telegraph: 1.3, damage: 1.2, length: 34, duration: 4, target: top }
+          - { type: lightning_strikes, cooldown: 11, telegraph: 1.2, damage: 1.5, target: all, count: 5 }
+    loot:
+      coins: 130000
+      combat-xp: 26000
+      drops:
+        - { item: "custom:leviathan_tooth", chance: 0.8, min: 2, max: 5 }
+        - { item: "custom:tidal_trident", chance: 0.04, min: 1, max: 1, min-share: 0.10, max-rank: 5, pity: 0.002, pity-cap: 0.04 }
+        - { item: "vanilla:HEART_OF_THE_SEA", chance: 0.1, min: 1, max: 1 }
+    summon:
+      item: leviathan_scale
+      mode: free
+      worlds: [sb_world]
+      cooldown-seconds: 180
+      require-island-member: true
+      require-water: true
+      max-concurrent: 1
+      refund-on-despawn: true
+
+  # ----------------------------------------------------------------------------------------------------------
+  # Dungeon boss: spawned by the dungeon feature with BossApi.spawn("crypt_lord", location, null). No summon item.
+  # Limits the dungeon owner must know: players further than `radius` from the spawn point cannot hurt it, it vanishes
+  # (no event is fired, only a kill is observable through BossKillEvent) after `idle-despawn-seconds` without a player in
+  # range and after `time-limit-seconds`.
+  crypt_lord:
+    name: "<gradient:#6b6b6b:#c8c8c8><bold>Crypt Lord</bold></gradient>"
+    description: "An undead necromancer. Kill the skeleton waves, break the bone cage, do not stand in the beam."
+    entity: WITHER_SKELETON
+    health: 350000
+    damage: 10
+    scale: 2.5
+    speed: 1.0
+    knockback-resistance: 1.0
+    bar: { color: WHITE, overlay: NOTCHED_10 }
+    arena:
+      radius: 48
+      leash: 64
+      projectile-range: 56
+      min-players: 1
+      scale-per-player: 0.3
+      scale-cap: 3.0
+      enrage-seconds: 480
+      idle-despawn-seconds: 300
+      time-limit-seconds: 900
+      max-minions: 12
+    options: { glow: false, contact-radius: 4 }
+    equipment:
+      head: "WITHER_SKELETON_SKULL"
+      chest: "LEATHER_CHESTPLATE:#2b1b3d"
+      legs: "LEATHER_LEGGINGS:#2b1b3d"
+      feet: "LEATHER_BOOTS:#1a1026"
+      mainhand: "STONE_SWORD"
+    phases:
+      - name: "Summoner"
+        at: 1.0
+        abilities:
+          - { type: summon_minions, cooldown: 14, entity: SKELETON, count: 4, health: 50, radius: 8, name: "<gray>Risen Skeleton", weapon: BOW }
+          - { type: bone_cage, cooldown: 18, telegraph: 1.5, damage: 1.0, target: random, count: 1 }
+      - name: "Necromancer"
+        at: 0.60
+        title: "<dark_gray><bold>ARISE"
+        subtitle: "<gray>The dead answer the Crypt Lord."
+        damage: 1.2
+        abilities:
+          - { type: summon_minions, cooldown: 12, entity: SKELETON, count: 5, health: 60, radius: 9, name: "<gray>Risen Skeleton", weapon: BOW }
+          - { type: bone_cage, cooldown: 14, telegraph: 1.3, damage: 1.2, target: top, count: 2 }
+          - { type: soul_drain, cooldown: 16, telegraph: 1.2, damage: 1.0, target: random, range: 30, heal: 0.0025, duration: 6 }
+      - name: "Lich"
+        at: 0.25
+        title: "<dark_purple><bold>THE LICH AWAKENS"
+        subtitle: "<gray>Souls feed it. Break the line of sight."
+        damage: 1.4
+        speed: 1.2
+        abilities:
+          - { type: summon_minions, cooldown: 11, entity: WITHER_SKELETON, count: 3, health: 90, radius: 9, name: "<dark_gray>Bone Knight", weapon: STONE_SWORD }
+          - { type: bone_cage, cooldown: 12, telegraph: 1.1, damage: 1.3, target: all, count: 2 }
+          - { type: soul_drain, cooldown: 12, telegraph: 1.0, damage: 1.2, target: top, range: 32, heal: 0.003, duration: 6 }
+          - { type: wither_cloud, cooldown: 13, telegraph: 1.3, damage: 1.0, target: all, count: 4 }
+    loot:
+      coins: 90000
+      combat-xp: 18000
+      drops:
+        - { item: "custom:lord_bone", chance: 0.8, min: 2, max: 5 }
+        - { item: "custom:necro_scepter", chance: 0.04, min: 1, max: 1, min-share: 0.10, max-rank: 5, pity: 0.002, pity-cap: 0.04 }
+        - { item: "vanilla:BONE", chance: 1.0, min: 16, max: 48, magic-find: false }
+
+  # ----------------------------------------------------------------------------------------------------------
+  # World bosses (scheduled events). They are listed here so the event pool can reference them.
+  ancient_colossus:
+    kind: world
+    name: "<gradient:#b0b0b0:#ffd27f><bold>Ancient Colossus</bold></gradient>"
+    description: "A giant of iron that wakes every few hours. Everyone who fights shares the spoils."
+    entity: IRON_GOLEM
+    health: 1200000
+    damage: 14
+    scale: 3.5
+    speed: 0.9
+    knockback-resistance: 1.0
+    bar: { color: YELLOW, overlay: NOTCHED_12 }
+    arena:
+      radius: 50
+      leash: 70
+      projectile-range: 58
+      min-players: 1
+      scale-per-player: 0.2
+      scale-cap: 6.0
+      enrage-seconds: 780
+      idle-despawn-seconds: 120
+      time-limit-seconds: 900
+      max-minions: 8
+    options: { contact-radius: 5.5 }
+    phases:
+      - name: "Awakened"
+        at: 1.0
+        abilities:
+          - { type: ground_slam, cooldown: 10, telegraph: 1.5, damage: 1.8, radius: 20, speed: 1.0 }
+          - { type: charge_dash, cooldown: 14, telegraph: 1.5, damage: 2.0, distance: 22, speed: 1.4 }
+      - name: "Overloaded"
+        at: 0.50
+        title: "<gold><bold>THE COLOSSUS OVERLOADS"
+        subtitle: "<gray>Sparks are flying!"
+        damage: 1.3
+        speed: 1.15
+        abilities:
+          - { type: ground_slam, cooldown: 8, telegraph: 1.2, damage: 2.0, radius: 24, speed: 1.2 }
+          - { type: lightning_strikes, cooldown: 12, telegraph: 1.3, damage: 1.6, target: all, count: 6 }
+          - { type: laser_beam, cooldown: 15, telegraph: 1.5, damage: 1.2, length: 40, duration: 4, target: top }
+    loot:
+      coins: 500000
+      combat-xp: 50000
+      rank-bonus: [1.5, 1.25, 1.1]
+      drops:
+        - { item: "custom:colossus_core", chance: 0.12, min: 1, max: 1, min-share: 0.05, pity: 0.01, pity-cap: 0.2 }
+        - { item: "vanilla:IRON_BLOCK", chance: 1.0, min: 4, max: 12, magic-find: false }
+
+  storm_roc:
+    kind: world
+    name: "<gradient:#7fdcff:#fff27f><bold>Storm Roc</bold></gradient>"
+    description: "A thunderbird that dives from the clouds. Everyone who fights shares the spoils."
+    entity: PHANTOM
+    health: 900000
+    damage: 12
+    scale: 5.0
+    speed: 1.1
+    knockback-resistance: 1.0
+    bar: { color: BLUE, overlay: NOTCHED_10 }
+    arena:
+      radius: 55
+      leash: 80
+      projectile-range: 64
+      min-players: 1
+      scale-per-player: 0.2
+      scale-cap: 6.0
+      enrage-seconds: 780
+      idle-despawn-seconds: 120
+      time-limit-seconds: 900
+      max-minions: 6
+    options: { contact-radius: 6 }
+    phases:
+      - name: "Gathering Storm"
+        at: 1.0
+        abilities:
+          - { type: dive_bomb, cooldown: 14, telegraph: 1.8, damage: 2.0, target: random, flat: false }
+          - { type: lightning_strikes, cooldown: 12, telegraph: 1.5, damage: 1.3, target: random, count: 4 }
+      - name: "Eye of the Storm"
+        at: 0.50
+        title: "<aqua><bold>THE STORM BREAKS"
+        subtitle: "<gray>Lightning everywhere!"
+        damage: 1.3
+        speed: 1.2
+        abilities:
+          - { type: dive_bomb, cooldown: 10, telegraph: 1.4, damage: 2.2, target: top, flat: false }
+          - { type: lightning_strikes, cooldown: 8, telegraph: 1.2, damage: 1.6, target: all, count: 7 }
+          - { type: vacuum, cooldown: 18, telegraph: 1.5, damage: 1.5, radius: 24, duration: 3 }
+    loot:
+      coins: 450000
+      combat-xp: 45000
+      rank-bonus: [1.5, 1.25, 1.1]
+      drops:
+        - { item: "custom:roc_feather", chance: 0.12, min: 1, max: 1, min-share: 0.05, pity: 0.01, pity-cap: 0.2 }
+        - { item: "vanilla:FEATHER", chance: 1.0, min: 16, max: 48, magic-find: false }
+
+# ------------------------------------------------------------------------------------------------------------
+# World boss events. The event picks a boss from the pool and a spot, warns everyone, spawns it, ranks the damagers.
+world-bosses:
+  enabled: true
+  interval-minutes: 120           # server uptime between two events
+  first-spawn-delay-minutes: 30   # delay before the first event after a fresh install
+  min-players: 1                  # players online in Skyblock worlds needed to start an event
+  announce-before-seconds: [300, 60, 10]
+  duration-minutes: 15            # the boss leaves after this long
+  retry-minutes: 5                # when too few players are online, check again after this long
+  leaderboard-size: 5
+  history-size: 10
+  # y: -999 means "x and z are offsets from the world spawn" (the island feature builds the hub around its spawn pad at
+  # 0, 14: the plaza has radius 26 around 0, 0). At spawn time the boss is placed on the highest solid block of the column
+  # with 10 free blocks above it; no ground means the event is retried. More spots: /worldboss addspot <name>.
+  locations:
+    - { world: sb_hub, x: 0, y: -999, z: -14, name: "Hub Plaza" }
+    - { world: sb_hub, x: 12, y: -999, z: -14, name: "Plaza Rim" }
+  pool:
+    - { boss: ancient_colossus, weight: 1.0 }
+    - { boss: storm_roc, weight: 1.0 }
+
+# ------------------------------------------------------------------------------------------------------------
+# Slayers: kill the matching mobs to fill the quest, pay coins, fight a personal boss (only its owner can hurt it).
+slayer-settings:
+  enabled: true
+  ignore-spawner-mobs: true
+  spawn-min-distance: 6
+  spawn-max-distance: 10
+  spawn-countdown-seconds: 3
+
+slayers:
+  zombie:
+    name: "Revenant Horror"
+    icon: ROTTEN_FLESH
+    description: "A rotting abomination that regenerates and calls its dead."
+    entity: ZOMBIE
+    targets: [ZOMBIE, ZOMBIE_VILLAGER, HUSK, DROWNED]
+    kill-xp: { default: 5, ZOMBIE_VILLAGER: 6, HUSK: 6 }
+    worlds: [sb_world, sb_nether, sb_end, sb_hub]
+    level-xp: [5, 15, 200, 1000, 5000, 20000, 100000, 400000, 1000000]
+    perks:
+      - { level: 1, stat: HEALTH, amount: 2 }
+      - { level: 2, stat: HEALTH, amount: 2 }
+      - { level: 3, stat: DEFENSE, amount: 1 }
+      - { level: 4, stat: HEALTH, amount: 3 }
+      - { level: 5, stat: DEFENSE, amount: 2 }
+      - { level: 6, stat: HEALTH, amount: 3 }
+      - { level: 7, stat: DEFENSE, amount: 2 }
+      - { level: 8, stat: HEALTH, amount: 4 }
+      - { level: 9, stat: DEFENSE, amount: 3 }
+    costs: [2000, 7500, 20000, 50000, 100000]
+    required-xp: [150, 1440, 2400, 7200, 28800]
+    health: [500, 20000, 400000, 1500000, 10000000]
+    damage: [4, 8, 12, 16, 22]
+    slayer-xp: [5, 25, 100, 500, 1500]
+    time-limit: [600, 600, 600, 600, 600]
+    coins: [0, 0, 0, 0, 0]
+    combat-xp: [200, 2500, 25000, 100000, 500000]
+    speed: [1.0, 1.0, 1.05, 1.1, 1.15]
+    scale: [1.1, 1.2, 1.3, 1.4, 1.6]
+    armor: [0, 0, 0, 0, 0]
+    unlock-level: [0, 0, 2, 4, 6]
+    bar: { color: GREEN, overlay: NOTCHED_10 }
+    equipment:
+      head: "LEATHER_HELMET:#3b5d2b"
+      chest: "LEATHER_CHESTPLATE:#2f4a22"
+      mainhand: "IRON_SWORD"
+    frenzy: { from-tier: 3, at: 0.4, damage: 1.25, speed: 1.2, title: "<red><bold>FRENZY", subtitle: "<gray>It is enraged!" }
+    abilities:
+      - { type: summon_minions, cooldown: 18, entity: ZOMBIE, count: 2, health: 40, radius: 5, name: "<green>Revenant Spawn", from-tier: 3 }
+      - { type: ground_slam, cooldown: 14, telegraph: 1.4, damage: 1.5, radius: 10, from-tier: 4 }
+      - { type: poison_cloud, cooldown: 16, telegraph: 1.3, damage: 0.8, count: 2, from-tier: 5 }
+    loot:
+      min-share: 0.0
+      share-floor: 1.0
+      drops:
+        - { item: "custom:revenant_flesh", chance: 1.0, min: 2, max: 6, magic-find: false }
+        - { item: "custom:revenant_catalyst", chance: 0.03, min: 1, max: 1, from-tier: 3, pity: 0.002, pity-cap: 0.06 }
+        - { item: "vanilla:ROTTEN_FLESH", chance: 1.0, min: 8, max: 24, magic-find: false }
+
+  spider:
+    name: "Tarantula Broodfather"
+    icon: SPIDER_EYE
+    description: "A venomous spider that climbs, pounces and webs."
+    entity: SPIDER
+    targets: [SPIDER, CAVE_SPIDER]
+    kill-xp: { default: 5, CAVE_SPIDER: 3 }
+    worlds: [sb_world, sb_nether, sb_end, sb_hub]
+    level-xp: [5, 25, 200, 1000, 5000, 20000, 100000, 400000, 1000000]
+    perks:
+      - { level: 1, stat: CRIT_DAMAGE, amount: 1 }
+      - { level: 2, stat: CRIT_CHANCE, amount: 1 }
+      - { level: 3, stat: CRIT_DAMAGE, amount: 2 }
+      - { level: 4, stat: CRIT_CHANCE, amount: 1 }
+      - { level: 5, stat: CRIT_DAMAGE, amount: 3 }
+      - { level: 6, stat: CRIT_CHANCE, amount: 1 }
+      - { level: 7, stat: CRIT_DAMAGE, amount: 4 }
+      - { level: 8, stat: CRIT_CHANCE, amount: 2 }
+      - { level: 9, stat: CRIT_DAMAGE, amount: 5 }
+    costs: [2000, 7500, 20000, 50000, 100000]
+    required-xp: [100, 500, 1500, 5000, 20000]
+    health: [750, 30000, 900000, 2400000, 10000000]
+    damage: [4, 8, 12, 16, 22]
+    slayer-xp: [5, 25, 100, 500, 1500]
+    time-limit: [600, 600, 600, 600, 600]
+    coins: [0, 0, 0, 0, 0]
+    combat-xp: [250, 3000, 30000, 120000, 600000]
+    speed: [1.0, 1.05, 1.1, 1.15, 1.2]
+    scale: [1.5, 1.8, 2.0, 2.4, 2.8]
+    armor: [0, 0, 0, 0, 0]
+    unlock-level: [0, 0, 2, 4, 6]
+    bar: { color: PURPLE, overlay: NOTCHED_10 }
+    frenzy: { from-tier: 3, at: 0.35, damage: 1.25, speed: 1.25, title: "<red><bold>FRENZY", subtitle: "<gray>It is enraged!" }
+    abilities:
+      - { type: web_traps, cooldown: 12, telegraph: 1.2, damage: 0.8, count: 2, from-tier: 2 }
+      - { type: teleport_behind, cooldown: 14, telegraph: 1.0, damage: 1.8, from-tier: 4 }
+      - { type: summon_minions, cooldown: 16, entity: CAVE_SPIDER, count: 3, health: 30, radius: 5, name: "<green>Spiderling", from-tier: 5 }
+    loot:
+      min-share: 0.0
+      share-floor: 1.0
+      drops:
+        - { item: "custom:tarantula_web", chance: 1.0, min: 2, max: 6, magic-find: false }
+        - { item: "custom:tarantula_charm", chance: 0.03, min: 1, max: 1, from-tier: 3, pity: 0.002, pity-cap: 0.06 }
+        - { item: "vanilla:STRING", chance: 1.0, min: 8, max: 24, magic-find: false }
+
+  wolf:
+    name: "Sven Packmaster"
+    icon: BONE
+    description: "An alpha wolf that hunts fast and calls the pack."
+    entity: WOLF
+    targets: [WOLF]
+    kill-xp: { default: 6 }
+    worlds: [sb_world, sb_hub]
+    level-xp: [5, 30, 250, 1500, 5000, 20000, 100000, 400000, 1000000]
+    perks:
+      - { level: 1, stat: SPEED, amount: 1 }
+      - { level: 2, stat: HEALTH, amount: 2 }
+      - { level: 3, stat: SPEED, amount: 1 }
+      - { level: 4, stat: HEALTH, amount: 3 }
+      - { level: 5, stat: SPEED, amount: 2 }
+      - { level: 6, stat: HEALTH, amount: 3 }
+      - { level: 7, stat: SPEED, amount: 2 }
+      - { level: 8, stat: HEALTH, amount: 4 }
+      - { level: 9, stat: SPEED, amount: 3 }
+    costs: [2000, 7500, 20000, 50000, 100000]
+    required-xp: [150, 750, 2000, 7000, 28000]
+    health: [2000, 40000, 750000, 2000000, 10000000]
+    damage: [4, 8, 12, 16, 22]
+    slayer-xp: [5, 25, 100, 500, 1500]
+    time-limit: [600, 600, 600, 600, 600]
+    coins: [0, 0, 0, 0, 0]
+    combat-xp: [300, 3500, 35000, 140000, 700000]
+    speed: [1.1, 1.2, 1.3, 1.4, 1.5]
+    scale: [1.6, 1.8, 2.0, 2.3, 2.6]
+    armor: [0, 0, 0, 0, 0]
+    unlock-level: [0, 0, 2, 4, 6]
+    bar: { color: WHITE, overlay: NOTCHED_10 }
+    options: { contact-radius: 3.2 }
+    frenzy: { from-tier: 3, at: 0.35, damage: 1.3, speed: 1.2, title: "<red><bold>FRENZY", subtitle: "<gray>It is enraged!" }
+    abilities:
+      - { type: charge_dash, cooldown: 12, telegraph: 1.1, damage: 1.5, distance: 14, speed: 1.5, from-tier: 2 }
+      - { type: summon_minions, cooldown: 18, entity: WOLF, count: 2, health: 40, radius: 5, name: "<gray>Pack Wolf", from-tier: 3 }
+      - { type: teleport_behind, cooldown: 14, telegraph: 0.9, damage: 1.8, from-tier: 4 }
+    loot:
+      min-share: 0.0
+      share-floor: 1.0
+      drops:
+        - { item: "custom:ravager_tooth", chance: 1.0, min: 2, max: 6, magic-find: false }
+        - { item: "custom:ravager_pelt", chance: 0.03, min: 1, max: 1, from-tier: 3, pity: 0.002, pity-cap: 0.06 }
+        - { item: "vanilla:BONE", chance: 1.0, min: 8, max: 24, magic-find: false }
+
+  enderman:
+    name: "Voidgloom Seraph"
+    icon: ENDER_PEARL
+    description: "A towering enderman that blinks behind you and bends the void."
+    entity: ENDERMAN
+    targets: [ENDERMAN]
+    kill-xp: { default: 8 }
+    worlds: [sb_end]
+    level-xp: [10, 30, 250, 1500, 5000, 20000, 100000, 400000, 1000000]
+    perks:
+      - { level: 1, stat: INTELLIGENCE, amount: 1 }
+      - { level: 2, stat: HEALTH, amount: 2 }
+      - { level: 3, stat: INTELLIGENCE, amount: 2 }
+      - { level: 4, stat: HEALTH, amount: 3 }
+      - { level: 5, stat: INTELLIGENCE, amount: 3 }
+      - { level: 6, stat: HEALTH, amount: 3 }
+      - { level: 7, stat: INTELLIGENCE, amount: 4 }
+      - { level: 8, stat: HEALTH, amount: 4 }
+      - { level: 9, stat: INTELLIGENCE, amount: 5 }
+    costs: [2000, 7500, 20000, 50000, 100000]
+    required-xp: [100, 1000, 3000, 12000, 50000]
+    health: [300000, 1500000, 5000000, 12000000, 40000000]
+    damage: [5, 10, 14, 18, 24]
+    slayer-xp: [5, 25, 100, 500, 1500]
+    time-limit: [600, 600, 600, 600, 600]
+    coins: [0, 0, 0, 0, 0]
+    combat-xp: [500, 5000, 40000, 160000, 800000]
+    speed: [1.0, 1.05, 1.1, 1.15, 1.2]
+    scale: [1.3, 1.5, 1.7, 1.9, 2.2]
+    armor: [0, 0, 0, 0, 0]
+    unlock-level: [0, 0, 2, 4, 6]
+    bar: { color: PURPLE, overlay: NOTCHED_10 }
+    frenzy: { from-tier: 3, at: 0.4, damage: 1.25, speed: 1.2, title: "<red><bold>FRENZY", subtitle: "<gray>It is enraged!" }
+    abilities:
+      - { type: teleport_behind, cooldown: 11, telegraph: 1.0, damage: 1.6 }
+      - { type: void_zones, cooldown: 15, telegraph: 1.3, damage: 0.8, count: 2, from-tier: 3 }
+      - { type: vacuum, cooldown: 20, telegraph: 1.5, damage: 1.2, radius: 16, duration: 2.5, from-tier: 5 }
+    loot:
+      min-share: 0.0
+      share-floor: 1.0
+      drops:
+        - { item: "custom:null_sphere", chance: 1.0, min: 2, max: 6, magic-find: false }
+        - { item: "custom:void_conduit", chance: 0.03, min: 1, max: 1, from-tier: 3, pity: 0.002, pity-cap: 0.06 }
+        - { item: "vanilla:ENDER_PEARL", chance: 1.0, min: 2, max: 8, magic-find: false }
+
+  blaze:
+    name: "Demonlord Inferno"
+    icon: BLAZE_POWDER
+    description: "A blaze demon that rains fire and wreathes itself in flame."
+    entity: BLAZE
+    targets: [BLAZE]
+    kill-xp: { default: 8 }
+    worlds: [sb_nether]
+    level-xp: [10, 30, 250, 1500, 5000, 20000, 100000, 400000, 1000000]
+    perks:
+      - { level: 1, stat: STRENGTH, amount: 1 }
+      - { level: 2, stat: HEALTH, amount: 2 }
+      - { level: 3, stat: STRENGTH, amount: 2 }
+      - { level: 4, stat: HEALTH, amount: 3 }
+      - { level: 5, stat: STRENGTH, amount: 3 }
+      - { level: 6, stat: HEALTH, amount: 3 }
+      - { level: 7, stat: STRENGTH, amount: 4 }
+      - { level: 8, stat: HEALTH, amount: 4 }
+      - { level: 9, stat: STRENGTH, amount: 5 }
+    costs: [2000, 7500, 20000, 50000, 100000]
+    required-xp: [150, 1500, 4000, 15000, 60000]
+    health: [600000, 2400000, 6000000, 15000000, 50000000]
+    damage: [5, 10, 14, 18, 24]
+    slayer-xp: [5, 25, 100, 500, 1500]
+    time-limit: [600, 600, 600, 600, 600]
+    coins: [0, 0, 0, 0, 0]
+    combat-xp: [600, 6000, 45000, 180000, 900000]
+    speed: [1.0, 1.05, 1.1, 1.15, 1.2]
+    scale: [1.4, 1.6, 1.8, 2.1, 2.4]
+    armor: [0, 0, 0, 0, 0]
+    unlock-level: [0, 0, 2, 4, 6]
+    bar: { color: RED, overlay: NOTCHED_10 }
+    frenzy: { from-tier: 3, at: 0.4, damage: 1.25, speed: 1.2, title: "<red><bold>FRENZY", subtitle: "<gray>It is enraged!" }
+    abilities:
+      - { type: fireball_barrage, cooldown: 10, telegraph: 1.0, damage: 1.0, count: 4 }
+      - { type: fire_ring, cooldown: 14, telegraph: 1.2, damage: 1.4, gap: 60, from-tier: 3 }
+      - { type: lava_pools, cooldown: 16, telegraph: 1.3, damage: 0.8, count: 2, from-tier: 4 }
+    loot:
+      min-share: 0.0
+      share-floor: 1.0
+      drops:
+        - { item: "custom:demon_ember", chance: 1.0, min: 2, max: 6, magic-find: false }
+        - { item: "custom:demon_core", chance: 0.03, min: 1, max: 1, from-tier: 3, pity: 0.002, pity-cap: 0.06 }
+        - { item: "vanilla:BLAZE_ROD", chance: 1.0, min: 4, max: 12, magic-find: false }
+
+# ------------------------------------------------------------------------------------------------------------
+# Extra drops of vanilla mobs (summon items). chance is per kill in (0, 1]; Magic Find boosts it unless magic-find: false.
+mob-drops:
+  - { item: void_sigil, entities: [ENDERMAN], worlds: [sb_end], chance: 0.0015 }
+  - { item: magma_core, entities: [MAGMA_CUBE, BLAZE], worlds: [sb_nether], chance: 0.0012 }
+  - { item: frost_heart, entities: [STRAY], chance: 0.0015 }
+  - { item: matriarch_egg, entities: [SPIDER, CAVE_SPIDER], chance: 0.0008 }
+  - { item: leviathan_scale, entities: [ELDER_GUARDIAN, GUARDIAN, DROWNED], chance: 0.0012 }
+
+# ------------------------------------------------------------------------------------------------------------
+# Crafting recipes of the summon items. OFF by default: a wither farm makes Nether Stars without limit, which would turn
+# every kill payout into an endless faucet (the repeat damper in settings softens it). Turn one on with enabled: true.
+recipes:
+  void_sigil:
+    enabled: false
+    shape: ["EDE", "DND", "EDE"]
+    ingredients: { E: ENDER_EYE, D: DRAGON_BREATH, N: NETHER_STAR }
+  magma_core:
+    enabled: false
+    shape: ["MBM", "BNB", "MBM"]
+    ingredients: { M: MAGMA_BLOCK, B: BLAZE_ROD, N: NETHER_STAR }
+  frost_heart:
+    enabled: false
+    shape: ["BIB", "INI", "BIB"]
+    ingredients: { B: BLUE_ICE, I: PACKED_ICE, N: NETHER_STAR }
+  matriarch_egg:
+    enabled: false
+    shape: ["SFS", "FNF", "SFS"]
+    ingredients: { S: STRING, F: FERMENTED_SPIDER_EYE, N: NETHER_STAR }
+  leviathan_scale:
+    enabled: false
+    shape: ["PHP", "HNH", "PHP"]
+    ingredients: { P: PRISMARINE_SHARD, H: HEART_OF_THE_SEA, N: NETHER_STAR }
+
+# ------------------------------------------------------------------------------------------------------------
+# Optional display overrides of boss items: items.<id>.name / lore (MiniMessage). Needs a restart.
+items: {}
