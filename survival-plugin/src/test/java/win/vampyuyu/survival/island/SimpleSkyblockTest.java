@@ -60,6 +60,26 @@ public class SimpleSkyblockTest {
     private void save(Location at, PlayerSetSpawnEvent.Cause cause) {
         plugin.core().modes().onSetSpawn(new PlayerSetSpawnEvent(player,cause,at,false,false,Component.empty()));
     }
+    @Test public void inventoriesAreSeparatePerMode() {
+        player.teleport(survival.getSpawnLocation());
+        player.getInventory().addItem(new org.bukkit.inventory.ItemStack(Material.DIAMOND,3));
+        player.getEnderChest().addItem(new org.bukkit.inventory.ItemStack(Material.GOLD_INGOT,2));
+        player.setLevel(7);
+        assertTrue(plugin.core().modes().enterIsland(player));
+        assertEquals(sky,player.getWorld());
+        assertFalse(player.getInventory().contains(Material.DIAMOND));
+        assertFalse(player.getEnderChest().contains(Material.GOLD_INGOT));
+        assertEquals(0,player.getLevel());
+        player.getInventory().addItem(new org.bukkit.inventory.ItemStack(Material.DIRT,5));
+        assertTrue(plugin.core().modes().enterSurvival(player));
+        assertTrue(player.getInventory().contains(Material.DIAMOND));
+        assertFalse(player.getInventory().contains(Material.DIRT));
+        assertTrue(player.getEnderChest().contains(Material.GOLD_INGOT));
+        assertEquals(7,player.getLevel());
+        assertTrue(plugin.core().modes().enterIsland(player));
+        assertTrue(player.getInventory().contains(Material.DIRT));
+        assertFalse(player.getInventory().contains(Material.DIAMOND));
+    }
     @Test public void onlyTwoSkyblockWorldsAndNoProgressionFeatures() {
         assertNull(server.getWorld(SkyblockWorlds.HUB));
         assertNull(server.getWorld(SkyblockWorlds.END));

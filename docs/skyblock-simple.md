@@ -15,3 +15,5 @@ The old world names remain classified as Skyblock for isolation, even though the
 `make plugin-test PLUGIN=survival` and `make plugin-test PLUGIN=network` run the unit and compatibility suites. `SimpleSkyblockTest` covers personal ownership plus membership, world setup, portal events in both directions, independent beds and profile persistence, native respawn restoration, safe fallbacks and explicit mode entry.
 
 `python3 scripts/e2e_client.py --scenario skyblock --keep` runs the real offline client on an isolated Paper instance and captures screenshots. `scripts/e2e_skyblock_roundtrip.py` extends this disposable fixture with two real clients, physical portals, deaths in each dimension and graceful server restarts. These scripts bind the test server to loopback and do not use the active stack or real player data. The test fixtures live under ignored `.e2e/`.
+
+Inventories are separate per mode: `ModeTravel` stashes items, ender chest, XP, health and food in the profile (`mode_inventories`) on every Skyblock/Survival crossing. The inventory that existed before the split stays with the mode the player was in; the other mode starts empty.

@@ -37,6 +37,22 @@ public final class ModeTravel implements Listener {
         public String kind;
         public boolean forced;
     }
+    /** One saved player state per mode: Skyblock and Survival never share items, ender chest, XP or health. */
+    public static final class Stash {
+        public String inventory;
+        public String enderChest;
+        public int level;
+        public float exp;
+        public double health = 20;
+        public int food = 20;
+        public float saturation = 5;
+    }
+    public static final class Stashes {
+        public Stash skyblock;
+        public Stash survival;
+        /** Mode the live inventory currently belongs to (null = never recorded). */
+        public String live;
+    }
     private final Core core;
     private final Set<UUID> crossing = new HashSet<>();
     private final Set<UUID> restoringSpawn = new HashSet<>();
@@ -162,6 +178,12 @@ public final class ModeTravel implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        Stashes stashes = core.profiles().section(player.getUniqueId(), "mode_inventories", Stashes.class, Stashes::new);
+        if (stashes.live == null) {
+            // The shared pre-split inventory stays with the mode the player logs into.
+            stashes.live = sky(player.getWorld()) ? "skyblock" : "survival";
+            core.profiles().markDirty(player.getUniqueId());
+        }
         Points points = points(player);
         if (!points.imported) {
             // Preserve the one pre-upgrade vanilla point in the mode its WORLD belongs to.
@@ -204,7 +226,64 @@ public final class ModeTravel implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldChange(org.bukkit.event.player.PlayerChangedWorldEvent event) {
+        swapInventory(event.getPlayer(), sky(event.getPlayer().getWorld()));
         rememberMode(event.getPlayer(), sky(event.getPlayer().getWorld()));
+    }
+
+    private static String encode(org.bukkit.inventory.ItemStack[] items) {
+        return java.util.Base64.getEncoder().encodeToString(org.bukkit.inventory.ItemStack.serializeItemsAsBytes(items));
+    }
+    private static org.bukkit.inventory.ItemStack[] decode(String data) {
+        return data == null ? new org.bukkit.inventory.ItemStack[0]
+            : org.bukkit.inventory.ItemStack.deserializeItemsFromBytes(java.util.Base64.getDecoder().decode(data));
+    }
+
+    /** Puts the live state in the stash of the mode it belongs to and loads the other mode's stash (empty the first time). */
+    void swapInventory(Player player, boolean skyblock) {
+        Stashes stashes = core.profiles().section(player.getUniqueId(), "mode_inventories", Stashes.class, Stashes::new);
+        String target = skyblock ? "skyblock" : "survival";
+        if (stashes.live == null) {
+            // The shared pre-split inventory stays with the mode the player is in right now.
+            stashes.live = target;
+            core.profiles().markDirty(player.getUniqueId());
+            return;
+        }
+        if (stashes.live.equals(target)) return;
+        Stash out = new Stash();
+        out.inventory = encode(player.getInventory().getContents());
+        out.enderChest = encode(player.getEnderChest().getContents());
+        out.level = player.getLevel();
+        out.exp = player.getExp();
+        out.health = player.getHealth();
+        out.food = player.getFoodLevel();
+        out.saturation = player.getSaturation();
+        if (skyblock) stashes.survival = out; else stashes.skyblock = out;
+        Stash in = skyblock ? stashes.skyblock : stashes.survival;
+        var inventory = player.getInventory();
+        inventory.clear();
+        player.getEnderChest().clear();
+        if (in == null) {
+            player.setLevel(0);
+            player.setExp(0);
+            player.setFoodLevel(20);
+            player.setSaturation(5);
+            var max = player.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+            player.setHealth(max == null ? 20 : max.getValue());
+        } else {
+            var contents = decode(in.inventory);
+            for (int i = 0; i < contents.length && i < inventory.getSize(); i++) inventory.setItem(i, contents[i]);
+            var ender = decode(in.enderChest);
+            for (int i = 0; i < ender.length && i < player.getEnderChest().getSize(); i++) player.getEnderChest().setItem(i, ender[i]);
+            player.setLevel(in.level);
+            player.setExp(in.exp);
+            player.setFoodLevel(in.food);
+            player.setSaturation(in.saturation);
+            var max = player.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+            player.setHealth(Math.max(1, Math.min(in.health, max == null ? 20 : max.getValue())));
+        }
+        stashes.live = target;
+        core.profiles().markDirty(player.getUniqueId());
+        core.profiles().saveDirty(); // the stash must reach the disk before the world's player data can
     }
 
     @EventHandler
