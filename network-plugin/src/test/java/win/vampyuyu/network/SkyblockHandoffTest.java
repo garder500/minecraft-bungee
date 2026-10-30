@@ -35,6 +35,7 @@ public class SkyblockHandoffTest {
         @Override
         public void del(String key) {
             if (failing) throw new IllegalStateException("redis down");
+            if (timeline != null) timeline.add("DEL");
             calls.add("DEL " + key);
         }
 

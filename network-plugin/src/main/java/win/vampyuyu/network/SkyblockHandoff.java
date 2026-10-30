@@ -10,6 +10,7 @@ import java.util.logging.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 import redis.clients.jedis.DefaultJedisClientConfig;
@@ -29,7 +30,11 @@ import redis.clients.jedis.JedisPool;
 final class SkyblockHandoff implements AutoCloseable {
     static final String KEY_PREFIX = "sb:transfer:";
     static final int TTL_SECONDS = 30;
-    /** Incoming plugin channel the survival plugin can listen on for the same-server case. */
+    /**
+     * Incoming plugin channel the survival plugin can listen on for the same-server case. CLIENT-REACHABLE: Paper
+     * delivers a custom payload a player sends to any registered listener. A listener must only act when the player's
+     * metadata of this name holds the {@code nonce} of the payload (see {@link #notifyLocal}).
+     */
     static final String CHANNEL = "vampyuyu:skyblock";
     private static final int PING_PERIOD_TICKS = 20 * 30;
 
@@ -68,7 +73,21 @@ final class SkyblockHandoff implements AutoCloseable {
 
     /** The body of the key: exactly this shape is the contract with the survival plugin. */
     static String payload(long epochMillis) {
-        return "{\"dest\":\"skyblock\",\"ts\":" + epochMillis + "}";
+        return payload(epochMillis, "skyblock");
+    }
+
+    /** Same, with a landing: {@code skyblock} (the survival side decides), {@code island} or {@code hub}. */
+    static String payload(long epochMillis, String dest) {
+        return "{\"dest\":\"" + dest + "\",\"ts\":" + epochMillis + "}";
+    }
+
+    /**
+     * The body of a same-server channel message: the key's body plus a {@code nonce}. The nonce is ALSO set as the
+     * player's metadata {@link #CHANNEL} during the dispatch, which a client cannot do, so a listener can tell a real
+     * request from a payload forged by a modified client.
+     */
+    static String channelPayload(long epochMillis, String dest, String nonce) {
+        return "{\"dest\":\"" + dest + "\",\"ts\":" + epochMillis + ",\"nonce\":\"" + nonce + "\"}";
     }
 
     /** True when the player's Skyblock request can be routed (Redis configured and, as far as known, reachable). */
@@ -83,9 +102,14 @@ final class SkyblockHandoff implements AutoCloseable {
 
     /** Blocking. Writes the key with its 30 s TTL; false (and {@link #available()} false) when Redis fails. */
     boolean write(UUID player, long epochMillis) {
+        return write(player, epochMillis, "skyblock");
+    }
+
+    /** Blocking, as {@link #write(UUID, long)} with a landing. */
+    boolean write(UUID player, long epochMillis, String dest) {
         if (store == null) return false;
         try {
-            store.setex(key(player), TTL_SECONDS, payload(epochMillis));
+            store.setex(key(player), TTL_SECONDS, payload(epochMillis, dest));
             markUp();
             return true;
         } catch (RuntimeException failure) {
@@ -139,18 +163,31 @@ final class SkyblockHandoff implements AutoCloseable {
     }
 
     /**
-     * Same-server request (the player is already on the survival server). Main thread. Tries the registered
-     * {@link SkyblockGateway}, then listeners of {@link #CHANNEL}; the channel message carries the same JSON body.
+     * Same-server request (the player is already on the survival server). Main thread.
+     *
+     * <p>Skyblock-wide requests ({@code dest} = {@code skyblock}) try the registered {@link SkyblockGateway} first (it
+     * has no landing parameter). Then the incoming channel {@link #CHANNEL}: Paper hands a payload that a CLIENT sends
+     * to the same listeners, so the message is only trustworthy together with the player metadata {@link #CHANNEL}
+     * that is set for the duration of the (synchronous) dispatch and holds the {@code nonce} of the payload.
      */
-    Local notifyLocal(Player player, String payload) {
-        try {
-            RegisteredServiceProvider<SkyblockGateway> gateway = Bukkit.getServicesManager().getRegistration(SkyblockGateway.class);
-            if (gateway != null && gateway.getProvider().sendToSkyblock(player)) return Local.GATEWAY;
-        } catch (RuntimeException | LinkageError failure) {
-            plugin.getLogger().log(Level.WARNING, "SkyblockGateway failed", failure);
+    Local notifyLocal(Player player, String dest, long epochMillis) {
+        if ("skyblock".equals(dest)) {
+            try {
+                RegisteredServiceProvider<SkyblockGateway> gateway = Bukkit.getServicesManager().getRegistration(SkyblockGateway.class);
+                if (gateway != null && gateway.getProvider().sendToSkyblock(player)) return Local.GATEWAY;
+            } catch (RuntimeException | LinkageError failure) {
+                plugin.getLogger().log(Level.WARNING, "SkyblockGateway failed", failure);
+            }
         }
         if (!Bukkit.getMessenger().getIncomingChannelRegistrations(CHANNEL).isEmpty()) {
-            Bukkit.getMessenger().dispatchIncomingMessage(player, CHANNEL, payload.getBytes(StandardCharsets.UTF_8));
+            String nonce = UUID.randomUUID().toString();
+            player.setMetadata(CHANNEL, new FixedMetadataValue(plugin, nonce));
+            try {
+                Bukkit.getMessenger().dispatchIncomingMessage(player, CHANNEL,
+                        channelPayload(epochMillis, dest, nonce).getBytes(StandardCharsets.UTF_8));
+            } finally {
+                player.removeMetadata(CHANNEL, plugin);
+            }
             return Local.CHANNEL;
         }
         return Local.NONE;

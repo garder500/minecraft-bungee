@@ -99,6 +99,7 @@ public final class NetworkDisplay extends JavaPlugin implements Listener {
         MenuPack pack = MenuPack.load(this);
         if (pack != null) getServer().getPluginManager().registerEvents(pack, this);
         selector = new WorldSelector(this, pack, server);
+        selector.online(() -> networkOnline);
         vault = new MenuVault(this);
         try { new CommunityFeatures(this, server, bridge, token, pack, vault); }
         catch (Exception e) {

@@ -145,18 +145,56 @@ public class SkyblockRouteTest {
     }
 
     @Test
-    public void onSurvivalTheRequestGoesToTheChannelListenerWithTheSamePayload() {
+    public void onSurvivalTheRequestGoesToTheChannelListenerWithTheNonceAndNoRedis() {
         List<String> received = new ArrayList<>();
-        PluginMessageListener listener = (channel, player, message) ->
-                received.add(channel + "|" + player.getName() + "|" + new String(message, StandardCharsets.UTF_8));
+        PluginMessageListener listener = (channel, player, message) -> {
+            String body = new String(message, StandardCharsets.UTF_8);
+            boolean trusted = player.getMetadata(SkyblockHandoff.CHANNEL).stream()
+                    .anyMatch(value -> body.contains("\"nonce\":\"" + value.asString() + "\""));
+            received.add(channel + "|" + player.getName() + "|" + trusted + "|" + body);
+        };
         Bukkit.getMessenger().registerIncomingPluginChannel(plugin, SkyblockHandoff.CHANNEL, listener);
         SkyblockRoute route = new SkyblockRoute(plugin, "survival", new SkyblockHandoff(plugin, store, null));
-        route.go(join("alex"));
-        settle();
+        Recorder player = join("alex");
+        route.go(player);
         assertEquals(1, received.size());
-        assertTrue(received.get(0), received.get(0).startsWith("vampyuyu:skyblock|alex|{\"dest\":\"skyblock\",\"ts\":"));
+        assertTrue(received.get(0), received.get(0).startsWith("vampyuyu:skyblock|alex|true|{\"dest\":\"skyblock\",\"ts\":"));
+        assertTrue(received.get(0), received.get(0).contains("\"nonce\":\""));
         assertFalse("a same-server connect would do nothing", events.contains("BungeeCord:Connect:survival"));
-        assertFalse("the key stays for the listener to consume", store.calls.stream().anyMatch(c -> c.startsWith("DEL")));
+        assertTrue("no Redis on the same server", store.calls.isEmpty());
+        assertTrue("the metadata only lives during the dispatch", player.getMetadata(SkyblockHandoff.CHANNEL).isEmpty());
+    }
+
+    @Test
+    public void aPayloadForgedByAClientHasNoMetadataSoAListenerCanRejectIt() {
+        List<String> trusted = new ArrayList<>();
+        Bukkit.getMessenger().registerIncomingPluginChannel(plugin, SkyblockHandoff.CHANNEL, (channel, player, message) -> {
+            String body = new String(message, StandardCharsets.UTF_8);
+            if (player.getMetadata(SkyblockHandoff.CHANNEL).stream().anyMatch(v -> body.contains(v.asString()))) trusted.add(body);
+        });
+        Recorder cheater = join("mallory");
+        // exactly what Paper does with a packet a modified client sent on the channel
+        Bukkit.getMessenger().dispatchIncomingMessage(cheater, SkyblockHandoff.CHANNEL,
+                SkyblockHandoff.channelPayload(System.currentTimeMillis(), "island", "guess").getBytes(StandardCharsets.UTF_8));
+        assertTrue(trusted.isEmpty());
+        SkyblockRoute route = new SkyblockRoute(plugin, "survival", new SkyblockHandoff(plugin, store, null));
+        route.go(join("alex"));
+        assertEquals("only the real request is trusted", 1, trusted.size());
+    }
+
+    @Test
+    public void theLandingIsCarriedToTheChannelAndTheGatewayOnlyServesSkyblockWide() {
+        List<String> used = new ArrayList<>();
+        server.getServicesManager().register(SkyblockGateway.class, player -> used.add("gateway") || true,
+                plugin, ServicePriority.Normal);
+        Bukkit.getMessenger().registerIncomingPluginChannel(plugin, SkyblockHandoff.CHANNEL,
+                (channel, player, message) -> used.add(new String(message, StandardCharsets.UTF_8)));
+        SkyblockRoute route = new SkyblockRoute(plugin, "survival", new SkyblockHandoff(plugin, store, null));
+        route.go(join("alex"), SkyblockRoute.Dest.HUB);
+        route.go(join("bea"), SkyblockRoute.Dest.SKYBLOCK);
+        assertEquals(2, used.size());
+        assertTrue(used.get(0), used.get(0).startsWith("{\"dest\":\"hub\","));
+        assertEquals("gateway", used.get(1));
     }
 
     @Test
@@ -168,7 +206,6 @@ public class SkyblockRouteTest {
                 (channel, player, message) -> used.add("channel"));
         SkyblockRoute route = new SkyblockRoute(plugin, "survival", new SkyblockHandoff(plugin, store, null));
         route.go(join("alex"));
-        settle();
         assertEquals(List.of("gateway:alex"), used);
     }
 
@@ -179,7 +216,7 @@ public class SkyblockRouteTest {
         Bukkit.getMessenger().registerIncomingPluginChannel(plugin, SkyblockHandoff.CHANNEL,
                 (channel, player, message) -> used.add("channel"));
         SkyblockHandoff handoff = new SkyblockHandoff(plugin, store, null);
-        assertEquals(SkyblockHandoff.Local.CHANNEL, handoff.notifyLocal(join("alex"), SkyblockHandoff.payload(1)));
+        assertEquals(SkyblockHandoff.Local.CHANNEL, handoff.notifyLocal(join("alex"), "skyblock", 1));
         assertEquals(List.of("channel"), used);
     }
 
@@ -189,17 +226,16 @@ public class SkyblockRouteTest {
             throw new IllegalStateException("boom");
         }, plugin, ServicePriority.Normal);
         SkyblockHandoff handoff = new SkyblockHandoff(plugin, store, null);
-        assertEquals(SkyblockHandoff.Local.NONE, handoff.notifyLocal(join("alex"), SkyblockHandoff.payload(1)));
+        assertEquals(SkyblockHandoff.Local.NONE, handoff.notifyLocal(join("alex"), "skyblock", 1));
     }
 
     @Test
-    public void onSurvivalWithNobodyListeningTheKeyIsRemovedAndThePlayerStaysPut() {
+    public void onSurvivalWithNobodyListeningThePlayerStaysPutAndIsToldWithoutTouchingRedis() {
         SkyblockRoute route = new SkyblockRoute(plugin, "survival", new SkyblockHandoff(plugin, store, null));
         Recorder player = join("alex");
         route.go(player);
-        settle();
         assertFalse(events.contains("BungeeCord:Connect:survival"));
-        assertTrue(store.calls.contains("DEL sb:transfer:" + player.getUniqueId()));
+        assertTrue(store.calls.isEmpty());
         boolean told = false;
         Component message;
         while ((message = player.nextComponentMessage()) != null) told |= plain(message).contains("not ready");
@@ -214,8 +250,103 @@ public class SkyblockRouteTest {
                 (channel, player, message) -> received.add(player.getName()));
         SkyblockRoute route = new SkyblockRoute(plugin, "survival", new SkyblockHandoff(plugin, store, null));
         route.go(join("alex"));
-        settle();
         assertEquals(List.of("alex"), received);
+    }
+
+    // ---- stale keys: a plain card clears a pending Skyblock key before it connects ----------------------------------
+
+    @Test
+    public void survivalCardDeletesTheKeyBeforeTheConnect() {
+        store.timeline = events;
+        SkyblockRoute route = new SkyblockRoute(plugin, "lobby", new SkyblockHandoff(plugin, store, null));
+        Recorder player = join("alex");
+        route.go(player);
+        settle();
+        route.leave(player, "survival", "Survival");
+        settle();
+        assertEquals(List.of("SETEX", "BungeeCord:Connect:survival", "DEL", "BungeeCord:Connect:survival"), events);
+        assertTrue(store.calls.contains("DEL sb:transfer:" + player.getUniqueId()));
+    }
+
+    @Test
+    public void leavingWithRedisKnownDownConnectsAtOnceWithoutADelete() {
+        SkyblockRoute route = new SkyblockRoute(plugin, "lobby", new SkyblockHandoff(plugin, null, "no redis"));
+        route.leave(join("alex"), "creative", "Creative");
+        assertEquals("no waiting for a timeout", List.of("BungeeCord:Connect:creative"), events);
+    }
+
+    @Test
+    public void leavingStillConnectsWhenTheDeleteFails() {
+        store.failing = true;
+        SkyblockRoute route = new SkyblockRoute(plugin, "lobby", new SkyblockHandoff(plugin, store, null));
+        route.leave(join("alex"), "survival", "Survival");
+        settle();
+        assertEquals(List.of("BungeeCord:Connect:survival"), events);
+    }
+
+    @Test
+    public void skyblockThenSurvivalClicksNeverRunTwoRequestsAtOnce() {
+        store.timeline = events;
+        SkyblockRoute route = new SkyblockRoute(plugin, "lobby", new SkyblockHandoff(plugin, store, null));
+        Recorder player = join("alex");
+        route.go(player);
+        route.leave(player, "survival", "Survival"); // the first request is still in flight: ignored
+        settle();
+        assertEquals("no DEL may overtake the SETEX", List.of("SETEX", "BungeeCord:Connect:survival"), events);
+        assertTrue(store.calls.stream().noneMatch(call -> call.startsWith("DEL")));
+    }
+
+    @Test
+    public void aKnownDownRedisSkipsTheWriteSoThePlayerDoesNotWaitForATimeout() {
+        SkyblockRoute route = new SkyblockRoute(plugin, "lobby", new SkyblockHandoff(plugin, null, "no redis"));
+        route.go(join("alex"));
+        assertEquals(List.of("BungeeCord:Connect:survival"), events);
+    }
+
+    @Test
+    public void theCooldownAppliesAfterTheRequestFinishes() {
+        SkyblockRoute route = new SkyblockRoute(plugin, "lobby", new SkyblockHandoff(plugin, store, null), 60_000);
+        Recorder player = join("alex");
+        route.go(player);
+        settle();
+        route.go(player);
+        route.leave(player, "survival", "Survival");
+        settle();
+        assertEquals(List.of("SETEX", "BungeeCord:Connect:survival"), events);
+        route.forget(player.getUniqueId()); // a relog starts fresh
+        route.go(player);
+        settle();
+        assertEquals(4, events.size());
+    }
+
+    @Test
+    public void theLandingIsWrittenIntoTheKey() {
+        SkyblockRoute route = new SkyblockRoute(plugin, "lobby", new SkyblockHandoff(plugin, store, null));
+        Recorder player = join("alex");
+        route.go(player, SkyblockRoute.Dest.ISLAND);
+        settle();
+        assertTrue(store.calls.get(0), store.calls.get(0).contains("{\"dest\":\"island\",\"ts\":"));
+    }
+
+    // ---- click types and the /menu arguments ---------------------------------------------------------------------
+
+    @Test
+    public void clickTypesMapToLandings() {
+        assertEquals(SkyblockRoute.Dest.SKYBLOCK, WorldSelector.destFor(org.bukkit.event.inventory.ClickType.LEFT));
+        assertEquals(SkyblockRoute.Dest.ISLAND, WorldSelector.destFor(org.bukkit.event.inventory.ClickType.SHIFT_LEFT));
+        assertEquals(SkyblockRoute.Dest.ISLAND, WorldSelector.destFor(org.bukkit.event.inventory.ClickType.SHIFT_RIGHT));
+        assertEquals(SkyblockRoute.Dest.HUB, WorldSelector.destFor(org.bukkit.event.inventory.ClickType.RIGHT));
+        assertNull(WorldSelector.destFor(org.bukkit.event.inventory.ClickType.NUMBER_KEY));
+        assertNull(WorldSelector.destFor(org.bukkit.event.inventory.ClickType.DROP));
+    }
+
+    @Test
+    public void menuArgumentsParse() {
+        assertEquals(WorldSelector.Target.SKYBLOCK, WorldSelector.Target.parse("Skyblock"));
+        assertEquals(WorldSelector.Target.LOBBY, WorldSelector.Target.parse("lobby"));
+        assertNull(WorldSelector.Target.parse("nether"));
+        assertEquals(SkyblockRoute.Dest.HUB, WorldSelector.parseDest("HUB"));
+        assertNull(WorldSelector.parseDest("moon"));
     }
 
     @Test
@@ -225,8 +356,17 @@ public class SkyblockRouteTest {
         assertFalse(online.contains("offline"));
         assertTrue(offline.contains("Skyblock routing is offline"));
         assertTrue(offline.contains("Survival server instead"));
-        assertTrue(online.contains("SKYBLOCK") && online.contains("Click to enter"));
+        assertTrue(online.contains("SKYBLOCK") && online.contains("Left-click to enter"));
+        assertTrue(online.contains("Shift-click: go to my island") && online.contains("Right-click: visit the hub"));
         assertEquals(Material.GRASS_BLOCK, WorldSelector.Menu.skyblockCard(true).getType());
+    }
+
+    @Test
+    public void theCardShowsTheLiveOnlineCountOnlyWhenKnown() {
+        assertFalse(tooltip(WorldSelector.Menu.skyblockCard(true, -1)).contains("online"));
+        assertFalse(tooltip(WorldSelector.Menu.skyblockCard(true, 0)).contains("online"));
+        assertTrue(tooltip(WorldSelector.Menu.skyblockCard(true, 1)).contains("1 player online on the network"));
+        assertTrue(tooltip(WorldSelector.Menu.skyblockCard(true, 12)).contains("12 players online on the network"));
     }
 
     @Test

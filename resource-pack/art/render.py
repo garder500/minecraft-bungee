@@ -541,7 +541,11 @@ def write_font():
     print("wrote font with", len(providers) - 1, "tiles")
 
 if __name__ == "__main__":
-    wanted = sys.argv[1:] or [*ART, "icons", "werewolf"]
+    wanted = sys.argv[1:] or [*ART, "icons", "werewolf", "skyblock_icon"]
     for n in wanted:
-        render_icons() if n == "icons" else render_werewolf() if n == "werewolf" else render(n)
+        if n == "skyblock_icon":
+            import skyblock_icon  # stdlib-only pixel art, same folder
+            skyblock_icon.write()
+        else:
+            render_icons() if n == "icons" else render_werewolf() if n == "werewolf" else render(n)
     write_font()

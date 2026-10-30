@@ -72,5 +72,15 @@ def write():
     print("wrote the skyblock icon")
 
 
+def preview(scale=16):
+    """Nearest-neighbour enlargement for reviewers (docs/skyblock-notes/netmenu-icon-preview.png)."""
+    big = ["".join(ch * scale for ch in row) for row in ROWS for _ in range(scale)]
+    return png(big)
+
+
 if __name__ == "__main__":
     write()
+    if "--preview" in __import__("sys").argv:
+        out = pathlib.Path(__file__).resolve().parents[2] / "docs" / "skyblock-notes" / "netmenu-icon-preview.png"
+        out.write_bytes(preview())
+        print("wrote", out)

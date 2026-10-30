@@ -10,7 +10,8 @@ import org.bukkit.entity.Player;
  * Because the two plugins share no build dependency, the registering side has to load this interface
  * through VampyuyuNetwork's class loader and wrap it in a {@link java.lang.reflect.Proxy}. The zero-code
  * alternative is the incoming plugin channel {@link SkyblockHandoff#CHANNEL}, which needs no reflection (see
- * {@code docs/skyblock-notes/netmenu.md}, "Same-server handoff"). The gateway wins when both exist.
+ * {@code docs/skyblock-notes/netmenu.md}, "Same-server handoff"). The gateway only serves a plain Skyblock request
+ * (it has no landing parameter); "my island" and "hub" requests use the channel.
  */
 public interface SkyblockGateway {
     /**
