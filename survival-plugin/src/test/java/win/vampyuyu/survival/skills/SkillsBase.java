@@ -34,6 +34,8 @@ abstract class SkillsBase {
         player = server.addPlayer("Miner");
         player.setLocation(new org.bukkit.Location(world, 0.5, 70, 0.5));
         player.setGameMode(org.bukkit.GameMode.SURVIVAL);
+        // The real island protection is on: these tests break blocks in a bare world, outside any island.
+        player.addAttachment(plugin, win.vampyuyu.survival.island.IslandService.BYPASS, true);
     }
 
     @After
