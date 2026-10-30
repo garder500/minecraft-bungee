@@ -72,10 +72,22 @@ public class ReviewFixesTest {
 
     // ---------------------------------------------------------------- damage vs the items pipeline
 
-    /** Stands in for the items feature: mitigates at HIGH and records what the player finally takes at MONITOR. */
+    /**
+     * Stands in for one more mitigation layer after the real items feature (which scales and mitigates at HIGH and was
+     * registered first): records what the boss set (NORMAL, after the boss's LOW and before the real items), halves
+     * at HIGH and records what the player finally takes at MONITOR.
+     */
     private static final class FakeItems implements Listener {
+        final List<Double> seenAtNormal = new ArrayList<>();
         final List<Double> seenAtHigh = new ArrayList<>();
         final List<Double> finalDamage = new ArrayList<>();
+
+        @EventHandler(priority = EventPriority.NORMAL)
+        public void normal(EntityDamageEvent event) {
+            if (event.getEntity() instanceof Player) {
+                seenAtNormal.add(event.getDamage());
+            }
+        }
 
         @EventHandler(priority = EventPriority.HIGH)
         public void high(EntityDamageEvent event) {
@@ -104,8 +116,9 @@ public class ReviewFixesTest {
             EntityDamageEvent.DamageCause.ENTITY_ATTACK, 1.0);
         Bukkit.getPluginManager().callEvent(event);
         double expected = Math.max(0.5, session.hitDamage(1.0));
-        assertEquals("the boss damage is set BEFORE the items listener (LOW)", expected, items.seenAtHigh.get(0), 1e-9);
-        assertEquals("and the items mitigation survives", expected / 2.0, items.finalDamage.get(0), 1e-9);
+        assertEquals("the boss damage is set BEFORE the items listener (LOW)", expected, items.seenAtNormal.get(0), 1e-9);
+        assertTrue("the real items feature scaled the hit at HIGH", items.seenAtHigh.get(0) > expected);
+        assertEquals("and the items mitigation survives", items.seenAtHigh.get(0) / 2.0, items.finalDamage.get(0), 1e-9);
         session.end(BossSession.End.ADMIN, null);
     }
 

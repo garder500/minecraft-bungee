@@ -347,7 +347,8 @@ public class BlockSourcesTest extends SkillsBase {
     }
 
     @Test
-    public void pistonsCarryTheMarkWithTheBlock() {
+    public void pistonsCarryTheMarkWithTheBlock() throws Exception {
+        useUnprotectedWorld();
         Block piston = block(30, 64, 30, Material.PISTON);
         org.bukkit.block.data.Directional facing = (org.bukkit.block.data.Directional) piston.getBlockData();
         facing.setFacing(org.bukkit.block.BlockFace.EAST);
@@ -366,7 +367,8 @@ public class BlockSourcesTest extends SkillsBase {
     }
 
     @Test
-    public void burnedBlocksLoseTheirMark() {
+    public void burnedBlocksLoseTheirMark() throws Exception {
+        useUnprotectedWorld();
         Block log = block(40, 64, 40, Material.OAK_LOG);
         place(log);
         server.getPluginManager().callEvent(new org.bukkit.event.block.BlockBurnEvent(log, null));

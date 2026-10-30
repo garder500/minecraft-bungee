@@ -81,8 +81,12 @@ public class BossSessionTest {
         EntityDamageEvent event = new org.bukkit.event.entity.EntityDamageByEntityEvent(player, boss,
             EntityDamageEvent.DamageCause.ENTITY_ATTACK, 1000.0);
         Bukkit.getPluginManager().callEvent(event);
-        assertEquals(before - 1000.0, session.hp(), 1.0);
-        assertEquals(1000.0, session.ledger().damageOf(player.getUniqueId()), 1.0);
+        // The real items feature turns the raw 1000 into its own formula (the boss reads that output at HIGHEST), so
+        // the credited amount is not 1000 any more; the ledger and the virtual health must still agree on it.
+        double dealt = session.ledger().damageOf(player.getUniqueId());
+        assertTrue("some damage got through", dealt > 0);
+        assertTrue("the items formula replaced the raw hit", dealt != 1000.0);
+        assertEquals(before - dealt, session.hp(), 1e-6);
         session.end(BossSession.End.ADMIN, null);
     }
 
@@ -114,7 +118,10 @@ public class BossSessionTest {
     /** Collects what the framework pays. */
     private static final class Spy implements win.vampyuyu.survival.api.WingsApi, win.vampyuyu.survival.api.EconomyApi {
         final java.util.List<String> grants = new java.util.ArrayList<>();
+        /** Every coin paid by any feature (quests and skill level rewards pay through the economy too). */
         final java.util.Map<java.util.UUID, Double> paid = new java.util.HashMap<>();
+        /** Only what the boss loot pool paid (reason "boss:..."). */
+        final java.util.Map<java.util.UUID, Double> bossPaid = new java.util.HashMap<>();
 
         @Override public org.bukkit.inventory.ItemStack create() { return null; }
         @Override public boolean isWings(org.bukkit.inventory.ItemStack stack) { return false; }
@@ -124,7 +131,11 @@ public class BossSessionTest {
         @Override public double coins(java.util.UUID player) { return paid.getOrDefault(player, 0.0); }
         @Override public boolean has(java.util.UUID player, double amount) { return coins(player) >= amount; }
         @Override public boolean take(java.util.UUID player, double amount, String reason) { return false; }
-        @Override public void add(java.util.UUID player, double amount, String reason) { paid.merge(player, amount, Double::sum); }
+        @Override public void add(java.util.UUID player, double amount, String reason) { paid.merge(player, amount, Double::sum);
+            if (reason != null && reason.startsWith("boss:")) {
+                bossPaid.merge(player, amount, Double::sum);
+            }
+        }
         @Override public void addTransactionListener(java.util.function.Consumer<Transaction> listener) {}
     }
 
@@ -166,9 +177,9 @@ public class BossSessionTest {
         assertEquals(2, spy.grants.size());
         assertEquals("boss:voidwyrm", spy.grants.get(0));
         // coins: everyone with at least the min-share is paid, the biggest damager the most
-        assertTrue(spy.paid.getOrDefault(big.getUniqueId(), 0.0) > spy.paid.getOrDefault(small.getUniqueId(), 0.0));
+        assertTrue(spy.bossPaid.getOrDefault(big.getUniqueId(), 0.0) > spy.bossPaid.getOrDefault(small.getUniqueId(), 0.0));
         assertTrue(max > 0);
-        double total = spy.paid.values().stream().mapToDouble(Double::doubleValue).sum();
+        double total = spy.bossPaid.values().stream().mapToDouble(Double::doubleValue).sum();
         assertTrue("never pays out more than the pool: " + total, total <= def.loot().coins() * 1.0001);
         assertTrue("loot hook items reach the inventory", big.getInventory().contains(org.bukkit.Material.STICK));
         assertEquals(0, manager.activeCount("voidwyrm"));
