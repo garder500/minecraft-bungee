@@ -1,5 +1,7 @@
 package win.vampyuyu.survival.minions;
 
+import com.destroystokyo.paper.event.block.BlockDestroyEvent;
+import io.papermc.paper.event.block.PlayerShearBlockEvent;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -19,6 +21,7 @@ import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
+import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 import win.vampyuyu.survival.core.Core;
@@ -143,8 +146,39 @@ final class PlacedBlockGuard implements Listener {
     }
 
     /**
-     * Catch-all for a placed block that popped off by physics (its support went away some way not covered above):
-     * the item that would spawn at its position is cancelled, so it still yields nothing.
+     * A placed block destroyed by something that is not a player: its support went away, a water bucket or a flow
+     * washed it out. Paper fires this before the block is destroyed and the drops are made, so cancelling it keeps the
+     * block (and cancels the drops and the experience).
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onDestroy(BlockDestroyEvent event) {
+        if (manager.isProtected(event.getBlock())) {
+            event.setCancelled(true);
+        }
+    }
+
+    /** Shearing a placed pumpkin would drop seeds and leave a carved pumpkin that the minion no longer owns. */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onShear(PlayerShearBlockEvent event) {
+        if (manager.isProtected(event.getBlock())) {
+            event.setCancelled(true);
+            tell(event.getPlayer());
+        }
+    }
+
+    /** A bucket of water or lava emptied onto a placed crop would replace it (and pop its drops). */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onBucket(PlayerBucketEmptyEvent event) {
+        if (manager.isProtected(event.getBlock())) {
+            event.setCancelled(true);
+            tell(event.getPlayer());
+        }
+    }
+
+    /**
+     * Last resort for a placed block that vanished some way not covered above: an item that spawns at its position
+     * while the block there no longer is what the minion placed is cancelled. (Vanilla spawns the drops before it
+     * clears the block, so {@link #onDestroy} is the real guard; this only helps when the order is the other way.)
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onItemSpawn(ItemSpawnEvent event) {

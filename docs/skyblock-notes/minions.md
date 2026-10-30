@@ -29,8 +29,11 @@ restart or a chunk reload still finishes the cycle. Rules (`Terrain`, `PlacedBlo
 * Nobody can break the recorded block: `BlockBreakEvent` is cancelled at LOWEST priority (so no skill XP or custom
   drop is awarded by another feature), with a rate-limited chat hint (never the action bar). Also blocked: pistons
   moving it, explosions, an enderman or falling block taking it, water flowing into it, fire, farmland trampling
-  and drying, bone meal and tree growth, and breaking the ground under a non-solid placed block (a crop). Two
-  catch-alls clear `BlockDropItemEvent` and cancel an `ItemSpawnEvent` where a placed block vanished by physics.
+  and drying, bone meal and tree growth, shearing, a bucket emptied onto it, and breaking the ground under a
+  non-solid placed block (a crop). Paper's `BlockDestroyEvent` (fires before a block is destroyed by physics or
+  water, before the drops) is cancelled for placed blocks; `BlockDropItemEvent` is cleared as defence in depth, and an
+  `ItemSpawnEvent` guard is a last resort only (vanilla makes the drops before it clears the block, so it may never
+  fire; `BlockDestroyEvent` is the real guard and has only been tested with a synthetic event).
 * Pick-up, purge and island return remove the placed block silently (no drop) when its chunk is loaded. The placed
   block of a minion that is purged while its chunk is unloaded stays in the world as a normal block (rare, admin only).
 * The minion never fills water or lava, and a placed block that nobody removed stays until the cycle ends (a full
@@ -69,7 +72,9 @@ duplicate through the menu.
 * Fuels (burn only while the minion is actually working): Coal, Coal Block (vanilla items), Enchanted Coal,
   Enchanted Charcoal (these two ARE the Enchanted items the menu's Compress button makes from coal and charcoal: the
   fuel list accepts `minion_enchanted_coal` / `minion_enchanted_charcoal`, there is no second item with the same
-  name; `compressed:` in `fuels.*`), Enchanted Lava Bucket, Hamster Wheel (farming only), Foul Flesh (everything except farming),
+  name; `compressed:` in `fuels.*`). **Breaking change for other features: the item ids `minion_fuel_enchanted_coal`
+  and `minion_fuel_enchanted_charcoal` no longer exist** (`items.create` on them throws); use
+  `minion_enchanted_coal` / `minion_enchanted_charcoal`. The other custom fuels keep `minion_fuel_<id>`, Enchanted Lava Bucket, Hamster Wheel (farming only), Foul Flesh (everything except farming),
   Catalyst, Hyper Catalyst. Speeds of fuel and upgrades add up (`MinionLogic.speeds`), the final interval is
   `action-seconds * tier factor / (1 + sum)`.
 * Upgrades (2 slots): Auto Smelter, Compactor, Super Compactor 3000 (replaces the Compactor), Diamond Spreading,
@@ -169,7 +174,10 @@ The rule is: a crash may LOSE an item but must not DUPLICATE one. The order is c
 * Menu: no slot is a real inventory slot, all moves are buttons with a main-thread atomic check of inventory space.
   A click cooldown (`gui-click-millis`, 150) and "write the file once per action" (collect all writes ONE file for
   every kind of item) keep click spam from queueing fsyncs. The save before an item changes hands still waits for
-  the disk by design (that is what makes the order above true); it is one fsync per user action.
+  the disk by design (that is what makes the order above true). Placing also rewrites the spent-uid ledger (up to
+  50,000 uids): it is serialised on the writer thread, not the main thread, and queued before the owner file on the
+  same single writer, but the main thread still waits for both files to reach the disk, so a placement costs two
+  fsyncs. Everything else costs one per user action.
 * Production is not tied to the placed block any more than to the clock: breaking it is impossible, so there is no
   way to get vanilla drops on top of the virtual output.
 
@@ -208,8 +216,11 @@ whole elapsed window is produced on the first tick after the chunk loads. Loaded
   `/minion purge orphans` asks the island registry now, so it also works on minions in chunks that have not loaded
   since the restart (it does not need the ticker). If the world or chunk is not loaded the minion is not ticked
   (frozen) and is kept as is.
-* **While you were away.** On join (3 s after, with the owed delivery) the owner gets one line: items made since they
-  last looked at their minions (`MinionData.seenProduced`, updated when a menu is opened) and how many are full.
+* **While you were away.** Two messages, never both for the same items. (1) On join (3 s after, with the owed
+  delivery) the owner gets one line: items made since they last looked at their minions (`MinionData.seenProduced`,
+  updated when a menu is opened) and how many are full. (2) When a minion catches up on a window of 5 minutes or more
+  (its chunk loaded again after the owner was elsewhere, the hub router sent them to the hub first) and the owner is
+  online, they are told once per ticker pass how many items it made, and those items count as seen.
 
 ### Custom items are inert
 
@@ -243,8 +254,8 @@ use vanilla models on purpose.
 * `Player.saveData()` is the forced player save. It is a main-thread write of one small file per payment / placement;
   `PlayerMock` may not implement it (tests use a hook), and a server that does not honour it falls back to the
   vanilla autosave (the order above is then not guaranteed).
-* Crafting: `CraftItemEvent.setCurrentItem` stamping and the shift-click cancel are not covered by a test
-  (MockBukkit cannot simulate the crafting grid); a failure leaves an unstamped item, which is stamped at placement.
+* Crafting: `CraftItemEvent.setCurrentItem` stamping, the shift-click cancel and the `CrafterCraftEvent` cancel are
+  not covered by a test (MockBukkit cannot simulate the crafting grid or a Crafter); a failure leaves an unstamped item, which is stamped at placement.
   The upgrade/hat/fuel recipes use `ExactChoice` of the custom items; their matching in a real crafting grid was not
   seen.
 * Villager trades are not guarded against `minion_*` items.
@@ -267,7 +278,8 @@ use vanilla models on purpose.
   preview of the working area, and tier pips on the minion icon (needs new art). (Two Flycatchers at once now work:
   speed upgrades stack, other upgrades still refuse a duplicate.)
 * Rare hats and Catalysts have no recipe on purpose (see Fuel, upgrades, hats).
-* The IO of a save before an item changes hands is still synchronous (one fsync per user action).
+* The IO of a save before an item changes hands is still synchronous (one fsync per user action, two for a
+  placement because of the ledger).
 
 ## NEEDS (contract changes the foundation owner could apply)
 

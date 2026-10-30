@@ -582,4 +582,69 @@ public class MinionReviewFixesTest {
         assertNull(manager.installUpgrade(player, d, compactor).error());
         assertNotNull(manager.installUpgrade(player, d, compactor).error());
     }
+
+    @Test
+    public void everyConfiguredItemRecipeIsRegisteredWithExactChoices() {
+        assertTrue(manager.config().itemRecipes.size() >= 10);
+        for (String id : manager.config().itemRecipes.keySet()) {
+            var recipe = Bukkit.getRecipe(new org.bukkit.NamespacedKey(plugin, "minion_item_" + id));
+            assertNotNull("recipe " + id + " was not registered (see the log)", recipe);
+            var shaped = (org.bukkit.inventory.ShapedRecipe) recipe;
+            assertFalse(shaped.getChoiceMap().isEmpty());
+            shaped.getChoiceMap().values().stream().filter(java.util.Objects::nonNull)
+                .forEach(c -> assertTrue(c instanceof org.bukkit.inventory.RecipeChoice.ExactChoice));
+        }
+    }
+
+    @Test
+    public void nonPlayerDestructionOfAPlacedBlockIsCancelled() {
+        MinionData d = place("wheat", 1);
+        Block crop = track(d, 1, Material.WHEAT);
+        var destroy = new com.destroystokyo.paper.event.block.BlockDestroyEvent(crop, Material.AIR.createBlockData(),
+            Material.AIR.createBlockData(), 0, true);
+        server.getPluginManager().callEvent(destroy);
+        assertTrue(destroy.isCancelled());
+        Block other = world.getBlockAt(3, 64, 3);
+        other.setType(Material.WHEAT);
+        var free = new com.destroystokyo.paper.event.block.BlockDestroyEvent(other, Material.AIR.createBlockData(),
+            Material.AIR.createBlockData(), 0, true);
+        server.getPluginManager().callEvent(free);
+        assertFalse(free.isCancelled());
+    }
+
+    @Test
+    public void shearingAndBucketsCannotChangeAPlacedBlock() {
+        MinionData d = place("pumpkin", 1);
+        Block pumpkin = track(d, 1, Material.PUMPKIN);
+        var shear = new io.papermc.paper.event.block.PlayerShearBlockEvent(player, pumpkin, new ItemStack(Material.SHEARS),
+            org.bukkit.inventory.EquipmentSlot.HAND, new ArrayList<>());
+        server.getPluginManager().callEvent(shear);
+        assertTrue(shear.isCancelled());
+        var bucket = new org.bukkit.event.player.PlayerBucketEmptyEvent(player, pumpkin, pumpkin.getRelative(BlockFace.DOWN),
+            BlockFace.UP, Material.WATER_BUCKET, new ItemStack(Material.WATER_BUCKET), org.bukkit.inventory.EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(bucket);
+        assertTrue(bucket.isCancelled());
+    }
+
+    @Test
+    public void aLongCatchUpIsReportedToTheOnlineOwnerOncePerPass() {
+        AtomicLong now = new AtomicLong(20_000_000);
+        MinionManager timed = new MinionManager(core, manager.config(), manager.store(), manager.logic(),
+            new MinionVisuals(manager.config(), plugin.getLogger()), now::get);
+        MinionData a = place("cobblestone", 1);
+        a.lastTick = now.get();
+        now.addAndGet(2 * 3_600_000L);
+        timed.tick();
+        List<String> messages = new ArrayList<>();
+        for (Object m = player.nextMessage(); m != null; m = player.nextMessage()) {
+            messages.add(String.valueOf(m));
+        }
+        assertEquals(1, messages.stream().filter(m -> m.contains("While you were away")).count());
+        assertEquals("seen, so the join summary stays quiet", a.produced, a.seenProduced);
+        now.addAndGet(1000);
+        timed.tick();
+        for (Object m = player.nextMessage(); m != null; m = player.nextMessage()) {
+            assertFalse("a normal tick says nothing about being away: " + m, String.valueOf(m).contains("While you were away"));
+        }
+    }
 }

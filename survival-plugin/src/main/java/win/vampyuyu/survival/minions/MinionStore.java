@@ -218,11 +218,13 @@ public final class MinionStore {
      * can lose an item but never duplicate one.
      */
     public void saveNow(String owner) {
-        // The ledger first: if the process dies between the two writes, a spent uid with no minion only costs the
-        // player an item, while the other order could let the same item be placed twice.
+        // The ledger is queued first and the owner file second on the SAME single writer thread, so the ledger always
+        // lands first: if the process dies between the two writes, a spent uid with no minion only costs the player
+        // an item, while the other order could let the same item be placed twice. Waiting for the owner file therefore
+        // also waits for the ledger, but the ledger is serialised on the writer thread, not on the main thread.
         if (ledgerDirty) {
             ledgerDirty = false;
-            wait(submitLedger());
+            submitLedger();
         }
         dirtyOwners.remove(owner);
         wait(submit(owner));
@@ -271,10 +273,12 @@ public final class MinionStore {
     }
 
     private Future<?> submitLedger() {
-        LedgerFile file = new LedgerFile();
-        file.spent = ledger.snapshot();
-        JsonElement tree = JsonStore.GSON.toJsonTree(file);
-        return run(() -> write(LEDGER, tree));
+        List<String> spent = ledger.snapshot();
+        return run(() -> {
+            LedgerFile file = new LedgerFile();
+            file.spent = spent;
+            write(LEDGER, JsonStore.GSON.toJsonTree(file));
+        });
     }
 
     private void write(String path, JsonElement tree) {

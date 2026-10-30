@@ -59,6 +59,10 @@ public final class MinionManager implements MinionApi {
     private final java.util.Map<String, MinionRuntime> runtime = new java.util.HashMap<>();
     /** Block position of every placed block a minion owns, to the id of the minion (see {@link #minionAtSpot}). */
     private final java.util.Map<String, String> spots = new java.util.HashMap<>();
+    /** Items made during a long catch-up for owners who are online, reported once per ticker pass. */
+    private final java.util.Map<UUID, Long> awayMade = new java.util.HashMap<>();
+    /** A window of at least this long since the minion last ran counts as "away" (5 minutes). */
+    private static final long AWAY_MILLIS = 300_000L;
     private long lastFlush;
     private long lastOwedCheck;
     /** Forces the player's inventory to disk (a payment must be durable before the minion state changes). */
@@ -940,6 +944,7 @@ public final class MinionManager implements MinionApi {
                 }
             }
         }
+        reportAway();
         if (now - lastFlush >= 10_000) {
             lastFlush = now;
             store.flushDirty();
@@ -981,7 +986,12 @@ public final class MinionManager implements MinionApi {
         boolean near = playerNear(w, d);
         rt.visualNear = near;
         Status scanned = scan(d, type, area, rt, near, now);
+        long windowStart = d.lastTick;
+        long producedBefore = d.produced;
         Production.Outcome out = logic.advance(d, type, now, scanned == Status.WORKING);
+        if (now - windowStart >= AWAY_MILLIS && d.produced > producedBefore) {
+            recordAway(d, d.produced - producedBefore);
+        }
         Status status = scanned == Status.WORKING && out.stalled() ? Status.STORAGE_FULL : scanned;
         if (out.cycles() > 0) {
             store.markDirty(d);
@@ -1000,6 +1010,33 @@ public final class MinionManager implements MinionApi {
             notifyOwner(d, type, rt, status, now);
             rt.status = status;
         }
+    }
+
+    /**
+     * A minion that just caught up on a long window (its chunk loaded again, the server started) made {@code gained}
+     * items while its owner was away. When the owner is online it is told once per ticker pass, whichever way they
+     * got here (a hub router may send them elsewhere first, so the join message alone would miss this).
+     */
+    private void recordAway(MinionData d, long gained) {
+        UUID owner = UUID.fromString(d.owner);
+        if (Bukkit.getPlayer(owner) != null) {
+            awayMade.merge(owner, gained, Long::sum);
+            d.seenProduced = d.produced;
+        }
+    }
+
+    private void reportAway() {
+        if (awayMade.isEmpty()) {
+            return;
+        }
+        for (var e : awayMade.entrySet()) {
+            Player p = Bukkit.getPlayer(e.getKey());
+            if (p != null && e.getValue() > 0) {
+                core.msg().info(p, "While you were away your minions made " + Msg.grouped(e.getValue()) + " item"
+                    + (e.getValue() == 1 ? "" : "s") + ".");
+            }
+        }
+        awayMade.clear();
     }
 
     private Status scan(MinionData d, Type type, Terrain.Area area, MinionRuntime rt, boolean near, long now) {
