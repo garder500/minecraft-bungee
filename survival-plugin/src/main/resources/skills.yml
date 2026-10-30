@@ -1,0 +1,1100 @@
+# Skyblock skills, collections and collection-gated recipes (feature "skills").
+# Edit this file in plugins/VampyuyuSurvival/skills.yml; /skilladmin reload applies it without a restart.
+# Keys missing from your copy fall back to the jar's defaults. A bad entry is skipped with a console warning.
+
+# Skills only earn experience in Skyblock worlds (sb_hub, sb_world, sb_nether, sb_end, dungeons).
+only_skyblock_worlds: true
+# Worlds that never give experience even when allowed above.
+blocked_worlds: []
+# Global experience multiplier applied before skill multipliers and boosts. 1.0 = normal.
+xp_multiplier: 1.0
+
+boosts:
+  # Cap of the combined /skilladmin boost multiplier (boosts add up as 1 + sum(m - 1)).
+  max_total: 10.0
+
+levels:
+  default_max: 60
+  # Experience to go from level n-1 to n is base * growth^(n-1), rounded to significant_digits digits.
+  # A smooth curve: level 10 needs about 1.3k total, level 30 about 60k, level 60 about 14M.
+  base: 50
+  growth: 1.2
+  significant_digits: 2
+  # Optional explicit list (one number per level, at least as long as the highest max_level) that overrides the curve.
+  xp_table: []
+
+rewards:
+  coins:
+    # Coins paid at each level: base + step * level, multiplied on every milestone_every-th level.
+    base: 200
+    step: 40
+    milestone_every: 10
+    milestone_multiplier: 5
+
+average:
+  # Skills counted in the skill average. Empty = every skill except Carpentry.
+  skills: []
+
+# Per skill: max_level, multiplier (extra experience factor) and the stat bonuses given per level.
+# stats.<STAT>: list of {from, to, amount}: every level from..to adds `amount` of the stat.
+# Stat bonuses reach the stats engine as the modifier source "skill:<skill>".
+skills:
+  combat:
+    max_level: 60
+    multiplier: 1.0
+    stats:
+      CRIT_CHANCE:
+        - {from: 1, to: 60, amount: 0.4}
+      STRENGTH:
+        - {from: 1, to: 20, amount: 0.5}
+        - {from: 21, to: 60, amount: 0.75}
+    unlocks:
+      5: "You are getting the hang of fighting."
+      10: "Your name starts to carry weight in a fight."
+      20: "A veteran of many fights."
+      30: "Crits come naturally now."
+      40: "Few things can stop you."
+      50: "A true slayer."
+      60: "The pinnacle of combat."
+  mining:
+    max_level: 60
+    multiplier: 1.0
+    stats:
+      MINING_FORTUNE:
+        - {from: 1, to: 20, amount: 2}
+        - {from: 21, to: 60, amount: 3}
+      DEFENSE:
+        - {from: 1, to: 14, amount: 1}
+        - {from: 15, to: 60, amount: 2}
+    unlocks:
+      5: "Ores feel within reach."
+      10: "The mines know your name."
+      20: "A seasoned miner."
+      30: "You have an eye for ore."
+      40: "Deep miner."
+      50: "Master of the mines."
+      60: "The mountain bows to you."
+  farming:
+    max_level: 60
+    multiplier: 1.0
+    stats:
+      FARMING_FORTUNE:
+        - {from: 1, to: 20, amount: 2}
+        - {from: 21, to: 60, amount: 3}
+      HEALTH:
+        - {from: 1, to: 14, amount: 2}
+        - {from: 15, to: 19, amount: 3}
+        - {from: 20, to: 25, amount: 4}
+        - {from: 26, to: 60, amount: 5}
+    unlocks:
+      5: "Your fields start to pay off."
+      10: "Green thumbs."
+      20: "A bountiful harvest."
+      30: "The fields love you."
+      40: "Farmer of renown."
+      50: "Master of the harvest."
+      60: "Nothing grows without your blessing."
+  foraging:
+    max_level: 60
+    multiplier: 1.0
+    stats:
+      FORAGING_FORTUNE:
+        - {from: 1, to: 20, amount: 2}
+        - {from: 21, to: 60, amount: 3}
+      STRENGTH:
+        - {from: 1, to: 14, amount: 1}
+        - {from: 15, to: 60, amount: 0.5}
+    unlocks:
+      5: "You are learning the forests."
+      10: "You know every kind of wood."
+      20: "A seasoned lumberjack."
+      30: "The forest is your home."
+      40: "Woodcutter of legend."
+      50: "Master forester."
+      60: "The forest answers to you."
+  fishing:
+    max_level: 60
+    multiplier: 1.0
+    stats:
+      HEALTH:
+        - {from: 1, to: 14, amount: 2}
+        - {from: 15, to: 19, amount: 3}
+        - {from: 20, to: 25, amount: 4}
+        - {from: 26, to: 60, amount: 5}
+    unlocks:
+      5: "You are finding your rhythm on the water."
+      10: "Anglers start to know your name."
+      20: "A patient angler."
+      30: "The sea knows you."
+      40: "Angler of renown."
+      50: "Master of the deep."
+      60: "The ocean is yours."
+  enchanting:
+    max_level: 60
+    multiplier: 1.0
+    stats:
+      INTELLIGENCE:
+        - {from: 1, to: 14, amount: 1}
+        - {from: 15, to: 60, amount: 2}
+    unlocks:
+      5: "You are learning the table's language."
+      10: "Runes make sense to you."
+      20: "A learned enchanter."
+      30: "You read the table's whispers."
+      40: "Arcane scholar."
+      50: "Master enchanter."
+      60: "Magic itself obeys you."
+  alchemy:
+    max_level: 60
+    multiplier: 1.0
+    stats:
+      INTELLIGENCE:
+        - {from: 1, to: 14, amount: 1}
+        - {from: 15, to: 60, amount: 2}
+    unlocks:
+      5: "You are learning your reagents."
+      10: "You know your reagents."
+      20: "A practised brewer."
+      30: "Recipes flow from memory."
+      40: "Alchemist of renown."
+      50: "Master brewer."
+      60: "You could brew anything."
+  carpentry:
+    max_level: 50
+    multiplier: 1.0
+    stats:
+      HEALTH:
+        - {from: 1, to: 50, amount: 1}
+    unlocks:
+      5: "Your joints are tight."
+      10: "Wood bends to your plans."
+      20: "A fine carpenter."
+      30: "Furniture of quality."
+      40: "Craftsman of renown."
+      50: "Master carpenter."
+
+xp:
+  mining:
+    # Experience per block broken (blocks placed by players give nothing).
+    blocks:
+      STONE: 1
+      COBBLESTONE: 1
+      ANDESITE: 1
+      DIORITE: 1
+      GRANITE: 1
+      DEEPSLATE: 1.2
+      COBBLED_DEEPSLATE: 1.2
+      TUFF: 1
+      CALCITE: 1
+      DRIPSTONE_BLOCK: 1
+      NETHERRACK: 0.5
+      BASALT: 1
+      BLACKSTONE: 1
+      END_STONE: 2
+      SANDSTONE: 1
+      RED_SANDSTONE: 1
+      GRAVEL: 0.5
+      SAND: 0.5
+      OBSIDIAN: 12
+      CRYING_OBSIDIAN: 12
+      GLOWSTONE: 3
+      COAL_ORE: 4
+      IRON_ORE: 6
+      COPPER_ORE: 4
+      GOLD_ORE: 9
+      REDSTONE_ORE: 6
+      LAPIS_ORE: 8
+      DIAMOND_ORE: 18
+      EMERALD_ORE: 20
+      NETHER_QUARTZ_ORE: 5
+      NETHER_GOLD_ORE: 4
+      ANCIENT_DEBRIS: 40
+      DEEPSLATE_COAL_ORE: 4.8
+      DEEPSLATE_IRON_ORE: 7.2
+      DEEPSLATE_COPPER_ORE: 4.8
+      DEEPSLATE_GOLD_ORE: 10.8
+      DEEPSLATE_REDSTONE_ORE: 7.2
+      DEEPSLATE_LAPIS_ORE: 9.6
+      DEEPSLATE_DIAMOND_ORE: 21.6
+      DEEPSLATE_EMERALD_ORE: 24.0
+  foraging:
+    blocks:
+      OAK_LOG: 6
+      SPRUCE_LOG: 6
+      BIRCH_LOG: 6
+      JUNGLE_LOG: 6
+      ACACIA_LOG: 6
+      DARK_OAK_LOG: 6
+      CHERRY_LOG: 6
+      MANGROVE_LOG: 6
+      PALE_OAK_LOG: 6
+      CRIMSON_STEM: 6
+      WARPED_STEM: 6
+  farming:
+    blocks:
+      WHEAT: 3
+      CARROTS: 3
+      POTATOES: 3
+      BEETROOTS: 3
+      NETHER_WART: 4
+      COCOA: 4
+      SWEET_BERRY_BUSH: 2
+      TORCHFLOWER: 5
+      PITCHER_CROP: 5
+      PUMPKIN: 4
+      MELON: 4
+      SUGAR_CANE: 2
+      CACTUS: 2
+      BAMBOO: 1
+      RED_MUSHROOM: 3
+      BROWN_MUSHROOM: 3
+    # Crops that only give experience (and collections) when fully grown.
+    # They are NOT remembered when planted (planting by hand is the normal way to farm on an island).
+    mature_only: [WHEAT, CARROTS, POTATOES, BEETROOTS, NETHER_WART, COCOA, SWEET_BERRY_BUSH, PITCHER_CROP]
+    # Plants that grow upwards from a base: breaking one block pays every grown block above it too (the blocks
+    # above fall by physics without their own break event). A hand-placed block pays nothing, grown ones do.
+    column_plants: [SUGAR_CANE, CACTUS, BAMBOO]
+  combat:
+    # Experience per kill by entity type. Other hostile mobs give max health * health_factor.
+    mobs:
+      ZOMBIE: 6
+      ZOMBIE_VILLAGER: 6
+      HUSK: 7
+      DROWNED: 7
+      SKELETON: 6
+      STRAY: 7
+      BOGGED: 7
+      SPIDER: 5
+      CAVE_SPIDER: 5
+      CREEPER: 8
+      ENDERMAN: 14
+      WITCH: 14
+      SLIME: 5
+      MAGMA_CUBE: 7
+      BLAZE: 16
+      GHAST: 20
+      WITHER_SKELETON: 20
+      PIGLIN: 10
+      PIGLIN_BRUTE: 24
+      ZOMBIFIED_PIGLIN: 9
+      HOGLIN: 14
+      ZOGLIN: 16
+      PHANTOM: 10
+      PILLAGER: 12
+      VINDICATOR: 14
+      EVOKER: 20
+      RAVAGER: 30
+      VEX: 8
+      SILVERFISH: 3
+      ENDERMITE: 4
+      GUARDIAN: 12
+      ELDER_GUARDIAN: 60
+      SHULKER: 18
+      BREEZE: 14
+      CREAKING: 12
+      WARDEN: 250
+      WITHER: 250
+      ENDER_DRAGON: 250
+    health_factor: 0.4
+    # No kill gives more than this (a guard against boss-sized health pools).
+    max_per_kill: 250
+    # Never give experience or collections.
+    blocked_entities: [ARMOR_STAND, VILLAGER, WANDERING_TRADER, IRON_GOLEM, SNOW_GOLEM]
+    # Mobs that appeared for these reasons give nothing: mob spawners, eggs, breeding and plugin spawns (CUSTOM:
+    # bosses, dungeon and quest mobs). Another feature can allow one mob anyway with the byte tag vampyuyu:skill_xp,
+    # or refuse one with vampyuyu:no_skill_xp. A mob tagged vampyuyu:sea_creature gives Fishing experience.
+    blocked_spawn_reasons: [SPAWNER, SPAWNER_EGG, DISPENSE_EGG, BREEDING, EGG, CUSTOM, SLIME_SPLIT, TRAP, SHEARED, COMMAND]
+  fishing:
+    catches:
+      COD: 14
+      SALMON: 20
+      TROPICAL_FISH: 30
+      PUFFERFISH: 28
+      NAUTILUS_SHELL: 60
+      NAME_TAG: 50
+      SADDLE: 60
+      ENCHANTED_BOOK: 55
+      BOW: 40
+      FISHING_ROD: 40
+      LILY_PAD: 6
+      BOWL: 4
+      STICK: 3
+      STRING: 4
+      LEATHER: 5
+      ROTTEN_FLESH: 5
+      INK_SAC: 6
+      TRIPWIRE_HOOK: 4
+      BONE: 4
+      BAMBOO: 4
+    default_catch: 10
+    # Kills of mobs tagged vampyuyu:sea_creature (experience by entity type).
+    sea_creatures:
+      GUARDIAN: 40
+      ELDER_GUARDIAN: 150
+      DROWNED: 30
+      SQUID: 20
+      GLOW_SQUID: 24
+    default_sea_creature: 60
+  enchanting:
+    # Enchanting table: cost level (1-3 = 1/2/3 of the buttons, shown as 1..30 levels) and enchantment levels.
+    per_cost_level: 3
+    per_enchant_level: 4
+    # Experience per level of the anvil cost when a player takes an anvil result (combining, renaming is free).
+    anvil_per_level: 2
+  alchemy:
+    # The stand's owner is the last player who opened it; the experience is only paid while they are in the same
+    # world within `owner_radius` blocks of the stand (0 = no distance check).
+    owner_radius: 24
+    # Experience per potion changed in a brewing stand, by the ingredient used.
+    ingredients:
+      NETHER_WART: 10
+      REDSTONE: 12
+      GLOWSTONE_DUST: 12
+      GUNPOWDER: 14
+      DRAGON_BREATH: 20
+      FERMENTED_SPIDER_EYE: 14
+      SUGAR: 10
+      MAGMA_CREAM: 12
+      GOLDEN_CARROT: 12
+      GHAST_TEAR: 16
+      BLAZE_POWDER: 10
+      RABBIT_FOOT: 14
+      PHANTOM_MEMBRANE: 14
+      SPIDER_EYE: 10
+      GLISTERING_MELON_SLICE: 12
+      PUFFERFISH: 12
+      TURTLE_SCUTE: 14
+    default: 8
+  carpentry:
+    # Experience per crafted item (vanilla recipes). Counted from what really reached the inventory.
+    crafts:
+      CHEST: 4
+      TRAPPED_CHEST: 5
+      BARREL: 4
+      CRAFTING_TABLE: 3
+      LECTERN: 6
+      LOOM: 4
+      COMPOSTER: 3
+      JUKEBOX: 8
+      NOTE_BLOCK: 5
+      BOOKSHELF: 6
+      ITEM_FRAME: 3
+      PAINTING: 3
+      LADDER: 1
+      BOWL: 1
+      FURNACE: 3
+      BLAST_FURNACE: 8
+      SMOKER: 6
+      CARTOGRAPHY_TABLE: 5
+      FLETCHING_TABLE: 5
+      SMITHING_TABLE: 5
+      GRINDSTONE: 5
+      STONECUTTER: 5
+      BEEHIVE: 8
+      CAMPFIRE: 4
+      OAK_STAIRS: 1
+      OAK_SLAB: 0.5
+      OAK_FENCE: 1
+      OAK_FENCE_GATE: 2
+      OAK_DOOR: 2
+      OAK_TRAPDOOR: 2
+      OAK_BOAT: 3
+      OAK_SIGN: 1
+      SPRUCE_STAIRS: 1
+      SPRUCE_SLAB: 0.5
+      SPRUCE_FENCE: 1
+      SPRUCE_FENCE_GATE: 2
+      SPRUCE_DOOR: 2
+      SPRUCE_TRAPDOOR: 2
+      SPRUCE_BOAT: 3
+      SPRUCE_SIGN: 1
+      BIRCH_STAIRS: 1
+      BIRCH_SLAB: 0.5
+      BIRCH_FENCE: 1
+      BIRCH_FENCE_GATE: 2
+      BIRCH_DOOR: 2
+      BIRCH_TRAPDOOR: 2
+      BIRCH_BOAT: 3
+      BIRCH_SIGN: 1
+      JUNGLE_STAIRS: 1
+      JUNGLE_SLAB: 0.5
+      JUNGLE_FENCE: 1
+      JUNGLE_FENCE_GATE: 2
+      JUNGLE_DOOR: 2
+      JUNGLE_TRAPDOOR: 2
+      JUNGLE_BOAT: 3
+      JUNGLE_SIGN: 1
+      ACACIA_STAIRS: 1
+      ACACIA_SLAB: 0.5
+      ACACIA_FENCE: 1
+      ACACIA_FENCE_GATE: 2
+      ACACIA_DOOR: 2
+      ACACIA_TRAPDOOR: 2
+      ACACIA_BOAT: 3
+      ACACIA_SIGN: 1
+      DARK_OAK_STAIRS: 1
+      DARK_OAK_SLAB: 0.5
+      DARK_OAK_FENCE: 1
+      DARK_OAK_FENCE_GATE: 2
+      DARK_OAK_DOOR: 2
+      DARK_OAK_TRAPDOOR: 2
+      DARK_OAK_BOAT: 3
+      DARK_OAK_SIGN: 1
+      CHERRY_STAIRS: 1
+      CHERRY_SLAB: 0.5
+      CHERRY_FENCE: 1
+      CHERRY_FENCE_GATE: 2
+      CHERRY_DOOR: 2
+      CHERRY_TRAPDOOR: 2
+      CHERRY_BOAT: 3
+      CHERRY_SIGN: 1
+      MANGROVE_STAIRS: 1
+      MANGROVE_SLAB: 0.5
+      MANGROVE_FENCE: 1
+      MANGROVE_FENCE_GATE: 2
+      MANGROVE_DOOR: 2
+      MANGROVE_TRAPDOOR: 2
+      MANGROVE_BOAT: 3
+      MANGROVE_SIGN: 1
+    default: 0
+    # Upper bound of crafts counted for one shift-click.
+    max_batch: 64
+
+anti_farm:
+  # Diminishing returns for the same spot: after `free` events inside `window_seconds` in one cell of
+  # `cell` x `cell` x `cell` blocks, each further event gives `step` less experience (never below `min`).
+  mobs: {cell: 4, window_seconds: 120, free: 25, step: 0.04, min: 0.1}
+  blocks: {cell: 1, window_seconds: 30, free: 4, step: 0.2, min: 0.1}
+
+fortune:
+  # Mining/Farming/Foraging Fortune from the stats engine adds drops to blocks that give skill experience
+  # (100 fortune = one extra item per dropped item on average; Silk Touch tools get none).
+  # OFF by default: the items feature already applies these stats to block drops, so turning this on while the
+  # items feature runs multiplies every drop twice. Enable it only when the items feature is disabled.
+  enabled: false
+  max_multiplier: 10
+
+# Enchanted resources keep none of their vanilla behaviour: they cannot be placed, planted, eaten, burned, thrown,
+# smelted, dispensed, brewed or used in vanilla recipes (that would destroy the investment).
+enchanted_guard:
+  enabled: true
+
+# Sea creatures: a catch can summon a tagged vanilla mob instead of (in addition to) the loot. Killing it pays
+# Fishing XP (`xp.fishing.sea_creatures`) and its drops count in the collections.
+#   chance = base_chance + per_fishing_level * level + per_chance_stat * SEA_CREATURE_CHANCE (stat points), capped at max_chance
+sea_creatures:
+  enabled: true
+  base_chance: 0.04
+  per_fishing_level: 0.0008
+  per_chance_stat: 0.01
+  max_chance: 0.35
+  max_alive_per_player: 3
+  despawn_seconds: 120
+  # entity: vanilla type, min_level: Fishing level needed, weight: relative odds, health: max health (scaled up)
+  creatures:
+    squid: {entity: SQUID, name: "Sea Squid", min_level: 0, weight: 40, health: 30}
+    drowned: {entity: DROWNED, name: "Sunken Sailor", min_level: 3, weight: 30, health: 60}
+    glow_squid: {entity: GLOW_SQUID, name: "Glimmering Squid", min_level: 8, weight: 18, health: 80}
+    guardian: {entity: GUARDIAN, name: "Reef Guardian", min_level: 15, weight: 10, health: 150}
+    elder_guardian: {entity: ELDER_GUARDIAN, name: "Abyssal Elder", min_level: 30, weight: 2, health: 600}
+
+placed_tracking:
+  # Extra block types remembered when placed (everything with experience or a collection already is).
+  extra: []
+
+leaderboard:
+  refresh_seconds: 300
+  size: 100
+  max_files: 20000
+
+# Collections: counters of items you gathered (block drops, mob drops, fishing). Each tier pays coins once and can
+# unlock recipes below. Counting ignores placed blocks, immature crops and spawner mobs.
+collections:
+  presets:
+    bulk:
+      tiers: [100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000]
+      coins: [200, 400, 800, 1500, 3000, 6000, 12000, 24000, 48000, 100000]
+    common:
+      tiers: [50, 100, 250, 1000, 2500, 5000, 10000, 25000, 50000]
+      coins: [150, 300, 600, 1200, 2500, 5000, 10000, 20000, 40000]
+    uncommon:
+      tiers: [25, 50, 100, 250, 1000, 2500, 5000, 10000, 25000]
+      coins: [200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200]
+    rare:
+      tiers: [10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
+      coins: [300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 76800]
+  items:
+    COBBLESTONE:
+      category: MINING
+      preset: bulk
+      materials: [COBBLESTONE, COBBLED_DEEPSLATE]
+    COAL:
+      category: MINING
+      preset: common
+      materials: [COAL]
+    IRON:
+      name: "Iron"
+      category: MINING
+      preset: common
+      materials: [RAW_IRON]
+      icon: IRON_INGOT
+    GOLD:
+      name: "Gold"
+      category: MINING
+      preset: uncommon
+      materials: [RAW_GOLD]
+      icon: GOLD_INGOT
+    COPPER:
+      name: "Copper"
+      category: MINING
+      preset: common
+      materials: [RAW_COPPER]
+      icon: COPPER_INGOT
+    DIAMOND:
+      category: MINING
+      preset: rare
+      materials: [DIAMOND]
+    EMERALD:
+      category: MINING
+      preset: rare
+      materials: [EMERALD]
+    LAPIS:
+      name: "Lapis Lazuli"
+      category: MINING
+      preset: common
+      materials: [LAPIS_LAZULI]
+      icon: LAPIS_LAZULI
+    REDSTONE:
+      category: MINING
+      preset: common
+      materials: [REDSTONE]
+    QUARTZ:
+      category: MINING
+      preset: common
+      materials: [QUARTZ]
+    OBSIDIAN:
+      category: MINING
+      preset: uncommon
+      materials: [OBSIDIAN]
+    GLOWSTONE:
+      name: "Glowstone Dust"
+      category: MINING
+      preset: common
+      materials: [GLOWSTONE_DUST]
+      icon: GLOWSTONE_DUST
+    GRAVEL:
+      category: MINING
+      preset: bulk
+      materials: [GRAVEL]
+    SAND:
+      category: MINING
+      preset: bulk
+      materials: [SAND]
+    END_STONE:
+      category: MINING
+      preset: bulk
+      materials: [END_STONE]
+    ANCIENT_DEBRIS:
+      category: MINING
+      preset: rare
+      materials: [ANCIENT_DEBRIS]
+    WHEAT:
+      category: FARMING
+      preset: common
+      materials: [WHEAT]
+    CARROT:
+      category: FARMING
+      preset: common
+      materials: [CARROT]
+    POTATO:
+      category: FARMING
+      preset: common
+      materials: [POTATO]
+    BEETROOT:
+      category: FARMING
+      preset: common
+      materials: [BEETROOT]
+    PUMPKIN:
+      category: FARMING
+      preset: common
+      materials: [PUMPKIN]
+    MELON:
+      name: "Melon"
+      category: FARMING
+      preset: common
+      materials: [MELON_SLICE, MELON]
+      icon: MELON_SLICE
+    SUGAR_CANE:
+      category: FARMING
+      preset: common
+      materials: [SUGAR_CANE]
+    CACTUS:
+      category: FARMING
+      preset: common
+      materials: [CACTUS]
+    COCOA:
+      name: "Cocoa Beans"
+      category: FARMING
+      preset: common
+      materials: [COCOA_BEANS]
+      icon: COCOA_BEANS
+    NETHER_WART:
+      category: FARMING
+      preset: common
+      materials: [NETHER_WART]
+    MUSHROOM:
+      name: "Mushroom"
+      category: FARMING
+      preset: common
+      materials: [BROWN_MUSHROOM, RED_MUSHROOM]
+      icon: RED_MUSHROOM
+    SWEET_BERRIES:
+      category: FARMING
+      preset: common
+      materials: [SWEET_BERRIES]
+    OAK_LOG:
+      name: "Oak Wood"
+      category: FORAGING
+      preset: bulk
+    SPRUCE_LOG:
+      name: "Spruce Wood"
+      category: FORAGING
+      preset: bulk
+    BIRCH_LOG:
+      name: "Birch Wood"
+      category: FORAGING
+      preset: bulk
+    JUNGLE_LOG:
+      name: "Jungle Wood"
+      category: FORAGING
+      preset: bulk
+    ACACIA_LOG:
+      name: "Acacia Wood"
+      category: FORAGING
+      preset: bulk
+    DARK_OAK_LOG:
+      name: "Dark Oak Wood"
+      category: FORAGING
+      preset: bulk
+    CHERRY_LOG:
+      name: "Cherry Wood"
+      category: FORAGING
+      preset: bulk
+    MANGROVE_LOG:
+      name: "Mangrove Wood"
+      category: FORAGING
+      preset: bulk
+    ROTTEN_FLESH:
+      category: COMBAT
+      preset: common
+      materials: [ROTTEN_FLESH]
+    BONE:
+      category: COMBAT
+      preset: common
+      materials: [BONE]
+    STRING:
+      category: COMBAT
+      preset: common
+      materials: [STRING]
+    SPIDER_EYE:
+      category: COMBAT
+      preset: uncommon
+      materials: [SPIDER_EYE]
+    GUNPOWDER:
+      category: COMBAT
+      preset: common
+      materials: [GUNPOWDER]
+    ENDER_PEARL:
+      category: COMBAT
+      preset: rare
+      materials: [ENDER_PEARL]
+    BLAZE_ROD:
+      category: COMBAT
+      preset: rare
+      materials: [BLAZE_ROD]
+    GHAST_TEAR:
+      category: COMBAT
+      preset: rare
+      materials: [GHAST_TEAR]
+    SLIME_BALL:
+      name: "Slimeball"
+      category: COMBAT
+      preset: uncommon
+      materials: [SLIME_BALL]
+    MAGMA_CREAM:
+      category: COMBAT
+      preset: uncommon
+      materials: [MAGMA_CREAM]
+    COD:
+      name: "Raw Cod"
+      category: FISHING
+      preset: common
+      materials: [COD]
+    SALMON:
+      name: "Raw Salmon"
+      category: FISHING
+      preset: common
+      materials: [SALMON]
+    PUFFERFISH:
+      category: FISHING
+      preset: uncommon
+      materials: [PUFFERFISH]
+    TROPICAL_FISH:
+      category: FISHING
+      preset: uncommon
+      materials: [TROPICAL_FISH]
+    LILY_PAD:
+      category: FISHING
+      preset: common
+      materials: [LILY_PAD]
+    INK_SAC:
+      category: FISHING
+      preset: common
+      materials: [INK_SAC]
+    NAUTILUS_SHELL:
+      category: FISHING
+      preset: rare
+      materials: [NAUTILUS_SHELL]
+    PRISMARINE_SHARD:
+      category: FISHING
+      preset: uncommon
+      materials: [PRISMARINE_SHARD]
+    PRISMARINE_CRYSTALS:
+      category: FISHING
+      preset: uncommon
+      materials: [PRISMARINE_CRYSTALS]
+    SPONGE:
+      category: FISHING
+      preset: rare
+      materials: [SPONGE]
+
+# Compacted resources. Ids start with enchanted_ and belong to the skills feature unless the items feature
+# already registered the same id (then its definition is used). Textures: resource-pack/art/skills_icons.py.
+# tier 1 = enchanted, tier 2 = compacted.
+enchanted_items:
+  enchanted_cobblestone: {name: "Enchanted Cobblestone", material: COBBLESTONE, rarity: UNCOMMON, tier: 1}
+  enchanted_coal: {name: "Enchanted Coal", material: COAL, rarity: UNCOMMON, tier: 1}
+  enchanted_iron: {name: "Enchanted Iron", material: IRON_INGOT, rarity: UNCOMMON, tier: 1}
+  enchanted_gold: {name: "Enchanted Gold", material: GOLD_INGOT, rarity: UNCOMMON, tier: 1}
+  enchanted_diamond: {name: "Enchanted Diamond", material: DIAMOND, rarity: UNCOMMON, tier: 1}
+  enchanted_emerald: {name: "Enchanted Emerald", material: EMERALD, rarity: UNCOMMON, tier: 1}
+  enchanted_lapis: {name: "Enchanted Lapis Lazuli", material: LAPIS_LAZULI, rarity: UNCOMMON, tier: 1}
+  enchanted_redstone: {name: "Enchanted Redstone", material: REDSTONE, rarity: UNCOMMON, tier: 1}
+  enchanted_quartz: {name: "Enchanted Quartz", material: QUARTZ, rarity: UNCOMMON, tier: 1}
+  enchanted_obsidian: {name: "Enchanted Obsidian", material: OBSIDIAN, rarity: UNCOMMON, tier: 1}
+  enchanted_glowstone: {name: "Enchanted Glowstone Dust", material: GLOWSTONE_DUST, rarity: UNCOMMON, tier: 1}
+  enchanted_coal_block: {name: "Enchanted Coal Block", material: COAL_BLOCK, rarity: RARE, tier: 2}
+  enchanted_iron_block: {name: "Enchanted Iron Block", material: IRON_BLOCK, rarity: RARE, tier: 2}
+  enchanted_gold_block: {name: "Enchanted Gold Block", material: GOLD_BLOCK, rarity: RARE, tier: 2}
+  enchanted_diamond_block: {name: "Enchanted Diamond Block", material: DIAMOND_BLOCK, rarity: RARE, tier: 2}
+  enchanted_emerald_block: {name: "Enchanted Emerald Block", material: EMERALD_BLOCK, rarity: RARE, tier: 2}
+  enchanted_lapis_block: {name: "Enchanted Lapis Block", material: LAPIS_BLOCK, rarity: RARE, tier: 2}
+  enchanted_redstone_block: {name: "Enchanted Redstone Block", material: REDSTONE_BLOCK, rarity: RARE, tier: 2}
+  enchanted_quartz_block: {name: "Enchanted Quartz Block", material: QUARTZ_BLOCK, rarity: RARE, tier: 2}
+  enchanted_bread: {name: "Enchanted Bread", material: BREAD, rarity: UNCOMMON, tier: 1}
+  enchanted_carrot: {name: "Enchanted Carrot", material: CARROT, rarity: UNCOMMON, tier: 1}
+  enchanted_potato: {name: "Enchanted Potato", material: POTATO, rarity: UNCOMMON, tier: 1}
+  enchanted_pumpkin: {name: "Enchanted Pumpkin", material: PUMPKIN, rarity: UNCOMMON, tier: 1}
+  enchanted_melon: {name: "Enchanted Melon", material: MELON_SLICE, rarity: UNCOMMON, tier: 1}
+  enchanted_sugar: {name: "Enchanted Sugar", material: SUGAR, rarity: UNCOMMON, tier: 1}
+  enchanted_cactus: {name: "Enchanted Cactus", material: CACTUS, rarity: UNCOMMON, tier: 1}
+  enchanted_cocoa: {name: "Enchanted Cocoa Beans", material: COCOA_BEANS, rarity: UNCOMMON, tier: 1}
+  enchanted_nether_wart: {name: "Enchanted Nether Wart", material: NETHER_WART, rarity: UNCOMMON, tier: 1}
+  enchanted_golden_carrot: {name: "Enchanted Golden Carrot", material: GOLDEN_CARROT, rarity: RARE, tier: 2}
+  enchanted_baked_potato: {name: "Enchanted Baked Potato", material: BAKED_POTATO, rarity: RARE, tier: 2}
+  enchanted_oak_log: {name: "Enchanted Oak Wood", material: OAK_LOG, rarity: UNCOMMON, tier: 1}
+  enchanted_spruce_log: {name: "Enchanted Spruce Wood", material: SPRUCE_LOG, rarity: UNCOMMON, tier: 1}
+  enchanted_birch_log: {name: "Enchanted Birch Wood", material: BIRCH_LOG, rarity: UNCOMMON, tier: 1}
+  enchanted_jungle_log: {name: "Enchanted Jungle Wood", material: JUNGLE_LOG, rarity: UNCOMMON, tier: 1}
+  enchanted_acacia_log: {name: "Enchanted Acacia Wood", material: ACACIA_LOG, rarity: UNCOMMON, tier: 1}
+  enchanted_dark_oak_log: {name: "Enchanted Dark Oak Wood", material: DARK_OAK_LOG, rarity: UNCOMMON, tier: 1}
+  enchanted_rotten_flesh: {name: "Enchanted Rotten Flesh", material: ROTTEN_FLESH, rarity: UNCOMMON, tier: 1}
+  enchanted_bone: {name: "Enchanted Bone", material: BONE, rarity: UNCOMMON, tier: 1}
+  enchanted_string: {name: "Enchanted String", material: STRING, rarity: UNCOMMON, tier: 1}
+  enchanted_gunpowder: {name: "Enchanted Gunpowder", material: GUNPOWDER, rarity: UNCOMMON, tier: 1}
+  enchanted_ender_pearl: {name: "Enchanted Ender Pearl", material: ENDER_PEARL, rarity: UNCOMMON, tier: 1}
+  enchanted_blaze_rod: {name: "Enchanted Blaze Rod", material: BLAZE_ROD, rarity: UNCOMMON, tier: 1}
+  enchanted_slime_ball: {name: "Enchanted Slimeball", material: SLIME_BALL, rarity: UNCOMMON, tier: 1}
+  enchanted_slime_block: {name: "Enchanted Slime Block", material: SLIME_BLOCK, rarity: RARE, tier: 2}
+  enchanted_eye_of_ender: {name: "Enchanted Eye of Ender", material: ENDER_EYE, rarity: RARE, tier: 2}
+  enchanted_raw_fish: {name: "Enchanted Raw Fish", material: COD, rarity: UNCOMMON, tier: 1}
+  enchanted_raw_salmon: {name: "Enchanted Raw Salmon", material: SALMON, rarity: UNCOMMON, tier: 1}
+  enchanted_pufferfish: {name: "Enchanted Pufferfish", material: PUFFERFISH, rarity: UNCOMMON, tier: 1}
+  enchanted_clownfish: {name: "Enchanted Clownfish", material: TROPICAL_FISH, rarity: UNCOMMON, tier: 1}
+  enchanted_lily_pad: {name: "Enchanted Lily Pad", material: LILY_PAD, rarity: UNCOMMON, tier: 1}
+  enchanted_ink_sac: {name: "Enchanted Ink Sac", material: INK_SAC, rarity: UNCOMMON, tier: 1}
+  enchanted_cooked_fish: {name: "Enchanted Cooked Fish", material: COOKED_COD, rarity: RARE, tier: 2}
+  enchanted_cooked_salmon: {name: "Enchanted Cooked Salmon", material: COOKED_SALMON, rarity: RARE, tier: 2}
+
+# Recipes: shapeless, any arrangement of exactly the listed number of slots. Each slot needs `per_slot` items.
+#   ingredients: [{item: MATERIAL | custom: item_id, slots: 1-9, per_slot: 1-64}]  (at most 9 slots in total)
+#   result_custom: item id | result_item: MATERIAL, amount: 1-64
+#   requires: {COLLECTION_ID: tier}  the crafter needs every tier; the result shows "Recipe locked" until then
+#   xp: {skill: ENCHANTING, amount: n}  optional experience per craft
+# Two recipes must not share the same ingredient items (tier 2 uses the tier 1 custom item, so they differ).
+recipes:
+  enchanted_cobblestone:
+    result_custom: enchanted_cobblestone
+    ingredients: [{item: COBBLESTONE, slots: 5, per_slot: 32}]
+    requires: {COBBLESTONE: 4}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_coal:
+    result_custom: enchanted_coal
+    ingredients: [{item: COAL, slots: 5, per_slot: 32}]
+    requires: {COAL: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_iron:
+    result_custom: enchanted_iron
+    ingredients: [{item: IRON_INGOT, slots: 5, per_slot: 32}]
+    requires: {IRON: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_gold:
+    result_custom: enchanted_gold
+    ingredients: [{item: GOLD_INGOT, slots: 5, per_slot: 32}]
+    requires: {GOLD: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_diamond:
+    result_custom: enchanted_diamond
+    ingredients: [{item: DIAMOND, slots: 5, per_slot: 32}]
+    requires: {DIAMOND: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_emerald:
+    result_custom: enchanted_emerald
+    ingredients: [{item: EMERALD, slots: 5, per_slot: 32}]
+    requires: {EMERALD: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_lapis:
+    result_custom: enchanted_lapis
+    ingredients: [{item: LAPIS_LAZULI, slots: 5, per_slot: 32}]
+    requires: {LAPIS: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_redstone:
+    result_custom: enchanted_redstone
+    ingredients: [{item: REDSTONE, slots: 5, per_slot: 32}]
+    requires: {REDSTONE: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_quartz:
+    result_custom: enchanted_quartz
+    ingredients: [{item: QUARTZ, slots: 5, per_slot: 32}]
+    requires: {QUARTZ: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_obsidian:
+    result_custom: enchanted_obsidian
+    ingredients: [{item: OBSIDIAN, slots: 5, per_slot: 32}]
+    requires: {OBSIDIAN: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_glowstone:
+    result_custom: enchanted_glowstone
+    ingredients: [{item: GLOWSTONE_DUST, slots: 5, per_slot: 32}]
+    requires: {GLOWSTONE: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_bread:
+    result_custom: enchanted_bread
+    ingredients: [{item: WHEAT, slots: 5, per_slot: 32}]
+    requires: {WHEAT: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_carrot:
+    result_custom: enchanted_carrot
+    ingredients: [{item: CARROT, slots: 5, per_slot: 32}]
+    requires: {CARROT: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_potato:
+    result_custom: enchanted_potato
+    ingredients: [{item: POTATO, slots: 5, per_slot: 32}]
+    requires: {POTATO: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_pumpkin:
+    result_custom: enchanted_pumpkin
+    ingredients: [{item: PUMPKIN, slots: 5, per_slot: 32}]
+    requires: {PUMPKIN: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_melon:
+    result_custom: enchanted_melon
+    ingredients: [{item: MELON_SLICE, slots: 5, per_slot: 32}]
+    requires: {MELON: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_sugar:
+    result_custom: enchanted_sugar
+    ingredients: [{item: SUGAR_CANE, slots: 5, per_slot: 32}]
+    requires: {SUGAR_CANE: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_cactus:
+    result_custom: enchanted_cactus
+    ingredients: [{item: CACTUS, slots: 5, per_slot: 32}]
+    requires: {CACTUS: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_cocoa:
+    result_custom: enchanted_cocoa
+    ingredients: [{item: COCOA_BEANS, slots: 5, per_slot: 32}]
+    requires: {COCOA: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_nether_wart:
+    result_custom: enchanted_nether_wart
+    ingredients: [{item: NETHER_WART, slots: 5, per_slot: 32}]
+    requires: {NETHER_WART: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_oak_log:
+    result_custom: enchanted_oak_log
+    ingredients: [{item: OAK_LOG, slots: 5, per_slot: 32}]
+    requires: {OAK_LOG: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_spruce_log:
+    result_custom: enchanted_spruce_log
+    ingredients: [{item: SPRUCE_LOG, slots: 5, per_slot: 32}]
+    requires: {SPRUCE_LOG: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_birch_log:
+    result_custom: enchanted_birch_log
+    ingredients: [{item: BIRCH_LOG, slots: 5, per_slot: 32}]
+    requires: {BIRCH_LOG: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_jungle_log:
+    result_custom: enchanted_jungle_log
+    ingredients: [{item: JUNGLE_LOG, slots: 5, per_slot: 32}]
+    requires: {JUNGLE_LOG: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_acacia_log:
+    result_custom: enchanted_acacia_log
+    ingredients: [{item: ACACIA_LOG, slots: 5, per_slot: 32}]
+    requires: {ACACIA_LOG: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_dark_oak_log:
+    result_custom: enchanted_dark_oak_log
+    ingredients: [{item: DARK_OAK_LOG, slots: 5, per_slot: 32}]
+    requires: {DARK_OAK_LOG: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_rotten_flesh:
+    result_custom: enchanted_rotten_flesh
+    ingredients: [{item: ROTTEN_FLESH, slots: 5, per_slot: 32}]
+    requires: {ROTTEN_FLESH: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_bone:
+    result_custom: enchanted_bone
+    ingredients: [{item: BONE, slots: 5, per_slot: 32}]
+    requires: {BONE: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_string:
+    result_custom: enchanted_string
+    ingredients: [{item: STRING, slots: 5, per_slot: 32}]
+    requires: {STRING: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_gunpowder:
+    result_custom: enchanted_gunpowder
+    ingredients: [{item: GUNPOWDER, slots: 5, per_slot: 32}]
+    requires: {GUNPOWDER: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_ender_pearl:
+    result_custom: enchanted_ender_pearl
+    ingredients: [{item: ENDER_PEARL, slots: 5, per_slot: 32}]
+    requires: {ENDER_PEARL: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_blaze_rod:
+    result_custom: enchanted_blaze_rod
+    ingredients: [{item: BLAZE_ROD, slots: 5, per_slot: 32}]
+    requires: {BLAZE_ROD: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_slime_ball:
+    result_custom: enchanted_slime_ball
+    ingredients: [{item: SLIME_BALL, slots: 5, per_slot: 32}]
+    requires: {SLIME_BALL: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_raw_fish:
+    result_custom: enchanted_raw_fish
+    ingredients: [{item: COD, slots: 5, per_slot: 32}]
+    requires: {COD: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_raw_salmon:
+    result_custom: enchanted_raw_salmon
+    ingredients: [{item: SALMON, slots: 5, per_slot: 32}]
+    requires: {SALMON: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_pufferfish:
+    result_custom: enchanted_pufferfish
+    ingredients: [{item: PUFFERFISH, slots: 5, per_slot: 32}]
+    requires: {PUFFERFISH: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_clownfish:
+    result_custom: enchanted_clownfish
+    ingredients: [{item: TROPICAL_FISH, slots: 5, per_slot: 32}]
+    requires: {TROPICAL_FISH: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_lily_pad:
+    result_custom: enchanted_lily_pad
+    ingredients: [{item: LILY_PAD, slots: 5, per_slot: 32}]
+    requires: {LILY_PAD: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_ink_sac:
+    result_custom: enchanted_ink_sac
+    ingredients: [{item: INK_SAC, slots: 5, per_slot: 32}]
+    requires: {INK_SAC: 3}
+    xp: {skill: ENCHANTING, amount: 15}
+  enchanted_coal_block:
+    result_custom: enchanted_coal_block
+    ingredients: [{custom: enchanted_coal, slots: 5, per_slot: 16}]
+    requires: {COAL: 5}
+    xp: {skill: ENCHANTING, amount: 60}
+  enchanted_iron_block:
+    result_custom: enchanted_iron_block
+    ingredients: [{custom: enchanted_iron, slots: 5, per_slot: 16}]
+    requires: {IRON: 5}
+    xp: {skill: ENCHANTING, amount: 60}
+  enchanted_gold_block:
+    result_custom: enchanted_gold_block
+    ingredients: [{custom: enchanted_gold, slots: 5, per_slot: 16}]
+    requires: {GOLD: 5}
+    xp: {skill: ENCHANTING, amount: 60}
+  enchanted_diamond_block:
+    result_custom: enchanted_diamond_block
+    ingredients: [{custom: enchanted_diamond, slots: 5, per_slot: 16}]
+    requires: {DIAMOND: 5}
+    xp: {skill: ENCHANTING, amount: 60}
+  enchanted_emerald_block:
+    result_custom: enchanted_emerald_block
+    ingredients: [{custom: enchanted_emerald, slots: 5, per_slot: 16}]
+    requires: {EMERALD: 5}
+    xp: {skill: ENCHANTING, amount: 60}
+  enchanted_lapis_block:
+    result_custom: enchanted_lapis_block
+    ingredients: [{custom: enchanted_lapis, slots: 5, per_slot: 16}]
+    requires: {LAPIS: 5}
+    xp: {skill: ENCHANTING, amount: 60}
+  enchanted_redstone_block:
+    result_custom: enchanted_redstone_block
+    ingredients: [{custom: enchanted_redstone, slots: 5, per_slot: 16}]
+    requires: {REDSTONE: 5}
+    xp: {skill: ENCHANTING, amount: 60}
+  enchanted_quartz_block:
+    result_custom: enchanted_quartz_block
+    ingredients: [{custom: enchanted_quartz, slots: 5, per_slot: 16}]
+    requires: {QUARTZ: 5}
+    xp: {skill: ENCHANTING, amount: 60}
+  enchanted_golden_carrot:
+    result_custom: enchanted_golden_carrot
+    ingredients: [{custom: enchanted_carrot, slots: 5, per_slot: 16}]
+    requires: {CARROT: 5}
+    xp: {skill: ENCHANTING, amount: 60}
+  enchanted_baked_potato:
+    result_custom: enchanted_baked_potato
+    ingredients: [{custom: enchanted_potato, slots: 5, per_slot: 16}]
+    requires: {POTATO: 5}
+    xp: {skill: ENCHANTING, amount: 60}
+  enchanted_slime_block:
+    result_custom: enchanted_slime_block
+    ingredients: [{custom: enchanted_slime_ball, slots: 5, per_slot: 16}]
+    requires: {SLIME_BALL: 5}
+    xp: {skill: ENCHANTING, amount: 60}
+  enchanted_eye_of_ender:
+    result_custom: enchanted_eye_of_ender
+    ingredients: [{custom: enchanted_ender_pearl, slots: 5, per_slot: 16}]
+    requires: {ENDER_PEARL: 5}
+    xp: {skill: ENCHANTING, amount: 60}
+  enchanted_cooked_fish:
+    result_custom: enchanted_cooked_fish
+    ingredients: [{custom: enchanted_raw_fish, slots: 5, per_slot: 16}]
+    requires: {COD: 5}
+    xp: {skill: ENCHANTING, amount: 60}
+  enchanted_cooked_salmon:
+    result_custom: enchanted_cooked_salmon
+    ingredients: [{custom: enchanted_raw_salmon, slots: 5, per_slot: 16}]
+    requires: {SALMON: 5}
+    xp: {skill: ENCHANTING, amount: 60}
