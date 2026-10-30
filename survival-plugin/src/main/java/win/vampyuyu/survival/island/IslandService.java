@@ -448,7 +448,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
                     player.setFallDistance(0);
                 }
             });
-        } catch (UnsupportedOperationException e) {
+        } catch (RuntimeException e) {
             player.teleport(target, TeleportCause.PLUGIN);
             player.setFallDistance(0);
         }
