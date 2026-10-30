@@ -417,48 +417,44 @@ public class IslandFeatureTest {
     public void expansionsAreFreeWithoutTheRetiredEconomyAndChargeOnlyWhenAnEconomyIsProvided() {
         PlayerMock owner = player("Buyer");
         Island island = readyIsland(owner);
-        int radiusBefore = service.config().radiusFor(island);
+        int slotsBefore = service.config().memberSlotsFor(island);
         plugin.core().unpublish(EconomyApi.class);
-        owner.performCommand("island upgrade radius");
+        owner.performCommand("island upgrade members");
         assertTrue("simple Skyblock expansion stays usable", said(owner).contains("upgraded"));
-        assertEquals(1, island.radiusTier);
-        island.radiusTier = 0; // The remaining assertions exercise the optional legacy economy provider.
+        assertEquals(1, island.memberTier);
+        island.memberTier = 0; // The remaining assertions exercise the optional legacy economy provider.
 
         FakeEconomy economy = new FakeEconomy();
         plugin.core().replace(EconomyApi.class, economy);
-        owner.performCommand("island upgrade radius");
+        owner.performCommand("island upgrade members");
         assertTrue(said(owner).contains("You need"));
-        assertEquals(0, island.radiusTier);
+        assertEquals(0, island.memberTier);
         assertEquals(0, economy.takes);
 
-        double price = service.tiers(Upgrade.RADIUS).get(1).cost();
+        double price = service.tiers(Upgrade.MEMBERS).get(1).cost();
         assertTrue(price > 0);
         economy.balance = price + 1;
-        owner.performCommand("island upgrade radius");
-        assertEquals(1, island.radiusTier);
+        owner.performCommand("island upgrade members");
+        assertEquals(1, island.memberTier);
         assertEquals(1, economy.takes);
         assertEquals(1.0, economy.balance, 1e-9);
-        assertTrue(service.config().radiusFor(island) > radiusBefore);
-        assertEquals(service.config().radiusFor(island), service.radius(owner.getUniqueId()));
-        assertEquals(service.config().radiusFor(island), service.islandOf(owner.getUniqueId()).orElseThrow().radius());
+        assertTrue(service.config().memberSlotsFor(island) > slotsBefore);
 
         // maximum: no charge
         economy.balance = 1e12;
         for (int i = 0; i < 40; i++) {
-            owner.performCommand("island upgrade radius");
+            owner.performCommand("island upgrade members");
         }
-        assertEquals(service.tiers(Upgrade.RADIUS).size() - 1, island.radiusTier);
+        assertEquals(service.tiers(Upgrade.MEMBERS).size() - 1, island.memberTier);
         double after = economy.balance;
-        owner.performCommand("island upgrade radius");
+        owner.performCommand("island upgrade members");
         assertEquals(after, economy.balance, 0);
-        assertTrue(service.config().radiusFor(island) <= service.config().maxRadius());
 
         // visitors cannot buy
         PlayerMock visitor = player("Visitor");
-        visitor.performCommand("island upgrade radius");
+        visitor.performCommand("island upgrade members");
         assertTrue(said(visitor).contains("do not have an island"));
         assertEquals(0, service.minionSlotBonus(UUID.randomUUID()));
-        assertEquals(0, service.radius(UUID.randomUUID()));
     }
 
     @Test

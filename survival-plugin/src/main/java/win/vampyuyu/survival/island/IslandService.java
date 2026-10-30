@@ -1041,12 +1041,13 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         if (template == null || !template.enabled() || !IslandTemplates.exists(template.id())) {
             return Result.fail("Unknown island type '" + templateId + "'.");
         }
-        PlayerIslandData data = data(id);
-        island.kitOwed = !cfg.starterOnce || !data.starterClaimed;
-        island.lootOwed = !cfg.starterOnce || !data.lootClaimed;
+        // A reset starts over: the full starter chest again, and the player's Skyblock inventory is emptied (no farming).
+        island.kitOwed = true;
+        island.lootOwed = true;
         island.kitFor = id;
         island.lootFor = id;
         int gen = ++island.generation; // drops every callback of the island's earlier builds, platform jobs and scans
+        core.modes().resetSkyblockState(player);
         core.modes().awaitIsland(player);
         island.state(Island.State.RESETTING);
         island.lastResetAt = now();

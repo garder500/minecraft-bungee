@@ -319,7 +319,7 @@ public class IslandReviewFixesTest {
         p.performCommand("island reset");
         tick(20);
         assertEquals(Island.State.READY, island.state());
-        assertFalse("anti farming: no second kit", has(fake.lastOverworldChest(), Material.ICE));
+        assertTrue("a reset hands out the full starter chest again", has(fake.lastOverworldChest(), Material.ICE));
         assertTrue(has(fake.lastOverworldChest(), Material.BONE_MEAL));
         assertEquals("a reset draws another generation", 3, island.generation);
     }
@@ -352,7 +352,7 @@ public class IslandReviewFixesTest {
         member.performCommand("island reset");
         member.performCommand("island reset");
         tick(30);
-        assertFalse(has(fake.lastOverworldChest(island), Material.ICE));
+        assertTrue(has(fake.lastOverworldChest(island), Material.ICE));
     }
 
     @Test

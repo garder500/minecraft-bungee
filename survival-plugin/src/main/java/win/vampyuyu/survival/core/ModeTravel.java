@@ -253,6 +253,25 @@ public final class ModeTravel implements Listener {
             : org.bukkit.inventory.ItemStack.deserializeItemsFromBytes(java.util.Base64.getDecoder().decode(data));
     }
 
+    /** Island reset: empties the player's Skyblock items, ender chest, XP, health and food; Survival is never touched. */
+    public void resetSkyblockState(Player player) {
+        Stashes stashes = core.profiles().section(player.getUniqueId(), "mode_inventories", Stashes.class, Stashes::new);
+        boolean liveSky = stashes.live != null ? "skyblock".equals(stashes.live) : sky(player.getWorld());
+        if (liveSky) {
+            player.getInventory().clear();
+            player.getEnderChest().clear();
+            player.setLevel(0);
+            player.setExp(0);
+            player.setFoodLevel(20);
+            player.setSaturation(5);
+            var max = player.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+            player.setHealth(max == null ? 20 : max.getValue());
+        } else {
+            stashes.skyblock = null; // Skyblock state is in the stash; Survival is live
+        }
+        core.profiles().markDirty(player.getUniqueId());
+    }
+
     /** Puts the live state in the stash of the mode it belongs to and loads the other mode's stash (empty the first time). */
     void swapInventory(Player player, boolean skyblock) {
         Stashes stashes = core.profiles().section(player.getUniqueId(), "mode_inventories", Stashes.class, Stashes::new);

@@ -89,6 +89,17 @@ public class SimpleSkyblockTest {
         assertEquals(survival,player.getWorld());
         assertTrue(player.getLocation().distance(spot) < 4);
     }
+    @Test public void resetClearsSkyblockInventoryAndKeepsSurvival() {
+        player.teleport(survival.getSpawnLocation());
+        player.getInventory().addItem(new org.bukkit.inventory.ItemStack(Material.DIAMOND,3));
+        assertTrue(plugin.core().modes().enterIsland(player));
+        player.getInventory().addItem(new org.bukkit.inventory.ItemStack(Material.DIRT,5));
+        assertTrue(islands.reset(player,"classic").ok());
+        assertFalse(player.getInventory().contains(Material.DIRT));
+        assertTrue(personal.kitOwed);
+        assertTrue(plugin.core().modes().enterSurvival(player));
+        assertTrue(player.getInventory().contains(Material.DIAMOND));
+    }
     @Test public void onlyTwoSkyblockWorldsAndNoProgressionFeatures() {
         assertNull(server.getWorld(SkyblockWorlds.HUB));
         assertNull(server.getWorld(SkyblockWorlds.END));
