@@ -7,15 +7,15 @@ import java.util.Optional;
  *
  * <ol>
  *   <li>A player inside a dungeon run is never moved (the dungeon feature owns them).</li>
- *   <li>No key, a stale key or a key for a dungeon the player is not in: the player is not moved
- *       ({@link NoKey#STAY}, the default), or sent to the hub ({@link NoKey#HUB}, the design doc's original rule)
- *       unless they already stand in a Skyblock world.</li>
+ *   <li>No key, a stale key or a key for a dungeon the player is not in: a normal join, so the player is sent to
+ *       the hub ({@link NoKey#HUB}, the design contract section 12.3 and the default) unless they already stand in a
+ *       Skyblock world. {@link NoKey#STAY} (leave them where the server put them) is an opt-in.</li>
  *   <li>A Skyblock key: island if the player has one, else the hub with the create-island prompt.</li>
  * </ol>
  */
 public final class JoinRouter {
     /** What to do with a joining player who has no usable key. */
-    public enum NoKey { STAY, HUB }
+    public enum NoKey { HUB, STAY }
 
     /** The outcome. */
     public enum Action {

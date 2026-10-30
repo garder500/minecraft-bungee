@@ -101,4 +101,42 @@ public class SoulLogicTest {
         assertEquals(1, steps.size());
         assertEquals(1, stepProblems.size());
     }
+
+    @Test
+    public void islandOffsetsBelongToTheirWorld() {
+        List<SoulDef> mixed = List.of(new SoulDef("island_1", "world", 1, 1, 1, true),
+            new SoulDef("nether_1", "nether", 2, 1, 2, true), new SoulDef("any_1", "", 3, 1, 3, true));
+        assertEquals(List.of("island_1", "any_1"), SoulLogic.spotsFor("sb_world", new double[] {0, 0, 0}, List.of(), mixed,
+            MenuConfig::worldName).stream().map(SoulSpot::id).toList());
+        assertEquals(List.of("nether_1", "any_1"), SoulLogic.spotsFor("sb_nether", new double[] {0, 0, 0}, List.of(), mixed,
+            MenuConfig::worldName).stream().map(SoulSpot::id).toList());
+    }
+
+    @Test
+    public void parseKeepsTheWorldOfIslandSoulsAndRequiresOneForFixedSouls() {
+        List<String> problems = new java.util.ArrayList<>();
+        List<SoulDef> island = SoulLogic.parse(List.of(Map.of("id", "a", "world", "end", "x", 1, "y", 1, "z", 1),
+            Map.of("id", "b", "x", 1, "y", 1, "z", 1)), true, problems);
+        assertEquals(List.of("end", "world"), island.stream().map(SoulDef::world).toList());
+        assertTrue(problems.isEmpty());
+        assertEquals(0, SoulLogic.parse(List.of(Map.of("id", "c", "x", 1, "y", 1, "z", 1)), false, problems).size());
+        assertEquals(1, problems.size());
+    }
+
+    @Test
+    public void milestoneCoinsGrowAndZoneProgressCountsEachIdOnce() {
+        assertEquals(250, SoulLogic.milestoneCoins(1, 250, 50), 0);
+        assertEquals(500, SoulLogic.milestoneCoins(6, 250, 50), 0);
+        assertEquals(250, SoulLogic.milestoneCoins(9, 250, -10), 0);
+        List<SoulDef> defs = List.of(new SoulDef("a", "hub", 0, 0, 0, false), new SoulDef("a", "hub", 1, 0, 0, false),
+            new SoulDef("b", "world", 0, 0, 0, true), new SoulDef("c", "moon", 0, 0, 0, false));
+        var progress = SoulLogic.progress(java.util.Set.of("a", "c"), defs);
+        assertEquals(List.of("hub", "world", "moon"), progress.stream().map(SoulLogic.ZoneProgress::zone).toList());
+        assertEquals(1, progress.get(0).total());
+        assertEquals(1, progress.get(0).found());
+        assertEquals(0, progress.get(1).found());
+        assertEquals("███░░░░░", SoulLogic.bar(3, 8, 8));
+        assertEquals("░░░░", SoulLogic.bar(0, 0, 4));
+        assertEquals("████", SoulLogic.bar(9, 4, 4));
+    }
 }

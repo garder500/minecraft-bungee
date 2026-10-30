@@ -3,27 +3,28 @@ package win.vampyuyu.survival.menu;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.SkullMeta;
 import win.vampyuyu.survival.api.BossApi;
-import win.vampyuyu.survival.api.IslandInfo;
 import win.vampyuyu.survival.core.Gui;
 import win.vampyuyu.survival.core.Guis;
 import win.vampyuyu.survival.core.SkyblockWorlds;
 
-/** The warps menu: hub, island, Nether, End, boss arena hints and public islands. */
+/** The warps menu: hub, island, Nether, End, boss arena hints and the island feature's public warps. */
 final class WarpsGui {
     private final MenuRuntime rt;
     private final WarpService warps;
     private Consumer<Player> back = p -> { };
+    private BiConsumer<Player, String> run = (p, command) -> p.performCommand(command);
 
     WarpsGui(MenuRuntime rt, WarpService warps) {
         this.rt = rt;
@@ -32,6 +33,11 @@ final class WarpsGui {
 
     void backTo(Consumer<Player> back) {
         this.back = back;
+    }
+
+    /** How a linked feature's command is run for the player (the main menu's runner also counts it for quests). */
+    void runWith(BiConsumer<Player, String> run) {
+        this.run = run;
     }
 
     private static String esc(String text) {
@@ -59,25 +65,21 @@ final class WarpsGui {
             ? Guis.icon(Material.END_STONE, "<light_purple>The End", "<gray>Endermen and the way to the", "<gray>end bosses.", "", status)
             : unavailable("The End"), click -> go(click, WarpService.Target.END));
         gui.set(14, bossIcon());
-        gui.set(15, Guis.icon(Material.SPYGLASS, "<aqua>Public Islands",
-            "<gray>Visit islands that their", "<gray>owners opened to everyone.", "",
-            "<gray>Open islands: <aqua>" + warps.publicWarps().list().size(), "", "<yellow>Click to browse!"),
-            click -> publicIslands(player));
-        boolean open = warps.publicWarps().isPublic(player.getUniqueId());
-        gui.set(16, !hasIsland ? Guis.icon(Material.GRAY_DYE, "<gray>Open My Island", "<gray>You need an island first.")
-            : Guis.icon(open ? Material.LIME_DYE : Material.GRAY_DYE,
-                open ? "<green>My Island is Public" : "<gray>My Island is Private",
-                "<gray>Let anyone visit your island", "<gray>from the Public Islands list.", "",
-                "<yellow>Click to " + (open ? "close" : "open") + " it!"), click -> {
-                    if (open) {
-                        warps.publicWarps().unpublish(player.getUniqueId());
-                        rt.core.msg().ok(player, "Your island is private again.");
-                    } else if (rt.islands().flatMap(api -> api.islandOf(player.getUniqueId())).isPresent()) {
-                        warps.publicWarps().publish(player.getUniqueId(), player.getName(), "");
-                        rt.core.msg().ok(player, "Your island is now listed in Public Islands.");
-                    }
-                    open(player);
-                });
+        boolean islandCommands = rt.commandFor("island", player).isPresent();
+        gui.set(15, islandCommands
+            ? Guis.icon(Material.SPYGLASS, "<aqua>Public Islands",
+                "<gray>Visit islands that their", "<gray>owners opened to everyone.", "", "<yellow>Click to browse!")
+            : unavailable("Public Islands"), click -> islandCommand(click, "warp"));
+        gui.set(16, islandCommands
+            ? Guis.icon(Material.PLAYER_HEAD, "<green>Visit a Player",
+                "<gray>Visit the island of a friend", "<gray>who invited you.", "",
+                "<gray>Type <yellow>/island visit <player>", "", "<yellow>Click to get the command!")
+            : unavailable("Visit a Player"), click -> {
+                click.close();
+                rt.core.scheduler().nextTick(() -> player.sendMessage(rt.core.msg().prefix().append(
+                    Component.text("Click here to visit a player: /island visit ", NamedTextColor.YELLOW)
+                        .clickEvent(ClickEvent.suggestCommand("/island visit ")))));
+            });
         gui.set(31, Guis.icon(Material.ARROW, "<green>Go Back", "<gray>To Skyblock Menu"), click -> back.accept(player));
         gui.open(player);
         rt.play(player, "click");
@@ -115,41 +117,15 @@ final class WarpsGui {
         return Guis.icon(Material.WITHER_SKELETON_SKULL, "<red>Boss Arenas", lore.toArray(String[]::new));
     }
 
-    void publicIslands(Player player) {
-        Gui gui = rt.core.guis().create(5, "<dark_gray>Public Islands");
-        gui.border(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
-        List<Map.Entry<UUID, PublicWarps.Entry>> list = warps.publicWarps().list();
-        gui.paginate(list, gui.innerSlots(), entry -> islandIcon(entry.getKey(), entry.getValue()), (click, entry) -> {
-            click.close();
-            rt.core.scheduler().nextTick(() -> warps.visit(player, entry.getKey()));
-        }, 36, 44);
-        gui.set(40, Guis.icon(Material.ARROW, "<green>Go Back", "<gray>To Warps"), click -> open(player));
-        if (list.isEmpty()) {
-            gui.set(22, Guis.icon(Material.BARRIER, "<red>No public islands yet",
-                "<gray>Open your own island from the", "<gray>Warps menu or with <yellow>/sbwarps public on<gray>."));
+    /** Runs {@code /island <sub>} as the player (the island feature owns public warps and visits). */
+    private void islandCommand(Gui.Click click, String sub) {
+        Player player = click.player();
+        click.close();
+        Optional<String> command = rt.commandFor("island", player);
+        if (command.isEmpty()) {
+            rt.core.msg().error(player, "Islands are not available right now.");
+            return;
         }
-        gui.open(player);
-    }
-
-    private ItemStack islandIcon(UUID owner, PublicWarps.Entry entry) {
-        List<String> lore = new ArrayList<>();
-        if (!entry.note.isBlank()) {
-            lore.add("<gray>" + esc(entry.note));
-            lore.add("");
-        }
-        Optional<IslandInfo> island = rt.islands().flatMap(api -> api.islandOf(owner));
-        island.ifPresent(i -> {
-            long online = i.members().stream().filter(m -> Bukkit.getPlayer(m) != null).count();
-            lore.add("<gray>Members online: <green>" + online + "<gray>/" + i.members().size());
-        });
-        lore.add("");
-        lore.add("<yellow>Click to visit!");
-        ItemStack head = Guis.icon(Material.PLAYER_HEAD, "<green>" + esc(entry.name) + "<gray>'s Island",
-            lore.toArray(String[]::new));
-        if (head.getItemMeta() instanceof SkullMeta meta) {
-            meta.setOwningPlayer(Bukkit.getOfflinePlayer(owner));
-            head.setItemMeta(meta);
-        }
-        return head;
+        run.accept(player, command.get() + " " + sub);
     }
 }

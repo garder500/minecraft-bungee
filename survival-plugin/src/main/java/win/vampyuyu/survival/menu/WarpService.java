@@ -10,14 +10,13 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import win.vampyuyu.survival.api.IslandApi;
-import win.vampyuyu.survival.api.IslandInfo;
 import win.vampyuyu.survival.core.Cooldowns;
 import win.vampyuyu.survival.core.Msg;
 import win.vampyuyu.survival.core.Scheduler;
 import win.vampyuyu.survival.core.SkyblockWorlds;
 
 /**
- * Hub navigation. Every warp runs through the same checks: the player must be in a Skyblock world (a warp is never a way
+ * Hub navigation (public island warps and visits belong to the island feature: {@code /island warp}, {@code /island visit}). Every warp runs through the same checks: the player must be in a Skyblock world (a warp is never a way
  * out of a plain survival world, into a dungeon run or out of one), a cooldown applies, and a warm-up (standing still)
  * protects against using warps as an escape in a fight. There is no combat tag API; taking damage during the warm-up
  * cancels it, which gives the same protection.
@@ -29,17 +28,11 @@ final class WarpService {
     private record Pending(Scheduler.Handle task, Location start, double health) {}
 
     private final MenuRuntime rt;
-    private final PublicWarps publicWarps;
     private final Cooldowns cooldowns = new Cooldowns();
     private final Map<UUID, Pending> pending = new HashMap<>();
 
-    WarpService(MenuRuntime rt, PublicWarps publicWarps) {
+    WarpService(MenuRuntime rt) {
         this.rt = rt;
-        this.publicWarps = publicWarps;
-    }
-
-    PublicWarps publicWarps() {
-        return publicWarps;
     }
 
     /** Why the player cannot warp right now, empty when they can. */
@@ -90,34 +83,6 @@ final class WarpService {
         start(player, label, () -> {
             Location destination = MenuConfig.warpLocation(section, world);
             return teleport(player, destination);
-        });
-    }
-
-    /** Teleports to a public island of another player. */
-    void visit(Player player, UUID owner) {
-        Optional<String> block = blocked(player);
-        if (block.isPresent()) {
-            rt.core.msg().error(player, block.get());
-            return;
-        }
-        if (!publicWarps.isPublic(owner)) {
-            rt.core.msg().error(player, "That island is not open to visitors.");
-            return;
-        }
-        Optional<IslandInfo> island = rt.islands().flatMap(api -> api.islandOf(owner));
-        if (island.isEmpty() || island.get().center() == null || island.get().center().getWorld() == null) {
-            rt.core.msg().error(player, "That island is not available.");
-            return;
-        }
-        String name = publicWarps.get(owner).map(e -> e.name).orElse("that player");
-        start(player, name + "'s island", () -> {
-            // re-check at the moment of the teleport: the owner may have closed the island during the warm-up
-            Optional<IslandInfo> fresh = rt.islands().flatMap(api -> api.islandOf(owner));
-            if (!publicWarps.isPublic(owner) || fresh.isEmpty() || fresh.get().center().getWorld() == null) {
-                rt.core.msg().error(player, "That island is no longer open to visitors.");
-                return false;
-            }
-            return teleport(player, fresh.get().center().clone());
         });
     }
 

@@ -38,7 +38,7 @@ public class SettingsAndSidebarTest extends MenuTestBase {
     @Test
     public void defaultsAreAllOn() {
         MenuData data = rt.prefs(player.getUniqueId());
-        assertTrue(data.sidebar && data.questTracker && data.damageIndicators && data.sounds);
+        assertTrue(data.sidebar && data.questTracker && data.sounds);
         assertFalse(data.welcomed);
     }
 
@@ -47,10 +47,9 @@ public class SettingsAndSidebarTest extends MenuTestBase {
         assertFalse(settings.toggle(player, Setting.SIDEBAR));
         assertFalse(rt.prefs(player.getUniqueId()).sidebar);
         assertTrue(settings.toggle(player, Setting.SIDEBAR));
-        assertFalse(settings.toggle(player, Setting.DAMAGE_INDICATORS));
         assertFalse(settings.toggle(player, Setting.SOUNDS));
         assertFalse(settings.toggle(player, Setting.QUEST_TRACKER));
-        assertEquals(5, changed.size());
+        assertEquals(4, changed.size());
     }
 
     @Test
@@ -75,7 +74,6 @@ public class SettingsAndSidebarTest extends MenuTestBase {
     @Test
     public void settingKeysAreCommandFriendly() {
         assertEquals("quest-tracker", Setting.QUEST_TRACKER.key());
-        assertEquals("damage-indicators", Setting.DAMAGE_INDICATORS.key());
     }
 
     @Test
@@ -83,12 +81,12 @@ public class SettingsAndSidebarTest extends MenuTestBase {
         settings.open(player);
         var top = player.getOpenInventory().getTopInventory();
         int icons = 0;
-        for (int slot : new int[] {10, 12, 14, 16}) {
+        for (int slot : new int[] {10, 12, 14}) {
             if (top.getItem(slot) != null) {
                 icons++;
             }
         }
-        assertEquals(4, icons);
+        assertEquals(3, icons);
     }
 
     // ------------------------------------------------------------ sidebar
@@ -168,5 +166,76 @@ public class SettingsAndSidebarTest extends MenuTestBase {
         sidebar.refresh(player);
         sidebar.stop();
         assertSame(Bukkit.getScoreboardManager().getMainScoreboard(), player.getScoreboard());
+    }
+
+    // ------------------------------------------------------------ other features' scoreboards
+
+    private org.bukkit.scoreboard.Scoreboard foreignBoard(String objective) {
+        var board = Bukkit.getScoreboardManager().getNewScoreboard();
+        var o = board.registerNewObjective(objective, org.bukkit.scoreboard.Criteria.DUMMY,
+            net.kyori.adventure.text.Component.text("Other"));
+        o.setDisplaySlot(org.bukkit.scoreboard.DisplaySlot.SIDEBAR);
+        return board;
+    }
+
+    @Test
+    public void aBoardOfAnotherFeatureIsNeverReplaced() {
+        player.teleport(new Location(world("sb_world"), 0, 64, 0));
+        var theirs = foreignBoard("dungeon");
+        player.setScoreboard(theirs);
+        for (int i = 0; i < 5; i++) {
+            sidebar.refresh(player);
+        }
+        assertSame("no flicker: the foreign board stays", theirs, player.getScoreboard());
+    }
+
+    @Test
+    public void dungeonWorldsAreLeftToTheDungeonSidebar() {
+        player.teleport(new Location(world("sb_dungeon_run1"), 0, 64, 0));
+        var theirs = foreignBoard("dungeon");
+        player.setScoreboard(theirs);
+        sidebar.refresh(player);
+        sidebar.refresh(player);
+        assertSame(theirs, player.getScoreboard());
+    }
+
+    @Test
+    public void ourBoardIsDroppedWhenARunStartsAndAdoptedAgainWhenItIsHandedBack() {
+        player.teleport(new Location(world("sb_world"), 0, 64, 0));
+        sidebar.refresh(player);
+        var ours = player.getScoreboard();
+        assertNotNull(ours.getObjective(SidebarService.OBJECTIVE));
+        // the run starts: the dungeon feature shows its own board
+        player.teleport(new Location(world("sb_dungeon_run1"), 0, 64, 0));
+        var theirs = foreignBoard("dungeon");
+        player.setScoreboard(theirs);
+        sidebar.refresh(player);
+        assertSame(theirs, player.getScoreboard());
+        // the run ends: the dungeon feature gives back the board it captured on entry (ours)
+        player.setScoreboard(ours);
+        player.teleport(new Location(world("sb_world"), 0, 64, 0));
+        sidebar.refresh(player);
+        assertSame("adopted, not replaced", ours, player.getScoreboard());
+        assertFalse(sidebar.build(player).isEmpty());
+        // and it still goes away when the player leaves Skyblock
+        player.teleport(new Location(world("world"), 0, 64, 0));
+        sidebar.refresh(player);
+        assertSame(Bukkit.getScoreboardManager().getMainScoreboard(), player.getScoreboard());
+    }
+
+    @Test
+    public void aDungeonApiRunInASkyblockWorldAlsoSkipsTheSidebar() {
+        core.register(win.vampyuyu.survival.api.DungeonApi.class, p -> true);
+        player.teleport(new Location(world("sb_world"), 0, 64, 0));
+        sidebar.refresh(player);
+        assertSame(Bukkit.getScoreboardManager().getMainScoreboard(), player.getScoreboard());
+    }
+
+    @Test
+    public void theServerNameLineComesFromTheConfig() {
+        List<String> lines = sidebar.build(player);
+        assertTrue(lines.toString(), lines.contains("<white>Server: <green>Skyblock"));
+        assertEquals("<yellow>vampyuyu.win", lines.get(lines.size() - 1));
+        assertEquals(lines.size() - 2, lines.indexOf("<white>Server: <green>Skyblock"));
     }
 }

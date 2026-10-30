@@ -140,7 +140,19 @@ final class FairySouls implements Listener {
 
     /** Number of souls a player can find in total (fixed souls plus one island's worth). */
     int total() {
-        return fixedSouls().size() + rt.config().fairyIsland.size();
+        return allDefs().size();
+    }
+
+    /** Every soul definition: configured, island offsets and admin placed ones. */
+    List<SoulDef> allDefs() {
+        List<SoulDef> all = fixedSouls();
+        all.addAll(rt.config().fairyIsland);
+        return all;
+    }
+
+    /** Found/total per zone for the Fairy Souls menu. */
+    List<SoulLogic.ZoneProgress> zoneProgress(Player player) {
+        return SoulLogic.progress(rt.fairy(player.getUniqueId()).found, allDefs());
     }
 
     List<SoulDef> adminSouls() {
@@ -365,13 +377,14 @@ final class FairySouls implements Listener {
             SoulLogic.StatStep step = cfg.fairyCycle.isEmpty() ? null
                 : cfg.fairyCycle.get((number - 1) % cfg.fairyCycle.size());
             String reward = "";
-            if (cfg.fairyCoinsPerMilestone > 0) {
+            double coins = SoulLogic.milestoneCoins(number, cfg.fairyCoinsPerMilestone, cfg.fairyCoinsIncrease);
+            if (coins > 0) {
                 if (rt.economy().isPresent()) {
-                    rt.economy().get().add(player.getUniqueId(), cfg.fairyCoinsPerMilestone, "fairy:milestone");
+                    rt.economy().get().add(player.getUniqueId(), coins, "fairy:milestone");
                 } else {
-                    data.pendingCoins += cfg.fairyCoinsPerMilestone;
+                    data.pendingCoins += coins;
                 }
-                reward += "<gold>+" + Msg.number(cfg.fairyCoinsPerMilestone) + " coins";
+                reward += "<gold>+" + Msg.number(coins) + " coins";
             }
             if (step != null) {
                 reward += (reward.isEmpty() ? "" : "<gray>, ") + "<#" + String.format("%06x", step.stat().color().value())

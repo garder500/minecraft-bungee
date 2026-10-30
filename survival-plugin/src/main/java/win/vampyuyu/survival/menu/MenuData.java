@@ -6,6 +6,5 @@ public final class MenuData {
     public boolean welcomed;
     public boolean sidebar = true;
     public boolean questTracker = true;
-    public boolean damageIndicators = true;
     public boolean sounds = true;
 }

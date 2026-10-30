@@ -19,10 +19,6 @@ final class SettingsGui {
             boolean get(MenuData d) { return d.questTracker; }
             void set(MenuData d, boolean v) { d.questTracker = v; }
         },
-        DAMAGE_INDICATORS("Damage Indicators", Material.IRON_SWORD, "Show floating damage numbers when you hit", "something.") {
-            boolean get(MenuData d) { return d.damageIndicators; }
-            void set(MenuData d, boolean v) { d.damageIndicators = v; }
-        },
         SOUNDS("Menu Sounds", Material.NOTE_BLOCK, "Play sounds for menus, quests and", "fairy souls.") {
             boolean get(MenuData d) { return d.sounds; }
             void set(MenuData d, boolean v) { d.sounds = v; }

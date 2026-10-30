@@ -97,7 +97,7 @@ public class FairySoulsTest extends MenuTestBase {
         for (int i = 6; i <= 10; i++) {
             fairy.collect(player, spot("s" + i));
         }
-        assertEquals(500, economy.coins(player.getUniqueId()), 0);
+        assertEquals("250 for the first milestone, 300 for the second", 550, economy.coins(player.getUniqueId()), 0);
         assertEquals(2.0, stats.modifiers.get(Stat.HEALTH), 0);
         assertEquals(1.0, stats.modifiers.get(Stat.DEFENSE), 0);
     }
@@ -137,7 +137,7 @@ public class FairySoulsTest extends MenuTestBase {
     @Test
     public void totalCountsFixedAdminAndIslandSouls() {
         int base = fairy.total();
-        assertEquals(8, base);
+        assertEquals("16 hub + 14 island + 8 nether + 5 end", 43, base);
         assertTrue(fairy.addAdmin(new Location(world("sb_hub"), 1, 65, 1), "fountain").isPresent());
         assertEquals(base + 1, fairy.total());
         assertTrue("duplicate ids are refused", fairy.addAdmin(new Location(world("sb_hub"), 2, 65, 2), "fountain").isEmpty());
@@ -174,7 +174,7 @@ public class FairySoulsTest extends MenuTestBase {
         fairy.start();
         try {
             server.getScheduler().performTicks(25);
-            assertEquals("one display per island soul", 8, displays.live());
+            assertEquals("one display per overworld island soul", 14, displays.live());
             assertTrue(displays.spawned.stream().allMatch(h -> h.visibleTo.contains(player.getUniqueId())));
             // the player finds a soul: it disappears for them only
             SoulSpot found = displays.spawned.get(0).spot;
@@ -184,8 +184,8 @@ public class FairySoulsTest extends MenuTestBase {
             assertTrue(displays.spawned.get(0).visibleTo.contains(other.getUniqueId()));
             long forPlayer = displays.spawned.stream().filter(h -> h.visibleTo.contains(player.getUniqueId())).count();
             long forOther = displays.spawned.stream().filter(h -> h.visibleTo.contains(other.getUniqueId())).count();
-            assertEquals(7, forPlayer);
-            assertEquals(8, forOther);
+            assertEquals(13, forPlayer);
+            assertEquals(14, forOther);
             // when nobody is near any more the entities are despawned
             player.teleport(center.clone().add(0, 0, 500));
             other.teleport(center.clone().add(0, 0, -500));
@@ -252,7 +252,48 @@ public class FairySoulsTest extends MenuTestBase {
         while ((message = player.nextComponentMessage()) != null) {
             text.append(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(message)).append('\n');
         }
-        assertTrue(text.toString(), text.toString().contains("Fairy Souls: 0/8"));
+        assertTrue(text.toString(), text.toString().contains("Fairy Souls: 0/43"));
         assertTrue(text.toString(), text.toString().contains("Nearest soul:"));
+    }
+
+    @Test
+    public void netherAndEndSoulsOnlyExistOnTheirOwnPlatforms() {
+        Location nether = new Location(world("sb_nether"), 400, 80, 400);
+        islands.give(player.getUniqueId(), nether);
+        player.teleport(nether);
+        fairy.start();
+        try {
+            server.getScheduler().performTicks(25);
+            assertEquals("only the 8 nether souls", 8, displays.live());
+            assertTrue(displays.spawned.stream().allMatch(h -> h.spot.id().startsWith("nether_")));
+        } finally {
+            fairy.stop();
+        }
+    }
+
+    @Test
+    public void progressIsCountedPerZone() {
+        for (String id : List.of("hub_1", "hub_2", "island_1", "nether_1", "end_1", "end_2", "unknown_soul")) {
+            fairy.collect(player, spot(id));
+        }
+        var zones = fairy.zoneProgress(player);
+        assertEquals(List.of("hub", "world", "nether", "end"), zones.stream().map(SoulLogic.ZoneProgress::zone).toList());
+        assertEquals(List.of(2, 1, 1, 2), zones.stream().map(SoulLogic.ZoneProgress::found).toList());
+        assertEquals(List.of(16, 14, 8, 5), zones.stream().map(SoulLogic.ZoneProgress::total).toList());
+    }
+
+    @Test
+    public void theFairyGuiShowsAZonePerWorldAndAHintButton() {
+        FairyGui gui = new FairyGui(rt, fairy);
+        fairy.collect(player, spot("hub_1"));
+        gui.open(player);
+        var top = player.getOpenInventory().getTopInventory();
+        assertNotNull(top.getItem(4));
+        for (int slot : new int[] {19, 20, 21, 22}) {
+            assertNotNull("zone icon in slot " + slot, top.getItem(slot));
+        }
+        assertNull(top.getItem(23));
+        assertEquals(org.bukkit.Material.COMPASS, top.getItem(31).getType());
+        assertEquals(43, gui.total());
     }
 }

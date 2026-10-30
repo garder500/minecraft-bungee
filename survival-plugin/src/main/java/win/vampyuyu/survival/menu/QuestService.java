@@ -276,13 +276,16 @@ final class QuestService {
         if (lower.contains(":")) {
             lower = lower.substring(lower.indexOf(':') + 1);
         }
-        StringBuilder subject = new StringBuilder(lower);
+        // PlayerCommandPreprocessEvent fires before dispatch: an unknown command, or one the player may not run,
+        // must not count (a disabled bazaar would otherwise still complete its quest).
         org.bukkit.command.Command command = org.bukkit.Bukkit.getCommandMap().getCommand(lower);
-        if (command != null) {
-            subject.append('|').append(command.getName().toLowerCase(Locale.ROOT));
-            for (String alias : command.getAliases()) {
-                subject.append('|').append(alias.toLowerCase(Locale.ROOT));
-            }
+        if (command == null || !command.testPermissionSilent(player)) {
+            return;
+        }
+        StringBuilder subject = new StringBuilder(lower);
+        subject.append('|').append(command.getName().toLowerCase(Locale.ROOT));
+        for (String alias : command.getAliases()) {
+            subject.append('|').append(alias.toLowerCase(Locale.ROOT));
         }
         record(player, QuestType.COMMAND, subject.toString(), 1);
     }

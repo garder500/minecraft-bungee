@@ -55,22 +55,32 @@ public class SidebarLogicTest {
     @Test
     public void layoutWithEverything() {
         List<String> lines = SidebarLines.build(new SidebarLines.View("Late Summer 15th", "7:10pm", false, "Your Island",
-            "1,234", "2/4", "Break wood", "(2/5)", "<yellow>play.example"));
+            "1,234", "2/4", "Break wood", "(2/5)", "Skyblock", "<yellow>play.example"));
         assertEquals(List.of("<gray>Late Summer 15th", "<gray>7:10pm <blue>☽", "", "<gray>⏣ <aqua>Your Island", "",
             "<white>Purse: <gold>1,234", "<white>Members: <green>2/4", "", "<aqua>Objective",
-            "<yellow>Break wood <gray>(2/5)", "", "<yellow>play.example"), lines);
+            "<yellow>Break wood <gray>(2/5)", "", "<white>Server: <green>Skyblock", "<yellow>play.example"), lines);
     }
 
     @Test
     public void layoutDropsMissingBlocksAndTrailingBlank() {
-        List<String> lines = SidebarLines.build(new SidebarLines.View("d", "t", true, "z", null, null, null, null, ""));
+        List<String> lines = SidebarLines.build(new SidebarLines.View("d", "t", true, "z", null, null, null, null, "", ""));
         assertEquals(List.of("<gray>d", "<gray>t <yellow>☀", "", "<gray>⏣ <aqua>z"), lines);
+    }
+
+    @Test
+    public void serverNameLineIsShownEscapedAndOmittedWhenBlank() {
+        List<String> with = SidebarLines.build(new SidebarLines.View("d", "t", true, "z", null, null, null, null,
+            "<red>Evil", ""));
+        assertEquals("<white>Server: <green>\\<red>Evil", with.get(with.size() - 1));
+        List<String> without = SidebarLines.build(new SidebarLines.View("d", "t", true, "z", null, null, null, null,
+            "", ""));
+        assertTrue(without.stream().noneMatch(l -> l.contains("Server:")));
     }
 
     @Test
     public void dynamicTextCannotInjectMarkup() {
         List<String> lines = SidebarLines.build(new SidebarLines.View("d", "t", true, "<red>evil", null, null,
-            "<click:run_command:/op>x", null, ""));
+            "<click:run_command:/op>x", null, "", ""));
         assertTrue(lines.get(3).contains("\\<red>"));
         assertTrue(lines.stream().noneMatch(l -> l.matches("(?s).*(?<!\\\\)<click.*")));
     }

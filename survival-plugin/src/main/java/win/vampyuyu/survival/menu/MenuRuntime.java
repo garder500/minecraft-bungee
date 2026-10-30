@@ -130,4 +130,14 @@ final class MenuRuntime {
         }
         return false;
     }
+
+    /** The configured create-island command when it exists and the player may use it. */
+    Optional<String> createIslandCommand(org.bukkit.command.CommandSender who) {
+        String command = config.createIslandCommand;
+        if (command.isBlank()) {
+            return Optional.empty();
+        }
+        Command registered = Bukkit.getCommandMap().getCommand(command.split(" ")[0]);
+        return registered != null && registered.testPermissionSilent(who) ? Optional.of(command) : Optional.empty();
+    }
 }

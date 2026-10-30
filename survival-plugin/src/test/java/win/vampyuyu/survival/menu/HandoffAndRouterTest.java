@@ -62,7 +62,7 @@ public class HandoffAndRouterTest {
     // ------------------------------------------------------------ router
 
     @Test
-    public void noKeyDoesNotMoveThePlayerByDefault() {
+    public void noKeyStayModeDoesNotMoveThePlayer() {
         assertEquals(Action.STAY, JoinRouter.decide(ctx(null, true, false, false, NoKey.STAY)).action());
         assertEquals(Action.STAY, JoinRouter.decide(ctx(null, false, false, false, NoKey.STAY)).action());
     }

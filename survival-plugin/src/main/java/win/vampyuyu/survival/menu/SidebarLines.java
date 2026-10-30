@@ -15,7 +15,8 @@ public final class SidebarLines {
 
     /** What the sidebar shows for one player. {@code null} entries are left out. */
     public record View(String date, String time, boolean day, String zone, @Nullable String coins,
-            @Nullable String members, @Nullable String questName, @Nullable String questProgress, String footer) {}
+            @Nullable String members, @Nullable String questName, @Nullable String questProgress, String serverName,
+            String footer) {}
 
     /** The lines from top to bottom; a blank line is the empty string. */
     public static List<String> build(View v) {
@@ -39,6 +40,9 @@ public final class SidebarLines {
             lines.add("<yellow>" + esc(cut(v.questName(), QUEST_WIDTH))
                 + (v.questProgress() == null ? "" : " <gray>" + esc(v.questProgress())));
             lines.add("");
+        }
+        if (!v.serverName().isBlank()) {
+            lines.add("<white>Server: <green>" + esc(v.serverName()));
         }
         if (!v.footer().isBlank()) {
             lines.add(v.footer());

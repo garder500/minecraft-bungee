@@ -124,6 +124,10 @@ abstract class MenuTestBase {
         final Map<UUID, IslandInfo> byPlayer = new HashMap<>();
         final List<String> teleports = new ArrayList<>();
         boolean homeWorks = true;
+        /** The next this many teleportHub calls fail (the hub is still generating). */
+        int hubFailures;
+        /** When set, a successful teleportHub really moves the player into this world. */
+        World hubWorld;
 
         IslandInfo give(UUID owner, Location center) {
             IslandInfo info = new IslandInfo(UUID.randomUUID(), owner, Set.of(owner), center.getWorld().getName(), 0, 0,
@@ -145,6 +149,13 @@ abstract class MenuTestBase {
         }
         @Override public boolean teleportHub(Player player) {
             teleports.add("hub:" + player.getName());
+            if (hubFailures > 0) {
+                hubFailures--;
+                return false;
+            }
+            if (hubWorld != null) {
+                player.teleport(new Location(hubWorld, 0, 64, 0));
+            }
             return true;
         }
         @Override public Collection<IslandInfo> all() { return byPlayer.values(); }

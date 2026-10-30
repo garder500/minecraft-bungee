@@ -238,4 +238,74 @@ public class QuestServiceTest extends MenuTestBase {
         quests.record(player, QuestType.BREAK_BLOCK, "STONE", 1);
         assertTrue("mining 3 completes on unlock because the player is level 7", data().completed.contains("mining_3"));
     }
+
+    @Test
+    public void aCommandThatDoesNotExistNeverCompletesAQuest() {
+        giveIslandAndSync();
+        data().completed.add("earn_coins");
+        // the bazaar feature is not installed
+        server.getPluginManager().callEvent(new PlayerCommandPreprocessEvent(player, "/bazaar"));
+        server.getPluginManager().callEvent(new PlayerCommandPreprocessEvent(player, "/bz"));
+        assertFalse(data().completed.contains("open_bazaar"));
+        assertFalse(data().progress.containsKey("open_bazaar") && data().progress.get("open_bazaar") > 0);
+    }
+
+    @Test
+    public void aCommandThePlayerMayNotRunDoesNotCount() {
+        giveIslandAndSync();
+        data().completed.add("earn_coins");
+        core.commands().command("bazaar").permission("vampyuyu.test.nobazaar", org.bukkit.permissions.PermissionDefault.FALSE)
+            .executor((s, c, l, a) -> true).register();
+        server.getPluginManager().callEvent(new PlayerCommandPreprocessEvent(player, "/bazaar"));
+        assertFalse(data().completed.contains("open_bazaar"));
+    }
+
+    @Test
+    public void aQualifiedCommandLabelStillCountsWhenTheCommandExists() {
+        giveIslandAndSync();
+        data().completed.add("earn_coins");
+        core.commands().command("bazaar").executor((s, c, l, a) -> true).register();
+        server.getPluginManager().callEvent(new PlayerCommandPreprocessEvent(player, "/vampyuyusurvival:bazaar"));
+        assertTrue(data().completed.contains("open_bazaar"));
+    }
+
+    @Test
+    public void onlyARealMinionCountsForTheMinionQuests() {
+        QuestDef tutorial = shipped().catalog.tutorialQuest("craft_minion").orElseThrow();
+        QuestDef daily = shipped().catalog.dailyPool().get("craft_minion");
+        for (QuestDef def : new QuestDef[] {tutorial, daily}) {
+            if (def == null) {
+                continue;
+            }
+            assertTrue(def.target(), QuestMatcher.matches(def.target(), "CUSTOM:minion_cobblestone_1"));
+            assertTrue(QuestMatcher.matches(def.target(), "CUSTOM:minion_nether_wart_11"));
+            for (String other : List.of("minion_enchanted_cobblestone", "minion_fuel_coal", "minion_fuel_3",
+                    "minion_upgrade_compactor", "minion_skin_pirate", "minion_super_cobblestone", "bazaar_thing")) {
+                assertFalse(other, QuestMatcher.matches(def.target(), "CUSTOM:" + other));
+            }
+            assertFalse(QuestMatcher.matches(def.target(), "COBBLESTONE"));
+        }
+    }
+
+    @Test
+    public void craftingEnchantedCobblestoneDoesNotCompleteAutomation() {
+        data().completed.addAll(List.of("create_island", "break_wood", "craft_table", "craft_pickaxe", "mine_stone",
+            "mining_3"));
+        quests.sync(player);
+        quests.record(player, QuestType.CRAFT_ITEM, "CUSTOM:minion_enchanted_cobblestone", 1);
+        assertFalse(data().completed.contains("craft_minion"));
+        quests.record(player, QuestType.CRAFT_ITEM, "CUSTOM:minion_cobblestone_1", 1);
+        assertTrue(data().completed.contains("craft_minion"));
+    }
+
+    @Test
+    public void aBadRegexTargetIsReportedAtLoadAndTheQuestSkipped() {
+        var yaml = shippedYaml();
+        yaml.set("quests.tutorial.craft_minion.target", "custom:re:minion_(");
+        MenuConfig config = new MenuConfig(yaml);
+        assertTrue(config.problems().toString(), config.problems().stream().anyMatch(p -> p.contains("craft_minion")
+            && p.contains("regex")));
+        assertTrue(config.catalog.tutorialQuest("craft_minion").isEmpty());
+        assertFalse(QuestMatcher.matches("custom:re:minion_(", "CUSTOM:minion_x_1"));
+    }
 }

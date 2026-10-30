@@ -34,6 +34,7 @@ public record QuestDef(String id, String name, String description, QuestType typ
             throw new IllegalArgumentException("Quest " + id + ": amount must be at least 1");
         }
         target = target == null ? "" : target.trim();
+        QuestMatcher.validate(target); // IllegalArgumentException for a bad regex: the quest is skipped and reported
         requires = List.copyOf(requires);
     }
 

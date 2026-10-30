@@ -41,14 +41,11 @@ public final class MenuConfig {
 
     public final boolean sidebarEnabled;
     public final String sidebarTitle;
+    public final String sidebarServerName;
     public final String sidebarFooter;
     public final int sidebarUpdateTicks;
     public final Map<String, String> defaultZones;
     public final Zones zones;
-
-    public final boolean damageEnabled;
-    public final int damageLifetimeTicks;
-    public final int damageMaxPerSecond;
 
     public final Map<String, String> sounds;
 
@@ -57,6 +54,7 @@ public final class MenuConfig {
     public final double fairyCollectRadius;
     public final int fairyEvery;
     public final double fairyCoinsPerMilestone;
+    public final double fairyCoinsIncrease;
     public final List<StatStep> fairyCycle;
     public final String fairyGlow;
     public final List<SoulDef> fairyFixed;
@@ -76,10 +74,10 @@ public final class MenuConfig {
     private final List<String> problems = new ArrayList<>();
 
     public MenuConfig(ConfigurationSection c) {
-        String noKeyText = c.getString("join.no-key", "stay").toLowerCase(Locale.ROOT);
-        noKey = noKeyText.equals("hub") ? JoinRouter.NoKey.HUB : JoinRouter.NoKey.STAY;
+        String noKeyText = c.getString("join.no-key", "hub").toLowerCase(Locale.ROOT);
+        noKey = noKeyText.equals("stay") ? JoinRouter.NoKey.STAY : JoinRouter.NoKey.HUB;
         if (!noKeyText.equals("hub") && !noKeyText.equals("stay")) {
-            problems.add("join.no-key must be stay or hub, got '" + noKeyText + "'; using stay");
+            problems.add("join.no-key must be hub or stay, got '" + noKeyText + "'; using hub");
         }
         joinMaxAgeMs = Math.max(1, c.getLong("join.max-age-seconds", 30)) * 1000;
         createIslandCommand = clean(c.getString("join.create-island-command", "island create"));
@@ -90,8 +88,8 @@ public final class MenuConfig {
         redisConnectTimeoutMs = clamp(c.getInt("join.redis.connect-timeout-ms", 1500), 100, 10000);
         redisSocketTimeoutMs = clamp(c.getInt("join.redis.socket-timeout-ms", 1500), 100, 10000);
         redisBackoffMs = Math.max(1, c.getLong("join.redis.backoff-seconds", 30)) * 1000;
-        String route = c.getString("respawn.route", "island").toLowerCase(Locale.ROOT);
-        respawnRoute = List.of("island", "hub", "none").contains(route) ? route : "island";
+        String route = c.getString("respawn.route", "none").toLowerCase(Locale.ROOT);
+        respawnRoute = List.of("island", "hub", "none").contains(route) ? route : "none";
 
         menuItemEnabled = c.getBoolean("menu-item.enabled", true);
         menuItemSlot = clamp(c.getInt("menu-item.slot", 8), 0, 8);
@@ -113,6 +111,7 @@ public final class MenuConfig {
 
         sidebarEnabled = c.getBoolean("sidebar.enabled", true);
         sidebarTitle = c.getString("sidebar.title", "<bold>SKYBLOCK");
+        sidebarServerName = c.getString("sidebar.server-name", "Skyblock").strip();
         sidebarFooter = c.getString("sidebar.footer", "");
         sidebarUpdateTicks = clamp(c.getInt("sidebar.update-ticks", 20), 5, 200);
         Map<String, String> dz = new LinkedHashMap<>();
@@ -124,10 +123,6 @@ public final class MenuConfig {
         }
         defaultZones = Map.copyOf(dz);
         zones = Zones.parse(c.getMapList("sidebar.zones"), MenuConfig::worldName, problems);
-
-        damageEnabled = c.getBoolean("damage-indicators.enabled", true);
-        damageLifetimeTicks = clamp(c.getInt("damage-indicators.lifetime-ticks", 24), 5, 100);
-        damageMaxPerSecond = clamp(c.getInt("damage-indicators.max-per-second", 12), 1, 100);
 
         Map<String, String> snd = new LinkedHashMap<>();
         ConfigurationSection ss = c.getConfigurationSection("sounds");
@@ -143,6 +138,7 @@ public final class MenuConfig {
         fairyCollectRadius = Math.max(0.5, c.getDouble("fairy-souls.collect-radius", 1.6));
         fairyEvery = Math.max(0, c.getInt("fairy-souls.every", 5));
         fairyCoinsPerMilestone = Math.max(0, c.getDouble("fairy-souls.coins-per-milestone", 250));
+        fairyCoinsIncrease = Math.max(0, c.getDouble("fairy-souls.coins-increase-per-milestone", 0));
         fairyCycle = List.copyOf(SoulLogic.parseCycle(c.getMapList("fairy-souls.stat-cycle"), problems));
         fairyGlow = c.getString("fairy-souls.glow-color", "#ff7ad9");
         fairyFixed = List.copyOf(SoulLogic.parse(c.getMapList("fairy-souls.fixed"), false, problems));

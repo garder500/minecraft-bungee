@@ -14,8 +14,9 @@ public final class SoulLogic {
     private SoulLogic() {}
 
     /**
-     * A soul definition. {@code world} is {@code hub|world|nether|end} (resolved to a real world name by the caller)
-     * for fixed souls; island souls have {@code relative = true} and x/y/z are offsets from the island centre.
+     * A soul definition. {@code world} is {@code hub|world|nether|end} (resolved to a real world name by the caller).
+     * Fixed souls have absolute coordinates; island souls have {@code relative = true}, x/y/z are offsets from the
+     * centre of the island platform in that world (the Nether and End platforms have their own centre).
      */
     public record SoulDef(String id, String world, double x, double y, double z, boolean relative) {
         public SoulDef {
@@ -60,6 +61,9 @@ public final class SoulLogic {
         }
         if (islandCenter != null) {
             for (SoulDef def : islandOffsets) {
+                if (!def.world().isEmpty() && !worldName.equals(resolveWorld.apply(def.world()))) {
+                    continue;
+                }
                 spots.add(new SoulSpot(def.id(), worldName, islandCenter[0] + def.x(), islandCenter[1] + def.y(),
                     islandCenter[2] + def.z()));
             }
@@ -115,12 +119,57 @@ public final class SoulLogic {
         return names[index];
     }
 
+    /** Coins of milestone {@code number} (1-based): base plus {@code increase} for every earlier milestone. */
+    public static double milestoneCoins(int number, double base, double increase) {
+        return Math.max(0, base + Math.max(0, increase) * Math.max(0, number - 1));
+    }
+
+    /** Souls found and available in one zone (a world token such as {@code hub}). */
+    public record ZoneProgress(String zone, int found, int total) {}
+
+    private static final List<String> ZONE_ORDER = List.of("hub", "world", "nether", "end");
+
+    /** Per zone counts over every soul definition (a soul id counts once), known zones first, then the others by name. */
+    public static List<ZoneProgress> progress(Set<String> found, List<SoulDef> defs) {
+        Map<String, int[]> zones = new java.util.TreeMap<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (SoulDef def : defs) {
+            if (!seen.add(def.id())) {
+                continue;
+            }
+            int[] counts = zones.computeIfAbsent(def.world().isEmpty() ? "world" : def.world(), z -> new int[2]);
+            counts[1]++;
+            if (found.contains(def.id())) {
+                counts[0]++;
+            }
+        }
+        List<ZoneProgress> out = new ArrayList<>();
+        for (String zone : ZONE_ORDER) {
+            int[] counts = zones.remove(zone);
+            if (counts != null) {
+                out.add(new ZoneProgress(zone, counts[0], counts[1]));
+            }
+        }
+        zones.forEach((zone, counts) -> out.add(new ZoneProgress(zone, counts[0], counts[1])));
+        return out;
+    }
+
+    /** Text progress bar: {@code ████░░░░}. */
+    public static String bar(int found, int total, int width) {
+        int filled = total <= 0 ? 0 : (int) Math.round((double) Math.min(found, total) / total * width);
+        return "█".repeat(filled) + "░".repeat(Math.max(0, width - filled));
+    }
+
     /** Parses a list of soul entries from a config list of maps ({@code id, world, x, y, z}). */
     public static List<SoulDef> parse(List<Map<?, ?>> raw, boolean relative, List<String> problems) {
         List<SoulDef> out = new ArrayList<>();
         for (Map<?, ?> map : raw) {
             try {
-                out.add(new SoulDef(String.valueOf(map.get("id")), relative ? "" : String.valueOf(map.get("world")),
+                Object world = map.get("world");
+                if (world == null && !relative) {
+                    throw new IllegalArgumentException("missing 'world'");
+                }
+                out.add(new SoulDef(String.valueOf(map.get("id")), world != null ? String.valueOf(world) : "world",
                     num(map, "x"), num(map, "y"), num(map, "z"), relative));
             } catch (RuntimeException e) {
                 problems.add("fairy soul " + map + ": " + e.getMessage());

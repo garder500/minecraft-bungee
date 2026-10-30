@@ -9,7 +9,6 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -17,7 +16,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import win.vampyuyu.survival.api.IslandApi;
-import win.vampyuyu.survival.api.IslandInfo;
 import win.vampyuyu.survival.core.Msg;
 import win.vampyuyu.survival.core.SkyblockWorlds;
 
@@ -63,6 +61,11 @@ final class JoinFlow implements Listener {
         });
     }
 
+    /** Ticks between two attempts to reach a hub that is still being generated. */
+    static final int RETRY_TICKS = 20;
+    /** Attempts after the first one (10 seconds in all). */
+    static final int RETRY_ATTEMPTS = 10;
+
     /** Decides and applies the destination, then runs the arrival hooks. Main thread. */
     void route(Player player, Optional<HandoffPayload> payload) {
         if (!player.isOnline() || Bukkit.getPlayer(player.getUniqueId()) != player) {
@@ -80,15 +83,39 @@ final class JoinFlow implements Listener {
                 rt.core.debug("Island feature unavailable: " + player.getName() + " is not moved");
             } else {
                 moved = apply(player, islands.get(), decision.action());
+                if (!moved) {
+                    scheduleRetry(player, decision.action(), RETRY_ATTEMPTS);
+                }
             }
         }
-        boolean prompt = moved && decision.action() == JoinRouter.Action.HUB_CREATE_PROMPT;
-        rt.core.scheduler().later(moved ? 10 : 1, () -> {
+        scheduleArrival(player, moved ? 10 : 1);
+    }
+
+    private void scheduleArrival(Player player, int delay) {
+        rt.core.scheduler().later(delay, () -> {
             if (player.isOnline()) {
                 onArrive.accept(player);
-                if (prompt) {
-                    createIslandPrompt(player);
-                }
+                promptIfHomeless(player);
+            }
+        });
+    }
+
+    /** The hub may still be generating on a first boot: keep trying for a few seconds instead of giving up. */
+    private void scheduleRetry(Player player, JoinRouter.Action action, int attemptsLeft) {
+        if (attemptsLeft <= 0) {
+            rt.core.debug("Gave up routing " + player.getName() + ": the destination never became available");
+            return;
+        }
+        rt.core.scheduler().later(RETRY_TICKS, () -> {
+            Optional<IslandApi> islands = rt.islands();
+            if (!player.isOnline() || Bukkit.getPlayer(player.getUniqueId()) != player || islands.isEmpty()
+                    || MenuRuntime.inSkyblock(player.getWorld()) || rt.inDungeon(player)) {
+                return; // gone, or something else (a command, the island feature) already put them somewhere useful
+            }
+            if (apply(player, islands.get(), action)) {
+                scheduleArrival(player, 10);
+            } else {
+                scheduleRetry(player, action, attemptsLeft - 1);
             }
         });
     }
@@ -105,13 +132,27 @@ final class JoinFlow implements Listener {
         }
     }
 
+    /** True when the player stands in the hub and has no island yet: they get the create-island prompt. */
+    boolean needsIslandPrompt(Player player) {
+        if (!SkyblockWorlds.HUB.equals(player.getWorld().getName()) || rt.inDungeon(player)) {
+            return false;
+        }
+        Optional<IslandApi> islands = rt.islands();
+        return islands.isPresent() && islands.get().islandOf(player.getUniqueId()).isEmpty();
+    }
+
+    private void promptIfHomeless(Player player) {
+        if (needsIslandPrompt(player)) {
+            createIslandPrompt(player);
+        }
+    }
+
     /** Chat prompt with a clickable button that runs the configured island creation command. */
     void createIslandPrompt(Player player) {
-        String command = rt.config().createIslandCommand;
-        boolean exists = !command.isBlank()
-            && Bukkit.getCommandMap().getCommand(command.split(" ")[0]) != null;
+        Optional<String> found = rt.createIslandCommand(player);
+        String command = found.orElse("");
         Component line;
-        if (exists) {
+        if (found.isPresent()) {
             line = Component.text("You do not have an island yet! ", NamedTextColor.YELLOW)
                 .append(Component.text("[CREATE YOUR ISLAND]", NamedTextColor.GREEN, TextDecoration.BOLD)
                     .clickEvent(ClickEvent.runCommand("/" + command))
@@ -125,7 +166,12 @@ final class JoinFlow implements Listener {
 
     // ---------------------------------------------------------------- respawn
 
-    @EventHandler(priority = EventPriority.HIGH)
+    /**
+     * Opt-in respawn routing. The island feature owns respawns (it checks that the island is ready), so the default
+     * route is {@code none}. With {@code island} or {@code hub} this only teleports one tick AFTER the respawn through
+     * {@link IslandApi}; it never edits the respawn location.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onRespawn(PlayerRespawnEvent event) {
         String route = rt.config().respawnRoute;
         Player player = event.getPlayer();
@@ -134,23 +180,21 @@ final class JoinFlow implements Listener {
                 || SkyblockWorlds.isDungeon(player.getWorld().getName()) || rt.inDungeon(player)) {
             return;
         }
-        Optional<IslandApi> islands = rt.islands();
-        if (islands.isEmpty()) {
-            return;
-        }
-        if (route.equals("island")) {
-            Optional<IslandInfo> island = islands.get().islandOf(player.getUniqueId());
-            if (island.isPresent()) {
-                Location center = island.get().center();
-                if (center != null && center.getWorld() != null) {
-                    event.setRespawnLocation(center.clone());
-                    return;
-                }
-            }
-        }
         rt.core.scheduler().later(1, () -> {
-            if (player.isOnline() && !player.isDead()) {
-                islands.get().teleportHub(player);
+            Optional<IslandApi> islands = rt.islands();
+            if (islands.isEmpty() || !player.isOnline() || player.isDead() || rt.inDungeon(player)) {
+                return;
+            }
+            try {
+                if (route.equals("island")) {
+                    if (!islands.get().teleportHome(player)) {
+                        islands.get().teleportHub(player);
+                    }
+                } else {
+                    islands.get().teleportHub(player);
+                }
+            } catch (RuntimeException e) {
+                rt.core.getPlugin().getLogger().warning("Could not route the respawn of " + player.getName() + ": " + e);
             }
         });
     }

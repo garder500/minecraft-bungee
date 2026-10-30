@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Supplier;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -59,20 +58,12 @@ final class MenuCommands {
             .executor(this::fairy).tab(this::fairyTab).register();
         rt.core.commands().command("sbwarps").aliases("skyblockwarps")
             .description("Travel around Skyblock")
-            .usage("/<command> [hub|island|nether|end|visit <player>|public <on|off|list> [note]]")
+            .usage("/<command> [hub|island|nether|end|visit [player]|public]")
             .permission("vampyuyu.sb.menu.warps", PermissionDefault.TRUE)
             .executor(this::warps).tab(this::warpsTab).register();
-        rt.core.commands().command("hub")
-            .description("Go to the Skyblock hub")
-            .usage("/<command>")
-            .permission("vampyuyu.sb.menu.warps", PermissionDefault.TRUE)
-            .executor((s, c, l, a) -> player(s).map(p -> {
-                warps.warp(p, WarpService.Target.HUB);
-                return true;
-            }).orElse(true)).register();
         rt.core.commands().command("sbsettings").aliases("skyblocksettings")
             .description("Your Skyblock preferences")
-            .usage("/<command> [sidebar|quest-tracker|damage-indicators|sounds] [on|off]")
+            .usage("/<command> [sidebar|quest-tracker|sounds] [on|off]")
             .permission("vampyuyu.sb.menu.settings", PermissionDefault.TRUE)
             .executor(this::settings).tab(this::settingsTab).register();
     }
@@ -246,45 +237,21 @@ final class MenuCommands {
             case "island", "home" -> warps.warp(player, WarpService.Target.ISLAND);
             case "nether" -> warps.warp(player, WarpService.Target.NETHER);
             case "end" -> warps.warp(player, WarpService.Target.END);
-            case "visit" -> {
-                if (args.length < 2) {
-                    warpsGui.publicIslands(player);
-                } else {
-                    UUID owner = warps.publicWarps().list().stream()
-                        .filter(e -> e.getValue().name.equalsIgnoreCase(args[1])).map(java.util.Map.Entry::getKey)
-                        .findFirst().orElse(null);
-                    if (owner == null) {
-                        rt.core.msg().error(player, "No public island belongs to '" + args[1] + "'.");
-                    } else {
-                        warps.visit(player, owner);
-                    }
-                }
-            }
-            case "public" -> publicCommand(player, args);
+            case "visit" -> islandCommand(player, args.length < 2 ? "warp" : "visit " + args[1]);
+            case "public" -> islandCommand(player, "warp");
             default -> rt.core.msg().error(player, "Unknown destination. Use /sbwarps for the menu.");
         }
         return true;
     }
 
-    private void publicCommand(Player player, String[] args) {
-        String mode = args.length < 2 ? "list" : args[1].toLowerCase(Locale.ROOT);
-        switch (mode) {
-            case "on" -> {
-                if (rt.islands().flatMap(api -> api.islandOf(player.getUniqueId())).isEmpty()) {
-                    rt.core.msg().error(player, "You need an island first.");
-                    return;
-                }
-                String note = args.length > 2 ? String.join(" ", java.util.Arrays.copyOfRange(args, 2, args.length)) : "";
-                warps.publicWarps().publish(player.getUniqueId(), player.getName(), note);
-                rt.core.msg().ok(player, "Your island is now open to visitors.");
-            }
-            case "off" -> {
-                warps.publicWarps().unpublish(player.getUniqueId());
-                rt.core.msg().ok(player, "Your island is private.");
-            }
-            case "list" -> warpsGui.publicIslands(player);
-            default -> rt.core.msg().error(player, "Usage: /sbwarps public <on [note]|off|list>");
+    /** Public warps and visits belong to the island feature: run {@code /island <args>} as the player. */
+    private void islandCommand(Player player, String args) {
+        Optional<String> command = rt.commandFor("island", player);
+        if (command.isEmpty()) {
+            rt.core.msg().error(player, "Islands are not available right now.");
+            return;
         }
+        mainMenu.run(player, command.get() + " " + args);
     }
 
     private List<String> warpsTab(CommandSender sender, Command command, String label, String[] args) {
@@ -292,10 +259,7 @@ final class MenuCommands {
             return filter(List.of("hub", "island", "nether", "end", "visit", "public"), args[0]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("visit")) {
-            return filter(warps.publicWarps().list().stream().map(e -> e.getValue().name).toList(), args[1]);
-        }
-        if (args.length == 2 && args[0].equalsIgnoreCase("public")) {
-            return filter(List.of("on", "off", "list"), args[1]);
+            return filter(org.bukkit.Bukkit.getOnlinePlayers().stream().map(Player::getName).toList(), args[1]);
         }
         return List.of();
     }
@@ -319,7 +283,7 @@ final class MenuCommands {
             }
         }
         if (chosen == null) {
-            rt.core.msg().error(player, "Unknown setting. Options: sidebar, quest-tracker, damage-indicators, sounds.");
+            rt.core.msg().error(player, "Unknown setting. Options: sidebar, quest-tracker, sounds.");
             return true;
         }
         MenuData data = rt.prefs(player.getUniqueId());

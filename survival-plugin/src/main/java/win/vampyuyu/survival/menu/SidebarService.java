@@ -23,6 +23,7 @@ import org.bukkit.scoreboard.Criteria;
 import win.vampyuyu.survival.api.IslandInfo;
 import win.vampyuyu.survival.core.Msg;
 import win.vampyuyu.survival.core.Scheduler;
+import win.vampyuyu.survival.core.SkyblockWorlds;
 
 /**
  * Per-player Hypixel style sidebar. Each player in a Skyblock world gets a private scoreboard (so nothing shared flickers)
@@ -86,30 +87,53 @@ final class SidebarService implements Listener {
         }
     }
 
+    /** Name of our objective: a board that has it was built by this service (even one handed back after a dungeon run). */
+    static final String OBJECTIVE = "sbside";
+
     /** Redraws the player's sidebar now (settings changed, world changed). */
     void refresh(Player player) {
         MenuConfig cfg = rt.config();
         boolean want = cfg.sidebarEnabled && player.isOnline() && MenuRuntime.inSkyblock(player.getWorld())
+            && !SkyblockWorlds.isDungeon(player.getWorld().getName()) && !rt.inDungeon(player)
             && rt.prefs(player.getUniqueId()).sidebar;
         if (!want) {
             clear(player);
             return;
         }
-        List<String> lines = build(player);
+        Scoreboard current = player.getScoreboard();
         State state = states.get(player.getUniqueId());
-        if (state == null || player.getScoreboard() != state.board) {
-            state = create(player);
+        if (state == null || current != state.board) {
+            if (current != null && current.getObjective(OBJECTIVE) != null) {
+                state = adopt(player, current); // ours: handed back to the player after a dungeon run, for example
+            } else if (current == null || current == Bukkit.getScoreboardManager().getMainScoreboard()) {
+                state = create(player);
+            } else {
+                // Another feature (the dungeon sidebar, a plugin) shows its own board: never fight over it.
+                states.remove(player.getUniqueId());
+                return;
+            }
         }
         if (!cfg.sidebarTitle.equals(state.title)) {
             state.objective.displayName(Msg.component(cfg.sidebarTitle));
             state.title = cfg.sidebarTitle;
         }
-        apply(state, lines);
+        apply(state, build(player));
+    }
+
+    /** Takes over a board that already carries our objective, wiping every stale line so the next draw is complete. */
+    private State adopt(Player player, Scoreboard board) {
+        Objective objective = board.getObjective(OBJECTIVE);
+        for (String entry : new ArrayList<>(board.getEntries())) {
+            board.resetScores(entry);
+        }
+        State state = new State(board, objective);
+        states.put(player.getUniqueId(), state);
+        return state;
     }
 
     private State create(Player player) {
         Scoreboard board = Bukkit.getScoreboardManager().getNewScoreboard();
-        Objective objective = board.registerNewObjective("sbside", Criteria.DUMMY, Component.text("SKYBLOCK"));
+        Objective objective = board.registerNewObjective(OBJECTIVE, Criteria.DUMMY, Component.text("SKYBLOCK"));
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         if (!numberFormatBroken) {
             try {
@@ -156,10 +180,14 @@ final class SidebarService implements Listener {
         state.lines = List.copyOf(next);
     }
 
-    /** Restores the main scoreboard when the player is showing ours. */
+    /** Restores the main scoreboard when the player is showing ours; a board of another feature is left alone. */
     void clear(Player player) {
         State state = states.remove(player.getUniqueId());
-        if (state != null && player.isOnline() && player.getScoreboard() == state.board) {
+        if (!player.isOnline()) {
+            return;
+        }
+        Scoreboard current = player.getScoreboard();
+        if (current != null && ((state != null && current == state.board) || current.getObjective(OBJECTIVE) != null)) {
             player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
         }
     }
@@ -191,7 +219,7 @@ final class SidebarService implements Listener {
         }
         return SidebarLines.build(new SidebarLines.View(SkyCalendar.date(world.getFullTime()),
             SkyCalendar.clock(world.getTime()), SkyCalendar.isDay(world.getTime()), zone(player), coins, members,
-            questName, questProgress, cfg.sidebarFooter));
+            questName, questProgress, cfg.sidebarServerName, cfg.sidebarFooter));
     }
 
     String zone(Player player) {

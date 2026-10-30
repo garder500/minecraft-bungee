@@ -5,9 +5,10 @@
 # ------------------------------------------------------------------ join router
 join:
   # What to do with a player who joins WITHOUT a valid cross-server key (sb:transfer:<uuid> in Redis):
-  #   stay = do not move them (plain survival players keep their spawn)   <- default
-  #   hub  = send them to sb_hub (docs/skyblock-design.md section 12), unless they already stand in a Skyblock world
-  no-key: stay
+  #   hub  = a normal join: send them to sb_hub (docs/skyblock-design.md section 12.3), unless they already stand
+  #          in a Skyblock world (returning players are never moved)   <- default
+  #   stay = do not move them (plain survival players keep their spawn)
+  no-key: hub
   # A key whose "ts" (epoch millis, optional) is older than this is ignored.
   max-age-seconds: 30
   # Command the "create island" prompt runs when a player arrives in the hub without an island.
@@ -24,9 +25,11 @@ join:
     backoff-seconds: 30
 
 # Where a player respawns after dying in a Skyblock world (a bed or respawn anchor always wins):
-#   island = their island spawn (hub when they have none), hub = always the hub, none = leave the server default.
+#   none   = leave it to the island feature, which owns respawns (safe fallback, checks the island is ready)  <- default
+#   island = one tick after the respawn, IslandApi.teleportHome (the hub when that fails)
+#   hub    = one tick after the respawn, IslandApi.teleportHub
 respawn:
-  route: island
+  route: none
 
 # ------------------------------------------------------------------ the Skyblock Menu item
 menu-item:
@@ -37,21 +40,28 @@ menu-item:
   click-cooldown-ms: 250
 
 # Commands of the other features, tried in order; the first that exists AND the player may use wins. When none
-# exists the entry is greyed out ("not available"). Menu entries run them as the player.
+# exists the menu door is hidden (feature not installed); when one exists but the player may not use it the door is
+# greyed out. Menu entries run them as the player.
 commands:
+  stats: [stats, mystats]            # click on your profile head
   skills: [skills, skill]
   collections: [collections, collection]
   pets: [pets, pet]
-  accessories: [accessories, accessorybag, talismans]
+  accessories: [accessories, acc, bag]
   bazaar: [bazaar, bz]
   auction: [auctionhouse, ah, auction]
+  bank: [bank, sbbank]
+  minions: [minion, minions]
   island: [island, is]
-  recipes: [recipes, recipebook, recipe]
-  leaderboards: [leaderboards, leaderboard, lb]
-  minions: [minions, minion]
-  bank: [bank]
   boss: [boss, bosses]
-  dungeon: [dungeon, dungeons]
+  slayer: [slayer]
+  dungeon: [dungeon, dg, catacombs]
+  # Leaderboards: when none of the "leaderboards" aliases exists the door opens the menu's own submenu with these two
+  leaderboards: [leaderboards, leaderboard, lb]
+  baltop: [baltop, topcoins]
+  skilltop: [skilltop, skillboard]
+  # No feature registers a recipe browser yet: the door stays hidden until one of these commands exists
+  recipes: [recipes, recipebook, recipe]
 
 # ------------------------------------------------------------------ warps
 warps:
@@ -69,6 +79,8 @@ warps:
 sidebar:
   enabled: true
   title: "<gradient:#7b2ff7:#00d4ff><bold>SKYBLOCK</bold></gradient>"
+  # Server name line ("Server: Skyblock"), plain text shown above the footer; empty to omit
+  server-name: "Skyblock"
   # Last line (MiniMessage); empty to omit
   footer: "<yellow>vampyuyu.win"
   update-ticks: 20
@@ -84,14 +96,6 @@ sidebar:
     - {name: "Hub Village", world: hub, min: [-96, -64, -96], max: [96, 320, 96]}
     - {name: "Wilderness", world: nether, min: [-30000000, -64, -30000000], max: [30000000, 320, 30000000]}
     - {name: "The Void Gate", world: end, min: [-60, 0, -60], max: [60, 320, 60]}
-
-# ------------------------------------------------------------------ damage indicators
-damage-indicators:
-  enabled: true
-  # Lifetime of the floating number, ticks
-  lifetime-ticks: 24
-  # At most this many numbers per attacker per second
-  max-per-second: 12
 
 # ------------------------------------------------------------------ sounds (vanilla sound keys)
 sounds:
@@ -112,29 +116,72 @@ fairy-souls:
   collect-radius: 1.6
   # A milestone pays every N souls (0 disables rewards)
   every: 5
+  # Coins of milestone n (1-based): coins-per-milestone + coins-increase-per-milestone * (n - 1)
   coins-per-milestone: 250
+  coins-increase-per-milestone: 50
   # Stat bonus of milestone number n (1-based) is step ((n-1) mod size); bonuses add up (source "fairy")
   stat-cycle:
     - {stat: HEALTH, amount: 2}
     - {stat: DEFENSE, amount: 1}
     - {stat: STRENGTH, amount: 1}
     - {stat: SPEED, amount: 1}
+    - {stat: INTELLIGENCE, amount: 2}
+    - {stat: CRIT_CHANCE, amount: 1}
+    - {stat: MAGIC_FIND, amount: 1}
+    - {stat: HEALTH, amount: 3}
   # Glow colour of the soul (hex)
   glow-color: "#ff7ad9"
   # Souls at fixed positions: id (a-z, 0-9, _), world token hub/world/nether/end, coordinates.
   # Admins add more in game with /fairy admin add (kept in menu/fairy_souls.json).
-  fixed: []
-  #  - {id: hub_fountain, world: hub, x: 0.5, y: 70, z: 8.5}
-  # Souls on every island, as offsets from the island centre (one id counts once per player, on any island)
+  # Hub: the plaza surface is y=100 (island.yml hub.y), souls hover half a block above it.
+  # Plaza ring (r=12.5), plaza edge (r=23) and the ring road (r=40). Coordinates follow island/HubPlan.
+  fixed:
+    - {id: hub_1, world: hub, x: 11.5, y: 101.5, z: 4.5}
+    - {id: hub_2, world: hub, x: 4.5, y: 101.5, z: 11.5}
+    - {id: hub_3, world: hub, x: -4.5, y: 101.5, z: 11.5}
+    - {id: hub_4, world: hub, x: -11.5, y: 101.5, z: 4.5}
+    - {id: hub_5, world: hub, x: -11.5, y: 101.5, z: -4.5}
+    - {id: hub_6, world: hub, x: -4.5, y: 101.5, z: -11.5}
+    - {id: hub_7, world: hub, x: 4.5, y: 101.5, z: -11.5}
+    - {id: hub_8, world: hub, x: 11.5, y: 101.5, z: -4.5}
+    - {id: hub_9, world: hub, x: 23.5, y: 101.5, z: 0.5}
+    - {id: hub_10, world: hub, x: -22.5, y: 101.5, z: 0.5}
+    - {id: hub_11, world: hub, x: 0.5, y: 101.5, z: 23.5}
+    - {id: hub_12, world: hub, x: 0.5, y: 101.5, z: -22.5}
+    - {id: hub_13, world: hub, x: 40.5, y: 101.5, z: 0.5}
+    - {id: hub_14, world: hub, x: -39.5, y: 101.5, z: 0.5}
+    - {id: hub_15, world: hub, x: 0.5, y: 101.5, z: 40.5}
+    - {id: hub_16, world: hub, x: 0.5, y: 101.5, z: -39.5}
+  # Island souls: offsets from the centre of the island platform in the named world. Y 0 is the top layer, players stand at y=1.
+  # Overworld islands stay within 9.5 blocks of the centre and the End gate is at z=-6, the platforms in the Nether and the End have radius 15.
   island:
-    - {id: island_1, x: 4.5, y: 1.5, z: 0.5}
-    - {id: island_2, x: -5.5, y: 1.5, z: 3.5}
-    - {id: island_3, x: 0.5, y: 2.5, z: -7.5}
-    - {id: island_4, x: 8.5, y: 2.0, z: 6.5}
-    - {id: island_5, x: -9.5, y: 2.0, z: -5.5}
-    - {id: island_6, x: 0.5, y: 8.5, z: 0.5}
-    - {id: island_7, x: 12.5, y: 1.5, z: -3.5}
-    - {id: island_8, x: -12.5, y: 1.5, z: 8.5}
+    - {id: island_1, world: world, x: 4.5, y: 1.5, z: 0.5}
+    - {id: island_2, world: world, x: 6.5, y: 2.0, z: 3.5}
+    - {id: island_3, world: world, x: 3.5, y: 1.5, z: 4.5}
+    - {id: island_4, world: world, x: 2.5, y: 2.0, z: 7.5}
+    - {id: island_5, world: world, x: 0.5, y: 1.5, z: 4.5}
+    - {id: island_6, world: world, x: -2.5, y: 2.0, z: 7.5}
+    - {id: island_7, world: world, x: -3.5, y: 1.5, z: 4.5}
+    - {id: island_8, world: world, x: -7.5, y: 2.0, z: 4.5}
+    - {id: island_9, world: world, x: -4.5, y: 1.5, z: 0.5}
+    - {id: island_10, world: world, x: -7.5, y: 2.0, z: -1.5}
+    - {id: island_11, world: world, x: -5.5, y: 1.5, z: -3.5}
+    - {id: island_12, world: world, x: -5.5, y: 2.0, z: -6.5}
+    - {id: island_13, world: world, x: 5.5, y: 2.0, z: -6.5}
+    - {id: island_14, world: world, x: 3.5, y: 1.5, z: -2.5}
+    - {id: nether_1, world: nether, x: 6.5, y: 1.5, z: 1.5}
+    - {id: nether_2, world: nether, x: 5.5, y: 1.5, z: 9.5}
+    - {id: nether_3, world: nether, x: -2.5, y: 1.5, z: 8.5}
+    - {id: nether_4, world: nether, x: -10.5, y: 1.5, z: 5.5}
+    - {id: nether_5, world: nether, x: -6.5, y: 1.5, z: -1.5}
+    - {id: nether_6, world: nether, x: -5.5, y: 1.5, z: -9.5}
+    - {id: nether_7, world: nether, x: 2.5, y: 1.5, z: -8.5}
+    - {id: nether_8, world: nether, x: 10.5, y: 1.5, z: -6.5}
+    - {id: end_1, world: end, x: 4.5, y: 1.5, z: 7.5}
+    - {id: end_2, world: end, x: -7.5, y: 1.5, z: 8.5}
+    - {id: end_3, world: end, x: -7.5, y: 1.5, z: -3.5}
+    - {id: end_4, world: end, x: 1.5, y: 1.5, z: -11.5}
+    - {id: end_5, world: end, x: 9.5, y: 1.5, z: -2.5}
 
 # ------------------------------------------------------------------ quests
 quests:
@@ -274,7 +321,7 @@ quests:
         name: "Minion Maker"
         description: "Craft a minion."
         type: CRAFT_ITEM
-        target: "custom:minion"
+        target: "custom:re:minion_(?!fuel_|upgrade_|skin_|enchanted_|super_)[a-z_]+_[0-9]+"
         amount: 1
         icon: ARMOR_STAND
         rewards: {coins: 300, skill-xp: {CARPENTRY: 100}}
@@ -350,7 +397,8 @@ quests:
   # Types: ISLAND_CREATE ISLAND_ENTER BREAK_BLOCK PLACE_BLOCK CRAFT_ITEM KILL_MOB FISH SKILL_LEVEL BOSS_KILL
   #        COINS_EARN COMMAND VISIT_WORLD COLLECT_SOUL ENCHANT_ITEM
   # Targets: a material / entity / skill / boss id, a group (LOGS PLANKS STONE ORES CROPS SAPLINGS FLOWERS), ANY,
-  #          custom:<item id prefix> for CRAFT_ITEM of custom items, a command name for COMMAND.
+  #          custom:<item id prefix> or custom:re:<regex on the whole item id> for CRAFT_ITEM of custom
+  #          items (a bad regex skips the quest and is logged), a command name for COMMAND.
   # rewards.items maps a custom item id (see /sbgive) to an amount; ids that do not exist are skipped.
   tutorial:
     create_island:
@@ -472,7 +520,7 @@ quests:
       name: "Automation"
       description: "Craft your first minion."
       type: CRAFT_ITEM
-      target: "custom:minion"
+      target: "custom:re:minion_(?!fuel_|upgrade_|skin_|enchanted_|super_)[a-z_]+_[0-9]+"
       amount: 1
       icon: ARMOR_STAND
       requires: [mining_3]

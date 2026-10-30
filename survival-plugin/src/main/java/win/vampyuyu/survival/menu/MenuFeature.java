@@ -11,8 +11,7 @@ import win.vampyuyu.survival.core.Feature;
 import win.vampyuyu.survival.core.Scheduler;
 
 /**
- * The menu feature: the only join router, the Skyblock Menu item, warps, quests, fairy souls, sidebar, settings and
- * damage numbers. See docs/skyblock-notes/menu.md.
+ * The menu feature: the only join router, the Skyblock Menu item, warps, quests, fairy souls, sidebar and settings. See docs/skyblock-notes/menu.md.
  */
 public final class MenuFeature implements Feature {
     private MenuRuntime rt;
@@ -22,10 +21,8 @@ public final class MenuFeature implements Feature {
     private HandoffSource source;
     private QuestService quests;
     private WarpService warps;
-    private PublicWarps publicWarps;
     private FairySouls fairy;
     private SidebarService sidebar;
-    private DamageIndicators damage;
     private Scheduler.Handle maintenance;
 
     @Override
@@ -52,19 +49,22 @@ public final class MenuFeature implements Feature {
         item.register();
         quests = new QuestService(rt);
         QuestsGui questsGui = new QuestsGui(rt, quests);
-        publicWarps = new PublicWarps(core);
-        publicWarps.load();
-        warps = new WarpService(rt, publicWarps);
+        warps = new WarpService(rt);
         WarpsGui warpsGui = new WarpsGui(rt, warps);
         fairy = new FairySouls(rt, quests);
         sidebar = new SidebarService(rt, quests);
         SettingsGui settingsGui = new SettingsGui(rt, sidebar::refresh);
-        MainMenu mainMenu = new MainMenu(rt, quests, questsGui, warpsGui, settingsGui, fairy);
+        FairyGui fairyGui = new FairyGui(rt, fairy);
+        LeaderboardsGui boardsGui = new LeaderboardsGui(rt);
+        MainMenu mainMenu = new MainMenu(rt, quests, questsGui, warpsGui, settingsGui, fairyGui, boardsGui);
         questsGui.backTo(mainMenu.opener());
         warpsGui.backTo(mainMenu.opener());
+        warpsGui.runWith(mainMenu::run);
         settingsGui.backTo(mainMenu.opener());
+        fairyGui.backTo(mainMenu.opener());
+        boardsGui.backTo(mainMenu.opener());
+        boardsGui.runWith(mainMenu::run);
         guard = new MenuItemGuard(rt, item, mainMenu.opener());
-        damage = new DamageIndicators(rt);
         source = config.redisEnabled ? RedisHandoffSource.fromEnvironment(core.getPlugin().getLogger(),
             config.redisHost, config.redisPort, config.redisPasswordFile, config.redisConnectTimeoutMs,
             config.redisSocketTimeoutMs, config.redisBackoffMs) : null;
@@ -75,7 +75,6 @@ public final class MenuFeature implements Feature {
         core.listen(new QuestListener(rt, quests));
         core.listen(fairy);
         core.listen(sidebar);
-        core.listen(damage);
         core.listen(new Cleanup());
 
         new MenuCommands(rt, mainMenu, questsGui, quests, warpsGui, warps, settingsGui, fairy, () -> reload(core))
@@ -147,14 +146,8 @@ public final class MenuFeature implements Feature {
         if (fairy != null) {
             fairy.stop();
         }
-        if (damage != null) {
-            damage.stop();
-        }
         if (warps != null) {
             warps.shutdown();
-        }
-        if (publicWarps != null) {
-            publicWarps.flushNow();
         }
         if (guard != null) {
             guard.stripEveryone();
@@ -178,6 +171,6 @@ public final class MenuFeature implements Feature {
 
     /** For tests: the commands every instance of the feature registers. */
     static List<String> commandNames() {
-        return List.of("sbmenu", "quests", "fairy", "sbwarps", "hub", "sbsettings");
+        return List.of("sbmenu", "quests", "fairy", "sbwarps", "sbsettings");
     }
 }
