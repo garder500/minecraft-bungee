@@ -39,7 +39,11 @@ public class MinionManagerTest {
         plugin = MockBukkit.load(SurvivalPlugin.class);
         core = plugin.core();
         items = core.items();
-        world = server.addSimpleWorld("sb_world");
+        // the real island feature already created sb_world at boot: reuse it (a second one of the same name is never returned by Bukkit.getWorld)
+        world = (WorldMock) server.getWorld("sb_world");
+        if (world == null) {
+            world = server.addSimpleWorld("sb_world");
+        }
         player = server.addPlayer();
         islands = new FakeIslands(player.getUniqueId());
         core.replace(IslandApi.class, islands);
