@@ -143,6 +143,25 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         return core.profiles().section(player, "island", PlayerIslandData.class, PlayerIslandData::new);
     }
 
+    /**
+     * Changes a player's island data without ever reading a profile from disk on the main thread: online players are
+     * edited in place, offline ones through the profile store's any-thread {@code edit}.
+     */
+    private void editData(UUID player, Consumer<PlayerIslandData> change) {
+        if (Bukkit.getPlayer(player) != null) {
+            change.accept(data(player));
+            dirty(player);
+            return;
+        }
+        core.scheduler().async(() -> {
+            try {
+                core.profiles().edit(player, "island", PlayerIslandData.class, PlayerIslandData::new, change);
+            } catch (RuntimeException e) {
+                log.log(Level.WARNING, "Could not update the island data of " + player, e);
+            }
+        });
+    }
+
     private void dirty(UUID player) {
         core.profiles().markDirty(player);
     }
@@ -1116,11 +1135,11 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
                 return Result.fail("You cannot kick " + nameOf(target) + ": they have the same or a higher role.");
             }
             registry.removeMember(island, target);
+            long lostAt = now();
+            editData(target, data -> data.lastLostAt = lostAt);
             Player online = Bukkit.getPlayer(target);
             if (online != null) {
                 core.msg().warn(online, "You were removed from " + registry.nameOf(island.owner) + "'s island.");
-                data(target).lastLostAt = now();
-                dirty(target);
                 if (tracker != null) {
                     tracker.refreshPlayer(online);
                 }
@@ -1272,9 +1291,8 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
                 + " again within " + cfg.confirmSeconds + " seconds to confirm.");
         }
         registry.transfer(island, target);
-        PlayerIslandData data = data(target);
-        data.lastIsland = island.id.toString();
-        dirty(target);
+        String islandId = island.id.toString();
+        editData(target, data -> data.lastIsland = islandId);
         notifyCoop(island, nameOf(target) + " is now the owner of the island.", null);
         return Result.ok("You transferred the island to " + nameOf(target) + ". You are now a co-owner.");
     }

@@ -369,6 +369,27 @@ public class IslandFeatureTest {
     }
 
     @Test
+    public void transferAndKickWorkForOfflineMembers() {
+        PlayerMock owner = player("Present");
+        PlayerMock heir = player("Gone");
+        PlayerMock other = player("Gone2");
+        Island island = readyIsland(owner);
+        owner.performCommand("island invite Gone");
+        heir.performCommand("island accept");
+        owner.performCommand("island invite Gone2");
+        other.performCommand("island accept");
+        heir.disconnect();
+        other.disconnect();
+        owner.performCommand("island transfer Gone");
+        owner.performCommand("island transfer Gone");
+        assertEquals(heir.getUniqueId(), island.owner);
+        // the former owner is now a co-owner of an island owned by an offline player
+        owner.performCommand("island kick Gone2");
+        assertEquals(IslandRole.VISITOR, island.roleOf(other.getUniqueId()));
+        server.getScheduler().performTicks(5);
+    }
+
+    @Test
     public void resetNeedsConfirmationAndHonoursTheCooldown() {
         PlayerMock owner = player("Wiper");
         Island island = readyIsland(owner);
