@@ -128,9 +128,31 @@ public final class CombatListener implements Listener, win.vampyuyu.survival.ite
                 return;
             }
             playerAttack = outgoing(event, victim, attackerPlayer, projectile);
+            if (playerAttack && !(victim instanceof Player)) {
+                ignoreVanillaMitigation(event);
+            }
         }
         if (victim instanceof Player player && engine.active(player)) {
             incoming(event, player, attackerEntity, playerAttack, s);
+        }
+    }
+
+    /**
+     * Formula damage is final: the victim's own vanilla armor, Resistance and enchant protection (armored zombies,
+     * Resistance potions) must not shave it, otherwise the kill time would not match the number on the indicator.
+     */
+    @SuppressWarnings("deprecation")
+    private static void ignoreVanillaMitigation(EntityDamageEvent event) {
+        for (EntityDamageEvent.DamageModifier modifier : new EntityDamageEvent.DamageModifier[] {
+                EntityDamageEvent.DamageModifier.ARMOR, EntityDamageEvent.DamageModifier.RESISTANCE,
+                EntityDamageEvent.DamageModifier.MAGIC}) {
+            try {
+                if (event.isApplicable(modifier)) {
+                    event.setDamage(modifier, 0);
+                }
+            } catch (RuntimeException ignored) {
+                // a server build that refuses to edit this modifier: the hit keeps the vanilla reduction
+            }
         }
     }
 

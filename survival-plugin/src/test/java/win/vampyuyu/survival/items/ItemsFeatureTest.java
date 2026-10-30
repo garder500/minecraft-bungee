@@ -77,15 +77,11 @@ public class ItemsFeatureTest {
 
     @Test
     public void catalogHasTheRequiredBreadth() throws Exception {
-        List<String> ids = new ArrayList<>(new TreeSet<>(core.items().ids()));
+        // other features register their own items (wings...): only the items-pack ones are checked here
+        List<String> ids = new ArrayList<>(new TreeSet<>(core.items().ids().stream()
+            .filter(id -> core.items().def(id).map(d -> d.itemModel() != null && d.itemModel().startsWith("vampyuyu:items/"))
+                .orElse(false)).toList()));
         assertTrue("at least 40 items, got " + ids.size(), ids.size() >= 40);
-        for (String id : ids) {
-            var def = core.items().def(id).orElseThrow();
-            if (def.itemModel() != null && def.itemModel().startsWith("vampyuyu:items/")) {
-                continue;
-            }
-            fail("item without an items/ model: " + id);
-        }
         // six armor sets of three tiers and four pieces
         for (String set : List.of("miner", "lumberjack", "farmer", "hunter", "void_walker", "frostborne")) {
             for (int tier = 1; tier <= 3; tier++) {
@@ -346,7 +342,9 @@ public class ItemsFeatureTest {
         server.getPluginManager().callEvent(new org.bukkit.event.entity.CreatureSpawnEvent(zombie,
             org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL));
         double after = zombie.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getBaseValue();
-        assertEquals(before * settings.mobHealthMultiplier, after, 1e-9);
+        // the mobs table gives a zombie level 3 and 150 health
+        assertEquals(150, after, 1e-9);
+        assertEquals(3, win.vampyuyu.survival.items.combat.MobScaling.levelOf(zombie));
         // a second spawn event for the same entity does not scale it again
         server.getPluginManager().callEvent(new org.bukkit.event.entity.CreatureSpawnEvent(zombie,
             org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL));
@@ -355,6 +353,13 @@ public class ItemsFeatureTest {
         server.getPluginManager().callEvent(new org.bukkit.event.entity.CreatureSpawnEvent(plain,
             org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL));
         assertEquals(before, plain.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getBaseValue(), 1e-9);
+        var cow = world.spawn(new org.bukkit.Location(world, 6, 64, 6), org.bukkit.entity.Cow.class);
+        double cowBefore = cow.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getBaseValue();
+        server.getPluginManager().callEvent(new org.bukkit.event.entity.CreatureSpawnEvent(cow,
+            org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL));
+        assertEquals(cowBefore * settings.mobHealthMultiplier,
+            cow.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getBaseValue(), 1e-9);
+        assertEquals(0, win.vampyuyu.survival.items.combat.MobScaling.levelOf(cow));
         var custom = world.spawn(new org.bukkit.Location(world, 3, 64, 3), org.bukkit.entity.Zombie.class);
         server.getPluginManager().callEvent(new org.bukkit.event.entity.CreatureSpawnEvent(custom,
             org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.CUSTOM));

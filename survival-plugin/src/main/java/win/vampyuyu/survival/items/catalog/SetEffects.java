@@ -93,11 +93,13 @@ public final class SetEffects implements CombatModifiers, Listener {
     public void tick(Player player) {
         UUID id = player.getUniqueId();
         var active = sets.activeOf(id);
+        String set = active.isEmpty() ? "" : active.get().set().id();
+        if (shouldDropTimber(set, timberUntil.get(id), System.currentTimeMillis())) {
+            dropTimber(player);
+        }
         if (active.isEmpty()) {
-            timber.remove(id);
             return;
         }
-        String set = active.get().set().id();
         switch (set) {
             case "miner" -> {
                 if (player.getLocation().getY() < 40) {
@@ -111,17 +113,42 @@ public final class SetEffects implements CombatModifiers, Listener {
                     lastSafe.put(id, player.getLocation());
                 }
             }
-            case "lumberjack" -> {
-                Long until = timberUntil.get(id);
-                if (until != null && until < System.currentTimeMillis()) {
-                    timberUntil.remove(id);
-                    timber.remove(id);
-                    engine.removeModifiers(id, "set:timber");
-                    engine.recompute(player);
-                }
-            }
             default -> { }
         }
+    }
+
+    /**
+     * Pure: true when the Lumberjack stacks must go: the worn set is not the lumberjack one (piece taken off, other
+     * set worn) or the stacks have expired.
+     */
+    public static boolean shouldDropTimber(String activeSet, Long until, long now) {
+        if (until == null) {
+            return false;
+        }
+        return !"lumberjack".equals(activeSet) || until < now;
+    }
+
+    private void dropTimber(Player player) {
+        UUID id = player.getUniqueId();
+        timberUntil.remove(id);
+        timber.remove(id);
+        engine.removeModifiers(id, "set:timber");
+        engine.recompute(player);
+    }
+
+    /** One more Timber stack (up to 5) for a broken log; the Strength modifier lasts {@code sets.lumberjack.seconds}. */
+    public void addTimber(Player player) {
+        UUID id = player.getUniqueId();
+        int[] stacks = timber.computeIfAbsent(id, k -> new int[1]);
+        stacks[0] = Math.min(5, stacks[0] + 1);
+        timberUntil.put(id, System.currentTimeMillis() + (long) (sets.param("lumberjack", "seconds") * 1000));
+        engine.addModifier(id, "set:timber", Stat.STRENGTH, stacks[0] * sets.param("lumberjack", "timber"));
+        engine.recompute(player);
+    }
+
+    /** Test hook: true while Timber stacks are remembered for the player. */
+    public boolean hasTimber(UUID id) {
+        return timberUntil.containsKey(id);
     }
 
     // ---------------------------------------------------------------- block based
@@ -135,11 +162,7 @@ public final class SetEffects implements CombatModifiers, Listener {
         Block block = event.getBlock();
         UUID id = player.getUniqueId();
         if (sets.has(id, "lumberjack") && Tag.LOGS.isTagged(block.getType())) {
-            int[] stacks = timber.computeIfAbsent(id, k -> new int[1]);
-            stacks[0] = Math.min(5, stacks[0] + 1);
-            timberUntil.put(id, System.currentTimeMillis() + (long) (sets.param("lumberjack", "seconds") * 1000));
-            engine.addModifier(id, "set:timber", Stat.STRENGTH, stacks[0] * sets.param("lumberjack", "timber"));
-            engine.recompute(player);
+            addTimber(player);
         } else if (sets.has(id, "farmer") && block.getBlockData() instanceof Ageable crop
                 && crop.getAge() >= crop.getMaximumAge()
                 && ThreadLocalRandom.current().nextDouble() * 100 < sets.param("farmer", "chance")) {
@@ -161,6 +184,7 @@ public final class SetEffects implements CombatModifiers, Listener {
         lastSafe.remove(id);
         timber.remove(id);
         timberUntil.remove(id);
+        engine.removeModifiers(id, "set:timber");
         sets.forget(id);
     }
 }

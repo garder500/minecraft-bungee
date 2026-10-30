@@ -352,6 +352,19 @@ public final class PetService implements StatProvider {
         return egg;
     }
 
+    /** A fresh egg of a species at a level (loot and commands). Null for an unknown species. */
+    public @Nullable ItemStack newEgg(String typeId, Rarity rarity, int level) {
+        if (PetTypes.get(typeId).isEmpty()) {
+            return null;
+        }
+        PetData.Entry entry = new PetData.Entry();
+        entry.id = UUID.randomUUID().toString();
+        entry.type = typeId;
+        entry.rarity = rarity.name();
+        entry.xp = leveling().totalForLevel(Math.max(1, Math.min(100, level)), rarity);
+        return createEgg(entry);
+    }
+
     /** Reads an egg back into an entry (not yet added to any collection). */
     public Optional<PetData.Entry> readEgg(@Nullable ItemStack stack) {
         if (stack == null || !gear.items().is(stack, "pet_egg")) {

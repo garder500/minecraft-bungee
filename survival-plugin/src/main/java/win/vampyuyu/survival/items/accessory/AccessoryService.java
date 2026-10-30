@@ -92,10 +92,23 @@ public final class AccessoryService implements StatProvider {
         for (ItemStack stack : stacks) {
             encoded.add(encode(stack));
         }
-        data.slots = encoded;
+        data.slots = merge(encoded, data.slots);
         core.profiles().markDirty(id);
         versions.merge(id, 1, Integer::sum);
         engine.markDirty(id, false);
+    }
+
+    /**
+     * Pure: the stored slot list after a save. The visible slots replace the first entries; entries stored beyond them
+     * (the bag shrank through {@code /sbitems reload}) are kept untouched so a lower limit never deletes an
+     * accessory and a later upgrade or a higher limit brings it back.
+     */
+    public static List<String> merge(List<String> visible, List<String> stored) {
+        List<String> out = new ArrayList<>(visible);
+        for (int i = visible.size(); i < stored.size(); i++) {
+            out.add(stored.get(i));
+        }
+        return out;
     }
 
     /** True when the stack may live in the bag. */

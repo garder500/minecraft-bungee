@@ -42,6 +42,7 @@ import win.vampyuyu.survival.core.SkyblockWorlds;
 import win.vampyuyu.survival.items.ItemsSettings;
 import win.vampyuyu.survival.items.gear.Gear;
 import win.vampyuyu.survival.items.gear.GearInfo;
+import win.vampyuyu.survival.items.gear.Keys;
 
 /**
  * The stats engine and {@link StatsApi}. A stat is its base value plus the sum of the modifier sources: the ones
@@ -64,6 +65,10 @@ public final class StatsEngine implements StatsApi, Listener {
     private final Set<UUID> dirty = ConcurrentHashMap.newKeySet();
     private final List<StatProvider> providers = new CopyOnWriteArrayList<>();
     private final List<Scheduler.Handle> tasks = new ArrayList<>();
+    /** Health and mana ratios remembered when a player's attributes are removed (logout, leaving a Skyblock world). */
+    private record Saved(double health, double mana, double overflow) {}
+
+    private final Map<UUID, Saved> saved = new ConcurrentHashMap<>();
     private int tickCounter;
     private long lastSecond = System.currentTimeMillis();
 
@@ -99,6 +104,7 @@ public final class StatsEngine implements StatsApi, Listener {
         }
         states.clear();
         dirty.clear();
+        saved.clear();
     }
 
     // ---------------------------------------------------------------- state access
@@ -175,6 +181,11 @@ public final class StatsEngine implements StatsApi, Listener {
 
     // ---------------------------------------------------------------- computation
 
+    /** Pure: a drill (an item with a fuel tank) with an empty tank gives no stats at all. */
+    public static boolean outOfFuel(GearInfo info, long fuel) {
+        return info.def().pdcLongs().containsKey(Keys.FUEL_MAX) && fuel <= 0;
+    }
+
     private boolean counts(GearInfo info) {
         return !settings.ignoredItemIds.contains(info.id());
     }
@@ -205,7 +216,8 @@ public final class StatsEngine implements StatsApi, Listener {
 
         ItemStack main = player.getInventory().getItemInMainHand();
         Optional<GearInfo> heldInfo = gear.read(main);
-        if (heldInfo.isPresent() && counts(heldInfo.get()) && heldType(heldInfo.get())) {
+        if (heldInfo.isPresent() && counts(heldInfo.get()) && heldType(heldInfo.get())
+                && !outOfFuel(heldInfo.get(), gear.items().getLong(main, Keys.FUEL).orElse(0L))) {
             gear.items().statsOf(main).forEach((stat, v) -> held.merge(stat, v, Double::sum));
             addEnchants(enchants, heldInfo.get());
         }
@@ -245,14 +257,42 @@ public final class StatsEngine implements StatsApi, Listener {
 
         if (active(player)) {
             boolean first = !st.everApplied;
-            attributes.apply(player, finalTotals, settings, first);
+            Saved back = first && !player.isDead() ? saved.remove(player.getUniqueId()) : null;
+            attributes.apply(player, finalTotals, settings, first, back == null ? -1 : back.health());
+            if (back != null) {
+                double max = finalTotals.getOrDefault(Stat.INTELLIGENCE, Stat.INTELLIGENCE.base());
+                st.mana.load(Math.min(max, back.mana() * max), back.overflow());
+            }
             st.everApplied = true;
             st.attributesActive = true;
         } else if (st.attributesActive) {
+            remember(player, st);
             attributes.clear(player);
             st.attributesActive = false;
             st.everApplied = false;
         }
+    }
+
+    /** Remembers the health and mana ratios before the attributes are removed, so leaving never heals. */
+    private void remember(Player player, PlayerState st) {
+        if (!st.attributesActive || player.isDead()) {
+            return;
+        }
+        var maxHealth = player.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+        double cap = maxHealth == null ? 20 : maxHealth.getValue();
+        double intelligence = st.stat(Stat.INTELLIGENCE);
+        double mana = st.mana.pristine() || intelligence <= 0 ? 1 : Math.min(1, st.mana.mana() / intelligence);
+        if (saved.size() > 10000) {
+            saved.clear();
+        }
+        saved.put(player.getUniqueId(), new Saved(Math.max(0, Math.min(1, player.getHealth() / Math.max(1, cap))),
+            mana, st.mana.overflow()));
+    }
+
+    /** Test hook: the remembered health ratio of a player, or -1. */
+    public double rememberedHealth(UUID id) {
+        Saved s = saved.get(id);
+        return s == null ? -1 : s.health();
     }
 
     private double clampStat(Stat stat, double value) {
@@ -360,6 +400,10 @@ public final class StatsEngine implements StatsApi, Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+        PlayerState leaving = states.get(player.getUniqueId());
+        if (leaving != null) {
+            remember(player, leaving);
+        }
         attributes.clear(player);
         states.remove(player.getUniqueId());
         dirty.remove(player.getUniqueId());
@@ -369,6 +413,7 @@ public final class StatsEngine implements StatsApi, Listener {
     public void onRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
         PlayerState st = state(player);
+        saved.remove(player.getUniqueId());
         st.everApplied = false;
         st.mana.fill(st.stat(Stat.INTELLIGENCE));
         markDirty(player.getUniqueId(), true);

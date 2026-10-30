@@ -155,4 +155,12 @@ public final class Gear {
         }
         render.apply(stack, this);
     }
+
+    /** An enchanted book holding {@code enchantId} at {@code level} (the one way books are made: command, loot, shops). */
+    public ItemStack createBook(String enchantId, int level) {
+        ItemStack book = items.create("enchanted_book");
+        items.set(book, Keys.BOOK, enchantId + ":" + level);
+        rebuild(book);
+        return book;
+    }
 }

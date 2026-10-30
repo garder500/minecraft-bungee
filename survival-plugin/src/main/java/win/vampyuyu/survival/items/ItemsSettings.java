@@ -49,6 +49,25 @@ public final class ItemsSettings {
     public final boolean healthBars;
     public final double abilityIntelligenceDivisor;
 
+    // mobs
+    /** A row of {@code mobs.table}: level shown, absolute max health (0 = vanilla x multiplier) and damage (0 = vanilla). */
+    public record MobEntry(int level, double health, double damage) {}
+
+    public final boolean mobShowLevel;
+    public final double mobHealthPerLevel;
+    public final double mobDamagePerLevel;
+    public final Map<String, MobEntry> mobTable;
+
+    // recipes and loot
+    public final boolean recipesEnabled;
+    public final boolean recipesSkyblockOnly;
+    public final List<win.vampyuyu.survival.items.obtain.RecipeDef> recipeDefs;
+    public final boolean lootEnabled;
+    public final double lootChanceCap;
+    public final double lootMobLevelBonus;
+    public final Set<String> lootMobSpawnReasons;
+    public final List<win.vampyuyu.survival.items.obtain.LootEntry> lootEntries;
+
     // mana / hud
     public final double manaRegenPercent;
     public final double overflowMaxPercent;
@@ -127,6 +146,21 @@ public final class ItemsSettings {
         healthBars = b("combat.mob-health-bars", true);
         abilityIntelligenceDivisor = d("combat.ability-intelligence-divisor", 100);
 
+        mobShowLevel = b("mobs.show-level", true);
+        mobHealthPerLevel = Math.max(0, d("mobs.health-per-level", 0.15));
+        mobDamagePerLevel = Math.max(0, d("mobs.damage-per-level", 0.10));
+        mobTable = mobTable();
+
+        recipesEnabled = b("recipes.enabled", true);
+        recipesSkyblockOnly = b("recipes.skyblock-only", true);
+        recipeDefs = win.vampyuyu.survival.items.obtain.RecipeDef.parse(root);
+        lootEnabled = b("loot.enabled", true);
+        lootChanceCap = clamp(d("loot.chance-cap", 100), 0, 100);
+        lootMobLevelBonus = Math.max(0, d("loot.mob-level-bonus", 0.05));
+        lootMobSpawnReasons = upperSet("loot.mob-spawn-reasons", List.of("NATURAL", "CHUNK_GEN", "PATROL", "RAID",
+            "REINFORCEMENTS", "VILLAGE_INVASION", "JOCKEY", "TRAP"));
+        lootEntries = win.vampyuyu.survival.items.obtain.LootEntry.parse(root);
+
         manaRegenPercent = d("mana.regen-percent-per-second", 2.0);
         overflowMaxPercent = d("mana.overflow.max-percent", 100);
         overflowDecayPercent = d("mana.overflow.decay-percent-per-second", 2.0);
@@ -188,6 +222,42 @@ public final class ItemsSettings {
         petRarityXp = doubles("pets.xp-curve.rarity-multiplier", Map.of("COMMON", 0.4, "UNCOMMON", 0.7, "RARE", 1.0,
             "EPIC", 1.6, "LEGENDARY", 2.4, "MYTHIC", 3.4));
         petUpdateTicks = Math.max(1, i("pets.update-ticks", 2));
+    }
+
+    private static final Map<String, MobEntry> DEFAULT_MOBS = defaultMobs();
+
+    private static Map<String, MobEntry> defaultMobs() {
+        Map<String, MobEntry> m = new LinkedHashMap<>();
+        m.put("ZOMBIE", new MobEntry(3, 150, 0));
+        m.put("HUSK", new MobEntry(4, 180, 0));
+        m.put("DROWNED", new MobEntry(4, 180, 0));
+        m.put("SKELETON", new MobEntry(3, 130, 0));
+        m.put("STRAY", new MobEntry(4, 160, 0));
+        m.put("SPIDER", new MobEntry(3, 120, 0));
+        m.put("CAVE_SPIDER", new MobEntry(4, 90, 0));
+        m.put("CREEPER", new MobEntry(5, 200, 0));
+        m.put("WITCH", new MobEntry(6, 260, 0));
+        m.put("ENDERMAN", new MobEntry(10, 800, 0));
+        m.put("BLAZE", new MobEntry(12, 500, 0));
+        m.put("WITHER_SKELETON", new MobEntry(14, 700, 0));
+        m.put("GHAST", new MobEntry(10, 250, 0));
+        return Map.copyOf(m);
+    }
+
+    private Map<String, MobEntry> mobTable() {
+        ConfigurationSection section = root.getConfigurationSection("mobs.table");
+        if (section == null) {
+            return DEFAULT_MOBS;
+        }
+        Map<String, MobEntry> out = new LinkedHashMap<>();
+        for (String key : section.getKeys(false)) {
+            ConfigurationSection row = section.getConfigurationSection(key);
+            if (row != null) {
+                out.put(key.toUpperCase(Locale.ROOT), new MobEntry(Math.max(0, row.getInt("level", 1)),
+                    Math.max(0, row.getDouble("health", 0)), Math.max(0, row.getDouble("damage", 0))));
+            }
+        }
+        return Map.copyOf(out);
     }
 
     public ConfigurationSection root() { return root; }

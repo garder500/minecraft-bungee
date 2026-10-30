@@ -45,7 +45,23 @@ public final class AttributeApplier {
         return (clamped - 100.0) / 100.0;
     }
 
+    /**
+     * Pure: the health a player gets back on the first apply after a logout or a world change. {@code fraction} is
+     * the health ratio remembered when the attributes were removed (negative = nothing remembered, full health).
+     */
+    public static double restoredHealth(double fraction, double cap) {
+        if (fraction < 0 || Double.isNaN(fraction)) {
+            return Math.max(1, cap);
+        }
+        return Math.max(1, Math.min(cap, fraction * cap));
+    }
+
     public void apply(Player player, Map<Stat, Double> totals, ItemsSettings settings, boolean firstTime) {
+        apply(player, totals, settings, firstTime, -1);
+    }
+
+    public void apply(Player player, Map<Stat, Double> totals, ItemsSettings settings, boolean firstTime,
+            double healthFraction) {
         try {
             AttributeInstance health = player.getAttribute(Attribute.MAX_HEALTH);
             if (health != null) {
@@ -55,7 +71,7 @@ public final class AttributeApplier {
                 double now = player.getHealth();
                 double cap = health.getValue();
                 if (firstTime) {
-                    player.setHealth(Math.max(1, cap));
+                    player.setHealth(restoredHealth(healthFraction, cap));
                 } else if (now > cap) {
                     player.setHealth(Math.max(1, cap));
                 }

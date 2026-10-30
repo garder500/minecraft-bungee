@@ -76,6 +76,12 @@ hud:
   period-ticks: 5                  # 4 updates per second; a line is only resent when its text changed
   keep-alive-ticks: 40             # resend an unchanged line this often so the client does not fade it
   xp-popup-seconds: 3
+  # The XP popup shows "412/1,000" when SkillsApi has xpForLevel(Skill, int) or this curve reproduces the skills
+  # feature's levels (a curve that disagrees is never shown): XP to go from level-1 to level = base * growth^(level-1).
+  xp-curve:
+    enabled: false
+    base: 100
+    growth: 1.15
 
 # ------------------------------------------------------------------------------------------------ fortune
 fortune:
@@ -86,6 +92,115 @@ fortune:
   crops: [WHEAT, CARROTS, POTATOES, BEETROOTS, NETHER_WART, COCOA, MELON, PUMPKIN, SUGAR_CANE, CACTUS, SWEET_BERRY_BUSH]
   logs: []                         # empty = every block of the LOGS tag
   placed-block-memory: 50000       # blocks remembered as player placed (no fortune, no farming exploit)
+
+# ------------------------------------------------------------------------------------------------ mobs
+mobs:
+  show-level: true                 # "[Lv3] Zombie 120/150" on hurt mobs
+  health-per-level: 0.15           # opt-in mobs (PDC vampyuyu:sb_level): health x (1 + level * this)
+  damage-per-level: 0.10           # attack damage x (1 + level * this)
+  # Natural mobs by entity type. health 0 = vanilla x combat.mob-health-multiplier, damage 0 = vanilla x level scaling.
+  table:
+    ZOMBIE: {level: 3, health: 150, damage: 0}
+    HUSK: {level: 4, health: 180, damage: 0}
+    DROWNED: {level: 4, health: 180, damage: 0}
+    SKELETON: {level: 3, health: 130, damage: 0}
+    STRAY: {level: 4, health: 160, damage: 0}
+    SPIDER: {level: 3, health: 120, damage: 0}
+    CAVE_SPIDER: {level: 4, health: 90, damage: 0}
+    CREEPER: {level: 5, health: 200, damage: 0}
+    WITCH: {level: 6, health: 260, damage: 0}
+    ENDERMAN: {level: 10, health: 800, damage: 0}
+    BLAZE: {level: 12, health: 500, damage: 0}
+    WITHER_SKELETON: {level: 14, health: 700, damage: 0}
+    GHAST: {level: 10, health: 250, damage: 0}
+
+# ------------------------------------------------------------------------------------------------ recipes
+# Vanilla crafting recipes for the starting gear. Only craftable in Skyblock worlds (when skyblock-only) and never with
+# custom items as ingredients. Armor tiers 2 and 3, pets, books and most weapons come from loot (see "loot").
+recipes:
+  enabled: true
+  skyblock-only: true
+  list:
+    rookie_sword: {result: rookie_sword, amount: 1, shape: ["C", "I", "S"], ingredients: {C: COPPER_INGOT, I: IRON_INGOT, S: STICK}}
+    warriors_blade: {result: warriors_blade, amount: 1, shape: ["I", "I", "B"], ingredients: {I: IRON_INGOT, B: BLAZE_ROD}}
+    miners_pickaxe: {result: miners_pickaxe, amount: 1, shape: ["IDI", " C ", " C "], ingredients: {I: IRON_INGOT, D: DIAMOND, C: COPPER_INGOT}}
+    farmers_hoe: {result: farmers_hoe, amount: 1, shape: ["II", " C", " C"], ingredients: {I: IRON_INGOT, C: COPPER_INGOT}}
+    diggers_shovel: {result: diggers_shovel, amount: 1, shape: ["I", "C", "C"], ingredients: {I: IRON_INGOT, C: COPPER_INGOT}}
+    grappling_hook: {result: grappling_hook, amount: 1, shape: ["  I", " IS", "I S"], ingredients: {I: IRON_INGOT, S: STRING}}
+    warp_pearl: {result: warp_pearl, amount: 1, shape: ["EC", "CE"], ingredients: {E: ENDER_PEARL, C: CHORUS_FRUIT}}
+    hot_potato_book: {result: hot_potato_book, amount: 1, shape: ["PGP", "GBG", "PGP"], ingredients: {P: BAKED_POTATO, G: GOLDEN_CARROT, B: BOOK}}
+    miner_helmet_t1: {result: miner_helmet_t1, amount: 1, shape: ["MMM", "M M"], ingredients: {M: COBBLESTONE}}
+    miner_chestplate_t1: {result: miner_chestplate_t1, amount: 1, shape: ["M M", "MMM", "MMM"], ingredients: {M: COBBLESTONE}}
+    miner_leggings_t1: {result: miner_leggings_t1, amount: 1, shape: ["MMM", "M M", "M M"], ingredients: {M: COBBLESTONE}}
+    miner_boots_t1: {result: miner_boots_t1, amount: 1, shape: ["M M", "M M"], ingredients: {M: COBBLESTONE}}
+    lumberjack_helmet_t1: {result: lumberjack_helmet_t1, amount: 1, shape: ["MMM", "M M"], ingredients: {M: OAK_LOG}}
+    lumberjack_chestplate_t1: {result: lumberjack_chestplate_t1, amount: 1, shape: ["M M", "MMM", "MMM"], ingredients: {M: OAK_LOG}}
+    lumberjack_leggings_t1: {result: lumberjack_leggings_t1, amount: 1, shape: ["MMM", "M M", "M M"], ingredients: {M: OAK_LOG}}
+    lumberjack_boots_t1: {result: lumberjack_boots_t1, amount: 1, shape: ["M M", "M M"], ingredients: {M: OAK_LOG}}
+    farmer_helmet_t1: {result: farmer_helmet_t1, amount: 1, shape: ["MMM", "M M"], ingredients: {M: WHEAT}}
+    farmer_chestplate_t1: {result: farmer_chestplate_t1, amount: 1, shape: ["M M", "MMM", "MMM"], ingredients: {M: WHEAT}}
+    farmer_leggings_t1: {result: farmer_leggings_t1, amount: 1, shape: ["MMM", "M M", "M M"], ingredients: {M: WHEAT}}
+    farmer_boots_t1: {result: farmer_boots_t1, amount: 1, shape: ["M M", "M M"], ingredients: {M: WHEAT}}
+    hunter_helmet_t1: {result: hunter_helmet_t1, amount: 1, shape: ["MMM", "M M"], ingredients: {M: BONE}}
+    hunter_chestplate_t1: {result: hunter_chestplate_t1, amount: 1, shape: ["M M", "MMM", "MMM"], ingredients: {M: BONE}}
+    hunter_leggings_t1: {result: hunter_leggings_t1, amount: 1, shape: ["MMM", "M M", "M M"], ingredients: {M: BONE}}
+    hunter_boots_t1: {result: hunter_boots_t1, amount: 1, shape: ["M M", "M M"], ingredients: {M: BONE}}
+    void_walker_helmet_t1: {result: void_walker_helmet_t1, amount: 1, shape: ["MMM", "M M"], ingredients: {M: END_STONE}}
+    void_walker_chestplate_t1: {result: void_walker_chestplate_t1, amount: 1, shape: ["M M", "MMM", "MMM"], ingredients: {M: END_STONE}}
+    void_walker_leggings_t1: {result: void_walker_leggings_t1, amount: 1, shape: ["MMM", "M M", "M M"], ingredients: {M: END_STONE}}
+    void_walker_boots_t1: {result: void_walker_boots_t1, amount: 1, shape: ["M M", "M M"], ingredients: {M: END_STONE}}
+    frostborne_helmet_t1: {result: frostborne_helmet_t1, amount: 1, shape: ["MMM", "M M"], ingredients: {M: SNOW_BLOCK}}
+    frostborne_chestplate_t1: {result: frostborne_chestplate_t1, amount: 1, shape: ["M M", "MMM", "MMM"], ingredients: {M: SNOW_BLOCK}}
+    frostborne_leggings_t1: {result: frostborne_leggings_t1, amount: 1, shape: ["MMM", "M M", "M M"], ingredients: {M: SNOW_BLOCK}}
+    frostborne_boots_t1: {result: frostborne_boots_t1, amount: 1, shape: ["M M", "M M"], ingredients: {M: SNOW_BLOCK}}
+
+# ------------------------------------------------------------------------------------------------ loot
+# Item loot of boss kills (registered with BossApi when the boss feature is loaded), natural mob kills and fishing.
+# chance is a percent per roll: multiplied by (1 + Magic Find / 100), pet rows by (1 + Pet Luck / 100). Row sources:
+# boss, boss:<id>, mob, mob:<ENTITY_TYPE>, fishing. Kinds: item (catalog id, @armor:N = random armor piece of tier N),
+# book (enchant id or @ultimate, level .. max-level) and pet (species id + rarity).
+loot:
+  enabled: true
+  chance-cap: 100                  # no roll is ever above this percent
+  mob-level-bonus: 0.05            # mob drops: chance x (1 + mob level * this)
+  mob-spawn-reasons: [NATURAL, CHUNK_GEN, PATROL, RAID, REINFORCEMENTS, VILLAGE_INVASION, JOCKEY, TRAP]
+  entries:
+    - {kind: book, id: sharpness, level: 6, chance: 0.12, sources: ["mob"]}
+    - {kind: book, id: power, level: 6, chance: 0.12, sources: ["mob"]}
+    - {kind: book, id: protection, level: 6, chance: 0.12, sources: ["mob"]}
+    - {kind: book, id: growth, level: 6, chance: 0.12, sources: ["mob"]}
+    - {kind: book, id: critical, level: 6, chance: 0.12, sources: ["mob"]}
+    - {kind: book, id: efficiency, level: 6, chance: 0.12, sources: ["mob"]}
+    - {kind: item, id: hot_potato_book, chance: 0.5, sources: ["mob"]}
+    - {kind: item, id: pet_candy, chance: 0.6, sources: ["mob"]}
+    - {kind: item, id: reforge_stone_fabled, chance: 0.06, sources: ["mob"]}
+    - {kind: item, id: recombobulator, chance: 0.015, sources: ["mob"]}
+    - {kind: item, id: warp_pearl, chance: 0.8, sources: ["mob:ENDERMAN"]}
+    - {kind: pet, id: wolf, rarity: COMMON, chance: 0.12, sources: ["mob:ZOMBIE", "mob:SKELETON", "mob:SPIDER"]}
+    - {kind: pet, id: enderman, rarity: RARE, chance: 0.1, sources: ["mob:ENDERMAN"]}
+    - {kind: pet, id: tiger, rarity: EPIC, chance: 0.04, sources: ["mob:BLAZE", "mob:WITHER_SKELETON"]}
+    - {kind: item, id: pet_candy, chance: 1, sources: ["fishing"]}
+    - {kind: item, id: warp_pearl, chance: 1.5, sources: ["fishing"]}
+    - {kind: item, id: reforge_stone_fabled, chance: 0.2, sources: ["fishing"]}
+    - {kind: item, id: rod_of_legends, chance: 0.03, sources: ["fishing"]}
+    - {kind: pet, id: turtle, rarity: UNCOMMON, chance: 0.4, sources: ["fishing"]}
+    - {kind: pet, id: rabbit, rarity: COMMON, chance: 0.25, sources: ["fishing"]}
+    - {kind: book, id: "@ultimate", max-level: 2, chance: 18, sources: ["boss"]}
+    - {kind: book, id: sharpness, level: 7, chance: 12, sources: ["boss"]}
+    - {kind: book, id: protection, level: 7, chance: 12, sources: ["boss"]}
+    - {kind: book, id: critical, level: 7, chance: 10, sources: ["boss"]}
+    - {kind: item, id: "@armor:2", chance: 20, sources: ["boss"]}
+    - {kind: item, id: "@armor:3", chance: 3, sources: ["boss"]}
+    - {kind: item, id: reforge_stone_withered, chance: 14, sources: ["boss"]}
+    - {kind: item, id: reforge_stone_ancient, chance: 5, sources: ["boss"]}
+    - {kind: item, id: reforge_stone_refined, chance: 1.5, sources: ["boss"]}
+    - {kind: item, id: recombobulator, chance: 6, sources: ["boss"]}
+    - {kind: item, id: drill_fuel_volta, chance: 10, sources: ["boss"]}
+    - {kind: item, id: wither_blade, chance: 0.7, sources: ["boss"]}
+    - {kind: item, id: titan_drill, chance: 0.5, sources: ["boss"]}
+    - {kind: pet, id: tiger, rarity: EPIC, chance: 4, sources: ["boss"]}
+    - {kind: pet, id: phoenix, rarity: EPIC, chance: 3, sources: ["boss"]}
+    - {kind: pet, id: ender_dragon, rarity: LEGENDARY, chance: 1.5, sources: ["boss"]}
 
 # ------------------------------------------------------------------------------------------------ costs
 costs:

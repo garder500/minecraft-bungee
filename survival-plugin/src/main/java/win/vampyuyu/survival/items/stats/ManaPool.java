@@ -21,6 +21,13 @@ public final class ManaPool {
         full = false;
     }
 
+    /** Sets the pool to saved values (login after a logout): not full, not pristine. */
+    public synchronized void load(double manaValue, double overflowValue) {
+        mana = Math.max(0, manaValue);
+        overflow = Math.max(0, overflowValue);
+        full = false;
+    }
+
     /** True until the first {@link #fill} or tick set a value for this player. */
     public synchronized boolean pristine() { return full; }
 

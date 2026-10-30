@@ -94,11 +94,22 @@ public final class BreakListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlace(BlockPlaceEvent event) {
-        Material type = event.getBlockPlaced().getType();
-        if (engine.active(event.getPlayer())
-                && (settings().fortuneOres.contains(type.name()) || Tag.LOGS.isTagged(type))) {
+        if (engine.active(event.getPlayer()) && tracksPlacement(settings(), event.getBlockPlaced().getBlockData())) {
             placed.add(event.getBlockPlaced());
         }
+    }
+
+    /**
+     * Pure: true when a block placed by a player must not give fortune drops when it is broken again. Ores and logs
+     * always; crops only when they are not {@link Ageable} (pumpkin, melon: they have no growth stage, so a placed one
+     * would look "mature"). Planted seeds (wheat, carrots...) are not tracked: they only give fortune once grown.
+     */
+    public static boolean tracksPlacement(ItemsSettings s, BlockData data) {
+        Material type = data.getMaterial();
+        if (s.fortuneOres.contains(type.name()) || s.fortuneLogs.contains(type.name()) || Tag.LOGS.isTagged(type)) {
+            return true;
+        }
+        return s.fortuneCrops.contains(type.name()) && (!(data instanceof Ageable) || stacking(type));
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -215,7 +226,16 @@ public final class BreakListener implements Listener {
         }
     }
 
-    private static boolean mature(BlockData data) {
+    /** Crops that grow as a stack of blocks: their age is not a growth stage, every block counts as ripe. */
+    private static boolean stacking(Material type) {
+        return type == Material.SUGAR_CANE || type == Material.CACTUS;
+    }
+
+    /** Pure: true when a crop block can be harvested (fully grown, or a crop without growth stages). */
+    public static boolean mature(BlockData data) {
+        if (stacking(data.getMaterial())) {
+            return true;
+        }
         return !(data instanceof Ageable ageable) || ageable.getAge() >= ageable.getMaximumAge();
     }
 

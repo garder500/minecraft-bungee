@@ -190,10 +190,7 @@ public final class ItemsCommands {
 
     /** An enchanted book holding {@code enchant} at {@code level}. */
     public ItemStack createBook(Enchant enchant, int level) {
-        ItemStack book = gear.items().create("enchanted_book");
-        gear.items().set(book, Keys.BOOK, enchant.id() + ":" + level);
-        gear.rebuild(book);
-        return book;
+        return gear.createBook(enchant.id(), level);
     }
 
     private void book(CommandSender sender, String[] args) {

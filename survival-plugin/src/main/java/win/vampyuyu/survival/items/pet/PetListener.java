@@ -90,7 +90,8 @@ public final class PetListener implements Listener, CombatModifiers {
     public void onQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
         service.forget(id);
-        reviveReadyAt.remove(id);
+        // The Phoenix cooldown survives a relog; only an expired entry is dropped.
+        reviveReadyAt.computeIfPresent(id, (key, readyAt) -> keepRevive(readyAt, System.currentTimeMillis()) ? readyAt : null);
         clickGuard.remove(id);
     }
 
@@ -299,6 +300,16 @@ public final class PetListener implements Listener, CombatModifiers {
                 }
             }
         }
+    }
+
+    /** Pure: a revive cooldown entry is kept across a logout while it is still running. */
+    public static boolean keepRevive(long readyAt, long now) {
+        return readyAt > now;
+    }
+
+    /** Test hook: stores a revive cooldown. */
+    public void reviveCooldown(UUID id, long readyAt) {
+        reviveReadyAt.put(id, readyAt);
     }
 
     /** Test hook: when the pet may revive its owner again (epoch millis, 0 when ready). */

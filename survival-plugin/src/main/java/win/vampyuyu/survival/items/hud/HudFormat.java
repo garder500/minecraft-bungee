@@ -33,6 +33,11 @@ public final class HudFormat {
         return gain(gained) + " " + skill + " (Lv " + level + ", " + Msg.grouped(totalXp) + " XP)";
     }
 
+    /** The text of a skill XP popup with progress: {@code +3.2 Mining (412/1,000)}. */
+    public static String xpProgressPopup(String skill, double gained, double into, double needed) {
+        return gain(gained) + " " + skill + " (" + Msg.grouped(Math.floor(into)) + "/" + Msg.grouped(Math.floor(needed)) + ")";
+    }
+
     /**
      * Builds the bar: health on the left, the centre message (notice, XP popup or Defense) and the mana on the right.
      *

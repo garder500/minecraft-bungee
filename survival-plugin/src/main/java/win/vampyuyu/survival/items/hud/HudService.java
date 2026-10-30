@@ -38,6 +38,9 @@ public final class HudService implements Listener {
         task = core.scheduler().repeating(5, engine.settings().hudPeriodTicks, this::tick);
     }
 
+    private XpProgress progress;
+    private ItemsSettings progressSource;
+
     public void stop() {
         if (task != null) {
             task.cancel();
@@ -98,11 +101,29 @@ public final class HudService implements Listener {
             }
             PlayerState st = engine.state(player);
             Optional<SkillsApi> api = skills;
-            String text = api.map(a -> HudFormat.xpPopup(skill, gained, a.level(player.getUniqueId(), event.getSkill()),
-                a.xp(player.getUniqueId(), event.getSkill()))).orElse(HudFormat.gain(gained) + " " + skill);
+            String text = api.map(a -> xpText(a, player, event.getSkill(), skill, gained))
+                .orElse(HudFormat.gain(gained) + " " + skill);
             st.xpPopup = text;
             st.xpPopupUntil = System.currentTimeMillis() + engine.settings().xpPopupSeconds * 1000L;
         });
+    }
+
+    private String xpText(SkillsApi api, Player player, win.vampyuyu.survival.api.Skill skill, String name,
+            double gained) {
+        var progress = progress().of(api, player.getUniqueId(), skill);
+        if (progress.isPresent()) {
+            return HudFormat.xpProgressPopup(name, gained, progress.get().into(), progress.get().needed());
+        }
+        return HudFormat.xpPopup(name, gained, api.level(player.getUniqueId(), skill), api.xp(player.getUniqueId(), skill));
+    }
+
+    private XpProgress progress() {
+        ItemsSettings s = engine.settings();
+        if (progress == null || progressSource != s) {
+            progress = XpProgress.from(s.root());
+            progressSource = s;
+        }
+        return progress;
     }
 
     @EventHandler

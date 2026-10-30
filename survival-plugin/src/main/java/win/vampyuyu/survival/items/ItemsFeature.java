@@ -38,6 +38,9 @@ import win.vampyuyu.survival.items.menu.EnchantTableMenu;
 import win.vampyuyu.survival.items.menu.ItemMenuListener;
 import win.vampyuyu.survival.items.menu.ReforgeMenu;
 import win.vampyuyu.survival.items.menu.TableListener;
+import win.vampyuyu.survival.items.obtain.ItemRecipes;
+import win.vampyuyu.survival.items.obtain.LootRoller;
+import win.vampyuyu.survival.items.obtain.LootService;
 import win.vampyuyu.survival.items.pet.PetListener;
 import win.vampyuyu.survival.items.pet.PetMenu;
 import win.vampyuyu.survival.items.pet.PetService;
@@ -62,6 +65,8 @@ public final class ItemsFeature implements Feature {
     private SetBonuses sets;
     private ItemLoreExtras lore;
     private PetService pets;
+    private ItemRecipes recipes;
+    private LootService loot;
 
     @Override
     public String id() {
@@ -132,7 +137,7 @@ public final class ItemsFeature implements Feature {
         core.listen(new Listener() {
             @EventHandler
             public void onQuit(PlayerQuitEvent event) {
-                abilities.clearCooldowns(event.getPlayer());
+                // Cooldowns are expiry based and survive a relog (clearing them let a reconnect skip any cooldown).
                 accessories.forget(event.getPlayer().getUniqueId());
             }
         });
@@ -149,6 +154,16 @@ public final class ItemsFeature implements Feature {
         core.listen(new TableListener(engine::settings, (player, kind) ->
             ItemsCommands.later(core, player, () -> menus.open(player, ItemsCommands.menuOf(kind)))));
         new ItemsCommands(core, gear, engine, pets, menus, this::reload).register();
+
+        recipes = new ItemRecipes(gear, settings, core.getPlugin().getLogger());
+        core.listen(recipes);
+        recipes.register();
+        LootRoller roller = new LootRoller(gear, pets);
+        roller.problems(settings.lootEntries).forEach(row ->
+            core.getPlugin().getLogger().warning("Loot row points at nothing and will never drop: " + row));
+        loot = new LootService(core, engine, roller);
+        core.listen(loot);
+        loot.start();
 
         engine.start();
         hud.start();
@@ -172,6 +187,8 @@ public final class ItemsFeature implements Feature {
         accessories.settings(fresh);
         pets.settings(fresh);
         sets.settings(fresh);
+        recipes.settings(fresh);
+        recipes.register();
         lore.settings(fresh);
         indicators.settings(fresh);
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -182,6 +199,12 @@ public final class ItemsFeature implements Feature {
     @Override
     public void disable() {
         ItemMenuListener.closeAll();
+        if (loot != null) {
+            loot.stop();
+        }
+        if (recipes != null) {
+            recipes.unregister();
+        }
         if (setTask != null) {
             setTask.cancel();
         }
