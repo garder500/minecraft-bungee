@@ -69,6 +69,14 @@ mobs:
   watcher-guards-base: 3
   watcher-guards-per-floor: 1
 
+# The Crypt Merchant of the shop room. Prices are multiplied by the floor reward multiplier. Needs the economy feature.
+shop:
+  spirit-leaf-price: 1500
+  healing-flask-price: 400
+  # Healing Flask: percent of max health restored, and the pause between two uses (seconds).
+  flask-heal-percent: 60
+  flask-cooldown-seconds: 15
+
 scoring:
   # Seconds past the par time that cost one speed point.
   speed-decay-seconds: 6.0

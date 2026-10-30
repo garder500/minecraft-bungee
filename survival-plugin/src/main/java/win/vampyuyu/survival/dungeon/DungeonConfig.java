@@ -71,6 +71,11 @@ public final class DungeonConfig {
     public int watcherGuardsBase;
     public int watcherGuardsPerFloor;
 
+    public double shopLeafPrice;
+    public double shopFlaskPrice;
+    public int flaskHealPercent;
+    public int flaskCooldownSeconds;
+
     public double speedDecaySeconds;
     public double deathPenalty;
     public final Map<Grade, Integer> thresholds = new EnumMap<>(Grade.class);
@@ -177,6 +182,12 @@ public final class DungeonConfig {
         partyDamageScale = dbl(mobs, "party-damage-scale", 0.10, 0.0, 3.0);
         watcherGuardsBase = num(mobs, "watcher-guards-base", 3, 0, 30);
         watcherGuardsPerFloor = num(mobs, "watcher-guards-per-floor", 1, 0, 10);
+
+        ConfigurationSection shop = r == null ? null : r.getConfigurationSection("shop");
+        shopLeafPrice = dbl(shop, "spirit-leaf-price", 1500, 0, 1e9);
+        shopFlaskPrice = dbl(shop, "healing-flask-price", 400, 0, 1e9);
+        flaskHealPercent = num(shop, "flask-heal-percent", 60, 1, 100);
+        flaskCooldownSeconds = num(shop, "flask-cooldown-seconds", 15, 0, 3600);
 
         ConfigurationSection score = r == null ? null : r.getConfigurationSection("scoring");
         speedDecaySeconds = dbl(score, "speed-decay-seconds", 6.0, 0.5, 600.0);

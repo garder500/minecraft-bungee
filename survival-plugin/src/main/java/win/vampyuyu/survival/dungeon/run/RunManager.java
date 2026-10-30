@@ -203,12 +203,22 @@ public final class RunManager {
         return null;
     }
 
+    /** The folder holding the world folders, or null when the server cannot say (never guess a path to delete from). */
+    private static Path container() {
+        try {
+            File f = Bukkit.getWorldContainer();
+            return f == null ? null : f.toPath();
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
     private synchronized String nextId() {
-        File container = Bukkit.getWorldContainer();
+        Path container = container();
         while (true) {
             counter++;
             String name = SkyblockWorlds.dungeon(Integer.toString(counter));
-            if (Bukkit.getWorld(name) == null && !new File(container, name).exists()) {
+            if (Bukkit.getWorld(name) == null && (container == null || !java.nio.file.Files.exists(container.resolve(name)))) {
                 return Integer.toString(counter);
             }
         }
@@ -409,7 +419,10 @@ public final class RunManager {
     }
 
     private void scheduleDelete(Path folder, String name) {
-        Path container = Bukkit.getWorldContainer().toPath();
+        Path container = container();
+        if (container == null) {
+            return;
+        }
         Path target = folder != null ? folder : container.resolve(name);
         Runnable job = () -> {
             if (!WorldFiles.isDungeonWorldName(name)) {
@@ -431,7 +444,10 @@ public final class RunManager {
 
     /** Deletes sb_dungeon_* folders that no loaded world uses (crash leftovers). Safe to call at enable. */
     public void cleanOrphans() {
-        Path container = Bukkit.getWorldContainer().toPath();
+        Path container = container();
+        if (container == null) {
+            return;
+        }
         List<String> loaded = new ArrayList<>();
         for (World w : Bukkit.getWorlds()) {
             loaded.add(w.getName());
@@ -493,8 +509,8 @@ public final class RunManager {
                         applier.releaseTickets();
                     }
                     boolean unloaded = Bukkit.unloadWorld(world, false);
-                    if (unloaded) {
-                        Path container = Bukkit.getWorldContainer().toPath();
+                    Path container = container();
+                    if (unloaded && container != null) {
                         WorldFiles.deleteWorldFolder(container, folder != null ? folder : container.resolve(world.getName()));
                     }
                 }
@@ -513,7 +529,10 @@ public final class RunManager {
             appliers.clear();
         }
         progressBars.clear();
-        deleteOrphans(Bukkit.getWorldContainer().toPath(), Bukkit.getWorlds().stream().map(World::getName).toList());
+        Path container = container();
+        if (container != null) {
+            deleteOrphans(container, Bukkit.getWorlds().stream().map(World::getName).toList());
+        }
     }
 
     /** A participant quit or was removed: leave the run, no teleport (the server does not care about offline players). */
