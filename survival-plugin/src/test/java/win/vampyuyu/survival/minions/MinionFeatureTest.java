@@ -109,6 +109,48 @@ public class MinionFeatureTest {
         assertFalse(event.isCancelled());
     }
 
+    @Test
+    public void theIslandOwnerMayPlaceEvenWhenMembersLeavesTheOwnerOut() {
+        FakeIslands islands = (FakeIslands) core.require(IslandApi.class);
+        islands.members = java.util.Set.of(java.util.UUID.randomUUID());
+        ItemStack item = MinionItems.createMinion(items, "coal", 1, null);
+        player.getInventory().setItemInMainHand(item);
+        server.getPluginManager().callEvent(new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, item,
+            world.getBlockAt(0, 63, 0), BlockFace.UP, EquipmentSlot.HAND));
+        assertEquals(1, manager.store().size());
+        MinionData d = manager.store().all().get(0);
+        MinionStoreHelper.forceIslandCheck(manager, d);
+        manager.tick();
+        MinionStoreHelper.forceIslandCheck(manager, d);
+        manager.tick();
+        assertEquals("the minion must not be returned", 1, manager.store().size());
+    }
+
+    // ---------------------------------------------------------------- custom items keep to themselves
+
+    @Test
+    public void customMinionItemsCannotBeEatenPlacedOrBurned() {
+        ItemStack enchanted = items.create(MinionItems.enchantedId(Material.COAL));
+        org.bukkit.event.player.PlayerItemConsumeEvent eat = new org.bukkit.event.player.PlayerItemConsumeEvent(player,
+            enchanted);
+        server.getPluginManager().callEvent(eat);
+        assertTrue(eat.isCancelled());
+
+        org.bukkit.event.player.PlayerItemConsumeEvent plain = new org.bukkit.event.player.PlayerItemConsumeEvent(player,
+            new ItemStack(Material.COAL));
+        server.getPluginManager().callEvent(plain);
+        assertFalse(plain.isCancelled());
+
+        org.bukkit.event.inventory.FurnaceBurnEvent burn = new org.bukkit.event.inventory.FurnaceBurnEvent(
+            world.getBlockAt(5, 64, 5), enchanted, 1600);
+        server.getPluginManager().callEvent(burn);
+        assertTrue(burn.isCancelled());
+        org.bukkit.event.inventory.FurnaceBurnEvent burnPlain = new org.bukkit.event.inventory.FurnaceBurnEvent(
+            world.getBlockAt(5, 64, 5), new ItemStack(Material.COAL), 1600);
+        server.getPluginManager().callEvent(burnPlain);
+        assertFalse(burnPlain.isCancelled());
+    }
+
     // ---------------------------------------------------------------- recipes
 
     @Test

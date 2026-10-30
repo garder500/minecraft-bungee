@@ -197,4 +197,19 @@ public class MinionStoreTest {
         a.loadAll();
         assertEquals(0, a.size());
     }
+
+    @Test
+    public void aPlacedMinionsUidIsSpentAgainOnLoadEvenWithoutTheLedgerFile() throws Exception {
+        MinionStore a = store();
+        MinionData one = minion("owner-a", 1);
+        a.add(one);
+        a.saveNow("owner-a");
+        a.close();
+        Files.deleteIfExists(root.resolve("minions/ledger.json"));
+
+        MinionStore b = store();
+        b.loadAll();
+        assertTrue(b.ledger().isSpent(one.uid));
+        assertFalse(b.spendUid(one.uid));
+    }
 }

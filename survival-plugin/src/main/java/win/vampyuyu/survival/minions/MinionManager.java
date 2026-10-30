@@ -133,6 +133,11 @@ public final class MinionManager implements MinionApi {
         return p.hasPermission("vampyuyu.sb.minions.admin");
     }
 
+    /** The owner counts as a member even if an IslandApi implementation leaves it out of {@code members()}. */
+    static boolean isMember(IslandInfo island, UUID player) {
+        return island.owner().equals(player) || island.members().contains(player);
+    }
+
     /** Owner, a member of the island the minion stands on, or an admin. */
     public boolean canAccess(Player p, MinionData d) {
         if (d.owner.equals(p.getUniqueId().toString()) || isAdmin(p)) {
@@ -143,7 +148,7 @@ public final class MinionManager implements MinionApi {
         if (w == null || api.isEmpty()) {
             return false;
         }
-        return api.get().islandAt(new Location(w, d.x, d.y, d.z)).map(i -> i.members().contains(p.getUniqueId()))
+        return api.get().islandAt(new Location(w, d.x, d.y, d.z)).map(i -> isMember(i, p.getUniqueId()))
             .orElse(false);
     }
 
@@ -190,7 +195,7 @@ public final class MinionManager implements MinionApi {
             return Result.fail("Minions can only be placed on an island.");
         }
         UUID id = p.getUniqueId();
-        if (!island.get().members().contains(id)) {
+        if (!isMember(island.get(), id)) {
             return Result.fail("You can only place minions on your own island.");
         }
         if (!api.get().canBuild(p, at)) {
@@ -868,7 +873,7 @@ public final class MinionManager implements MinionApi {
         }
         IslandInfo island = info.get();
         UUID owner = UUID.fromString(d.owner);
-        if (!island.id().toString().equals(d.island) || !island.members().contains(owner)) {
+        if (!island.id().toString().equals(d.island) || !isMember(island, owner)) {
             if (++rt.islandStrikes >= 2) {
                 returnToOwner(d, "island changed");
                 return true;

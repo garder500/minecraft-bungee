@@ -62,7 +62,7 @@ Slots = `base-slots` (5) + 1 per threshold in `slot-thresholds` reached by the n
 tier) the player has ever crafted or upgraded to, capped at `max-slots` (30). Island cap: `per-island-cap` (48) for
 all players together. Placing needs: an island (IslandApi), membership of that island, `canBuild`, 2 free blocks of
 air above a solid block, and the whole working area inside the island border (otherwise status "Outside island").
-Members of the island can open and use the minions of the owner; only the minion owner, the island owner or an admin
+Members of the island (the island owner counts even if `members()` omits it) can open and use the minions of the owner; only the minion owner, the island owner or an admin
 can pick one up.
 
 ## Commands and permissions
@@ -97,10 +97,12 @@ a warning, the rest loads. There is no hot reload.
 
 ### Anti-dupe
 
-* Every minion item handed out by this feature (`/minion give`, pick up, owed delivery) carries a fresh `uid`. Placing
-  marks the uid spent in `ledger.json` (an item with a spent uid, for example a copy or an inventory restored from a
-  backup, is refused with "already used"). A minion item made by a crafting table has no uid yet and gets one when it
-  is placed, so a copy of a never-placed crafted item is NOT caught (crafting output is a fresh item anyway).
+* Every minion item carries a `uid`: `/minion give`, pick up and owed deliveries stamp a fresh one, and a crafted
+  minion is stamped in `PrepareItemCraftEvent` (`MinionListener.onPrepareCraft`). Placing marks the uid spent in
+  `ledger.json` (an item with a spent uid, for example a copy or an inventory restored from a backup after a crash, is
+  refused with "already used"). The ledger is written before the owner file, and `loadAll` re-spends the uid of every
+  placed minion, so a lagging ledger file cannot reopen the window. An item with no uid (should not exist) is stamped
+  when placed, which cannot be checked against copies.
 * Pick up returns the exact storage: it is moved to the owner first and the pick-up is refused while anything is
   left (full inventory). The data is saved (minion removed) BEFORE the items are handed over, and the owed list of an
   island reset / purge is written before the owner is given anything: a crash in between can lose items but can never
@@ -129,6 +131,13 @@ whole elapsed window is produced on the first tick after the chunk loads. Loaded
   minion is removed and everything it holds is owed to the owner (`owed`). If the world or chunk is not loaded the minion
   is not ticked (frozen) and is kept as is.
 
+### Custom items are inert
+
+`MinionItemGuard`: every `minion_*` item (made of vanilla materials such as FURNACE, PISTON, COAL, LAVA_BUCKET) is
+refused for block placing, eating, bucket pouring, furnace fuel and smelting, dispensers and Crafter blocks, and
+the crafting table never uses them as ingredients of a vanilla recipe. Villager trades and cartography/other
+exotic recipe stations are NOT guarded (gap).
+
 ## Resource pack
 
 `resource-pack/art/minions_icons.py` (stdlib only, deterministic) writes 40 icons (26 minions, 7 fuels, 7 upgrades)
@@ -145,6 +154,10 @@ use vanilla models on purpose.
   visuals, particles, block growth or chunk unload, so the look of the minion body, the arm swing, the label and
   particles, the PDC cleanup of leftover entities after a crash, the real chunk-unload/load path and the GUI layout in
   a 6-row window are NOT verified. Run `scripts/e2e_client.py` with a minion scenario before trusting the visuals.
+* Shift-click crafting: the uid is stamped on every prepare event; whether each craft of a shift-click gets a distinct
+  uid was not verified (MockBukkit cannot simulate it). The prepare/guard events other than consume and furnace burn
+  are only covered by code review, not tests.
+* Villager trades are not guarded against `minion_*` items.
 * Icons were checked as an enlarged contact sheet (not in a client with the real pack).
 * The body uses the Paper `Mannequin` API (it compiles against paper-api 26.3); how it renders in a client (scale 0.7,
   default profile skin) and whether `swingMainHand` animates it was not seen.

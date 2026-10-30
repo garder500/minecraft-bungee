@@ -43,6 +43,7 @@ public final class MinionsFeature implements Feature {
             recipes = new MinionRecipes(core.getPlugin());
             recipes.register(core.items(), config);
             core.listen(new MinionListener(core, manager, gui, recipes));
+            core.listen(new MinionItemGuard(core.items()));
 
             core.permissions().register("vampyuyu.sb.minions.admin", "Give, list and purge minions",
                 PermissionDefault.OP);

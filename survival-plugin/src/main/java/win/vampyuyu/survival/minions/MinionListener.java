@@ -186,6 +186,16 @@ final class MinionListener implements Listener {
                 return;
             }
         }
+        // A crafted minion gets its uid now, so a copy of it (crash that restores an older inventory) is caught by the
+        // ledger once the original has been placed.
+        if (event.getRecipe() instanceof Keyed keyed && recipes.isOurs(keyed.getKey())) {
+            ItemStack result = event.getInventory().getResult();
+            if (result != null && MinionItems.parse(core.items(), result) != null) {
+                ItemStack stamped = result.clone();
+                core.items().set(stamped, MinionItems.PDC_UID, MinionItems.newUid());
+                event.getInventory().setResult(stamped);
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

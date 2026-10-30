@@ -44,7 +44,7 @@ final class FakeIslands implements IslandApi {
 
     @Override
     public boolean canBuild(Player player, Location location) {
-        return members.contains(player.getUniqueId());
+        return owner.equals(player.getUniqueId()) || members.contains(player.getUniqueId());
     }
 
     @Override

@@ -100,6 +100,10 @@ public final class MinionStore {
                 new Storage(d.storage, Integer.MAX_VALUE).sanitize();
                 d.tier = MinionConfig.clampTier(d.tier);
                 index(d);
+                // A placed minion's uid is always spent, even when the ledger file lags behind the owner file.
+                if (!d.uid.isBlank() && ledger.spend(d.uid)) {
+                    ledgerDirty = true;
+                }
             }
         }
     }
