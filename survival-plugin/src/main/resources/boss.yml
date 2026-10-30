@@ -26,6 +26,11 @@ settings:
   hit-iframes: 6             # invulnerability ticks of a boss between two hits
   magic-find-cap: 1000       # Magic Find above this is ignored
   purge-orphans: true        # remove tagged boss entities left behind (bosses never persist across a restart)
+  scale-min-share: 0.01      # a player grows the boss health pool only after dealing this fraction of its base health
+  repeat-window-minutes: 60  # kills of the same boss inside this window lower the next payout (coins and combat xp)...
+  repeat-decay: 0.2          # ...by this fraction per earlier kill...
+  repeat-floor: 0.25         # ...down to this fraction (0 decay turns the damper off)
+  damage-numbers: true       # floating damage numbers on bosses (they take a token real hit, so the generic ones read 0)
 
 bosses:
   # ----------------------------------------------------------------------------------------------------------
@@ -101,7 +106,10 @@ bosses:
     summon:
       item: void_sigil
       mode: altar
-      altar: { world: sb_end, x: 0, y: 70, z: 0, radius: 40 }   # adjust to the End island altar
+      # Every island has its own altar in its End cell at (cellX * cell-size + 0.5, island-y + 1, cellZ * cell-size + 0.5)
+      # (island.yml grid.cell-size and grid.island-y). The one closest to the player is used, so x, y, z are those of
+      # cell 0,0 and cell-size repeats them. Set cell-size: 0 for a single fixed altar.
+      altar: { world: sb_end, x: 0.5, y: 65, z: 0.5, radius: 40, cell-size: 400 }
       worlds: [sb_end]
       cooldown-seconds: 300
       global-cooldown-seconds: 0
@@ -391,6 +399,9 @@ bosses:
 
   # ----------------------------------------------------------------------------------------------------------
   # Dungeon boss: spawned by the dungeon feature with BossApi.spawn("crypt_lord", location, null). No summon item.
+  # Limits the dungeon owner must know: players further than `radius` from the spawn point cannot hurt it, it vanishes
+  # (no event is fired, only a kill is observable through BossKillEvent) after `idle-despawn-seconds` without a player in
+  # range and after `time-limit-seconds`.
   crypt_lord:
     name: "<gradient:#6b6b6b:#c8c8c8><bold>Crypt Lord</bold></gradient>"
     description: "An undead necromancer. Kill the skeleton waves, break the bone cage, do not stand in the beam."
@@ -402,14 +413,14 @@ bosses:
     knockback-resistance: 1.0
     bar: { color: WHITE, overlay: NOTCHED_10 }
     arena:
-      radius: 32
-      leash: 44
-      projectile-range: 40
+      radius: 48
+      leash: 64
+      projectile-range: 56
       min-players: 1
       scale-per-player: 0.3
       scale-cap: 3.0
       enrage-seconds: 480
-      idle-despawn-seconds: 90
+      idle-despawn-seconds: 300
       time-limit-seconds: 900
       max-minions: 12
     options: { glow: false, contact-radius: 4 }
@@ -561,10 +572,12 @@ world-bosses:
   retry-minutes: 5                # when too few players are online, check again after this long
   leaderboard-size: 5
   history-size: 10
+  # y: -999 means "x and z are offsets from the world spawn" (the island feature builds the hub around its spawn pad at
+  # 0, 14: the plaza has radius 26 around 0, 0). At spawn time the boss is placed on the highest solid block of the column
+  # with 10 free blocks above it; no ground means the event is retried. More spots: /worldboss addspot <name>.
   locations:
-    # Hub adjacent arenas: edit to match the hub build.
-    - { world: sb_hub, x: 0, y: 80, z: 60, name: "Hub Fields" }
-    - { world: sb_hub, x: 0, y: 80, z: -60, name: "North Plateau" }
+    - { world: sb_hub, x: 0, y: -999, z: -14, name: "Hub Plaza" }
+    - { world: sb_hub, x: 12, y: -999, z: -14, name: "Plaza Rim" }
   pool:
     - { boss: ancient_colossus, weight: 1.0 }
     - { boss: storm_roc, weight: 1.0 }
@@ -819,26 +832,27 @@ mob-drops:
   - { item: leviathan_scale, entities: [ELDER_GUARDIAN, GUARDIAN, DROWNED], chance: 0.0012 }
 
 # ------------------------------------------------------------------------------------------------------------
-# Crafting recipes of the summon items (a deliberately expensive fallback; remove an entry or set enabled: false).
+# Crafting recipes of the summon items. OFF by default: a wither farm makes Nether Stars without limit, which would turn
+# every kill payout into an endless faucet (the repeat damper in settings softens it). Turn one on with enabled: true.
 recipes:
   void_sigil:
-    enabled: true
+    enabled: false
     shape: ["EDE", "DND", "EDE"]
     ingredients: { E: ENDER_EYE, D: DRAGON_BREATH, N: NETHER_STAR }
   magma_core:
-    enabled: true
+    enabled: false
     shape: ["MBM", "BNB", "MBM"]
     ingredients: { M: MAGMA_BLOCK, B: BLAZE_ROD, N: NETHER_STAR }
   frost_heart:
-    enabled: true
+    enabled: false
     shape: ["BIB", "INI", "BIB"]
     ingredients: { B: BLUE_ICE, I: PACKED_ICE, N: NETHER_STAR }
   matriarch_egg:
-    enabled: true
+    enabled: false
     shape: ["SFS", "FNF", "SFS"]
     ingredients: { S: STRING, F: FERMENTED_SPIDER_EYE, N: NETHER_STAR }
   leviathan_scale:
-    enabled: true
+    enabled: false
     shape: ["PHP", "HNH", "PHP"]
     ingredients: { P: PRISMARINE_SHARD, H: HEART_OF_THE_SEA, N: NETHER_STAR }
 

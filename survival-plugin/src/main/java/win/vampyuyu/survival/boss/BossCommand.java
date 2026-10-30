@@ -36,6 +36,7 @@ public final class BossCommand implements CommandExecutor, TabCompleter {
         switch (sub) {
             case "list" -> list(sender);
             case "info" -> info(sender, args);
+            case "claim" -> claim(sender);
             case "spawn" -> {
                 if (admin(sender)) {
                     spawn(sender, args);
@@ -73,11 +74,33 @@ public final class BossCommand implements CommandExecutor, TabCompleter {
         core.msg().info(sender, "Boss commands:");
         core.msg().info(sender, "/boss list - every boss");
         core.msg().info(sender, "/boss info <id> - health, abilities and drops");
+        core.msg().info(sender, "/boss claim - collect boss loot that did not fit in your inventory");
         if (sender.hasPermission(BossListener.ADMIN)) {
             core.msg().info(sender, "/boss spawn <id> [x y z [world]] - spawn at you or at coordinates");
             core.msg().info(sender, "/boss kill [id|all] - remove bosses, no rewards");
             core.msg().info(sender, "/boss active - running fights");
             core.msg().info(sender, "/boss reload - re-read boss.yml");
+        }
+    }
+
+    private void claim(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            core.msg().error(sender, "Only players can claim loot.");
+            return;
+        }
+        manager.rewards().applyPending(player);
+        int before = manager.delivery().pendingCount(player.getUniqueId());
+        if (before == 0) {
+            core.msg().info(player, "You have no boss loot waiting.");
+            return;
+        }
+        int delivered = manager.delivery().claimPending(player);
+        int left = manager.delivery().pendingCount(player.getUniqueId());
+        if (delivered > 0) {
+            core.msg().ok(player, "Delivered " + delivered + (delivered == 1 ? " item." : " items.")
+                + (left > 0 ? " " + left + " still waiting, make more room." : ""));
+        } else {
+            core.msg().warn(player, "Your inventory is full. " + left + " item" + (left == 1 ? " is" : "s are") + " waiting.");
         }
     }
 
@@ -211,7 +234,7 @@ public final class BossCommand implements CommandExecutor, TabCompleter {
         List<String> out = new ArrayList<>();
         boolean admin = sender.hasPermission(BossListener.ADMIN);
         if (args.length == 1) {
-            out.addAll(List.of("list", "info"));
+            out.addAll(List.of("list", "info", "claim"));
             if (admin) {
                 out.addAll(List.of("spawn", "kill", "active", "reload"));
             }

@@ -44,6 +44,7 @@ public final class BossFeature implements Feature {
             summon = new SummonListener(core, manager);
             core.listen(new BossListener(core, manager));
             core.listen(summon);
+            core.listen(new BossItemGuard(core));
             slayer = new SlayerManager(core, manager);
             core.listen(slayer);
             SlayerGui gui = new SlayerGui(core, slayer);
@@ -77,7 +78,7 @@ public final class BossFeature implements Feature {
     private void registerCommands(SlayerGui gui) {
         BossCommand bossCommand = new BossCommand(core, manager, this::reload);
         core.commands().command("boss").description("Bosses: list, info and admin tools")
-            .usage("/boss <list|info|spawn|kill|active|reload>")
+            .usage("/boss <list|info|claim|spawn|kill|active|reload>")
             .permission("vampyuyu.sb.boss.info", PermissionDefault.TRUE)
             .executor(bossCommand).tab(bossCommand).register();
         SlayerCommand slayerCommand = new SlayerCommand(core, slayer, gui);

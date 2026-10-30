@@ -3,6 +3,7 @@ package win.vampyuyu.survival.boss.slayer;
 import java.util.Optional;
 import org.bukkit.entity.EntityType;
 import win.vampyuyu.survival.boss.BossData;
+import win.vampyuyu.survival.boss.BossSession;
 
 /** Pure state machine of a slayer quest: start rules, progress, win, fail, restart recovery. */
 public final class SlayerQuests {
@@ -79,6 +80,21 @@ public final class SlayerQuests {
         if (data.quest != null && BossData.Quest.FIGHTING.equals(data.quest.state)) {
             data.quest.state = BossData.Quest.READY;
         }
+    }
+
+    /**
+     * Whether a fight that ended for {@code reason} costs the player the quest. Leaving, dying, running out of time, or
+     * losing the boss after hurting it is a lost fight: otherwise quitting at low health would be a free retry at full
+     * boss health. Only server faults and an admin removal keep the quest ready.
+     *
+     * @param damaged the boss took damage before it ended
+     */
+    public static boolean failsQuest(BossSession.End reason, boolean damaged) {
+        return switch (reason) {
+            case TIMEOUT, OWNER_DIED, OWNER_LEFT -> true;
+            case DESPAWN, ENTITY_LOST -> damaged;
+            default -> false;
+        };
     }
 
     /** Join or restart recovery: no fight survives a restart. */

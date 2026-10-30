@@ -128,13 +128,43 @@ public class ShippedConfigTest {
     }
 
     @Test
-    public void everySummonItemHasABossAndARecipeOrDrop() throws Exception {
+    public void everySummonItemHasABossAndADrop() throws Exception {
         BossConfig config = shipped();
         for (String item : List.of("void_sigil", "magma_core", "frost_heart", "matriarch_egg", "leviathan_scale")) {
             assertTrue(item, config.bosses().values().stream()
                 .anyMatch(d -> d.summon() != null && d.summon().item().equals(item)));
             assertTrue(item, config.mobDrops().stream().anyMatch(d -> d.item().equals(item)));
-            assertTrue(item, config.recipes().containsKey(item));
         }
+        assertTrue("recipes ship disabled (a wither farm would make the payouts an endless faucet)",
+            config.recipes().isEmpty());
+    }
+
+    @Test
+    public void altarFollowsTheIslandCellsAndHubSpotsUseSpawnOffsets() throws Exception {
+        BossConfig config = shipped();
+        BossDefinition.Altar altar = config.bosses().get("voidwyrm").summon().altar();
+        assertEquals("island cells repeat the altar", 400, altar.cellSize(), 0);
+        assertEquals(0.5, altar.x(), 0);
+        assertEquals(65, altar.y(), 0);
+        for (var spot : config.worldBoss().locations()) {
+            assertTrue(spot.name() + " is placed relative to the world spawn, then snapped to ground", spot.y() <= -900);
+            assertTrue("inside the 26 block hub plaza around 0,0 (spawn pad at 0,14)",
+                Math.hypot(spot.x(), spot.z() + 14) <= 26);
+        }
+    }
+
+    @Test
+    public void dungeonBossHasRoomAndPatience() throws Exception {
+        BossDefinition.Arena arena = shipped().bosses().get("crypt_lord").arena();
+        assertTrue(arena.radius() >= 48);
+        assertTrue(arena.idleDespawnSeconds() >= 300);
+    }
+
+    @Test
+    public void newSettingsHaveSaneDefaults() throws Exception {
+        BossSettings settings = shipped().settings();
+        assertEquals(0.01, settings.scaleMinShare(), 0);
+        assertTrue(settings.repeatDecay() > 0 && settings.repeatFloor() > 0);
+        assertTrue(settings.damageNumbers());
     }
 }

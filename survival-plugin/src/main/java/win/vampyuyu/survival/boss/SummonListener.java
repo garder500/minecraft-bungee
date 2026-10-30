@@ -106,7 +106,9 @@ public final class SummonListener implements Listener {
             if (altar == null || !world.getName().equals(altar.world())) {
                 return "You must be at the altar to use this.";
             }
-            Location centre = new Location(world, altar.x(), altar.y(), altar.z());
+            // every island has its own altar in its End cell: use the one closest to the player
+            double[] xz = altar.centreNear(player.getLocation().getX(), player.getLocation().getZ());
+            Location centre = new Location(world, xz[0], altar.y(), xz[1]);
             if (Fx.flat(player.getLocation(), centre) > altar.radius()) {
                 return "You are too far from the altar. Stand within " + (int) altar.radius() + " blocks of it.";
             }
@@ -129,8 +131,11 @@ public final class SummonListener implements Listener {
                 }
             }
         }
-        if (manager.activeCount(def.id()) >= rules.maxConcurrent()) {
-            return "That boss is already awake.";
+        if (manager.activeCountBy(def.id(), player.getUniqueId()) >= rules.maxConcurrent()) {
+            return "You already woke that boss. Finish the fight first.";
+        }
+        if (manager.activeCount(def.id()) >= rules.globalMaxConcurrent()) {
+            return "Too many of those are awake right now. Try again in a moment.";
         }
         Optional<String> wait = gate.acquire(player.getUniqueId(), def.id(), rules);
         if (wait.isPresent()) {

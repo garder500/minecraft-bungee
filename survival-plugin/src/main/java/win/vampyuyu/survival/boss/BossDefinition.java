@@ -146,14 +146,37 @@ public record BossDefinition(String id, String name, String description, EntityT
      */
     public record Summon(String item, String mode, List<String> worlds, @Nullable Altar altar,
             double maxSpawnDistance, int cooldownSeconds, int globalCooldownSeconds, boolean requireIslandMember,
-            boolean requireWater, int maxConcurrent, boolean refundOnDespawn) {
+            boolean requireWater, int maxConcurrent, boolean refundOnDespawn, int globalMaxConcurrent) {
         public Summon {
             worlds = List.copyOf(worlds);
         }
+
+        public Summon(String item, String mode, List<String> worlds, @Nullable Altar altar, double maxSpawnDistance,
+                int cooldownSeconds, int globalCooldownSeconds, boolean requireIslandMember, boolean requireWater,
+                int maxConcurrent, boolean refundOnDespawn) {
+            this(item, mode, worlds, altar, maxSpawnDistance, cooldownSeconds, globalCooldownSeconds,
+                requireIslandMember, requireWater, maxConcurrent, refundOnDespawn, Math.max(maxConcurrent, 6));
+        }
     }
 
-    /** Altar position and the radius around it where the item works. */
-    public record Altar(String world, double x, double y, double z, double radius) {}
+    /**
+     * Altar position and the radius around it where the item works. With {@code cellSize > 0} the altar repeats on a
+     * grid (every island owns one in its own End cell): the centre used is the one nearest to the player.
+     */
+    public record Altar(String world, double x, double y, double z, double radius, double cellSize) {
+        public Altar(String world, double x, double y, double z, double radius) {
+            this(world, x, y, z, radius, 0);
+        }
+
+        /** The altar centre closest to {@code (px, pz)}; the configured one when the altar does not repeat. */
+        public double[] centreNear(double px, double pz) {
+            if (!(cellSize > 0)) {
+                return new double[] {x, z};
+            }
+            return new double[] {Math.round((px - x) / cellSize) * cellSize + x,
+                Math.round((pz - z) / cellSize) * cellSize + z};
+        }
+    }
 
     public boolean isSlayer() { return kind == Kind.SLAYER; }
 }

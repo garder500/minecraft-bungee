@@ -60,6 +60,15 @@ public final class LootMath {
         return chance >= 1.0 || random.nextDouble() < chance;
     }
 
+    /**
+     * Payout multiplier of a repeated kill: {@code 1 - decay * recentKills}, never below {@code floor}. A boss
+     * that can be summoned again and again with a crafted item must not be an endless coin faucet.
+     */
+    public static double repeatMultiplier(int recentKills, double decay, double floor) {
+        double mult = 1.0 - Math.max(0, decay) * Math.max(0, recentKills);
+        return clamp(mult, clamp(floor, 0, 1), 1.0);
+    }
+
     static double clamp(double v, double lo, double hi) {
         return Math.max(lo, Math.min(hi, v));
     }

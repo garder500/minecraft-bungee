@@ -45,7 +45,13 @@ public final class BossSession {
     private static final MiniMessage MINI = MiniMessage.miniMessage();
 
     /** Why a session ended. */
-    public enum End { KILLED, TIMEOUT, DESPAWN, OWNER_LEFT, OWNER_DIED, ADMIN, SHUTDOWN, WORLD_UNLOAD, ENTITY_LOST }
+    public enum End {
+        KILLED, TIMEOUT, DESPAWN, OWNER_LEFT, OWNER_DIED, ADMIN, SHUTDOWN, WORLD_UNLOAD,
+        /** The entity disappeared (chunk unloaded, removed by another plugin). */
+        ENTITY_LOST,
+        /** An exception in the update loop or at spawn: the server's fault, always refunded. */
+        ERROR
+    }
 
     /** Passed to end listeners. */
     public record EndInfo(BossSession session, End reason, @Nullable Player killer) {}
@@ -78,6 +84,17 @@ public final class BossSession {
     private final Set<UUID> barViewers = new HashSet<>();
     private final Map<UUID, Long> contactCooldown = new HashMap<>();
     private final List<Consumer<EndInfo>> endListeners = new ArrayList<>();
+    /** Players whose credited damage reached the scaling threshold (they grow the health pool). */
+    private final Set<UUID> scalers = new HashSet<>();
+    /** Chunk tickets held for the life of the fight, key = packed chunk coordinates. */
+    private final Set<Long> heldChunks = new HashSet<>();
+    private boolean ticketsUnsupported;
+    private long lastEntityChunk = Long.MIN_VALUE;
+    private boolean abilityHit;
+    private final List<UUID> numbers = new ArrayList<>();
+    private double pendingNumber;
+    private long nextNumberAt;
+    private String lastNameplate = "";
 
     LivingEntity entity;
     UUID entityId;
@@ -126,8 +143,10 @@ public final class BossSession {
 
     /** Spawns the entity and starts the fight. False when the spawn was refused. */
     boolean begin() {
+        holdChunks(anchor);
         LivingEntity spawned = BossEntities.spawnBoss(def, settings, anchor, sessionId.toString(), 1.0);
         if (spawned == null) {
+            releaseChunks();
             return false;
         }
         entity = spawned;
@@ -278,8 +297,92 @@ public final class BossSession {
         }
         double amount = hitDamage(mult);
         if (amount > 0) {
-            player.damage(amount, entity);
+            abilityHit = true; // the damage listener must not replace this amount with the plain contact damage
+            try {
+                player.damage(amount, entity);
+            } finally {
+                abilityHit = false;
+            }
         }
+    }
+
+    /** Tests only. */
+    void setAbilityHitForTest(boolean value) {
+        abilityHit = value;
+    }
+
+    /** True while {@link #hit} is delivering an ability hit (the damage event is synchronous). */
+    boolean inAbilityHit() {
+        return abilityHit;
+    }
+
+    /**
+     * Whether the arena rules (no building, no pearls) bind this player. A fight someone summoned only restrains the
+     * summoner and the players who hurt it; a public event (no summoner) restrains everybody around it.
+     */
+    boolean restrains(Player player) {
+        return summoner == null || summoner.equals(player.getUniqueId()) || ledger.contains(player.getUniqueId());
+    }
+
+    // ---------------------------------------------------------------- chunks
+
+    private static long chunkKey(int x, int z) {
+        return ((long) x << 32) | (z & 0xffffffffL);
+    }
+
+    /**
+     * Keeps the chunks around {@code centre} (and around the anchor) loaded for the life of the fight: the boss is not
+     * persistent, so an unloaded chunk would silently take it away while players are still walking to the arena.
+     */
+    private void holdChunks(Location centre) {
+        if (ticketsUnsupported || world == null) {
+            return;
+        }
+        Set<Long> wanted = new HashSet<>();
+        for (Location base : List.of(anchor, centre)) {
+            int cx = base.getBlockX() >> 4;
+            int cz = base.getBlockZ() >> 4;
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    wanted.add(chunkKey(cx + dx, cz + dz));
+                }
+            }
+        }
+        try {
+            for (Long key : wanted) {
+                if (heldChunks.add(key)) {
+                    manager.holdChunk(world, (int) (key >> 32), (int) (long) key);
+                }
+            }
+            for (Long key : new ArrayList<>(heldChunks)) {
+                if (!wanted.contains(key)) {
+                    heldChunks.remove(key);
+                    manager.releaseChunk(world, (int) (key >> 32), (int) (long) key);
+                }
+            }
+        } catch (RuntimeException e) {
+            ticketsUnsupported = true;
+            core.debug("chunk tickets unsupported: " + e.getMessage());
+        }
+    }
+
+    private void releaseChunks() {
+        if (world == null) {
+            return;
+        }
+        for (Long key : heldChunks) {
+            try {
+                manager.releaseChunk(world, (int) (key >> 32), (int) (long) key);
+            } catch (RuntimeException e) {
+                core.debug("chunk ticket release failed: " + e.getMessage());
+            }
+        }
+        heldChunks.clear();
+    }
+
+    /** Number of chunk tickets currently held (tests). */
+    int heldChunkCount() {
+        return heldChunks.size();
     }
 
     // ---------------------------------------------------------------- scheduling
@@ -373,8 +476,15 @@ public final class BossSession {
         if (!inArena.isEmpty()) {
             lastPlayerTick = ticks;
         }
+        Location now = entity.getLocation();
+        long chunk = chunkKey(now.getBlockX() >> 4, now.getBlockZ() >> 4);
+        if (chunk != lastEntityChunk) {
+            lastEntityChunk = chunk;
+            holdChunks(now);
+        }
         int idle = def.arena().idleDespawnSeconds();
-        if (idle > 0 && ticks - lastPlayerTick > idle * 20L) {
+        // a world event is public and has its own time limit; players need time to travel to it
+        if (idle > 0 && !options.worldEvent() && ticks - lastPlayerTick > idle * 20L) {
             end(End.DESPAWN, null);
             return;
         }
@@ -392,6 +502,8 @@ public final class BossSession {
             castNext();
         }
         updateBar();
+        updateNameplate();
+        flushDamage();
     }
 
     private void leash() {
@@ -652,18 +764,95 @@ public final class BossSession {
         if (!(dmg > 0)) {
             return 0;
         }
-        // A newcomer grows the pool BEFORE the hit is credited, otherwise a lethal first hit would be capped at the
-        // old health and leave the rescaled boss alive.
-        if (!ledger.contains(attacker.getUniqueId())) {
-            rescale(ledger.size() + 1);
+        // A player grows the pool only once they dealt a real share of the health (a one-hit alt account must not make
+        // the fight harder for the group). It happens BEFORE the hit is credited, otherwise a lethal hit would be
+        // capped at the old health and leave the rescaled boss alive.
+        UUID id = attacker.getUniqueId();
+        double threshold = baseMaxHp * settings.scaleMinShare();
+        if (!scalers.contains(id) && ledger.damageOf(id) + dmg >= threshold) {
+            scalers.add(id);
+            rescale(scalers.size());
         }
-        double credited = ledger.record(attacker.getUniqueId(), dmg, hp);
+        double credited = ledger.record(id, dmg, hp);
         if (credited <= 0) {
             return 0;
         }
         hp -= credited;
+        showDamage(credited);
         healthChanged(attacker);
         return credited;
+    }
+
+    /**
+     * Floating damage number. The generic damage indicators read the real event damage, which is a token amount for a
+     * boss, so the boss shows its own: throttled to about four a second, hits in between are added up.
+     */
+    private void showDamage(double credited) {
+        if (!settings.damageNumbers() || world == null || entity == null) {
+            return;
+        }
+        pendingNumber += credited;
+        flushDamage();
+    }
+
+    private void flushDamage() {
+        long now = System.currentTimeMillis();
+        if (pendingNumber <= 0 || now < nextNumberAt || entity == null || !entity.isValid()) {
+            return;
+        }
+        double amount = pendingNumber;
+        pendingNumber = 0;
+        nextNumberAt = now + 250;
+        numbers.removeIf(id -> Bukkit.getEntity(id) == null);
+        if (numbers.size() >= 12) {
+            return;
+        }
+        List<Player> watching = viewers();
+        if (watching.isEmpty()) {
+            return;
+        }
+        double big = Math.min(1, amount / Math.max(1, maxHp * 0.02));
+        String colour = big > 0.6 ? "<gold><bold>" : big > 0.2 ? "<yellow>" : "<white>";
+        Location at = location().add((random.nextDouble() - 0.5) * 1.6, entity.getHeight() * 0.8 + random.nextDouble(),
+            (random.nextDouble() - 0.5) * 1.6);
+        try {
+            org.bukkit.entity.TextDisplay display = world.spawn(at, org.bukkit.entity.TextDisplay.class, d -> {
+                d.text(MINI.deserialize(colour + Msg.number(amount)));
+                d.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
+                d.setPersistent(false);
+                d.setVisibleByDefault(false);
+                d.setSeeThrough(true);
+                d.setBackgroundColor(org.bukkit.Color.fromARGB(0, 0, 0, 0));
+                d.setShadowed(true);
+                d.setViewRange(0.5f);
+            });
+            for (Player p : watching) {
+                p.showEntity(core.getPlugin(), display);
+            }
+            numbers.add(display.getUniqueId());
+            UUID id = display.getUniqueId();
+            core.scheduler().later(22, () -> {
+                org.bukkit.entity.Entity e = Bukkit.getEntity(id);
+                if (e != null) {
+                    e.remove();
+                }
+                numbers.remove(id);
+            });
+        } catch (RuntimeException e) {
+            core.debug("damage number unsupported: " + e.getMessage());
+        }
+    }
+
+    /** Keeps the name tag in step with the health pool, once a second at most. */
+    private void updateNameplate() {
+        if (ticks % 20 >= settings.tickPeriod() || entity == null || !entity.isValid()) {
+            return;
+        }
+        String text = def.name() + " <white>" + Msg.number(hp) + " <red>❤";
+        if (!text.equals(lastNameplate)) {
+            lastNameplate = text;
+            entity.customName(MINI.deserialize(text));
+        }
     }
 
     /** Heals the boss, never above its maximum. */
@@ -849,6 +1038,7 @@ public final class BossSession {
             Fx.particle(world, Particle.POOF, at, 40, 1, 1, 1, 0.1);
         }
         removeSpawned();
+        releaseChunks();
         if (bar != null) {
             for (UUID id : barViewers) {
                 Player p = Bukkit.getPlayer(id);
@@ -878,6 +1068,13 @@ public final class BossSession {
             }
         }
         minions.clear();
+        for (UUID id : numbers) {
+            org.bukkit.entity.Entity e = Bukkit.getEntity(id);
+            if (e != null) {
+                e.remove();
+            }
+        }
+        numbers.clear();
         for (UUID id : crystals.keySet()) {
             org.bukkit.entity.Entity e = Bukkit.getEntity(id);
             manager.unregisterAux(id);

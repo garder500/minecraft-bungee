@@ -354,7 +354,7 @@ public final class DefinitionParser {
                 errors.add(path + ".altar: the altar mode needs world, x, y, z, radius");
             } else {
                 altar = new BossDefinition.Altar(a.getString("world"), a.getDouble("x"), a.getDouble("y"),
-                    a.getDouble("z"), a.getDouble("radius", 16));
+                    a.getDouble("z"), a.getDouble("radius", 16), Math.max(0, a.getDouble("cell-size", 0)));
             }
         }
         int cooldown = s.getInt("cooldown-seconds", 60);
@@ -368,7 +368,8 @@ public final class DefinitionParser {
         }
         return new BossDefinition.Summon(item, mode, s.getStringList("worlds"), altar,
             s.getDouble("max-spawn-distance", 0), cooldown, global, s.getBoolean("require-island-member", true),
-            s.getBoolean("require-water", false), concurrent, s.getBoolean("refund-on-despawn", true));
+            s.getBoolean("require-water", false), concurrent, s.getBoolean("refund-on-despawn", true),
+            Math.max(concurrent, s.getInt("global-max-concurrent", 6)));
     }
 
     // ---------------------------------------------------------------- yaml helpers

@@ -14,7 +14,7 @@ public final class SpawnSources {
     private static final Set<SpawnReason> ARTIFICIAL = EnumSet.of(SpawnReason.SPAWNER, SpawnReason.TRIAL_SPAWNER,
         SpawnReason.SPAWNER_EGG, SpawnReason.DISPENSE_EGG, SpawnReason.BREEDING, SpawnReason.EGG,
         SpawnReason.BUILD_SNOWMAN, SpawnReason.BUILD_IRONGOLEM, SpawnReason.BUILD_WITHER, SpawnReason.INFECTION,
-        SpawnReason.CURED, SpawnReason.SLIME_SPLIT);
+        SpawnReason.CURED, SpawnReason.SLIME_SPLIT, SpawnReason.FROZEN, SpawnReason.DROWNED, SpawnReason.SHEARED);
 
     private SpawnSources() {}
 

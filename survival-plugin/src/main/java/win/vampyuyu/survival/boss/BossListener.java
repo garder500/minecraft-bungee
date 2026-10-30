@@ -95,9 +95,8 @@ public final class BossListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onDamage(EntityDamageEvent event) {
         Entity victim = event.getEntity();
-        if (victim instanceof Player player) {
-            playerHurt(event, player);
-            return;
+        if (victim instanceof Player) {
+            return; // see onPlayerDamage: players are handled early so the items feature can mitigate the result
         }
         if (!Tags.isOurs(victim) && !(victim instanceof org.bukkit.entity.ComplexEntityPart)) {
             return;
@@ -193,6 +192,18 @@ public final class BossListener implements Listener {
         return null;
     }
 
+    /**
+     * Boss damage against players. Runs at LOW, BEFORE the items feature applies its scale, Defense and shields at
+     * HIGH, so everything a boss deals (melee, projectiles, abilities) goes through the same mitigation formula.
+     * Hits made by {@link BossSession#hit} already carry the ability multiplier and are left alone.
+     */
+    @EventHandler(priority = EventPriority.LOW)
+    public void onPlayerDamage(EntityDamageEvent event) {
+        if (event.getEntity() instanceof Player player) {
+            playerHurt(event, player);
+        }
+    }
+
     private void playerHurt(EntityDamageEvent event, Player player) {
         if (!(event instanceof EntityDamageByEntityEvent by)) {
             return;
@@ -219,7 +230,10 @@ public final class BossListener implements Listener {
             return;
         }
         BossSession session = manager.sessionOfBoss(damager);
-        if (session != null && (damager instanceof EnderDragon || !hasAttackAttribute(damager))) {
+        if (session == null || session.inAbilityHit()) {
+            return; // an ability hit: the amount already includes its multiplier
+        }
+        if (damager instanceof EnderDragon || !hasAttackAttribute(damager)) {
             event.setDamage(Math.max(0.5, session.hitDamage(1.0)));
         }
     }
@@ -340,12 +354,17 @@ public final class BossListener implements Listener {
 
     // ---------------------------------------------------------------- arena rules
 
-    private @Nullable BossSession arenaAt(Location at, boolean needsNoBuild, boolean needsNoTeleport) {
+    /**
+     * The fight whose arena rules bind {@code player} at {@code at}. A fight started by a player only restrains that
+     * player and the ones who hit the boss: a neighbour on the next island is never locked out by someone else's
+     * summon. Public events (no summoner) restrain everybody.
+     */
+    private @Nullable BossSession arenaAt(Location at, Player player, boolean needsNoBuild, boolean needsNoTeleport) {
         if (at == null || at.getWorld() == null) {
             return null;
         }
         for (BossSession s : manager.active()) {
-            if (s.isEnded() || !at.getWorld().equals(s.world)) {
+            if (s.isEnded() || !at.getWorld().equals(s.world) || !s.restrains(player)) {
                 continue;
             }
             BossDefinition.Arena arena = s.def.arena();
@@ -361,7 +380,7 @@ public final class BossListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onPlace(BlockPlaceEvent event) {
-        if (!event.getPlayer().hasPermission(ADMIN) && arenaAt(event.getBlock().getLocation(), true, false) != null) {
+        if (!event.getPlayer().hasPermission(ADMIN) && arenaAt(event.getBlock().getLocation(), event.getPlayer(), true, false) != null) {
             event.setCancelled(true);
             notice(event.getPlayer(), "boss-build", "You cannot build during a boss fight.");
         }
@@ -369,7 +388,7 @@ public final class BossListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onBreak(BlockBreakEvent event) {
-        if (!event.getPlayer().hasPermission(ADMIN) && arenaAt(event.getBlock().getLocation(), true, false) != null) {
+        if (!event.getPlayer().hasPermission(ADMIN) && arenaAt(event.getBlock().getLocation(), event.getPlayer(), true, false) != null) {
             event.setCancelled(true);
             notice(event.getPlayer(), "boss-build", "You cannot break blocks during a boss fight.");
         }
@@ -382,7 +401,8 @@ public final class BossListener implements Listener {
             && cause != PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT) {
             return;
         }
-        if (arenaAt(event.getFrom(), false, true) != null || arenaAt(event.getTo(), false, true) != null) {
+        Player traveller = event.getPlayer();
+        if (arenaAt(event.getFrom(), traveller, false, true) != null || arenaAt(event.getTo(), traveller, false, true) != null) {
             event.setCancelled(true);
             notice(event.getPlayer(), "boss-tp", "Something blocks your teleport during the boss fight.");
         }
@@ -406,6 +426,7 @@ public final class BossListener implements Listener {
         core.scheduler().later(60, () -> {
             Player p = Bukkit.getPlayer(id);
             if (p != null && p.isOnline()) {
+                manager.rewards().applyPending(p);
                 int n = manager.delivery().claimPending(p);
                 if (n > 0) {
                     core.msg().ok(p, "Boss loot was waiting for you: " + n + (n == 1 ? " item" : " items") + " delivered.");

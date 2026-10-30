@@ -2,6 +2,7 @@ package win.vampyuyu.survival.boss;
 
 import static org.junit.Assert.*;
 
+import java.util.List;
 import org.junit.Test;
 import win.vampyuyu.survival.boss.world.WorldBossState;
 import win.vampyuyu.survival.core.JsonStore;
@@ -20,10 +21,20 @@ public class PersistenceRoundTripTest {
         data.quest.progress = 12.5;
         data.quest.state = BossData.Quest.READY;
         data.pending.add("QUJD");
+        data.pendingWings.add("boss:voidwyrm");
+        data.pendingXp.put("boss:voidwyrm", 1500.0);
+        data.pendingKills.add("voidwyrm|123");
+        data.pendingDry.add("+voidwyrm|void_fang");
+        data.recentKills.put("voidwyrm", new java.util.ArrayList<>(java.util.List.of(5L, 6L)));
         BossData back = JsonStore.GSON.fromJson(JsonStore.GSON.toJson(data), BossData.class);
         assertEquals(1234L, back.slayerXp.get("zombie").longValue());
         assertEquals(2, (int) back.slayerKills.get("zombie:3"));
         assertEquals(7, (int) back.dry.get("voidwyrm|void_fang"));
+        assertEquals(List.of("boss:voidwyrm"), back.pendingWings);
+        assertEquals(1500.0, back.pendingXp.get("boss:voidwyrm"), 0);
+        assertEquals(List.of("voidwyrm|123"), back.pendingKills);
+        assertEquals(List.of("+voidwyrm|void_fang"), back.pendingDry);
+        assertEquals(List.of(5L, 6L), back.recentKills.get("voidwyrm"));
         assertEquals("zombie", back.quest.slayer);
         assertEquals(4, back.quest.tier);
         assertEquals(12.5, back.quest.progress, 0);

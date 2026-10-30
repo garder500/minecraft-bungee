@@ -121,7 +121,8 @@ public final class WorldBossManager {
 
     /** Starts an event now. {@code bossId} null picks from the pool. False when it could not spawn. */
     public boolean spawnEvent(@Nullable String bossId) {
-        if (active != null || config.locations().isEmpty()) {
+        List<WorldBossConfig.Spot> spots = allSpots();
+        if (active != null || spots.isEmpty()) {
             return false;
         }
         String id = bossId != null ? bossId : config.pool().isEmpty() ? null : schedule.pick(random);
@@ -129,18 +130,16 @@ public final class WorldBossManager {
         if (def.isEmpty()) {
             return false;
         }
-        WorldBossConfig.Spot spot = schedule.pickSpot(random);
+        WorldBossConfig.Spot spot = spots.get(random.nextInt(spots.size()));
         World world = Bukkit.getWorld(spot.world());
         if (world == null) {
             core.getPlugin().getLogger().warning("World boss spot world '" + spot.world() + "' is not loaded");
             return false;
         }
-        // y = -999 means "x and z are offsets from the world spawn"
-        Location at = spot.y() <= -900 ? world.getSpawnLocation().add(spot.x(), 2, spot.z())
-            : new Location(world, spot.x(), spot.y(), spot.z());
-        try {
-            world.getChunkAt(at);
-        } catch (RuntimeException e) {
+        Location at = resolve(world, spot);
+        if (at == null) {
+            core.getPlugin().getLogger().warning("World boss spot '" + spot.name() + "' has no solid ground with a clear "
+                + CLEARANCE + " block column (is the hub built?); the event is retried later");
             return false;
         }
         Optional<BossSession> session = bosses.spawn(def.get(), at, null, new BossSession.SpawnOptions(false, true, 0,
@@ -157,14 +156,108 @@ public final class WorldBossManager {
         save();
         String name = def.get().name();
         Component line = MINI.deserialize("<gold><bold>WORLD BOSS <gray>- " + name + " <gray>has appeared at <yellow>"
-            + MINI.escapeTags(spot.name()) + " <gray>(" + Math.round(spot.x()) + ", " + Math.round(spot.y()) + ", "
-            + Math.round(spot.z()) + ")! It leaves in <yellow>" + config.durationMinutes() + " minutes<gray>.");
+            + MINI.escapeTags(spot.name()) + " <gray>(" + at.getBlockX() + ", " + at.getBlockY() + ", "
+            + at.getBlockZ() + ")! It leaves in <yellow>" + config.durationMinutes() + " minutes<gray>. "
+            + "<click:run_command:'/worldboss warp'><hover:show_text:'Teleport to the fight'><green><bold>[Click to teleport]"
+            + "</bold></green></hover></click>");
         for (Player p : Bukkit.getOnlinePlayers()) {
             p.sendMessage(line);
             p.showTitle(Title.title(MINI.deserialize(name), MINI.deserialize("<gray>A world boss has appeared!"),
                 Title.Times.times(Duration.ofMillis(300), Duration.ofSeconds(3), Duration.ofMillis(800))));
         }
         return true;
+    }
+
+    /** Clearance (free blocks above the ground) a boss needs to spawn. */
+    static final int CLEARANCE = 10;
+
+    /** Spots from boss.yml followed by the ones added in game. */
+    List<WorldBossConfig.Spot> allSpots() {
+        List<WorldBossConfig.Spot> all = new ArrayList<>(config.locations());
+        for (WorldBossState.SpotRecord r : state.spots) {
+            all.add(new WorldBossConfig.Spot(r.world, r.x, r.y, r.z, r.name));
+        }
+        return all;
+    }
+
+    /**
+     * The real spawn point of a spot: {@code y <= -900} means x and z are offsets from the world spawn, and the boss
+     * always stands on the highest solid block with a clear column, so a guessed Y can never bury it or hang it over
+     * the void. Null when the column has no ground.
+     */
+    @Nullable Location resolve(World world, WorldBossConfig.Spot spot) {
+        try {
+            Location base = spot.y() <= -900 ? world.getSpawnLocation().add(spot.x(), 0, spot.z())
+                : new Location(world, spot.x(), spot.y(), spot.z());
+            return snap(world, base, 12, 32);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** Ground under {@code base}: scans from {@code up} above to {@code down} below. Loads the chunk. */
+    static @Nullable Location snap(World world, Location base, int up, int down) {
+        int x = base.getBlockX();
+        int z = base.getBlockZ();
+        world.getChunkAt(x >> 4, z >> 4);
+        int top = Math.min(world.getMaxHeight() - CLEARANCE - 2, base.getBlockY() + up);
+        int floor = Math.max(world.getMinHeight(), base.getBlockY() - down);
+        int y = GroundSnap.find(top, floor, CLEARANCE, by -> !world.getBlockAt(x, by, z).isPassable());
+        if (y == Integer.MIN_VALUE) {
+            return null;
+        }
+        return new Location(world, x + 0.5, y, z + 0.5);
+    }
+
+    // ---------------------------------------------------------------- admin spots and warp
+
+    /** Saves an event spot at a location. Returns the English refusal or null. */
+    public @Nullable String addSpot(String name, Location at) {
+        if (name.isBlank() || at.getWorld() == null) {
+            return "A spot needs a name.";
+        }
+        if (state.spots.stream().anyMatch(r -> r.name.equalsIgnoreCase(name))) {
+            return "A spot named '" + name + "' already exists.";
+        }
+        state.spots.add(new WorldBossState.SpotRecord(name, at.getWorld().getName(), at.getBlockX() + 0.5,
+            at.getBlockY(), at.getBlockZ() + 0.5));
+        save();
+        return null;
+    }
+
+    public boolean removeSpot(String name) {
+        boolean removed = state.spots.removeIf(r -> r.name.equalsIgnoreCase(name));
+        if (removed) {
+            save();
+        }
+        return removed;
+    }
+
+    /** Teleports a player next to the running event. Returns the English refusal or null. */
+    public @Nullable String warp(Player player) {
+        BossSession session = active;
+        if (session == null || session.isEnded()) {
+            return "There is no world boss event right now.";
+        }
+        if (core.service(win.vampyuyu.survival.api.DungeonApi.class).map(d -> d.inDungeon(player)).orElse(false)) {
+            return "You cannot do that inside a dungeon.";
+        }
+        Location anchor = session.anchor();
+        World world = anchor.getWorld();
+        if (world == null) {
+            return "The event world is not available.";
+        }
+        for (int i = 0; i < 8; i++) {
+            double angle = Math.PI * 2 * i / 8;
+            Location base = anchor.clone().add(Math.cos(angle) * 22, 0, Math.sin(angle) * 22);
+            Location spot = snap(world, base, 6, 12);
+            if (spot != null) {
+                spot.setDirection(anchor.toVector().subtract(spot.toVector()));
+                player.teleport(spot);
+                return null;
+            }
+        }
+        return "No safe place to land near the boss. Walk there instead.";
     }
 
     private void eventEnded(BossSession.EndInfo info) {
@@ -229,8 +322,9 @@ public final class WorldBossManager {
             BossSession s = active;
             lines.add("<gold>Active: " + s.definition().name() + " <gray>- <red>" + Math.round(s.fraction() * 100) + "% <gray>health");
             if (activeSpot != null) {
+                Location where = s.anchor();
                 lines.add("<gray>Location: <yellow>" + MINI.escapeTags(activeSpot.name()) + " <gray>("
-                    + Math.round(activeSpot.x()) + ", " + Math.round(activeSpot.y()) + ", " + Math.round(activeSpot.z()) + ")");
+                    + where.getBlockX() + ", " + where.getBlockY() + ", " + where.getBlockZ() + ") <green>/worldboss warp");
             }
             List<Damager> top = s.ledger().top(config.leaderboardSize());
             if (!top.isEmpty()) {
@@ -260,6 +354,7 @@ public final class WorldBossManager {
         copy.lastSpawnAt = state.lastSpawnAt;
         copy.lastBoss = state.lastBoss;
         copy.history = new ArrayList<>(state.history);
+        copy.spots = new ArrayList<>(state.spots);
         return copy;
     }
 

@@ -172,7 +172,7 @@ public final class SlayerManager implements Listener {
         return null;
     }
 
-    private void launch(UUID id, SlayerDefinition def, SlayerDefinition.Tier tier, Location at) {
+    void launch(UUID id, SlayerDefinition def, SlayerDefinition.Tier tier, Location at) {
         Player player = Bukkit.getPlayer(id);
         if (player == null || !player.isOnline()) {
             return; // recovered to READY at the next login
@@ -223,11 +223,10 @@ public final class SlayerManager implements Listener {
 
     private void ended(UUID id, SlayerDefinition def, SlayerDefinition.Tier tier, BossSession.EndInfo info) {
         Player player = Bukkit.getPlayer(id);
+        // Also for an offline owner (rare: the profile is loaded from disk), otherwise a lost fight would stay FIGHTING
+        // and the login recovery would hand back a free retry.
         BossData data = player != null ? data(player)
-            : core.profiles().isLoaded(id) ? core.profiles().section(id, "boss", BossData.class, BossData::new) : null;
-        if (data == null) {
-            return;
-        }
+            : core.profiles().section(id, "boss", BossData.class, BossData::new);
         switch (info.reason()) {
             case KILLED -> {
                 SlayerQuests.Win win = SlayerQuests.win(data, def, tier.tier());
@@ -244,26 +243,35 @@ public final class SlayerManager implements Listener {
                         "slayer:" + d.id()));
                 }
             }
-            case TIMEOUT, OWNER_DIED -> {
-                SlayerQuests.fail(data);
-                core.profiles().markDirty(id);
-                if (player != null) {
-                    core.msg().mini(player, "<red><bold>SLAYER QUEST FAILED! <gray>"
-                        + (info.reason() == BossSession.End.TIMEOUT ? "You ran out of time." : "You died.")
-                        + " The coins are lost.");
-                }
-            }
             default -> {
-                SlayerQuests.interrupted(data);
-                core.profiles().markDirty(id);
-                if (player != null) {
-                    core.msg().info(player, "The slayer boss vanished. Your quest is ready: /slayer spawn");
+                if (SlayerQuests.failsQuest(info.reason(), info.session().ledger().total() > 0)) {
+                    SlayerQuests.fail(data);
+                    core.profiles().markDirty(id);
+                    if (player != null) {
+                        core.msg().mini(player, "<red><bold>SLAYER QUEST FAILED! <gray>" + failReason(info.reason())
+                            + " The coins are lost.");
+                    }
+                } else {
+                    SlayerQuests.interrupted(data);
+                    core.profiles().markDirty(id);
+                    if (player != null) {
+                        core.msg().info(player, "The slayer boss vanished. Your quest is ready: /slayer spawn");
+                    }
                 }
             }
         }
         if (player != null) {
             applyPerks(player);
         }
+    }
+
+    private static String failReason(BossSession.End reason) {
+        return switch (reason) {
+            case TIMEOUT -> "You ran out of time.";
+            case OWNER_DIED -> "You died.";
+            case OWNER_LEFT -> "You left the fight.";
+            default -> "You lost the boss.";
+        };
     }
 
     private void levelUp(Player player, SlayerDefinition def, SlayerQuests.Win win) {

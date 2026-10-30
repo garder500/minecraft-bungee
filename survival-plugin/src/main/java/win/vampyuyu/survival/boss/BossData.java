@@ -21,6 +21,16 @@ public final class BossData {
     public Quest quest;
     /** Loot waiting for the player to log in (base64 of ItemStack.serializeAsBytes). */
     public List<String> pending = new ArrayList<>();
+    /** Wings sources earned while offline (WingsApi.grantOnce on the next login). */
+    public List<String> pendingWings = new ArrayList<>();
+    /** Combat xp earned while offline, by source (SkillsApi.addXp on the next login). */
+    public Map<String, Double> pendingXp = new HashMap<>();
+    /** Kills made while offline, {@code <bossId>|<epochMillis>}. */
+    public List<String> pendingKills = new ArrayList<>();
+    /** Pity changes of offline kills, in order: {@code +<key>} adds a dry kill, {@code =<key>} resets the streak. */
+    public List<String> pendingDry = new ArrayList<>();
+    /** Recent kill times by boss id (epoch millis), used for diminishing coin and xp returns. */
+    public Map<String, List<Long>> recentKills = new HashMap<>();
 
     /** A paid slayer quest. */
     public static final class Quest {

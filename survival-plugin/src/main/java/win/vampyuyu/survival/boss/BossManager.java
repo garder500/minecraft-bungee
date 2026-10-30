@@ -31,6 +31,7 @@ public final class BossManager {
     private final Map<UUID, BossSession> aux = new ConcurrentHashMap<>();
     private final BossRewards rewards;
     private final LootDelivery delivery;
+    private final TicketCounter tickets = new TicketCounter();
     private Scheduler.Handle loop;
     private boolean shuttingDown;
 
@@ -39,9 +40,24 @@ public final class BossManager {
         this.config = config;
         this.delivery = new LootDelivery(core);
         this.rewards = new BossRewards(core, config.settings(), delivery);
+        this.rewards.setNameLookup(id -> this.config.definition(id).map(BossDefinition::name).orElse(id));
     }
 
     public Core core() { return core; }
+
+    /** Adds the plugin chunk ticket unless another fight already holds it. Throws if tickets are unsupported. */
+    void holdChunk(World world, int x, int z) {
+        if (tickets.acquire(world.getUID() + ":" + x + ":" + z)) {
+            world.addPluginChunkTicket(x, z, core.getPlugin());
+        }
+    }
+
+    /** Removes the plugin chunk ticket when the last fight holding it lets go. */
+    void releaseChunk(World world, int x, int z) {
+        if (tickets.release(world.getUID() + ":" + x + ":" + z)) {
+            world.removePluginChunkTicket(x, z, core.getPlugin());
+        }
+    }
 
     public BossConfig config() { return config; }
 
@@ -67,7 +83,7 @@ public final class BossManager {
             } catch (RuntimeException e) {
                 core.getPlugin().getLogger().log(Level.SEVERE, "Boss tick failed for " + session.def.id()
                     + ", ending the fight", e);
-                session.end(BossSession.End.ENTITY_LOST, null);
+                session.end(BossSession.End.ERROR, null);
             }
         }
     }
@@ -106,7 +122,7 @@ public final class BossManager {
             started = session.begin();
         } catch (RuntimeException e) {
             core.getPlugin().getLogger().log(Level.WARNING, "Could not spawn boss " + def.id(), e);
-            session.end(BossSession.End.ADMIN, null);
+            session.end(BossSession.End.ERROR, null);
             return Optional.empty();
         }
         if (!started) {
@@ -126,6 +142,17 @@ public final class BossManager {
         int n = 0;
         for (BossSession s : byEntity.values()) {
             if (s.def.id().equals(bossId)) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /** Fights of this boss started by one player. */
+    public int activeCountBy(String bossId, UUID summoner) {
+        int n = 0;
+        for (BossSession s : byEntity.values()) {
+            if (s.def.id().equals(bossId) && summoner.equals(s.summoner())) {
                 n++;
             }
         }
@@ -187,11 +214,8 @@ public final class BossManager {
         if (item == null || summoner == null || core.items().def(item).isEmpty()) {
             return;
         }
-        boolean serverSide = switch (info.reason()) {
-            case SHUTDOWN, WORLD_UNLOAD, ENTITY_LOST -> true;
-            case DESPAWN -> session.ledger.total() <= 0;
-            default -> false;
-        };
+        boolean serverSide = refundable(info.reason(), session.ledger.total() > 0);
+
         if (!serverSide) {
             return;
         }
@@ -201,6 +225,19 @@ public final class BossManager {
         if (p != null) {
             core.msg().info(p, "The summoning was interrupted, your item was returned.");
         }
+    }
+
+    /**
+     * Whether a fight that ended for {@code reason} gives the summon item back. Only faults of the server always do;
+     * a boss that vanished (idle, chunk unloaded) after players hurt it is a lost fight, otherwise leaving the area
+     * would be a free retry at full health.
+     */
+    static boolean refundable(BossSession.End reason, boolean damaged) {
+        return switch (reason) {
+            case SHUTDOWN, WORLD_UNLOAD, ERROR -> true;
+            case DESPAWN, ENTITY_LOST -> !damaged;
+            default -> false;
+        };
     }
 
     public void playerDied(Player player) {
