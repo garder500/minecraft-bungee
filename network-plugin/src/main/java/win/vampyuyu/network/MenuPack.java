@@ -15,6 +15,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent;
@@ -50,6 +51,8 @@ final class MenuPack implements Listener {
     private final byte[] hash;
     private final boolean required;
     private final Set<UUID> loaded = ConcurrentHashMap.newKeySet();
+    /** Players whose client took the offer (accepted, downloading or loaded): no need to offer it again. */
+    private final Set<UUID> taken = ConcurrentHashMap.newKeySet();
 
     MenuPack(JavaPlugin plugin, String baseUrl, String sha1, boolean required) {
         this.plugin = plugin;
@@ -161,9 +164,27 @@ final class MenuPack implements Listener {
     @EventHandler
     public void join(PlayerJoinEvent event) {
         loaded.remove(event.getPlayer().getUniqueId());
-        event.getPlayer().setResourcePack(id, url, hash,
+        taken.remove(event.getPlayer().getUniqueId());
+        offer(event.getPlayer());
+    }
+
+    private void offer(Player player) {
+        player.setResourcePack(id, url, hash,
                 Component.text(required ? "Vampyuyu menu theme (required)" : "Optional Vampyuyu menu theme"),
                 required);
+    }
+
+    /**
+     * A feature that moves the player right after the join (the Skyblock hub route does) makes the client drop the
+     * pack prompt together with the loading screen, and the pack is never taken: offer it again after the move.
+     */
+    @EventHandler
+    public void worldChanged(PlayerChangedWorldEvent event) {
+        Player player = event.getPlayer();
+        if (taken.contains(player.getUniqueId())) return;
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline() && !taken.contains(player.getUniqueId())) offer(player);
+        }, 10L);
     }
 
     @EventHandler
@@ -171,14 +192,15 @@ final class MenuPack implements Listener {
         if (!id.equals(event.getID())) return;
         UUID player = event.getPlayer().getUniqueId();
         switch (event.getStatus()) {
-            case SUCCESSFULLY_LOADED -> loaded.add(player);
-            case ACCEPTED, DOWNLOADED -> { }
-            default -> loaded.remove(player);
+            case SUCCESSFULLY_LOADED -> { loaded.add(player); taken.add(player); }
+            case ACCEPTED, DOWNLOADED -> taken.add(player);
+            default -> { loaded.remove(player); taken.remove(player); }
         }
     }
 
     @EventHandler
     public void quit(PlayerQuitEvent event) {
         loaded.remove(event.getPlayer().getUniqueId());
+        taken.remove(event.getPlayer().getUniqueId());
     }
 }
