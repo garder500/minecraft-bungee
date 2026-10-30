@@ -15,8 +15,11 @@ combat:
   # Teleports are refused for a while after being hit. vampyuyu.sb.utility.bypass.combat ignores it.
   enabled: true
   tag-seconds: 10
-  # Also tag when the damage comes from a mob (not only from players).
-  include-mobs: true
+  # Also tag when the damage comes from a mob. Off by default: only player-versus-player fights tag, so a creeper
+  # never blocks /spawn or /home as an escape.
+  include-mobs: false
+  # Tell the player in chat when the tag starts and when it ends (the action bar belongs to the items feature).
+  notify: true
 
 homes:
   # Homes a player gets without a vampyuyu.sb.utility.homes.<n> permission.

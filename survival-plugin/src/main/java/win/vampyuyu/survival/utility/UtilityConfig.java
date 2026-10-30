@@ -8,7 +8,7 @@ import win.vampyuyu.survival.core.Rarity;
 /** Immutable snapshot of {@code utility.yml}. Every value has a default here so a partial file still works. */
 public record UtilityConfig(
         int warmupSeconds, double moveTolerance, boolean cancelOnDamage, boolean showTitle,
-        boolean combatEnabled, int combatSeconds, boolean combatIncludeMobs,
+        boolean combatEnabled, int combatSeconds, boolean combatIncludeMobs, boolean combatNotify,
         int homesDefault, int homesMax, int homeNameLength, String defaultHomeName,
         int tpaExpireSeconds, int tpaSendCooldownSeconds, int tpaMaxPending, int tpaTeleportCooldownSeconds,
         String spawnWorld,
@@ -30,7 +30,8 @@ public record UtilityConfig(
             c.getBoolean("teleport.show-title", true),
             c.getBoolean("combat.enabled", true),
             Math.max(0, c.getInt("combat.tag-seconds", 10)),
-            c.getBoolean("combat.include-mobs", true),
+            c.getBoolean("combat.include-mobs", false),
+            c.getBoolean("combat.notify", true),
             Math.max(0, c.getInt("homes.default-limit", 3)),
             Math.max(1, c.getInt("homes.max-limit", 100)),
             Math.max(3, Math.min(32, c.getInt("homes.max-name-length", 16))),

@@ -11,6 +11,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.Location;
 import org.bukkit.permissions.PermissionDefault;
 import win.vampyuyu.survival.back.BackCommand;
+import win.vampyuyu.survival.back.TeleportGate;
 import win.vampyuyu.survival.back.BackService;
 import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.Cooldowns;
@@ -45,6 +46,7 @@ public final class UtilityFeature implements Feature {
         CombatTag combat = new CombatTag(System::currentTimeMillis);
         teleports = new TeleportService(core, () -> settings.current, combat);
         core.listen(teleports);
+        teleports.start();
 
         // /back keeps its plugin.yml entry and its state file; only the teleport now goes through the gate.
         Path file = core.getDataFolder().toPath().resolve("back.json");
@@ -84,7 +86,10 @@ public final class UtilityFeature implements Feature {
                 reloaded.tpaMaxPending());
         }).register();
 
-        // Published last: other features may ask the teleport rules (for example to refuse a teleport in combat).
+        // Published last. TeleportGate (foundation interface, importable by every feature) is how island/menu can
+        // ask "may this player teleport now?" and run their own teleports through the warm-up and combat rules.
+        // TeleportService itself is only published for the tests of this feature.
+        core.register(TeleportGate.class, teleports);
         core.register(TeleportService.class, teleports);
     }
 

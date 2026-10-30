@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -81,6 +82,7 @@ public final class TeleportService implements TeleportGate, Listener {
     private final Supplier<UtilityConfig> config;
     private final CombatTag combat;
     private final Map<UUID, Session> sessions = new ConcurrentHashMap<>();
+    private Scheduler.Handle sweep;
 
     public TeleportService(Core core, Supplier<UtilityConfig> config, CombatTag combat) {
         this.core = core;
@@ -271,6 +273,9 @@ public final class TeleportService implements TeleportGate, Listener {
                     }
                     if (error == null && Boolean.TRUE.equals(done)) {
                         session.onArrive.run();
+                    } else if (error == null) {
+                        // Another feature (for example the island entry rules) cancelled it and told the player why.
+                        msg.error(player, "The destination refused the teleport.");
                     } else {
                         msg.error(player, "The teleport failed.");
                     }
@@ -310,6 +315,10 @@ public final class TeleportService implements TeleportGate, Listener {
 
     /** Drops every session (plugin disable). */
     public void shutdown() {
+        if (sweep != null) {
+            sweep.cancel();
+            sweep = null;
+        }
         for (Session session : sessions.values()) {
             if (session.task != null) {
                 session.task.cancel();
@@ -345,15 +354,34 @@ public final class TeleportService implements TeleportGate, Listener {
         if (damager.equals(victim)) {
             return;
         }
-        long millis = cfg.combatSeconds() * 1000L;
         if (damager instanceof Player attacker) {
             if (!isNpc(attacker)) {
-                combat.tag(attacker.getUniqueId(), millis);
-                combat.tag(victim.getUniqueId(), millis);
+                tag(attacker, cfg);
+                tag(victim, cfg);
             }
         } else if (damager instanceof LivingEntity && cfg.combatIncludeMobs()) {
-            combat.tag(victim.getUniqueId(), millis);
+            tag(victim, cfg);
         }
+    }
+
+    private void tag(Player player, UtilityConfig cfg) {
+        boolean fresh = combat.tag(player.getUniqueId(), cfg.combatSeconds() * 1000L);
+        if (fresh && cfg.combatNotify() && !player.hasPermission(Perms.BYPASS_COMBAT)) {
+            msg.warn(player, "You are in combat. You cannot teleport for " + cfg.combatSeconds() + " seconds.");
+        }
+    }
+
+    /** Starts the once-a-second sweep that tells players their combat tag ended. */
+    public void start() {
+        sweep = core.scheduler().repeating(20, 20, () -> {
+            boolean notify = config.get().combatNotify();
+            for (UUID id : combat.expired()) {
+                Player player = Bukkit.getPlayer(id);
+                if (notify && player != null && player.isOnline() && !player.hasPermission(Perms.BYPASS_COMBAT)) {
+                    msg.info(player, "You are no longer in combat.");
+                }
+            }
+        });
     }
 
     private static boolean isNpc(Player player) {

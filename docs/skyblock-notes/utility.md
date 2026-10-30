@@ -30,7 +30,7 @@ Quality-of-life layer of the Skyblock/survival server. Profile section: `utility
 * **Every teleport** (`/home /spawn /back /tpa* /rtp`) uses the same door (`TeleportService`): warm-up (3 s by default,
   cancelled by moving, taking damage, entering combat), one teleport at a time per player, refusal when the player is in
   a dungeon (`DungeonApi.inDungeon` or an `sb_dungeon_*` world) or when the destination is a dungeon world, refusal
-  while combat tagged (hit by a player or, by default, a mob in the last 10 s; cleared on death and quit).
+  while combat tagged (hit by a player in the last 10 s, mobs only with `combat.include-mobs`; cleared on death and quit). The player gets a chat line when the tag starts and when it ends (`combat.notify`).
 
 ## Commands and permissions
 
@@ -56,7 +56,7 @@ Quality-of-life layer of the Skyblock/survival server. Profile section: `utility
 ## Config keys (`utility.yml`, all documented in the file)
 
 `teleport.{warmup-seconds, move-tolerance, cancel-on-damage, show-title}`, `combat.{enabled, tag-seconds,
-include-mobs}`, `homes.{default-limit, max-limit, max-name-length, default-name}`, `tpa.{expire-seconds,
+include-mobs, notify}`, `homes.{default-limit, max-limit, max-name-length, default-name}`, `tpa.{expire-seconds,
 send-cooldown-seconds, max-pending-per-target, teleport-cooldown-seconds}`, `spawn.world`, `rtp.{enabled, world,
 cooldown-seconds, min-radius, max-radius, use-world-spawn, center-x, center-z, max-attempts, search-timeout-seconds}`,
 `portable.<name>.public`, `sit.{seat-height, seat-offset}`, `trash.{keep-ids, keep-rarity}`,
@@ -93,10 +93,20 @@ No custom items and no pack art: the menus use vanilla bed icons as requested. N
   there is no custom movement detection.
 * `/rtp` was tested against MockBukkit's flat blocks, not against real terrain (trees, oceans, caves). The rules reject
   liquids, leaves, ice, hazards and blocked bodies and require height >= sea level - 1; extreme biomes are unchecked.
-* Combat tag counts mob hits by default (`combat.include-mobs: true`); set it false for a PvP-only tag. Damage from
-  environment (fall, lava) never tags.
-* A player can still be teleported by something else (another feature, vanilla commands): only the utility commands go
-  through the gate. `TeleportService` is published for the foundation owner to wire other features (see NEEDS).
+* The combat tag is PvP only by default (`combat.include-mobs: false`); damage from environment (fall, lava) never
+  tags. The tag is announced in chat only: the action bar belongs to the items feature.
+* The combat tag is PARTIAL: only the utility commands (and `/back`) consult it. `/is`, hub items and the menu feature
+  teleport players themselves. The gate is published as `core.service(TeleportGate.class)` (`back.TeleportGate`, a
+  foundation interface any feature may import): `island` and `menu` can call `denial(player, destination)` before
+  routing a player, or `teleport(...)` to get the warm-up too. A global `PlayerTeleportEvent` interceptor was
+  rejected on purpose: void rescue, dungeon exits and join routing use the same cause and must never be blocked.
+  `TeleportService` is also registered, for this feature's tests only.
+* Tpa onto an island does not ask the island feature anything itself. A banned or locked-out player is stopped by the
+  island feature's own `PlayerTeleportEvent` entry rules (`IslandTracker.onTeleport`, branch `sb/island`); utility then
+  says "The destination refused the teleport." and starts no cooldown. This depends on the island feature being merged;
+  tested here only with a stand-in listener. Non-members may otherwise visit a friend's island by request.
+* Safe spot checks use real collision boxes (slab, stair, carpet, path, chest floors work). Only the pure geometry and
+  a shape stand-in are unit tested (MockBukkit cannot describe shapes): slab and stair floors are NOT verified in game.
 * `/home` and the tpa teleport do not search a safe spot: an unsafe home is refused with an explanation.
 * The anti-spam send cooldown of /tpa survives a relog but not a restart.
 * `/playtime` and `/seen` for offline players depend on `Bukkit.getOfflinePlayerIfCached` (a name the server never saw
@@ -105,6 +115,6 @@ No custom items and no pack art: the menus use vanilla bed icons as requested. N
 
 ## NEEDS
 
-* Optional: a `TeleportApi` (or `api/` interface) exposing "is this player teleport-restricted (combat/dungeon)" so
-  `menu`/`island` can honour the combat tag when routing players. Today only the utility commands consult the combat tag.
+* `island` and `menu` should consult `core.service(TeleportGate.class)` (lazy lookup, may be empty) before they teleport
+  a player on their own; until they do, the combat tag does not apply to them. An `api/TeleportApi` is not needed.
 * The foundation owner should keep `plugin.yml` `back` untouched; no other change is required.

@@ -38,6 +38,8 @@ public class UtilityFeatureTest {
     private SurvivalPlugin plugin;
     private World world;
     private TeleportService teleports;
+    private final java.util.function.Function<org.bukkit.block.Block, java.util.Collection<org.bukkit.util.BoundingBox>>
+        originalShapes = SafeSpot.shapes;
 
     @Before
     public void setUp() {
@@ -52,6 +54,7 @@ public class UtilityFeatureTest {
     @After
     public void tearDown() {
         Platform.useReal();
+        SafeSpot.shapes = originalShapes;
         MockBukkit.unmock();
     }
 
@@ -537,6 +540,135 @@ public class UtilityFeatureTest {
         b.performCommand("tpaccept");
         ticks(2);
         assertEquals(80.5, a.getLocation().getX(), 0.01);
+    }
+
+    @Test
+    public void slabStairAndCarpetFloorsAreSafeToSetAHomeOn() {
+        // MockBukkit cannot describe collision shapes: give slabs, stairs and carpets their vanilla boxes.
+        SafeSpot.shapes = block -> switch (block.getType()) {
+            case OAK_SLAB -> List.of(new org.bukkit.util.BoundingBox(0, 0, 0, 1, 0.5, 1));
+            case OAK_STAIRS -> List.of(new org.bukkit.util.BoundingBox(0, 0, 0, 1, 0.5, 1),
+                new org.bukkit.util.BoundingBox(0, 0.5, 0.5, 1, 1, 1));
+            case WHITE_CARPET -> List.of(new org.bukkit.util.BoundingBox(0, 0, 0, 1, 0.0625, 1));
+            case AIR -> List.of();
+            default -> List.of(new org.bukkit.util.BoundingBox(0, 0, 0, 1, 1, 1));
+        };
+        PlayerMock p = player("Slab");
+        int x = 300;
+        for (int dy = 62; dy <= 68; dy++) {
+            world.getBlockAt(x, dy, x).setType(Material.AIR);
+        }
+        // bottom slab floor: feet at y + 0.5
+        world.getBlockAt(x, 63, x).setType(Material.STONE);
+        world.getBlockAt(x, 64, x).setType(Material.OAK_SLAB);
+        p.teleport(new Location(world, x + 0.5, 64.5, x + 0.5));
+        p.performCommand("sethome slab");
+        assertTrue("slab floor", data(p).homes.containsKey("slab"));
+        // low step of a stair
+        world.getBlockAt(x, 64, x).setType(Material.OAK_STAIRS);
+        p.teleport(new Location(world, x + 0.5, 64.5, x + 0.2));
+        p.performCommand("sethome stairs");
+        assertTrue("stair floor", data(p).homes.containsKey("stairs"));
+        // carpet
+        world.getBlockAt(x, 64, x).setType(Material.WHITE_CARPET);
+        p.teleport(new Location(world, x + 0.5, 64.0625, x + 0.5));
+        p.performCommand("sethome carpet");
+        assertTrue("carpet floor", data(p).homes.containsKey("carpet"));
+        // the saved slab home still teleports back after the floor is a slab again
+        world.getBlockAt(x, 64, x).setType(Material.OAK_SLAB);
+        p.addAttachment(plugin, Perms.BYPASS_WARMUP, true);
+        stand(p, world, 0, 64, 0);
+        p.performCommand("home slab");
+        ticks(2);
+        assertEquals(x + 0.5, p.getLocation().getX(), 0.01);
+        assertEquals(64.5, p.getLocation().getY(), 0.01);
+        // feet sunk into the slab and a ceiling over the head are still refused
+        drain(p);
+        p.teleport(new Location(world, x + 0.5, 64.25, x + 0.5));
+        p.performCommand("sethome sunk");
+        assertFalse(data(p).homes.containsKey("sunk"));
+        world.getBlockAt(x, 65, x).setType(Material.STONE);
+        p.teleport(new Location(world, x + 0.5, 64.5, x + 0.5));
+        p.performCommand("sethome low");
+        assertFalse("ceiling in the head cell", data(p).homes.containsKey("low"));
+    }
+
+    @Test
+    public void fullBlockFloorStillWorks() {
+        PlayerMock p = player("Full");
+        Location at = stand(p, world, 310, 64, 310);
+        assertTrue(SafeSpot.isSafe(at));
+        world.getBlockAt(310, 65, 310).setType(Material.STONE);
+        assertFalse(SafeSpot.isSafe(at));
+    }
+
+    // ---------------------------------------------------------------- combat tag source
+
+    private void hit(org.bukkit.entity.Entity damager, Player victim) {
+        server.getPluginManager().callEvent(new org.bukkit.event.entity.EntityDamageByEntityEvent(damager, victim,
+            EntityDamageEvent.DamageCause.ENTITY_ATTACK, 4.0));
+    }
+
+    @Test
+    public void onlyPlayersTagByDefaultAndTheTagIsAnnounced() {
+        PlayerMock a = player("Pvp1");
+        PlayerMock b = player("Pvp2");
+        stand(a, world, 0, 64, 0);
+        stand(b, world, 2, 64, 0);
+        org.bukkit.entity.Entity zombie = world.spawnEntity(new Location(world, 1.5, 64, 0.5),
+            org.bukkit.entity.EntityType.ZOMBIE);
+        hit(zombie, a);
+        assertFalse("a mob must not tag", teleports.combat().tagged(a.getUniqueId()));
+        hit(a, b);
+        assertTrue(teleports.combat().tagged(a.getUniqueId()));
+        assertTrue(teleports.combat().tagged(b.getUniqueId()));
+        assertTrue(drain(b).contains("You are in combat"));
+        // a second hit during the tag does not repeat the announcement
+        hit(a, b);
+        assertFalse(drain(b).contains("You are in combat"));
+    }
+
+    @Test
+    public void endOfTheTagIsAnnounced() throws Exception {
+        PlayerMock a = player("Tag1");
+        teleports.combat().tag(a.getUniqueId(), 5);
+        Thread.sleep(20);
+        drain(a);
+        ticks(40);
+        assertTrue(drain(a).contains("no longer in combat"));
+    }
+
+    @Test
+    public void theTeleportGateIsPublishedForOtherFeatures() {
+        assertSame(teleports, plugin.core().service(win.vampyuyu.survival.back.TeleportGate.class).orElseThrow());
+    }
+
+    @Test
+    public void aTeleportCancelledByAnotherFeatureLeavesNoCooldownAndSaysWhy() {
+        PlayerMock a = player("Vis1", Perms.BYPASS_WARMUP);
+        PlayerMock b = player("Vis2");
+        stand(a, world, 0, 64, 0);
+        stand(b, world, 80, 64, 80);
+        // stands in for the island feature refusing a banned visitor
+        server.getPluginManager().registerEvents(new org.bukkit.event.Listener() {
+            @org.bukkit.event.EventHandler(priority = org.bukkit.event.EventPriority.HIGH)
+            public void onTp(org.bukkit.event.player.PlayerTeleportEvent event) {
+                if (event.getTo() != null && event.getTo().getX() > 50) {
+                    event.setCancelled(true);
+                }
+            }
+        }, plugin);
+        a.performCommand("tpa Vis2");
+        b.performCommand("tpaccept");
+        ticks(2);
+        assertEquals(0.5, a.getLocation().getX(), 0.01);
+        assertFalse(teleports.isTeleporting(a.getUniqueId()));
+        assertTrue(drain(a).contains("destination refused"));
+        // no arrival: the tpa cooldown was not started, so a new request goes through
+        a.performCommand("tpa Vis2");
+        b.performCommand("tpaccept");
+        ticks(2);
+        assertFalse(drain(b).contains("wait"));
     }
 
     // ---------------------------------------------------------------- rtp

@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.util.BoundingBox;
 import org.junit.Test;
 import win.vampyuyu.survival.core.Rarity;
 
@@ -83,6 +84,61 @@ public class PureLogicTest {
         tag.tag(id, 5000);
         tag.clear(id);
         assertFalse(tag.tagged(id));
+    }
+
+
+    @Test
+    public void combatTagReportsFreshTagsAndHandsOutExpiredOnce() {
+        AtomicLong now = new AtomicLong(1000);
+        CombatTag tag = new CombatTag(now::get);
+        UUID id = UUID.randomUUID();
+        assertTrue(tag.tag(id, 10_000));
+        assertFalse(tag.tag(id, 10_000));
+        assertTrue(tag.expired().isEmpty());
+        now.addAndGet(10_000);
+        assertFalse(tag.tagged(id));
+        assertEquals(List.of(id), tag.expired());
+        assertTrue(tag.expired().isEmpty());
+        assertTrue(tag.tag(id, 5000));
+        now.addAndGet(5000);
+        assertTrue(tag.tag(id, 5000)); // the old tag had ended: a fresh one
+    }
+
+    // ---------------------------------------------------------------- safe spots (collision boxes)
+
+    private static final BoundingBox BOTTOM_SLAB = new BoundingBox(0, 0, 0, 1, 0.5, 1);
+    private static final BoundingBox FULL = new BoundingBox(0, 0, 0, 1, 1, 1);
+
+    @Test
+    public void standingOnASlabStairCarpetOrChestDoesNotObstructTheFeet() {
+        // feet on top of the block: the block's own box ends at the feet
+        assertFalse(SafeSpot.boxStopsBody(BOTTOM_SLAB, 64, 0.5, 0.5, 64.5));
+        assertTrue(SafeSpot.boxHoldsFeet(BOTTOM_SLAB, 64, 0.5, 0.5, 64.5));
+        BoundingBox carpet = new BoundingBox(0, 0, 0, 1, 0.0625, 1);
+        assertFalse(SafeSpot.boxStopsBody(carpet, 64, 0.5, 0.5, 64.0625));
+        assertTrue(SafeSpot.boxHoldsFeet(carpet, 64, 0.5, 0.5, 64.0625));
+        BoundingBox chest = new BoundingBox(0.0625, 0, 0.0625, 0.9375, 0.875, 0.9375);
+        assertFalse(SafeSpot.boxStopsBody(chest, 64, 0.5, 0.5, 64.875));
+        assertTrue(SafeSpot.boxHoldsFeet(chest, 64, 0.5, 0.5, 64.875));
+        // stair: the low step holds the feet, the raised back is beside the body
+        BoundingBox back = new BoundingBox(0, 0.5, 0.5, 1, 1, 1);
+        assertFalse(SafeSpot.boxStopsBody(back, 64, 0.5, 0.2, 64.5));
+        assertFalse(SafeSpot.boxStopsBody(BOTTOM_SLAB, 64, 0.5, 0.2, 64.5));
+        // but standing against the raised back it does obstruct
+        assertTrue(SafeSpot.boxStopsBody(back, 64, 0.5, 0.6, 64.5));
+    }
+
+    @Test
+    public void bodiesInsideBlocksOrUnderCeilingsAreObstructed() {
+        assertTrue(SafeSpot.boxStopsBody(FULL, 64, 0.5, 0.5, 64.0));
+        assertTrue(SafeSpot.boxStopsBody(BOTTOM_SLAB, 64, 0.5, 0.5, 64.25)); // feet sunk in the slab
+        assertTrue(SafeSpot.boxStopsBody(FULL, 65, 0.5, 0.5, 64.0)); // head cell
+        assertFalse(SafeSpot.boxStopsBody(FULL, 66, 0.5, 0.5, 64.0)); // above a 1.8 tall body
+        BoundingBox topSlab = new BoundingBox(0, 0.5, 0, 1, 1, 1);
+        assertTrue(SafeSpot.boxStopsBody(topSlab, 65, 0.5, 0.5, 64.0)); // the body reaches 65.8, into the upper half of the head cell
+        assertFalse(SafeSpot.boxStopsBody(topSlab, 65, 0.5, 0.5, 63.0)); // 63 + 1.8 = 64.8 < 65.5
+        assertFalse(SafeSpot.boxHoldsFeet(FULL, 63, 0.5, 0.5, 63.5)); // top is above the feet
+        assertTrue(SafeSpot.boxHoldsFeet(FULL, 63, 0.5, 0.5, 64.0));
     }
 
     // ---------------------------------------------------------------- tpa
@@ -223,6 +279,8 @@ public class PureLogicTest {
         UtilityConfig c = UtilityConfig.defaults();
         assertEquals(3, c.warmupSeconds());
         assertEquals(10, c.combatSeconds());
+        assertFalse("only players tag by default", c.combatIncludeMobs());
+        assertTrue(c.combatNotify());
         assertEquals(60, c.tpaExpireSeconds());
         assertEquals(600, c.rtpCooldownSeconds());
         assertEquals(3, c.homesDefault());
