@@ -66,12 +66,20 @@ public class SkyblockRouteTest {
         return player;
     }
 
+    /** Async tasks start on a pool thread and post back to the main thread: tick and wait until it is quiet. */
     private void settle() {
-        for (int round = 0; round < 4; round++) {
+        for (int round = 0; round < 40; round++) {
             server.getScheduler().waitAsyncTasksFinished();
             server.getScheduler().performOneTick();
+            try {
+                Thread.sleep(5);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
         }
         server.getScheduler().waitAsyncTasksFinished();
+        server.getScheduler().performOneTick();
     }
 
     private static String plain(Component component) {
