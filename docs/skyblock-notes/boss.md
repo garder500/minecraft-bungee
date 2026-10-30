@@ -92,8 +92,7 @@ fight is lost (the quest returns to READY).
 
 ## NEEDS (contract changes I did not make)
 
-* A way for the `items` feature to read slayer perks is not needed (perks go through `StatsApi.addModifier`, source
-  `"slayer"`), but `StatsApi` must keep modifiers of offline players until they join (applied on join here).
+* `StatsApi` should keep (or accept) modifiers set with `addModifier(uuid, "slayer", ...)` for players who are online; perks are re-applied on join and after each slayer level up.
 * The End altar position and the hub arena positions in `boss.yml` are guesses: the `island` feature owns the real
   coordinates. Change `bosses.voidwyrm.summon.altar` and `world-bosses.locations`.
 * Nothing in `core` or `api` had to change.
