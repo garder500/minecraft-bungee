@@ -176,3 +176,4 @@ take the boss away while players walk to it.
 * Summon items of the Frost Revenant, Matriarch and Leviathan work only in `sb_world` (islands), not the hub, so nobody can
   lock pearls and building in the hub; edit `summon.worlds` to change it.
 * No custom sounds or translated names (pack rules): vanilla sounds only.
+* Slayers run only in island worlds (`sb_world`, `sb_nether`, `sb_end`); `sb_hub` was removed from `slayers.*.worlds` (design principle, docs/skyblock-design.md section 13). World boss spots stay on the hub plaza (special event).
