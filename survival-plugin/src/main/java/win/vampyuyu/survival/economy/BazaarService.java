@@ -395,7 +395,13 @@ final class BazaarService implements EconomyAudit.Contributor {
 
     private void deliver(Player p, InFlight flight) {
         if (flight.cents() > 0) {
-            economy.addCents(p.getUniqueId(), flight.cents(), "bazaar:claim");
+            long credited = economy.addCents(p.getUniqueId(), flight.cents(), "bazaar:claim");
+            if (credited < flight.cents()) {
+                // the purse reached the cap during the write window: the rest stays claimable
+                market.restoreClaim(p.getUniqueId().toString(), p.getName(), flight.cents() - credited, Map.of(),
+                    System.currentTimeMillis());
+                persist();
+            }
             core.profiles().saveDirty();
         }
         flight.items().forEach((key, n) -> Inv.giveKey(p, keys, key, n));

@@ -92,8 +92,13 @@ off the main thread, coalesced over `persist-delay-ticks`). Rules:
 * NOT verified on a real Paper 26.3 server or client: all menus (only built in MockBukkit, `MenuSmokeTest`), item tooltips, the pack icons in game
   (checked as a contact sheet only, `art/economy_icons.py --sheet`), NPC entities (villager type, profession, persistence across chunk unload),
   sound, `ItemStack.serializeAsBytes` round trip (MockBukkit falls back to the YAML form, so the `b:` path is untested here), `player.saveData()` timing.
-* Custom items of other features are not listed in the shipped shops; the Bazaar lists only guess ids (`enchanted_*`, `minion_enchanted_*`,
-  `minion_super_*`), unknown ones are skipped. Check ids when the items/minions features are final.
+* Custom item ids come from the UNMERGED sibling branch `sb/minions` (read-only): `minion_enchanted_<material>` and `minion_super_<material>`
+  (lower case material name, 160 raw per enchanted and 160 enchanted per super at the default `compact-ratio` / `super-ratio`, glint override only
+  so the stacks are "clean"). The six raw-goods shops sell them SELL ONLY at 150 x the raw sell price (and super at 150 x enchanted), so compacting
+  never beats selling raw. If `minions.yml` lowers its ratios below 150 these prices must be lowered too (`ShippedPricesTest` checks the 150 rule,
+  not the minions config). Items of other features (items, boss, dungeon) are not priced yet: ids unknown. Unregistered ids are skipped silently.
+* `refuseItem` checks only the top-level stack: Wings inside a shulker box or bundle could still be auctioned.
+* A claim credited while the purse is at its cap keeps the remainder as a new claim (tested only at the unit level, not in a stress case).
 * The Bazaar has no NPC liquidity: with no sell orders there is nothing to buy instantly. Seed liquidity is a design decision for the owner.
 * No cross-server economy (single survival server, profiles are local files). Concurrent edits from two servers would not be safe.
 * Price entry for custom bazaar orders is by command (no sign/anvil input); the menus suggest a price one tick better than the book.
@@ -104,5 +109,4 @@ off the main thread, coalesced over `persist-delay-ticks`). Rules:
 
 ## NEEDS
 
-* Nothing blocking. Optional: a `Stat`-free hook is not needed. If the items feature wants Bazaar price guidance for its items, it can read
-  `economy.yml` categories; no API change requested.
+None.

@@ -533,7 +533,12 @@ final class AuctionService implements EconomyAudit.Contributor {
                 return;
             }
             if (taken.cents() > 0) {
-                economy.addCents(uid, taken.cents(), "auction:claim");
+                long credited = economy.addCents(uid, taken.cents(), "auction:claim");
+                if (credited < taken.cents()) {
+                    // the purse reached the cap during the write window: the rest stays claimable
+                    book.state().refunds.merge(id(p), taken.cents() - credited, Long::sum);
+                    persist();
+                }
                 core.profiles().saveDirty();
             }
             for (ItemStack s : flight.stacks()) {

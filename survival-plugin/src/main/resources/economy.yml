@@ -126,6 +126,25 @@ shops:
       WOODEN_HOE: {buy: 8}
       BUCKET: {buy: 70}
       SHEARS: {buy: 70}
+      # Compacted minion items (feature minions): sell only, priced BELOW ratio x the raw item (ratio 160 in
+      # minions.yml, kept at 150 here). Never add a buy price or raise these above the raw equivalent, or
+      # compacting becomes a coin faucet.
+      minion_enchanted_wheat: {sell: 300}
+      minion_super_wheat: {sell: 45000}
+      minion_enchanted_wheat_seeds: {sell: 75}
+      minion_super_wheat_seeds: {sell: 11250}
+      minion_enchanted_carrot: {sell: 225}
+      minion_super_carrot: {sell: 33750}
+      minion_enchanted_potato: {sell: 225}
+      minion_super_potato: {sell: 33750}
+      minion_enchanted_baked_potato: {sell: 450}
+      minion_super_baked_potato: {sell: 67500}
+      minion_enchanted_poisonous_potato: {sell: 75}
+      minion_super_poisonous_potato: {sell: 11250}
+      minion_enchanted_pumpkin: {sell: 450}
+      minion_super_pumpkin: {sell: 67500}
+      minion_enchanted_melon_slice: {sell: 150}
+      minion_super_melon_slice: {sell: 22500}
   miner:
     name: "Miner"
     npc-name: "<gray>Miner"
@@ -182,6 +201,33 @@ shops:
       IRON_SHOVEL: {buy: 50}
       TORCH: {buy: 4}
       LANTERN: {buy: 35}
+      # Compacted minion items (feature minions): sell only, priced BELOW ratio x the raw item (ratio 160 in
+      # minions.yml, kept at 150 here). Never add a buy price or raise these above the raw equivalent, or
+      # compacting becomes a coin faucet.
+      minion_enchanted_cobblestone: {sell: 75}
+      minion_super_cobblestone: {sell: 11250}
+      minion_enchanted_stone: {sell: 112.5}
+      minion_super_stone: {sell: 16875}
+      minion_enchanted_sand: {sell: 75}
+      minion_super_sand: {sell: 11250}
+      minion_enchanted_clay_ball: {sell: 150}
+      minion_super_clay_ball: {sell: 22500}
+      minion_enchanted_coal: {sell: 450}
+      minion_super_coal: {sell: 67500}
+      minion_enchanted_charcoal: {sell: 375}
+      minion_super_charcoal: {sell: 56250}
+      minion_enchanted_iron_ingot: {sell: 750}
+      minion_super_iron_ingot: {sell: 112500}
+      minion_enchanted_gold_ingot: {sell: 1050}
+      minion_super_gold_ingot: {sell: 157500}
+      minion_enchanted_redstone: {sell: 300}
+      minion_super_redstone: {sell: 45000}
+      minion_enchanted_lapis_lazuli: {sell: 300}
+      minion_super_lapis_lazuli: {sell: 45000}
+      minion_enchanted_diamond: {sell: 3600}
+      minion_super_diamond: {sell: 540000}
+      minion_enchanted_emerald: {sell: 2700}
+      minion_super_emerald: {sell: 405000}
   lumberjack:
     name: "Lumberjack"
     npc-name: "<gold>Lumberjack"
@@ -223,6 +269,15 @@ shops:
       CHEST: {buy: 28}
       BARREL: {buy: 28}
       LADDER: {buy: 6}
+      # Compacted minion items (feature minions): sell only, priced BELOW ratio x the raw item (ratio 160 in
+      # minions.yml, kept at 150 here). Never add a buy price or raise these above the raw equivalent, or
+      # compacting becomes a coin faucet.
+      minion_enchanted_oak_log: {sell: 300}
+      minion_super_oak_log: {sell: 45000}
+      minion_enchanted_spruce_log: {sell: 300}
+      minion_super_spruce_log: {sell: 45000}
+      minion_enchanted_birch_log: {sell: 300}
+      minion_super_birch_log: {sell: 45000}
   fisherman:
     name: "Fisherman"
     npc-name: "<aqua>Fisherman"
@@ -256,6 +311,25 @@ shops:
       FISHING_ROD: {buy: 60}
       STRING: {buy: 6, sell: 1.5}
       WATER_BUCKET: {buy: 80}
+      # Compacted minion items (feature minions): sell only, priced BELOW ratio x the raw item (ratio 160 in
+      # minions.yml, kept at 150 here). Never add a buy price or raise these above the raw equivalent, or
+      # compacting becomes a coin faucet.
+      minion_enchanted_cod: {sell: 300}
+      minion_super_cod: {sell: 45000}
+      minion_enchanted_salmon: {sell: 375}
+      minion_super_salmon: {sell: 56250}
+      minion_enchanted_tropical_fish: {sell: 900}
+      minion_super_tropical_fish: {sell: 135000}
+      minion_enchanted_pufferfish: {sell: 750}
+      minion_super_pufferfish: {sell: 112500}
+      minion_enchanted_cooked_cod: {sell: 600}
+      minion_super_cooked_cod: {sell: 90000}
+      minion_enchanted_cooked_salmon: {sell: 750}
+      minion_super_cooked_salmon: {sell: 112500}
+      minion_enchanted_ink_sac: {sell: 300}
+      minion_super_ink_sac: {sell: 45000}
+      minion_enchanted_sponge: {sell: 3750}
+      minion_super_sponge: {sell: 562500}
   mob_hunter:
     name: "Mob Hunter"
     npc-name: "<red>Mob Hunter"
@@ -285,6 +359,17 @@ shops:
       BREEZE_ROD: {sell: 15}
       WIND_CHARGE: {sell: 2}
       GOAT_HORN: {sell: 60}
+      # Compacted minion items (feature minions): sell only, priced BELOW ratio x the raw item (ratio 160 in
+      # minions.yml, kept at 150 here). Never add a buy price or raise these above the raw equivalent, or
+      # compacting becomes a coin faucet.
+      minion_enchanted_rotten_flesh: {sell: 150}
+      minion_super_rotten_flesh: {sell: 22500}
+      minion_enchanted_bone: {sell: 225}
+      minion_super_bone: {sell: 33750}
+      minion_enchanted_slime_ball: {sell: 600}
+      minion_super_slime_ball: {sell: 90000}
+      minion_enchanted_arrow: {sell: 75}
+      minion_super_arrow: {sell: 11250}
   alchemist:
     name: "Alchemist"
     npc-name: "<light_purple>Alchemist"
@@ -422,6 +507,25 @@ shops:
       GOLDEN_HORSE_ARMOR: {buy: 480}
       DIAMOND_HORSE_ARMOR: {buy: 1200}
       BEEHIVE: {buy: 120}
+      # Compacted minion items (feature minions): sell only, priced BELOW ratio x the raw item (ratio 160 in
+      # minions.yml, kept at 150 here). Never add a buy price or raise these above the raw equivalent, or
+      # compacting becomes a coin faucet.
+      minion_enchanted_beef: {sell: 375}
+      minion_super_beef: {sell: 56250}
+      minion_enchanted_porkchop: {sell: 375}
+      minion_super_porkchop: {sell: 56250}
+      minion_enchanted_chicken: {sell: 300}
+      minion_super_chicken: {sell: 45000}
+      minion_enchanted_mutton: {sell: 375}
+      minion_super_mutton: {sell: 56250}
+      minion_enchanted_cooked_chicken: {sell: 600}
+      minion_super_cooked_chicken: {sell: 90000}
+      minion_enchanted_cooked_mutton: {sell: 750}
+      minion_super_cooked_mutton: {sell: 112500}
+      minion_enchanted_leather: {sell: 450}
+      minion_super_leather: {sell: 67500}
+      minion_enchanted_feather: {sell: 225}
+      minion_super_feather: {sell: 33750}
 
 bazaar:
   enabled: true

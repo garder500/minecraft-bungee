@@ -9,7 +9,9 @@ import java.util.List;
 import java.util.logging.Logger;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.mockbukkit.mockbukkit.MockBukkit;
 import org.junit.Test;
 
 /** Checks the price tables shipped in economy.yml: valid items and no buy-low / sell-high loops. */
@@ -19,9 +21,15 @@ public class ShippedPricesTest {
 
     @BeforeClass
     public static void load() {
+        MockBukkit.mock(); // Material and YamlConfiguration need a server, also when this class runs alone
         config = YamlConfiguration.loadConfiguration(new InputStreamReader(
             ShippedPricesTest.class.getResourceAsStream("/economy.yml"), StandardCharsets.UTF_8));
         catalog = ShopCatalog.parse(config, Logger.getAnonymousLogger());
+    }
+
+    @AfterClass
+    public static void unload() {
+        MockBukkit.unmock();
     }
 
     private static long minBuy(String key) {
@@ -138,5 +146,37 @@ public class ShippedPricesTest {
         assertTrue(config.getDouble("pressure.soft-cap") > 0);
         assertTrue(config.getDouble("pressure.min-multiplier") > 0);
         assertTrue(config.getInt("buyback.seconds") > 0);
+    }
+
+    /** Compacted minion items (160 raw -> enchanted, 160 enchanted -> super in minions.yml) must never out-earn the raw goods. */
+    @Test
+    public void compactedMinionItemsAreSellOnlyAndBelowTheCompactionRatio() {
+        int checked = 0;
+        for (var shop : catalog.shops().values()) {
+            for (var i : shop.items()) {
+                String key = i.key();
+                boolean ench = key.startsWith("minion_enchanted_");
+                boolean sup = key.startsWith("minion_super_");
+                if (!ench && !sup) {
+                    continue;
+                }
+                checked++;
+                assertEquals(key + " must be sell only", 0, i.buyCents());
+                String base = key.substring(ench ? "minion_enchanted_".length() : "minion_super_".length());
+                String raw = base.toUpperCase(java.util.Locale.ROOT);
+                long rawSell = maxSell(raw);
+                assertTrue(shop.id() + " sells " + key + " but no shop buys " + raw, rawSell > 0);
+                long enchSell = maxSell("minion_enchanted_" + base);
+                if (ench) {
+                    assertTrue(key + " above 150 x raw", i.sellCents() <= 150 * rawSell);
+                    assertTrue(key + " not above the raw buy price x 160",
+                        minBuy(raw) == Long.MAX_VALUE || i.sellCents() <= 160 * minBuy(raw));
+                } else {
+                    assertTrue(key + " has no enchanted form sold", enchSell > 0);
+                    assertTrue(key + " above 150 x enchanted", i.sellCents() <= 150 * enchSell);
+                }
+            }
+        }
+        assertTrue("the shipped shops list compacted items", checked >= 40);
     }
 }
