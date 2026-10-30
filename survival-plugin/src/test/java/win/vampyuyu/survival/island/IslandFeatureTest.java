@@ -417,6 +417,7 @@ public class IslandFeatureTest {
         PlayerMock owner = player("Buyer");
         Island island = readyIsland(owner);
         int radiusBefore = service.config().radiusFor(island);
+        plugin.core().unpublish(EconomyApi.class); // the real economy feature is enabled now: simulate it being off
         owner.performCommand("island upgrade radius");
         assertTrue("no economy: refused", said(owner).contains("not available"));
         assertEquals(0, island.radiusTier);
