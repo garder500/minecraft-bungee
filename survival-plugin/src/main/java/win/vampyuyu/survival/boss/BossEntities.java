@@ -51,10 +51,10 @@ public final class BossEntities {
         e.getPersistentDataContainer().set(Tags.SESSION, PersistentDataType.STRING, sessionId);
         e.customName(MINI.deserialize(def.name()));
         e.setCustomNameVisible(true);
-        e.setRemoveWhenFarAway(false);
-        e.setPersistent(false);
-        e.setCanPickupItems(false);
-        e.setMaximumNoDamageTicks(Math.max(1, settings.hitIframes()));
+        quiet(() -> e.setRemoveWhenFarAway(false));
+        quiet(() -> e.setPersistent(false));
+        quiet(() -> e.setCanPickupItems(false));
+        quiet(() -> e.setMaximumNoDamageTicks(Math.max(1, settings.hitIframes())));
         e.setSilent(false);
         base(e, Attribute.MAX_HEALTH, Math.min(1024, settings.visualHealth()));
         e.setHealth(Math.min(1024, settings.visualHealth()));
@@ -94,6 +94,15 @@ public final class BossEntities {
     public static double moveSpeed(LivingEntity e) {
         AttributeInstance instance = e.getAttribute(Attribute.MOVEMENT_SPEED);
         return instance == null ? 0 : instance.getBaseValue();
+    }
+
+    /** Runs a cosmetic or best effort setter; a server that does not support it must not abort the spawn. */
+    static void quiet(Runnable setter) {
+        try {
+            setter.run();
+        } catch (RuntimeException ignored) {
+            // optional behaviour, the boss still works without it
+        }
     }
 
     static void base(LivingEntity e, Attribute attribute, double value) {

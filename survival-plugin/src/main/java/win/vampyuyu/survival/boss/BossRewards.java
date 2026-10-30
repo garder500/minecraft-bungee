@@ -53,6 +53,12 @@ public final class BossRewards {
         BossKillEvent event = new BossKillEvent(def.id(), killer, ranking, session.location());
         Bukkit.getPluginManager().callEvent(event);
         BossDefinition.Loot loot = def.loot();
+        int eligible = 0;
+        for (Damager damager : ranking) {
+            if (session.ledger.share(damager.player()) >= loot.minShare()) {
+                eligible++;
+            }
+        }
         for (int i = 0; i < ranking.size(); i++) {
             Damager damager = ranking.get(i);
             double share = session.ledger.share(damager.player());
@@ -60,7 +66,7 @@ public final class BossRewards {
                 continue;
             }
             try {
-                reward(session, event, damager, share, i + 1, ranking);
+                reward(session, event, damager, share, i + 1, eligible);
             } catch (RuntimeException e) {
                 core.getPlugin().getLogger().log(Level.SEVERE,
                     "Boss reward failed for " + damager.player() + " on " + def.id(), e);
@@ -72,13 +78,13 @@ public final class BossRewards {
     }
 
     private void reward(BossSession session, BossKillEvent event, Damager damager, double share, int rank,
-            List<Damager> ranking) {
+            int eligible) {
         BossDefinition def = session.def;
         BossDefinition.Loot loot = def.loot();
         UUID id = damager.player();
         Player player = Bukkit.getPlayer(id);
-        double coins = LootMath.share(loot.coins(), share, loot.shareFloor());
-        double xp = LootMath.share(loot.combatXp(), share, loot.shareFloor());
+        double coins = LootMath.share(loot.coins(), share, loot.shareFloor(), eligible);
+        double xp = LootMath.share(loot.combatXp(), share, loot.shareFloor(), eligible);
         if (coins > 0) {
             core.service(EconomyApi.class).ifPresent(e -> e.add(id, coins, "boss:" + def.id()));
         }

@@ -8,12 +8,14 @@ public final class LootMath {
     private LootMath() {}
 
     /**
-     * Coins or xp for one participant: everybody eligible gets {@code floor} of the pool, the rest is split by
-     * damage share. {@code floor + (1 - floor) * share}, times the pool.
+     * Coins or xp for one participant: the {@code floor} part of the pool is split EQUALLY between the eligible
+     * participants, the rest by damage share: {@code pool * (floor / n + (1 - floor) * share)}. The sum over all
+     * eligible participants never exceeds the pool, so extra accounts cannot multiply the payout.
      */
-    public static double share(double pool, double share, double floor) {
+    public static double share(double pool, double share, double floor, int eligible) {
         double f = clamp(floor, 0, 1);
-        return Math.max(0, pool * (f + (1 - f) * clamp(share, 0, 1)));
+        int n = Math.max(1, eligible);
+        return Math.max(0, pool * (f / n + (1 - f) * clamp(share, 0, 1)));
     }
 
     /** Chance multiplier for a 1-based rank (1.0 beyond the configured list or for rank 0). */

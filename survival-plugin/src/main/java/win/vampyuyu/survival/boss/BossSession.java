@@ -649,13 +649,17 @@ public final class BossSession {
             return 0;
         }
         double dmg = finalDamage * settings.incomingScale() * (ticks < vulnerableUntil ? vulnerableMult : 1.0);
-        boolean newcomer = !ledger.contains(attacker.getUniqueId());
+        if (!(dmg > 0)) {
+            return 0;
+        }
+        // A newcomer grows the pool BEFORE the hit is credited, otherwise a lethal first hit would be capped at the
+        // old health and leave the rescaled boss alive.
+        if (!ledger.contains(attacker.getUniqueId())) {
+            rescale(ledger.size() + 1);
+        }
         double credited = ledger.record(attacker.getUniqueId(), dmg, hp);
         if (credited <= 0) {
             return 0;
-        }
-        if (newcomer) {
-            rescale();
         }
         hp -= credited;
         healthChanged(attacker);
@@ -671,8 +675,8 @@ public final class BossSession {
         mirrorHealth();
     }
 
-    private void rescale() {
-        double mult = BossMath.hpMultiplier(ledger.size(), def.arena().minPlayers(), def.arena().scalePerPlayer(),
+    private void rescale(int participants) {
+        double mult = BossMath.hpMultiplier(participants, def.arena().minPlayers(), def.arena().scalePerPlayer(),
             def.arena().scaleCap());
         double newMax = baseMaxHp * mult;
         if (Math.abs(newMax - maxHp) > 1e-9) {

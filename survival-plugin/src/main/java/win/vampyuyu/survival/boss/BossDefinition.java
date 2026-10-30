@@ -91,10 +91,10 @@ public record BossDefinition(String id, String name, String description, EntityT
     /**
      * Rewards.
      *
-     * @param coins total coins, split by damage share (see {@link LootMath#share})
+     * @param coins total coins, split by damage share (see {@link LootMath#share}; the pool is never exceeded)
      * @param combatXp total combat xp, split the same way
      * @param minShare damage share below which a participant gets nothing
-     * @param shareFloor fraction of coins/xp every eligible participant gets regardless of share
+     * @param shareFloor fraction of coins/xp split equally between the eligible participants, the rest follows the damage share
      * @param rankBonus chance multiplier for rank 1, 2, 3...
      * @param entries item drops
      * @param wingsMinShare share above which WingsApi.grantOnce is called, negative = never
