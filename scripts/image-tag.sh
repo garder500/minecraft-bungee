@@ -14,7 +14,7 @@ plugins=(network-plugin arena-plugin)
 case $target in
  panel) paths=("${common[@]}" "${go[@]}" web "${pack[@]}") ;;
  controller | tools) paths=("${common[@]}" "${go[@]}") ;;
- server) paths=("${common[@]}" "${plugins[@]}" claims-plugin "${pack[@]}") ;;
+ server) paths=("${common[@]}" "${plugins[@]}" claims-plugin survival-plugin "${pack[@]}") ;;
  lobby) paths=("${common[@]}" "${plugins[@]}" "${pack[@]}" lobby infra/lobby-palace) ;;
  *) echo "Unknown image target: $target" >&2; exit 1 ;;
 esac
