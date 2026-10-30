@@ -80,6 +80,15 @@ public class SimpleSkyblockTest {
         assertTrue(player.getInventory().contains(Material.DIRT));
         assertFalse(player.getInventory().contains(Material.DIAMOND));
     }
+    @Test public void survivalPositionIsRemembered() {
+        Location spot = new Location(survival,300,70,300);
+        floor(spot);
+        player.teleport(spot);
+        assertTrue(plugin.core().modes().enterIsland(player));
+        assertTrue(plugin.core().modes().enterSurvival(player));
+        assertEquals(survival,player.getWorld());
+        assertTrue(player.getLocation().distance(spot) < 4);
+    }
     @Test public void onlyTwoSkyblockWorldsAndNoProgressionFeatures() {
         assertNull(server.getWorld(SkyblockWorlds.HUB));
         assertNull(server.getWorld(SkyblockWorlds.END));

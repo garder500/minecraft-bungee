@@ -30,6 +30,8 @@ public final class ModeTravel implements Listener {
         public Point skyblock;
         public Point survival;
         public boolean imported;
+        /** Where the player last stood in Survival, so coming back does not send them to the world spawn. */
+        public Pos lastSurvival;
         public String mode;
     }
     public static final class Point {
@@ -74,6 +76,7 @@ public final class ModeTravel implements Listener {
     /** Used only by the explicit mode selector and island-home entry. No asynchronous permit can leak. */
     public boolean enter(Player player, Location target) {
         if (target == null || target.getWorld() == null || retired(target.getWorld())) return false;
+        if (sky(target.getWorld())) rememberSurvivalSpot(player);
         crossing.add(player.getUniqueId());
         try {
             boolean ok = player.teleport(target, PlayerTeleportEvent.TeleportCause.PLUGIN);
@@ -97,7 +100,19 @@ public final class ModeTravel implements Listener {
     public boolean enterSurvival(Player player) {
         selected(player);
         waiting.remove(player.getUniqueId());
+        Pos last = points(player).lastSurvival;
+        Location back = last == null ? null : last.toLocation();
+        if (back != null && back.getWorld() != null && !sky(back.getWorld())) {
+            Location landing = safeLanding(back);
+            if (landing != null && enter(player, landing)) return true;
+        }
         return enter(player, survivalSpawn());
+    }
+
+    private void rememberSurvivalSpot(Player player) {
+        if (sky(player.getWorld())) return;
+        points(player).lastSurvival = Pos.of(player.getLocation());
+        core.profiles().markDirty(player.getUniqueId());
     }
 
     public Location survivalSpawn() {
@@ -288,6 +303,7 @@ public final class ModeTravel implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
+        rememberSurvivalSpot(event.getPlayer());
         waiting.remove(event.getPlayer().getUniqueId());
         selections.remove(event.getPlayer().getUniqueId());
     }
