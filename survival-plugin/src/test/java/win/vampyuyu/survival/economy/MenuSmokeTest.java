@@ -89,7 +89,7 @@ public class MenuSmokeTest {
         bob.getInventory().addItem(new ItemStack(Material.WHEAT, 64));
         assertTrue(bz.placeSell(bob, "WHEAT", 20, 30).ok());
         assertTrue(bz.placeBuy(alice, "WHEAT", 15, 10).ok());
-        assertTrue(bz.instantBuy(alice, "WHEAT", 5).ok());
+        assertTrue(BazaarServiceTest.buy(bz, alice, "WHEAT", 5).ok());
         ui.openMain(alice);
         assertMenu("bazaar main");
         for (BazaarService.Category c : BazaarService.Category.values()) {

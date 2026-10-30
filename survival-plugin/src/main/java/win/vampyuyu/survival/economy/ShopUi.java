@@ -143,20 +143,25 @@ final class ShopUi {
             if (r.ok()) {
                 core.msg().mini(player, "<green>Bought <white>" + qty + "x " + name + "</white> for <gold>"
                     + Money.coins(r.cents()) + "</gold>.");
+                Sfx.success(player);
             } else {
                 core.msg().error(player, r.error());
+                Sfx.error(player);
             }
         } else if (click.right()) {
             if (item.sellCents() <= 0) {
                 core.msg().error(player, shop.name() + " does not buy that.");
+                Sfx.error(player);
             } else {
                 ShopService.Result r = shops.sell(player, shop.id(), k -> k.equals(item.key()) ? item.sellCents() : 0,
                     item.key(), click.shift() ? 0 : 1);
                 if (r.ok()) {
                     core.msg().mini(player, "<green>Sold <white>" + r.items() + "x " + name + "</white> for <gold>"
                         + Money.coins(r.cents()) + "</gold>.");
+                    Sfx.coins(player);
                 } else {
                     core.msg().error(player, r.error());
+                    Sfx.error(player);
                 }
             }
         }
@@ -173,8 +178,10 @@ final class ShopUi {
         }
         if (!r.ok()) {
             core.msg().error(player, r.error());
+            Sfx.error(player);
             return;
         }
+        Sfx.coins(player);
         core.msg().mini(player, "<green>Sold <white>" + r.items() + " items</white> for <gold>"
             + Money.coins(r.cents()) + "</gold>.");
         r.lines().stream().limit(6).forEach(l -> core.msg().mini(player, "<dark_gray> - <gray>" + l.qty() + "x "
@@ -200,9 +207,11 @@ final class ShopUi {
                 if (r.ok()) {
                     core.msg().mini(c.player(), "<green>Bought back <white>" + e.stack().getAmount() + "x "
                         + Ui.esc(keys.name(e.key())) + "</white> for <gold>" + Money.coins(r.cents()) + "</gold>.");
+                    Sfx.success(c.player());
                     openBuyback(c.player(), back);
                 } else {
                     core.msg().error(c.player(), r.error());
+                    Sfx.error(c.player());
                 }
             }, 36, 44);
         if (entries.isEmpty()) {

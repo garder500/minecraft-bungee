@@ -20,7 +20,9 @@ import win.vampyuyu.survival.core.JsonStore;
 /**
  * Recomputes the economy totals from the data on disk (and memory for online players) and checks every player's
  * ledger chain: each retained entry must satisfy {@code after = previous.after + delta} and the last entry must equal
- * the purse; the bank history is checked the same way. Market contributors add their escrow totals and invariants.
+ * the purse; the bank history is checked the same way; the lifetime counters must satisfy
+ * {@code purse = totalEarned - totalSpent} (this one reaches back past the retained ledger). Market contributors add
+ * their escrow totals, invariants and burned taxes; the server-wide faucet and sink table is attached to the report.
  */
 final class EconomyAudit {
     /** The numbers and problems found. */
@@ -29,7 +31,19 @@ final class EconomyAudit {
         long purseCents;
         long bankCents;
         final Map<String, Long> extras = new LinkedHashMap<>();
+        /**
+         * Coins destroyed by the markets WITHOUT passing through a purse debit (sale taxes), added to the destroyed
+         * total of the faucet and sink view. Listing fees are taken from the purse (reason {@code auction:fee}), so
+         * the flow table already counts them: they are only listed in {@link #info}.
+         */
+        final Map<String, Long> burns = new LinkedHashMap<>();
+        /** Extra figures shown with the report, not part of any total. */
+        final Map<String, Long> info = new LinkedHashMap<>();
         final List<String> problems = new ArrayList<>();
+        List<Flows.Row> flows = List.of();
+        long flowsSince;
+        long minted;
+        long burned;
 
         long totalCents() {
             long sum = purseCents + bankCents;
@@ -68,6 +82,10 @@ final class EconomyAudit {
                 report.problems.add("Player scan failed: " + e);
             }
             core.scheduler().sync(() -> {
+                report.flows = economy.flows().rows();
+                report.flowsSince = economy.flows().since();
+                report.minted = economy.flows().minted();
+                report.burned = economy.flows().burned();
                 for (Contributor c : contributors) {
                     try {
                         c.audit(report);
@@ -94,7 +112,7 @@ final class EconomyAudit {
                 } catch (IllegalArgumentException e) {
                     continue;
                 }
-                EconomyData data = core.profiles().isLoaded(id) ? economy.data(id) : read(file);
+                EconomyData data = core.profiles().isLoaded(id) ? snapshot(id) : read(file);
                 if (data == null) {
                     continue;
                 }
@@ -106,6 +124,19 @@ final class EconomyAudit {
         } catch (IOException e) {
             report.problems.add("Could not list player profiles: " + e.getMessage());
         }
+    }
+
+    /**
+     * A private copy of a loaded profile's data, made under the profile lock (the main thread keeps appending to the
+     * live ledger lists while this scan runs on another thread).
+     */
+    private EconomyData snapshot(UUID id) {
+        EconomyData[] copy = new EconomyData[1];
+        economy.update(id, (d, txs) -> {
+            copy[0] = JsonStore.GSON.fromJson(JsonStore.GSON.toJsonTree(d), EconomyData.class);
+            return null;
+        });
+        return copy[0];
     }
 
     private static EconomyData read(Path file) {
@@ -126,6 +157,10 @@ final class EconomyAudit {
         String who = id.toString().substring(0, 8);
         if (d.cents < 0 || d.bankCents < 0) {
             add(problems, who + ": negative balance (purse " + d.cents + ", bank " + d.bankCents + ")");
+        }
+        if (d.cents != d.totalEarned - d.totalSpent) {
+            add(problems, who + ": purse " + d.cents + " differs from lifetime earned " + d.totalEarned
+                + " minus spent " + d.totalSpent + " (" + (d.cents - (d.totalEarned - d.totalSpent)) + ")");
         }
         EconomyData.Entry previous = null;
         for (EconomyData.Entry e : d.ledger) {

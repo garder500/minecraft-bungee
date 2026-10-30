@@ -10,10 +10,13 @@ import java.util.function.Consumer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.block.Container;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BlockStateMeta;
+import org.bukkit.inventory.meta.BundleMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import win.vampyuyu.survival.api.WingsApi;
 import win.vampyuyu.survival.core.Core;
@@ -60,6 +63,25 @@ final class AuctionService implements EconomyAudit.Contributor {
         }
     }
 
+    /** Which kinds of listing the browse menu shows. */
+    enum Kind {
+        ALL("Everything"), BIN("Buy It Now only"), AUCTION("Auctions only");
+
+        final String label;
+
+        Kind(String label) {
+            this.label = label;
+        }
+
+        Kind next() {
+            return values()[(ordinal() + 1) % values().length];
+        }
+
+        boolean accepts(boolean bin) {
+            return this == ALL || (this == BIN) == bin;
+        }
+    }
+
     /** Listing fee rule and the other settings that are not part of {@link AuctionBook.Rules}. */
     record Settings(boolean enabled, List<Integer> durations, int defaultHours, double feeBasePercent,
             double feePerDayPercent, long minFeeCents, long maxFeeCents, Set<Material> blocked, Set<String> blockedIds,
@@ -95,10 +117,9 @@ final class AuctionService implements EconomyAudit.Contributor {
     void enable(ConfigurationSection config) {
         AuctionBook.State state = core.store().read(FILE, AuctionBook.State.class, AuctionBook.State::new);
         book = new AuctionBook(state, rules(config));
-        file = new DurableFile(core.store(), FILE, book::state, env, () -> {
-            core.profiles().saveDirty();
-            core.profiles().awaitWrites();
-        }, core.getPlugin().getLogger(), config.getLong("auction.persist-delay-ticks", 10));
+        file = new DurableFile(core.store(), FILE, book::state, env,
+            () -> core.profiles().saveDirty(), () -> core.profiles().awaitWrites(), core.getPlugin().getLogger(),
+            config.getLong("auction.persist-delay-ticks", 10));
         reload(config);
     }
 
@@ -229,11 +250,70 @@ final class AuctionService implements EconomyAudit.Contributor {
         return Category.MISC;
     }
 
-    /** Why this stack may not be listed, or null. */
+    /** Deepest container nesting that is inspected; anything deeper is refused. */
+    static final int MAX_NESTING = 8;
+
+    /** Lists what a container item (shulker box, chest, bundle...) holds. Replaceable for tests. */
+    private java.util.function.Function<ItemStack, List<ItemStack>> inspector = AuctionService::contents;
+
+    void inspector(java.util.function.Function<ItemStack, List<ItemStack>> inspector) {
+        this.inspector = inspector;
+    }
+
+    /** The stacks inside a container item (empty for a plain item). */
+    static List<ItemStack> contents(ItemStack stack) {
+        List<ItemStack> out = new ArrayList<>();
+        ItemMeta meta = stack.getItemMeta();
+        if (meta instanceof BlockStateMeta block && block.hasBlockState()
+                && block.getBlockState() instanceof Container container) {
+            for (ItemStack inner : container.getSnapshotInventory().getContents()) {
+                if (inner != null && !inner.getType().isAir()) {
+                    out.add(inner);
+                }
+            }
+        }
+        if (meta instanceof BundleMeta bundle) {
+            for (ItemStack inner : bundle.getItems()) {
+                if (inner != null && !inner.getType().isAir()) {
+                    out.add(inner);
+                }
+            }
+        }
+        return out;
+    }
+
+    /** Why this stack may not be listed, or null. Looks inside shulker boxes, chests and bundles, to any depth. */
     String refuseItem(ItemStack stack) {
         if (stack == null || stack.getType().isAir()) {
             return "Hold the item you want to sell in your main hand.";
         }
+        return refuse(stack, 0);
+    }
+
+    private String refuse(ItemStack stack, int depth) {
+        String own = refuseOne(stack);
+        if (own != null) {
+            return depth == 0 ? own : "It holds something that cannot be auctioned. " + own;
+        }
+        if (depth >= MAX_NESTING) {
+            return "That item is nested too deeply to be checked.";
+        }
+        List<ItemStack> inner;
+        try {
+            inner = inspector.apply(stack);
+        } catch (RuntimeException e) {
+            return "That item's contents cannot be checked, so it cannot be auctioned.";
+        }
+        for (ItemStack in : inner) {
+            String why = refuse(in, depth + 1);
+            if (why != null) {
+                return why;
+            }
+        }
+        return null;
+    }
+
+    private String refuseOne(ItemStack stack) {
         if (settings.blocked().contains(stack.getType())) {
             return "That item cannot be auctioned.";
         }
@@ -258,10 +338,18 @@ final class AuctionService implements EconomyAudit.Contributor {
 
     /** Active listings, filtered and sorted. */
     List<AuctionBook.Auction> browse(Category category, String search, Sort sort, long now) {
+        return browse(category, search, sort, Kind.ALL, now);
+    }
+
+    /** Active listings, filtered by category, text and kind (Buy It Now / auction), and sorted. */
+    List<AuctionBook.Auction> browse(Category category, String search, Sort sort, Kind kind, long now) {
         List<AuctionBook.Auction> out = new ArrayList<>();
         String q = search == null ? "" : search.toLowerCase(Locale.ROOT).trim();
         for (AuctionBook.Auction a : book.active(now)) {
             if (category != null && !category.name().equals(a.category)) {
+                continue;
+            }
+            if (!kind.accepts(a.bin)) {
                 continue;
             }
             if (!q.isEmpty() && !a.itemName.toLowerCase(Locale.ROOT).contains(q)
@@ -573,6 +661,8 @@ final class AuctionService implements EconomyAudit.Contributor {
     public void audit(EconomyAudit.Report report) {
         long inFlightCents = inFlight.stream().mapToLong(f -> f.taken().cents()).sum();
         report.extras.put("Auction escrow and unclaimed coins", book.escrowedCents() + inFlightCents);
+        report.burns.put("Auction sale tax burned", book.state().taxBurnedCents);
+        report.info.put("Auction listing fees burned (already in the flow table as auction:fee)", book.state().feesBurnedCents);
         for (String problem : book.verify()) {
             report.problems.add("auction: " + problem);
         }

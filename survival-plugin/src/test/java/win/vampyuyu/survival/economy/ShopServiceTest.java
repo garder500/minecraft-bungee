@@ -46,6 +46,7 @@ public class ShopServiceTest {
         cfg.set("pressure.soft-cap", 100);
         cfg.set("pressure.min-multiplier", 0.25);
         shops.reload(cfg);
+        keys.allowCustom(shops.catalog().keys());
         alice = server.addPlayer("Alice");
     }
 

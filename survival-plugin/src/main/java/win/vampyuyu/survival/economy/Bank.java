@@ -27,8 +27,8 @@ public final class Bank {
     private final Core core;
     private final EconomyService economy;
     private volatile List<Tier> tiers = List.of();
-    private volatile long periodMs = 8 * 3_600_000L;
-    private volatile int maxCatchup = 12;
+    private volatile long periodMs = 24 * 3_600_000L;
+    private volatile int maxCatchup = 3;
 
     public Bank(Core core, EconomyService economy, ConfigurationSection config) {
         this.core = core;
@@ -37,20 +37,20 @@ public final class Bank {
     }
 
     void reload(ConfigurationSection c) {
-        periodMs = Math.max(60_000L, (long) (c.getDouble("bank.interest-period-hours", 8.0) * 3_600_000L));
-        maxCatchup = EconomySettings.clamp(c.getInt("bank.max-catchup-periods", 12), 1, 1000);
+        periodMs = Math.max(60_000L, (long) (c.getDouble("bank.interest-period-hours", 24.0) * 3_600_000L));
+        maxCatchup = EconomySettings.clamp(c.getInt("bank.max-catchup-periods", 3), 1, 1000);
         List<Tier> out = new ArrayList<>();
         for (java.util.Map<?, ?> raw : c.getMapList("bank.tiers")) {
             Object name = raw.get("name");
             long capacity = coins(raw.get("capacity"), 5_000_000);
-            double rate = num(raw.get("rate"), 2.0);
+            double rate = num(raw.get("rate"), 0.5);
             long maxInterest = coins(raw.get("max-interest"), 100_000);
             long cost = coins(raw.get("cost"), 0);
             out.add(new Tier(name == null ? "Tier " + (out.size() + 1) : name.toString(), capacity,
                 (int) Math.round(Math.max(0, Math.min(100, rate)) * 100), maxInterest, cost));
         }
         if (out.isEmpty()) {
-            out.add(new Tier("Starter", 500_000_000L, 200, 10_000_000L, 0));
+            out.add(new Tier("Starter", 500_000_000L, 50, 2_500_000L, 0));
         }
         tiers = List.copyOf(out);
     }
@@ -119,6 +119,7 @@ public final class Bank {
         if (a.interest() > 0) {
             d.bankCents = a.bank();
             d.bankInterestTotal += a.interest();
+            economy.flows().record("bank:interest", a.interest());
             d.appendBank(new EconomyData.BankEntry(now, "Interest", a.interest(), d.bankCents),
                 economy.settings().bankHistorySize());
         }

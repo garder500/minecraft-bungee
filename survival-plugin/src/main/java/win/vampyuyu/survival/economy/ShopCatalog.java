@@ -43,6 +43,17 @@ final class ShopCatalog {
         return Optional.ofNullable(id == null ? null : shops.get(id.toLowerCase(java.util.Locale.ROOT)));
     }
 
+    /** Every item key any shop trades. */
+    java.util.Set<String> keys() {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        for (ShopDef shop : shops.values()) {
+            for (ShopItem i : shop.items()) {
+                out.add(i.key());
+            }
+        }
+        return out;
+    }
+
     /** Highest sell price any shop pays for the key (used by sell-all). */
     OptionalLong bestSell(String key) {
         long best = 0;
@@ -50,6 +61,19 @@ final class ShopCatalog {
             for (ShopItem i : shop.items()) {
                 if (i.key().equals(key)) {
                     best = Math.max(best, i.sellCents());
+                }
+            }
+        }
+        return best > 0 ? OptionalLong.of(best) : OptionalLong.empty();
+    }
+
+    /** Lowest price any shop asks for the key (the cheapest the NPCs sell it at). */
+    OptionalLong lowestBuy(String key) {
+        long best = 0;
+        for (ShopDef shop : shops.values()) {
+            for (ShopItem i : shop.items()) {
+                if (i.key().equals(key) && i.buyCents() > 0 && (best == 0 || i.buyCents() < best)) {
+                    best = i.buyCents();
                 }
             }
         }

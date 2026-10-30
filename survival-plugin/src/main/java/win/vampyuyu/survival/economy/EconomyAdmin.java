@@ -162,12 +162,36 @@ final class EconomyAdmin {
         }
     }
 
+    /** The server-wide faucet and sink table, largest movements first. */
+    private void sendFlows(CommandSender sender, EconomyAudit.Report r) {
+        if (r.flows.isEmpty()) {
+            return;
+        }
+        SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT);
+        fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
+        long burnedByMarkets = r.burns.values().stream().mapToLong(Long::longValue).sum();
+        core.msg().info(sender, "Coin flows since " + fmt.format(new java.util.Date(r.flowsSince)) + " UTC: created "
+            + Money.coins(r.minted) + ", destroyed " + Money.coins(r.burned + burnedByMarkets)
+            + " (net " + Money.coins(r.minted - r.burned - burnedByMarkets) + "). Biggest groups:");
+        int shown = 0;
+        for (Flows.Row row : r.flows) {
+            if (shown++ >= 12) {
+                break;
+            }
+            core.msg().info(sender, "  " + row.group() + (row.transfer() ? " (transfer)" : "") + ": +"
+                + Money.compact(row.faucet()) + " / -" + Money.compact(row.sink()));
+        }
+        r.burns.forEach((k, v) -> core.msg().info(sender, "  " + k + ": " + Money.coins(v)));
+        r.info.forEach((k, v) -> core.msg().info(sender, "  " + k + ": " + Money.coins(v)));
+    }
+
     private void sendReport(CommandSender sender, EconomyAudit.Report r) {
         core.msg().info(sender, "Economy audit: " + r.players + " profiles");
         core.msg().info(sender, "  Purses: " + Money.coins(r.purseCents));
         core.msg().info(sender, "  Banks: " + Money.coins(r.bankCents));
         r.extras.forEach((k, v) -> core.msg().info(sender, "  " + k + ": " + Money.coins(v)));
         core.msg().info(sender, "  Total in the economy: " + Money.coins(r.totalCents()));
+        sendFlows(sender, r);
         if (r.problems.isEmpty()) {
             core.msg().ok(sender, "No inconsistency found.");
         } else {

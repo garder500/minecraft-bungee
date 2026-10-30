@@ -66,6 +66,19 @@ public class BazaarServiceTest {
         MockBukkit.unmock();
     }
 
+    /** Runs an instant buy; the result is null while the market file is still being written. */
+    static BazaarService.Outcome buy(BazaarService s, PlayerMock p, String product, int n) {
+        BazaarService.Outcome[] out = new BazaarService.Outcome[1];
+        s.instantBuy(p, product, n, o -> out[0] = o);
+        return out[0];
+    }
+
+    static BazaarService.Outcome sell(BazaarService s, PlayerMock p, String product, int n) {
+        BazaarService.Outcome[] out = new BazaarService.Outcome[1];
+        s.instantSell(p, product, n, o -> out[0] = o);
+        return out[0];
+    }
+
     private void fund(PlayerMock p, long coins) {
         eco.addCents(p.getUniqueId(), coins * 100, "test");
     }
@@ -91,7 +104,7 @@ public class BazaarServiceTest {
         assertTrue(sellOrder.message(), sellOrder.ok());
         assertEquals(54, carried(bob, "WHEAT"));
         fund(alice, 100);
-        var r = bz.instantBuy(alice, "WHEAT", 4);
+        var r = buy(bz, alice, "WHEAT", 4);
         assertTrue(r.message(), r.ok());
         assertEquals(4, carried(alice, "WHEAT"));
         assertEquals(10_000 - 800, eco.balanceCents(alice.getUniqueId()));
@@ -110,7 +123,7 @@ public class BazaarServiceTest {
         bob.getInventory().addItem(new ItemStack(Material.WHEAT, 10));
         bz.placeSell(bob, "WHEAT", 20, 10);
         fund(alice, 100);
-        bz.instantBuy(alice, "WHEAT", 10);
+        buy(bz, alice, "WHEAT", 10);
         bz.claim(bob, o -> { });
         long after = eco.balanceCents(bob.getUniqueId());
         var again = new BazaarService.Outcome[1];
@@ -124,14 +137,14 @@ public class BazaarServiceTest {
         bob.getInventory().addItem(new ItemStack(Material.WHEAT, 20));
         assertTrue(bz.placeSell(bob, "WHEAT", 20, 10).ok());
         fund(bob, 1000);
-        assertFalse("instant buy of own offer", bz.instantBuy(bob, "WHEAT", 1).ok());
+        assertFalse("instant buy of own offer", buy(bz, bob, "WHEAT", 1).ok());
         assertFalse("crossing buy order", bz.placeBuy(bob, "WHEAT", 20, 1).ok());
         assertEquals(100_000, eco.balanceCents(bob.getUniqueId()));
     }
 
     @Test
     public void cannotSellWhatYouDoNotCarryOrModifiedItems() {
-        assertFalse(bz.instantSell(alice, "WHEAT", 1).ok());
+        assertFalse(sell(bz, alice, "WHEAT", 1).ok());
         assertFalse(bz.placeSell(alice, "WHEAT", 20, 5).ok());
         ItemStack named = new ItemStack(Material.WHEAT, 5);
         var meta = named.getItemMeta();
@@ -175,7 +188,7 @@ public class BazaarServiceTest {
         bob.getInventory().addItem(new ItemStack(Material.WHEAT, 10));
         slow.placeSell(bob, "WHEAT", 20, 10);
         fund(alice, 100);
-        slow.instantBuy(alice, "WHEAT", 10);
+        buy(slow, alice, "WHEAT", 10);
         env.runAll();
         long before = eco.balanceCents(bob.getUniqueId());
         var result = new BazaarService.Outcome[1];
@@ -199,7 +212,7 @@ public class BazaarServiceTest {
         bob.getInventory().addItem(new ItemStack(Material.WHEAT, 10));
         slow.placeSell(bob, "WHEAT", 20, 10);
         fund(alice, 100);
-        slow.instantBuy(alice, "WHEAT", 10);
+        buy(slow, alice, "WHEAT", 10);
         env.runAll();
         slow.claim(bob, o -> { });
         var blocked = new BazaarService.Outcome[1];

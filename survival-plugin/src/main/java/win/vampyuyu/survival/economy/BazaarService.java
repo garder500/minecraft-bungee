@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -50,7 +51,11 @@ final class BazaarService implements EconomyAudit.Contributor {
         static Outcome fail(String m) { return new Outcome(false, m); }
     }
 
-    private record InFlight(UUID owner, String ownerName, long cents, Map<String, Integer> items) {}
+    /** Value that already left the market book but is not with its owner yet (see {@link #park}). */
+    private record InFlight(UUID owner, String ownerName, long cents, Map<String, Integer> items, String reason) {}
+
+    /** What {@link #deliver} really handed over. */
+    private record Delivered(long cents, Map<String, Integer> items) {}
 
     private final Core core;
     private final EconomyService economy;
@@ -65,6 +70,7 @@ final class BazaarService implements EconomyAudit.Contributor {
     private final Set<UUID> claiming = new HashSet<>();
     private final List<InFlight> inFlight = new ArrayList<>();
     private boolean saveData = true;
+    private java.util.function.Supplier<ShopCatalog> npc = ShopCatalog::empty;
 
     BazaarService(Core core, EconomyService economy, ItemKeys keys, DurableFile.Env env) {
         this.core = core;
@@ -76,10 +82,10 @@ final class BazaarService implements EconomyAudit.Contributor {
     void enable(ConfigurationSection config) {
         BazaarMarket.State state = core.store().read(FILE, BazaarMarket.State.class, BazaarMarket.State::new);
         market = new BazaarMarket(state, rules(config));
-        file = new DurableFile(core.store(), FILE, market::state, env, () -> {
-            core.profiles().saveDirty();
-            core.profiles().awaitWrites();
-        }, core.getPlugin().getLogger(), config.getLong("bazaar.persist-delay-ticks", 10));
+        market.seed(this::seedTicks);
+        file = new DurableFile(core.store(), FILE, market::state, env,
+            () -> core.profiles().saveDirty(), () -> core.profiles().awaitWrites(), core.getPlugin().getLogger(),
+            config.getLong("bazaar.persist-delay-ticks", 10));
         reload(config);
     }
 
@@ -109,6 +115,40 @@ final class BazaarService implements EconomyAudit.Contributor {
 
     boolean enabled() { return enabled && !closing; }
 
+    /** Where the NPC prices come from (the shop tables); the Bazaar uses them as price floor, ceiling and seed. */
+    void npcPrices(java.util.function.Supplier<ShopCatalog> catalog) {
+        this.npc = catalog == null ? ShopCatalog::empty : catalog;
+    }
+
+    private static long ticks(long cents) {
+        return cents <= 0 ? 0 : Math.max(1, cents / BazaarMarket.CENTS_PER_TICK);
+    }
+
+    /** What the best NPC pays for the product, in ticks (0 = no NPC buys it): selling below this is pointless. */
+    long npcFloorTicks(String key) {
+        return ticks(npc.get().bestSell(key).orElse(0));
+    }
+
+    /** What the cheapest NPC asks for the product, in ticks (0 = no NPC sells it): buying above this is pointless. */
+    long npcCeilingTicks(String key) {
+        return ticks(npc.get().lowestBuy(key).orElse(0));
+    }
+
+    /** The band anchor of a product that never traded: between the NPC floor and ceiling, or whichever exists. */
+    long seedTicks(String key) {
+        long floor = npcFloorTicks(key);
+        long ceiling = npcCeilingTicks(key);
+        if (floor > 0 && ceiling > 0) {
+            return Math.max(1, Math.round(Math.sqrt((double) floor * ceiling)));
+        }
+        return Math.max(floor, ceiling);
+    }
+
+    /** Reference price for the menus and the price band, in ticks (0 when nothing is known). */
+    long reference(String key, long now) {
+        return market.reference(key, now);
+    }
+
     BazaarMarket market() { return market; }
 
     /** Final write on disable. In-flight claims whose delivery never ran are put back first. */
@@ -118,7 +158,7 @@ final class BazaarService implements EconomyAudit.Contributor {
             live.shutdown();
         }
         for (InFlight f : inFlight) {
-            market.restoreClaim(f.owner().toString(), f.ownerName(), f.cents(), f.items(), System.currentTimeMillis());
+            restore(f);
         }
         inFlight.clear();
         file.close();
@@ -135,6 +175,11 @@ final class BazaarService implements EconomyAudit.Contributor {
             }
         }
         return out;
+    }
+
+    /** Every configured product id, whether or not its feature is loaded. */
+    Set<String> productKeys() {
+        return java.util.Collections.unmodifiableSet(products.keySet());
     }
 
     boolean isProduct(String key) {
@@ -199,52 +244,206 @@ final class BazaarService implements EconomyAudit.Contributor {
 
     // ---------------------------------------------------------------- instant trades
 
-    Outcome instantBuy(Player player, String product, int amount) {
+    /**
+     * Buys from the cheapest sell orders. The coins are taken now (so the debit reaches the disk before the market
+     * file does), the items are handed over only once the market file that records the fill is durable: a crash in
+     * between loses the coins, it never lets the same items exist twice. {@code done} gets the result message, either
+     * at once (refusal) or when the goods are delivered.
+     */
+    void instantBuy(Player player, String product, int amount, Consumer<Outcome> done) {
         Outcome refused = gate(player, product);
         if (refused != null) {
-            return refused;
+            done.accept(refused);
+            return;
         }
         var quote = market.quoteBuy(id(player), product, amount);
         if (!quote.check().ok()) {
-            return Outcome.fail(quote.check().error());
+            done.accept(Outcome.fail(quote.check().error()));
+            return;
         }
         ItemStack template = keys.create(product, 1).orElseThrow();
         if (!Inv.canFit(player, Inv.stacks(template, amount))) {
-            return Outcome.fail("Your inventory cannot hold " + amount + " items.");
+            done.accept(Outcome.fail("Your inventory cannot hold " + amount + " items."));
+            return;
         }
         if (!economy.takeCents(player.getUniqueId(), quote.cents(), "bazaar:buy:" + product)) {
-            return Outcome.fail("You need " + Money.coins(quote.cents()) + " for that.");
+            done.accept(Outcome.fail("You need " + Money.coins(quote.cents()) + " for that."));
+            return;
         }
         market.commitBuy(quote, product, System.currentTimeMillis());
-        Inv.give(player, Inv.stacks(template, amount));
-        persist();
-        return Outcome.ok("Bought " + amount + "x " + keys.name(product) + " for " + Money.coins(quote.cents()) + ".");
+        notifyFills(quote.fills());
+        long paid = quote.cents();
+        InFlight flight = new InFlight(player.getUniqueId(), player.getName(), 0, Map.of(product, amount),
+            "bazaar:buy:" + product);
+        park(flight, null, d -> {
+            int got = d.items().getOrDefault(product, 0);
+            String text = "Bought " + got + "x " + keys.name(product) + " for " + Money.coins(paid) + ".";
+            return got < amount ? Outcome.ok(text + " " + (amount - got)
+                + " did not fit and wait in /bz claim.") : Outcome.ok(text);
+        }, "The Bazaar could not save. Your " + keys.name(product) + " is waiting in /bz claim.", done);
     }
 
-    Outcome instantSell(Player player, String product, int amount) {
+    /**
+     * Sells to the highest buy orders. The items leave the inventory now (and the player data is saved), the coins
+     * are paid only once the market file that records the fill is durable: a crash in between loses the coins, it
+     * never pays the seller while the buyer's order is still alive on disk.
+     */
+    void instantSell(Player player, String product, int amount, Consumer<Outcome> done) {
         Outcome refused = gate(player, product);
         if (refused != null) {
-            return refused;
+            done.accept(refused);
+            return;
         }
         if (Inv.count(player, keys, product) < amount) {
-            return Outcome.fail("You do not carry " + amount + " unmodified " + keys.name(product) + ".");
+            done.accept(Outcome.fail("You do not carry " + amount + " unmodified " + keys.name(product) + "."));
+            return;
         }
         var quote = market.quoteSell(id(player), product, amount);
         if (!quote.check().ok()) {
-            return Outcome.fail(quote.check().error());
+            done.accept(Outcome.fail(quote.check().error()));
+            return;
         }
+        sell(player, product, quote, done);
+    }
+
+    /**
+     * Sells every clean unit of the product the player carries, as far as the buy orders go (never fails for a short
+     * book; only when nothing at all can be sold).
+     */
+    void instantSellAll(Player player, String product, Consumer<Outcome> done) {
+        Outcome refused = gate(player, product);
+        if (refused != null) {
+            done.accept(refused);
+            return;
+        }
+        int carry = Inv.count(player, keys, product);
+        if (carry < 1) {
+            done.accept(Outcome.fail("You carry no unmodified " + keys.name(product) + "."));
+            return;
+        }
+        int depth = market.sellableDepth(id(player), product);
+        var quote = market.quoteSell(id(player), product, Math.min(carry, Math.max(1, depth)), true);
+        if (!quote.check().ok()) {
+            done.accept(Outcome.fail(quote.check().error()));
+            return;
+        }
+        sell(player, product, quote, done);
+    }
+
+    /**
+     * Sells every Bazaar product in the inventory to the existing buy orders (instant sells, one per product).
+     * {@code done} gets one summary message when the last proceeds are delivered.
+     */
+    void sellInventory(Player player, Consumer<Outcome> done) {
+        if (!enabled()) {
+            done.accept(Outcome.fail("The Bazaar is closed right now."));
+            return;
+        }
+        Set<String> carried = new java.util.LinkedHashSet<>();
+        for (ItemStack stack : player.getInventory().getStorageContents()) {
+            String key = keys.keyOf(stack);
+            if (key != null && isProduct(key) && keys.clean(stack)) {
+                carried.add(key);
+            }
+        }
+        List<String> sellable = new ArrayList<>();
+        for (String key : carried) {
+            if (market.sellableDepth(id(player), key) > 0) {
+                sellable.add(key);
+            }
+        }
+        if (sellable.isEmpty()) {
+            done.accept(Outcome.fail(carried.isEmpty() ? "You carry nothing the Bazaar trades."
+                : "Nobody has a buy order for what you carry."));
+            return;
+        }
+        List<String> keysToSell = new ArrayList<>();
+        List<BazaarMarket.Instant> quotes = new ArrayList<>();
+        for (String key : sellable) {
+            int carry = Inv.count(player, keys, key);
+            int depth = market.sellableDepth(id(player), key);
+            var quote = market.quoteSell(id(player), key, Math.min(carry, depth), true);
+            if (quote.check().ok()) {
+                keysToSell.add(key);
+                quotes.add(quote);
+            }
+        }
+        if (quotes.isEmpty()) {
+            done.accept(Outcome.fail("Nothing could be sold, try again."));
+            return;
+        }
+        int[] sold = {0};
+        long[] coins = {0};
+        int[] okCount = {0};
+        int[] pending = {quotes.size()};
+        for (int i = 0; i < quotes.size(); i++) {
+            int items = quotes.get(i).items();
+            long net = quotes.get(i).cents();
+            sell(player, keysToSell.get(i), quotes.get(i), o -> {
+                if (o.ok()) {
+                    sold[0] += items;
+                    coins[0] += net;
+                    okCount[0]++;
+                }
+                if (--pending[0] == 0) {
+                    done.accept(okCount[0] == 0 ? Outcome.fail("Nothing could be sold, try again.")
+                        : Outcome.ok("Sold " + sold[0] + " items of " + okCount[0] + " products for "
+                            + Money.coins(coins[0]) + " (tax included)."));
+                }
+            });
+        }
+    }
+
+    private void sell(Player player, String product, BazaarMarket.Instant quote, Consumer<Outcome> done) {
+        int amount = quote.items();
         if (economy.settings().maxBalanceCents() - economy.balanceCents(player.getUniqueId()) < quote.cents()) {
-            return Outcome.fail("Your purse cannot hold that many coins. Deposit some in the bank first.");
+            done.accept(Outcome.fail("Your purse cannot hold that many coins. Deposit some in the bank first."));
+            return;
         }
         if (!Inv.remove(player, keys, product, amount)) {
-            return Outcome.fail("Your inventory changed, try again.");
+            done.accept(Outcome.fail("Your inventory changed, try again."));
+            return;
         }
         Inv.saveData(player, saveData);
         market.commitSell(quote, product, System.currentTimeMillis());
-        economy.addCents(player.getUniqueId(), quote.cents(), "bazaar:sell:" + product);
-        persist();
-        return Outcome.ok("Sold " + amount + "x " + keys.name(product) + " for " + Money.coins(quote.cents())
-            + " (tax included).");
+        notifyFills(quote.fills());
+        long net = quote.cents();
+        InFlight flight = new InFlight(player.getUniqueId(), player.getName(), net, Map.of(), "bazaar:sell:" + product);
+        park(flight, null, d -> d.cents() >= net
+            ? Outcome.ok("Sold " + amount + "x " + keys.name(product) + " for " + Money.coins(net) + " (tax included).")
+            : Outcome.ok("Sold " + amount + "x " + keys.name(product) + " for " + Money.coins(net)
+                + " (tax included). Your purse is full: " + Money.coins(net - d.cents()) + " waits in /bz claim."),
+            "The Bazaar could not save. Your " + Money.coins(net) + " is waiting in /bz claim.", done);
+    }
+
+    /** Tells every online owner of a resting order that part of it was filled. */
+    private void notifyFills(List<BazaarMarket.Fill> fills) {
+        Map<Long, Integer> byOrder = new LinkedHashMap<>();
+        Map<Long, BazaarMarket.Order> orders = new LinkedHashMap<>();
+        for (BazaarMarket.Fill f : fills) {
+            byOrder.merge(f.resting().id, f.qty(), Integer::sum);
+            orders.put(f.resting().id, f.resting());
+        }
+        byOrder.forEach((orderId, qty) -> {
+            BazaarMarket.Order o = orders.get(orderId);
+            Player owner = online(o.owner);
+            if (owner == null) {
+                return;
+            }
+            boolean done = o.remaining == 0;
+            core.msg().info(owner, "Your " + (o.buy ? "buy" : "sell") + " order #" + o.id + " for "
+                + keys.name(o.product) + " " + (done ? "was filled" : "was filled for " + qty + " more") + " ("
+                + o.filled() + "/" + o.total + "). Collect it with /bz claim.");
+            Sfx.notice(owner);
+        });
+    }
+
+    private static Player online(String uuid) {
+        try {
+            return Bukkit.getPlayer(UUID.fromString(uuid));
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     // ---------------------------------------------------------------- orders
@@ -269,6 +468,7 @@ final class BazaarService implements EconomyAudit.Contributor {
             return Outcome.fail(placed.check().error());
         }
         persist();
+        notifyFills(placed.fills());
         return Outcome.ok("Buy order #" + placed.order().id + " placed: " + amount + "x " + keys.name(product) + " at "
             + price(ticks) + " each (" + Money.coins(cost) + " held)."
             + (placed.filledNow() > 0 ? " " + placed.filledNow() + " were bought instantly, use /bz claim." : ""));
@@ -297,6 +497,7 @@ final class BazaarService implements EconomyAudit.Contributor {
             return Outcome.fail(placed.check().error());
         }
         persist();
+        notifyFills(placed.fills());
         return Outcome.ok("Sell order #" + placed.order().id + " placed: " + amount + "x " + keys.name(product) + " at "
             + price(ticks) + " each."
             + (placed.filledNow() > 0 ? " " + placed.filledNow() + " were sold instantly, use /bz claim." : ""));
@@ -324,7 +525,7 @@ final class BazaarService implements EconomyAudit.Contributor {
     }
 
     /** Collects everything that fits. {@code done} receives the message once delivered (or refused). */
-    void claim(Player player, java.util.function.Consumer<Outcome> done) {
+    void claim(Player player, Consumer<Outcome> done) {
         if (!enabled()) {
             done.accept(Outcome.fail("The Bazaar is closed right now."));
             return;
@@ -354,59 +555,107 @@ final class BazaarService implements EconomyAudit.Contributor {
             done.accept(Outcome.fail("Nothing to claim."));
             return;
         }
-        InFlight flight = new InFlight(uid, player.getName(), cents, new LinkedHashMap<>(items));
-        inFlight.add(flight);
-        long grantedCents = cents;
-        file.request(ok -> {
-            if (closing) {
-                return; // close() already put the claim back into the final file
-            }
-            inFlight.remove(flight);
-            claiming.remove(uid);
-            if (!ok) {
-                market.restoreClaim(uid.toString(), flight.ownerName(), flight.cents(), flight.items(),
-                    System.currentTimeMillis());
-                persist();
-                Player p = Bukkit.getPlayer(uid);
-                if (p != null) {
-                    done.accept(Outcome.fail("The Bazaar could not save, your claim was kept. Try again."));
-                }
-                return;
-            }
-            Player p = Bukkit.getPlayer(uid);
-            if (p == null) {
-                market.restoreClaim(uid.toString(), flight.ownerName(), flight.cents(), flight.items(),
-                    System.currentTimeMillis());
-                persist();
-                return;
-            }
-            deliver(p, flight);
+        InFlight flight = new InFlight(uid, player.getName(), cents, new LinkedHashMap<>(items), "bazaar:claim");
+        park(flight, () -> claiming.remove(uid), d -> {
             StringBuilder text = new StringBuilder("Claimed");
-            if (grantedCents > 0) {
-                text.append(' ').append(Money.coins(grantedCents));
+            if (d.cents() > 0) {
+                text.append(' ').append(Money.coins(d.cents()));
             }
-            flight.items().forEach((k, n) -> text.append(' ').append(n).append("x ").append(keys.name(k)).append(','));
+            d.items().forEach((k, n) -> text.append(' ').append(n).append("x ").append(keys.name(k)).append(','));
             if (text.charAt(text.length() - 1) == ',') {
                 text.setLength(text.length() - 1);
             }
-            done.accept(Outcome.ok(text + "."));
+            return Outcome.ok(text + ".");
+        }, "The Bazaar could not save, your claim was kept. Try again.", done);
+    }
+
+    /**
+     * Two phase hand over of value that already left the book: it is parked, the market file is requested, and only
+     * when that file is durable is the owner paid / given the goods. A failed write, a player who left, or a plugin
+     * disable puts the value back as a settled claim (so it can never exist twice). {@code release} runs when the
+     * write finishes, {@code ok} builds the message from what was really delivered.
+     */
+    private void park(InFlight flight, Runnable release, java.util.function.Function<Delivered, Outcome> ok,
+            String saveFailed, Consumer<Outcome> done) {
+        inFlight.add(flight);
+        file.request(saved -> {
+            if (closing) {
+                return; // close() already put the value back into the final file
+            }
+            inFlight.remove(flight);
+            if (release != null) {
+                release.run();
+            }
+            Player p = Bukkit.getPlayer(flight.owner());
+            if (!saved) {
+                restore(flight);
+                persist();
+                if (p != null) {
+                    done.accept(Outcome.fail(saveFailed));
+                }
+                return;
+            }
+            if (p == null) {
+                restore(flight);
+                persist();
+                return;
+            }
+            done.accept(ok.apply(deliver(p, flight)));
         });
     }
 
-    private void deliver(Player p, InFlight flight) {
+    private void restore(InFlight f) {
+        market.restoreClaim(f.owner().toString(), f.ownerName(), f.cents(), f.items(), System.currentTimeMillis());
+    }
+
+    /** Pays and hands over what fits; whatever does not stays claimable. */
+    private Delivered deliver(Player p, InFlight flight) {
+        long credited = 0;
+        boolean leftover = false;
         if (flight.cents() > 0) {
-            long credited = economy.addCents(p.getUniqueId(), flight.cents(), "bazaar:claim");
+            credited = economy.addCents(p.getUniqueId(), flight.cents(), flight.reason());
             if (credited < flight.cents()) {
                 // the purse reached the cap during the write window: the rest stays claimable
                 market.restoreClaim(p.getUniqueId().toString(), p.getName(), flight.cents() - credited, Map.of(),
                     System.currentTimeMillis());
-                persist();
+                leftover = true;
             }
             core.profiles().saveDirty();
         }
-        flight.items().forEach((key, n) -> Inv.giveKey(p, keys, key, n));
-        if (!flight.items().isEmpty()) {
+        Map<String, Integer> fitted = flight.items().isEmpty() ? Map.of() : Inv.fit(p, keys, flight.items());
+        fitted.forEach((key, n) -> Inv.giveKey(p, keys, key, n));
+        if (!fitted.isEmpty()) {
             Inv.saveData(p, saveData);
+        }
+        Map<String, Integer> rest = new LinkedHashMap<>();
+        flight.items().forEach((key, n) -> {
+            int missing = n - fitted.getOrDefault(key, 0);
+            if (missing > 0) {
+                rest.put(key, missing);
+            }
+        });
+        if (!rest.isEmpty()) {
+            market.restoreClaim(p.getUniqueId().toString(), p.getName(), 0, rest, System.currentTimeMillis());
+            leftover = true;
+        }
+        if (leftover) {
+            persist();
+        }
+        return new Delivered(credited, fitted);
+    }
+
+    /** Tells a joining player that fills or refunds wait for them. */
+    void remind(Player player) {
+        if (!enabled()) {
+            return;
+        }
+        BazaarMarket.Claim claim = market.claimable(id(player));
+        if (!claim.empty()) {
+            int items = claim.items().values().stream().mapToInt(Integer::intValue).sum();
+            core.msg().info(player, "Your Bazaar orders have something for you: "
+                + (items > 0 ? items + " item(s) " : "") + (claim.cents() > 0 ? Money.coins(claim.cents()) + " " : "")
+                + "waiting in /bz claim.");
+            Sfx.notice(player);
         }
     }
 
@@ -416,6 +665,7 @@ final class BazaarService implements EconomyAudit.Contributor {
     public void audit(EconomyAudit.Report report) {
         long inFlightCents = inFlight.stream().mapToLong(InFlight::cents).sum();
         report.extras.put("Bazaar escrow and unclaimed coins", market.escrowedCents() + inFlightCents);
+        report.burns.put("Bazaar tax burned", market.state().taxBurnedCents);
         for (String problem : market.verify()) {
             report.problems.add("bazaar: " + problem);
         }

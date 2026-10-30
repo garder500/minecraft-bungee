@@ -1,7 +1,10 @@
 package win.vampyuyu.survival.economy;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -14,14 +17,36 @@ import win.vampyuyu.survival.core.Items;
  * registers them may enable after the economy.
  *
  * <p>Only "clean" stacks trade: an unmodified vanilla stack (no name, enchantment, damage, contents...) or a custom
- * item with no per-item bonuses and no vanilla enchantments. Traded goods are always RE-CREATED from the key, never
+ * item that is explicitly listed as a product ({@link #allowCustom}) with no per-item bonuses and no vanilla
+ * enchantments. Traded goods are always RE-CREATED from the key, never
  * handed back as the stored ItemStack, so no tag can be smuggled through a market.
  */
 final class ItemKeys {
     private final Core core;
+    /** Custom ids that are explicitly listed as products (shop tables, bazaar categories). */
+    private volatile Set<String> tradable = Set.of();
 
     ItemKeys(Core core) {
         this.core = core;
+    }
+
+    /**
+     * Sets the custom item ids that may trade. A custom item is re-created from its id when it changes hands, so any
+     * state it carries beyond the id (custom enchants, rolled stats, owner tags) would be lost; only ids somebody
+     * priced on purpose are therefore accepted, never an arbitrary custom stack.
+     */
+    void allowCustom(Collection<String> ids) {
+        Set<String> next = new HashSet<>();
+        for (String id : ids) {
+            if (id != null && !looksVanilla(id)) {
+                next.add(id);
+            }
+        }
+        this.tradable = Set.copyOf(next);
+    }
+
+    boolean allowed(String customId) {
+        return tradable.contains(customId);
     }
 
     private Items items() {
@@ -48,7 +73,7 @@ final class ItemKeys {
         }
         var id = items().idOf(stack);
         if (id.isPresent()) {
-            if (items().def(id.get()).isEmpty() || !items().bonuses(stack).isEmpty()) {
+            if (!tradable.contains(id.get()) || items().def(id.get()).isEmpty() || !items().bonuses(stack).isEmpty()) {
                 return false;
             }
             ItemMeta meta = stack.getItemMeta();

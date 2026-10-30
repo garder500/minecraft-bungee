@@ -33,6 +33,7 @@ public final class EconomyService implements EconomyApi {
     private volatile EconomySettings settings;
     private final List<Consumer<Transaction>> listeners = new CopyOnWriteArrayList<>();
     private final LedgerLog fileLog;
+    private final Flows flows = new Flows();
 
     public EconomyService(Core core, EconomySettings settings) {
         this.core = core;
@@ -42,6 +43,11 @@ public final class EconomyService implements EconomyApi {
 
     public EconomySettings settings() {
         return settings;
+    }
+
+    /** The faucet and sink table. */
+    Flows flows() {
+        return flows;
     }
 
     void settings(EconomySettings next) {
@@ -115,6 +121,7 @@ public final class EconomyService implements EconomyApi {
 
     private void publish(List<Tx> txs) {
         for (Tx tx : txs) {
+            flows.record(tx.reason(), tx.delta());
             if (fileLog != null) {
                 fileLog.append(tx);
             }

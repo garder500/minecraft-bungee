@@ -20,16 +20,18 @@ import win.vampyuyu.survival.core.JsonStore;
  *
  * <p>Protocol (main thread only): mutate the in-memory state, call {@link #request}. Requests made in the same short
  * window are coalesced into one snapshot, serialised on the main thread (so it is consistent), then written by one
- * IO thread, in order. Before each write the IO thread runs the {@code barrier} (the economy forces every pending
- * player profile to disk first). The callbacks run back on the main thread once the write is on disk, with
- * {@code true}, or {@code false} when it failed (the next request retries with a fresh snapshot).
+ * IO thread, in order. Before each snapshot the main thread queues every pending player profile ({@code flush}) and
+ * the IO thread waits for those writes ({@code barrier}) before it writes the market file. The callbacks run back on
+ * the main thread once the write is on disk, with {@code true}, or {@code false} when it failed (the next request
+ * retries with a fresh snapshot).
  *
  * <p>Ordering rules that make a crash lose value instead of duplicating it:
  * <ul>
  *   <li>Value moving INTO the market (coins/items escrowed): the player's debit is made durable (barrier) BEFORE the
  *       market file that records the escrow.</li>
- *   <li>Value moving OUT of the market (claims): the claim is removed from the market file FIRST; the player is
- *       credited only in the callback, after that file is durable. A failed write restores the claim.</li>
+ *   <li>Value moving OUT of the market (claims, and the proceeds of instant trades): it is removed from the market
+ *       file FIRST; the player is credited / given the goods only in the callback, after that file is durable. A
+ *       failed write puts the value back as a claim.</li>
  * </ul>
  */
 final class DurableFile {
@@ -48,6 +50,7 @@ final class DurableFile {
     private final String path;
     private final Supplier<Object> snapshot;
     private final Env env;
+    private final Runnable flush;
     private final Runnable barrier;
     private final Logger log;
     private volatile long delayTicks;
@@ -55,12 +58,19 @@ final class DurableFile {
     private boolean scheduled;
     private boolean closed;
 
-    DurableFile(JsonStore store, String path, Supplier<Object> snapshot, Env env, Runnable barrier, Logger log,
-            long delayTicks) {
+    /**
+     * @param flush   runs on the MAIN thread right before each snapshot: queues every dirty player profile (they are
+     *                serialised on the thread that asks, and other features edit their sections on the main thread)
+     * @param barrier runs on the IO thread right before the file is written: waits until the queued profile writes
+     *                are on disk
+     */
+    DurableFile(JsonStore store, String path, Supplier<Object> snapshot, Env env, Runnable flush, Runnable barrier,
+            Logger log, long delayTicks) {
         this.store = store;
         this.path = path;
         this.snapshot = snapshot;
         this.env = env;
+        this.flush = flush;
         this.barrier = barrier;
         this.log = log;
         this.delayTicks = delayTicks;
@@ -93,6 +103,7 @@ final class DurableFile {
         waiting.clear();
         String json;
         try {
+            flush.run();
             json = COMPACT.toJson(snapshot.get());
         } catch (RuntimeException e) {
             log.log(Level.SEVERE, "Could not serialise " + path, e);
@@ -139,6 +150,7 @@ final class DurableFile {
         waiting.clear();
         boolean ok = false;
         try {
+            flush.run();
             ok = write(COMPACT.toJson(snapshot.get()));
         } catch (RuntimeException e) {
             log.log(Level.SEVERE, "Final write of " + path + " failed", e);

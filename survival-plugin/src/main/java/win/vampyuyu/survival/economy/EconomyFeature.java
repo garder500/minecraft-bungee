@@ -24,6 +24,8 @@ public final class EconomyFeature implements Feature {
     private DurableFile.Live bazaarIo;
     private DurableFile.Live auctionIo;
     private Scheduler.Handle auctionTask;
+    private Prompts prompts;
+    private ItemKeys keys;
 
     @Override
     public String id() {
@@ -42,11 +44,15 @@ public final class EconomyFeature implements Feature {
         CoinCommands coins = new CoinCommands(core, economy, balTop);
         coins.register();
         core.listen(new PurseListener(core, economy, coins));
-        new BankUi(core, economy, bank).register();
+        prompts = new Prompts(core);
+        prompts.register();
+        BankUi bankUi = new BankUi(core, economy, bank);
+        bankUi.prompts(prompts);
+        bankUi.register();
         new EconomyAdmin(core, economy, audit, this::reload).register();
         bankTask = core.scheduler().repeating(1200, 1200, bank::tick);
 
-        ItemKeys keys = new ItemKeys(core);
+        keys = new ItemKeys(core);
         pressure = new PricePressure();
         pressure.load(core.store().read(PRESSURE_FILE, PricePressure.State.class, PricePressure.State::new));
         shops = new ShopService(core, economy, keys, pressure);
@@ -57,18 +63,25 @@ public final class EconomyFeature implements Feature {
         npcs.enable();
         new NpcCommand(core, npcs, shops).register();
         core.listen(new SessionListener(shops));
-        pressureTask = core.scheduler().repeating(12_000, 12_000, this::savePressure);
+        economy.flows().load(core.store().read(FLOWS_FILE, Flows.State.class, Flows.State::new));
+        pressureTask = core.scheduler().repeating(12_000, 12_000, () -> saveState(false));
 
         bazaarIo = new DurableFile.Live(core, "bazaar");
         bazaar = new BazaarService(core, economy, keys, bazaarIo);
         bazaar.enable(config);
-        new BazaarUi(core, economy, keys, bazaar).register();
+        bazaar.npcPrices(shops::catalog);
+        BazaarUi bazaarUi = new BazaarUi(core, economy, keys, bazaar);
+        bazaarUi.prompts(prompts);
+        bazaarUi.register();
         audit.addContributor(bazaar);
+        allowTradables();
 
         auctionIo = new DurableFile.Live(core, "auction");
         auctions = new AuctionService(core, economy, keys, auctionIo);
         auctions.enable(config);
-        new AuctionUi(core, keys, auctions).register();
+        AuctionUi auctionUi = new AuctionUi(core, keys, auctions);
+        auctionUi.prompts(prompts);
+        auctionUi.register();
         audit.addContributor(auctions);
         auctionTask = core.scheduler().repeating(40, 40, auctions::tick);
 
@@ -81,17 +94,40 @@ public final class EconomyFeature implements Feature {
         bank.reload(config);
         shops.reload(config);
         bazaar.reload(config);
+        allowTradables();
         auctions.reload(config);
         npcs.refreshAll();
     }
 
-    private static final String PRESSURE_FILE = "economy/pressure.json";
+    /** Custom ids may trade only when a shop table or a bazaar category lists them. */
+    private void allowTradables() {
+        java.util.Set<String> ids = new java.util.HashSet<>(shops.catalog().keys());
+        ids.addAll(bazaar.productKeys());
+        keys.allowCustom(ids);
+    }
 
-    private void savePressure() {
-        try {
-            core.store().write(PRESSURE_FILE, pressure.export(System.currentTimeMillis()));
-        } catch (java.io.IOException e) {
-            core.getPlugin().getLogger().warning("Could not save the sell pressure: " + e.getMessage());
+    private static final String PRESSURE_FILE = "economy/pressure.json";
+    private static final String FLOWS_FILE = "economy/flows.json";
+
+    /**
+     * Writes the sell pressure and the coin flows. The snapshot is taken on the calling (main) thread, the disk write
+     * happens off it, except on disable where it must finish before the server stops.
+     */
+    private void saveState(boolean wait) {
+        PricePressure.State p = pressure.export(System.currentTimeMillis());
+        Flows.State f = economy.flows().export();
+        Runnable write = () -> {
+            try {
+                core.store().write(PRESSURE_FILE, p);
+                core.store().write(FLOWS_FILE, f);
+            } catch (java.io.IOException e) {
+                core.getPlugin().getLogger().warning("Could not save the sell pressure and coin flows: " + e.getMessage());
+            }
+        };
+        if (wait) {
+            write.run();
+        } else {
+            core.scheduler().async(write);
         }
     }
 
@@ -106,6 +142,9 @@ public final class EconomyFeature implements Feature {
         if (auctionTask != null) {
             auctionTask.cancel();
         }
+        if (prompts != null) {
+            prompts.clear();
+        }
         if (npcs != null) {
             npcs.disable();
         }
@@ -116,8 +155,8 @@ public final class EconomyFeature implements Feature {
         if (auctions != null) {
             auctions.close(auctionIo);
         }
-        if (pressure != null) {
-            savePressure();
+        if (pressure != null && economy != null) {
+            saveState(true);
         }
         if (economy != null) {
             economy.close();

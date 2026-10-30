@@ -45,18 +45,20 @@ safety:
 
 bank:
   # Real time between interest payments, in hours (interest is also paid for the time spent offline).
-  interest-period-hours: 8
+  # Tuning note: 24 h x 0.5 % is about 0.5 % a day. Do not shorten the period or raise the rates without watching
+  # "/economy audit" (the faucet table shows bank:interest next to every other source of coins).
+  interest-period-hours: 24
   # Offline catch-up is limited to this many periods; the rest is forfeited.
-  max-catchup-periods: 12
+  max-catchup-periods: 3
   # capacity = most coins the bank can hold, rate = percent per period, max-interest = cap per period,
   # cost = price of reaching this tier (paid from the purse).
   tiers:
-    - {name: Starter, capacity: 5000000, rate: 2.0, max-interest: 100000, cost: 0}
-    - {name: Gold, capacity: 20000000, rate: 2.0, max-interest: 400000, cost: 2000000}
-    - {name: Deluxe, capacity: 100000000, rate: 2.0, max-interest: 2000000, cost: 15000000}
-    - {name: Super Deluxe, capacity: 500000000, rate: 2.5, max-interest: 12500000, cost: 80000000}
-    - {name: Premier, capacity: 2500000000, rate: 2.5, max-interest: 62500000, cost: 400000000}
-    - {name: Prestige, capacity: 10000000000, rate: 3.0, max-interest: 300000000, cost: 2000000000}
+    - {name: Starter, capacity: 5000000, rate: 0.5, max-interest: 25000, cost: 0}
+    - {name: Gold, capacity: 20000000, rate: 0.5, max-interest: 100000, cost: 2000000}
+    - {name: Deluxe, capacity: 100000000, rate: 0.6, max-interest: 600000, cost: 15000000}
+    - {name: Super Deluxe, capacity: 500000000, rate: 0.7, max-interest: 3500000, cost: 80000000}
+    - {name: Premier, capacity: 2500000000, rate: 0.8, max-interest: 20000000, cost: 400000000}
+    - {name: Prestige, capacity: 10000000000, rate: 1.0, max-interest: 100000000, cost: 2000000000}
 
 sell:
   # true = "Sell everything" and /sellall leave the 9 hotbar slots alone.
@@ -74,6 +76,12 @@ pressure:
   soft-cap: 20000
   half-life-hours: 2
   min-multiplier: 0.2
+  # Compacted items pool their pressure with the raw item they are made of: prefix -> how many raw items one
+  # compacted item counts for (the shop price ratio). minion_enchanted_wheat records into WHEAT x150, so selling
+  # 133 enchanted wheat moves the wheat price as much as selling 20000 raw wheat, and vice versa.
+  compact-prefixes:
+    minion_enchanted_: 150
+    minion_super_: 22500
 
 # ----------------------------------------------------------------------------------------------------------
 # NPC merchants. Place them with /sbnpc create <shop id>.
@@ -370,6 +378,15 @@ shops:
       minion_super_slime_ball: {sell: 90000}
       minion_enchanted_arrow: {sell: 75}
       minion_super_arrow: {sell: 11250}
+      # Slayer drops (feature boss). Sell only: they are earned by fighting, never bought.
+      revenant_flesh: {sell: 150}
+      tarantula_web: {sell: 150}
+      ravager_tooth: {sell: 150}
+      null_sphere: {sell: 150}
+      tarantula_charm: {sell: 3500}
+      ravager_pelt: {sell: 3500}
+      void_conduit: {sell: 3500}
+      demon_core: {sell: 3500}
   alchemist:
     name: "Alchemist"
     npc-name: "<light_purple>Alchemist"
@@ -398,6 +415,9 @@ shops:
       DANDELION: {buy: 4, sell: 1}
       ALLIUM: {buy: 6, sell: 1.5}
       LILY_OF_THE_VALLEY: {buy: 6, sell: 1.5}
+      # Reagents dropped by slayer bosses (feature boss). Sell only.
+      revenant_catalyst: {sell: 3500}
+      demon_ember: {sell: 150}
   adventurer:
     name: "Adventurer"
     npc-name: "<yellow>Adventurer"
@@ -421,6 +441,22 @@ shops:
       COOKED_BEEF: {sell: 6}
       COOKED_PORKCHOP: {sell: 6}
       HONEY_BOTTLE: {sell: 6}
+      # Dungeon loot (feature dungeon). Sell only. Consumables and summon items are deliberately not priced.
+      dungeon_bone_fragment: {sell: 25}
+      dungeon_crypt_shard: {sell: 120}
+      dungeon_wither_essence: {sell: 600}
+      dungeon_spirit_dust: {sell: 3000}
+      dungeon_relic: {sell: 25000}
+      dungeon_dark_scroll: {sell: 150000}
+      # Boss materials (feature boss). Sell only. Weapons, summon items and the Wing Core are not priced.
+      voidwyrm_scale: {sell: 4000}
+      warden_heart: {sell: 4000}
+      frost_shard: {sell: 4000}
+      matriarch_silk: {sell: 4000}
+      leviathan_tooth: {sell: 4000}
+      lord_bone: {sell: 4000}
+      colossus_core: {sell: 30000}
+      roc_feather: {sell: 30000}
   weaponsmith:
     name: "Weaponsmith"
     npc-name: "<dark_red>Weaponsmith"
@@ -868,6 +904,25 @@ bazaar:
       - enchanted_feather
       - minion_enchanted_feather
       - minion_super_feather
+      # slayer drops and boss materials (feature boss)
+      - revenant_flesh
+      - revenant_catalyst
+      - tarantula_web
+      - tarantula_charm
+      - ravager_tooth
+      - ravager_pelt
+      - null_sphere
+      - void_conduit
+      - demon_ember
+      - demon_core
+      - voidwyrm_scale
+      - warden_heart
+      - frost_shard
+      - matriarch_silk
+      - leviathan_tooth
+      - lord_bone
+      - colossus_core
+      - roc_feather
     fishing:
       - COD
       - SALMON
@@ -937,9 +992,17 @@ bazaar:
       - minion_enchanted_clay_ball
       - minion_super_clay_ball
     misc:
+      # dungeon loot (feature dungeon)
+      - dungeon_bone_fragment
+      - dungeon_crypt_shard
+      - dungeon_wither_essence
+      - dungeon_spirit_dust
+      - dungeon_relic
+      - dungeon_dark_scroll
       - EXPERIENCE_BOTTLE
       - ENCHANTED_BOOK
-      - enchanted_book
+      # (the custom enchanted_book is NOT listed on purpose: it stores its enchantment in item data, which a
+      # re-created item would lose. Books trade through the Auction House.)
       - ENCHANTED_GOLDEN_APPLE
       - GOLDEN_APPLE
       - GOLDEN_CARROT

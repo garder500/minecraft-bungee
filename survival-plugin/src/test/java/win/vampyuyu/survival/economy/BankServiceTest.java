@@ -100,8 +100,8 @@ public class BankServiceTest {
         eco.addCents(id, 50_000_000, "seed");
         Bank.Move move = bank.deposit(id, 50_000_000);
         assertTrue(move.ok());
-        // Three periods were paid on the OLD balance only (compounding 2% of 10,000.00 coins).
-        long expected = 20_000 + 20_400 + 20_808;
+        // Three periods were paid on the OLD balance only (compounding 0.5% of 10,000.00 coins).
+        long expected = 5_000 + 5_025 + 5_050;
         assertEquals(expected, move.interest());
         assertEquals(1_000_000 + expected + 50_000_000, eco.bankCents(id));
         assertTrue(eco.data(id).bankInterestAt > now - periodMs);

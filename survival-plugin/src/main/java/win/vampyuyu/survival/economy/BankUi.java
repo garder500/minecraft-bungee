@@ -20,11 +20,17 @@ final class BankUi {
     private final Core core;
     private final EconomyService economy;
     private final Bank bank;
+    private Prompts prompts;
 
     BankUi(Core core, EconomyService economy, Bank bank) {
         this.core = core;
         this.economy = economy;
         this.bank = bank;
+    }
+
+    /** Click-then-type input; without it the menu tells the player which command to type instead. */
+    void prompts(Prompts prompts) {
+        this.prompts = prompts;
     }
 
     void register() {
@@ -99,8 +105,10 @@ final class BankUi {
         }
         if (move.ok()) {
             core.msg().ok(player, done);
+            Sfx.coins(player);
         } else {
             core.msg().error(player, move.error());
+            Sfx.error(player);
         }
     }
 
@@ -151,8 +159,9 @@ final class BankUi {
         gui.set(11, Ui.icon(Material.CHEST_MINECART, "deposit", "<green>Deposit half",
             "<gray>Moves half of your purse.", "", "<yellow>Click to deposit <gold>" + Money.coins(d.cents / 2)),
             c -> act(gui, c, true, d.cents / 2));
-        gui.set(12, Ui.plain(Material.OAK_SIGN, "<green>Deposit an amount", "<gray>Type it in chat:",
-            "<yellow>/bank deposit [amount]", "<dark_gray>Examples: 500, 1.5k, 2m"));
+        gui.set(12, Ui.plain(Material.OAK_SIGN, "<green>Deposit an amount", "<gray>Click, then type it in chat.",
+            "<dark_gray>Examples: 500, 1.5k, 2m, half", "<dark_gray>Or /bank deposit [amount]"),
+            c -> askAmount(c.player(), true));
 
         gui.set(14, Ui.icon(Material.HOPPER, "withdraw", "<red>Withdraw everything",
             "<gray>Moves your whole bank balance to the purse.", "",
@@ -160,8 +169,9 @@ final class BankUi {
         gui.set(15, Ui.icon(Material.HOPPER_MINECART, "withdraw", "<red>Withdraw half",
             "<gray>Moves half of your bank balance.", "",
             "<yellow>Click to withdraw <gold>" + Money.coins(d.bankCents / 2)), c -> act(gui, c, false, d.bankCents / 2));
-        gui.set(16, Ui.plain(Material.OAK_SIGN, "<red>Withdraw an amount", "<gray>Type it in chat:",
-            "<yellow>/bank withdraw [amount]", "<dark_gray>Examples: 500, 1.5k, half"));
+        gui.set(16, Ui.plain(Material.OAK_SIGN, "<red>Withdraw an amount", "<gray>Click, then type it in chat.",
+            "<dark_gray>Examples: 500, 1.5k, half, all", "<dark_gray>Or /bank withdraw [amount]"),
+            c -> askAmount(c.player(), false));
 
         if (d.bankTier < bank.tiers().size() - 1) {
             Bank.Tier nextTier = bank.tiers().get(d.bankTier + 1);
@@ -182,6 +192,37 @@ final class BankUi {
         gui.set(31, Ui.icon(Material.BOOK, "history", "<aqua>Transaction history",
             "<gray>Your recent bank movements.", "", "<yellow>Click to view"), c -> history(c.player()));
         gui.set(27, Ui.plain(Material.BARRIER, "<red>Close"), Gui.Click::close);
+    }
+
+    /** Parses "500", "1.5k", "all" or "half" against what the player has to move. */
+    static OptionalLong parseAmount(String text, long available) {
+        if (text.equalsIgnoreCase("all")) {
+            return OptionalLong.of(available);
+        }
+        if (text.equalsIgnoreCase("half")) {
+            return OptionalLong.of(available / 2);
+        }
+        return Money.parse(text);
+    }
+
+    private void askAmount(Player player, boolean deposit) {
+        if (prompts == null) {
+            core.msg().info(player, "Type /bank " + (deposit ? "deposit" : "withdraw") + " [amount].");
+            return;
+        }
+        player.closeInventory();
+        prompts.ask(player, "How much do you want to " + (deposit ? "deposit" : "withdraw")
+            + " (examples: 500, 1.5k, half, all)?", text -> {
+                EconomyData d = economy.data(player.getUniqueId());
+                OptionalLong cents = parseAmount(text, deposit ? d.cents : d.bankCents);
+                if (cents.isEmpty()) {
+                    core.msg().error(player, "'" + text + "' is not a valid amount.");
+                    Sfx.error(player);
+                } else {
+                    transfer(player, deposit, cents.getAsLong());
+                }
+                open(player);
+            }, () -> open(player));
     }
 
     private void act(Gui gui, Gui.Click click, boolean deposit, Long amount) {

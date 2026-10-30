@@ -23,11 +23,17 @@ final class AuctionUi implements Listener {
     private final Core core;
     private final ItemKeys keys;
     private final AuctionService ah;
+    private Prompts prompts;
 
     AuctionUi(Core core, ItemKeys keys, AuctionService ah) {
         this.core = core;
         this.keys = keys;
         this.ah = ah;
+    }
+
+    /** Click-then-type input; without it the menus tell the player which command to type instead. */
+    void prompts(Prompts prompts) {
+        this.prompts = prompts;
     }
 
     void register() {
@@ -72,8 +78,10 @@ final class AuctionUi implements Listener {
     private void say(Player p, BazaarService.Outcome o) {
         if (o.ok()) {
             core.msg().ok(p, o.message());
+            Sfx.success(p);
         } else {
             core.msg().error(p, o.message());
+            Sfx.error(p);
         }
     }
 
@@ -203,7 +211,17 @@ final class AuctionUi implements Listener {
         gui.set(22, Ui.icon(Material.COMPASS, "browse", "<yellow>Browse everything",
             "<gray>Every active listing.", "", "<yellow>Click to browse"),
             c -> openBrowse(c.player(), null, null, AuctionService.Sort.ENDING));
-        gui.set(31, Ui.plain(Material.OAK_SIGN, "<aqua>Search", "<gray>Type in chat:", "<yellow>/ah search [text]"));
+        gui.set(31, Ui.plain(Material.OAK_SIGN, "<aqua>Search", "<gray>Find listings by item name.", "",
+            "<yellow>Click, then type the name in chat", "<dark_gray>Or use /ah search [text]"), c -> {
+                if (prompts == null) {
+                    core.msg().info(c.player(), "Type /ah search [text].");
+                    return;
+                }
+                c.close();
+                prompts.ask(c.player(), "What are you looking for?",
+                    text -> openBrowse(c.player(), null, text, AuctionService.Sort.ENDING),
+                    () -> openMain(c.player()));
+            });
         gui.set(38, Ui.icon(Material.ANVIL, "create", "<green>Create an auction",
             "<gray>Sell the item in your main hand.", "", "<yellow>Click to start"), c -> openCreate(c.player(), null));
         gui.set(40, Ui.icon(Material.WRITABLE_BOOK, "my_auctions", "<green>My auctions",
@@ -263,18 +281,27 @@ final class AuctionUi implements Listener {
     }
 
     void openBrowse(Player player, AuctionService.Category cat, String search, AuctionService.Sort sort) {
+        openBrowse(player, cat, search, sort, AuctionService.Kind.ALL);
+    }
+
+    void openBrowse(Player player, AuctionService.Category cat, String search, AuctionService.Sort sort,
+            AuctionService.Kind kind) {
         long now = System.currentTimeMillis();
-        List<AuctionBook.Auction> found = ah.browse(cat, search, sort, now);
+        List<AuctionBook.Auction> found = ah.browse(cat, search, sort, kind, now);
         String title = search != null ? "<gold>Search: " + Ui.esc(search)
             : cat != null ? "<gold>Auctions: " + cat.label : "<gold>All auctions";
         Gui gui = core.guis().create(6, title);
         gui.border(Ui.glass());
         gui.paginate(found, gui.innerSlots(), a -> {
             return more(listingIcon(a, now, player), a.bin ? "<yellow>Click to view and buy" : "<yellow>Click to view and bid");
-        }, (c, a) -> openDetail(c.player(), a.id, () -> openBrowse(c.player(), cat, search, sort)), 45, 53);
+        }, (c, a) -> openDetail(c.player(), a.id, () -> openBrowse(c.player(), cat, search, sort, kind)), 45, 53);
         gui.set(49, Ui.plain(Material.ARROW, "<yellow>Back to the Auction House"), c -> openMain(c.player()));
         gui.set(48, Ui.plain(Material.HOPPER, "<aqua>Sort: " + sort.label, "<gray>Click to change the order."),
-            c -> openBrowse(c.player(), cat, search, sort.next()));
+            c -> openBrowse(c.player(), cat, search, sort.next(), kind));
+        gui.set(50, Ui.plain(kind == AuctionService.Kind.BIN ? Material.EMERALD
+            : kind == AuctionService.Kind.AUCTION ? Material.BELL : Material.COMPASS, "<aqua>Show: " + kind.label,
+            "<gray>Click to switch between all listings,", "<gray>Buy It Now only and auctions only."),
+            c -> openBrowse(c.player(), cat, search, sort, kind.next()));
         if (found.isEmpty()) {
             gui.set(22, Ui.plain(Material.STRUCTURE_VOID, "<gray>No listings here", "<dark_gray>Be the first: /ah sell"));
         }
@@ -312,8 +339,25 @@ final class AuctionUi implements Listener {
                     say(c.player(), ah.bid(c.player(), id, bigger));
                     openDetail(c.player(), id, back);
                 });
-            gui.set(22, Ui.plain(Material.OAK_SIGN, "<aqua>Custom bid", "<gray>Type in chat:",
-                "<yellow>/ah bid " + id + " [amount]", "<dark_gray>Last-minute bids extend the auction."));
+            gui.set(22, Ui.plain(Material.OAK_SIGN, "<aqua>Custom bid", "<gray>Click, then type your bid in chat.",
+                "<dark_gray>Or /ah bid " + id + " [amount]", "<dark_gray>Last-minute bids extend the auction."), c -> {
+                    if (prompts == null) {
+                        core.msg().info(c.player(), "Type /ah bid " + id + " [amount].");
+                        return;
+                    }
+                    c.close();
+                    prompts.ask(c.player(), "How much do you bid on auction #" + id + " (minimum "
+                        + Money.coins(min) + ")?", text -> {
+                            OptionalLong cents = Money.parse(text);
+                            if (cents.isEmpty()) {
+                                core.msg().error(c.player(), "'" + text + "' is not a valid amount.");
+                                Sfx.error(c.player());
+                            } else {
+                                say(c.player(), ah.bid(c.player(), id, cents.getAsLong()));
+                            }
+                            openDetail(c.player(), id, back);
+                        }, () -> openDetail(c.player(), id, back));
+                });
         }
         if (a.seller.equals(player.getUniqueId().toString()) && a.bids == 0) {
             gui.set(35, Ui.plain(Material.RED_STAINED_GLASS_PANE, "<red>Cancel this listing",
@@ -410,7 +454,23 @@ final class AuctionUi implements Listener {
         show.setAmount(Math.max(1, Math.min(hand.getAmount(), show.getMaxStackSize())));
         gui.set(4, show);
         gui.set(13, Ui.plain(Material.GOLD_INGOT, "<gold>" + (bin ? "Buy It Now price" : "Starting bid") + ": "
-            + Money.coins(st[0]), "<gray>Use the buttons below, or type:", "<yellow>/ah sell [price] [bin] [hours]"));
+            + Money.coins(st[0]), "<gray>Use the buttons below,", "<gray>or click here and type a price.", "",
+            "<dark_gray>Or /ah sell [price] [bin] [hours]"), c -> {
+                if (prompts == null) {
+                    return;
+                }
+                c.close();
+                prompts.ask(c.player(), "What price (examples: 25000, 1.5m)?", text -> {
+                    OptionalLong cents = Money.parse(text);
+                    if (cents.isEmpty()) {
+                        core.msg().error(c.player(), "'" + text + "' is not a valid price.");
+                        Sfx.error(c.player());
+                    } else {
+                        st[0] = cents.getAsLong();
+                    }
+                    renderCreate(c.player(), st);
+                }, () -> renderCreate(c.player(), st));
+            });
         record Step(String name, int slot, LongUnaryOperator f, Material glass) {}
         List<Step> steps = List.of(
             new Step("Half", 19, v -> v / 2, Material.RED_STAINED_GLASS_PANE),

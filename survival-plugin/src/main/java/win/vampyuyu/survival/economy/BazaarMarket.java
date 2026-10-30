@@ -94,9 +94,9 @@ final class BazaarMarket {
     }
 
     /** Outcome of placing an order. */
-    record Placed(Check check, Order order, int filledNow) {
+    record Placed(Check check, Order order, int filledNow, List<Fill> fills) {
         static Placed fail(String error) {
-            return new Placed(new Check(error), null, 0);
+            return new Placed(new Check(error), null, 0, List.of());
         }
     }
 
@@ -111,6 +111,8 @@ final class BazaarMarket {
 
     private final State state;
     private Rules rules;
+    /** NPC derived reference price in ticks for products that never traded (0 = unknown). */
+    private java.util.function.ToLongFunction<String> seed = k -> 0;
     private final Map<String, List<Order>> asks = new HashMap<>();
     private final Map<String, List<Order>> bids = new HashMap<>();
 
@@ -125,6 +127,9 @@ final class BazaarMarket {
     }
 
     State state() { return state; }
+
+    /** Where the price band starts for a product with no trading history (derived from the NPC shop tables). */
+    void seed(java.util.function.ToLongFunction<String> seed) { this.seed = seed == null ? k -> 0 : seed; }
 
     void rules(Rules rules) { this.rules = rules; }
 
@@ -245,6 +250,21 @@ final class BazaarMarket {
         return h == null ? 0 : h.lastTicks;
     }
 
+    /**
+     * Reference price in ticks that anchors the price band and the menu suggestions: the 24h average, else the last
+     * trade, else the NPC derived seed. 0 when nothing is known.
+     */
+    long reference(String product, long now) {
+        long ref = average24h(product, now);
+        if (ref == 0) {
+            ref = lastPrice(product);
+        }
+        if (ref == 0) {
+            ref = Math.max(0, seed.applyAsLong(product));
+        }
+        return ref;
+    }
+
     /** Volume weighted average price (ticks) over the last 24 hours, 0 when nothing traded. */
     long average24h(String product, long now) {
         History h = state.history.get(product);
@@ -302,10 +322,7 @@ final class BazaarMarket {
                 + " orders at once (including ones waiting to be claimed). Claim or cancel some first.");
         }
         if (rules.band() > 1) {
-            long ref = average24h(product, now);
-            if (ref == 0) {
-                ref = lastPrice(product);
-            }
+            long ref = reference(product, now);
             if (ref > 0 && (priceTicks > ref * rules.band() || priceTicks * rules.band() < ref)) {
                 return new Check("That price is far from the market (" + Money.plain(ref * CENTS_PER_TICK)
                     + " coins). Orders must stay within a factor of " + rules.band() + ".");
@@ -365,6 +382,25 @@ final class BazaarMarket {
 
     /** What an instant sell would pay (net of tax): walks the buy orders (highest first) skipping the seller's own. */
     Instant quoteSell(String owner, String product, int amount) {
+        return quoteSell(owner, product, amount, false);
+    }
+
+    /** Units other players' buy orders could take right now (the seller's own orders are skipped). */
+    int sellableDepth(String owner, String product) {
+        int n = 0;
+        for (Order o : bids(product)) {
+            if (!o.owner.equals(owner)) {
+                n += o.remaining;
+            }
+        }
+        return n;
+    }
+
+    /**
+     * Like {@link #quoteSell(String, String, int)}; with {@code partial} a short book is not an error: the quote covers
+     * as many items as the buy orders can take (it only fails when none can be sold).
+     */
+    Instant quoteSell(String owner, String product, int amount, boolean partial) {
         if (amount < 1 || amount > rules.maxAmount()) {
             return Instant.fail("Amount must be between 1 and " + rules.maxAmount() + ".");
         }
@@ -385,11 +421,11 @@ final class BazaarMarket {
             net += gross - tax;
             left -= q;
         }
-        if (left > 0) {
+        if (left > 0 && (!partial || left == amount)) {
             return Instant.fail(amount - left == 0 ? "Nobody is buying this right now."
                 : "Only " + (amount - left) + " can be sold right now.");
         }
-        return new Instant(Check.OK, amount, net, fills);
+        return new Instant(Check.OK, amount - left, net, fills);
     }
 
     /** Executes a quote made on this very tick (no mutation happened since). The taker's coins/items are the caller's. */
@@ -430,11 +466,13 @@ final class BazaarMarket {
         Order order = newOrder(owner, ownerName, product, true, priceTicks, amount, now);
         List<Order> book = asks.getOrDefault(product, List.of());
         int filled = 0;
+        List<Fill> fills = new ArrayList<>();
         while (order.remaining > 0 && !book.isEmpty() && book.get(0).price <= priceTicks) {
             Order ask = book.get(0);
             int q = Math.min(order.remaining, ask.remaining);
             long gross = ask.price * CENTS_PER_TICK * q;
             long tax = tax(gross);
+            fills.add(new Fill(ask, q, ask.price, gross, tax));
             ask.remaining -= q;
             ask.claimCents += gross - tax;
             state.taxBurnedCents += tax;
@@ -451,7 +489,7 @@ final class BazaarMarket {
         if (order.remaining > 0) {
             insert(order);
         }
-        return new Placed(Check.OK, order, filled);
+        return new Placed(Check.OK, order, filled, fills);
     }
 
     /** Places a sell order whose items the caller already removed, then matches it. */
@@ -463,11 +501,13 @@ final class BazaarMarket {
         Order order = newOrder(owner, ownerName, product, false, priceTicks, amount, now);
         List<Order> book = bids.getOrDefault(product, List.of());
         int filled = 0;
+        List<Fill> fills = new ArrayList<>();
         while (order.remaining > 0 && !book.isEmpty() && book.get(0).price >= priceTicks) {
             Order bid = book.get(0);
             int q = Math.min(order.remaining, bid.remaining);
             long gross = bid.price * CENTS_PER_TICK * q;
             long tax = tax(gross);
+            fills.add(new Fill(bid, q, bid.price, gross, tax));
             bid.remaining -= q;
             bid.claimItems += q;
             state.taxBurnedCents += tax;
@@ -483,7 +523,7 @@ final class BazaarMarket {
         if (order.remaining > 0) {
             insert(order);
         }
-        return new Placed(Check.OK, order, filled);
+        return new Placed(Check.OK, order, filled, fills);
     }
 
     private Order newOrder(String owner, String ownerName, String product, boolean buy, long price, int amount, long now) {
