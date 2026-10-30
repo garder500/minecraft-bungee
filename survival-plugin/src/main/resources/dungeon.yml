@@ -1,0 +1,161 @@
+# Dungeon (Catacombs) configuration. Every number here is tunable; invalid values are clamped and reported in the log.
+
+# Maximum number of dungeon worlds alive at the same time (generation, run, closing). A party that asks for a run
+# while the limit is reached is told to try again in a moment.
+max-concurrent-runs: 3
+# Seconds between the end of a run (boss dead or run failed) and the destruction of its world.
+close-delay-seconds: 45
+# A run that lasts longer than this is aborted (minutes).
+run-timeout-minutes: 75
+# Time given to the party to kill the final boss once it spawned (minutes).
+boss-timeout-minutes: 12
+# Which Crypt Lord fights the party. 0 = always the scripted Crypt Lord of this feature (hp and damage follow the
+# floor multipliers and the party size). N > 0 = from floor N on, the boss feature's `crypt_lord` is used when that
+# feature is present (fixed 350000 HP in boss.yml, it does NOT follow the floor multipliers: the boss API has no
+# scaling parameter yet). Lower floors keep the scripted boss.
+boss-external-from-floor: 0
+# Seconds of countdown between the end of the generation and the moment the doors open.
+ready-countdown-seconds: 8
+# Wither key / blood key broadcast and sidebar can be turned off.
+sidebar: true
+# Fog: a faint Darkness effect on everybody in the dungeon (off by default, some players dislike it).
+darkness-effect: false
+
+party:
+  # 1 to 5 (a party of one is a solo run).
+  max-size: 5
+  invite-expire-seconds: 60
+  ready-check-seconds: 30
+  warp-cooldown-seconds: 15
+  # When false only the leader invites.
+  members-can-invite: false
+
+generation:
+  # Time budget of the block placement per server tick, in milliseconds (1 to 40).
+  max-ms-per-tick: 6
+  # Y of the floor of every room.
+  base-y: 64
+  # Blocks placed per budget check (lower = finer budget, slightly slower).
+  blocks-per-check: 256
+
+# Where players stand to be reminded of the entrance (the island feature owns the hub; this is only a hint pad).
+# Stand within the radius and a clickable message tells you to type /dungeon. The defaults are the "Dungeon Gate"
+# pad of the island feature's hub (pad at x=33, z=0, hub y 100, so the block above it is y=101). If the island
+# feature moves the pad or the hub height, change x/y/z here.
+entrance:
+  enabled: true
+  world: sb_hub
+  x: 33.5
+  y: 101.0
+  z: 0.5
+  radius: 3.0
+  hint-cooldown-seconds: 90
+
+# Run rules.
+rules:
+  # Ghost deaths allowed per player and per run; the next death turns the player into a spectator until the end.
+  deaths-allowed: 3
+  # A ghost is brought back by itself after this many seconds, at the last room they were in.
+  ghost-seconds: 40
+  # Seconds a teammate has to stay next to a body (sneaking) to revive it.
+  revive-seconds: 3
+  # Health a revived player comes back with, percent of max.
+  revive-health-percent: 50
+  # Fall into the void: damage taken, then back to the start of the room.
+  void-damage: 6.0
+  # Commands that stay available while in a run (everything else is blocked).
+  allowed-commands: [party, pc, dungeon, dg, msg, tell, w, r, help, menu, leave]
+
+mobs:
+  max-per-room: 14
+  max-per-run: 70
+  # Extra health per additional party member (0.30 = +30 percent each).
+  party-health-scale: 0.30
+  party-damage-scale: 0.10
+  # Guards of the Watcher in the entrance room: base + per floor. Killing them all forges the blood key.
+  watcher-guards-base: 3
+  watcher-guards-per-floor: 1
+
+# The Crypt Merchant of the shop room. Prices are multiplied by the floor reward multiplier. Needs the economy feature.
+shop:
+  spirit-leaf-price: 1500
+  healing-flask-price: 400
+  # Healing Flask: percent of max health restored, and the pause between two uses (seconds).
+  flask-heal-percent: 60
+  flask-cooldown-seconds: 15
+
+# Catacombs level: cleared runs give Catacombs XP (a share of the Combat XP paid). Level n needs n^2 * level-base XP in
+# total. Each level adds reward-percent-per-level percent to the coins and Combat XP of every clear.
+catacombs:
+  level-base: 400
+  max-level: 50
+  xp-share: 0.5
+  reward-percent-per-level: 1.0
+
+# The Crypt Forge (/dungeon forge): dungeon materials are spent here. Each trade has a cost (item id -> amount, custom
+# ids or "mc:MATERIAL") and exactly ONE outcome: give (item id) + amount, cache-rolls (item rolls of the reward table at
+# cache-grade, on the highest floor the player cleared), or coins (needs the economy feature).
+forge:
+  trades:
+    - {id: spirit_leaf, name: "Spirit Leaf", icon: FERN, cost: {dungeon_bone_fragment: 16, dungeon_crypt_shard: 4}, give: dungeon_spirit_leaf, amount: 1}
+    - {id: healing_flasks, name: "Healing Flasks", icon: GLASS_BOTTLE, cost: {dungeon_bone_fragment: 12}, give: dungeon_healing_flask, amount: 3}
+    - {id: crypt_cache, name: "Crypt Cache", icon: ENDER_CHEST, cost: {dungeon_crypt_shard: 12, dungeon_wither_essence: 3}, cache-rolls: 4, cache-grade: B}
+    - {id: spirit_cache, name: "Spirit Cache", icon: SHULKER_BOX, cost: {dungeon_wither_essence: 12, dungeon_spirit_dust: 4}, cache-rolls: 5, cache-grade: S}
+    - {id: dark_scroll, name: "Dark Scroll", icon: PAPER, cost: {dungeon_relic: 5, dungeon_spirit_dust: 16}, give: dungeon_dark_scroll, amount: 1}
+    - {id: sell_bones, name: "Bone Market", icon: BONE, cost: {dungeon_bone_fragment: 64}, coins: 600}
+    - {id: sell_essence, name: "Essence Broker", icon: BLACK_DYE, cost: {dungeon_wither_essence: 10}, coins: 1500}
+
+scoring:
+  # Seconds past the par time that cost one speed point.
+  speed-decay-seconds: 6.0
+  # Points lost per death (team total).
+  death-penalty: 2.0
+  # Minimum total for each grade.
+  thresholds:
+    S+: 300
+    S: 270
+    A: 230
+    B: 160
+    C: 100
+    D: 0
+
+rewards:
+  # Per grade: coins and combat xp (multiplied by the floor reward multiplier), how many item rolls, and the name of the chest.
+  tiers:
+    D: {coins: 400, xp: 120, rolls: 1, chest: "Wooden Chest"}
+    C: {coins: 900, xp: 220, rolls: 2, chest: "Wooden Chest"}
+    B: {coins: 1800, xp: 380, rolls: 3, chest: "Gold Chest"}
+    A: {coins: 3500, xp: 650, rolls: 4, chest: "Diamond Chest"}
+    S: {coins: 6500, xp: 1100, rolls: 5, chest: "Emerald Chest"}
+    S+: {coins: 12000, xp: 1800, rolls: 6, chest: "Obsidian Chest"}
+  # Item rolls: one entry is picked by weight among those whose min-floor and min-grade are reached.
+  # item is a custom item id (see /sbgive) or "mc:MATERIAL".
+  items:
+    - {item: dungeon_bone_fragment, weight: 60, min: 3, max: 8, min-floor: 1, min-grade: D}
+    - {item: dungeon_crypt_shard, weight: 40, min: 1, max: 4, min-floor: 1, min-grade: C}
+    - {item: "mc:IRON_INGOT", weight: 30, min: 4, max: 12, min-floor: 1, min-grade: D}
+    - {item: "mc:GOLD_INGOT", weight: 20, min: 3, max: 9, min-floor: 2, min-grade: C}
+    - {item: dungeon_wither_essence, weight: 30, min: 2, max: 6, min-floor: 2, min-grade: B}
+    - {item: "mc:DIAMOND", weight: 12, min: 1, max: 3, min-floor: 3, min-grade: B}
+    - {item: dungeon_spirit_dust, weight: 12, min: 1, max: 3, min-floor: 4, min-grade: A}
+    - {item: "mc:NETHERITE_SCRAP", weight: 6, min: 1, max: 2, min-floor: 5, min-grade: A}
+    - {item: dungeon_relic, weight: 3, min: 1, max: 1, min-floor: 5, min-grade: S}
+    - {item: dungeon_dark_scroll, weight: 1, min: 1, max: 1, min-floor: 7, min-grade: S+}
+
+# Floors. Each floor has its own palette (stone_brick, mossy, deepslate, blackstone, nether, end, crimson), size and difficulty.
+#   grid: cells per side (3-7); rooms: rooms actually built (the path from the entrance to the blood room and the boss is always there)
+#   puzzles / traps / secret-rooms / mini-bosses: counts of those room types (clamped to what fits)
+#   wither-doors: doors that need a Wither Key (keys are held by mob rooms reachable before the door)
+#   hp / damage: mob multipliers; mob-level: shown level of the mobs; par-seconds: time for a full speed score
+#   secrets-needed-percent: share of the secrets to find for a full exploration score
+#   reward: multiplier for coins and xp; min-combat-level: requires the skills feature, 0 disables the check
+floors:
+  1: {name: "The Entrance", palette: stone_brick, grid: 3, rooms: 8, puzzles: 1, traps: 0, secret-rooms: 1, mini-bosses: 0, shop: false, fairy: true, wither-doors: 0, loops: 0, hp: 1.0, damage: 1.0, mob-level: 3, par-seconds: 420, secrets-needed-percent: 40, reward: 1.0, min-combat-level: 0}
+  2: {name: "The Ossuary", palette: mossy, grid: 4, rooms: 13, puzzles: 2, traps: 1, secret-rooms: 1, mini-bosses: 1, shop: true, fairy: true, wither-doors: 1, loops: 1, hp: 1.6, damage: 1.4, mob-level: 8, par-seconds: 600, secrets-needed-percent: 45, reward: 1.5, min-combat-level: 5}
+  3: {name: "The Drowned Vault", palette: deepslate, grid: 4, rooms: 15, puzzles: 2, traps: 1, secret-rooms: 2, mini-bosses: 1, shop: true, fairy: true, wither-doors: 1, loops: 1, hp: 2.4, damage: 1.9, mob-level: 14, par-seconds: 720, secrets-needed-percent: 50, reward: 2.2, min-combat-level: 10}
+  4: {name: "The Black Chapel", palette: blackstone, grid: 5, rooms: 18, puzzles: 3, traps: 2, secret-rooms: 2, mini-bosses: 2, shop: true, fairy: true, wither-doors: 2, loops: 2, hp: 3.6, damage: 2.6, mob-level: 21, par-seconds: 900, secrets-needed-percent: 55, reward: 3.2, min-combat-level: 15}
+  5: {name: "The Ember Crypt", palette: nether, grid: 5, rooms: 21, puzzles: 3, traps: 3, secret-rooms: 3, mini-bosses: 2, shop: true, fairy: true, wither-doors: 2, loops: 2, hp: 5.2, damage: 3.5, mob-level: 29, par-seconds: 1080, secrets-needed-percent: 60, reward: 4.6, min-combat-level: 20}
+  6: {name: "The Crimson Spire", palette: crimson, grid: 6, rooms: 26, puzzles: 4, traps: 3, secret-rooms: 3, mini-bosses: 3, shop: true, fairy: true, wither-doors: 3, loops: 3, hp: 7.5, damage: 4.6, mob-level: 38, par-seconds: 1320, secrets-needed-percent: 65, reward: 6.5, min-combat-level: 25}
+  7: {name: "The Void Sanctum", palette: end, grid: 7, rooms: 34, puzzles: 5, traps: 4, secret-rooms: 4, mini-bosses: 3, shop: true, fairy: true, wither-doors: 3, loops: 4, hp: 11.0, damage: 6.0, mob-level: 50, par-seconds: 1680, secrets-needed-percent: 70, reward: 9.0, min-combat-level: 30}
+# Unlock floor n only after clearing floor n-1.
+require-previous-floor: true
