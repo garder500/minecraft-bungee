@@ -47,7 +47,11 @@ public class MinionReviewFixesTest {
         plugin = MockBukkit.load(SurvivalPlugin.class);
         core = plugin.core();
         items = core.items();
-        world = server.addSimpleWorld("sb_world");
+        // the real island feature already created sb_world at boot: reuse it (a second one of the same name is never returned by Bukkit.getWorld)
+        world = (WorldMock) server.getWorld("sb_world");
+        if (world == null) {
+            world = server.addSimpleWorld("sb_world");
+        }
         player = server.addPlayer();
         islands = new FakeIslands(player.getUniqueId());
         core.replace(IslandApi.class, islands);
@@ -66,6 +70,13 @@ public class MinionReviewFixesTest {
         for (int i = 36; i < player.getInventory().getSize(); i++) {
             player.getInventory().setItem(i, new ItemStack(Material.BEDROCK));
         }
+    }
+
+    /** Another player; the real island protection (live in sb_world) must not decide what these tests check. */
+    private PlayerMock stranger() {
+        PlayerMock p = server.addPlayer();
+        p.addAttachment(plugin, win.vampyuyu.survival.island.IslandService.BYPASS, true);
+        return p;
     }
 
     @After
@@ -97,7 +108,7 @@ public class MinionReviewFixesTest {
     public void aPlayerCannotBreakTheOreAMinionPlaced() {
         MinionData d = place("diamond", 1);
         Block ore = track(d, 1, Material.DIAMOND_ORE);
-        BlockBreakEvent event = new BlockBreakEvent(ore, server.addPlayer());
+        BlockBreakEvent event = new BlockBreakEvent(ore, stranger());
         server.getPluginManager().callEvent(event);
         assertTrue(event.isCancelled());
         assertEquals(Material.DIAMOND_ORE, ore.getType());
@@ -109,7 +120,7 @@ public class MinionReviewFixesTest {
         track(d, 1, Material.DIAMOND_ORE);
         Block mine = world.getBlockAt(2, 64, 2);
         mine.setType(Material.DIAMOND_ORE);
-        BlockBreakEvent event = new BlockBreakEvent(mine, server.addPlayer());
+        BlockBreakEvent event = new BlockBreakEvent(mine, stranger());
         server.getPluginManager().callEvent(event);
         assertFalse(event.isCancelled());
     }
@@ -118,7 +129,7 @@ public class MinionReviewFixesTest {
     public void theGroundUnderAPlacedCropIsProtectedButNotUnderAPlacedOre() {
         MinionData d = place("wheat", 1);
         Block crop = track(d, 1, Material.WHEAT);
-        BlockBreakEvent under = new BlockBreakEvent(crop.getRelative(BlockFace.DOWN), server.addPlayer());
+        BlockBreakEvent under = new BlockBreakEvent(crop.getRelative(BlockFace.DOWN), stranger());
         server.getPluginManager().callEvent(under);
         assertTrue("breaking the farmland would pop the crop", under.isCancelled());
 
@@ -134,7 +145,7 @@ public class MinionReviewFixesTest {
         Block ore = world.getBlockAt(3, 64, 3);
         ore.setType(Material.COAL_ORE);
         manager.trackSpot(d2, ore);
-        BlockBreakEvent below = new BlockBreakEvent(ore.getRelative(BlockFace.DOWN), server.addPlayer());
+        BlockBreakEvent below = new BlockBreakEvent(ore.getRelative(BlockFace.DOWN), stranger());
         server.getPluginManager().callEvent(below);
         assertFalse(below.isCancelled());
     }
@@ -159,7 +170,9 @@ public class MinionReviewFixesTest {
 
         List<Block> blocks = new ArrayList<>(List.of(melon, other));
         EntityExplodeEvent boom = new EntityExplodeEvent(player, melon.getLocation(), blocks, 1f, org.bukkit.ExplosionResult.DESTROY);
-        server.getPluginManager().callEvent(boom);
+        // The real island protection (same priority, sb_world) strips every block of an explosion on its own, so the
+        // guard is called directly to check what it alone removes.
+        new PlacedBlockGuard(core, manager).onEntityExplode(boom);
         assertEquals(List.of(other), boom.blockList());
 
         BlockFromToEvent flow = new BlockFromToEvent(world.getBlockAt(1, 65, 1), melon);
