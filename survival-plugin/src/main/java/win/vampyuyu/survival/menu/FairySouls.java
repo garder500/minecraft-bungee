@@ -11,24 +11,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.bukkit.Bukkit;
-import org.bukkit.Color;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.World;
-import org.bukkit.entity.Display;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.util.Transformation;
-import org.joml.AxisAngle4f;
-import org.joml.Vector3f;
 import win.vampyuyu.survival.api.IslandInfo;
 import win.vampyuyu.survival.api.Stat;
 import win.vampyuyu.survival.core.Msg;
@@ -63,10 +55,10 @@ final class FairySouls implements Listener {
     }
 
     private static final class Live {
-        final ItemDisplay entity;
+        final SoulDisplays.Handle entity;
         final Set<UUID> shownTo = new HashSet<>();
 
-        Live(ItemDisplay entity) {
+        Live(SoulDisplays.Handle entity) {
             this.entity = entity;
         }
     }
@@ -74,6 +66,7 @@ final class FairySouls implements Listener {
     private final MenuRuntime rt;
     private final QuestService quests;
     private final NamespacedKey tag;
+    private final SoulDisplays displays;
     private final Map<String, Live> lives = new HashMap<>();
     private final List<SoulDef> adminSouls = new ArrayList<>();
     private final OrderedJsonWriter adminWriter;
@@ -81,9 +74,15 @@ final class FairySouls implements Listener {
     private int tickCount;
 
     FairySouls(MenuRuntime rt, QuestService quests) {
+        this(rt, quests, null);
+    }
+
+    /** @param displays entity backend; null for the real one (tests pass a fake) */
+    FairySouls(MenuRuntime rt, QuestService quests, SoulDisplays displays) {
         this.rt = rt;
         this.quests = quests;
         this.tag = new NamespacedKey(rt.core.getPlugin(), "menu_soul");
+        this.displays = displays != null ? displays : new SoulDisplays.Bukkit(rt.core.getPlugin(), tag, rt::config);
         this.adminWriter = new OrderedJsonWriter(rt.core, ADMIN_FILE);
     }
 
@@ -245,11 +244,11 @@ final class FairySouls implements Listener {
         Iterator<Map.Entry<String, Live>> it = lives.entrySet().iterator();
         while (it.hasNext()) {
             Live live = it.next().getValue();
-            if (!live.entity.isValid()) {
+            if (!live.entity.valid()) {
                 it.remove();
                 continue;
             }
-            Location at = live.entity.getLocation();
+            Location at = live.entity.location();
             boolean near = false;
             for (Player player : at.getWorld().getPlayers()) {
                 if (player.getLocation().distanceSquared(at) <= view * view * 2.25) {
@@ -271,36 +270,35 @@ final class FairySouls implements Listener {
         }
         FairyData data = rt.fairy(player.getUniqueId());
         Location here = player.getLocation();
+        UUID id = player.getUniqueId();
         for (SoulSpot spot : spotsAround(player)) {
             double d2 = spot.distanceSquared(here.getX(), here.getY(), here.getZ());
             String key = key(spot);
-            Live live = lives.get(key);
-            if (!SoulLogic.visibleTo(data.found, spot.id())) {
-                if (live != null && live.shownTo.remove(player.getUniqueId()) && live.entity.isValid()) {
-                    player.hideEntity(rt.core.getPlugin(), live.entity);
+            Live existing = lives.get(key);
+            boolean wanted = SoulLogic.visibleTo(data.found, spot.id()) && d2 <= view * view;
+            if (!wanted) {
+                if (existing != null && existing.shownTo.remove(id) && existing.entity.valid()) {
+                    safe(() -> existing.entity.hide(player));
                 }
                 continue;
             }
-            if (d2 > view * view) {
-                if (live != null && live.shownTo.remove(player.getUniqueId()) && live.entity.isValid()) {
-                    player.hideEntity(rt.core.getPlugin(), live.entity);
-                }
-                continue;
-            }
-            if (live == null || !live.entity.isValid()) {
+            Live live = existing;
+            if (live == null || !live.entity.valid()) {
                 live = spawn(player.getWorld(), spot);
                 if (live == null) {
                     continue;
                 }
                 lives.put(key, live);
             }
-            if (live.shownTo.add(player.getUniqueId())) {
-                player.showEntity(rt.core.getPlugin(), live.entity);
+            if (live.shownTo.add(id)) {
+                Live shown = live;
+                safe(() -> shown.entity.show(player));
             }
             if (d2 <= collect * collect) {
                 collect(player, spot, live);
             } else if (d2 <= 18 * 18 && tickCount % 2 == 0) {
-                player.spawnParticle(Particle.END_ROD, spot.x(), spot.y() + 0.2, spot.z(), 1, 0.25, 0.3, 0.25, 0.01);
+                safe(() -> player.spawnParticle(Particle.END_ROD, spot.x(), spot.y() + 0.2, spot.z(), 1, 0.25, 0.3, 0.25,
+                    0.01));
             }
         }
     }
@@ -311,46 +309,29 @@ final class FairySouls implements Listener {
     }
 
     private Live spawn(World world, SoulSpot spot) {
-        int cx = (int) Math.floor(spot.x()) >> 4;
-        int cz = (int) Math.floor(spot.z()) >> 4;
-        if (!world.isChunkLoaded(cx, cz)) {
+        if (!displays.chunkLoaded(world, spot)) {
             return null;
         }
-        MenuConfig cfg = rt.config();
-        Color glow = parseColor(cfg.fairyGlow);
-        ItemStack stack = new ItemStack(Material.PINK_DYE);
-        stack.editMeta(meta -> meta.setItemModel(NamespacedKey.fromString("vampyuyu:menu/fairy_soul")));
-        ItemDisplay display = world.spawn(new Location(world, spot.x(), spot.y(), spot.z()), ItemDisplay.class, e -> {
-            e.setPersistent(false);
-            e.setVisibleByDefault(false);
-            e.setItemStack(stack);
-            e.setBillboard(Display.Billboard.CENTER);
-            e.setGlowing(true);
-            e.setGlowColorOverride(glow);
-            e.setBrightness(new Display.Brightness(15, 15));
-            e.setViewRange(0.6f);
-            e.setTransformation(new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(0.7f, 0.7f, 0.7f),
-                new AxisAngle4f()));
-            e.setInvulnerable(true);
-            e.getPersistentDataContainer().set(tag, PersistentDataType.BYTE, (byte) 1);
-        });
-        return new Live(display);
+        return new Live(displays.spawn(world, spot));
     }
 
-    private static Color parseColor(String hex) {
+    /** Cosmetic calls (particles, entity visibility) must never break the gameplay around them. */
+    private static void safe(Runnable cosmetic) {
         try {
-            String clean = hex.startsWith("#") ? hex.substring(1) : hex;
-            int rgb = Integer.parseInt(clean, 16);
-            return Color.fromRGB((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
-        } catch (RuntimeException e) {
-            return Color.fromRGB(0xFF, 0x7A, 0xD9);
+            cosmetic.run();
+        } catch (UnsupportedOperationException ignored) {
+            // not supported by this server build
         }
     }
 
     // ---------------------------------------------------------------- collecting
 
     /** Marks the soul found (exactly once), then pays milestones. Main thread. */
-    void collect(Player player, SoulSpot spot, Live live) {
+    void collect(Player player, SoulSpot spot) {
+        collect(player, spot, lives.get(key(spot)));
+    }
+
+    private void collect(Player player, SoulSpot spot, Live live) {
         FairyData data = rt.fairy(player.getUniqueId());
         if (!data.found.add(spot.id())) {
             return;
@@ -358,12 +339,12 @@ final class FairySouls implements Listener {
         rt.dirty(player.getUniqueId());
         if (live != null) {
             live.shownTo.remove(player.getUniqueId());
-            if (live.entity.isValid()) {
-                player.hideEntity(rt.core.getPlugin(), live.entity);
+            if (live.entity.valid()) {
+                safe(() -> live.entity.hide(player));
             }
         }
         Location at = new Location(player.getWorld(), spot.x(), spot.y(), spot.z());
-        player.spawnParticle(Particle.TOTEM_OF_UNDYING, at, 24, 0.3, 0.4, 0.3, 0.2);
+        safe(() -> player.spawnParticle(Particle.TOTEM_OF_UNDYING, at, 24, 0.3, 0.4, 0.3, 0.2));
         int count = data.found.size();
         rt.core.msg().mini(player, "<light_purple><bold>FAIRY SOUL</bold> <gray>You found a soul! <dark_gray>(<light_purple>"
             + count + "<dark_gray>/<light_purple>" + total() + "<dark_gray>)");
@@ -478,7 +459,7 @@ final class FairySouls implements Listener {
             : spot.y() > here.getY() ? ", above you" : ", below you";
         rt.core.msg().mini(player, "<gray>Nearest soul: <light_purple>" + distance + " blocks "
             + SoulLogic.direction(dx, dz) + vertical);
-        player.setCompassTarget(new Location(player.getWorld(), spot.x(), spot.y(), spot.z()));
+        safe(() -> player.setCompassTarget(new Location(player.getWorld(), spot.x(), spot.y(), spot.z())));
         trail(player, spot);
     }
 
@@ -505,7 +486,7 @@ final class FairySouls implements Listener {
                     break;
                 }
                 Location p = from.clone().add(toward.clone().multiply(i * 0.8));
-                player.spawnParticle(Particle.END_ROD, p, 1, 0, 0, 0, 0);
+                safe(() -> player.spawnParticle(Particle.END_ROD, p, 1, 0, 0, 0, 0));
             }
         });
     }

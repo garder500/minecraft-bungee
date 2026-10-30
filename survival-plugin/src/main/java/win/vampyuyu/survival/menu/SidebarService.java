@@ -51,6 +51,7 @@ final class SidebarService implements Listener {
     private final Map<UUID, String> ownerNames = new HashMap<>();
     private Scheduler.Handle task;
     private boolean numberFormatBroken;
+    private boolean customNamesBroken;
 
     SidebarService(MenuRuntime rt, QuestService quests) {
         this.rt = rt;
@@ -136,8 +137,13 @@ final class SidebarService implements Listener {
             boolean changed = i >= state.lines.size() || !state.lines.get(i).equals(text);
             int score = count - i;
             var line = state.objective.getScore(entry(i));
-            if (changed) {
-                line.customName(text.isEmpty() ? Component.text(" ") : Msg.component(text));
+            if (changed && !customNamesBroken) {
+                try {
+                    line.customName(text.isEmpty() ? Component.text(" ") : Msg.component(text));
+                } catch (UnsupportedOperationException e) {
+                    // A server without per-score display names: the lines stay blank instead of failing every second.
+                    customNamesBroken = true;
+                }
             }
             if (i >= state.lines.size() || state.lines.size() != count) {
                 line.setScore(score);
