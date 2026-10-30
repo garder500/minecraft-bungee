@@ -1,0 +1,603 @@
+# Skyblock "menu" feature: join router, Skyblock Menu item, warps, quests, fairy souls, sidebar, settings.
+# Everything here is read at start and by "/sbmenu reload" (permission vampyuyu.sb.menu.admin).
+# All player-visible text is English.
+
+# ------------------------------------------------------------------ join router
+join:
+  # What to do with a player who joins WITHOUT a valid cross-server key (sb:transfer:<uuid> in Redis):
+  #   hub  = a normal join: send them to sb_hub (docs/skyblock-design.md section 12.3), unless they already stand
+  #          in a Skyblock world (returning players are never moved)   <- default
+  #   stay = do not move them (plain survival players keep their spawn)
+  no-key: hub
+  # A key whose "ts" (epoch millis, optional) is older than this is ignored.
+  max-age-seconds: 30
+  # Command the "create island" prompt runs when a player arrives in the hub without an island.
+  create-island-command: "island create"
+  redis:
+    enabled: true
+    # Empty = ARENA_REDIS_HOST (default "redis") / ARENA_REDIS_PASSWORD_FILE (default /run/secrets/arena_redis_password)
+    host: ""
+    port: 6379
+    password-file: ""
+    connect-timeout-ms: 1500
+    socket-timeout-ms: 1500
+    # After a Redis failure, joins skip Redis for this long (a dead Redis never delays logins)
+    backoff-seconds: 30
+
+# Where a player respawns after dying in a Skyblock world (a bed or respawn anchor always wins):
+#   none   = leave it to the island feature, which owns respawns (safe fallback, checks the island is ready)  <- default
+#   island = one tick after the respawn, IslandApi.teleportHome (the hub when that fails)
+#   hub    = one tick after the respawn, IslandApi.teleportHub
+respawn:
+  route: none
+
+# ------------------------------------------------------------------ the Skyblock Menu item
+menu-item:
+  enabled: true
+  # Hotbar index 0-8 (8 = the 9th slot)
+  slot: 8
+  # Right-click cooldown in milliseconds (the client sends two events per click)
+  click-cooldown-ms: 250
+
+# Commands of the other features, tried in order; the first that exists AND the player may use wins. When none
+# exists the menu door is hidden (feature not installed); when one exists but the player may not use it the door is
+# greyed out. Menu entries run them as the player.
+commands:
+  stats: [stats, mystats]            # click on your profile head
+  skills: [skills, skill]
+  collections: [collections, collection]
+  pets: [pets, pet]
+  accessories: [accessories, acc, bag]
+  bazaar: [bazaar, bz]
+  auction: [auctionhouse, ah, auction]
+  bank: [bank, sbbank]
+  minions: [minion, minions]
+  island: [island, is]
+  boss: [boss, bosses]
+  slayer: [slayer]
+  dungeon: [dungeon, dg, catacombs]
+  # Leaderboards: when none of the "leaderboards" aliases exists the door opens the menu's own submenu with these two
+  leaderboards: [leaderboards, leaderboard, lb]
+  baltop: [baltop, topcoins]
+  skilltop: [skilltop, skillboard]
+  # No feature registers a recipe browser yet: the door stays hidden until one of these commands exists
+  recipes: [recipes, recipebook, recipe]
+
+# ------------------------------------------------------------------ warps
+warps:
+  # Players stand still this long before the teleport; moving or taking damage cancels it
+  warmup-seconds: 3
+  cooldown-seconds: 5
+  # Optional exact destinations (world is fixed by the key). Without x/y/z the world spawn is used.
+  nether: {}
+  #  nether: {x: 0.5, y: 70, z: 0.5, yaw: 0, pitch: 0}
+  end: {}
+  # Shown on the "Boss arenas" item (the boss feature owns the arenas; this is only a hint)
+  boss-hint: "Summon bosses with their summon items on your island or in the arenas."
+
+# ------------------------------------------------------------------ sidebar
+sidebar:
+  enabled: true
+  title: "<gradient:#7b2ff7:#00d4ff><bold>SKYBLOCK</bold></gradient>"
+  # Server name line ("Server: Skyblock"), plain text shown above the footer; empty to omit
+  server-name: "Skyblock"
+  # Last line (MiniMessage); empty to omit
+  footer: "<yellow>vampyuyu.win"
+  update-ticks: 20
+  # Location names when no zone below matches, by world token (hub, world, nether, end)
+  default-zones:
+    hub: "Hub"
+    world: "Island"
+    nether: "The Nether"
+    end: "The End"
+  # Named regions, first match wins: world token or name + inclusive box.
+  zones:
+    - {name: "Hub Spawn", world: hub, min: [-16, -64, -16], max: [16, 320, 16]}
+    - {name: "Hub Village", world: hub, min: [-96, -64, -96], max: [96, 320, 96]}
+    - {name: "Wilderness", world: nether, min: [-30000000, -64, -30000000], max: [30000000, 320, 30000000]}
+    - {name: "The Void Gate", world: end, min: [-60, 0, -60], max: [60, 320, 60]}
+
+# ------------------------------------------------------------------ sounds (vanilla sound keys)
+sounds:
+  welcome: "entity.player.levelup"
+  quest-complete: "ui.toast.challenge_complete"
+  quest-progress: "entity.experience_orb.pickup"
+  soul-found: "entity.allay.item_given"
+  milestone: "entity.player.levelup"
+  teleport: "entity.enderman.teleport"
+  click: "ui.button.click"
+
+# ------------------------------------------------------------------ fairy souls
+fairy-souls:
+  enabled: true
+  # Souls are spawned for a player when they are within this many blocks
+  view-distance: 40
+  # Walk this close to a soul to collect it
+  collect-radius: 1.6
+  # A milestone pays every N souls (0 disables rewards)
+  every: 5
+  # Coins of milestone n (1-based): coins-per-milestone + coins-increase-per-milestone * (n - 1)
+  coins-per-milestone: 250
+  coins-increase-per-milestone: 50
+  # Stat bonus of milestone number n (1-based) is step ((n-1) mod size); bonuses add up (source "fairy")
+  stat-cycle:
+    - {stat: HEALTH, amount: 2}
+    - {stat: DEFENSE, amount: 1}
+    - {stat: STRENGTH, amount: 1}
+    - {stat: SPEED, amount: 1}
+    - {stat: INTELLIGENCE, amount: 2}
+    - {stat: CRIT_CHANCE, amount: 1}
+    - {stat: MAGIC_FIND, amount: 1}
+    - {stat: HEALTH, amount: 3}
+  # Glow colour of the soul (hex)
+  glow-color: "#ff7ad9"
+  # Souls at fixed positions: id (a-z, 0-9, _), world token hub/world/nether/end, coordinates.
+  # Admins add more in game with /fairy admin add (kept in menu/fairy_souls.json).
+  # Hub: the plaza surface is y=100 (island.yml hub.y), souls hover half a block above it.
+  # Plaza ring (r=12.5), plaza edge (r=23) and the ring road (r=40). Coordinates follow island/HubPlan.
+  fixed:
+    - {id: hub_1, world: hub, x: 11.5, y: 101.5, z: 4.5}
+    - {id: hub_2, world: hub, x: 4.5, y: 101.5, z: 11.5}
+    - {id: hub_3, world: hub, x: -4.5, y: 101.5, z: 11.5}
+    - {id: hub_4, world: hub, x: -11.5, y: 101.5, z: 4.5}
+    - {id: hub_5, world: hub, x: -11.5, y: 101.5, z: -4.5}
+    - {id: hub_6, world: hub, x: -4.5, y: 101.5, z: -11.5}
+    - {id: hub_7, world: hub, x: 4.5, y: 101.5, z: -11.5}
+    - {id: hub_8, world: hub, x: 11.5, y: 101.5, z: -4.5}
+    - {id: hub_9, world: hub, x: 23.5, y: 101.5, z: 0.5}
+    - {id: hub_10, world: hub, x: -22.5, y: 101.5, z: 0.5}
+    - {id: hub_11, world: hub, x: 0.5, y: 101.5, z: 23.5}
+    - {id: hub_12, world: hub, x: 0.5, y: 101.5, z: -22.5}
+    - {id: hub_13, world: hub, x: 40.5, y: 101.5, z: 0.5}
+    - {id: hub_14, world: hub, x: -39.5, y: 101.5, z: 0.5}
+    - {id: hub_15, world: hub, x: 0.5, y: 101.5, z: 40.5}
+    - {id: hub_16, world: hub, x: 0.5, y: 101.5, z: -39.5}
+  # Island souls: offsets from the centre of the island platform in the named world. Y 0 is the top layer, players stand at y=1.
+  # Overworld islands stay within 9.5 blocks of the centre and the End gate is at z=-6, the platforms in the Nether and the End have radius 15.
+  island:
+    - {id: island_1, world: world, x: 4.5, y: 1.5, z: 0.5}
+    - {id: island_2, world: world, x: 6.5, y: 2.0, z: 3.5}
+    - {id: island_3, world: world, x: 3.5, y: 1.5, z: 4.5}
+    - {id: island_4, world: world, x: 2.5, y: 2.0, z: 7.5}
+    - {id: island_5, world: world, x: 0.5, y: 1.5, z: 4.5}
+    - {id: island_6, world: world, x: -2.5, y: 2.0, z: 7.5}
+    - {id: island_7, world: world, x: -3.5, y: 1.5, z: 4.5}
+    - {id: island_8, world: world, x: -7.5, y: 2.0, z: 4.5}
+    - {id: island_9, world: world, x: -4.5, y: 1.5, z: 0.5}
+    - {id: island_10, world: world, x: -7.5, y: 2.0, z: -1.5}
+    - {id: island_11, world: world, x: -5.5, y: 1.5, z: -3.5}
+    - {id: island_12, world: world, x: -5.5, y: 2.0, z: -6.5}
+    - {id: island_13, world: world, x: 5.5, y: 2.0, z: -6.5}
+    - {id: island_14, world: world, x: 3.5, y: 1.5, z: -2.5}
+    - {id: nether_1, world: nether, x: 6.5, y: 1.5, z: 1.5}
+    - {id: nether_2, world: nether, x: 5.5, y: 1.5, z: 9.5}
+    - {id: nether_3, world: nether, x: -2.5, y: 1.5, z: 8.5}
+    - {id: nether_4, world: nether, x: -10.5, y: 1.5, z: 5.5}
+    - {id: nether_5, world: nether, x: -6.5, y: 1.5, z: -1.5}
+    - {id: nether_6, world: nether, x: -5.5, y: 1.5, z: -9.5}
+    - {id: nether_7, world: nether, x: 2.5, y: 1.5, z: -8.5}
+    - {id: nether_8, world: nether, x: 10.5, y: 1.5, z: -6.5}
+    - {id: end_1, world: end, x: 4.5, y: 1.5, z: 7.5}
+    - {id: end_2, world: end, x: -7.5, y: 1.5, z: 8.5}
+    - {id: end_3, world: end, x: -7.5, y: 1.5, z: -3.5}
+    - {id: end_4, world: end, x: 1.5, y: 1.5, z: -11.5}
+    - {id: end_5, world: end, x: 9.5, y: 1.5, z: -2.5}
+
+# ------------------------------------------------------------------ quests
+quests:
+  enabled: true
+  # Quest day: new daily quests start at this local time in this zone
+  daily:
+    reset-time: "04:00"
+    time-zone: "UTC"
+    count: 3
+    # Paid once when all of the day's daily quests are done: base + per-day * min(streak, cap)
+    bonus-coins: 150
+    streak-bonus-coins: 50
+    streak-cap: 10
+    bonus-skill-xp: 40
+    # Coin gains with a reason starting with one of these do not count for "earn coins" quests
+    ignore-coin-reasons: [bank, quest, daily, fairy, pay, trade, refund, admin, auction, sell_back]
+    # How many player-placed blocks are remembered per player (placed blocks do not count for break quests)
+    placed-memory: 2048
+    pool:
+      chop_logs:
+        name: "Lumberjack"
+        description: "Chop 32 logs."
+        type: BREAK_BLOCK
+        target: LOGS
+        amount: 32
+        icon: OAK_LOG
+        rewards: {coins: 120, skill-xp: {FORAGING: 60}}
+      mine_stone:
+        name: "Stone Cutter"
+        description: "Mine 64 stone blocks."
+        type: BREAK_BLOCK
+        target: STONE
+        amount: 64
+        icon: COBBLESTONE
+        rewards: {coins: 120, skill-xp: {MINING: 60}}
+      mine_ores:
+        name: "Prospector"
+        description: "Mine 16 ores."
+        type: BREAK_BLOCK
+        target: ORES
+        amount: 16
+        icon: IRON_ORE
+        rewards: {coins: 180, skill-xp: {MINING: 90}}
+      harvest_crops:
+        name: "Green Thumb"
+        description: "Harvest 48 fully grown crops."
+        type: BREAK_BLOCK
+        target: CROPS
+        amount: 48
+        icon: WHEAT
+        rewards: {coins: 120, skill-xp: {FARMING: 60}}
+      kill_zombies:
+        name: "Zombie Hunter"
+        description: "Defeat 15 zombies."
+        type: KILL_MOB
+        target: ZOMBIE
+        amount: 15
+        icon: ROTTEN_FLESH
+        rewards: {coins: 150, skill-xp: {COMBAT: 70}}
+      kill_skeletons:
+        name: "Bone Collector"
+        description: "Defeat 15 skeletons."
+        type: KILL_MOB
+        target: SKELETON
+        amount: 15
+        icon: BONE
+        rewards: {coins: 150, skill-xp: {COMBAT: 70}}
+      kill_spiders:
+        name: "Web Cutter"
+        description: "Defeat 12 spiders."
+        type: KILL_MOB
+        target: SPIDER
+        amount: 12
+        icon: STRING
+        rewards: {coins: 150, skill-xp: {COMBAT: 70}}
+      kill_creepers:
+        name: "Quiet Defusal"
+        description: "Defeat 8 creepers."
+        type: KILL_MOB
+        target: CREEPER
+        amount: 8
+        icon: GUNPOWDER
+        rewards: {coins: 160, skill-xp: {COMBAT: 80}}
+      kill_any:
+        name: "Monster Slayer"
+        description: "Defeat 40 mobs."
+        type: KILL_MOB
+        target: ANY
+        amount: 40
+        icon: IRON_SWORD
+        rewards: {coins: 200, skill-xp: {COMBAT: 100}}
+      go_fishing:
+        name: "Catch of the Day"
+        description: "Catch 12 fish."
+        type: FISH
+        amount: 12
+        icon: FISHING_ROD
+        rewards: {coins: 140, skill-xp: {FISHING: 80}}
+      fish_lots:
+        name: "Deep Sea Angler"
+        description: "Catch 25 fish."
+        type: FISH
+        amount: 25
+        icon: COD
+        rewards: {coins: 220, skill-xp: {FISHING: 130}}
+      earn_small:
+        name: "Pocket Money"
+        description: "Earn 2,000 coins."
+        type: COINS_EARN
+        amount: 2000
+        icon: GOLD_NUGGET
+        rewards: {coins: 100, skill-xp: {CARPENTRY: 30}}
+      earn_big:
+        name: "Merchant"
+        description: "Earn 20,000 coins."
+        type: COINS_EARN
+        amount: 20000
+        icon: GOLD_INGOT
+        rewards: {coins: 400, skill-xp: {CARPENTRY: 80}}
+      craft_planks:
+        name: "Carpenter"
+        description: "Craft 64 planks."
+        type: CRAFT_ITEM
+        target: PLANKS
+        amount: 64
+        icon: OAK_PLANKS
+        rewards: {coins: 90, skill-xp: {CARPENTRY: 50}}
+      craft_torches:
+        name: "Let There Be Light"
+        description: "Craft 32 torches."
+        type: CRAFT_ITEM
+        target: TORCH
+        amount: 32
+        icon: TORCH
+        rewards: {coins: 90, skill-xp: {CARPENTRY: 50}}
+      craft_minion:
+        name: "Minion Maker"
+        description: "Craft a minion."
+        type: CRAFT_ITEM
+        target: "custom:re:minion_(?!fuel_|upgrade_|skin_|enchanted_|super_)[a-z_]+_[0-9]+"
+        amount: 1
+        icon: ARMOR_STAND
+        rewards: {coins: 300, skill-xp: {CARPENTRY: 100}}
+      enchant_item:
+        name: "Enchanter"
+        description: "Enchant 3 items."
+        type: ENCHANT_ITEM
+        amount: 3
+        icon: ENCHANTING_TABLE
+        rewards: {coins: 200, skill-xp: {ENCHANTING: 120}}
+      place_saplings:
+        name: "Reforestation"
+        description: "Plant 20 saplings."
+        type: PLACE_BLOCK
+        target: SAPLINGS
+        amount: 20
+        icon: OAK_SAPLING
+        rewards: {coins: 100, skill-xp: {FORAGING: 50}}
+      place_blocks:
+        name: "Builder"
+        description: "Place 200 blocks."
+        type: PLACE_BLOCK
+        amount: 200
+        icon: BRICKS
+        rewards: {coins: 100, skill-xp: {CARPENTRY: 40}}
+      visit_islands:
+        name: "Neighbourhood Watch"
+        description: "Walk into an island 3 times."
+        type: ISLAND_ENTER
+        amount: 3
+        icon: GRASS_BLOCK
+        rewards: {coins: 80}
+      visit_nether:
+        name: "Hot Tourist"
+        description: "Visit the Nether."
+        type: VISIT_WORLD
+        target: nether
+        amount: 1
+        icon: NETHERRACK
+        rewards: {coins: 150, skill-xp: {COMBAT: 40}}
+      visit_end:
+        name: "Edge of the World"
+        description: "Visit the End."
+        type: VISIT_WORLD
+        target: end
+        amount: 1
+        icon: END_STONE
+        rewards: {coins: 250, skill-xp: {COMBAT: 60}}
+      find_soul:
+        name: "Soul Searcher"
+        description: "Collect a Fairy Soul."
+        type: COLLECT_SOUL
+        amount: 1
+        icon: PINK_DYE
+        rewards: {coins: 200}
+      bazaar_visit:
+        name: "Window Shopping"
+        description: "Open the Bazaar."
+        type: COMMAND
+        target: bazaar
+        amount: 1
+        icon: EMERALD
+        rewards: {coins: 60}
+      boss_hunt:
+        name: "Boss Rush"
+        description: "Take part in defeating a boss."
+        type: BOSS_KILL
+        amount: 1
+        icon: WITHER_SKELETON_SKULL
+        rewards: {coins: 500, skill-xp: {COMBAT: 200}}
+
+  # The tutorial: a line of quests that unlock each other ("requires"). Rewards are paid exactly once.
+  # Types: ISLAND_CREATE ISLAND_ENTER BREAK_BLOCK PLACE_BLOCK CRAFT_ITEM KILL_MOB FISH SKILL_LEVEL BOSS_KILL
+  #        COINS_EARN COMMAND VISIT_WORLD COLLECT_SOUL ENCHANT_ITEM
+  # Targets: a material / entity / skill / boss id, a group (LOGS PLANKS STONE ORES CROPS SAPLINGS FLOWERS), ANY,
+  #          custom:<item id prefix> or custom:re:<regex on the whole item id> for CRAFT_ITEM of custom
+  #          items (a bad regex skips the quest and is logged), a command name for COMMAND.
+  # rewards.items maps a custom item id (see /sbgive) to an amount; ids that do not exist are skipped.
+  tutorial:
+    create_island:
+      name: "A Place to Call Home"
+      description: "Create your island. Use the Skyblock Menu or the prompt in the hub."
+      type: ISLAND_CREATE
+      amount: 1
+      icon: GRASS_BLOCK
+      requires: []
+      rewards: {coins: 100}
+    visit_hub:
+      name: "Meet the Hub"
+      description: "Visit the hub through the Warps menu."
+      type: VISIT_WORLD
+      target: hub
+      amount: 1
+      icon: BELL
+      requires: [create_island]
+      rewards: {coins: 50}
+    break_wood:
+      name: "Timber!"
+      description: "Break 8 logs."
+      type: BREAK_BLOCK
+      target: LOGS
+      amount: 8
+      icon: OAK_LOG
+      requires: [create_island]
+      rewards: {coins: 50, skill-xp: {FORAGING: 20}}
+    craft_table:
+      name: "Workbench"
+      description: "Craft a crafting table."
+      type: CRAFT_ITEM
+      target: CRAFTING_TABLE
+      amount: 1
+      icon: CRAFTING_TABLE
+      requires: [break_wood]
+      rewards: {coins: 50, skill-xp: {CARPENTRY: 20}}
+    craft_pickaxe:
+      name: "First Tools"
+      description: "Craft a wooden pickaxe."
+      type: CRAFT_ITEM
+      target: WOODEN_PICKAXE
+      amount: 1
+      icon: WOODEN_PICKAXE
+      requires: [craft_table]
+      rewards: {coins: 50, skill-xp: {CARPENTRY: 20}}
+    mine_stone:
+      name: "Rock Bottom"
+      description: "Mine 24 stone blocks."
+      type: BREAK_BLOCK
+      target: STONE
+      amount: 24
+      icon: COBBLESTONE
+      requires: [craft_pickaxe]
+      rewards: {coins: 100, skill-xp: {MINING: 30}}
+    farm_crops:
+      name: "Farmer's Start"
+      description: "Harvest 10 fully grown crops."
+      type: BREAK_BLOCK
+      target: CROPS
+      amount: 10
+      icon: WHEAT
+      requires: [create_island]
+      rewards: {coins: 100, skill-xp: {FARMING: 30}}
+    first_blood:
+      name: "First Blood"
+      description: "Defeat 5 mobs."
+      type: KILL_MOB
+      target: ANY
+      amount: 5
+      icon: IRON_SWORD
+      requires: [create_island]
+      rewards: {coins: 100, skill-xp: {COMBAT: 30}}
+    first_catch:
+      name: "Something is Biting"
+      description: "Catch 3 fish."
+      type: FISH
+      amount: 3
+      icon: FISHING_ROD
+      requires: [craft_table]
+      rewards: {coins: 100, skill-xp: {FISHING: 30}}
+    foraging_3:
+      name: "Forester"
+      description: "Reach Foraging level 3."
+      type: SKILL_LEVEL
+      target: FORAGING
+      amount: 3
+      icon: JUNGLE_SAPLING
+      requires: [break_wood]
+      rewards: {coins: 200}
+    mining_3:
+      name: "Miner"
+      description: "Reach Mining level 3."
+      type: SKILL_LEVEL
+      target: MINING
+      amount: 3
+      icon: STONE_PICKAXE
+      requires: [mine_stone]
+      rewards: {coins: 250}
+    farming_3:
+      name: "Farmer"
+      description: "Reach Farming level 3."
+      type: SKILL_LEVEL
+      target: FARMING
+      amount: 3
+      icon: WOODEN_HOE
+      requires: [farm_crops]
+      rewards: {coins: 200}
+    combat_3:
+      name: "Fighter"
+      description: "Reach Combat level 3."
+      type: SKILL_LEVEL
+      target: COMBAT
+      amount: 3
+      icon: STONE_SWORD
+      requires: [first_blood]
+      rewards: {coins: 250}
+    craft_minion:
+      name: "Automation"
+      description: "Craft your first minion."
+      type: CRAFT_ITEM
+      target: "custom:re:minion_(?!fuel_|upgrade_|skin_|enchanted_|super_)[a-z_]+_[0-9]+"
+      amount: 1
+      icon: ARMOR_STAND
+      requires: [mining_3]
+      rewards: {coins: 500, skill-xp: {CARPENTRY: 80}}
+    earn_coins:
+      name: "Pocket Change"
+      description: "Earn 1,000 coins."
+      type: COINS_EARN
+      amount: 1000
+      icon: GOLD_NUGGET
+      requires: [create_island]
+      rewards: {coins: 100}
+    open_bazaar:
+      name: "Open for Business"
+      description: "Open the Bazaar."
+      type: COMMAND
+      target: bazaar
+      amount: 1
+      icon: EMERALD
+      requires: [earn_coins]
+      rewards: {coins: 100}
+    open_auction:
+      name: "Going Once"
+      description: "Open the Auction House."
+      type: COMMAND
+      target: auctionhouse
+      amount: 1
+      icon: GOLD_BLOCK
+      requires: [open_bazaar]
+      rewards: {coins: 100}
+    first_soul:
+      name: "A Glimmer"
+      description: "Collect your first Fairy Soul."
+      type: COLLECT_SOUL
+      amount: 1
+      icon: PINK_DYE
+      requires: [create_island]
+      rewards: {coins: 100}
+    five_souls:
+      name: "Soul Collector"
+      description: "Collect 5 Fairy Souls."
+      type: COLLECT_SOUL
+      amount: 5
+      icon: PINK_DYE
+      requires: [first_soul]
+      rewards: {coins: 300}
+    enchant_first:
+      name: "Arcane Beginnings"
+      description: "Enchant an item."
+      type: ENCHANT_ITEM
+      amount: 1
+      icon: ENCHANTING_TABLE
+      requires: [mining_3]
+      rewards: {coins: 200, skill-xp: {ENCHANTING: 40}}
+    skill_five:
+      name: "Getting Serious"
+      description: "Reach level 5 in any skill."
+      type: SKILL_LEVEL
+      target: ANY
+      amount: 5
+      icon: EXPERIENCE_BOTTLE
+      requires: [mining_3]
+      rewards: {coins: 500}
+    visit_nether:
+      name: "Into the Fire"
+      description: "Visit the Nether."
+      type: VISIT_WORLD
+      target: nether
+      amount: 1
+      icon: NETHERRACK
+      requires: [combat_3]
+      rewards: {coins: 300}
+    first_boss:
+      name: "Boss Slayer"
+      description: "Take part in defeating a boss."
+      type: BOSS_KILL
+      amount: 1
+      icon: WITHER_SKELETON_SKULL
+      requires: [combat_3]
+      rewards: {coins: 1000, skill-xp: {COMBAT: 300}}
