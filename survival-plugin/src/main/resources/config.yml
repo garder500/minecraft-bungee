@@ -5,5 +5,7 @@ features:
     enabled: true
   island:
     enabled: true
+  wings:
+    enabled: true
   menu:
     enabled: true

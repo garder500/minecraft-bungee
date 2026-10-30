@@ -113,7 +113,7 @@ public class WingsIntegrationTest {
 
     @Test
     public void featureIsEnabledAndPublishesTheApi() {
-        assertTrue(win.vampyuyu.survival.LegacyFeatureFixture.features(plugin).enabledIds().contains("wings"));
+        assertTrue(plugin.features().enabledIds().contains("wings"));
         assertNotNull(Bukkit.getCommandMap().getCommand("wings"));
         assertTrue(plugin.core().items().ids().contains("wings_1"));
         assertTrue(plugin.core().items().ids().contains("wings_10"));

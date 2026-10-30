@@ -1,6 +1,6 @@
 # Simple Skyblock
 
-The live Survival plugin loads only utility, islands and network mode routing. The former economy, custom combat/items, skills, Wings, bosses, minions, dungeons, quests and fairy souls do not start. Their old data files and implementation remain available for compatibility; no migration deletes player data. `LegacyFeatureFixture` loads retired modules only inside their isolated compatibility tests.
+The live Survival plugin loads only utility, islands, the Wings and network mode routing. The former economy, custom combat/items, skills, bosses, minions, dungeons, quests and fairy souls do not start. Their old data files and implementation remain available for compatibility; no migration deletes player data. `LegacyFeatureFixture` loads retired modules only inside their isolated compatibility tests.
 
 A Skyblock selection goes directly to the player's personal island, creating one if needed. There is no generated hub or Skyblock End. Existing hub/home handoff aliases land on the personal island. `/sbmenu` opens the island menu; invitations, visits and public warps remain. Joining another island retains one's own island. Expansion remains usable without the retired coin service.
 

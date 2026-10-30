@@ -8,6 +8,7 @@ import win.vampyuyu.survival.core.FeatureManager;
 import win.vampyuyu.survival.island.IslandFeature;
 import win.vampyuyu.survival.menu.MenuFeature;
 import win.vampyuyu.survival.utility.UtilityFeature;
+import win.vampyuyu.survival.wings.WingsFeature;
 
 public class SurvivalPlugin extends JavaPlugin {
     private Core core;
@@ -18,8 +19,8 @@ public class SurvivalPlugin extends JavaPlugin {
      * Services are published during enable(), so a feature only sees services of features listed before it.
      */
     static List<Feature> featureList() {
-        // The simple Skyblock deliberately does not load the former progression systems.
-        return List.of(new UtilityFeature(), new IslandFeature(), new MenuFeature());
+        // The simple Skyblock does not load the former progression systems, except the Wings.
+        return List.of(new UtilityFeature(), new IslandFeature(), new WingsFeature(), new MenuFeature());
     }
 
     @Override

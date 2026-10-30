@@ -37,7 +37,6 @@ public final class LegacyFeatureFixture {
             new win.vampyuyu.survival.economy.EconomyFeature(),
             new win.vampyuyu.survival.items.ItemsFeature(),
             new win.vampyuyu.survival.skills.SkillsFeature(),
-            new win.vampyuyu.survival.wings.WingsFeature(),
             new win.vampyuyu.survival.boss.BossFeature(),
             new win.vampyuyu.survival.minions.MinionsFeature(),
             new win.vampyuyu.survival.dungeon.DungeonFeature()));

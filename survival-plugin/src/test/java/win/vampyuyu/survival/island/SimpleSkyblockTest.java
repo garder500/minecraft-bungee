@@ -64,7 +64,7 @@ public class SimpleSkyblockTest {
         assertNull(server.getWorld(SkyblockWorlds.HUB));
         assertNull(server.getWorld(SkyblockWorlds.END));
         assertNotNull(server.getWorld(SkyblockWorlds.NETHER));
-        assertEquals(java.util.List.of("utility","island","menu"),plugin.features().enabledIds());
+        assertEquals(java.util.List.of("utility","island","wings","menu"),plugin.features().enabledIds());
         assertNotNull(server.getCommandMap().getCommand("sbmenu"));
         assertNull(server.getCommandMap().getCommand("dungeon"));
     }
