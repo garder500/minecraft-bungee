@@ -85,6 +85,24 @@ public class WingsIntegrationTest {
         fail("no wings in the inventory");
     }
 
+    /** The real dungeon feature refuses teleports into a dungeon world that is not its own run: borrow its admin permission. */
+    private void enterDungeon(PlayerMock p, World dungeon) {
+        var admin = p.addAttachment(plugin, win.vampyuyu.survival.dungeon.run.RunListener.ADMIN, true);
+        try {
+            p.teleport(dungeon.getSpawnLocation());
+        } finally {
+            p.removeAttachment(admin);
+        }
+    }
+
+    /** The real island feature makes sb_hub a safe zone (all damage cancelled), so damage tests step out of it. */
+    private void leaveHub(PlayerMock... players) {
+        World w = Bukkit.getWorld("world") != null ? Bukkit.getWorld("world") : server.addSimpleWorld("world");
+        for (PlayerMock p : players) {
+            p.teleport(w.getSpawnLocation());
+        }
+    }
+
     private void give(PlayerMock p, int tier, int amount) {
         p.getInventory().addItem(items().createCore(tier, amount));
     }
@@ -509,7 +527,7 @@ public class WingsIntegrationTest {
         service.grantOnce(alice, "t");
         equip(alice);
         World dungeon = server.addSimpleWorld("sb_dungeon_test");
-        alice.teleport(dungeon.getSpawnLocation());
+        enterDungeon(alice, dungeon);
         tick(alice, System.currentTimeMillis());
         assertFalse(alice.getAllowFlight());
     }
@@ -521,7 +539,7 @@ public class WingsIntegrationTest {
         tick(alice, System.currentTimeMillis());
         alice.setFlying(true);
         World dungeon = server.addSimpleWorld("sb_dungeon_test2");
-        alice.teleport(dungeon.getSpawnLocation());
+        enterDungeon(alice, dungeon);
         tick(alice, System.currentTimeMillis() + 100);
         assertFalse(alice.getAllowFlight());
         assertFalse(alice.isFlying());
@@ -546,6 +564,7 @@ public class WingsIntegrationTest {
 
     @Test
     public void damageFromPlayersAndBossesTagsButEnvironmentDoesNot() {
+        leaveHub(alice, bob);
         service.grantOnce(alice, "t");
         equip(alice);
         assertEquals(0, flight.combatRemaining(alice.getUniqueId()));
@@ -590,6 +609,7 @@ public class WingsIntegrationTest {
 
     @Test
     public void fallDamageIsNotCancelledForNormalPlayers() {
+        leaveHub(alice);
         EntityDamageEvent fall = new EntityDamageEvent(alice, EntityDamageEvent.DamageCause.FALL, 10.0);
         server.getPluginManager().callEvent(fall);
         assertFalse(fall.isCancelled());
@@ -700,6 +720,11 @@ public class WingsIntegrationTest {
 
     @Test
     public void aStrangerCannotPickUpDroppedWings() {
+        // MockBukkit's ItemMock.getThrower is unimplemented, which island protection calls on pickups: bypass it
+        // (this test is about the Wings guard, not about islands)
+        for (PlayerMock p : new PlayerMock[] {alice, bob}) {
+            p.addAttachment(plugin, win.vampyuyu.survival.island.IslandService.BYPASS, true);
+        }
         service.grantOnce(alice, "t");
         ItemStack mine = alice.getInventory().getContents()[service.findValidSlot(alice)].clone();
         alice.getInventory().clear();
@@ -715,6 +740,11 @@ public class WingsIntegrationTest {
 
     @Test
     public void theOwnerCanPickUpTheirDroppedWings() {
+        // MockBukkit's ItemMock.getThrower is unimplemented, which island protection calls on pickups: bypass it
+        // (this test is about the Wings guard, not about islands)
+        for (PlayerMock p : new PlayerMock[] {alice, bob}) {
+            p.addAttachment(plugin, win.vampyuyu.survival.island.IslandService.BYPASS, true);
+        }
         service.grantOnce(alice, "t");
         ItemStack mine = alice.getInventory().getContents()[service.findValidSlot(alice)].clone();
         alice.getInventory().clear();

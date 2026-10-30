@@ -92,6 +92,19 @@ public class UtilityFeatureTest {
         return at;
     }
 
+    /**
+     * Puts a player into a dungeon world. The real dungeon feature refuses every teleport into a dungeon world that
+     * is not its own run (RunListener.onTeleport), so the test borrows the dungeon admin permission for the jump only.
+     */
+    private Location standInDungeon(PlayerMock p, World w, int x, int y, int z) {
+        var admin = p.addAttachment(plugin, win.vampyuyu.survival.dungeon.run.RunListener.ADMIN, true);
+        try {
+            return stand(p, w, x, y, z);
+        } finally {
+            p.removeAttachment(admin);
+        }
+    }
+
     private void ticks(int n) {
         server.getScheduler().performTicks(n);
     }
@@ -341,7 +354,7 @@ public class UtilityFeatureTest {
         PlayerMock p = player("Lia", Perms.BYPASS_WARMUP);
         stand(p, world, 0, 64, 0);
         p.performCommand("sethome h");
-        stand(p, dungeon, 5, 64, 5);
+        standInDungeon(p, dungeon, 5, 64, 5);
         drain(p);
         p.performCommand("home h");
         ticks(2);
@@ -354,7 +367,7 @@ public class UtilityFeatureTest {
         server.getPluginManager().callEvent(new PlayerDeathEvent(p, org.bukkit.damage.DamageSource.builder(
             org.bukkit.damage.DamageType.GENERIC).build(), new ArrayList<>(), 0, "x"));
         stand(p, world, 70, 64, 70);
-        stand(p, dungeon, 5, 64, 5);
+        standInDungeon(p, dungeon, 5, 64, 5);
         drain(p);
         p.performCommand("back");
         ticks(2);
@@ -518,7 +531,7 @@ public class UtilityFeatureTest {
         PlayerMock a = player("Hex", Perms.BYPASS_WARMUP);
         PlayerMock b = player("Ian");
         stand(a, world, 0, 64, 0);
-        stand(b, dungeon, 4, 64, 4);
+        standInDungeon(b, dungeon, 4, 64, 4);
         drain(a);
         a.performCommand("tpa Ian");
         assertTrue(drain(a).contains("dungeons"));
@@ -932,7 +945,7 @@ public class UtilityFeatureTest {
         assertNull("no permission, no anvil", p.getOpenInventory().getTopInventory() == null ? null
             : (p.getOpenInventory().getTopInventory().getType() == org.bukkit.event.inventory.InventoryType.ANVIL ? "open" : null));
         World dungeon = server.addSimpleWorld("sb_dungeon_ec");
-        stand(p, dungeon, 0, 64, 0);
+        standInDungeon(p, dungeon, 0, 64, 0);
         drain(p);
         p.performCommand("ec");
         assertTrue(drain(p).contains("disabled inside dungeons"));
