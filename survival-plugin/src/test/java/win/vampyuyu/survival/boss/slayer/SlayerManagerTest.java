@@ -125,10 +125,15 @@ public class SlayerManagerTest {
     }
 
     @Test
-    public void withoutAnEconomyNothingStarts() {
+    public void withoutAnEconomyNothingStarts() throws Exception {
         MockBukkit.unmock();
         server = MockBukkit.mock();
-        plugin = MockBukkit.load(SurvivalPlugin.class); // no wallet registered
+        plugin = MockBukkit.load(SurvivalPlugin.class);
+        // the real economy feature is loaded now: take its service away to model a network without an economy
+        java.lang.reflect.Field services = win.vampyuyu.survival.core.Core.class.getDeclaredField("services");
+        services.setAccessible(true);
+        ((java.util.Map<?, ?>) services.get(plugin.core())).remove(win.vampyuyu.survival.api.EconomyApi.class);
+        assertTrue(plugin.core().service(win.vampyuyu.survival.api.EconomyApi.class).isEmpty());
         PlayerMock p = server.addPlayer();
         BossConfig config = BossConfig.load(org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(
             new java.io.InputStreamReader(getClass().getResourceAsStream("/boss.yml"),
