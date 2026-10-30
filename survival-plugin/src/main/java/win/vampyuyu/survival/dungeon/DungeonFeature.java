@@ -41,6 +41,7 @@ public final class DungeonFeature implements Feature {
             service.parties.tick();
             hint.tick();
         });
+        core.register(DungeonService.class, service);
         core.register(DungeonApi.class, new DungeonApiImpl());
     }
 

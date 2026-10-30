@@ -130,7 +130,7 @@ public final class RunListener implements Listener {
         Player p = event.getPlayer();
         // a player that logs in inside a dungeon world without a run (crash, quit mid-run) is sent out
         ctx.scheduler().later(5, () -> {
-            if (p.isOnline() && RunManager.inDungeonWorld(p) && active(p) == null) {
+            if (p.isOnline() && RunManager.inDungeonWorld(p) && active(p) == null && !admin(p)) {
                 if (p.getGameMode() == GameMode.SPECTATOR && !admin(p)) {
                     p.setGameMode(GameMode.SURVIVAL);
                 }
@@ -532,7 +532,7 @@ public final class RunListener implements Listener {
         }
         DungeonRun run = active(p);
         boolean toDungeon = dungeonWorld(event.getTo().getWorld());
-        if (run != null && !run.state.over()) {
+        if (run != null && run.state.active()) {
             if (event.getCause() == PlayerTeleportEvent.TeleportCause.SPECTATE && event.getTo().getWorld() == run.world) {
                 return;
             }
@@ -582,7 +582,7 @@ public final class RunListener implements Listener {
     public void onCommand(PlayerCommandPreprocessEvent event) {
         Player p = event.getPlayer();
         DungeonRun run = active(p);
-        if (run == null || run.state.over() || admin(p)) {
+        if (run == null || !run.state.active() || admin(p)) {
             return;
         }
         String line = event.getMessage();

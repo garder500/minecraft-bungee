@@ -63,6 +63,17 @@ public final class MobFactory {
             raw.remove();
             return null;
         }
+        try {
+            configure(e, spec, runId, room, kind, floor, level, hpMult, dmgMult, target);
+        } catch (RuntimeException ex) {
+            e.remove(); // never leave a half configured monster behind
+            return null;
+        }
+        return e;
+    }
+
+    private void configure(LivingEntity e, MobSpec spec, String runId, int room, String kind, int floor, int level,
+            double hpMult, double dmgMult, Player target) {
         double hp = Math.max(1, spec.health() * hpMult);
         AttributeInstance maxHealth = e.getAttribute(Attribute.MAX_HEALTH);
         if (maxHealth != null) {
@@ -106,7 +117,6 @@ public final class MobFactory {
         if (e instanceof Mob mob && target != null) {
             mob.setTarget(target);
         }
-        return e;
     }
 
     private void gear(LivingEntity e, MobSpec spec, int floor) {

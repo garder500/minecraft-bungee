@@ -46,7 +46,6 @@ public final class RunManager {
     private final WorldFactory worlds;
     private final Map<String, DungeonRun> runs = new LinkedHashMap<>();
     private final Map<UUID, DungeonRun> byPlayer = new HashMap<>();
-    private final Map<String, BlockApplier> appliers = new HashMap<>();
     private final Map<String, BossBar> progressBars = new HashMap<>();
     private final Map<String, Boolean> cancelledBuilds = new HashMap<>();
     private int building;
@@ -273,15 +272,11 @@ public final class RunManager {
         final World world = w;
         DungeonRun run = new DungeonRun(ctx, id, floor, seed, layout, built, party);
         run.world = world;
-        run.closeRequest = () -> destroy(run);
         synchronized (this) {
-            runs.put(id, run);
-            for (UUID m : run.players.keySet()) {
-                byPlayer.put(m, run);
-            }
             building = Math.max(0, building - 1);
             cancelledBuilds.remove(id);
         }
+        register(run);
         BossBar bar = progressBars.get(id);
         BlockApplier applier = new BlockApplier(ctx.core.getPlugin(), ctx.scheduler(), world, built.buffer,
             ctx.cfg.maxMsPerTick, ctx.cfg.blocksPerCheck,
@@ -296,9 +291,6 @@ public final class RunManager {
                 if (b != null) {
                     run.each(p -> p.hideBossBar(b));
                 }
-                synchronized (this) {
-                    appliers.remove(id);
-                }
                 if (run.state == RunState.GENERATING) {
                     run.begin(world);
                 }
@@ -307,10 +299,27 @@ public final class RunManager {
                 ctx.log().warning("Dungeon " + id + ": block placement failed: " + error);
                 run.finish(false, "The crypt could not be built.");
             });
-        synchronized (this) {
-            appliers.put(id, applier);
-        }
+        run.applier = applier;
         applier.start();
+    }
+
+    private static Path folderOf(World world) {
+        try {
+            return world == null ? null : world.getWorldFolder().toPath();
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** Makes a run known to the manager (its players, its world) and wires its close request. */
+    void register(DungeonRun run) {
+        run.closeRequest = () -> destroy(run);
+        synchronized (this) {
+            runs.put(run.id, run);
+            for (UUID m : run.players.keySet()) {
+                byPlayer.put(m, run);
+            }
+        }
     }
 
     // ------------------------------------------------------------------ destroy
@@ -355,12 +364,9 @@ public final class RunManager {
         }
         run.state = RunState.CLOSING;
         World world = run.world;
-        Path folder = world == null ? null : world.getWorldFolder().toPath();
+        Path folder = folderOf(world);
         String name = SkyblockWorlds.dungeon(run.id);
-        BlockApplier applier;
-        synchronized (this) {
-            applier = appliers.remove(run.id);
-        }
+        BlockApplier applier = run.applier;
         BossBar bar = progressBars.remove(run.id);
         if (applier != null) {
             applier.cancel();
@@ -486,7 +492,7 @@ public final class RunManager {
         for (DungeonRun run : list) {
             try {
                 World world = run.world;
-                Path folder = world == null ? null : world.getWorldFolder().toPath();
+                Path folder = folderOf(world);
                 run.closeRequest = () -> { };
                 run.destroying = true;
                 run.state = RunState.CLOSING;
@@ -494,10 +500,7 @@ public final class RunManager {
                     run.leave(id, false);
                 }
                 run.dispose();
-                BlockApplier applier;
-                synchronized (this) {
-                    applier = appliers.remove(run.id);
-                }
+                BlockApplier applier = run.applier;
                 if (applier != null) {
                     applier.cancel();
                 }
@@ -526,7 +529,6 @@ public final class RunManager {
         synchronized (this) {
             runs.clear();
             byPlayer.clear();
-            appliers.clear();
         }
         progressBars.clear();
         Path container = container();

@@ -198,6 +198,7 @@ final class BossDirector {
             Entity a = Bukkit.getEntity(id);
             if (a != null) {
                 a.remove();
+                run.mobsSpawned--; // dismissed with the boss, not part of the kill ratio
             }
         }
         adds.clear();

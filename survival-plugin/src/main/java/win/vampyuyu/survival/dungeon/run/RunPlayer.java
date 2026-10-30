@@ -36,6 +36,8 @@ final class RunPlayer {
     boolean origAllowFlight;
     boolean origFlying;
     boolean rewarded;
+    /** prepare() ran: game mode and scoreboard were saved and must be restored. */
+    boolean prepared;
     boolean darkness;
     long lastRoomTitle;
 

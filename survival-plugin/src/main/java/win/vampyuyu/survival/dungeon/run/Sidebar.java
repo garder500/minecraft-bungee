@@ -21,7 +21,11 @@ final class Sidebar {
         this.board = Bukkit.getScoreboardManager().getNewScoreboard();
         this.objective = board.registerNewObjective("dungeon", Criteria.DUMMY, title);
         this.objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-        this.objective.numberFormat(NumberFormat.blank());
+        try {
+            this.objective.numberFormat(NumberFormat.blank());
+        } catch (RuntimeException ignored) {
+            // an older or partial scoreboard implementation: the numbers just stay visible
+        }
     }
 
     private static String entry(int i) {

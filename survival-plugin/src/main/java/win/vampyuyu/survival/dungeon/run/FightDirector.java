@@ -246,6 +246,8 @@ final class FightDirector {
         if (e != null) {
             guards.add(e.getUniqueId());
             guardsSpawned++;
+        } else {
+            guardsTotal = Math.max(guardsSpawned, guardsTotal - 1); // a guard that cannot spawn must not hold the key back
         }
     }
 
@@ -262,7 +264,11 @@ final class FightDirector {
             return;
         }
         guardKills++;
-        if (!bloodKey && guardsSpawned >= guardsTotal && guards.isEmpty()) {
+        checkBloodKey();
+    }
+
+    private void checkBloodKey() {
+        if (guardsStarted && !bloodKey && guardsSpawned >= guardsTotal && guards.isEmpty()) {
             bloodKey = true;
             run.sayAll("<red><bold>The blood key is forged!</bold> <gray>Open the blood door next to the blood room.");
             run.soundAll(Sound.BLOCK_BEACON_ACTIVATE, 1f, 0.5f);
@@ -464,6 +470,7 @@ final class FightDirector {
                 updateFight(rt);
             }
         }
+        checkBloodKey();
         // the guards roam: keep them hunting and forget those that vanished
         for (UUID id : new ArrayList<>(guards)) {
             Entity e = Bukkit.getEntity(id);
@@ -494,11 +501,13 @@ final class FightDirector {
             if (e == null || !e.isValid() || e.isDead()) {
                 rt.mobs.remove(id);
                 rt.removed++;
+                run.mobsSpawned--; // it vanished: it can never be killed, so it must not weigh on the score
             } else {
                 if (e.getLocation().getY() < run.built.baseY - 8) {
                     e.remove();
                     rt.mobs.remove(id);
                     rt.removed++;
+                    run.mobsSpawned--;
                 } else if (run.tick % 40 == 0) {
                     retarget(e);
                 }
@@ -570,8 +579,14 @@ final class FightDirector {
                 run.mobsKilled++;
                 guardDied(e.getUniqueId());
             }
-            case "boss" -> run.boss.mainDied(e);
-            case "boss_add" -> run.boss.addDied(e);
+            case "boss" -> {
+                run.mobsKilled++;
+                run.boss.mainDied(e);
+            }
+            case "boss_add" -> {
+                run.mobsKilled++;
+                run.boss.addDied(e);
+            }
             default -> {
                 Integer room = run.keys().roomOf(e);
                 RoomRt rt = room == null ? null : run.rooms.get(room);

@@ -81,6 +81,8 @@ public final class DungeonRun {
     int fightRoomsCleared;
     Runnable closeRequest = () -> { };
     boolean destroying;
+    /** Places the blocks; kept so the chunk tickets can be released when the world closes. */
+    win.vampyuyu.survival.dungeon.gen.BlockApplier applier;
 
     final FightDirector fights;
     final BossDirector boss;
@@ -380,6 +382,7 @@ public final class DungeonRun {
     }
 
     private void prepare(Player p, RunPlayer rp) {
+        rp.prepared = true;
         rp.originalMode = p.getGameMode();
         rp.originalBoard = p.getScoreboard();
         rp.origAllowFlight = p.getAllowFlight();
@@ -394,8 +397,13 @@ public final class DungeonRun {
         var max = p.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
         p.setHealth(max == null ? 20 : Math.min(max.getValue(), p.getHealth() + max.getValue()));
         if (ctx.cfg.sidebar) {
-            rp.sidebar = new Sidebar(Msg.component("<dark_red><bold>CATACOMBS</bold> <gray>F" + floor.number()));
-            rp.sidebar.show(p);
+            try {
+                rp.sidebar = new Sidebar(Msg.component("<dark_red><bold>CATACOMBS</bold> <gray>F" + floor.number()));
+                rp.sidebar.show(p);
+            } catch (RuntimeException e) {
+                rp.sidebar = null;
+                ctx.log().warning("Dungeon: sidebar unavailable: " + e);
+            }
         }
         if (ctx.cfg.darknessEffect) {
             p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, PotionEffect.INFINITE_DURATION, 0, false, false, false));
@@ -405,6 +413,10 @@ public final class DungeonRun {
 
     /** Gives the player back to the world: mode, flight, scoreboard. Does not teleport. */
     void release(Player p, RunPlayer rp) {
+        if (!rp.prepared) {
+            return; // still waiting in the hub: nothing was changed
+        }
+        rp.prepared = false;
         try {
             deaths.cleanup(rp);
             if (rp.darkness) {
@@ -440,7 +452,7 @@ public final class DungeonRun {
             release(p, rp);
         }
         rp.left = true;
-        if (p != null && sendOut) {
+        if (p != null && sendOut && p.getWorld() == world) {
             ctx.scheduler().nextTick(() -> RunManager.sendOut(ctx, p));
         }
         if (!state.over()) {
@@ -597,7 +609,9 @@ public final class DungeonRun {
                 p.setGliding(false);
             }
             RoomBuild rb = built.roomAt(l.getX(), l.getZ());
-            if (rb != null && rb.plan.index != rp.room) {
+            // a room counts as entered once the player is past the wall and doorway strip, so that the doors
+            // that lock behind a fight never close on somebody standing in them
+            if (rb != null && rb.plan.index != rp.room && interior(rb, l)) {
                 enterRoom(p, rp, rb);
             }
             int floorY = rb != null && rb.plan.type == RoomType.TRAP ? rb.fallY : built.baseY - 12;
@@ -605,6 +619,12 @@ public final class DungeonRun {
                 deaths.fell(p, rp);
             }
         });
+    }
+
+    private static boolean interior(RoomBuild rb, Location l) {
+        double lx = l.getX() - rb.minX;
+        double lz = l.getZ() - rb.minZ;
+        return lx >= 2 && lx < 30 && lz >= 2 && lz < 30;
     }
 
     private void enterRoom(Player p, RunPlayer rp, RoomBuild rb) {
