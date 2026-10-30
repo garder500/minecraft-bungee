@@ -107,6 +107,14 @@ public final class MinionItems {
         }
     }
 
+    /** One item of the fuel, as the player holds it (the compressed resource, the custom fuel or the vanilla item). */
+    public static ItemStack fuelStack(Items items, Fuel fuel) {
+        if (fuel.compressed() != null) {
+            return items.create(enchantedId(fuel.compressed()));
+        }
+        return fuel.custom() ? items.create(fuelId(fuel.id())) : new ItemStack(fuel.material());
+    }
+
     /** Removes everything {@link #register} added. */
     public static void unregister(Items items, MinionConfig config) {
         for (String id : new ArrayList<>(items.ids())) {
@@ -155,12 +163,11 @@ public final class MinionItems {
 
     // ---------------------------------------------------------------- stacks
 
-    /** A fresh minion item; {@code uid} null stamps nothing (a crafted item is stamped when placed). */
+    /** A fresh minion item; {@code uid} null stamps a new random one. */
     public static ItemStack createMinion(Items items, String type, int tier, @Nullable String uid) {
         ItemStack stack = items.create(minionId(type, tier));
-        if (uid != null) {
-            items.set(stack, PDC_UID, uid);
-        }
+        // Always stamped: an unstamped item could be copied by a crash that restores an older inventory.
+        items.set(stack, PDC_UID, uid != null ? uid : newUid());
         return stack;
     }
 

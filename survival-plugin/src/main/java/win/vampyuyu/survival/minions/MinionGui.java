@@ -1,8 +1,12 @@
 package win.vampyuyu.survival.minions;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+import org.bukkit.Bukkit;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
@@ -10,10 +14,12 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import win.vampyuyu.survival.core.Cooldowns;
 import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.Gui;
 import win.vampyuyu.survival.core.Guis;
 import win.vampyuyu.survival.core.Msg;
+import win.vampyuyu.survival.core.Scheduler;
 import win.vampyuyu.survival.minions.MinionConfig.Fuel;
 import win.vampyuyu.survival.minions.MinionConfig.Skin;
 import win.vampyuyu.survival.minions.MinionConfig.Type;
@@ -36,12 +42,53 @@ public final class MinionGui {
     private static final int SLOT_HAT = 52;
     private static final int SLOT_PICKUP = 53;
 
+    private static final String NOT_COLLECTOR = "Only the owner of the minion can take items out of it.";
+
+    /** How often an open menu is redrawn, in ticks. */
+    private static final long REFRESH_TICKS = 20;
+
+    /** An open minion menu. */
+    private record Viewer(Gui gui, String minionId) {}
+
     private final Core core;
     private final MinionManager manager;
+    private final Cooldowns clicks = new Cooldowns();
+    private final Map<UUID, Viewer> viewers = new HashMap<>();
+    private Scheduler.Handle refreshTask;
 
     public MinionGui(Core core, MinionManager manager) {
         this.core = core;
         this.manager = manager;
+        this.refreshTask = core.scheduler().repeating(REFRESH_TICKS, REFRESH_TICKS, this::refreshAll);
+    }
+
+    /** Stops the refresh and forgets every open menu (the feature is being disabled). */
+    public void shutdown() {
+        if (refreshTask != null) {
+            refreshTask.cancel();
+            refreshTask = null;
+        }
+        viewers.clear();
+    }
+
+    /** Redraws every open minion menu in place (the storage, the status and the numbers move while it is open). */
+    void refreshAll() {
+        for (var it = viewers.entrySet().iterator(); it.hasNext();) {
+            var entry = it.next();
+            Player p = Bukkit.getPlayer(entry.getKey());
+            Viewer v = entry.getValue();
+            MinionData d = manager.store().get(v.minionId()).orElse(null);
+            if (p == null || d == null || p.getOpenInventory().getTopInventory().getHolder() != v.gui()) {
+                it.remove();
+                continue;
+            }
+            try {
+                render(v.gui(), p, d);
+            } catch (RuntimeException e) {
+                core.debug("minions: menu refresh failed: " + e);
+                it.remove();
+            }
+        }
     }
 
     private MinionConfig config() {
@@ -55,11 +102,26 @@ public final class MinionGui {
             core.msg().error(p, "This minion type no longer exists. Ask an admin.");
             return;
         }
+        Gui gui = core.guis().create(6, "<dark_gray>" + MinionItems.minionName(type, d.tier));
+        gui.border(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
+        render(gui, p, d);
+        UUID viewer = p.getUniqueId();
+        Viewer mine = new Viewer(gui, d.id);
+        gui.onClose(pl -> viewers.remove(viewer, mine));
+        gui.open(p);
+        viewers.put(viewer, mine);
+        manager.markSeen(d);
+    }
+
+    /** Fills (or refills) every dynamic slot of the menu; safe to call again on an open menu. */
+    private void render(Gui gui, Player p, MinionData d) {
+        Type type = config().types.get(d.type);
+        if (type == null) {
+            return;
+        }
         MinionLogic logic = manager.logic();
         Storage storage = logic.storage(d);
         Status status = manager.statusOf(d);
-        Gui gui = core.guis().create(6, "<dark_gray>" + MinionItems.minionName(type, d.tier));
-        gui.border(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
         String id = d.id;
 
         // ---- storage
@@ -68,6 +130,9 @@ public final class MinionGui {
             if (i < stacks.size()) {
                 Storage.Stack stack = stacks.get(i);
                 gui.set(STORAGE[i], stackIcon(stack), c -> act(c.player(), id, (pl, m) -> {
+                    if (!manager.canCollect(pl, m)) {
+                        return MinionManager.Result.fail(NOT_COLLECTOR);
+                    }
                     long moved = manager.withdraw(pl, m, stack.key(), c.shift() ? Long.MAX_VALUE : stack.amount());
                     if (moved == 0) {
                         core.msg().error(pl, "Your inventory is full.");
@@ -81,6 +146,8 @@ public final class MinionGui {
         if (stacks.size() > STORAGE.length) {
             gui.set(44, Guis.icon(Material.CHEST, "<yellow>+" + (stacks.size() - STORAGE.length) + " more stacks",
                 "<gray>Collect to see the rest."));
+        } else {
+            gui.set(44, Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
         }
 
         // ---- top bar
@@ -88,6 +155,9 @@ public final class MinionGui {
             "<gray>Takes every item to your inventory.", "", "<gray>Stored: <white>" + Msg.grouped(storage.total())
             + " items", "<gray>Slots: <white>" + storage.slotsUsed() + "/" + storage.capacity()),
             c -> act(c.player(), id, (pl, m) -> {
+                if (!manager.canCollect(pl, m)) {
+                    return MinionManager.Result.fail(NOT_COLLECTOR);
+                }
                 long moved = manager.collectAll(pl, m);
                 if (moved == 0) {
                     core.msg().info(pl, "Nothing to collect, or your inventory is full.");
@@ -117,7 +187,9 @@ public final class MinionGui {
         }));
         gui.set(SLOT_INFO, infoIcon(d, type, storage));
         gui.set(SLOT_STATUS, Guis.icon(status.blocked() ? Material.RED_DYE : Material.LIME_DYE,
-            status.color() + status.label(), "<gray>" + status.hint(type.kind())));
+            status.color() + status.label(), "<gray>" + status.hint(type.kind()), "",
+            "<gray>Production: <green>" + Msg.grouped(Math.round(logic.itemsPerHour(d, type))) + " items per hour",
+            "<gray>Storage full: <white>" + fullIn(d, type, storage)));
 
         // ---- bottom bar
         Fuel fuel = logic.fuelOf(d);
@@ -151,15 +223,16 @@ public final class MinionGui {
         gui.set(SLOT_PICKUP, Guis.icon(Material.BARRIER, "<red>Pick up", "<gray>Takes the minion back with its",
             "<gray>upgrades, hat and unused fuel.", "", "<gray>Collect the storage first."),
             c -> act(c.player(), id, (pl, m) -> {
+                boolean mine = m.owner.equals(pl.getUniqueId().toString()) || manager.canManage(pl, m);
                 MinionManager.Result r = manager.pickUp(pl, m);
                 if (r.ok()) {
-                    core.msg().ok(pl, "Minion picked up.");
+                    core.msg().ok(pl, mine ? "Minion picked up."
+                        : "Minion picked up: it and everything in it were sent back to its owner.");
                     pl.closeInventory();
                     return null;
                 }
                 return r;
             }, false));
-        gui.open(p);
     }
 
     /** Runs an action on the live minion, reports a refusal, and reopens the menu next tick. */
@@ -168,6 +241,11 @@ public final class MinionGui {
     }
 
     private void act(Player p, String id, Action action, boolean reopen) {
+        // One click per gui-click-millis (150 ms): every action that moves items writes the minion file, so click spam must not queue disk
+        // writes on the main thread.
+        if (config().guiClickMillis > 0 && !clicks.tryUse(p.getUniqueId(), "click", config().guiClickMillis)) {
+            return;
+        }
         MinionData d = manager.store().get(id).orElse(null);
         if (d == null) {
             core.msg().error(p, "That minion is gone.");
@@ -184,7 +262,19 @@ public final class MinionGui {
             core.msg().error(p, r.error());
         }
         if (reopen) {
-            core.scheduler().nextTick(() -> manager.store().get(id).ifPresent(m -> open(p, m)));
+            // Redraw in place when the same menu is still open (no flicker, no cursor reset), else open it again.
+            core.scheduler().nextTick(() -> {
+                Viewer v = viewers.get(p.getUniqueId());
+                MinionData m = manager.store().get(id).orElse(null);
+                if (m == null) {
+                    return;
+                }
+                if (v != null && v.minionId().equals(id) && p.getOpenInventory().getTopInventory().getHolder() == v.gui()) {
+                    render(v.gui(), p, m);
+                } else {
+                    open(p, m);
+                }
+            });
         }
     }
 
@@ -224,6 +314,8 @@ public final class MinionGui {
             "<gray>Speed: <green>" + MinionItems.trim(speed * 100) + "%",
             "<gray>Working area: <white>" + diameter + "x" + diameter,
             "<gray>Storage: <white>" + storage.slotsUsed() + "/" + storage.capacity() + " slots",
+            "<gray>Production: <green>" + Msg.grouped(Math.round(logic.itemsPerHour(d, type))) + " items per hour",
+            "<gray>Storage full: <white>" + fullIn(d, type, storage),
             "", "<gray>Items produced: <white>" + Msg.grouped(d.produced));
         ItemMeta meta = icon.getItemMeta();
         NamespacedKey model = NamespacedKey.fromString("vampyuyu:minions/" + type.id());
@@ -232,6 +324,22 @@ public final class MinionGui {
         }
         icon.setItemMeta(meta);
         return icon;
+    }
+
+    /** "now", or about how long until the primary resource no longer fits. */
+    private String fullIn(MinionData d, Type type, Storage storage) {
+        if (storage.isCompletelyFull()) {
+            return "now";
+        }
+        double rate = manager.logic().itemsPerHour(d, type);
+        if (rate <= 0) {
+            return "never";
+        }
+        boolean smelting = manager.logic().upgradesOf(d).stream().anyMatch(u -> u.effect() == MinionConfig.Effect.SMELT);
+        Material lead = smelting ? config().smelted(type.primary().item()) : type.primary().item();
+        String primary = ItemKey.vanilla(lead);
+        double hours = storage.room(primary) / rate;
+        return "in about " + Msg.duration(Math.round(hours * 3_600_000d));
     }
 
     private static String prettyKind(MinionConfig.Kind kind) {
@@ -261,7 +369,7 @@ public final class MinionGui {
             return Guis.icon(Material.COAL, "<gray>Fuel slot", "<gray>Fuel makes the minion faster.",
                 "<gray>It burns only while the minion works.", "", "<yellow>Click to add fuel", "<gray>from your inventory.");
         }
-        ItemStack icon = fuel.custom() ? core.items().create(MinionItems.fuelId(fuel.id())) : new ItemStack(fuel.material());
+        ItemStack icon = MinionItems.fuelStack(core.items(), fuel);
         ItemMeta meta = icon.getItemMeta();
         List<Component> lore = new ArrayList<>();
         lore.add(line("<gray>Speed: <green>+" + MinionItems.trim(fuel.speed() * 100) + "%"));
@@ -339,8 +447,8 @@ public final class MinionGui {
         for (Fuel fuel : config().fuels.values()) {
             long have = manager.countIn(p, List.of(fuel.key()));
             if (have > 0 && fuel.accepts(type.kind())) {
-                ItemStack icon = fuel.custom() ? core.items().create(MinionItems.fuelId(fuel.id())) : new ItemStack(fuel.material());
-                if (!fuel.custom()) {
+                ItemStack icon = MinionItems.fuelStack(core.items(), fuel);
+                if (!fuel.custom() && fuel.compressed() == null) {
                     ItemMeta meta = icon.getItemMeta();
                     meta.displayName(line("<white>" + fuel.name()));
                     meta.lore(List.of(line("<gray>Minion speed: <green>+" + MinionItems.trim(fuel.speed() * 100) + "%"),
@@ -368,7 +476,7 @@ public final class MinionGui {
         List<Choice> choices = new ArrayList<>();
         for (Upgrade up : config().upgrades.values()) {
             long have = manager.countIn(p, List.of(up.key()));
-            if (have > 0 && !d.upgrades.contains(up.id())) {
+            if (have > 0 && (!d.upgrades.contains(up.id()) || up.effect() == MinionConfig.Effect.SPEED)) {
                 choices.add(new Choice(withLore(core.items().create(MinionItems.upgradeId(up.id())),
                     "<gray>You have: <white>" + have, "<yellow>Click to install"), c -> act(c.player(), id, (pl, m) -> {
                         MinionManager.Result r = manager.installUpgrade(pl, m, up);

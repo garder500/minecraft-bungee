@@ -49,8 +49,9 @@ public enum Status {
                 default -> "Free some space around it.";
             };
             case INVALID_TERRAIN -> switch (kind) {
+                case MINING -> "It needs a solid block under the air it works on: no pillar, no void.";
                 case FARMING -> "It needs farmland around it, at the layer below its feet.";
-                case FORAGING -> "It needs grass or dirt around it to plant saplings on.";
+                case FORAGING -> "It needs grass or dirt around it for its trees to grow on.";
                 default -> "The ground around it is not suitable.";
             };
             case NO_WATER -> "It needs water in the layer below its feet.";

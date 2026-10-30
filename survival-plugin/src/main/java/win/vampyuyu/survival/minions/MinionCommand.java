@@ -271,7 +271,7 @@ final class MinionCommand implements CommandExecutor, TabCompleter {
         }
         int count = 0;
         for (MinionData d : manager.store().all()) {
-            if (orphans ? (manager.statusOf(d) == Status.ISLAND_MISSING || !config().types.containsKey(d.type))
+            if (orphans ? manager.isOrphan(d)
                     : d.owner.equals(owner.getUniqueId().toString())) {
                 count++;
             }

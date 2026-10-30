@@ -15,6 +15,7 @@ public final class MinionsFeature implements Feature {
     private Core core;
     private MinionConfig config;
     private MinionManager manager;
+    private MinionGui gui;
     private MinionRecipes recipes;
 
     @Override
@@ -39,11 +40,12 @@ public final class MinionsFeature implements Feature {
             MinionLogic logic = new MinionLogic(config, RandomGenerator.getDefault());
             MinionVisuals visuals = new MinionVisuals(config, log);
             manager = new MinionManager(core, config, store, logic, visuals, System::currentTimeMillis);
-            MinionGui gui = new MinionGui(core, manager);
+            gui = new MinionGui(core, manager);
             recipes = new MinionRecipes(core.getPlugin());
             recipes.register(core.items(), config);
             core.listen(new MinionListener(core, manager, gui, recipes));
             core.listen(new MinionItemGuard(core.items()));
+            core.listen(new PlacedBlockGuard(core, manager));
 
             core.permissions().register("vampyuyu.sb.minions.admin", "Give, list and purge minions",
                 PermissionDefault.OP);
@@ -70,6 +72,9 @@ public final class MinionsFeature implements Feature {
 
     @Override
     public void disable() {
+        if (gui != null) {
+            gui.shutdown();
+        }
         if (manager != null) {
             manager.shutdown();
         }

@@ -15,6 +15,14 @@ settings:
   max-catchup-hours: 336
   # Island checks (reset, kicked from a co-op) in seconds.
   island-check-seconds: 30
+  # A minion whose island has been gone for this many hours (deleted, no replacement) is returned to its owner
+  # through the owed list. Not counted across restarts.
+  island-missing-hours: 6
+  # When true, co-op members can also take items out of a minion's storage. Taking upgrades and hats out, and
+  # picking a minion up, stay with the owner (or the island owner, whose pick-up goes to the minion's owner).
+  member-collect: false
+  # Minimum time between two clicks in a minion menu (every item move writes the minion file to disk).
+  gui-click-millis: 150
   # Minion slots: base + one per threshold reached by the number of different minions (type + tier) crafted.
   base-slots: 5
   max-slots: 30
@@ -75,18 +83,20 @@ fuels:
     custom: false
     speed: 0.05
     hours: 5
+  # "compressed" means the fuel IS the Enchanted item the minion menu makes from that resource (Compress button),
+  # so it can be obtained in normal play. name, rarity and custom are then ignored.
   enchanted_coal:
     name: Enchanted Coal
     rarity: UNCOMMON
     material: COAL
-    custom: true
+    compressed: COAL
     speed: 0.10
     hours: 24
   enchanted_charcoal:
     name: Enchanted Charcoal
     rarity: RARE
     material: CHARCOAL
-    custom: true
+    compressed: CHARCOAL
     speed: 0.20
     hours: 36
   enchanted_lava_bucket:
@@ -178,6 +188,63 @@ upgrades:
     speed: 0.10
     burn: 0.8
     lore: ["10 percent faster and the fuel lasts 25 percent longer."]
+
+# Crafting recipes of upgrades, hats and custom fuels (shaped, 3x3 at most). Ingredient specs:
+#   MATERIAL (exactly that plain vanilla item), enchanted:MATERIAL / super:MATERIAL (made with the minion menu's
+#   Compress button), upgrade:<id>, skin:<id>, fuel:<id>. result: upgrade:<id>, skin:<id> or fuel:<id>.
+recipes:
+  auto_smelter:
+    result: upgrade:auto_smelter
+    shape: ["EEE", "EFE", "EEE"]
+    ingredients: {E: "enchanted:COAL", F: FURNACE}
+  compactor:
+    result: upgrade:compactor
+    shape: ["EEE", "EPE", "EEE"]
+    ingredients: {E: "enchanted:REDSTONE", P: PISTON}
+  super_compactor:
+    result: upgrade:super_compactor
+    shape: ["EEE", "ECE", "EEE"]
+    ingredients: {E: "enchanted:IRON_INGOT", C: "upgrade:compactor"}
+  diamond_spreading:
+    result: upgrade:diamond_spreading
+    shape: ["EEE", "EDE", "EEE"]
+    ingredients: {E: "enchanted:DIAMOND", D: DIAMOND_BLOCK}
+  minion_expander:
+    result: upgrade:minion_expander
+    shape: ["EEE", "EOE", "EEE"]
+    ingredients: {E: "enchanted:COBBLESTONE", O: OBSERVER}
+  flycatcher:
+    result: upgrade:flycatcher
+    shape: ["EEE", "ESE", "EEE"]
+    ingredients: {E: "enchanted:LAPIS_LAZULI", S: SPIDER_EYE}
+  mithril_infusion:
+    result: upgrade:mithril_infusion
+    shape: ["EEE", "ESE", "EEE"]
+    ingredients: {E: "enchanted:EMERALD", S: PRISMARINE_SHARD}
+  enchanted_lava_bucket:
+    result: fuel:enchanted_lava_bucket
+    shape: ["EEE", "ELE", "EEE"]
+    ingredients: {E: "enchanted:COAL", L: LAVA_BUCKET}
+  hamster_wheel:
+    result: fuel:hamster_wheel
+    shape: ["EEE", "EHE", "EEE"]
+    ingredients: {E: "enchanted:WHEAT", H: HAY_BLOCK}
+  foul_flesh:
+    result: fuel:foul_flesh
+    shape: ["EEE", "EEE", "EEE"]
+    ingredients: {E: "enchanted:ROTTEN_FLESH"}
+  pumpkin_hat:
+    result: skin:pumpkin_hat
+    shape: ["EEE", "EPE", "EEE"]
+    ingredients: {E: "enchanted:PUMPKIN", P: CARVED_PUMPKIN}
+  golden_helmet:
+    result: skin:golden_helmet
+    shape: ["EEE", "EHE", "EEE"]
+    ingredients: {E: "enchanted:GOLD_INGOT", H: GOLDEN_HELMET}
+  diamond_helmet:
+    result: skin:diamond_helmet
+    shape: ["EEE", "EHE", "EEE"]
+    ingredients: {E: "enchanted:DIAMOND", H: DIAMOND_HELMET}
 
 # Cosmetic hats (the head item of the minion body). material is the item shown on the head.
 skins:

@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.CrafterCraftEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
@@ -59,13 +60,16 @@ final class MinionListener implements Listener {
             return;
         }
         try {
-            MinionManager.Result result = manager.place(p, item, event.getClickedBlock(), event.getBlockFace());
+            // The item leaves the hand inside place(), after the checks and before the minion exists, and the
+            // player's data is written to disk before the minion is.
+            MinionManager.Result result = manager.place(p, item, event.getClickedBlock(), event.getBlockFace(), () -> {
+                item.setAmount(item.getAmount() - 1);
+                p.getInventory().setItemInMainHand(item.getAmount() <= 0 ? null : item);
+            });
             if (!result.ok()) {
                 core.msg().error(p, result.error());
                 return;
             }
-            item.setAmount(item.getAmount() - 1);
-            p.getInventory().setItemInMainHand(item.getAmount() <= 0 ? null : item);
             Optional<MinionData> placed = manager.at(event.getClickedBlock().getRelative(event.getBlockFace()));
             placed.ifPresent(d -> {
                 core.msg().ok(p, "Minion placed (" + manager.placedCount(p.getUniqueId()) + "/"
@@ -166,6 +170,7 @@ final class MinionListener implements Listener {
         core.scheduler().later(60, () -> {
             if (p.isOnline()) {
                 manager.deliverOwed(p);
+                manager.joinSummary(p);
             }
         });
         try {
@@ -180,21 +185,49 @@ final class MinionListener implements Listener {
     /** A minion item (paper) or an enchanted resource must never be eaten by a vanilla recipe. */
     @EventHandler
     public void onPrepareCraft(PrepareItemCraftEvent event) {
+        if (event.getRecipe() instanceof Keyed keyed && recipes.isItemRecipe(keyed.getKey())) {
+            return; // upgrade, hat and fuel recipes use custom items on purpose (exact choices match only those)
+        }
         for (ItemStack s : event.getInventory().getMatrix()) {
             if (s != null && core.items().idOf(s).map(i -> i.startsWith("minion_")).orElse(false)) {
                 event.getInventory().setResult(null);
                 return;
             }
         }
-        // A crafted minion gets its uid now, so a copy of it (crash that restores an older inventory) is caught by the
-        // ledger once the original has been placed.
-        if (event.getRecipe() instanceof Keyed keyed && recipes.isOurs(keyed.getKey())) {
-            ItemStack result = event.getInventory().getResult();
-            if (result != null && MinionItems.parse(core.items(), result) != null) {
-                ItemStack stamped = result.clone();
-                core.items().set(stamped, MinionItems.PDC_UID, MinionItems.newUid());
-                event.getInventory().setResult(stamped);
+    }
+
+    /**
+     * Crafting minions: one at a time (a shift-click would reuse the prepared result), and the result gets its own
+     * uid. Stamping happens here, per craft, not when the result is prepared.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onCraftStamp(CraftItemEvent event) {
+        if (!(event.getRecipe() instanceof Keyed keyed) || !recipes.isOurs(keyed.getKey())) {
+            return;
+        }
+        ItemStack result = event.getCurrentItem();
+        if (result == null || MinionItems.parse(core.items(), result) == null) {
+            return;
+        }
+        if (event.isShiftClick()) {
+            event.setCancelled(true);
+            if (event.getWhoClicked() instanceof Player p) {
+                core.msg().info(p, "Craft minions one at a time: click the result without shift.");
             }
+            return;
+        }
+        if (result.getAmount() == 1) {
+            ItemStack stamped = result.clone();
+            core.items().set(stamped, MinionItems.PDC_UID, MinionItems.newUid());
+            event.setCurrentItem(stamped);
+        }
+    }
+
+    /** A Crafter would hand out minions with no uid and no slot credit: crafting them is for players. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onCrafter(CrafterCraftEvent event) {
+        if (event.getRecipe() instanceof Keyed keyed && recipes.isOurs(keyed.getKey())) {
+            event.setCancelled(true);
         }
     }
 

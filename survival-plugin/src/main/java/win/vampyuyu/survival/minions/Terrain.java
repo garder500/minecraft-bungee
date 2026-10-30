@@ -30,8 +30,9 @@ import win.vampyuyu.survival.minions.MinionConfig.Type;
  * What a minion sees and does in the world: the flat square of blocks at its own height. Rules:
  * <ul>
  * <li>The area is the layer the minion stands in, radius blocks each way, without its own column.</li>
- * <li>It only ever replaces air and removes blocks of its own kind (its ore, its crop, its log): never a player's
- *     chest or house. Liquids are not air, so it never fills water or lava.</li>
+ * <li>It only ever replaces air, and it only ever removes the exact block it placed itself for the current cycle
+ *     (recorded in {@link MinionData}, so it survives a restart): never a player's chest, wall or crop, even when
+ *     it is made of the same material. Liquids are not air, so it never fills water or lava.</li>
  * <li>Nothing here runs unless every chunk of the area is loaded.</li>
  * </ul>
  */
@@ -96,33 +97,56 @@ public final class Terrain {
 
     // ---------------------------------------------------------------- scanning
 
-    /** Looks at the area and says whether the minion can work there. */
+    /** Looks at the area and says whether the minion can work there (no cycle in progress). */
     public static Status scan(Area area, Type type, MinionConfig config) {
+        return scan(area, type, config, null);
+    }
+
+    /**
+     * Looks at the area and says whether the minion can work there. The block the minion placed for the cycle in
+     * progress ({@code d}) counts as workable: it is going to be removed at the end of the cycle.
+     */
+    public static Status scan(Area area, Type type, MinionConfig config, @Nullable MinionData d) {
         return switch (type.kind()) {
-            case MINING -> scanMining(area, type);
-            case FARMING -> scanFarming(area, type);
-            case FORAGING -> scanForaging(area, type);
+            case MINING -> scanMining(area, type, d);
+            case FARMING -> scanFarming(area, type, d);
+            case FORAGING -> scanForaging(area, type, d);
             case ANIMAL, COMBAT -> scanRoom(area) ? Status.WORKING : Status.NO_SPACE;
             case FISHING -> countWater(area) >= config.fishingMinWater ? Status.WORKING : Status.NO_WATER;
         };
     }
 
-    private static Status scanMining(Area area, Type type) {
+    /** True when the minion has a placed block inside this area waiting to be removed. */
+    private static boolean hasTracked(Area area, @Nullable MinionData d) {
+        return d != null && d.placed && area.contains(d.spotX, d.spotY, d.spotZ);
+    }
+
+    private static Status scanMining(Area area, Type type, @Nullable MinionData d) {
+        if (hasTracked(area, d)) {
+            return Status.WORKING;
+        }
+        boolean airWithoutGround = false;
         for (Block b : blocks(area)) {
-            if (b.getType() == type.block() || isFreeSpot(b, type)) {
+            if (isFreeSpot(b)) {
                 return Status.WORKING;
             }
+            airWithoutGround |= b.getType().isAir();
         }
-        return Status.NO_SPACE;
+        // Air but nothing to stand the block on (a pillar, the void): the terrain is wrong, not just crowded.
+        return airWithoutGround ? Status.INVALID_TERRAIN : Status.NO_SPACE;
     }
 
-    private static boolean isFreeSpot(Block b, Type type) {
-        return b.getType().isAir() && (!type.support() || b.getRelative(BlockFace.DOWN).getType().isSolid());
+    /** A mining minion needs air with a solid block below it, so it never fills mid-air or the void. */
+    private static boolean isFreeSpot(Block b) {
+        return b.getType().isAir() && b.getRelative(BlockFace.DOWN).getType().isSolid();
     }
 
-    private static Status scanFarming(Area area, Type type) {
+    private static Status scanFarming(Area area, Type type, @Nullable MinionData d) {
+        if (hasTracked(area, d)) {
+            return Status.WORKING;
+        }
         for (Block b : blocks(area)) {
-            if (b.getType() == type.block() || canPlant(b, type)) {
+            if (canPlant(b, type)) {
                 return Status.WORKING;
             }
         }
@@ -142,14 +166,20 @@ public final class Terrain {
             || m == Material.ROOTED_DIRT || m == Material.MOSS_BLOCK || m == Material.MUD;
     }
 
-    private static Status scanForaging(Area area, Type type) {
+    private static Status scanForaging(Area area, Type type, @Nullable MinionData d) {
+        if (hasTracked(area, d)) {
+            return Status.WORKING;
+        }
         for (Block b : blocks(area)) {
-            if (b.getType() == type.block() || b.getType() == type.sapling() || (b.getType().isAir()
-                    && isSoil(b.getRelative(BlockFace.DOWN).getType()))) {
+            if (canGrow(b)) {
                 return Status.WORKING;
             }
         }
         return Status.INVALID_TERRAIN;
+    }
+
+    private static boolean canGrow(Block b) {
+        return b.getType().isAir() && isSoil(b.getRelative(BlockFace.DOWN).getType());
     }
 
     private static boolean scanRoom(Area area) {
@@ -186,7 +216,7 @@ public final class Terrain {
             double scale) {
         switch (type.kind()) {
             case MINING -> {
-                Block spot = pick(area, b -> isFreeSpot(b, type), random);
+                Block spot = pick(area, Terrain::isFreeSpot, random);
                 if (spot != null) {
                     spot.setType(type.block(), false);
                     effect(spot, Particle.BLOCK, spot.getBlockData(), Sound.BLOCK_STONE_PLACE);
@@ -206,9 +236,11 @@ public final class Terrain {
                 return spot;
             }
             case FORAGING -> {
-                Block spot = pick(area, b -> b.getType().isAir() && isSoil(b.getRelative(BlockFace.DOWN).getType()), random);
+                // The tree is a trunk block (the type's log): it appears on the soil and is chopped at the end of the
+                // cycle. No sapling is planted, so nothing can grow, be bone-mealed or be mistaken for a player's.
+                Block spot = pick(area, Terrain::canGrow, random);
                 if (spot != null) {
-                    spot.setType(type.sapling(), false);
+                    spot.setType(type.block(), false);
                     effect(spot, Particle.HAPPY_VILLAGER, null, Sound.ITEM_CROP_PLANT);
                 }
                 return spot;
@@ -230,24 +262,58 @@ public final class Terrain {
         }
     }
 
+    /** Remembers the block just placed as the minion's own. */
+    public static void track(MinionData d, Block spot) {
+        d.placed = true;
+        d.spotX = spot.getX();
+        d.spotY = spot.getY();
+        d.spotZ = spot.getZ();
+        d.spotMaterial = spot.getType().name();
+    }
+
+    /** Forgets the tracked block without touching the world. */
+    public static void untrack(MinionData d) {
+        d.placed = false;
+        d.spotMaterial = null;
+    }
+
+    /** True for the kinds that place a real block in the world. */
+    public static boolean placesBlocks(Type type) {
+        return type.kind() == Kind.MINING || type.kind() == Kind.FARMING || type.kind() == Kind.FORAGING;
+    }
+
     /**
-     * Second half: breaks / harvests / kills what {@link #place} set up (or any block of the minion's own kind),
-     * with the matching particles. Never touches anything else.
+     * Removes the tracked block when it is still the block the minion placed. Returns true when a block was removed.
+     * Never removes anything else: a player who replaced or removed it keeps what they built.
      */
-    public static void harvest(Area area, Type type, MinionRuntime rt, RandomGenerator random) {
-        switch (type.kind()) {
-            case MINING, FARMING, FORAGING -> {
-                Material target = type.kind() == Kind.FORAGING ? type.sapling() : type.block();
-                Block spot = rt.placed ? area.world().getBlockAt(rt.spotX, rt.spotY, rt.spotZ) : null;
-                if (spot == null || !area.contains(spot.getX(), spot.getY(), spot.getZ()) || !ownBlock(spot, type, target)) {
-                    spot = pick(area, b -> ownBlock(b, type, target), random);
-                }
-                if (spot != null) {
-                    BlockData data = spot.getBlockData();
-                    spot.setType(Material.AIR, false);
+    public static boolean removeTracked(World world, MinionData d, boolean effects) {
+        if (!d.placed) {
+            return false;
+        }
+        boolean removed = false;
+        // Never load a chunk just to clean up: an unloaded chunk keeps its block, the record stays for later.
+        if (world.isChunkLoaded(d.spotX >> 4, d.spotZ >> 4)) {
+            Block spot = world.getBlockAt(d.spotX, d.spotY, d.spotZ);
+            if (d.spotMaterial != null && spot.getType().name().equals(d.spotMaterial)) {
+                BlockData data = spot.getBlockData();
+                spot.setType(Material.AIR, false);
+                if (effects) {
                     effect(spot, Particle.BLOCK, data, breakSound(data.getMaterial()));
                 }
+                removed = true;
             }
+            untrack(d);
+        }
+        return removed;
+    }
+
+    /**
+     * Second half: removes the block placed by {@link #place} (and only that one), or kills the mob, with the
+     * matching particles. Never touches anything else.
+     */
+    public static void harvest(Area area, Type type, MinionData d, MinionRuntime rt, RandomGenerator random) {
+        switch (type.kind()) {
+            case MINING, FARMING, FORAGING -> removeTracked(area.world(), d, true);
             case ANIMAL, COMBAT -> {
                 Entity mob = rt.mob;
                 if (mob != null && mob.isValid()) {
@@ -280,23 +346,20 @@ public final class Terrain {
         return new Location(b.getWorld(), b.getX() + 0.5, b.getY() + up, b.getZ() + 0.5);
     }
 
-    private static boolean ownBlock(Block b, Type type, Material target) {
-        return b.getType() == target || (type.kind() == Kind.FORAGING && b.getType() == type.block());
-    }
-
     /** Removes the leftover of an interrupted cycle (the minion is being picked up or removed). */
-    public static void cleanup(Area area, Type type, MinionRuntime rt) {
+    public static void cleanup(World world, MinionData d, MinionRuntime rt) {
         Entity mob = rt.mob;
         if (mob != null) {
             mob.remove();
             rt.mob = null;
         }
         rt.placed = false;
+        removeTracked(world, d, false);
     }
 
     private static Sound breakSound(Material m) {
         return switch (m) {
-            case WHEAT, CARROTS, POTATOES, OAK_SAPLING, SPRUCE_SAPLING, BIRCH_SAPLING -> Sound.BLOCK_GRASS_BREAK;
+            case WHEAT, CARROTS, POTATOES, BEETROOTS, OAK_SAPLING, SPRUCE_SAPLING, BIRCH_SAPLING -> Sound.BLOCK_GRASS_BREAK;
             case OAK_LOG, SPRUCE_LOG, BIRCH_LOG -> Sound.BLOCK_WOOD_BREAK;
             case SAND, CLAY -> Sound.BLOCK_SAND_BREAK;
             default -> Sound.BLOCK_STONE_BREAK;

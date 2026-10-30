@@ -64,6 +64,15 @@ public class MinionManagerTest {
         return b;
     }
 
+    /** Solid ground under the minion's layer: a mining minion needs something to put its block on. */
+    private void floor(int radius) {
+        for (int x = -radius; x <= radius; x++) {
+            for (int z = -radius; z <= radius; z++) {
+                world.getBlockAt(x, 63, z).setType(Material.STONE);
+            }
+        }
+    }
+
     private ItemStack minionItem(String type, int tier, String uid) {
         return MinionItems.createMinion(items, type, tier, uid);
     }
@@ -99,7 +108,9 @@ public class MinionManagerTest {
         assertTrue(items.def("minion_slime_11").isPresent());
         assertTrue(items.def("minion_enchanted_cobblestone").isPresent());
         assertTrue(items.def("minion_super_stone").isPresent());
-        assertTrue(items.def("minion_fuel_enchanted_coal").isPresent());
+        // the Enchanted Coal fuel IS the compressed resource: no second item with the same name
+        assertTrue(items.def("minion_fuel_enchanted_coal").isEmpty());
+        assertTrue(items.def("minion_fuel_enchanted_lava_bucket").isPresent());
         assertTrue(items.def("minion_upgrade_compactor").isPresent());
         assertTrue(items.def("minion_skin_crown") .isEmpty());
         assertNotNull(org.bukkit.Bukkit.getCommandMap().getCommand("minion"));
@@ -359,10 +370,10 @@ public class MinionManagerTest {
         assertNull(manager.addFuel(player, d, fuel, true).error());
         assertEquals(10 * 30 * 60_000.0, d.fuelMs, 1e-6);
         assertEquals(0, count(player, "m:COAL"));
-        player.getInventory().addItem(items.create("minion_fuel_enchanted_coal"));
+        player.getInventory().addItem(items.create("minion_enchanted_coal"));
         var other = manager.addFuel(player, d, manager.config().fuels.get("enchanted_coal"), false);
         assertTrue(other.error(), other.error().startsWith("The minion is already burning"));
-        assertEquals(1, count(player, "c:minion_fuel_enchanted_coal"));
+        assertEquals(1, count(player, "c:minion_enchanted_coal"));
     }
 
     @Test
@@ -481,6 +492,7 @@ public class MinionManagerTest {
         d.tier = 11;
         d.lastTick = now.get();
         store.add(d);
+        floor(3);
         now.addAndGet(14_000L * 100);
         timed.tick();
         assertEquals(100, d.storage.get("m:COBBLESTONE").longValue());
@@ -507,6 +519,7 @@ public class MinionManagerTest {
         d.tier = 1;
         d.lastTick = now.get();
         store.add(d);
+        floor(2);
         now.addAndGet(24 * 3_600_000L);
         timed.tick();
         assertEquals(Status.STORAGE_FULL, timed.statusOf(d));

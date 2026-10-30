@@ -30,6 +30,57 @@ public class MinionConfigTest {
         assertEquals(9, c.fuels.size());
         assertEquals(7, c.upgrades.size());
         assertTrue(c.skins.size() >= 8);
+        assertTrue("recipes: " + c.itemRecipes.size(), c.itemRecipes.size() >= 10);
+    }
+
+    @Test
+    public void everyUpgradeIsCraftableAndSoAreTheCommonFuelsAndHats() {
+        MinionConfig c = TestConfig.load();
+        for (String up : c.upgrades.keySet()) {
+            assertTrue(up + " has a recipe", c.itemRecipes.values().stream().anyMatch(r -> r.result().equals("upgrade:" + up)));
+        }
+        assertTrue(c.itemRecipes.values().stream().anyMatch(r -> r.result().equals("skin:pumpkin_hat")));
+        assertTrue(c.itemRecipes.values().stream().anyMatch(r -> r.result().equals("fuel:hamster_wheel")));
+        // the settings added by the review
+        assertFalse(c.memberCollect);
+        assertEquals(6 * 3_600_000L, c.islandMissingMillis());
+        assertEquals(150, c.guiClickMillis);
+    }
+
+    @Test
+    public void aBadRecipeIsSkippedWithAWarning() {
+        YamlConfiguration yaml = TestConfig.yaml();
+        yaml.set("recipes.broken.result", "upgrade:nope");
+        yaml.set("recipes.broken.shape", java.util.List.of("EE"));
+        yaml.set("recipes.broken.ingredients.E", "COAL");
+        yaml.set("recipes.no_ingredient.result", "upgrade:compactor");
+        yaml.set("recipes.no_ingredient.shape", java.util.List.of("EX"));
+        yaml.set("recipes.no_ingredient.ingredients.E", "COAL");
+        java.util.List<String> warnings = new java.util.ArrayList<>();
+        Logger log = Logger.getAnonymousLogger();
+        log.setUseParentHandlers(false);
+        log.addHandler(new Handler() {
+            @Override public void publish(LogRecord r) { warnings.add(r.getMessage()); }
+            @Override public void flush() {}
+            @Override public void close() {}
+        });
+        MinionConfig c = MinionConfig.load(yaml, log);
+        assertFalse(c.itemRecipes.containsKey("broken"));
+        assertFalse(c.itemRecipes.containsKey("no_ingredient"));
+        assertEquals(2, warnings.size());
+        assertTrue(warnings.get(0), warnings.get(0).contains("broken"));
+    }
+
+    @Test
+    public void aCompressedFuelMustBeAResourceAMinionMakes() {
+        YamlConfiguration yaml = TestConfig.yaml();
+        yaml.set("fuels.bad.material", "COAL");
+        yaml.set("fuels.bad.compressed", "BEDROCK");
+        MinionConfig c = MinionConfig.load(yaml, Logger.getAnonymousLogger());
+        assertFalse(c.fuels.containsKey("bad"));
+        assertEquals(Material.COAL, c.fuels.get("enchanted_coal").compressed());
+        assertFalse(c.fuels.get("enchanted_coal").custom());
+        assertEquals("c:minion_enchanted_charcoal", c.fuels.get("enchanted_charcoal").key());
     }
 
     @Test

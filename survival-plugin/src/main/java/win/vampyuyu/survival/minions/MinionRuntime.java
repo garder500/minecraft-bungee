@@ -10,11 +10,11 @@ final class MinionRuntime {
     long lastChat;
     long lastIslandCheck;
     int islandStrikes;
-    /** True while a block / crop / sapling / mob placed for the current cycle is waiting to be harvested. */
+    /** True while a mob / fishing splash placed for the current cycle is waiting (blocks live in MinionData). */
     boolean placed;
-    int spotX;
-    int spotY;
-    int spotZ;
+    long lastGuardChat;
+    /** Wall clock since when the island has been missing (not saved: a restart must not count downtime), 0 for none. */
+    long missingSince;
     @Nullable Entity mob;
     /** Label text last drawn, to redraw only on change. */
     String labelText = "";

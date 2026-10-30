@@ -57,8 +57,14 @@ public final class MinionManager implements MinionApi {
     private final LongSupplier clock;
     private final Random random = new Random();
     private final java.util.Map<String, MinionRuntime> runtime = new java.util.HashMap<>();
+    /** Block position of every placed block a minion owns, to the id of the minion (see {@link #minionAtSpot}). */
+    private final java.util.Map<String, String> spots = new java.util.HashMap<>();
     private long lastFlush;
     private long lastOwedCheck;
+    /** Forces the player's inventory to disk (a payment must be durable before the minion state changes). */
+    private java.util.function.Consumer<Player> playerSaver;
+    /** Forces the player profiles to disk (the owed list must be durable before items are handed over). */
+    private Runnable profileFlusher;
 
     public MinionManager(Core core, MinionConfig config, MinionStore store, MinionLogic logic, MinionVisuals visuals,
             LongSupplier clock) {
@@ -68,6 +74,77 @@ public final class MinionManager implements MinionApi {
         this.logic = logic;
         this.visuals = visuals;
         this.clock = clock;
+        this.playerSaver = p -> {
+            try {
+                p.saveData();
+            } catch (RuntimeException e) {
+                core.debug("minions: could not save player data: " + e);
+            }
+        };
+        this.profileFlusher = () -> {
+            core.profiles().saveDirty();
+            core.profiles().awaitWrites();
+        };
+        for (MinionData d : store.all()) {
+            if (d.placed) {
+                spots.put(spotKey(d.world, d.spotX, d.spotY, d.spotZ), d.id);
+            }
+        }
+    }
+
+    /** Test hook: replaces the forced player save. */
+    void playerSaver(java.util.function.Consumer<Player> saver) {
+        this.playerSaver = saver;
+    }
+
+    /** Test hook: replaces the forced profile flush. */
+    void profileFlusher(Runnable flusher) {
+        this.profileFlusher = flusher;
+    }
+
+    private void persistPayment(Player p) {
+        playerSaver.accept(p);
+    }
+
+    // ---------------------------------------------------------------- placed blocks
+
+    private static String spotKey(String world, int x, int y, int z) {
+        return world + "|" + x + "|" + y + "|" + z;
+    }
+
+    /** The minion that placed the block at this position for its current cycle, if any. */
+    public Optional<MinionData> minionAtSpot(Block block) {
+        String id = spots.get(spotKey(block.getWorld().getName(), block.getX(), block.getY(), block.getZ()));
+        return id == null ? Optional.empty() : store.get(id);
+    }
+
+    /**
+     * True when the block is one a minion placed for its current cycle, or the ground under such a block when that
+     * block is not solid (a crop pops off when its farmland goes). Nobody else may break, move, grow or burn these.
+     */
+    public boolean isProtected(Block block) {
+        if (spots.isEmpty()) {
+            return false;
+        }
+        if (minionAtSpot(block).isPresent()) {
+            return true;
+        }
+        return minionAtSpot(block.getRelative(BlockFace.UP)).map(d -> {
+            Material m = d.spotMaterial == null ? null : Material.matchMaterial(d.spotMaterial);
+            return m != null && !m.isSolid();
+        }).orElse(false);
+    }
+
+    void trackSpot(MinionData d, Block spot) {
+        Terrain.track(d, spot);
+        spots.put(spotKey(d.world, d.spotX, d.spotY, d.spotZ), d.id);
+        store.markDirty(d);
+    }
+
+    private void releaseSpot(MinionData d) {
+        if (d.placed) {
+            spots.remove(spotKey(d.world, d.spotX, d.spotY, d.spotZ), d.id);
+        }
     }
 
     public MinionConfig config() {
@@ -138,38 +215,60 @@ public final class MinionManager implements MinionApi {
         return island.owner().equals(player) || island.members().contains(player);
     }
 
-    /** Owner, a member of the island the minion stands on, or an admin. */
-    public boolean canAccess(Player p, MinionData d) {
-        if (d.owner.equals(p.getUniqueId().toString()) || isAdmin(p)) {
-            return true;
-        }
-        World w = Bukkit.getWorld(d.world);
-        Optional<IslandApi> api = islands();
-        if (w == null || api.isEmpty()) {
-            return false;
-        }
-        return api.get().islandAt(new Location(w, d.x, d.y, d.z)).map(i -> isMember(i, p.getUniqueId()))
-            .orElse(false);
+    private boolean isOwnerOrAdmin(Player p, MinionData d) {
+        return d.owner.equals(p.getUniqueId().toString()) || isAdmin(p);
     }
 
-    /** Owner, owner of the island, or an admin. */
-    public boolean canPickUp(Player p, MinionData d) {
-        if (d.owner.equals(p.getUniqueId().toString()) || isAdmin(p)) {
-            return true;
-        }
+    /** The island the minion stands on right now, only when it is the island the minion was placed on. */
+    private Optional<IslandInfo> homeIsland(MinionData d) {
         World w = Bukkit.getWorld(d.world);
         Optional<IslandApi> api = islands();
         if (w == null || api.isEmpty()) {
-            return false;
+            return Optional.empty();
         }
-        return api.get().islandAt(new Location(w, d.x, d.y, d.z)).map(i -> i.owner().equals(p.getUniqueId()))
-            .orElse(false);
+        // A freed island cell that was given to somebody else is a different island id: its new owner gets nothing.
+        return api.get().islandAt(new Location(w, d.x, d.y, d.z)).filter(i -> i.id().toString().equals(d.island));
+    }
+
+    /** Owner, a member of the island the minion was placed on, or an admin: may open the menu and add fuel. */
+    public boolean canAccess(Player p, MinionData d) {
+        if (isOwnerOrAdmin(p, d)) {
+            return true;
+        }
+        return homeIsland(d).map(i -> isMember(i, p.getUniqueId())).orElse(false);
+    }
+
+    /** Owner or admin, plus co-op members when {@code member-collect} is on: may take items out of the storage. */
+    public boolean canCollect(Player p, MinionData d) {
+        return isOwnerOrAdmin(p, d) || (config.memberCollect && canAccess(p, d));
+    }
+
+    /** Owner or admin: may take upgrades and hats out (they belong to the owner). */
+    public boolean canManage(Player p, MinionData d) {
+        return isOwnerOrAdmin(p, d);
+    }
+
+    /** Owner, owner of the island the minion was placed on, or an admin. */
+    public boolean canPickUp(Player p, MinionData d) {
+        if (isOwnerOrAdmin(p, d)) {
+            return true;
+        }
+        return homeIsland(d).map(i -> i.owner().equals(p.getUniqueId())).orElse(false);
     }
 
     // ---------------------------------------------------------------- placing
 
     /** Places the minion item {@code stack} (not consumed here) against {@code face} of {@code clicked}. */
     public Result place(Player p, ItemStack stack, Block clicked, BlockFace face) {
+        return place(p, stack, clicked, face, () -> {});
+    }
+
+    /**
+     * Places the minion item {@code stack} against {@code face} of {@code clicked}. {@code consume} takes the item
+     * out of the player's hand; it runs after every check and BEFORE the minion exists, and the player's data is then
+     * forced to disk, so a crash can lose the minion but never leave both the item and the minion.
+     */
+    public Result place(Player p, ItemStack stack, Block clicked, BlockFace face, Runnable consume) {
         MinionItems.Parsed parsed = MinionItems.parse(items(), stack);
         if (parsed == null) {
             return Result.fail("That is not a minion.");
@@ -222,22 +321,33 @@ public final class MinionManager implements MinionApi {
         if (!store.spendUid(uid)) {
             return Result.fail("This minion item was already used.");
         }
-        MinionData d = new MinionData();
-        d.id = UUID.randomUUID().toString();
-        d.uid = uid;
-        d.owner = owner;
-        d.island = islandId;
-        d.world = target.getWorld().getName();
-        d.x = target.getX();
-        d.y = target.getY();
-        d.z = target.getZ();
-        d.yaw = Math.round((p.getLocation().getYaw() + 180f) / 45f) * 45f;
-        d.type = type.id();
-        d.tier = parsed.tier();
-        d.placedAt = clock.getAsLong();
-        d.lastTick = d.placedAt;
-        store.add(d);
-        store.saveNow(owner);
+        consume.run();
+        persistPayment(p);
+        try {
+            MinionData d = new MinionData();
+            d.id = UUID.randomUUID().toString();
+            d.uid = uid;
+            d.owner = owner;
+            d.island = islandId;
+            d.world = target.getWorld().getName();
+            d.x = target.getX();
+            d.y = target.getY();
+            d.z = target.getZ();
+            d.yaw = Math.round((p.getLocation().getYaw() + 180f) / 45f) * 45f;
+            d.type = type.id();
+            d.tier = parsed.tier();
+            d.placedAt = clock.getAsLong();
+            d.lastTick = d.placedAt;
+            store.add(d);
+            store.saveNow(owner);
+        } catch (RuntimeException e) {
+            // Nothing was placed: the player keeps a minion item (a fresh uid, the old one is spent).
+            long left = give(p, ItemKey.custom(MinionItems.minionId(parsed.type(), parsed.tier())), 1);
+            if (left > 0) {
+                dropAt(p, ItemKey.custom(MinionItems.minionId(parsed.type(), parsed.tier())), left);
+            }
+            throw e;
+        }
         return Result.OK;
     }
 
@@ -272,13 +382,23 @@ public final class MinionManager implements MinionApi {
      * state, save, hand over; whatever does not fit goes back into the chest.
      */
     public long withdraw(Player p, MinionData d, String key, long wanted) {
+        if (!canCollect(p, d)) {
+            return 0;
+        }
+        return withdrawOne(p, d, key, wanted, true);
+    }
+
+    /** One key, saving first when {@code save}: collect-all saves once for the whole action instead of per key. */
+    private long withdrawOne(Player p, MinionData d, String key, long wanted, boolean save) {
         Storage storage = logic.storage(d);
         long n = Math.min(wanted, storage.count(key));
         if (n <= 0 || !ItemKey.valid(items(), key)) {
             return 0;
         }
         storage.remove(key, n);
-        store.saveNow(d.owner);
+        if (save) {
+            store.saveNow(d.owner);
+        }
         long left = give(p, key, n);
         if (left > 0) {
             long back = logic.storage(d).add(key, left);
@@ -292,9 +412,35 @@ public final class MinionManager implements MinionApi {
 
     /** Collects everything; returns the number of items that reached the inventory. */
     public long collectAll(Player p, MinionData d) {
-        long moved = 0;
+        if (!canCollect(p, d)) {
+            return 0;
+        }
+        // Take everything out of the state first, write the file ONCE (one fsync per click, not one per item kind),
+        // then hand the items over.
+        Storage storage = logic.storage(d);
+        java.util.Map<String, Long> taken = new java.util.LinkedHashMap<>();
         for (String key : new ArrayList<>(d.storage.keySet())) {
-            moved += withdraw(p, d, key, Long.MAX_VALUE);
+            long n = storage.count(key);
+            if (n > 0 && ItemKey.valid(items(), key)) {
+                storage.remove(key, n);
+                taken.put(key, n);
+            }
+        }
+        if (taken.isEmpty()) {
+            return 0;
+        }
+        store.saveNow(d.owner);
+        long moved = 0;
+        for (var e : taken.entrySet()) {
+            long left = give(p, e.getKey(), e.getValue());
+            if (left > 0) {
+                long back = logic.storage(d).add(e.getKey(), left);
+                if (back < left) {
+                    dropAt(p, e.getKey(), left - back);
+                }
+                store.markDirty(d);
+            }
+            moved += e.getValue() - left;
         }
         return moved;
     }
@@ -431,6 +577,7 @@ public final class MinionManager implements MinionApi {
             }
         }
         takeFrom(p, keys, cost.amount());
+        persistPayment(p);
         d.tier++;
         store.markDirty(d);
         store.saveNow(d.owner);
@@ -491,6 +638,7 @@ public final class MinionManager implements MinionApi {
         }
         long units = all ? Math.min(fit, have) : 1;
         takeFrom(p, List.of(fuel.key()), units);
+        persistPayment(p);
         d.fuel = fuel.id();
         d.fuelMs = (current == null ? 0 : d.fuelMs) + units * per;
         store.markDirty(d);
@@ -503,7 +651,7 @@ public final class MinionManager implements MinionApi {
         if (d.upgrades.size() >= config.upgradeSlots) {
             return Result.fail("All upgrade slots are in use.");
         }
-        if (d.upgrades.contains(up.id())) {
+        if (d.upgrades.contains(up.id()) && up.effect() != Effect.SPEED) {
             return Result.fail("That upgrade is already installed.");
         }
         boolean clash = logic.upgradesOf(d).stream().anyMatch(o -> o.effect() == up.effect()
@@ -522,6 +670,7 @@ public final class MinionManager implements MinionApi {
         if (!takeFrom(p, List.of(up.key()), 1)) {
             return Result.fail("You do not have that upgrade.");
         }
+        persistPayment(p);
         d.upgrades.add(up.id());
         store.markDirty(d);
         store.saveNow(d.owner);
@@ -535,6 +684,9 @@ public final class MinionManager implements MinionApi {
 
     /** Takes an upgrade out and gives the item back. */
     public Result removeUpgrade(Player p, MinionData d, String upgradeId) {
+        if (!canManage(p, d)) {
+            return Result.fail("Only the owner of the minion can take its upgrades out.");
+        }
         Upgrade up = config.upgrades.get(upgradeId);
         if (!d.upgrades.contains(upgradeId)) {
             return Result.fail("That upgrade is not installed.");
@@ -557,9 +709,15 @@ public final class MinionManager implements MinionApi {
 
     /** Puts a hat on (the previous one is given back). */
     public Result setSkin(Player p, MinionData d, @Nullable Skin skin) {
+        if (!canManage(p, d)) {
+            return Result.fail("Only the owner of the minion can change its hat.");
+        }
         Type type = config.types.get(d.type);
         if (skin != null && !takeFrom(p, List.of(skin.key()), 1)) {
             return Result.fail("You do not have that hat.");
+        }
+        if (skin != null) {
+            persistPayment(p);
         }
         String old = d.skin;
         d.skin = skin == null ? null : skin.id();
@@ -610,10 +768,17 @@ public final class MinionManager implements MinionApi {
         return out;
     }
 
-    /** Picks the minion up: it must be emptied first; everything returns to the player. */
+    /**
+     * Picks the minion up: it must be emptied first; everything returns to the player. When the island owner picks up
+     * a co-op member's minion, everything is sent to the minion's owner instead (the owed list), never to the picker.
+     */
     public Result pickUp(Player p, MinionData d) {
         if (!canPickUp(p, d)) {
             return Result.fail("Only the owner of the minion or of the island can pick it up.");
+        }
+        if (!isOwnerOrAdmin(p, d)) {
+            returnToOwner(d, "picked up by the island owner");
+            return Result.OK;
         }
         collectAll(p, d);
         if (!logic.storage(d).isEmpty()) {
@@ -636,13 +801,13 @@ public final class MinionManager implements MinionApi {
         return MinionItems.createMinion(items(), type, tier, MinionItems.newUid());
     }
 
-    /** Removes the minion from the world and the store (not saved). */
+    /** Removes the minion from the world and the store (not saved), together with the block it placed. */
     void removeMinion(MinionData d) {
         MinionRuntime rt = runtime.remove(d.id);
         World w = Bukkit.getWorld(d.world);
-        Type type = config.types.get(d.type);
-        if (rt != null && type != null && w != null) {
-            Terrain.cleanup(new Terrain.Area(w, d.x, d.y, d.z, 1), type, rt);
+        releaseSpot(d);
+        if (w != null) {
+            Terrain.cleanup(w, d, rt != null ? rt : new MinionRuntime());
         }
         visuals.remove(d.id);
         store.remove(d.id);
@@ -650,7 +815,9 @@ public final class MinionManager implements MinionApi {
 
     /**
      * Removes a minion and owes everything it holds to its owner (island reset, kicked from a co-op, admin
-     * purge). Nothing is lost: it arrives next time the owner has room.
+     * purge). Nothing is lost: it arrives next time the owner has room. Order: the minion file without the minion is
+     * written first, then the owner's profile with the owed list, so a crash in between loses items but can never
+     * hand them out twice.
      */
     public void returnToOwner(MinionData d, String reason) {
         UUID owner = UUID.fromString(d.owner);
@@ -658,14 +825,59 @@ public final class MinionManager implements MinionApi {
         removeMinion(d);
         store.saveNow(d.owner);
         core.profiles().edit(owner, "minions", MinionProfile.class, MinionProfile::new, prof -> prof.owed.addAll(owed));
+        profileFlusher.run();
         Player online = Bukkit.getPlayer(owner);
         if (online != null) {
-            deliverOwed(online);
+            deliverOwed(online, true);
+        }
+    }
+
+    /**
+     * One line telling the owner what their minions made since they last looked ("while you were away"), with the
+     * number of full ones. Marks everything as seen. Silent when nothing was made.
+     */
+    public void joinSummary(Player p) {
+        String owner = p.getUniqueId().toString();
+        long made = 0;
+        int full = 0;
+        int total = 0;
+        for (MinionData d : store.ownedBy(owner)) {
+            total++;
+            made += Math.max(0, d.produced - d.seenProduced);
+            d.seenProduced = d.produced;
+            store.markDirty(d);
+            if (logic.storage(d).isCompletelyFull()) {
+                full++;
+            }
+        }
+        if (made <= 0 && full == 0) {
+            return;
+        }
+        String text = "While you were away your minions made " + Msg.grouped(made) + " item" + (made == 1 ? "" : "s");
+        if (full > 0) {
+            text += "; " + full + " of " + total + " " + (full == 1 ? "is" : "are") + " full";
+        }
+        core.msg().info(p, text + ".");
+    }
+
+    /** Marks the production of a minion as seen (its menu was opened). */
+    public void markSeen(MinionData d) {
+        if (d.seenProduced != d.produced) {
+            d.seenProduced = d.produced;
+            store.markDirty(d);
         }
     }
 
     /** Gives the player what they are owed, as far as it fits. */
     public void deliverOwed(Player p) {
+        deliverOwed(p, true);
+    }
+
+    /**
+     * Hands over the owed items. The list is emptied and written to disk BEFORE anything is given, and what did not
+     * fit is written back afterwards, so a crash can lose items but never deliver them twice.
+     */
+    void deliverOwed(Player p, boolean tell) {
         if (!core.profiles().isLoaded(p.getUniqueId())) {
             return;
         }
@@ -673,9 +885,19 @@ public final class MinionManager implements MinionApi {
         if (prof.owed.isEmpty()) {
             return;
         }
+        if (p.getInventory().firstEmpty() == -1) {
+            if (tell) {
+                core.msg().warn(p, "Some minion items are waiting for free inventory space.");
+            }
+            return;
+        }
+        List<MinionProfile.Owed> pending = new ArrayList<>(prof.owed);
+        prof.owed = new ArrayList<>();
+        core.profiles().markDirty(p.getUniqueId());
+        profileFlusher.run();
         long delivered = 0;
         List<MinionProfile.Owed> keep = new ArrayList<>();
-        for (MinionProfile.Owed o : prof.owed) {
+        for (MinionProfile.Owed o : pending) {
             if (!ItemKey.valid(items(), o.key) || o.amount <= 0) {
                 continue;
             }
@@ -685,12 +907,15 @@ public final class MinionManager implements MinionApi {
                 keep.add(new MinionProfile.Owed(o.key, left, o.reason));
             }
         }
-        prof.owed = keep;
-        core.profiles().markDirty(p.getUniqueId());
+        if (!keep.isEmpty()) {
+            prof.owed.addAll(keep);
+            core.profiles().markDirty(p.getUniqueId());
+            profileFlusher.run();
+        }
         if (delivered > 0) {
             core.msg().ok(p, "Items from your minions were added to your inventory.");
         }
-        if (!keep.isEmpty()) {
+        if (!keep.isEmpty() && tell) {
             core.msg().warn(p, "Some minion items are waiting for free inventory space.");
         }
     }
@@ -722,7 +947,7 @@ public final class MinionManager implements MinionApi {
         if (now - lastOwedCheck >= 30_000) {
             lastOwedCheck = now;
             for (Player online : Bukkit.getOnlinePlayers()) {
-                deliverOwed(online);
+                deliverOwed(online, false);
             }
         }
     }
@@ -749,7 +974,7 @@ public final class MinionManager implements MinionApi {
         }
         if (now - rt.lastIslandCheck >= config.islandCheckSeconds * 1000L) {
             rt.lastIslandCheck = now;
-            if (checkIsland(d, w, area, rt)) {
+            if (checkIsland(d, w, area, rt, now)) {
                 return;
             }
         }
@@ -784,7 +1009,7 @@ public final class MinionManager implements MinionApi {
         Status base = rt.status == Status.STORAGE_FULL ? Status.WORKING : rt.status;
         if (near || rt.lastScan == 0 || now - rt.lastScan >= config.scanSeconds * 1000L) {
             rt.lastScan = now;
-            return Terrain.scan(area, type, config);
+            return Terrain.scan(area, type, config, d);
         }
         return base;
     }
@@ -794,21 +1019,25 @@ public final class MinionManager implements MinionApi {
         if (status != Status.WORKING && status != Status.STORAGE_FULL) {
             return;
         }
+        boolean blocks = Terrain.placesBlocks(type);
         if (out.cycles() > 0) {
-            Terrain.harvest(area, type, rt, random);
+            releaseSpot(d);
+            Terrain.harvest(area, type, d, rt, random);
+            if (blocks) {
+                store.markDirty(d);
+            }
             rt.placed = false;
             visuals.swing(d.id);
         }
         double half = logic.cycleMillis(d, type) / 2d;
-        if (status == Status.WORKING && !rt.placed && d.progress >= half) {
+        boolean waiting = blocks ? d.placed : rt.placed;
+        if (status == Status.WORKING && !waiting && d.progress >= half) {
             Block spot = Terrain.place(area, type, d, rt, random, config.scale);
-            if (spot != null) {
-                rt.spotX = spot.getX();
-                rt.spotY = spot.getY();
-                rt.spotZ = spot.getZ();
+            if (spot != null && blocks) {
+                trackSpot(d, spot);
             }
             if (spot != null || type.kind() == MinionConfig.Kind.FISHING) {
-                rt.placed = true;
+                rt.placed = !blocks;
                 visuals.swing(d.id);
             }
         }
@@ -861,7 +1090,7 @@ public final class MinionManager implements MinionApi {
     }
 
     /** Island verification. Returns true when the minion was removed. */
-    private boolean checkIsland(MinionData d, World w, Terrain.Area area, MinionRuntime rt) {
+    private boolean checkIsland(MinionData d, World w, Terrain.Area area, MinionRuntime rt, long now) {
         Optional<IslandApi> api = islands();
         if (api.isEmpty()) {
             return false;
@@ -869,8 +1098,16 @@ public final class MinionManager implements MinionApi {
         Optional<IslandInfo> info = api.get().islandAt(new Location(w, d.x, d.y, d.z));
         if (info.isEmpty()) {
             rt.status = Status.ISLAND_MISSING;
+            if (rt.missingSince == 0) {
+                rt.missingSince = now;
+            } else if (now - rt.missingSince >= config.islandMissingMillis()) {
+                // The island has been gone for hours (deleted, no replacement): the owner gets everything back.
+                returnToOwner(d, "island missing");
+                return true;
+            }
             return false;
         }
+        rt.missingSince = 0;
         IslandInfo island = info.get();
         UUID owner = UUID.fromString(d.owner);
         if (!island.id().toString().equals(d.island) || !isMember(island, owner)) {
@@ -937,10 +1174,9 @@ public final class MinionManager implements MinionApi {
     public int purge(@Nullable UUID owner, boolean orphansOnly) {
         int n = 0;
         for (MinionData d : store.all()) {
-            boolean match = owner != null ? d.owner.equals(owner.toString()) : false;
+            boolean match = owner != null && d.owner.equals(owner.toString());
             if (orphansOnly) {
-                MinionRuntime rt = runtimeOf(d);
-                match = rt.status == Status.ISLAND_MISSING || !config.types.containsKey(d.type);
+                match = isOrphan(d);
             }
             if (match) {
                 returnToOwner(d, "admin purge");
@@ -948,6 +1184,21 @@ public final class MinionManager implements MinionApi {
             }
         }
         return n;
+    }
+
+    /**
+     * True for a minion of an unknown type or whose island is gone. Asks the island registry now, so it also works
+     * for a minion in a chunk that has not loaded since the restart.
+     */
+    public boolean isOrphan(MinionData d) {
+        return !config.types.containsKey(d.type) || runtimeOf(d).status == Status.ISLAND_MISSING || islandGone(d);
+    }
+
+    /** True when the island registry says nothing owns the minion's position (checked now, no ticker needed). */
+    private boolean islandGone(MinionData d) {
+        World w = Bukkit.getWorld(d.world);
+        Optional<IslandApi> api = islands();
+        return w != null && api.isPresent() && api.get().islandAt(new Location(w, d.x, d.y, d.z)).isEmpty();
     }
 
     /** Status of a minion as last seen by the ticker. */

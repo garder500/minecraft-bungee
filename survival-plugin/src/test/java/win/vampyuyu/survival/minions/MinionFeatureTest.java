@@ -56,6 +56,7 @@ public class MinionFeatureTest {
         player = server.addPlayer();
         core.register(IslandApi.class, new FakeIslands(player.getUniqueId()));
         manager = (MinionManager) core.require(MinionApi.class);
+        manager.config().guiClickMillis = 0; // tests click faster than a human
         world.getBlockAt(0, 63, 0).setType(Material.STONE);
         for (int i = 36; i < player.getInventory().getSize(); i++) {
             player.getInventory().setItem(i, new ItemStack(Material.BEDROCK));

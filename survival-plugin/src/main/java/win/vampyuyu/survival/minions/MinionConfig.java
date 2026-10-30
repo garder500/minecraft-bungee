@@ -57,9 +57,12 @@ public final class MinionConfig {
         }
     }
 
-    /** A fuel. {@code custom} false means the plain vanilla item is the fuel. */
+    /**
+     * A fuel. {@code custom} false means the plain vanilla item is the fuel. {@code compressed} non-null means the
+     * fuel IS the "Enchanted X" item the minion menu makes from X (so there is a way to get it in normal play).
+     */
     public record Fuel(String id, String name, Rarity rarity, Material material, boolean custom, double speed,
-            double hours, Set<Kind> kinds) {
+            double hours, Set<Kind> kinds, @Nullable Material compressed) {
         public Fuel {
             kinds = Set.copyOf(kinds);
         }
@@ -74,6 +77,9 @@ public final class MinionConfig {
 
         /** Item key of this fuel (see {@link ItemKey}). */
         public String key() {
+            if (compressed != null) {
+                return ItemKey.custom(MinionItems.enchantedId(compressed));
+            }
             return custom ? ItemKey.custom(MinionItems.fuelId(id)) : ItemKey.vanilla(material);
         }
     }
@@ -100,6 +106,18 @@ public final class MinionConfig {
         }
     }
 
+    /**
+     * A crafting recipe of a fuel, upgrade or hat. {@code result} and the ingredient specs use
+     * {@code upgrade:<id>}, {@code skin:<id>}, {@code fuel:<id>}, {@code enchanted:<MATERIAL>},
+     * {@code super:<MATERIAL>} or a plain {@code MATERIAL} (exactly that vanilla item, never a custom one).
+     */
+    public record ItemRecipe(String id, String result, List<String> shape, Map<Character, String> ingredients) {
+        public ItemRecipe {
+            shape = List.copyOf(shape);
+            ingredients = Map.copyOf(ingredients);
+        }
+    }
+
     // ---------------------------------------------------------------- settings
 
     public int tickTicks = 20;
@@ -107,6 +125,9 @@ public final class MinionConfig {
     public int scanSeconds = 10;
     public double maxCatchupHours = 336;
     public int islandCheckSeconds = 30;
+    public double islandMissingHours = 6;
+    public boolean memberCollect = false;
+    public int guiClickMillis = 150;
     public int baseSlots = 5;
     public int maxSlots = 30;
     public List<Integer> slotThresholds = List.of(5, 15, 30, 50, 75, 100, 125, 150, 175, 200, 225, 250);
@@ -133,6 +154,7 @@ public final class MinionConfig {
     public final Map<String, Type> types = new LinkedHashMap<>();
     public final Map<String, Fuel> fuels = new LinkedHashMap<>();
     public final Map<String, Upgrade> upgrades = new LinkedHashMap<>();
+    public final Map<String, ItemRecipe> itemRecipes = new LinkedHashMap<>();
     public final Map<String, Skin> skins = new LinkedHashMap<>();
     public final Map<Material, Material> smelt = new LinkedHashMap<>();
 
@@ -163,6 +185,10 @@ public final class MinionConfig {
 
     public long maxCatchupMillis() {
         return Math.round(maxCatchupHours * 3_600_000d);
+    }
+
+    public long islandMissingMillis() {
+        return Math.round(islandMissingHours * 3_600_000d);
     }
 
     public long maxFuelMillis() {
@@ -211,6 +237,9 @@ public final class MinionConfig {
             c.scanSeconds = Math.max(1, s.getInt("scan-seconds", c.scanSeconds));
             c.maxCatchupHours = Math.max(0, s.getDouble("max-catchup-hours", c.maxCatchupHours));
             c.islandCheckSeconds = Math.max(1, s.getInt("island-check-seconds", c.islandCheckSeconds));
+            c.islandMissingHours = Math.max(0.01, s.getDouble("island-missing-hours", c.islandMissingHours));
+            c.memberCollect = s.getBoolean("member-collect", c.memberCollect);
+            c.guiClickMillis = Math.max(0, s.getInt("gui-click-millis", c.guiClickMillis));
             c.baseSlots = Math.max(0, s.getInt("base-slots", c.baseSlots));
             c.maxSlots = Math.max(c.baseSlots, s.getInt("max-slots", c.maxSlots));
             List<Integer> thresholds = new ArrayList<>(s.getIntegerList("slot-thresholds"));
@@ -287,6 +316,7 @@ public final class MinionConfig {
         readFuels(c, root.getConfigurationSection("fuels"), log);
         readUpgrades(c, root.getConfigurationSection("upgrades"), log);
         readSkins(c, root.getConfigurationSection("skins"), log);
+        readItemRecipes(c, root.getConfigurationSection("recipes"), log);
         return c;
     }
 
@@ -371,9 +401,17 @@ public final class MinionConfig {
                 for (String k : e.getStringList("kinds")) {
                     kinds.add(Kind.valueOf(k.toUpperCase(Locale.ROOT)));
                 }
+                Material compressed = null;
+                if (e.contains("compressed")) {
+                    compressed = Material.matchMaterial(e.getString("compressed", ""));
+                    if (compressed == null || !c.producible().contains(compressed)) {
+                        throw new IllegalArgumentException("'compressed' must be a resource a minion can produce");
+                    }
+                    custom = false;
+                }
                 c.fuels.put(id, new Fuel(id, e.getString("name", prettify(material)),
                     enumOf(Rarity.class, e.getString("rarity", "COMMON"), Rarity.COMMON, log), material, custom, speed,
-                    hours, kinds));
+                    hours, kinds, compressed));
             } catch (RuntimeException ex) {
                 log.warning("minions.yml: skipped fuel '" + id + "': " + ex.getMessage());
             }
@@ -403,6 +441,67 @@ public final class MinionConfig {
                 log.warning("minions.yml: skipped upgrade '" + id + "': " + ex.getMessage());
             }
         }
+    }
+
+    private static void readItemRecipes(MinionConfig c, @Nullable ConfigurationSection recipes, Logger log) {
+        if (recipes == null) {
+            return;
+        }
+        for (String id : recipes.getKeys(false)) {
+            ConfigurationSection e = recipes.getConfigurationSection(id);
+            try {
+                if (e == null || !ID.matcher(id).matches()) {
+                    throw new IllegalArgumentException("bad id");
+                }
+                String result = e.getString("result", "");
+                if (!resultExists(c, result)) {
+                    throw new IllegalArgumentException("unknown result '" + result + "'");
+                }
+                List<String> shape = e.getStringList("shape");
+                if (shape.isEmpty() || shape.size() > 3) {
+                    throw new IllegalArgumentException("shape needs 1 to 3 rows");
+                }
+                for (String row : shape) {
+                    if (row.isEmpty() || row.length() > 3) {
+                        throw new IllegalArgumentException("shape rows need 1 to 3 characters");
+                    }
+                }
+                ConfigurationSection ing = e.getConfigurationSection("ingredients");
+                Map<Character, String> map = new LinkedHashMap<>();
+                if (ing != null) {
+                    for (String letter : ing.getKeys(false)) {
+                        if (letter.length() != 1 || letter.charAt(0) == ' ') {
+                            throw new IllegalArgumentException("ingredient key '" + letter + "' must be one character");
+                        }
+                        map.put(letter.charAt(0), ing.getString(letter, ""));
+                    }
+                }
+                for (String row : shape) {
+                    for (char ch : row.toCharArray()) {
+                        if (ch != ' ' && !map.containsKey(ch)) {
+                            throw new IllegalArgumentException("shape uses '" + ch + "' with no ingredient");
+                        }
+                    }
+                }
+                c.itemRecipes.put(id, new ItemRecipe(id, result, shape, map));
+            } catch (RuntimeException ex) {
+                log.warning("minions.yml: skipped recipe '" + id + "': " + ex.getMessage());
+            }
+        }
+    }
+
+    private static boolean resultExists(MinionConfig c, String spec) {
+        int colon = spec.indexOf(':');
+        if (colon < 0) {
+            return false;
+        }
+        String id = spec.substring(colon + 1);
+        return switch (spec.substring(0, colon)) {
+            case "upgrade" -> c.upgrades.containsKey(id);
+            case "skin" -> c.skins.containsKey(id);
+            case "fuel" -> c.fuels.containsKey(id) && c.fuels.get(id).custom();
+            default -> false;
+        };
     }
 
     private static void readSkins(MinionConfig c, @Nullable ConfigurationSection skins, Logger log) {

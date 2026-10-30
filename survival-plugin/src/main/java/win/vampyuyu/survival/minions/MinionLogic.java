@@ -146,18 +146,34 @@ public final class MinionLogic {
     }
 
     /**
-     * One finished cycle: roll, smelt, spread, store, compact. All or nothing: false (and nothing changed) when the
-     * result does not fit, so a full minion never loses an item.
+     * One finished cycle: roll, smelt, spread, store, compact.
+     *
+     * <p>The cycle only stalls (false, nothing changed) when the storage is COMPLETELY full: every slot a full stack,
+     * so not one more item of any kind fits. Otherwise the items rolled are stored as far as they fit (the primary
+     * resource first) and the rest is dropped: a one slot cow minion keeps adding beef when it rolls leather, a one
+     * slot fisher keeps going when it rolls a fish it has no slot for, and the Diamond Spreading bonus never blocks
+     * anything. So an offline window is never thrown away because of a bonus item. The spread counter always
+     * advances.
      */
     public boolean produce(MinionData d, Type type) {
         Map<Material, Integer> rolled = roll(type);
         boolean smelting = has(d, Effect.SMELT);
+        Material primary = smelting ? config.smelted(type.primary().item()) : type.primary().item();
         Map<Material, Long> byMaterial = new LinkedHashMap<>();
         long units = 0;
-        for (Map.Entry<Material, Integer> e : rolled.entrySet()) {
+        // The primary resource first, then the others in roll order.
+        List<Map.Entry<Material, Integer>> order = new ArrayList<>(rolled.entrySet());
+        order.sort((x, y) -> Boolean.compare(
+            (smelting ? config.smelted(y.getKey()) : y.getKey()) == primary,
+            (smelting ? config.smelted(x.getKey()) : x.getKey()) == primary));
+        for (Map.Entry<Material, Integer> e : order) {
             Material material = smelting ? config.smelted(e.getKey()) : e.getKey();
             byMaterial.merge(material, (long) e.getValue(), Long::sum);
             units += e.getValue();
+        }
+        Storage storage = storage(d);
+        if (storage.isCompletelyFull()) {
+            return false;
         }
         int spread = d.spread;
         long bonus = 0;
@@ -169,16 +185,39 @@ public final class MinionLogic {
                 byMaterial.merge(Material.DIAMOND, bonus, Long::sum);
             }
         }
-        Map<String, Long> items = new LinkedHashMap<>();
-        byMaterial.forEach((m, n) -> items.put(ItemKey.vanilla(m), n));
-        Storage storage = storage(d);
-        if (!storage.addAll(items)) {
-            return false;
+        Map<String, Long> stored = new LinkedHashMap<>();
+        long made = 0;
+        for (Map.Entry<Material, Long> e : byMaterial.entrySet()) {
+            String key = ItemKey.vanilla(e.getKey());
+            long taken = storage.add(key, e.getValue());
+            if (taken > 0) {
+                stored.put(key, taken);
+                made += taken;
+            }
         }
         d.spread = spread;
-        d.produced += units + bonus;
-        compaction.apply(storage, d.storage, compactMode(d), items.keySet());
+        d.produced += made;
+        compaction.apply(storage, d.storage, compactMode(d), stored.keySet());
         return true;
+    }
+
+    /** Items per hour at the current speed (the average of the lead drop; used by the menu). */
+    public double itemsPerHour(MinionData d, Type type) {
+        double perCycle = 0;
+        if (type.weighted()) {
+            double total = 0;
+            double sum = 0;
+            for (Drop drop : type.drops()) {
+                total += drop.chance();
+                sum += drop.chance() * (drop.min() + drop.max()) / 2d;
+            }
+            perCycle = total > 0 ? sum / total : 0;
+        } else {
+            Drop lead = type.primary();
+            perCycle = Math.min(1d, lead.chance()) * (lead.min() + lead.max()) / 2d;
+        }
+        double seconds = secondsPerItem(d, type);
+        return seconds <= 0 ? 0 : perCycle * 3600d / seconds;
     }
 
     /**

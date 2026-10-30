@@ -79,6 +79,20 @@ public final class Storage {
         return freeSlots() == 0;
     }
 
+    /** True when every slot holds a complete stack: not one more item of ANY kind (stored or new) fits. */
+    public boolean isCompletelyFull() {
+        if (freeSlots() > 0) {
+            return false;
+        }
+        for (Map.Entry<String, Long> e : counts.entrySet()) {
+            long size = Math.max(1, stackSize.applyAsInt(e.getKey()));
+            if (e.getValue() > 0 && e.getValue() % size != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /** How many more items of this kind fit (the partial slot plus every free slot). */
     public long room(String key) {
         long size = Math.max(1, stackSize.applyAsInt(key));

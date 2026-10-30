@@ -44,6 +44,19 @@ public final class MinionData {
     public long produced;
     /** Items produced since the last Diamond Spreading bonus. */
     public int spread;
+    /** Value of {@link #produced} the last time the owner was told about the production (join summary). */
+    public long seenProduced;
+    /**
+     * The block the minion placed for the current cycle (ore, crop, log) and is going to remove at the end of it.
+     * Saved, so a restart or a chunk reload can still finish the cycle: the minion only ever removes this exact
+     * block, never anything else of the same kind.
+     */
+    public boolean placed;
+    public int spotX;
+    public int spotY;
+    public int spotZ;
+    /** Material name the placed block had; the block is only removed while it still is that material. */
+    public @Nullable String spotMaterial;
 
     public MinionData copy() {
         MinionData c = new MinionData();
@@ -68,6 +81,12 @@ public final class MinionData {
         c.storage = new LinkedHashMap<>(storage);
         c.produced = produced;
         c.spread = spread;
+        c.seenProduced = seenProduced;
+        c.placed = placed;
+        c.spotX = spotX;
+        c.spotY = spotY;
+        c.spotZ = spotZ;
+        c.spotMaterial = spotMaterial;
         return c;
     }
 

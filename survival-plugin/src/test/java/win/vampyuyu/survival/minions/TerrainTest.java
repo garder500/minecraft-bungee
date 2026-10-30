@@ -79,25 +79,35 @@ public class TerrainTest {
     }
 
     @Test
-    public void miningNeedsAirOrItsOwnBlock() {
+    public void miningNeedsAirOnSolidGroundOrItsOwnPlacedBlock() {
         Type cobble = cfg.types.get("cobblestone");
         floor(Material.STONE);
         assertEquals(Status.WORKING, Terrain.scan(area(2), cobble, cfg));
         layer(Material.DIRT);
         assertEquals(Status.NO_SPACE, Terrain.scan(area(2), cobble, cfg));
+        // A cobblestone block that is just there (a player's wall) does not make the terrain workable ...
         world.getBlockAt(1, 64, 1).setType(Material.COBBLESTONE);
-        assertEquals(Status.WORKING, Terrain.scan(area(2), cobble, cfg));
+        assertEquals(Status.NO_SPACE, Terrain.scan(area(2), cobble, cfg));
+        // ... the block the minion itself placed for the cycle in progress does.
+        MinionData d = new MinionData();
+        Terrain.track(d, world.getBlockAt(1, 64, 1));
+        assertEquals(Status.WORKING, Terrain.scan(area(2), cobble, cfg, d));
     }
 
     @Test
-    public void miningNeverFillsLiquidsAndSandNeedsSupport() {
+    public void miningNeverFillsLiquidsAndEveryMiningTypeNeedsGroundUnderTheBlock() {
         layer(Material.WATER);
         assertEquals(Status.NO_SPACE, Terrain.scan(area(2), cfg.types.get("cobblestone"), cfg));
         layer(Material.AIR);
         floor(Material.AIR);
-        assertEquals(Status.NO_SPACE, Terrain.scan(area(2), cfg.types.get("sand"), cfg));
+        // Air but no ground to put the block on (a pillar over the void): the terrain is invalid, not just crowded.
+        assertEquals(Status.INVALID_TERRAIN, Terrain.scan(area(2), cfg.types.get("sand"), cfg));
+        assertEquals(Status.INVALID_TERRAIN, Terrain.scan(area(2), cfg.types.get("cobblestone"), cfg));
+        assertEquals(Status.INVALID_TERRAIN, Terrain.scan(area(2), cfg.types.get("diamond"), cfg));
+        assertNull(Terrain.place(area(2), cfg.types.get("cobblestone"), new MinionData(), new MinionRuntime(), random, 0.7));
         floor(Material.STONE);
         assertEquals(Status.WORKING, Terrain.scan(area(2), cfg.types.get("sand"), cfg));
+        assertEquals(Status.WORKING, Terrain.scan(area(2), cfg.types.get("cobblestone"), cfg));
     }
 
     @Test
@@ -114,13 +124,11 @@ public class TerrainTest {
             assertNotNull(spot);
             assertEquals(Material.COAL_ORE, spot.getType());
             assertTrue(spot.getX() + "," + spot.getY() + "," + spot.getZ(), area(2).contains(spot.getX(), spot.getY(), spot.getZ()));
-            rt.spotX = spot.getX();
-            rt.spotY = spot.getY();
-            rt.spotZ = spot.getZ();
-            rt.placed = true;
-            Terrain.harvest(area(2), coal, rt, random);
+            Terrain.track(d, spot);
+            assertTrue(d.placed);
+            Terrain.harvest(area(2), coal, d, rt, random);
             assertEquals(Material.AIR, spot.getType());
-            rt.placed = false;
+            assertFalse(d.placed);
         }
         assertEquals(Material.CHEST, world.getBlockAt(1, 64, 0).getType());
         assertEquals(Material.OAK_PLANKS, world.getBlockAt(-1, 64, 0).getType());
@@ -128,16 +136,57 @@ public class TerrainTest {
     }
 
     @Test
-    public void harvestOnlyRemovesTheMinionsOwnKind() {
-        Type coal = cfg.types.get("coal");
-        layer(Material.IRON_ORE);
+    public void harvestRemovesOnlyTheBlockTheMinionPlacedNeverAnotherBlockOfTheSameKind() {
+        Type cobble = cfg.types.get("cobblestone");
+        layer(Material.COBBLESTONE); // a player's cobblestone wall all around the minion
         MinionRuntime rt = new MinionRuntime();
-        Terrain.harvest(area(2), coal, rt, random);
-        assertEquals(24, count(Material.IRON_ORE, 2));
-        world.getBlockAt(2, 64, 2).setType(Material.COAL_ORE);
-        Terrain.harvest(area(2), coal, rt, random);
+        MinionData d = new MinionData();
+        // Nothing placed (a restart before the minion placed anything): the harvest touches nothing, wall included.
+        Terrain.harvest(area(2), cobble, d, rt, random);
+        assertEquals(24, count(Material.COBBLESTONE, 2));
+        // The recorded block is removed, the rest of the wall stays.
+        Terrain.track(d, world.getBlockAt(2, 64, 2));
+        Terrain.harvest(area(2), cobble, d, rt, random);
         assertEquals(Material.AIR, world.getBlockAt(2, 64, 2).getType());
-        assertEquals(23, count(Material.IRON_ORE, 2));
+        assertEquals(23, count(Material.COBBLESTONE, 2));
+        assertFalse(d.placed);
+    }
+
+    @Test
+    public void aTrackedBlockThatAPlayerReplacedIsLeftAlone() {
+        Type cobble = cfg.types.get("cobblestone");
+        MinionData d = new MinionData();
+        world.getBlockAt(1, 64, 1).setType(Material.COBBLESTONE);
+        Terrain.track(d, world.getBlockAt(1, 64, 1));
+        world.getBlockAt(1, 64, 1).setType(Material.OAK_PLANKS);
+        Terrain.harvest(area(2), cobble, d, new MinionRuntime(), random);
+        assertEquals(Material.OAK_PLANKS, world.getBlockAt(1, 64, 1).getType());
+        assertFalse(d.placed);
+    }
+
+    @Test
+    public void aTrackedBlockInAnUnloadedChunkIsKeptForLater() {
+        MinionData d = new MinionData();
+        d.placed = true;
+        d.spotX = 400;
+        d.spotY = 64;
+        d.spotZ = 400;
+        d.spotMaterial = "COAL_ORE";
+        assertFalse(Terrain.removeTracked(world, d, false));
+        assertTrue(d.placed);
+    }
+
+    @Test
+    public void cleanupRemovesThePlacedBlockSilently() {
+        Type coal = cfg.types.get("coal");
+        floor(Material.STONE);
+        MinionData d = new MinionData();
+        MinionRuntime rt = new MinionRuntime();
+        Block spot = Terrain.place(area(2), coal, d, rt, random, 0.7);
+        Terrain.track(d, spot);
+        Terrain.cleanup(world, d, rt);
+        assertEquals(Material.AIR, spot.getType());
+        assertFalse(d.placed);
     }
 
     @Test
@@ -163,14 +212,23 @@ public class TerrainTest {
     }
 
     @Test
-    public void foragingNeedsSoilForSaplings() {
+    public void foragingNeedsSoilAndGrowsALogNotASapling() {
         Type oak = cfg.types.get("oak");
         floor(Material.STONE);
         assertEquals(Status.INVALID_TERRAIN, Terrain.scan(area(2), oak, cfg));
         floor(Material.GRASS_BLOCK);
         assertEquals(Status.WORKING, Terrain.scan(area(2), oak, cfg));
         Block spot = Terrain.place(area(2), oak, new MinionData(), new MinionRuntime(), random, 0.7);
-        assertEquals(Material.OAK_SAPLING, spot.getType());
+        assertEquals(Material.OAK_LOG, spot.getType());
+        MinionData d = new MinionData();
+        Terrain.track(d, spot);
+        // A player's own oak log or sapling in the area is not touched by the harvest.
+        world.getBlockAt(-2, 64, -2).setType(Material.OAK_LOG);
+        world.getBlockAt(-2, 64, -1).setType(Material.OAK_SAPLING);
+        Terrain.harvest(area(2), oak, d, new MinionRuntime(), random);
+        assertEquals(Material.AIR, spot.getType());
+        assertEquals(Material.OAK_LOG, world.getBlockAt(-2, 64, -2).getType());
+        assertEquals(Material.OAK_SAPLING, world.getBlockAt(-2, 64, -1).getType());
     }
 
     @Test

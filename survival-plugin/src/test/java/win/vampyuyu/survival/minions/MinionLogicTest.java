@@ -319,4 +319,78 @@ public class MinionLogicTest {
         assertNotNull(new MinionLogic(cfg, always).roll(cobble));
         assertEquals(Map.of(Material.COBBLESTONE, 1), logic.roll(cobble));
     }
+
+    // ---------------------------------------------------------------- review fixes: partial drops
+
+    @Test
+    public void aTierOneCowKeepsFillingBeefOverEightHoursEvenWhenLeatherHasNoSlot() {
+        Type cow = cfg.types.get("cow");
+        MinionData d = minion("cow", 1);
+        Production.Outcome out = logic.advance(d, cow, d.lastTick + 8 * HOUR, true);
+        // 1 slot: beef fills it (leather is rolled but never fits), and only then does the minion stall.
+        assertEquals(64, d.storage.get("m:BEEF").longValue());
+        assertFalse(d.storage.containsKey("m:LEATHER"));
+        assertTrue(out.stalled());
+        assertTrue(logic.storage(d).isCompletelyFull());
+    }
+
+    @Test
+    public void aTierOneWheatMinionDoesNotFreezeOnSeeds() {
+        Type wheat = cfg.types.get("wheat");
+        MinionData d = minion("wheat", 1);
+        logic.advance(d, wheat, d.lastTick + 8 * HOUR, true);
+        assertEquals(64, d.storage.get("m:WHEAT").longValue());
+        assertFalse(d.storage.containsKey("m:WHEAT_SEEDS"));
+    }
+
+    @Test
+    public void aTierOneFisherKeepsGoingWhenItRollsAFishWithNoSlot() {
+        Type fishing = cfg.types.get("fishing");
+        MinionData d = minion("fishing", 1);
+        Production.Outcome out = logic.advance(d, fishing, d.lastTick + 48 * HOUR, true);
+        // only one kind ever gets the slot, and it ends up as a full stack instead of freezing at the first fish
+        assertEquals(1, d.storage.size());
+        assertEquals(64L, d.storage.values().iterator().next().longValue());
+        assertTrue(out.stalled());
+    }
+
+    @Test
+    public void diamondSpreadingNeverBlocksATierOneCobblestoneMinion() {
+        MinionData d = minion("cobblestone", 1);
+        d.upgrades.add("diamond_spreading");
+        Production.Outcome out = logic.advance(d, cobble, d.lastTick + 8 * HOUR, true);
+        // The bonus diamond has no second slot: it is dropped, the counter keeps moving, the cobblestone fills up.
+        assertEquals(64, d.storage.get("m:COBBLESTONE").longValue());
+        assertFalse(d.storage.containsKey("m:DIAMOND"));
+        assertTrue(out.stalled());
+        assertTrue(d.spread >= 0 && d.spread < cfg.spreadEvery);
+        assertTrue(d.produced >= 64);
+    }
+
+    @Test
+    public void aMinionWithTwoSlotsKeepsTheBonusDiamond() {
+        MinionData d = minion("cobblestone", 2);
+        d.upgrades.add("diamond_spreading");
+        logic.advance(d, cobble, d.lastTick + 28_000L * 20, true);
+        assertEquals(20, d.storage.get("m:COBBLESTONE").longValue());
+        assertEquals(2, d.storage.get("m:DIAMOND").longValue());
+    }
+
+    @Test
+    public void aCompletelyFullStorageStallsAndLosesNothing() {
+        MinionData d = minion("cobblestone", 1);
+        d.storage.put("m:COBBLESTONE", 64L);
+        assertFalse(logic.produce(d, cobble));
+        assertEquals(64, d.storage.get("m:COBBLESTONE").longValue());
+        assertEquals(0, d.produced);
+    }
+
+    @Test
+    public void itemsPerHourFollowsTheSpeed() {
+        MinionData d = minion("cobblestone", 1);
+        double plain = logic.itemsPerHour(d, cobble);
+        assertEquals(3600d / 28d, plain, 1e-6);
+        d.upgrades.add("flycatcher");
+        assertEquals(plain * 1.2, logic.itemsPerHour(d, cobble), 1e-6);
+    }
 }
