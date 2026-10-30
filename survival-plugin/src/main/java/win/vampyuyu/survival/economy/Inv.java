@@ -91,4 +91,42 @@ final class Inv {
             Bukkit.getLogger().log(Level.FINE, "saveData not available", e);
         }
     }
+
+    /**
+     * How many of each wanted item fit in the player's storage right now (simulated, nothing is given). Products
+     * are filled in map order, so an early product can use up the room of a later one.
+     */
+    static java.util.Map<String, Integer> fit(Player player, ItemKeys keys, java.util.Map<String, Integer> wanted) {
+        Inventory sim = Bukkit.createInventory(null, 36);
+        ItemStack[] storage = player.getInventory().getStorageContents();
+        for (int i = 0; i < 36 && i < storage.length; i++) {
+            sim.setItem(i, storage[i] == null ? null : storage[i].clone());
+        }
+        java.util.Map<String, Integer> out = new java.util.LinkedHashMap<>();
+        for (var e : wanted.entrySet()) {
+            var template = keys.create(e.getKey(), 1);
+            if (template.isEmpty()) {
+                continue;
+            }
+            int granted = 0;
+            for (ItemStack stack : stacks(template.get(), e.getValue())) {
+                int asked = stack.getAmount();
+                var left = sim.addItem(stack);
+                int notFit = left.values().stream().mapToInt(ItemStack::getAmount).sum();
+                granted += asked - notFit;
+                if (notFit > 0) {
+                    break;
+                }
+            }
+            if (granted > 0) {
+                out.put(e.getKey(), granted);
+            }
+        }
+        return out;
+    }
+
+    /** Gives {@code amount} items of a key (re-created from the key, never a stored stack). */
+    static void giveKey(Player player, ItemKeys keys, String key, int amount) {
+        keys.create(key, 1).ifPresent(t -> give(player, stacks(t, amount)));
+    }
 }
