@@ -1,0 +1,205 @@
+# Skyblock items feature: stats, combat, HUD, enchants, reforges, accessories, pets.
+# Every key has the same default in code, so deleting a key restores the value below.
+# Edit, then run /sbitems reload (numeric settings only; enchant and reforge definitions, catalog items need a restart).
+
+# ------------------------------------------------------------------------------------------------ menus
+menus:
+  replace-enchanting-table: true      # right-clicking an enchanting table opens the custom table (Skyblock worlds only)
+  replace-anvil: true                 # same for anvils
+  smithing-table-is-blacksmith: false # a smithing table opens the reforge blacksmith instead of vanilla smithing
+
+# ------------------------------------------------------------------------------------------------ stats engine
+stats:
+  # Item types (the word after the rarity) that count when held in the main hand. Armor always counts.
+  held-types: [SWORD, BOW, AXE, PICKAXE, SHOVEL, HOE, DRILL, ROD, STAFF, WAND, HOOK, TRIDENT, CROSSBOW]
+  # Item ids whose stats are provided by another feature (the Wings item gives flight energy through its own API).
+  ignore-item-ids: [wings]
+  flush-ticks: 2          # how often dirty players are recomputed (changes are debounced into one pass)
+  scan-ticks: 10          # full signature scan of all players; never faster than every 10 ticks
+  regen-percent-per-second: 1.5   # percent of max health regenerated each second (plus Rejuvenate)
+  cancel-vanilla-regen: true      # natural and saturation regeneration are replaced by the percent based one
+  skyblock-worlds-only: true      # stats are only applied in sb_* worlds; elsewhere the vanilla attributes are restored
+
+attributes:
+  max-health: 1024        # hard cap of the real max health attribute
+  health-scale: 40        # hearts drawn in the client (2 half-hearts per heart = 20 hearts)
+  max-speed-percent: 400
+  max-attack-speed-percent: 300
+  max-mining-speed-percent: 2000
+  zero-vanilla-armor: true   # custom gear never uses the vanilla armor bar; Defense replaces it
+
+# ------------------------------------------------------------------------------------------------ combat
+combat:
+  # damage = (weapon damage + damage-bonus) * (1 + Strength/100) * (1 + crit damage/100 on a crit) * enchant multipliers
+  damage-bonus: 5
+  vanilla-damage-multiplier: 3     # damage of a vanilla weapon in the formula = vanilla damage * this
+  mob-health-multiplier: 5         # natural mobs get this much more health in Skyblock worlds
+  scaled-spawn-reasons: [NATURAL, SPAWNER, CHUNK_GEN, JOCKEY, REINFORCEMENTS, PATROL, RAID, VILLAGE_INVASION, TRAP]
+  incoming-damage-scale:
+    default: 5                     # mob damage taken by players is multiplied by this before Defense applies
+    causes:
+      FALL: 5
+      FIRE: 3
+      FIRE_TICK: 2
+      LAVA: 8
+      DROWNING: 3
+      CONTACT: 3
+      SUFFOCATION: 3
+      HOT_FLOOR: 3
+      FREEZE: 2
+      LIGHTNING: 10
+  # True damage: percent of max health lost per hit; ignores Defense.
+  true-damage-percent-of-max-health:
+    VOID: 100
+    STARVATION: 2
+    SUICIDE: 100
+    KILL: 100
+    WORLD_BORDER: 100
+  crit-chance-cap: 100
+  use-attack-cooldown: true        # a half-charged swing deals less damage
+  ferocity-delay-ticks: 3          # delay between the extra Ferocity strikes
+  damage-indicators:
+    enabled: true
+    lifetime-ticks: 24
+    pool-size: 32
+  mob-health-bars: true            # "Zombie 120/500" in the name of hurt non boss mobs
+  ability-intelligence-divisor: 100  # ability damage * (1 + Intelligence / divisor)
+
+# ------------------------------------------------------------------------------------------------ mana and HUD
+mana:
+  regen-percent-per-second: 2.0
+  overflow:
+    max-percent: 100               # overflow mana cap, as percent of max mana
+    decay-percent-per-second: 2.0
+
+hud:
+  period-ticks: 5                  # 4 updates per second; a line is only resent when its text changed
+  keep-alive-ticks: 40             # resend an unchanged line this often so the client does not fade it
+  xp-popup-seconds: 3
+
+# ------------------------------------------------------------------------------------------------ fortune
+fortune:
+  ores: [COAL_ORE, DEEPSLATE_COAL_ORE, IRON_ORE, DEEPSLATE_IRON_ORE, GOLD_ORE, DEEPSLATE_GOLD_ORE, COPPER_ORE,
+         DEEPSLATE_COPPER_ORE, LAPIS_ORE, DEEPSLATE_LAPIS_ORE, REDSTONE_ORE, DEEPSLATE_REDSTONE_ORE, DIAMOND_ORE,
+         DEEPSLATE_DIAMOND_ORE, EMERALD_ORE, DEEPSLATE_EMERALD_ORE, NETHER_QUARTZ_ORE, NETHER_GOLD_ORE, ANCIENT_DEBRIS,
+         GLOWSTONE, AMETHYST_CLUSTER]
+  crops: [WHEAT, CARROTS, POTATOES, BEETROOTS, NETHER_WART, COCOA, MELON, PUMPKIN, SUGAR_CANE, CACTUS, SWEET_BERRY_BUSH]
+  logs: []                         # empty = every block of the LOGS tag
+  placed-block-memory: 50000       # blocks remembered as player placed (no fortune, no farming exploit)
+
+# ------------------------------------------------------------------------------------------------ costs
+costs:
+  require-economy: false           # true = menus refuse to work while the economy feature is unavailable
+  enchant-table:
+    base: 150                      # coins: base * growth^(level-1) * level
+    growth-per-level: 1.9
+    enchanting-xp-per-level: 12    # Enchanting skill XP per enchant level bought (through SkillsApi.addXp)
+    skill-levels-per-level: 5      # Enchanting level needed for level N of an enchant: (N-1) * this
+  anvil:
+    mode: coins                    # coins or levels
+    per-enchant-level: 250         # coins per resulting level (ultimates cost 4x)
+  reforge:
+    base: 400                      # price = base * (1 + rarity)^2 / 2
+  accessory-bag:
+    upgrade-base: 25000
+    upgrade-growth: 1.8
+
+hot-potato:
+  max: 10
+  weapon:
+    strength: 2
+  armor:
+    health: 4
+    defense: 2
+
+singularity:
+  fortune: 25
+
+# ------------------------------------------------------------------------------------------------ enchants and reforges
+# Overrides of the built in tables. Example:
+# enchants:
+#   sharpness: {max-level: 7, per-level: 5, table-max: 5}
+#   telekinesis: {enabled: false}
+enchants: {}
+reforges:
+  # Stat multiplier by rarity: COMMON, UNCOMMON, RARE, EPIC, LEGENDARY, MYTHIC, DIVINE, SPECIAL
+  rarity-multiplier: [1.0, 1.4, 1.9, 2.6, 3.5, 4.6, 6.0, 1.0]
+  disabled: []                     # reforge ids to remove
+
+# ------------------------------------------------------------------------------------------------ accessories
+accessories:
+  base-slots: 9
+  slots-per-upgrade: 3
+  max-slots: 45
+  # Magical Power by rarity of the counted accessories (one per family).
+  magical-power:
+    COMMON: 3
+    UNCOMMON: 5
+    RARE: 8
+    EPIC: 12
+    LEGENDARY: 16
+    MYTHIC: 22
+    DIVINE: 30
+    SPECIAL: 3
+  # Stats granted for every point of Magical Power.
+  per-magical-power:
+    HEALTH: 0.6
+    DEFENSE: 0.25
+    STRENGTH: 0.3
+    INTELLIGENCE: 0.35
+    CRIT_DAMAGE: 0.1
+    SPEED: 0.03
+
+# ------------------------------------------------------------------------------------------------ pets
+pets:
+  max-owned: 45
+  hide-from-owner: false           # true = the pet visual is hidden from its owner (others still see it)
+  xp-per-skill-xp: 1.0             # pet XP per skill XP of the pet's own skill
+  other-skill-share: 0.0           # pet XP per skill XP of the other skills
+  candy-xp: 5000
+  revive-cooldown-seconds: 300     # Phoenix
+  update-ticks: 2                  # how often the pet visual follows its owner
+  xp-curve:
+    base: 100                      # xp for level 1 -> 2 of a RARE pet; later levels grow by `growth`
+    growth: 1.075
+    rarity-multiplier:
+      COMMON: 0.4
+      UNCOMMON: 0.7
+      RARE: 1.0
+      EPIC: 1.6
+      LEGENDARY: 2.4
+      MYTHIC: 3.4
+  # Stat multiplier of the pet's rarity.
+  stat-multiplier:
+    COMMON: 0.5
+    UNCOMMON: 0.7
+    RARE: 1.0
+    EPIC: 1.35
+    LEGENDARY: 1.8
+    MYTHIC: 2.3
+
+# ------------------------------------------------------------------------------------------------ abilities
+abilities:
+  hit-animals: true                # abilities may damage passive animals
+  # Per ability overrides: mana, cooldown (seconds) and the numeric parameters shown in its description.
+  # instant_transmission: {mana: 50, range: 8}
+  # wither_impact: {mana: 150, cooldown: 3, damage: 800, radius: 6, range: 10, shield: 5}
+  wither_shield:
+    reduction: 0.7                 # fraction of damage blocked while the Wither Impact shield is active
+
+# ------------------------------------------------------------------------------------------------ armor sets
+# Parameters of the full set bonuses: sets.<set>.<key>
+sets:
+  lumberjack: {timber: 10, seconds: 8}
+  farmer: {chance: 12}
+  hunter: {lifesteal: 3}
+  void_walker: {cooldown: 30}
+  frostborne: {slow: 3, reduction: 10}
+
+# ------------------------------------------------------------------------------------------------ items
+# Any catalog item can be re-tuned: items.<id>.damage and items.<id>.stats.<stat key>, for example
+# items:
+#   void_blade:
+#     damage: 120
+#     stats: {strength: 80, crit_damage: 50}
+items: {}
