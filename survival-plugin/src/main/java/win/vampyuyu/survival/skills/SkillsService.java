@@ -162,12 +162,13 @@ public final class SkillsService implements SkillsApi {
     private void levelUp(Player player, Skill skill, int oldLevel, int newLevel) {
         SkillsConfig cfg = config;
         double coinsPaid = 0;
+        // Stats first: a SkillLevelUpEvent listener that reads StatsApi must see the bonuses of the new level.
+        applyStats(player, skill);
+        recompute(player);
         for (int level = oldLevel + 1; level <= newLevel; level++) {
             coinsPaid += payLevel(player.getUniqueId(), skill, level);
             Bukkit.getPluginManager().callEvent(new SkillLevelUpEvent(player, skill, level - 1, level));
         }
-        applyStats(player, skill);
-        recompute(player);
         announceLevelUp(player, skill, oldLevel, newLevel, coinsPaid, cfg);
     }
 

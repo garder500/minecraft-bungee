@@ -22,6 +22,7 @@ final class SkillsCommands {
     static final String PERM_USE = "vampyuyu.sb.skills.use";
     static final String PERM_COLLECTIONS = "vampyuyu.sb.skills.collections";
     static final String PERM_TOP = "vampyuyu.sb.skills.top";
+    static final String PERM_RECIPES = "vampyuyu.sb.skills.recipes";
     static final String PERM_ADMIN = "vampyuyu.sb.skills.admin";
     private static final List<String> ADMIN_SUBS = List.of("setxp", "addxp", "setlevel", "reset", "setcollection", "info",
         "boost", "boosts", "unboost", "reload", "help");
@@ -31,8 +32,13 @@ final class SkillsCommands {
     private final SkillsMenus menus;
     private final Leaderboard leaderboard;
     private final Runnable reload;
+    private final RecipeViewer viewer;
+    private final SkillRecipes recipes;
 
-    SkillsCommands(Core core, SkillsService service, SkillsMenus menus, Leaderboard leaderboard, Runnable reload) {
+    SkillsCommands(Core core, SkillsService service, SkillsMenus menus, Leaderboard leaderboard, Runnable reload,
+            RecipeViewer viewer, SkillRecipes recipes) {
+        this.viewer = viewer;
+        this.recipes = recipes;
         this.core = core;
         this.service = service;
         this.menus = menus;
@@ -49,6 +55,9 @@ final class SkillsCommands {
             .usage("/collections [category]").permission(PERM_COLLECTIONS, PermissionDefault.TRUE)
             .executor(this::collections).tab((s, c, l, a) -> a.length == 1 ? matching(categoryNames(), a[0]) : List.of())
             .register();
+        core.commands().command("recipes").aliases("sbrecipes").description("Browse and quick-craft enchanted recipes")
+            .usage("/recipes [recipe | craft <recipe>]").permission(PERM_RECIPES, PermissionDefault.TRUE)
+            .executor(this::recipesCommand).tab(this::recipesTab).register();
         core.commands().command("skilltop").aliases("skillboard").description("Skill leaderboards")
             .usage("/skilltop [skill|average]").permission(PERM_TOP, PermissionDefault.TRUE)
             .executor(this::top).tab((s, c, l, a) -> a.length == 1 ? matching(boardNames(), a[0]) : List.of())
@@ -95,6 +104,51 @@ final class SkillsCommands {
         }
         menus.openCategory(player, category);
         return true;
+    }
+
+    private boolean recipesCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player player)) {
+            core.msg().error(sender, "Only players can browse recipes.");
+            return true;
+        }
+        if (args.length == 0) {
+            viewer.openList(player);
+            return true;
+        }
+        boolean craft = args[0].equalsIgnoreCase("craft");
+        String id = craft ? (args.length > 1 ? args[1] : "") : args[0];
+        SkillsConfig.RecipeDef def = service.config().recipes.get(id.toLowerCase(Locale.ROOT));
+        if (def == null) {
+            core.msg().error(sender, craft && args.length < 2 ? "Usage: /recipes craft <recipe>"
+                : "Unknown recipe '" + id + "'. Use /recipes to browse them.");
+            return true;
+        }
+        if (!craft) {
+            viewer.open(player, def);
+            return true;
+        }
+        switch (recipes.quickCraft(player, def)) {
+            case OK -> core.msg().ok(player, "Crafted " + def.amount() + " " + service.resultName(def) + ".");
+            case LOCKED -> core.msg().warn(player, "This recipe is locked. Requires "
+                + String.join(", ", recipes.missingRequirements(player.getUniqueId(), def)) + ".");
+            case MISSING -> core.msg().warn(player, "You do not have enough ingredients: "
+                + String.join(", ", RecipeText.totals(service.config(), core, def)) + ".");
+            case NO_ROOM -> core.msg().warn(player, "Your inventory has no room for the result.");
+            case UNAVAILABLE -> core.msg().warn(player, "You cannot craft right now.");
+        }
+        return true;
+    }
+
+    private List<String> recipesTab(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length == 1) {
+            List<String> options = new ArrayList<>(service.config().recipes.keySet());
+            options.add("craft");
+            return matching(options, args[0]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("craft")) {
+            return matching(new ArrayList<>(service.config().recipes.keySet()), args[1]);
+        }
+        return List.of();
     }
 
     private boolean top(CommandSender sender, Command command, String label, String[] args) {

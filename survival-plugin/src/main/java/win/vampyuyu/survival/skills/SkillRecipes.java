@@ -226,6 +226,53 @@ final class SkillRecipes implements Listener {
         return missing;
     }
 
+    // ---------------------------------------------------------------- quick craft
+
+    enum QuickResult { OK, LOCKED, MISSING, NO_ROOM, UNAVAILABLE }
+
+    /**
+     * Crafts straight from the inventory, without the 3x3 grid. Everything happens in one step on the main thread:
+     * the ingredients are planned on a copy of the storage, the result is checked to fit, and only then is the copy
+     * written back and the result handed over, so nothing can be duplicated or lost halfway.
+     */
+    QuickResult quickCraft(Player player, SkillsConfig.RecipeDef def) {
+        if (!player.isOnline() || !Bukkit.isPrimaryThread()) {
+            return QuickResult.UNAVAILABLE;
+        }
+        if (!missingRequirements(player.getUniqueId(), def).isEmpty()) {
+            return QuickResult.LOCKED;
+        }
+        ItemStack[] storage = copyOf(player.getInventory().getStorageContents());
+        for (SkillsConfig.Ingredient ingredient : def.ingredients()) {
+            int need = ingredient.slots() * ingredient.perSlot();
+            for (int i = 0; i < storage.length && need > 0; i++) {
+                if (matches(ingredient, storage[i], core.items())) {
+                    int take = Math.min(need, storage[i].getAmount());
+                    need -= take;
+                    if (storage[i].getAmount() == take) {
+                        storage[i] = null;
+                    } else {
+                        storage[i].setAmount(storage[i].getAmount() - take);
+                    }
+                }
+            }
+            if (need > 0) {
+                return QuickResult.MISSING;
+            }
+        }
+        Inventory scratch = Bukkit.createInventory(null, 36);
+        scratch.setStorageContents(copyOf(storage));
+        if (!scratch.addItem(resultOf(def)).isEmpty()) {
+            return QuickResult.NO_ROOM;
+        }
+        player.getInventory().setStorageContents(scratch.getStorageContents());
+        if (def.xpSkill() != null && def.xpAmount() > 0) {
+            service.grant(player, def.xpSkill(), def.xpAmount(), "recipe:" + def.id());
+        }
+        player.updateInventory();
+        return QuickResult.OK;
+    }
+
     // ---------------------------------------------------------------- events
 
     @EventHandler(priority = EventPriority.HIGH)

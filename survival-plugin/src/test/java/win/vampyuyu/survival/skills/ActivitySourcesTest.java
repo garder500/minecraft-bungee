@@ -19,7 +19,7 @@ public class ActivitySourcesTest extends SkillsBase {
     private Zombie zombie(int x) {
         Zombie mob = world.spawn(new Location(world, x, 64, 0), Zombie.class);
         // a plugin spawn counts as CUSTOM and is tagged by the feature; these tests want a normal mob
-        mob.getPersistentDataContainer().remove(ActivitySources.NO_XP);
+        mob.getPersistentDataContainer().remove(ActivitySources.SPAWN_BLOCKED);
         return mob;
     }
 
@@ -71,6 +71,29 @@ public class ActivitySourcesTest extends SkillsBase {
         allowed.getPersistentDataContainer().set(ActivitySources.FORCE_XP, PersistentDataType.BYTE, (byte) 1);
         server.getPluginManager().callEvent(new CreatureSpawnEvent(allowed, CreatureSpawnEvent.SpawnReason.CUSTOM));
         kill(allowed);
+        assertEquals(6, combat(), 1e-9);
+    }
+
+    @Test
+    public void skillXpTagSetAfterSpawningStillCounts() {
+        // the usual pattern: spawn first (the spawn event fires inside the call), tag afterwards
+        Zombie boss = world.spawn(new Location(world, 30, 64, 0), Zombie.class);
+        assertTrue(boss.getPersistentDataContainer().has(ActivitySources.SPAWN_BLOCKED, PersistentDataType.BYTE));
+        assertFalse("the public refusal tag is not written by the spawn handler",
+            boss.getPersistentDataContainer().has(ActivitySources.NO_XP, PersistentDataType.BYTE));
+        boss.getPersistentDataContainer().set(ActivitySources.FORCE_XP, PersistentDataType.BYTE, (byte) 1);
+        kill(boss);
+        assertEquals(6, combat(), 1e-9);
+
+        // an explicit no_skill_xp still beats skill_xp
+        Zombie both = world.spawn(new Location(world, 31, 64, 0), Zombie.class);
+        both.getPersistentDataContainer().set(ActivitySources.FORCE_XP, PersistentDataType.BYTE, (byte) 1);
+        both.getPersistentDataContainer().set(ActivitySources.NO_XP, PersistentDataType.BYTE, (byte) 1);
+        kill(both);
+        assertEquals(6, combat(), 1e-9);
+
+        // a plugin spawn nobody vouched for stays refused
+        kill(world.spawn(new Location(world, 32, 64, 0), Zombie.class));
         assertEquals(6, combat(), 1e-9);
     }
 

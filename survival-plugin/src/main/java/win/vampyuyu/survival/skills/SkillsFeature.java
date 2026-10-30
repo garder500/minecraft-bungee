@@ -29,6 +29,7 @@ public final class SkillsFeature implements Feature, Listener {
     private PlacedBlocks placed;
     private BlockSources blockSources;
     private ActivitySources activitySources;
+    private SeaCreatures seaCreatures;
     private Leaderboard leaderboard;
     private final List<Scheduler.Handle> tasks = new ArrayList<>();
 
@@ -64,6 +65,9 @@ public final class SkillsFeature implements Feature, Listener {
         core.listen(blockSources);
         activitySources = new ActivitySources(core, service);
         core.listen(activitySources);
+        seaCreatures = new SeaCreatures(core, service);
+        core.listen(seaCreatures);
+        core.listen(new EnchantedGuard(core, service));
         core.listen(this);
         tasks.add(core.scheduler().repeating(1200, 1200, () -> {
             try {
@@ -76,7 +80,10 @@ public final class SkillsFeature implements Feature, Listener {
         leaderboard = new Leaderboard(core.getPlugin().getLogger());
         scheduleLeaderboard(config);
 
-        new SkillsCommands(core, service, new SkillsMenus(core, service), leaderboard, this::reload).register();
+        SkillsMenus menus = new SkillsMenus(core, service);
+        RecipeViewer viewer = new RecipeViewer(core, service, recipes);
+        menus.viewer(viewer);
+        new SkillsCommands(core, service, menus, leaderboard, this::reload, viewer, recipes).register();
 
         for (Player online : Bukkit.getOnlinePlayers()) {
             service.applyAllStats(online);
@@ -92,6 +99,9 @@ public final class SkillsFeature implements Feature, Listener {
         }
         tasks.forEach(Scheduler.Handle::cancel);
         tasks.clear();
+        if (seaCreatures != null) {
+            seaCreatures.clear();
+        }
         if (placed != null) {
             try {
                 placed.flush();

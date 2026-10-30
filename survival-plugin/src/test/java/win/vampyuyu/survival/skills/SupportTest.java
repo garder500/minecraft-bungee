@@ -106,6 +106,38 @@ public class SupportTest {
     }
 
     @Test
+    public void unloadHandsTheChunkObjectToTheBackendAndWorldDropFlushes() {
+        java.util.List<Object> hints = new java.util.ArrayList<>();
+        PlacedBlocks.Backend backend = new PlacedBlocks.Backend() {
+            @Override
+            public long[] load(java.util.UUID world, int cx, int cz) {
+                return new long[0];
+            }
+
+            @Override
+            public void save(java.util.UUID world, int cx, int cz, long[] bits) {
+                hints.add("plain");
+            }
+
+            @Override
+            public void save(java.util.UUID world, int cx, int cz, long[] bits, Object chunk) {
+                hints.add(chunk);
+            }
+        };
+        PlacedBlocks placed = new PlacedBlocks(backend);
+        java.util.UUID world = java.util.UUID.randomUUID();
+        placed.mark(world, -64, 1, 70, 1);
+        placed.unload(world, 0, 0, "the-chunk");
+        assertEquals(java.util.List.of("the-chunk"), hints);
+        assertEquals(0, placed.flush()); // nothing left to write after the unload
+        placed.mark(world, -64, 17, 70, 1);
+        placed.mark(world, -64, 33, 70, 1);
+        placed.dropWorld(world);
+        assertEquals(3, hints.size());
+        assertEquals(0, placed.cachedChunks());
+    }
+
+    @Test
     public void placedBlocksAreCompact() {
         PlacedBlocks placed = new PlacedBlocks(new MemoryBackend());
         java.util.UUID world = java.util.UUID.randomUUID();

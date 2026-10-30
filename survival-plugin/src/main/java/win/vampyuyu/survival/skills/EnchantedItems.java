@@ -26,13 +26,23 @@ final class EnchantedItems {
                 continue;
             }
             String tierLine = def.tier() >= 2 ? "<gray>A heavily compacted resource." : "<gray>A concentrated resource.";
+            List<String> lore = new ArrayList<>();
             CustomItemDef.Builder builder = CustomItemDef.builder(def.id(), def.name(), def.rarity(), def.material())
                 .itemModel(def.model()).type("RESOURCE").glint(true);
             if (def.lore().isEmpty()) {
-                builder.lore(tierLine, "<dark_gray>Used in crafting and sold to merchants.");
+                lore.add(tierLine);
+                lore.add("<dark_gray>A crafting material, not meant to be used as the plain item.");
             } else {
-                builder.lore(def.lore().toArray(new String[0]));
+                lore.addAll(def.lore());
             }
+            SkillsConfig.RecipeDef recipe = RecipeText.recipeFor(config, def.id());
+            if (recipe != null) {
+                // The vanilla recipe book only shows one item per slot: the real cost is written on the result.
+                lore.add("");
+                lore.add("<gray>Recipe (any arrangement):");
+                RecipeText.lines(config, core, recipe).forEach(line -> lore.add("<dark_gray> " + line));
+            }
+            builder.lore(lore.toArray(new String[0]));
             core.items().register(builder.build());
             owned.add(def.id());
             added.add(def.id());

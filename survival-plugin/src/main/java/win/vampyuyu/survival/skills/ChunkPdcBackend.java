@@ -24,7 +24,12 @@ final class ChunkPdcBackend implements PlacedBlocks.Backend {
 
     @Override
     public void save(UUID worldId, int chunkX, int chunkZ, long[] bits) {
-        Chunk chunk = loadedChunk(worldId, chunkX, chunkZ);
+        save(worldId, chunkX, chunkZ, bits, null);
+    }
+
+    @Override
+    public void save(UUID worldId, int chunkX, int chunkZ, long[] bits, Object chunkHint) {
+        Chunk chunk = chunkHint instanceof Chunk given ? given : loadedChunk(worldId, chunkX, chunkZ);
         if (chunk == null) {
             return;
         }

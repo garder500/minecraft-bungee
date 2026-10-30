@@ -101,6 +101,13 @@ public final class SkillsConfig {
     public record EnchantedDef(String id, String name, Material material, Rarity rarity, String model, int tier,
             List<String> lore) {}
 
+    /** One sea creature that can bite: its entity, the minimum Fishing level, spawn weight, health and display name. */
+    public record SeaCreatureDef(String id, EntityType type, String name, int minLevel, double weight, double health) {}
+
+    /** Sea creature fishing: chance per catch, caps and the creature table. */
+    public record SeaCreatureCfg(boolean enabled, double baseChance, double perLevel, double perStat, double maxChance,
+            int maxAlivePerPlayer, long despawnSeconds, List<SeaCreatureDef> creatures) {}
+
     /** Diminishing returns for spamming one spot. */
     public record AntiFarmCfg(int cell, long windowMillis, int free, double step, double min) {}
 
@@ -117,6 +124,8 @@ public final class SkillsConfig {
     public final Map<Material, Double> foragingBlocks;
     public final Map<Material, Double> farmingBlocks;
     public final Set<Material> matureOnly;
+    /** Plants that grow upwards from a base block (sugar cane, cactus, bamboo): the whole column pays on a break. */
+    public final Set<Material> columnPlants;
     public final Map<Material, Double> blockXp;
     public final Map<Material, Skill> blockSkill;
     public final Map<EntityType, Double> mobXp;
@@ -137,6 +146,10 @@ public final class SkillsConfig {
     public final AntiFarmCfg mobAntiFarm;
     public final AntiFarmCfg blockAntiFarm;
     public final boolean fortuneEnabled;
+    public final double enchantAnvilPerLevel;
+    public final double brewOwnerRadius;
+    public final boolean guardEnchantedItems;
+    public final SeaCreatureCfg seaCreatures;
     public final double fortuneMaxMultiplier;
     public final Set<Material> trackedPlaced;
     public final Map<String, CollectionDef> collections;
@@ -207,6 +220,9 @@ public final class SkillsConfig {
         foragingBlocks = materials(root.getConfigurationSection("xp.foraging.blocks"), "xp.foraging.blocks", warn);
         farmingBlocks = materials(root.getConfigurationSection("xp.farming.blocks"), "xp.farming.blocks", warn);
         matureOnly = materialSet(root.getStringList("xp.farming.mature_only"), "xp.farming.mature_only", warn);
+        columnPlants = Collections.unmodifiableSet(materialSet(
+            root.contains("xp.farming.column_plants") ? root.getStringList("xp.farming.column_plants")
+                : List.of("SUGAR_CANE", "CACTUS", "BAMBOO"), "xp.farming.column_plants", warn));
         Map<Material, Double> allBlocks = new LinkedHashMap<>();
         Map<Material, Skill> skillOf = new LinkedHashMap<>();
         for (var e : miningBlocks.entrySet()) {
@@ -253,7 +269,12 @@ public final class SkillsConfig {
 
         mobAntiFarm = antiFarm(root.getConfigurationSection("anti_farm.mobs"), new AntiFarmCfg(4, 120_000, 25, 0.04, 0.1));
         blockAntiFarm = antiFarm(root.getConfigurationSection("anti_farm.blocks"), new AntiFarmCfg(1, 30_000, 4, 0.2, 0.1));
-        fortuneEnabled = root.getBoolean("fortune.enabled", true);
+        // Off by default: the items feature owns the Mining/Farming/Foraging Fortune drops (see the notes).
+        fortuneEnabled = root.getBoolean("fortune.enabled", false);
+        enchantAnvilPerLevel = Math.max(0, root.getDouble("xp.enchanting.anvil_per_level", 2));
+        brewOwnerRadius = Math.max(0, root.getDouble("xp.alchemy.owner_radius", 24));
+        guardEnchantedItems = root.getBoolean("enchanted_guard.enabled", true);
+        seaCreatures = parseSeaCreatures(root.getConfigurationSection("sea_creatures"), warn);
         fortuneMaxMultiplier = Math.max(1, root.getDouble("fortune.max_multiplier", 10));
 
         // collections
@@ -286,6 +307,9 @@ public final class SkillsConfig {
                 }
             }
         }
+        // A crop is planted as a seedling and only pays when it is fully grown, so planting it must not mark it:
+        // the maturity check already stops plant-and-break, and a mark would block the harvest forever.
+        tracked.removeAll(matureOnly);
         tracked.addAll(materialSet(root.getStringList("placed_tracking.extra"), "placed_tracking.extra", warn));
         trackedPlaced = Collections.unmodifiableSet(tracked);
 
@@ -403,6 +427,35 @@ public final class SkillsConfig {
             }
         }
         return new SkillDef(skill, max, mult, List.copyOf(stats), Collections.unmodifiableMap(unlocks));
+    }
+
+    private static SeaCreatureCfg parseSeaCreatures(ConfigurationSection s, List<String> warn) {
+        if (s == null) {
+            return new SeaCreatureCfg(false, 0, 0, 0, 0, 0, 0, List.of());
+        }
+        List<SeaCreatureDef> list = new ArrayList<>();
+        ConfigurationSection table = s.getConfigurationSection("creatures");
+        if (table != null) {
+            for (String id : table.getKeys(false)) {
+                ConfigurationSection c = table.getConfigurationSection(id);
+                EntityType type = c == null ? null : entityType(c.getString("entity", ""));
+                if (type == null || !id.matches("[a-z0-9_]+") || type.getEntityClass() == null
+                        || !org.bukkit.entity.LivingEntity.class.isAssignableFrom(type.getEntityClass())) {
+                    warn.add("sea_creatures.creatures." + id + ": bad id or entity");
+                    continue;
+                }
+                list.add(new SeaCreatureDef(id, type, c.getString("name", prettify(id)), Math.max(0, c.getInt("min_level", 0)),
+                    Math.max(0, c.getDouble("weight", 1)), Math.max(1, c.getDouble("health", 20))));
+            }
+        }
+        return new SeaCreatureCfg(s.getBoolean("enabled", true), clamp01(s.getDouble("base_chance", 0.04)),
+            Math.max(0, s.getDouble("per_fishing_level", 0.0008)), Math.max(0, s.getDouble("per_chance_stat", 0.01)),
+            clamp01(s.getDouble("max_chance", 0.35)), Math.max(1, s.getInt("max_alive_per_player", 3)),
+            Math.max(10, s.getLong("despawn_seconds", 120)), List.copyOf(list));
+    }
+
+    private static double clamp01(double v) {
+        return Math.max(0, Math.min(1, v));
     }
 
     private static int intOf(Object o, int fallback) {

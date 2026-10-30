@@ -26,10 +26,13 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.inventory.BrewEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.inventory.InventoryAction;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.BrewerInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -42,13 +45,16 @@ import org.bukkit.Keyed;
  * fishing, enchanting, brewing and crafting.
  *
  * <p>Other features can steer mob kills with entity tags in the {@code vampyuyu} namespace:
- * {@code no_skill_xp} (byte) refuses experience and collections for that mob, {@code skill_xp} (byte) allows a mob that
- * would be refused because of its spawn reason (plugin spawns have reason CUSTOM), {@code sea_creature} (byte) turns
- * the kill into Fishing experience.
+ * {@code no_skill_xp} (byte) refuses experience and collections for that mob (always wins), {@code skill_xp} (byte)
+ * allows a mob that would be refused because of its spawn reason (plugin spawns have reason CUSTOM); it may be set
+ * at any time before the kill, also after {@code spawn()} returned, because the spawn reason is only judged at death
+ * time. {@code sea_creature} (byte) turns the kill into Fishing experience.
  */
 final class ActivitySources implements Listener {
     static final NamespacedKey NO_XP = new NamespacedKey("vampyuyu", "no_skill_xp");
     static final NamespacedKey FORCE_XP = new NamespacedKey("vampyuyu", "skill_xp");
+    /** Private marker written at spawn time for blocked spawn reasons; judged at death so FORCE_XP can come later. */
+    static final NamespacedKey SPAWN_BLOCKED = new NamespacedKey("vampyuyu", "skills_spawn_blocked");
     static final NamespacedKey SEA_CREATURE = new NamespacedKey("vampyuyu", "sea_creature");
     private static final long BREW_OWNER_TTL_MS = 30 * 60_000L;
 
@@ -90,9 +96,8 @@ final class ActivitySources implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSpawn(CreatureSpawnEvent event) {
         LivingEntity entity = event.getEntity();
-        if (service.config().blockedSpawnReasons.contains(event.getSpawnReason())
-                && !entity.getPersistentDataContainer().has(FORCE_XP, PersistentDataType.BYTE)) {
-            entity.getPersistentDataContainer().set(NO_XP, PersistentDataType.BYTE, (byte) 1);
+        if (service.config().blockedSpawnReasons.contains(event.getSpawnReason())) {
+            entity.getPersistentDataContainer().set(SPAWN_BLOCKED, PersistentDataType.BYTE, (byte) 1);
         }
     }
 
@@ -106,7 +111,8 @@ final class ActivitySources implements Listener {
             return;
         }
         var pdc = entity.getPersistentDataContainer();
-        if (pdc.has(NO_XP, PersistentDataType.BYTE)) {
+        if (pdc.has(NO_XP, PersistentDataType.BYTE)
+                || pdc.has(SPAWN_BLOCKED, PersistentDataType.BYTE) && !pdc.has(FORCE_XP, PersistentDataType.BYTE)) {
             return;
         }
         boolean sea = pdc.has(SEA_CREATURE, PersistentDataType.BYTE);
@@ -181,6 +187,29 @@ final class ActivitySources implements Listener {
             + levels * cfg.enchantPerLevel, "enchanting:table");
     }
 
+    /** Taking an anvil result pays Enchanting XP per level of the anvil cost, checked once the levels were paid. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onAnvil(InventoryClickEvent event) {
+        if (!(event.getInventory() instanceof AnvilInventory anvil) || event.getRawSlot() != 2
+                || !(event.getWhoClicked() instanceof Player player) || !earns(player) || !allowed(player.getWorld())) {
+            return;
+        }
+        ItemStack result = anvil.getResult();
+        int cost = anvil.getRepairCost();
+        SkillsConfig cfg = service.config();
+        if (result == null || result.getType().isAir() || cost <= 0 || cfg.enchantAnvilPerLevel <= 0
+                || event.getAction() == InventoryAction.NOTHING) {
+            return;
+        }
+        int levelBefore = player.getLevel();
+        core.scheduler().nextTick(() -> {
+            // Only a take that really cost the levels pays; a refused click (too poor, full cursor) leaves them.
+            if (player.isOnline() && player.getGameMode() != GameMode.CREATIVE && levelBefore - player.getLevel() >= cost) {
+                service.grant(player, Skill.ENCHANTING, cost * cfg.enchantAnvilPerLevel, "enchanting:anvil");
+            }
+        });
+    }
+
     // ---------------------------------------------------------------- alchemy
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -211,6 +240,11 @@ final class ActivitySources implements Listener {
         Player player = Bukkit.getPlayer(owner.player());
         if (player == null || !earns(player) || !allowed(stand.getWorld())) {
             return;
+        }
+        double radius = service.config().brewOwnerRadius;
+        if (radius > 0 && (!player.getWorld().equals(stand.getWorld())
+                || player.getLocation().distanceSquared(stand.getLocation().add(0.5, 0.5, 0.5)) > radius * radius)) {
+            return; // the owner walked away: nobody is credited for a stand they are not near
         }
         BrewerInventory contents = event.getContents();
         List<ItemStack> results = event.getResults();

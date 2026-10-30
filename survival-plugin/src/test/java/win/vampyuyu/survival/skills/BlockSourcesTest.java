@@ -150,8 +150,60 @@ public class BlockSourcesTest extends SkillsBase {
         assertEquals(0, service.data(player.getUniqueId()).collected("WHEAT"));
     }
 
+    /** Rebuilds the config from the shipped skills.yml after an edit. */
+    private void configure(java.util.function.Consumer<org.bukkit.configuration.file.YamlConfiguration> edit) {
+        try (var in = getClass().getClassLoader().getResourceAsStream("skills.yml")) {
+            var yaml = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(
+                new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8));
+            edit.accept(yaml);
+            service.config(new SkillsConfig(yaml));
+        } catch (java.io.IOException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    @Test
+    public void fortuneIsOffByDefaultBecauseTheItemsFeatureOwnsIt() {
+        assertFalse(service.config().fortuneEnabled);
+        stats.flat.put(Stat.MINING_FORTUNE, 100.0);
+        Block stone = block(15, 64, 9, Material.STONE);
+        BlockDropItemEvent event = drops(stone, Material.COBBLESTONE, 4);
+        breakIt(stone);
+        server.getPluginManager().callEvent(event);
+        assertEquals(4, service.data(player.getUniqueId()).collected("COBBLESTONE"));
+        assertEquals(1, world.getEntitiesByClass(Item.class).stream()
+            .filter(i -> i.getItemStack().getType() == Material.COBBLESTONE).count());
+    }
+
+    @Test
+    public void fortuneAlsoAppliesToBlocksThatDropTheirOwnMaterial() {
+        configure(y -> y.set("fortune.enabled", true));
+        stats.flat.put(Stat.FORAGING_FORTUNE, 100.0);
+        Block log = block(16, 64, 9, Material.OAK_LOG);
+        BlockDropItemEvent event = drops(log, Material.OAK_LOG, 1);
+        breakIt(log);
+        server.getPluginManager().callEvent(event);
+        assertEquals(2, service.data(player.getUniqueId()).collected("OAK_LOG"));
+    }
+
+    @Test
+    public void silkTouchToolsGetNoFortune() {
+        configure(y -> y.set("fortune.enabled", true));
+        stats.flat.put(Stat.MINING_FORTUNE, 100.0);
+        ItemStack pick = new ItemStack(Material.DIAMOND_PICKAXE);
+        pick.addUnsafeEnchantment(org.bukkit.enchantments.Enchantment.SILK_TOUCH, 1);
+        player.getInventory().setItemInMainHand(pick);
+        Block stone = block(17, 64, 9, Material.STONE);
+        BlockDropItemEvent event = drops(stone, Material.STONE, 3);
+        breakIt(stone);
+        server.getPluginManager().callEvent(event);
+        assertEquals(3, world.getEntitiesByClass(Item.class).stream()
+            .filter(i -> i.getItemStack().getType() == Material.STONE).mapToInt(i -> i.getItemStack().getAmount()).sum());
+    }
+
     @Test
     public void miningFortuneAddsDropsAndCollections() {
+        configure(y -> y.set("fortune.enabled", true));
         stats.flat.put(Stat.MINING_FORTUNE, 100.0);
         Block stone = block(13, 64, 9, Material.STONE);
         BlockDropItemEvent event = drops(stone, Material.COBBLESTONE, 4);
@@ -161,6 +213,125 @@ public class BlockSourcesTest extends SkillsBase {
         int extra = world.getEntitiesByClass(Item.class).stream()
             .filter(i -> i.getItemStack().getType() == Material.COBBLESTONE).mapToInt(i -> i.getItemStack().getAmount()).sum();
         assertEquals(8, extra); // the original 4 plus 4 more on the ground
+    }
+
+    @Test
+    public void plantedCropsPayWhenTheyAreRipe() {
+        // the real flow: plant (BlockPlaceEvent), wait, harvest. Planting must not mark the crop.
+        Block wheat = block(50, 64, 50, Material.WHEAT);
+        place(wheat);
+        Ageable crop = (Ageable) wheat.getBlockData();
+        crop.setAge(crop.getMaximumAge());
+        wheat.setBlockData(crop);
+        BlockDropItemEvent event = drops(wheat, Material.WHEAT, 1);
+        breakIt(wheat);
+        server.getPluginManager().callEvent(event);
+        assertEquals(3, service.xp(player.getUniqueId(), Skill.FARMING), 1e-9);
+        assertEquals(1, service.data(player.getUniqueId()).collected("WHEAT"));
+
+        Block wart = block(51, 64, 50, Material.NETHER_WART);
+        place(wart);
+        Ageable ripe = (Ageable) wart.getBlockData();
+        ripe.setAge(ripe.getMaximumAge());
+        wart.setBlockData(ripe);
+        breakIt(wart);
+        assertEquals(7, service.xp(player.getUniqueId(), Skill.FARMING), 1e-9);
+    }
+
+    @Test
+    public void plantingAndBreakingASeedlingStillGivesNothing() {
+        Block wheat = block(52, 64, 50, Material.WHEAT);
+        place(wheat);
+        breakIt(wheat); // age 0
+        assertEquals(0, service.xp(player.getUniqueId(), Skill.FARMING), 0);
+    }
+
+    @Test
+    public void trackedTypesExcludeCropsButKeepResourceBlocks() {
+        var tracked = service.config().trackedPlaced;
+        assertFalse(tracked.contains(Material.WHEAT));
+        assertFalse(tracked.contains(Material.NETHER_WART));
+        assertFalse(tracked.contains(Material.COCOA));
+        assertTrue(tracked.contains(Material.STONE));
+        assertTrue(tracked.contains(Material.SUGAR_CANE));
+        assertTrue(tracked.contains(Material.PUMPKIN));
+    }
+
+    @Test
+    public void caneColumnPaysForGrownBlocksButNotThePlacedBase() {
+        Block base = block(60, 64, 60, Material.SUGAR_CANE);
+        place(base); // hand-placed base is marked
+        block(60, 65, 60, Material.SUGAR_CANE);
+        block(60, 66, 60, Material.SUGAR_CANE);
+        breakIt(base);
+        // two grown blocks above: 2 xp each and one collection count each, the base gives nothing
+        assertEquals(4, service.xp(player.getUniqueId(), Skill.FARMING), 1e-9);
+        assertEquals(2, service.data(player.getUniqueId()).collected("SUGAR_CANE"));
+    }
+
+    @Test
+    public void naturalCaneBaseAlsoPaysItself() {
+        Block base = block(61, 64, 60, Material.SUGAR_CANE);
+        block(61, 65, 60, Material.SUGAR_CANE);
+        BlockDropItemEvent event = drops(base, Material.SUGAR_CANE, 1);
+        breakIt(base);
+        server.getPluginManager().callEvent(event);
+        assertEquals(4, service.xp(player.getUniqueId(), Skill.FARMING), 1e-9);
+        assertEquals(2, service.data(player.getUniqueId()).collected("SUGAR_CANE"));
+    }
+
+    /** Stands in for Telekinesis: takes the drops away at HIGH, before skills reads them at MONITOR. */
+    public static final class Vacuum implements org.bukkit.event.Listener {
+        @org.bukkit.event.EventHandler(priority = org.bukkit.event.EventPriority.HIGH)
+        public void onDrops(BlockDropItemEvent event) {
+            event.getItems().clear();
+        }
+    }
+
+    @Test
+    public void collectionsStillCountWhenAnotherFeatureTookTheDrops() {
+        server.getPluginManager().registerEvents(new Vacuum(), plugin);
+        Block ore = block(18, 64, 9, Material.DIAMOND_ORE);
+        BlockDropItemEvent event = drops(ore, Material.DIAMOND, 2);
+        breakIt(ore);
+        server.getPluginManager().callEvent(event);
+        assertTrue(event.getItems().isEmpty());
+        assertEquals(2, service.data(player.getUniqueId()).collected("DIAMOND"));
+    }
+
+    /** Stands in for the items feature's own fortune: adds to the stack in place at HIGH. */
+    public static final class ExtraDrops implements org.bukkit.event.Listener {
+        @org.bukkit.event.EventHandler(priority = org.bukkit.event.EventPriority.HIGH)
+        public void onDrops(BlockDropItemEvent event) {
+            event.getItems().forEach(i -> {
+                ItemStack s = i.getItemStack();
+                s.setAmount(s.getAmount() * 2);
+                i.setItemStack(s);
+            });
+        }
+    }
+
+    @Test
+    public void extrasAddedInPlaceByAnotherFeatureAreCounted() {
+        server.getPluginManager().registerEvents(new ExtraDrops(), plugin);
+        Block ore = block(19, 64, 9, Material.DIAMOND_ORE);
+        BlockDropItemEvent event = drops(ore, Material.DIAMOND, 2);
+        breakIt(ore);
+        server.getPluginManager().callEvent(event);
+        assertEquals(4, service.data(player.getUniqueId()).collected("DIAMOND"));
+    }
+
+    @Test
+    public void marksAreWrittenToTheChunkRightAway() {
+        Block ore = block(70, 64, 70, Material.DIAMOND_ORE);
+        var pdc = world.getChunkAt(ore).getPersistentDataContainer(); // the chunk is loaded while a player builds in it
+        place(ore);
+        assertTrue("the mark reaches the chunk's PDC without waiting for a timer",
+            pdc.has(ChunkPdcBackend.KEY, org.bukkit.persistence.PersistentDataType.LONG_ARRAY));
+        breakIt(ore);
+        assertFalse(pdc.has(ChunkPdcBackend.KEY, org.bukkit.persistence.PersistentDataType.LONG_ARRAY)
+            && java.util.BitSet.valueOf(pdc.get(ChunkPdcBackend.KEY, org.bukkit.persistence.PersistentDataType.LONG_ARRAY))
+                .get(PlacedBlocks.index(world.getMinHeight(), 70, 64, 70)));
     }
 
     @Test

@@ -50,7 +50,7 @@ skills:
         - {from: 21, to: 60, amount: 0.75}
     unlocks:
       5: "You are getting the hang of fighting."
-      10: "Monsters think twice before attacking you."
+      10: "Your name starts to carry weight in a fight."
       20: "A veteran of many fights."
       30: "Crits come naturally now."
       40: "Few things can stop you."
@@ -67,10 +67,10 @@ skills:
         - {from: 1, to: 14, amount: 1}
         - {from: 15, to: 60, amount: 2}
     unlocks:
-      5: "The earth gives up its ores more easily."
-      10: "Your pickaxe sings."
+      5: "Ores feel within reach."
+      10: "The mines know your name."
       20: "A seasoned miner."
-      30: "Veins reveal themselves to you."
+      30: "You have an eye for ore."
       40: "Deep miner."
       50: "Master of the mines."
       60: "The mountain bows to you."
@@ -87,7 +87,7 @@ skills:
         - {from: 20, to: 25, amount: 4}
         - {from: 26, to: 60, amount: 5}
     unlocks:
-      5: "Your crops grow stronger."
+      5: "Your fields start to pay off."
       10: "Green thumbs."
       20: "A bountiful harvest."
       30: "The fields love you."
@@ -105,7 +105,7 @@ skills:
         - {from: 1, to: 14, amount: 1}
         - {from: 15, to: 60, amount: 0.5}
     unlocks:
-      5: "Trees fall faster to your axe."
+      5: "You are learning the forests."
       10: "You know every kind of wood."
       20: "A seasoned lumberjack."
       30: "The forest is your home."
@@ -122,10 +122,10 @@ skills:
         - {from: 20, to: 25, amount: 4}
         - {from: 26, to: 60, amount: 5}
     unlocks:
-      5: "The water feels friendlier."
-      10: "You know where the fish bite."
+      5: "You are finding your rhythm on the water."
+      10: "Anglers start to know your name."
       20: "A patient angler."
-      30: "The sea is generous to you."
+      30: "The sea knows you."
       40: "Angler of renown."
       50: "Master of the deep."
       60: "The ocean is yours."
@@ -137,7 +137,7 @@ skills:
         - {from: 1, to: 14, amount: 1}
         - {from: 15, to: 60, amount: 2}
     unlocks:
-      5: "Magic flows more easily."
+      5: "You are learning the table's language."
       10: "Runes make sense to you."
       20: "A learned enchanter."
       30: "You read the table's whispers."
@@ -152,7 +152,7 @@ skills:
         - {from: 1, to: 14, amount: 1}
         - {from: 15, to: 60, amount: 2}
     unlocks:
-      5: "Your potions bubble just right."
+      5: "You are learning your reagents."
       10: "You know your reagents."
       20: "A practised brewer."
       30: "Recipes flow from memory."
@@ -249,7 +249,11 @@ xp:
       RED_MUSHROOM: 3
       BROWN_MUSHROOM: 3
     # Crops that only give experience (and collections) when fully grown.
+    # They are NOT remembered when planted (planting by hand is the normal way to farm on an island).
     mature_only: [WHEAT, CARROTS, POTATOES, BEETROOTS, NETHER_WART, COCOA, SWEET_BERRY_BUSH, PITCHER_CROP]
+    # Plants that grow upwards from a base: breaking one block pays every grown block above it too (the blocks
+    # above fall by physics without their own break event). A hand-placed block pays nothing, grown ones do.
+    column_plants: [SUGAR_CANE, CACTUS, BAMBOO]
   combat:
     # Experience per kill by entity type. Other hostile mobs give max health * health_factor.
     mobs:
@@ -335,7 +339,12 @@ xp:
     # Enchanting table: cost level (1-3 = 1/2/3 of the buttons, shown as 1..30 levels) and enchantment levels.
     per_cost_level: 3
     per_enchant_level: 4
+    # Experience per level of the anvil cost when a player takes an anvil result (combining, renaming is free).
+    anvil_per_level: 2
   alchemy:
+    # The stand's owner is the last player who opened it; the experience is only paid while they are in the same
+    # world within `owner_radius` blocks of the stand (0 = no distance check).
+    owner_radius: 24
     # Experience per potion changed in a brewing stand, by the ingredient used.
     ingredients:
       NETHER_WART: 10
@@ -459,9 +468,35 @@ anti_farm:
 
 fortune:
   # Mining/Farming/Foraging Fortune from the stats engine adds drops to blocks that give skill experience
-  # (100 fortune = one extra item per dropped item on average).
-  enabled: true
+  # (100 fortune = one extra item per dropped item on average; Silk Touch tools get none).
+  # OFF by default: the items feature already applies these stats to block drops, so turning this on while the
+  # items feature runs multiplies every drop twice. Enable it only when the items feature is disabled.
+  enabled: false
   max_multiplier: 10
+
+# Enchanted resources keep none of their vanilla behaviour: they cannot be placed, planted, eaten, burned, thrown,
+# smelted, dispensed, brewed or used in vanilla recipes (that would destroy the investment).
+enchanted_guard:
+  enabled: true
+
+# Sea creatures: a catch can summon a tagged vanilla mob instead of (in addition to) the loot. Killing it pays
+# Fishing XP (`xp.fishing.sea_creatures`) and its drops count in the collections.
+#   chance = base_chance + per_fishing_level * level + per_chance_stat * SEA_CREATURE_CHANCE (stat points), capped at max_chance
+sea_creatures:
+  enabled: true
+  base_chance: 0.04
+  per_fishing_level: 0.0008
+  per_chance_stat: 0.01
+  max_chance: 0.35
+  max_alive_per_player: 3
+  despawn_seconds: 120
+  # entity: vanilla type, min_level: Fishing level needed, weight: relative odds, health: max health (scaled up)
+  creatures:
+    squid: {entity: SQUID, name: "Sea Squid", min_level: 0, weight: 40, health: 30}
+    drowned: {entity: DROWNED, name: "Sunken Sailor", min_level: 3, weight: 30, health: 60}
+    glow_squid: {entity: GLOW_SQUID, name: "Glimmering Squid", min_level: 8, weight: 18, health: 80}
+    guardian: {entity: GUARDIAN, name: "Reef Guardian", min_level: 15, weight: 10, health: 150}
+    elder_guardian: {entity: ELDER_GUARDIAN, name: "Abyssal Elder", min_level: 30, weight: 2, health: 600}
 
 placed_tracking:
   # Extra block types remembered when placed (everything with experience or a collection already is).

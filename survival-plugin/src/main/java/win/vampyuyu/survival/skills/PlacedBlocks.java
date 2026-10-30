@@ -14,6 +14,9 @@ import java.util.UUID;
  *
  * <p>Persistence goes through a {@link Backend}: the plugin stores each chunk's bits in the chunk's own
  * persistent data container, so the server saves them with the chunk and this class never touches the disk.
+ * Changes are written through ({@link #flush()} right after the event that changed them), never only on a timer:
+ * every mark change goes with a block change in the same chunk, which already queues that chunk for the next save, so
+ * an autosave that lands between the two can no longer write the chunk without its marks.
  * Main thread only.
  */
 public final class PlacedBlocks {
@@ -24,6 +27,11 @@ public final class PlacedBlocks {
 
         /** Saves the bits (an empty array clears the stored value). */
         void save(UUID world, int chunkX, int chunkZ, long[] bits);
+
+        /** Same, with the chunk object when the caller has it (unload event); the default ignores it. */
+        default void save(UUID world, int chunkX, int chunkZ, long[] bits, Object chunk) {
+            save(world, chunkX, chunkZ, bits);
+        }
     }
 
     private record ChunkKey(UUID world, int x, int z) {}
@@ -39,6 +47,7 @@ public final class PlacedBlocks {
 
     private final Backend backend;
     private final Map<ChunkKey, Entry> chunks = new HashMap<>();
+    private final java.util.Set<ChunkKey> dirtyKeys = new java.util.LinkedHashSet<>();
 
     public PlacedBlocks(Backend backend) {
         this.backend = backend;
@@ -73,6 +82,7 @@ public final class PlacedBlocks {
         if (!entry.bits.get(i)) {
             entry.bits.set(i);
             entry.dirty = true;
+            dirtyKeys.add(new ChunkKey(world, x >> 4, z >> 4));
         }
     }
 
@@ -85,28 +95,46 @@ public final class PlacedBlocks {
         }
         entry.bits.clear(i);
         entry.dirty = true;
+        dirtyKeys.add(new ChunkKey(world, x >> 4, z >> 4));
         return true;
     }
 
     /** Writes a chunk (if modified) and forgets it. Call when the chunk unloads. */
     public void unload(UUID world, int chunkX, int chunkZ) {
+        unload(world, chunkX, chunkZ, null);
+    }
+
+    /** Same, handing the unloading chunk object to the backend (it is not reliably findable by coordinates then). */
+    public void unload(UUID world, int chunkX, int chunkZ, Object chunk) {
         ChunkKey key = new ChunkKey(world, chunkX, chunkZ);
         Entry entry = chunks.remove(key);
+        dirtyKeys.remove(key);
         if (entry != null && entry.dirty) {
-            backend.save(world, chunkX, chunkZ, entry.bits.toLongArray());
+            backend.save(world, chunkX, chunkZ, entry.bits.toLongArray(), chunk);
+        }
+    }
+
+    /** Forgets every cached chunk of a world after writing the modified ones (world unload). */
+    public void dropWorld(UUID world) {
+        for (ChunkKey key : new ArrayList<>(chunks.keySet())) {
+            if (key.world().equals(world)) {
+                unload(key.world(), key.x(), key.z(), null);
+            }
         }
     }
 
     /** Writes every modified chunk but keeps them cached. Returns how many were written. */
     public int flush() {
         int written = 0;
-        for (Map.Entry<ChunkKey, Entry> e : new ArrayList<>(chunks.entrySet())) {
-            if (e.getValue().dirty) {
-                backend.save(e.getKey().world(), e.getKey().x(), e.getKey().z(), e.getValue().bits.toLongArray());
-                e.getValue().dirty = false;
+        for (ChunkKey key : new ArrayList<>(dirtyKeys)) {
+            Entry entry = chunks.get(key);
+            if (entry != null && entry.dirty) {
+                backend.save(key.world(), key.x(), key.z(), entry.bits.toLongArray());
+                entry.dirty = false;
                 written++;
             }
         }
+        dirtyKeys.clear();
         return written;
     }
 

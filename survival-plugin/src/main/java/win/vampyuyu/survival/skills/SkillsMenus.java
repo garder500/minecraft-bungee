@@ -25,6 +25,12 @@ final class SkillsMenus {
 
     private final Core core;
     private final SkillsService service;
+    private RecipeViewer viewer;
+
+    /** Enables the "view recipe" click on collection tiers. */
+    void viewer(RecipeViewer viewer) {
+        this.viewer = viewer;
+    }
 
     SkillsMenus(Core core, SkillsService service) {
         this.core = core;
@@ -269,10 +275,31 @@ final class SkillsMenus {
         for (int t = 1; t <= def.maxTier(); t++) {
             tiers.add(t);
         }
-        gui.paginate(tiers, gui.innerSlots(), t -> tierIcon(id, def, t), (click, t) -> claimTier(click.player(), def, t),
+        gui.paginate(tiers, gui.innerSlots(), t -> tierIcon(id, def, t), (click, t) -> tierClick(click.player(), def, t),
             39, 41);
         gui.set(40, Guis.icon(Material.ARROW, "<gray>Back"), click -> openCategory(click.player(), def.category()));
         gui.open(player);
+    }
+
+    /** A reached tier with coins waiting is claimed; otherwise the click opens the recipe it unlocks. */
+    private void tierClick(Player player, SkillsConfig.CollectionDef def, int tier) {
+        SkillsData data = service.data(player.getUniqueId());
+        boolean waiting = def.tierOf(data.collected(def.id())) >= tier
+            && !data.claimed.contains(SkillsData.tierClaim(def.id(), tier));
+        if (waiting) {
+            claimTier(player, def, tier);
+            return;
+        }
+        if (viewer == null) {
+            return;
+        }
+        for (SkillsConfig.RecipeDef recipe : service.config().recipes.values()) {
+            Integer need = recipe.requires().get(def.id());
+            if (need != null && need == tier) {
+                viewer.open(player, recipe);
+                return;
+            }
+        }
     }
 
     private void claimTier(Player player, SkillsConfig.CollectionDef def, int tier) {
@@ -304,10 +331,14 @@ final class SkillsMenus {
         if (coins > 0) {
             lore.add("  <gold>+" + Msg.coins(coins));
         }
-        for (String recipe : recipesAt(def, tier)) {
+        List<String> unlockedRecipes = recipesAt(def, tier);
+        for (String recipe : unlockedRecipes) {
             lore.add("  <green>Recipe: " + recipe);
         }
         lore.add("");
+        if (!unlockedRecipes.isEmpty() && viewer != null && !(reached && !claimed && coins > 0)) {
+            lore.add("<yellow>Click to see the recipe");
+        }
         if (!reached) {
             lore.add("<red>Locked");
         } else if (!claimed && coins > 0) {
