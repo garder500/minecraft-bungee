@@ -294,15 +294,32 @@ public final class MinionManager implements MinionApi {
         return moved;
     }
 
+    /** True for the key of a minion item (it carries a uid, so every copy handed out gets its own). */
+    private boolean isMinionKey(String key) {
+        return ItemKey.isCustom(key) && ItemKey.id(key).startsWith("minion_")
+            && items().def(ItemKey.id(key)).map(def -> def.pdcStrings().containsKey(MinionItems.PDC_TYPE)).orElse(false);
+    }
+
+    /** One stack of the key; minion items get a fresh uid. */
+    private ItemStack make(String key, int amount) {
+        if (isMinionKey(key)) {
+            ItemStack stack = items().create(ItemKey.id(key), amount);
+            items().set(stack, MinionItems.PDC_UID, MinionItems.newUid());
+            return stack;
+        }
+        return ItemKey.create(items(), key, amount);
+    }
+
     /** Gives items to the inventory; returns how many did not fit. */
     long give(Player p, String key, long amount) {
         long left = 0;
         long remaining = amount;
-        int stack = Math.max(1, ItemKey.stackSize(key));
+        boolean unique = isMinionKey(key);
+        int stack = unique ? 1 : Math.max(1, ItemKey.stackSize(key));
+        long chunk = stack; // one real stack per call: leftovers are then exact on every server
         while (remaining > 0) {
-            int part = (int) Math.min(remaining, stack * 36L > Integer.MAX_VALUE ? Integer.MAX_VALUE : stack * 36L);
-            ItemStack made = ItemKey.create(items(), key, part);
-            for (ItemStack rest : p.getInventory().addItem(made).values()) {
+            int part = (int) Math.min(remaining, chunk);
+            for (ItemStack rest : p.getInventory().addItem(make(key, part)).values()) {
                 left += rest.getAmount();
             }
             remaining -= part;
@@ -324,7 +341,7 @@ public final class MinionManager implements MinionApi {
         int stack = Math.max(1, ItemKey.stackSize(key));
         while (remaining > 0) {
             int part = (int) Math.min(remaining, stack);
-            p.getWorld().dropItemNaturally(p.getLocation(), ItemKey.create(items(), key, part));
+            p.getWorld().dropItemNaturally(p.getLocation(), make(key, part));
             remaining -= part;
         }
     }
@@ -674,18 +691,6 @@ public final class MinionManager implements MinionApi {
     }
 
     private long deliverOne(Player p, MinionProfile.Owed o) {
-        if (ItemKey.isCustom(o.key) && items().getString(items().create(ItemKey.id(o.key)), MinionItems.PDC_TYPE).isPresent()) {
-            long left = 0;
-            for (long i = 0; i < o.amount; i++) {
-                ItemStack stack = items().create(ItemKey.id(o.key));
-                items().set(stack, MinionItems.PDC_UID, MinionItems.newUid());
-                if (!p.getInventory().addItem(stack).isEmpty()) {
-                    left = o.amount - i;
-                    break;
-                }
-            }
-            return left;
-        }
         return give(p, o.key, o.amount);
     }
 

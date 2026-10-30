@@ -267,12 +267,17 @@ public final class Terrain {
                 }
                 if (!water.isEmpty()) {
                     Block b = water.get(random.nextInt(water.size()));
-                    Location at = b.getLocation().add(0.5, 1.0, 0.5);
+                    Location at = centre(b, 1.0);
                     area.world().spawnParticle(Particle.FISHING, at, 10, 0.2, 0.05, 0.2, 0.01);
                     area.world().playSound(at, Sound.ENTITY_FISHING_BOBBER_SPLASH, 0.3f, 1.2f);
                 }
             }
         }
+    }
+
+    /** A fresh location in the middle of a block, {@code up} above its floor (never mutates the block's own). */
+    private static Location centre(Block b, double up) {
+        return new Location(b.getWorld(), b.getX() + 0.5, b.getY() + up, b.getZ() + 0.5);
     }
 
     private static boolean ownBlock(Block b, Type type, Material target) {
@@ -299,7 +304,7 @@ public final class Terrain {
     }
 
     private static void effect(Block at, Particle particle, @Nullable BlockData data, Sound sound) {
-        Location centre = at.getLocation().add(0.5, 0.5, 0.5);
+        Location centre = centre(at, 0.5);
         if (data != null) {
             at.getWorld().spawnParticle(particle, centre, 14, 0.25, 0.25, 0.25, 0.05, data);
         } else {
@@ -326,7 +331,7 @@ public final class Terrain {
         if (cls == null) {
             return null;
         }
-        Location at = spot.getLocation().add(0.5, 0, 0.5);
+        Location at = centre(spot, 0);
         Consumer setup = e -> prepare((Entity) e, minionId);
         Entity mob = spot.getWorld().spawn(at, (Class) cls, setup);
         return mob.isValid() ? mob : null;
