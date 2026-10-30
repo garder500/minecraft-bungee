@@ -97,15 +97,16 @@ public final class IslandMenus {
                     if (click.right()) {
                         reply(click.player(), service.setHome(click.player()));
                     } else {
-                        if (!service.teleportHome(click.player())) {
-                            service.core().msg().error(click.player(), "Your island is not ready yet.");
+                        Result result = service.goHome(click.player());
+                        if (!result.ok()) {
+                            service.core().msg().error(click.player(), result.message());
                         }
                     }
                     click.close();
                 });
         gui.set(12, Guis.icon(Material.COMPARATOR, "<gold>Settings", "<gray>Protection flags, island time", "<gray>and locking"),
             click -> settings(click.player()));
-        gui.set(14, Guis.icon(Material.EMERALD, "<green>Upgrades", "<gray>Island radius, member slots", "<gray>and minion slots"),
+        gui.set(14, Guis.icon(Material.EMERALD, "<green>Upgrades", "<gray>Island radius and member slots"),
             click -> upgrades(click.player()));
         gui.set(16, Guis.icon(Material.PLAYER_HEAD, "<yellow>Members",
             "<gray>" + island.size() + "/" + cfg.memberSlotsFor(island) + " co-op members",
@@ -137,8 +138,9 @@ public final class IslandMenus {
                 main(click.player());
             });
         gui.set(30, Guis.icon(Material.NETHER_STAR, "<white>Hub", "<gray>Go to the Skyblock hub"), click -> {
-            if (!service.teleportHub(click.player())) {
-                service.core().msg().error(click.player(), "The hub is not ready yet.");
+            Result result = service.goHub(click.player());
+            if (!result.ok()) {
+                service.core().msg().error(click.player(), result.message());
             }
             click.close();
         });
@@ -286,9 +288,14 @@ public final class IslandMenus {
             return;
         }
         Gui gui = gui(4, "<green>Island upgrades");
-        upgradeIcon(gui, 11, island, Upgrade.RADIUS, Material.SPYGLASS, "blocks");
-        upgradeIcon(gui, 13, island, Upgrade.MEMBERS, Material.PLAYER_HEAD, "players");
-        upgradeIcon(gui, 15, island, Upgrade.MINIONS, Material.REDSTONE_LAMP, "extra slots");
+        if (cfg.minionUpgrade) {
+            upgradeIcon(gui, 11, island, Upgrade.RADIUS, Material.SPYGLASS, "blocks");
+            upgradeIcon(gui, 13, island, Upgrade.MEMBERS, Material.PLAYER_HEAD, "players");
+            upgradeIcon(gui, 15, island, Upgrade.MINIONS, Material.REDSTONE_LAMP, "extra slots");
+        } else {
+            upgradeIcon(gui, 12, island, Upgrade.RADIUS, Material.SPYGLASS, "blocks");
+            upgradeIcon(gui, 14, island, Upgrade.MEMBERS, Material.PLAYER_HEAD, "players");
+        }
         back(gui, 31, this::main);
         gui.open(player);
     }

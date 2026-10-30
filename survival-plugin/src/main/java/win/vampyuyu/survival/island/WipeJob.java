@@ -17,16 +17,19 @@ import org.bukkit.plugin.Plugin;
 public final class WipeJob extends AreaJob {
     private final int minY;
     private final int maxY;
+    private final int entityWaitTicks;
+    private int entityWaited;
     private int[] pending;
     private int pendingIndex;
     private int cleared;
     private Chunk scanned;
 
-    public WipeJob(Plugin plugin, String label, World world, int centerX, int centerZ, int radius, int minY, int maxY,
-            int timeoutTicks) {
+    /** Always sweeps the world's full height: anything built or stored above the usual island is wiped too. */
+    public WipeJob(Plugin plugin, String label, World world, int centerX, int centerZ, int radius, int timeoutTicks) {
         super(plugin, label, world, centerX, centerZ, radius, timeoutTicks);
-        this.minY = Math.max(minY, world.getMinHeight());
-        this.maxY = Math.min(maxY, world.getMaxHeight() - 1);
+        this.minY = world.getMinHeight();
+        this.maxY = world.getMaxHeight() - 1;
+        this.entityWaitTicks = Math.min(timeoutTicks, 100);
     }
 
     @Override
@@ -35,6 +38,9 @@ public final class WipeJob extends AreaJob {
             return true;
         }
         if (scanned != chunk) {
+            if (!entitiesReady(chunk)) {
+                return false;
+            }
             if (!budget.take(300)) {
                 return false;
             }
@@ -55,6 +61,26 @@ public final class WipeJob extends AreaJob {
         scanned = null;
         pending = null;
         return true;
+    }
+
+    /**
+     * Entities (chest minecarts, frames, dropped items, mobs) load apart from the blocks: give them a moment before
+     * the sweep so none survive into the next owner's island. After the wait the sweep forces the load.
+     */
+    private boolean entitiesReady(Chunk chunk) {
+        try {
+            if (chunk.isEntitiesLoaded()) {
+                entityWaited = 0;
+                return true;
+            }
+        } catch (RuntimeException | AbstractMethodError e) {
+            return true;
+        }
+        if (++entityWaited > entityWaitTicks) {
+            entityWaited = 0;
+            return true;
+        }
+        return false;
     }
 
     private void scan(Chunk chunk) {
@@ -103,6 +129,15 @@ public final class WipeJob extends AreaJob {
         } catch (RuntimeException | AbstractMethodError e) {
             return false;
         }
+    }
+
+    /** First and last Y swept (always the whole world height). */
+    int minY() {
+        return minY;
+    }
+
+    int maxY() {
+        return maxY;
     }
 
     /** Number of blocks cleared so far. */

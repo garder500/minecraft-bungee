@@ -43,8 +43,22 @@ public final class Island {
     public boolean platformsReady;
     public long visits;
     public Warp warp;
-    /** Where the island's own Nether / End platform spawn is, relative offsets are fixed by the generator. */
+    /**
+     * Build token: bumped by create, reset, rebuild, platform recovery and delete. A callback that captured an older
+     * value belongs to a superseded build and must do nothing. Also mixed into the generator seeds.
+     */
     public int generation = 1;
+    /** The starter chest of this build is the full first-time kit (cleared once the island is READY). */
+    public boolean kitOwed;
+    /** The Nether/End ruin chests of this build get the first-time loot (cleared once the platforms are READY). */
+    public boolean lootOwed;
+    /**
+     * The player whose first-time kit / loot these builds are (whoever created or reset the island). The claim is
+     * recorded on THEM when the build finishes, even if the island was transferred meanwhile (null on old data:
+     * the owner).
+     */
+    public UUID kitFor;
+    public UUID lootFor;
 
     /** A public warp (listed in the warp browser). */
     public static final class Warp {

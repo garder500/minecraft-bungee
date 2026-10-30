@@ -184,6 +184,20 @@ public final class IslandTracker implements Listener {
                 update(player, player.getLocation());
             }
         });
+        // Entry rules are only checked when moving; someone banned or locked out while offline logs in inside the
+        // island. The menu feature is the only join router, so give its handoff time before acting.
+        service.core().scheduler().later(cfg.joinCheckTicks, () -> enforceEntry(player));
+    }
+
+    /** Moves a player out of the island cell they stand in when they may not be there (banned, locked, closed). */
+    void enforceEntry(Player player) {
+        if (!player.isOnline() || player.hasPermission(IslandService.BYPASS)) {
+            return;
+        }
+        Island cell = service.cellIslandAt(player.getLocation());
+        if (cell != null && !service.canEnter(player, cell)) {
+            service.evictPlayer(player, cell, service.enterDenyReason(player, cell));
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -306,21 +320,25 @@ public final class IslandTracker implements Listener {
 
     // ---------------------------------------------------------------- void and respawn
 
-    /** Pulls a player who fell out of the world back to safety, once. */
-    public void rescue(Player player, Location from) {
+    /**
+     * Pulls a player who fell out of the world back to safety, once. False when there was nowhere to send them (no
+     * island, hub not built): the caller must then let the void damage through instead of letting them fall forever.
+     */
+    public boolean rescue(Player player, Location from) {
         if (!rescuing.add(player.getUniqueId())) {
-            return;
+            return true; // a rescue is already under way
         }
         Location target = service.rescueLocation(player, from);
-        service.core().scheduler().later(40, () -> rescuing.remove(player.getUniqueId()));
         if (target == null) {
             rescuing.remove(player.getUniqueId());
-            return;
+            return false;
         }
+        service.core().scheduler().later(40, () -> rescuing.remove(player.getUniqueId()));
         player.setFallDistance(0);
         player.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
         service.teleport(player, target);
         service.core().msg().warn(player, cfg.voidMessage);
+        return true;
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -333,9 +351,8 @@ public final class IslandTracker implements Listener {
             return;
         }
         if (event.getCause() == EntityDamageEvent.DamageCause.VOID) {
-            if (cfg.voidRescue) {
+            if (cfg.voidRescue && rescue(player, player.getLocation())) {
                 event.setCancelled(true);
-                rescue(player, player.getLocation());
             }
             return;
         }
@@ -357,10 +374,9 @@ public final class IslandTracker implements Listener {
         Location target = null;
         if (cfg.respawnHome) {
             target = service.safeFallback(player);
-        } else if (service.hubReady()) {
-            target = service.hubLocation();
         }
-        if (target == null) {
+        // never respawn someone over a hub that has no floor yet (they would fall, die and loop)
+        if (target == null && service.hubReady()) {
             target = service.hubLocation();
         }
         if (target != null) {

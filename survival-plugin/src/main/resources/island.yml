@@ -59,6 +59,7 @@ hub:
   y: 100
   # Hard cap on the number of blocks the hub generator may place (the generator stops adding when reached).
   max-blocks: 45000
+  # false = no full hub: only the small spawn pad is built (islandless players and the void rescue still need it).
   # Players may press buttons / open doors in the hub (never break or place).
   allow-interact: true
 
@@ -68,6 +69,11 @@ generation:
   max-millis-per-tick: 20
   # A job that has waited this many ticks for chunks is abandoned.
   chunk-timeout-ticks: 600
+  # A failed island build, platform build or wipe is retried this many times (0 = never), waiting
+  # retry-delay-ticks and doubling the wait each time. After that the island stays unfinished (RESETTING or
+  # BUILDING), the owner and online admins are told, and /islandadmin rebuild (or the next restart) retries.
+  retries: 3
+  retry-delay-ticks: 100
 
 upgrades:
   # Border radius tiers. The first one is the starting radius (cost 0).
@@ -85,6 +91,9 @@ upgrades:
     - { slots: 5, cost: 20000 }
     - { slots: 8, cost: 100000 }
     - { slots: 12, cost: 500000 }
+  # The "Minion slots" upgrade is hidden and refused until the minions feature can read it (it needs an api/
+  # method that does not exist yet, see docs/skyblock-notes/island.md). Turn it on only when it does.
+  minions-enabled: false
   # Extra minion slots granted by the island (read by the minions feature through IslandUpgradesApi).
   minions:
     - { slots: 0, cost: 0 }
@@ -203,6 +212,13 @@ protection:
   trusted-containers: false
   # Cooldown between two "you cannot do that" messages, in milliseconds.
   message-cooldown-ms: 1500
+  # Visitors (and banned players) may pick up items lying on someone else's island (items they threw themselves
+  # are always theirs) / may drop items there.
+  visitor-pickup: false
+  visitor-drop: false
+  # A player who logs in standing on an island they may not enter (banned or the island was locked while they
+  # were offline) is moved out after this many ticks. Longer than the join router's cross-server handoff.
+  join-check-delay-ticks: 120
   # Bypass permission: vampyuyu.sb.island.bypass (OP by default).
 
 flags:
@@ -238,7 +254,7 @@ portals:
   # 1:1 coordinates between sb_world and sb_nether; the End portal leads to the island's own End.
   nether: true
   end: true
-  # /is nether and /is end shortcuts (no portal needed). Cooldown in seconds.
+  # /is nether and /is end shortcuts (no portal needed, the platforms must be ready). Cooldown in seconds.
   shortcuts: true
   shortcut-cooldown-seconds: 10
 
@@ -251,9 +267,7 @@ reset:
   cooldown-minutes: 60
   # Time allowed to type the confirmation.
   confirm-seconds: 30
-  # Everything between these world Y values is wiped (clamped to the world height).
-  wipe-min-y: -64
-  wipe-max-y: 192
+  # A reset, delete or rebuild always wipes (and the level scan always counts) the full world height.
 
 create:
   # Cooldown before a player who lost their island may create a new one (minutes).

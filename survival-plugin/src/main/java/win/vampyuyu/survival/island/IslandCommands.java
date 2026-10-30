@@ -43,7 +43,7 @@ public final class IslandCommands {
         {"flag", "flag <flag> <on|off>", "Change one island flag"},
         {"time", "time <time>", "Lock the time of day on the island"},
         {"upgrades", "upgrades", "Open the upgrades menu"},
-        {"upgrade", "upgrade <radius|members|minions>", "Buy the next tier"},
+        {"upgrade", "upgrade <type>", "Buy the next tier (radius, members)"},
         {"reset", "reset [type]", "Wipe and rebuild the island (owner)"},
         {"info", "info [player]", "Show an island"},
         {"level", "level", "Recalculate the island level"},
@@ -53,6 +53,8 @@ public final class IslandCommands {
         {"unlock", "unlock", "Let visitors in again"},
         {"transfer", "transfer <player>", "Give the island to a member (confirm)"},
         {"border", "border", "Show or hide the island border for you"},
+        {"nether", "nether", "Go to your island's Nether platform"},
+        {"end", "end", "Go to your island's End platform"},
         {"hub", "hub", "Go to the hub"},
         {"help", "help", "This list"},
     };
@@ -87,7 +89,7 @@ public final class IslandCommands {
             }).register();
         core.commands().command("islandadmin").aliases("isadmin")
             .description("Island administration")
-            .usage("/islandadmin <info|tp|level|rebuild|delete|list> [player]")
+            .usage("/islandadmin <info|tp|level|rebuild|platforms|delete|list> [player]")
             .permission(IslandService.ADMIN, PermissionDefault.OP)
             .executor(this::admin).tab(this::tabAdmin).register();
     }
@@ -128,11 +130,23 @@ public final class IslandCommands {
     }
 
     private void goHub(Player player) {
-        if (!service.teleportHub(player)) {
-            err(player, "The hub is not ready yet. Try again in a moment.");
+        Result result = service.goHub(player);
+        if (result.ok()) {
+            core.msg().info(player, result.message());
         } else {
-            core.msg().info(player, "Going to the hub...");
+            err(player, result.message());
         }
+    }
+
+    /** The upgrade families that can be bought right now (minion slots stay hidden until the minions feature reads them). */
+    static List<Upgrade> buyable(IslandConfig cfg) {
+        List<Upgrade> list = new ArrayList<>();
+        for (Upgrade upgrade : Upgrade.values()) {
+            if (upgrade != Upgrade.MINIONS || cfg.minionUpgrade) {
+                list.add(upgrade);
+            }
+        }
+        return list;
     }
 
     // ---------------------------------------------------------------- /island
@@ -147,18 +161,20 @@ public final class IslandCommands {
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
-        boolean hasIsland = service.registry().hasIsland(player.getUniqueId());
         switch (sub) {
             case "menu" -> menus.main(player);
             case "help", "?" -> help(player);
             case "create" -> create(player, args);
             case "home", "go" -> {
-                if (!service.teleportHome(player)) {
-                    err(player, hasIsland ? "Your island is not ready yet." : "You do not have an island. Use /island create.");
+                Result result = service.goHome(player);
+                if (result.ok()) {
+                    core.msg().info(player, result.message());
                 } else {
-                    core.msg().info(player, "Teleporting home...");
+                    err(player, result.message());
                 }
             }
+            case "nether" -> reply(player, service.shortcut(player, true));
+            case "end" -> reply(player, service.shortcut(player, false));
             case "sethome" -> reply(player, service.setHome(player));
             case "visit", "v" -> visit(player, args);
             case "invite" -> target(player, args, 1).ifPresent(t -> reply(player, service.invite(player, t)));
@@ -297,11 +313,12 @@ public final class IslandCommands {
 
     private void upgrade(Player player, String[] args) {
         if (args.length < 2) {
-            err(player, "Usage: /island upgrade <radius|members|minions>");
+            err(player, "Usage: /island upgrade <" + String.join("|", buyable(cfg).stream()
+                .map(u -> u.name().toLowerCase(Locale.ROOT)).toList()) + ">");
             return;
         }
         Upgrade type = null;
-        for (Upgrade candidate : Upgrade.values()) {
+        for (Upgrade candidate : buyable(cfg)) {
             if (candidate.name().equalsIgnoreCase(args[1])) {
                 type = candidate;
             }
@@ -424,7 +441,7 @@ public final class IslandCommands {
                     return filter(Arrays.stream(TimeLock.values()).map(t -> t.name().toLowerCase(Locale.ROOT)).toList(), args[1]);
                 }
                 case "upgrade" -> {
-                    return filter(Arrays.stream(Upgrade.values()).map(u -> u.name().toLowerCase(Locale.ROOT)).toList(), args[1]);
+                    return filter(buyable(cfg).stream().map(u -> u.name().toLowerCase(Locale.ROOT)).toList(), args[1]);
                 }
                 case "warp", "warps" -> {
                     List<String> options = new ArrayList<>(List.of("set", "remove", "list"));
@@ -477,7 +494,7 @@ public final class IslandCommands {
 
     private boolean admin(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            err(sender, "Usage: /islandadmin <info|tp|level|rebuild|delete|list> [player]");
+            err(sender, "Usage: /islandadmin <info|tp|level|rebuild|platforms|delete|list> [player]");
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
@@ -511,6 +528,7 @@ public final class IslandCommands {
             case "level" -> reply(sender, service.recalculate(island, false, done ->
                 ok(sender, "Island level: " + done.level)));
             case "rebuild" -> reply(sender, service.rebuild(island));
+            case "platforms" -> reply(sender, service.rebuildPlatforms(island));
             case "delete" -> {
                 if (sender instanceof Player p && !service.confirms().consume(p.getUniqueId(), "admin-delete", who.get().toString())) {
                     service.confirms().arm(p.getUniqueId(), "admin-delete", who.get().toString(), cfg.confirmSeconds * 1000L);
@@ -526,7 +544,7 @@ public final class IslandCommands {
 
     private List<String> tabAdmin(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return filter(List.of("info", "tp", "level", "rebuild", "delete", "list"), args[0]);
+            return filter(List.of("info", "tp", "level", "rebuild", "platforms", "delete", "list"), args[0]);
         }
         return args.length == 2 && !args[0].equalsIgnoreCase("list") ? players(args[1]) : List.of();
     }

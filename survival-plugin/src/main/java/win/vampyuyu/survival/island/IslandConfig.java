@@ -62,8 +62,12 @@ public final class IslandConfig {
     public final int maxPendingInvites;
     public final int resetCooldownMinutes;
     public final int confirmSeconds;
-    public final int wipeMinY;
-    public final int wipeMaxY;
+    public final boolean minionUpgrade;
+    public final int buildRetries;
+    public final int retryDelayTicks;
+    public final boolean visitorPickup;
+    public final boolean visitorDrop;
+    public final int joinCheckTicks;
     public final int createCooldownMinutes;
     public final double levelDivisor;
     public final int levelAutoMinutes;
@@ -142,8 +146,12 @@ public final class IslandConfig {
         this.maxPendingInvites = Math.max(1, c.getInt("invites.max-pending-per-player", 5));
         this.resetCooldownMinutes = Math.max(0, c.getInt("reset.cooldown-minutes", 60));
         this.confirmSeconds = Math.max(5, c.getInt("reset.confirm-seconds", 30));
-        this.wipeMinY = c.getInt("reset.wipe-min-y", -64);
-        this.wipeMaxY = c.getInt("reset.wipe-max-y", 192);
+        this.minionUpgrade = c.getBoolean("upgrades.minions-enabled", false);
+        this.buildRetries = Math.max(0, c.getInt("generation.retries", 3));
+        this.retryDelayTicks = Math.max(20, c.getInt("generation.retry-delay-ticks", 100));
+        this.visitorPickup = c.getBoolean("protection.visitor-pickup", false);
+        this.visitorDrop = c.getBoolean("protection.visitor-drop", false);
+        this.joinCheckTicks = Math.max(20, c.getInt("protection.join-check-delay-ticks", 120));
         this.createCooldownMinutes = Math.max(0, c.getInt("create.cooldown-minutes", 0));
         this.levelDivisor = Math.max(0.0001, c.getDouble("level.divisor", 100.0));
         this.levelAutoMinutes = Math.max(0, c.getInt("level.auto-interval-minutes", 30));
@@ -180,6 +188,9 @@ public final class IslandConfig {
     }
 
     public int minionSlotsFor(Island island) {
+        if (!minionUpgrade) {
+            return 0;
+        }
         return minionTiers.get(Math.min(Math.max(0, island.minionTier), minionTiers.size() - 1)).value();
     }
 

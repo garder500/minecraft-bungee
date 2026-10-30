@@ -4,6 +4,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.UUID;
+import io.papermc.paper.event.player.PlayerOpenSignEvent;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -18,6 +20,7 @@ import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Hanging;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Monster;
@@ -40,11 +43,13 @@ import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
+import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.block.EntityBlockFormEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntityPlaceEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -52,9 +57,12 @@ import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
+import org.bukkit.event.player.PlayerBedEnterEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketEntityEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerHarvestBlockEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -140,13 +148,42 @@ public final class IslandProtection implements Listener {
         return null;
     }
 
-    /** What an interaction with this block needs. */
-    static Action blockAction(Block block) {
-        Material type = block.getType();
+    /** Blocks anybody may use when the island allows interaction: no state of the island changes. */
+    private static final Set<Material> HARMLESS_USE = Set.of(Material.LEVER, Material.ENDER_CHEST,
+        Material.CRAFTING_TABLE, Material.ENCHANTING_TABLE, Material.STONECUTTER, Material.LOOM,
+        Material.CARTOGRAPHY_TABLE, Material.SMITHING_TABLE, Material.GRINDSTONE, Material.BELL);
+
+    /** The allow-list of {@code visitor_interact}: doors, trapdoors, gates, buttons, levers, plates and pure GUIs. */
+    static boolean harmlessToUse(Material type) {
         String name = type.name();
-        if (type == Material.ENDER_CHEST) {
+        return HARMLESS_USE.contains(type) || name.endsWith("_DOOR") || name.endsWith("_TRAPDOOR")
+            || name.endsWith("_FENCE_GATE") || name.endsWith("_BUTTON") || name.endsWith("_PRESSURE_PLATE");
+    }
+
+    /**
+     * What an interaction with this block needs; null when the block does nothing when clicked (stone, dirt...), so
+     * eating or throwing while pointing at it is never blocked. Everything that reacts to a click and is not in the
+     * harmless allow-list (repeaters, comparators, note blocks, signs, cake, beds, anvils...) is a BUILD.
+     */
+    static Action blockAction(Block block) {
+        Action explicit = explicitAction(block);
+        if (explicit != null) {
+            return explicit;
+        }
+        Material type = block.getType();
+        if (harmlessToUse(type)) {
             return Action.INTERACT;
         }
+        if (type.name().endsWith("_FENCE")) {
+            return null; // listed as interactable only because of leads, which count as a build tool anyway
+        }
+        return type.isInteractable() ? Action.BUILD : null;
+    }
+
+    /** Blocks that need BUILD or CONTAINER whatever the held item is (crops, eggs, fire sources, storage...). */
+    static Action explicitAction(Block block) {
+        Material type = block.getType();
+        String name = type.name();
         if (type == Material.FARMLAND || type == Material.TURTLE_EGG || type == Material.SNIFFER_EGG
                 || type == Material.FLOWER_POT || name.startsWith("POTTED_") || type == Material.COMPOSTER
                 || type == Material.RESPAWN_ANCHOR
@@ -171,7 +208,7 @@ public final class IslandProtection implements Listener {
         } catch (RuntimeException e) {
             // fall through
         }
-        return Action.INTERACT;
+        return null;
     }
 
     /** Held items that change the world when used on a block. */
@@ -246,7 +283,7 @@ public final class IslandProtection implements Listener {
             case PHYSICAL -> {
                 Block block = event.getClickedBlock();
                 if (block != null && ours(block.getLocation())) {
-                    Action needed = blockAction(block) == Action.BUILD ? Action.BUILD : Action.INTERACT;
+                    Action needed = explicitAction(block) == Action.BUILD ? Action.BUILD : Action.INTERACT;
                     if (service.allowed(player, block.getLocation(), needed)) {
                         return;
                     }
@@ -259,20 +296,27 @@ public final class IslandProtection implements Listener {
                 if (block == null || !ours(block.getLocation())) {
                     return;
                 }
-                Action needed = blockAction(block);
+                Action needed;
                 if (event.getAction() == org.bukkit.event.block.Action.LEFT_CLICK_BLOCK) {
                     // punching a block: only matters for fire and dragon eggs, both are BUILD
-                    needed = needed == Action.BUILD ? Action.BUILD : null;
-                    if (needed == null) {
-                        return;
+                    needed = explicitAction(block) == Action.BUILD ? Action.BUILD : null;
+                } else {
+                    needed = blockAction(block);
+                    if (isBuildTool(event.getItem()) && needed != Action.CONTAINER) {
+                        needed = Action.BUILD;
                     }
-                } else if (isBuildTool(event.getItem()) && needed != Action.CONTAINER) {
-                    needed = Action.BUILD;
+                }
+                if (needed == null) {
+                    return;
                 }
                 if (denied(player, block.getLocation(), needed)) {
                     event.setUseInteractedBlock(Event.Result.DENY);
-                    event.setUseItemInHand(Event.Result.DENY);
-                    event.setCancelled(true);
+                    if (isBuildTool(event.getItem())) {
+                        event.setUseItemInHand(Event.Result.DENY);
+                        event.setCancelled(true);
+                    }
+                    // otherwise only the block is off limits: eating, drawing a bow or throwing a pearl while
+                    // pointing at a repeater or sign still works
                 }
             }
             default -> {
@@ -407,13 +451,7 @@ public final class IslandProtection implements Listener {
             if (attacker == null || attacker.equals(target) || isNpc(attacker)) {
                 return;
             }
-            String name = worldName(victim.getLocation());
-            boolean pvp = false;
-            if (!SkyblockWorlds.HUB.equals(name)) {
-                Island island = service.islandAtLocation(victim.getLocation());
-                pvp = island != null && island.flag(IslandFlag.PVP);
-            }
-            if (!pvp) {
+            if (!pvpOn(victim.getLocation())) {
                 event.setCancelled(true);
                 if (notices.tryUse(attacker.getUniqueId(), "pvp", cfg.messageCooldownMs)) {
                     service.core().msg().warn(attacker, "PvP is disabled here.");
@@ -436,6 +474,120 @@ public final class IslandProtection implements Listener {
             needed = Action.ANIMAL; // hitting a villager is hurting an animal-like mob
         }
         if (denied(attacker, victim.getLocation(), needed)) {
+            event.setCancelled(true);
+        }
+    }
+
+    /** Whether players may hurt each other where the victim stands (never in the hub). */
+    private boolean pvpOn(Location where) {
+        if (SkyblockWorlds.HUB.equals(worldName(where))) {
+            return false;
+        }
+        Island island = service.islandAtLocation(where);
+        return island != null && island.flag(IslandFlag.PVP);
+    }
+
+    // ---------------------------------------------------------------- signs, beds, items, fishing
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onSignChange(SignChangeEvent event) {
+        if (denied(event.getPlayer(), event.getBlock().getLocation(), Action.BUILD)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onOpenSign(PlayerOpenSignEvent event) {
+        if (denied(event.getPlayer(), event.getSign().getLocation(), Action.BUILD)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onBedEnter(PlayerBedEnterEvent event) {
+        if (denied(event.getPlayer(), event.getBed().getLocation(), Action.BUILD)) {
+            event.setCancelled(true);
+        }
+    }
+
+    /**
+     * May the player take this item entity? Their own drops always, anything on their own island or one they are
+     * trusted on; on a stranger's island only when {@code protection.visitor-pickup} says so (banned players never).
+     */
+    boolean mayTake(Player player, Item item) {
+        Location at = item.getLocation();
+        if (!ours(at) || player.hasPermission(IslandService.BYPASS)) {
+            return true;
+        }
+        UUID id = player.getUniqueId();
+        if (id.equals(item.getThrower()) || id.equals(item.getOwner())) {
+            return true;
+        }
+        if (SkyblockWorlds.HUB.equals(worldName(at))) {
+            return true;
+        }
+        Island island = service.islandAtLocation(at);
+        if (island == null) {
+            return true;
+        }
+        IslandRole role = island.roleOf(id);
+        if (role.isCoop() || role == IslandRole.TRUSTED) {
+            return true;
+        }
+        return cfg.visitorPickup && role != IslandRole.BANNED;
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPickup(EntityPickupItemEvent event) {
+        if (event.getEntity() instanceof Player player && !mayTake(player, event.getItem())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onDrop(PlayerDropItemEvent event) {
+        Player player = event.getPlayer();
+        Location at = player.getLocation();
+        if (cfg.visitorDrop || !ours(at) || player.hasPermission(IslandService.BYPASS)
+                || SkyblockWorlds.HUB.equals(worldName(at))) {
+            return;
+        }
+        Island island = service.islandAtLocation(at);
+        if (island == null) {
+            return;
+        }
+        IslandRole role = island.roleOf(player.getUniqueId());
+        if (!role.isCoop() && role != IslandRole.TRUSTED) {
+            event.setCancelled(true);
+            if (notices.tryUse(player.getUniqueId(), "drop", cfg.messageCooldownMs)) {
+                service.core().msg().warn(player, "You cannot drop items on someone else's island.");
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onFish(PlayerFishEvent event) {
+        if (event.getState() != PlayerFishEvent.State.CAUGHT_ENTITY) {
+            return;
+        }
+        Entity caught = event.getCaught();
+        Player player = event.getPlayer();
+        if (caught == null || isNpc(caught) || !ours(caught.getLocation())) {
+            return;
+        }
+        boolean refuse;
+        if (caught instanceof Item item) {
+            refuse = !mayTake(player, item);
+        } else if (caught instanceof Player victim) {
+            refuse = !victim.equals(player) && !pvpOn(victim.getLocation());
+        } else {
+            Action needed = entityAction(caught);
+            if (needed == Action.INTERACT) {
+                needed = Action.ANIMAL;
+            }
+            refuse = needed != null && denied(player, caught.getLocation(), needed);
+        }
+        if (refuse) {
             event.setCancelled(true);
         }
     }
@@ -577,9 +729,12 @@ public final class IslandProtection implements Listener {
         }
         Projectile projectile = event.getEntity();
         if (projectile.getShooter() instanceof Player player) {
-            Action needed = blockAction(block);
-            if (needed == Action.INTERACT && !isTrigger(block)) {
-                return;
+            Action needed = explicitAction(block);
+            if (needed == null) {
+                if (!isTrigger(block)) {
+                    return;
+                }
+                needed = Action.INTERACT;
             }
             if (!service.allowed(player, block.getLocation(), needed)) {
                 projectile.remove();

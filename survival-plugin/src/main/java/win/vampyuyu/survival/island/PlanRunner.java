@@ -3,7 +3,9 @@ package win.vampyuyu.survival.island;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -12,7 +14,9 @@ import win.vampyuyu.survival.core.Scheduler;
 /**
  * Runs long block jobs (island generation, wipes, scans) a little every tick so the server never stalls. A few jobs
  * run side by side (each gets what is left of the tick's budget); every job completes a future with {@code true}
- * when it finished and {@code false} when it failed or was aborted. Main thread only.
+ * when it finished and {@code false} when it failed or was aborted. Jobs submitted with the same non-null lane run
+ * strictly one after the other in submission order (a wipe never overlaps the generation it follows, whatever the
+ * queue looks like); jobs of different lanes, or without a lane, run side by side. Main thread only.
  */
 public final class PlanRunner {
     /** Blocks and time left in the current tick. */
@@ -50,7 +54,7 @@ public final class PlanRunner {
         void abort();
     }
 
-    private record Entry(Job job, CompletableFuture<Boolean> done) {}
+    private record Entry(Job job, Object lane, CompletableFuture<Boolean> done) {}
 
     private static final int PARALLEL = 3;
 
@@ -72,19 +76,35 @@ public final class PlanRunner {
         task = scheduler.repeating(1, 1, this::tick);
     }
 
-    /** Queues a job. The future completes on the main thread. */
+    /** Queues a job without ordering constraints. The future completes on the main thread. */
     public CompletableFuture<Boolean> submit(Job job) {
+        return submit(null, job);
+    }
+
+    /** Queues a job behind every earlier job of the same lane (a null lane is never serialised). */
+    public CompletableFuture<Boolean> submit(Object lane, Job job) {
         CompletableFuture<Boolean> done = new CompletableFuture<>();
         if (closed) {
             done.complete(false);
             return done;
         }
-        queue.addLast(new Entry(job, done));
+        queue.addLast(new Entry(job, lane, done));
         return done;
     }
 
     public int pending() {
         return queue.size();
+    }
+
+    /** Jobs queued or running in one lane. */
+    public int pendingIn(Object lane) {
+        int count = 0;
+        for (Entry entry : queue) {
+            if (lane.equals(entry.lane())) {
+                count++;
+            }
+        }
+        return count;
     }
 
     /** Runs one tick of work (called by the scheduler; tests may call it directly). */
@@ -93,10 +113,15 @@ public final class PlanRunner {
             return;
         }
         Budget budget = new Budget(blocksPerTick, maxNanos);
+        // the first queued job of every lane may run; later jobs of a busy lane wait their turn
         List<Entry> active = new ArrayList<>();
+        Set<Object> busy = new HashSet<>();
         for (Entry entry : queue) {
             if (active.size() >= PARALLEL) {
                 break;
+            }
+            if (entry.lane() != null && !busy.add(entry.lane())) {
+                continue;
             }
             active.add(entry);
         }

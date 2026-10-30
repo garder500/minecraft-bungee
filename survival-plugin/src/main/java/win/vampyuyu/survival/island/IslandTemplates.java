@@ -57,6 +57,18 @@ public final class IslandTemplates {
     }
 
     /**
+     * Deterministic random source for one build step of an island: the same (island, generation, salt) always gives the
+     * same shape (so a retried step repeats exactly), a reset (new generation) gives a slightly different island.
+     * Salts: 0 overworld, 1 Nether platform, 2 End platform.
+     */
+    public static Random random(UUID islandId, int generation, int salt) {
+        long seed = islandId.getMostSignificantBits() ^ islandId.getLeastSignificantBits();
+        seed ^= generation * 0x9E3779B97F4A7C15L;
+        seed ^= (salt + 1) * 0xC2B2AE3D27D4EB4FL;
+        return new Random(seed);
+    }
+
+    /**
      * Builds the overworld island.
      *
      * @param chest contents of the starter chest

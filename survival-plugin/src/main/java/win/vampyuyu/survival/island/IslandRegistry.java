@@ -211,7 +211,8 @@ public final class IslandRegistry {
         }
     }
 
-    private boolean isDirty(int cx, int cz) {
+    /** True while the cell is parked waiting for its wipe. */
+    public boolean isDirty(int cx, int cz) {
         for (int[] cell : dirtyCells) {
             if (cell[0] == cx && cell[1] == cz) {
                 return true;

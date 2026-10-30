@@ -14,7 +14,7 @@ import org.bukkit.plugin.Plugin;
  * Counts the blocks of an island square by material. Snapshots are taken on the main thread, a couple per tick, and
  * counted on worker threads; the result is complete when {@link #counts()} is read after the job finished.
  */
-public final class ScanJob extends AreaJob {
+public final class ScanJob extends AreaJob implements IslandService.Counting {
     private final int minY;
     private final int maxY;
     private final int snapshotsPerTick;
@@ -23,11 +23,12 @@ public final class ScanJob extends AreaJob {
     private int takenThisTick;
     private volatile boolean failed;
 
-    public ScanJob(Plugin plugin, String label, World world, int centerX, int centerZ, int radius, int minY, int maxY,
+    /** Counts the full world height, like the wipe. */
+    public ScanJob(Plugin plugin, String label, World world, int centerX, int centerZ, int radius,
             int snapshotsPerTick, int timeoutTicks) {
         super(plugin, label, world, centerX, centerZ, radius, timeoutTicks);
-        this.minY = Math.max(minY, world.getMinHeight());
-        this.maxY = Math.min(maxY, world.getMaxHeight() - 1);
+        this.minY = world.getMinHeight();
+        this.maxY = world.getMaxHeight() - 1;
         this.snapshotsPerTick = Math.max(1, snapshotsPerTick);
     }
 
@@ -94,7 +95,17 @@ public final class ScanJob extends AreaJob {
         }
     }
 
+    /** First and last Y swept (always the whole world height). */
+    int minY() {
+        return minY;
+    }
+
+    int maxY() {
+        return maxY;
+    }
+
     /** Block counts (call after the job completed). */
+    @Override
     public Map<Material, Long> counts() {
         synchronized (totals) {
             Map<Material, Long> copy = new EnumMap<>(Material.class);
