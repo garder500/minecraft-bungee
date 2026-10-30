@@ -96,7 +96,7 @@ public final class BossRewards {
             data = core.profiles().section(id, "boss", BossData.class, BossData::new);
         }
         double repeat = 1.0;
-        if (data != null) {
+        if (data != null && !def.isSlayer()) { // slayers already cost coins and are a paid grind
             long window = settings.repeatWindowMinutes() * 60_000L;
             List<Long> recent = data.recentKills.computeIfAbsent(def.id(), k -> new ArrayList<>());
             recent.removeIf(t -> now - t > window);

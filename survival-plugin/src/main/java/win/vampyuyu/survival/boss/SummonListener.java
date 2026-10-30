@@ -131,6 +131,12 @@ public final class SummonListener implements Listener {
                 }
             }
         }
+        for (BossSession other : manager.active()) {
+            if (other.def.id().equals(def.id()) && world.equals(other.world)
+                && Fx.flat(other.anchor(), spawn) <= def.arena().radius()) {
+                return "That boss is already awake right here.";
+            }
+        }
         if (manager.activeCountBy(def.id(), player.getUniqueId()) >= rules.maxConcurrent()) {
             return "You already woke that boss. Finish the fight first.";
         }

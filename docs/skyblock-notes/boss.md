@@ -159,6 +159,16 @@ take the boss away while players walk to it.
   was not built.
 * The summon item cooldown is not re-armed when a boss vanishes after damage (the item is not refunded, which is the
   deterrent).
+* Hub world bosses stand on the hub plaza (spawn pad area): abilities hit every targetable player within radius + 8,
+  including AFK players and new arrivals.
+* Non-participants can still build or throw pearls inside a summoned boss's arena until their first hit (the arena rules
+  bind the summoner and the players in the ledger). Two summons of the same boss cannot share an altar anchor.
+* The ability-hit damage path is covered by a flag test; the end-to-end test through `Player.damage` is skipped when
+  MockBukkit fires no damage event for it.
+* A spawn that fails inside the session (an exception after the entity exists) does NOT refund: the caller keeps the item.
+  Update-loop exceptions (`End.ERROR`) do refund.
+* The crafting guard only touches vanilla recipes and this plugin's own; recipes of other plugins that use a boss item
+  as an ingredient are left to their owner. The repeat damper does not apply to slayer bosses.
 * Not verified against the real items feature (sb/items): the damage ordering is tested with a stand-in listener at HIGH.
 * Slayer progress and summon-item mob drops ignore farmable sources (`SpawnSources`: spawners, spawn eggs, breeding,
   built golems/snowmen/withers, infection, cure, eggs, slime splits); mob drops never use snow golems, iron golems or

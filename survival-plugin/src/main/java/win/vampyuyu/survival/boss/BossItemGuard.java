@@ -91,6 +91,9 @@ public final class BossItemGuard implements Listener {
     /** A boss item is never a crafting ingredient, whatever its vanilla material is. */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPrepareCraft(PrepareItemCraftEvent event) {
+        if (event.getRecipe() instanceof org.bukkit.Keyed keyed && !guarded(keyed.getKey())) {
+            return; // another feature's own recipe is its business
+        }
         for (ItemStack ingredient : event.getInventory().getMatrix()) {
             if (isBossItem(ingredient)) {
                 event.getInventory().setResult(null);
@@ -99,8 +102,17 @@ public final class BossItemGuard implements Listener {
         }
     }
 
+    /** Vanilla recipes and ours (which take vanilla materials) are guarded; recipes of other plugins are left alone. */
+    private boolean guarded(org.bukkit.NamespacedKey key) {
+        return key.getNamespace().equals(org.bukkit.NamespacedKey.MINECRAFT)
+            || key.getNamespace().equals(core.getPlugin().getName().toLowerCase(java.util.Locale.ROOT));
+    }
+
     @EventHandler(priority = EventPriority.LOWEST)
     public void onCraft(CraftItemEvent event) {
+        if (event.getRecipe() instanceof org.bukkit.Keyed keyed && !guarded(keyed.getKey())) {
+            return;
+        }
         for (ItemStack ingredient : event.getInventory().getMatrix()) {
             if (isBossItem(ingredient)) {
                 event.setCancelled(true);

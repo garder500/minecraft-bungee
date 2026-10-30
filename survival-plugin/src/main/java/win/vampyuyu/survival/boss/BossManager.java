@@ -122,7 +122,8 @@ public final class BossManager {
             started = session.begin();
         } catch (RuntimeException e) {
             core.getPlugin().getLogger().log(Level.WARNING, "Could not spawn boss " + def.id(), e);
-            session.end(BossSession.End.ERROR, null);
+            // ADMIN, not ERROR: a failed spawn returns empty and the caller keeps the summon item, a refund would duplicate it
+            session.end(BossSession.End.ADMIN, null);
             return Optional.empty();
         }
         if (!started) {
@@ -194,7 +195,9 @@ public final class BossManager {
     /** Called by the session when it ends (after cleanup), before the end listeners. */
     void sessionEnded(BossSession.EndInfo info) {
         BossSession session = info.session();
-        byEntity.remove(session.entityId());
+        if (session.entityId() != null) { // null when the spawn failed before the entity existed
+            byEntity.remove(session.entityId());
+        }
         aux.values().removeIf(s -> s == session);
         try {
             if (info.reason() == BossSession.End.KILLED) {

@@ -117,11 +117,8 @@ public class ReviewFixesTest {
         FakeItems items = new FakeItems();
         Bukkit.getPluginManager().registerEvents(items, plugin);
         session.hit(victim, 2.2);
-        if (items.seenAtHigh.isEmpty()) {
-            // MockBukkit's PlayerMock.damage(amount, source) fires no event: replay what the real server does
-            session.hit(victim, 2.2);
-            return;
-        }
+        // MockBukkit's PlayerMock.damage(amount, source) may fire no event: then only the flag test above covers this path
+        org.junit.Assume.assumeFalse("MockBukkit fires no damage event for damage(amount, source)", items.seenAtHigh.isEmpty());
         assertEquals(session.hitDamage(2.2), items.seenAtHigh.get(0), 1e-9);
         assertTrue(items.seenAtHigh.get(0) > session.hitDamage(1.0) * 2);
         session.end(BossSession.End.ADMIN, null);
@@ -343,6 +340,10 @@ public class ReviewFixesTest {
         BossSession session = manager.active().iterator().next();
         assertEquals(800.5, session.anchor().getX(), 1e-9);
         assertEquals(-399.5, session.anchor().getZ(), 1e-9);
+        PlayerMock second = server.addPlayer();
+        second.teleport(at);
+        assertNotNull("a second player cannot stack another one on the same altar",
+            listener.summon(second, def, EquipmentSlot.HAND));
         session.end(BossSession.End.ADMIN, null);
         p.teleport(new Location(end, 1000, 65, 1000));
         assertNotNull("far from every altar", listener.summon(p, def, EquipmentSlot.HAND));
