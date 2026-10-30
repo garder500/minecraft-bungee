@@ -19,6 +19,11 @@ public final class EconomyFeature implements Feature {
     private ShopService shops;
     private PricePressure pressure;
     private NpcManager npcs;
+    private BazaarService bazaar;
+    private AuctionService auctions;
+    private DurableFile.Live bazaarIo;
+    private DurableFile.Live auctionIo;
+    private Scheduler.Handle auctionTask;
 
     @Override
     public String id() {
@@ -54,6 +59,19 @@ public final class EconomyFeature implements Feature {
         core.listen(new SessionListener(shops));
         pressureTask = core.scheduler().repeating(12_000, 12_000, this::savePressure);
 
+        bazaarIo = new DurableFile.Live(core, "bazaar");
+        bazaar = new BazaarService(core, economy, keys, bazaarIo);
+        bazaar.enable(config);
+        new BazaarUi(core, economy, keys, bazaar).register();
+        audit.addContributor(bazaar);
+
+        auctionIo = new DurableFile.Live(core, "auction");
+        auctions = new AuctionService(core, economy, keys, auctionIo);
+        auctions.enable(config);
+        new AuctionUi(core, keys, auctions).register();
+        audit.addContributor(auctions);
+        auctionTask = core.scheduler().repeating(40, 40, auctions::tick);
+
         core.register(EconomyApi.class, economy);
     }
 
@@ -62,6 +80,8 @@ public final class EconomyFeature implements Feature {
         economy.settings(EconomySettings.load(config));
         bank.reload(config);
         shops.reload(config);
+        bazaar.reload(config);
+        auctions.reload(config);
         npcs.refreshAll();
     }
 
@@ -83,8 +103,18 @@ public final class EconomyFeature implements Feature {
         if (pressureTask != null) {
             pressureTask.cancel();
         }
+        if (auctionTask != null) {
+            auctionTask.cancel();
+        }
         if (npcs != null) {
             npcs.disable();
+        }
+        // Markets write their final state (and put unfinished claims back) before the purses are closed.
+        if (bazaar != null) {
+            bazaar.close(bazaarIo);
+        }
+        if (auctions != null) {
+            auctions.close(auctionIo);
         }
         if (pressure != null) {
             savePressure();

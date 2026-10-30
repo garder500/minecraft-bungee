@@ -59,6 +59,8 @@ final class BazaarService implements EconomyAudit.Contributor {
     private BazaarMarket market;
     private DurableFile file;
     private boolean enabled = true;
+    /** Set first thing in {@link #close}: a claim callback that fires after it must not deliver anything. */
+    private boolean closing;
     private final Map<String, Category> products = new LinkedHashMap<>();
     private final Set<UUID> claiming = new HashSet<>();
     private final List<InFlight> inFlight = new ArrayList<>();
@@ -105,12 +107,13 @@ final class BazaarService implements EconomyAudit.Contributor {
             EconomySettings.clamp(c.getInt("bazaar.history-hours", 72), 24, 24 * 14));
     }
 
-    boolean enabled() { return enabled; }
+    boolean enabled() { return enabled && !closing; }
 
     BazaarMarket market() { return market; }
 
     /** Final write on disable. In-flight claims whose delivery never ran are put back first. */
     void close(DurableFile.Live live) {
+        closing = true;
         if (live != null) {
             live.shutdown();
         }
@@ -173,7 +176,7 @@ final class BazaarService implements EconomyAudit.Contributor {
     // ---------------------------------------------------------------- helpers
 
     private Outcome gate(Player player, String product) {
-        if (!enabled) {
+        if (!enabled()) {
             return Outcome.fail("The Bazaar is closed right now.");
         }
         if (!isProduct(product)) {
@@ -300,7 +303,7 @@ final class BazaarService implements EconomyAudit.Contributor {
     }
 
     Outcome cancel(Player player, long orderId) {
-        if (!enabled) {
+        if (!enabled()) {
             return Outcome.fail("The Bazaar is closed right now.");
         }
         if (!market.cancel(orderId, id(player))) {
@@ -322,7 +325,7 @@ final class BazaarService implements EconomyAudit.Contributor {
 
     /** Collects everything that fits. {@code done} receives the message once delivered (or refused). */
     void claim(Player player, java.util.function.Consumer<Outcome> done) {
-        if (!enabled) {
+        if (!enabled()) {
             done.accept(Outcome.fail("The Bazaar is closed right now."));
             return;
         }
@@ -355,6 +358,9 @@ final class BazaarService implements EconomyAudit.Contributor {
         inFlight.add(flight);
         long grantedCents = cents;
         file.request(ok -> {
+            if (closing) {
+                return; // close() already put the claim back into the final file
+            }
             inFlight.remove(flight);
             claiming.remove(uid);
             if (!ok) {
