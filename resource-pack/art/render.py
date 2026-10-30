@@ -69,25 +69,57 @@ def lobby():
 <g fill="#ffd27a"><rect x="36" y="160" width="5" height="6"/><rect x="45" y="172" width="5" height="6"/><rect x="64" y="148" width="5" height="6"/><rect x="64" y="164" width="5" height="6"/><rect x="92" y="170" width="5" height="6"/><rect x="122" y="140" width="5" height="6"/><rect x="122" y="160" width="5" height="6"/><rect x="150" y="160" width="5" height="6"/></g>
 <g fill="#fff" opacity=".7"><rect x="52" y="104" width="10" height="10" transform="rotate(18 57 109)"/><rect x="128" y="96" width="8" height="8" transform="rotate(-14 132 100)"/><rect x="92" y="82" width="7" height="7"/></g></g>
 <path d="M21 183 V132 a81 81 0 0 1 162 0 V183" fill="none" stroke="#ffd7a8" stroke-width="2.5"/><path d="M27 183 V132 a75 75 0 0 1 150 0 V183" fill="none" stroke="#fff" stroke-opacity=".25"/>
-<g clip-path="url(#sc)"><rect x="333" y="51" width="162" height="132" fill="url(#ss)"/>
+<g transform="translate(12 0)"><g clip-path="url(#sc)"><rect x="333" y="51" width="162" height="132" fill="url(#ss)"/>
 <circle cx="446" cy="86" r="12" fill="#f2f4d8" opacity=".9"/>
 <path d="M333 183 V147 L370 107 L398 140 L428 95 L495 155 V183z" fill="#10303a"/>
 <path d="M333 183 V165 L360 147 L388 167 L420 140 L495 172 V183z" fill="#0b2227"/>
 <g fill="#07161a"><path d="M352 183 l10 -30 l10 30z"/><path d="M372 183 l12 -38 l12 38z"/><path d="M468 183 l10 -32 l10 32z"/></g>
 <circle cx="426" cy="175" r="20" fill="url(#gl)"/><path d="M420 182 q6 -18 12 0z" fill="#ffb454"/><path d="M423 182 q3 -11 6 0z" fill="#fff0a8"/></g>
-<path d="M333 183 V132 a81 81 0 0 1 162 0 V183" fill="none" stroke="#bfe6b0" stroke-width="2.5"/><path d="M339 183 V132 a75 75 0 0 1 150 0 V183" fill="none" stroke="#fff" stroke-opacity=".25"/>
-<circle cx="258" cy="78" r="46" fill="url(#st)"/>
-<path d="M258 49l7 21 22 .3-17.6 13 6.6 21-18-12.7-18 12.7 6.6-21L229 70.3l22-.3z" fill="#f2f8ff" stroke="#cfe4ff" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M333 183 V132 a81 81 0 0 1 162 0 V183" fill="none" stroke="#bfe6b0" stroke-width="2.5"/><path d="M339 183 V132 a75 75 0 0 1 150 0 V183" fill="none" stroke="#fff" stroke-opacity=".25"/></g>
+{skyblock_card()}
 {hills27()}{lower_panel27()}'''
     body = (title("Worlds")
             + text(21, 186, 162, "CREATIVE", 19, "#fff1e0", True, "center", 4)
             + text(21, 210, 162, "Build freely. Dream bigger.", 12, "#ffd7d2", extra="white-space:nowrap")
-            + text(333, 186, 162, "SURVIVAL", 19, "#f2ffe8", True, "center", 4)
-            + text(321, 210, 186, "Gather. Explore. Make it yours.", 12, "#d6f0c8", extra="white-space:nowrap")
-            + text(183, 118, 150, "VAMPYUYU", 13, "#e9d99b", True, "center", 4)
-            + text(183, 138, 150, "Choose your world", 13, "#d9d0ea", extra="white-space:nowrap")
-            + text(183, 188, 150, "← Back to the lobby", 13, "#fff", extra="white-space:nowrap"))
+            + text(345, 186, 162, "SURVIVAL", 19, "#f2ffe8", True, "center", 4)
+            + text(333, 210, 186, "Gather. Explore. Make it yours.", 12, "#d6f0c8", extra="white-space:nowrap")
+            + text(195, 124, 138, "SKYBLOCK", 15, "#fffbe8", True, "center", 3)
+            + text(195, 143, 138, "Build your island.", 11, "#cfe9ff", extra="white-space:nowrap")
+            + text(195, 182, 138, "← Back to the lobby", 13, "#fff", extra="white-space:nowrap"))
     return W, H, frame(W, H, svg, body)
+
+def skyblock_card():
+    """Centre of /menu (slots 3-5 of rows 0-1: x 183..345, y 51..159): a floating island with a tree in a
+    dawn sky, a dark glass band under it for the static caption. Mirrors the arches' double outline."""
+    x0, x1, y0, y1 = 195, 333, 51, 159
+    clouds = "".join(f'<ellipse cx="{cx}" cy="{cy}" rx="{rx}" ry="{ry}" fill="#fff" fill-opacity="{o}"/>'
+                     for cx, cy, rx, ry, o in [(222, 74, 13, 5, .85), (232, 72, 9, 5, .85), (312, 96, 12, 4.5, .7),
+                                                (304, 94, 8, 4.5, .7), (214, 112, 10, 3.5, .55), (252, 116, 18, 4, .6),
+                                                (290, 114, 14, 3.5, .5)])
+    sparks = "".join(f'<path d="M{x} {y - s}l{s * .35:.1f} {s * .65:.1f} {s * .65:.1f} {s * .35:.1f}-{s * .65:.1f} {s * .35:.1f}-{s * .35:.1f} {s * .65:.1f}-{s * .35:.1f}-{s * .65:.1f}-{s * .65:.1f}-{s * .35:.1f} {s * .65:.1f}-{s * .35:.1f}z" fill="#fff"/>'
+                     for x, y, s in [(309, 64, 4), (216, 94, 3), (322, 84, 2.5)])
+    return f'''<defs>
+<linearGradient id="skd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2d4fa8"/><stop offset=".55" stop-color="#78b4ee"/><stop offset="1" stop-color="#ffd9b0"/></linearGradient>
+<radialGradient id="skg"><stop offset="0" stop-color="#fff3c4" stop-opacity=".95"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient>
+<clipPath id="skc"><rect x="{x0}" y="{y0}" width="{x1 - x0}" height="{y1 - y0}" rx="22"/></clipPath></defs>
+<g clip-path="url(#skc)"><rect x="{x0}" y="{y0}" width="{x1 - x0}" height="{y1 - y0}" fill="url(#skd)"/>
+<circle cx="310" cy="76" r="30" fill="url(#skg)"/><circle cx="310" cy="76" r="8.5" fill="#fff6d0"/>
+{clouds}{sparks}
+<g transform="translate(264 92) scale(.78) translate(-264 -92)">
+<path d="M224 93 H304 C302 104 292 111 282 117 C276 121 270 125 264 128 C258 125 252 121 246 117 C236 111 226 104 224 93Z" fill="#8a5a3a" stroke="#3a2415" stroke-width="1.6" stroke-linejoin="round"/>
+<path d="M236 102 H292 M246 111 H282" stroke="#a87650" stroke-width="2" stroke-linecap="round"/>
+<g fill="#8f8fa0"><rect x="244" y="104" width="8" height="5"/><rect x="274" y="108" width="7" height="5"/><rect x="258" y="116" width="9" height="5"/></g>
+<path d="M220 93 C220 87 228 85 264 85 C300 85 308 87 308 93 C308 97 304 98 300 96 L290 98 L280 96 L270 99 L258 96 L246 98 L236 96 C226 99 220 97 220 93Z" fill="#6bbf4e" stroke="#2f6f2f" stroke-width="1.6" stroke-linejoin="round"/>
+<path d="M228 89 C250 86 278 86 300 89" stroke="#a3e87a" stroke-width="2" fill="none" stroke-linecap="round"/>
+<rect x="261" y="68" width="7" height="19" fill="#6b4423" stroke="#3a2415" stroke-width="1.4"/>
+<g stroke="#1f5f2a" stroke-width="1.5"><circle cx="252" cy="68" r="10" fill="#3f9e3f"/><circle cx="276" cy="68" r="10" fill="#3f9e3f"/><circle cx="264" cy="60" r="12" fill="#4fb84a"/><circle cx="264" cy="71" r="9" fill="#3f9e3f"/></g>
+<g fill="#8ee06e"><circle cx="259" cy="56" r="3.5"/><circle cx="249" cy="64" r="2.6"/><circle cx="272" cy="63" r="2.6"/></g>
+<g fill="#e84a5f"><circle cx="270" cy="72" r="1.7"/><circle cx="256" cy="66" r="1.7"/></g>
+</g>
+<rect x="{x0}" y="122" width="{x1 - x0}" height="{y1 - 122}" fill="#0a0820" fill-opacity=".55"/></g>
+<rect x="{x0}" y="{y0}" width="{x1 - x0}" height="{y1 - y0}" rx="22" fill="none" stroke="#bfe6ff" stroke-width="2.5"/>
+<rect x="{x0 + 6}" y="{y0 + 6}" width="{x1 - x0 - 12}" height="{y1 - y0 - 12}" rx="17" fill="none" stroke="#fff" stroke-opacity=".25"/>
+{glass(195, 165, 138, 38, 19, .35)}'''
 
 def grad(i, stops):
     return f'<linearGradient id="{i}" x1="0" y1="0" x2="0" y2="1">' + "".join(
@@ -509,7 +541,11 @@ def write_font():
     print("wrote font with", len(providers) - 1, "tiles")
 
 if __name__ == "__main__":
-    wanted = sys.argv[1:] or [*ART, "icons", "werewolf"]
+    wanted = sys.argv[1:] or [*ART, "icons", "werewolf", "skyblock_icon"]
     for n in wanted:
-        render_icons() if n == "icons" else render_werewolf() if n == "werewolf" else render(n)
+        if n == "skyblock_icon":
+            import skyblock_icon  # stdlib-only pixel art, same folder
+            skyblock_icon.write()
+        else:
+            render_icons() if n == "icons" else render_werewolf() if n == "werewolf" else render(n)
     write_font()

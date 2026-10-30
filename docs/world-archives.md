@@ -19,7 +19,7 @@ Files appear in `backups/<server>-export-<UTC timestamp>.zip`, with a `.zip.sha2
 
 A server ZIP contains:
 
-- Every immediate world folder with `level.dat`, including Nether/End and player UUID saves, inventory, spawn, gamerules, datapacks and the exact built Lobby.
+- Every immediate world folder with `level.dat`, including Nether/End and player UUID saves, inventory, spawn, gamerules, datapacks and the exact built Lobby. On Survival that includes the Skyblock worlds `sb_hub`, `sb_world`, `sb_nether` and `sb_end`. The throw-away dungeon worlds `sb_dungeon_*` (created and deleted by the survival plugin for each run, stored as `world/dimensions/<namespace>/sb_dungeon_*`) are **excluded** from `make zip`/`make export`; a dungeon run in progress at export time is simply not saved. (The panel's own Backups page does not apply this rule yet; see `docs/skyblock-notes/netmenu.md`.)
 - Plugin configuration/data, claims, arena definitions, pending player restoration snapshots and third-party plugin JARs.
 - OP/whitelist/ban lists, player-name cache, `permissions.yml` and the managed Lobby marker when present.
 - A manifest with the server identity, Minecraft version and SHA-256/size of every payload file.

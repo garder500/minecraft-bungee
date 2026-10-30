@@ -54,6 +54,9 @@ public final class LobbySelector extends JavaPlugin implements Listener {
   private static final TextColor IVORY = TextColor.color(0xf5e9cf);
   private static final TextColor GOLD = TextColor.color(0xe9d99b);
   private static final TextColor MUTED = TextColor.color(0xc5a69b);
+  private static final TextColor SKY = TextColor.color(0x8ee06e);
+  /** The Skyblock gate (south end of the avenue): its glass wall at z=38 marks it as built; see generate-lobby.py. */
+  private static final int SKYBLOCK_GATE_Z = 38;
   private NamespacedKey selectorKey;
   private boolean palace;
   private final Map<UUID, Long> gateCooldown = new ConcurrentHashMap<>();
@@ -181,6 +184,13 @@ public final class LobbySelector extends JavaPlugin implements Listener {
                   sign.update(true, false);
                 }
               }
+              if (world.getBlockAt(-5, 67, SKYBLOCK_GATE_Z - 2).getState() instanceof Sign sign) {
+                sign.line(0, text("SKYBLOCK", SKY).decorate(TextDecoration.BOLD));
+                sign.line(1, text("Build your island", IVORY));
+                sign.line(2, text("Walk towards the gate", ROSE));
+                sign.line(3, text("or use /menu", MUTED));
+                sign.update(true, false);
+              }
             },
             40);
   }
@@ -213,7 +223,9 @@ public final class LobbySelector extends JavaPlugin implements Listener {
         text("VAMPYUYU ", ROSE)
             .decorate(TextDecoration.BOLD)
             .append(text("Welcome home. ", IVORY))
-            .append(text("Right-click your compass or use /menu to choose a world.", GOLD)));
+            .append(text("Right-click your compass or use /menu: Creative, Survival or ", GOLD))
+            .append(text("Skyblock", SKY).decorate(TextDecoration.BOLD))
+            .append(text(".", GOLD)));
   }
 
   @EventHandler
@@ -332,10 +344,19 @@ public final class LobbySelector extends JavaPlugin implements Listener {
     event.setCancelled(true);
   }
 
+  /**
+   * Goes through the network plugin's {@code /menu <world>} so that a pending Skyblock request is cleared (or made) on
+   * the way; the raw BungeeCord connect stays as the fallback if that command is somehow unavailable.
+   */
   private void connect(Player player, String server) {
     long now = System.currentTimeMillis();
     if (now - gateCooldown.getOrDefault(player.getUniqueId(), 0L) < 4000) return;
     gateCooldown.put(player.getUniqueId(), now);
+    if (player.performCommand("vampyuyunetwork:menu " + server)) return;
+    rawConnect(player, server.equals("skyblock") ? "survival" : server);
+  }
+
+  private void rawConnect(Player player, String server) {
     try {
       ByteArrayOutputStream buffer = new ByteArrayOutputStream();
       try (DataOutputStream data = new DataOutputStream(buffer)) {
@@ -346,6 +367,11 @@ public final class LobbySelector extends JavaPlugin implements Listener {
     } catch (java.io.IOException e) {
       player.sendMessage(text("Use /menu to choose your world.", ROSE));
     }
+  }
+
+  /** True when the Skyblock gate has been built in this lobby world (older lobbies only have the two side gates). */
+  private boolean skyblockGateBuilt(org.bukkit.World world) {
+    return world.getBlockAt(0, 68, SKYBLOCK_GATE_Z).getType() == Material.LIME_STAINED_GLASS;
   }
 
   @EventHandler
@@ -388,6 +414,15 @@ public final class LobbySelector extends JavaPlugin implements Listener {
         && Math.abs(to.getZ()) < 3.5) {
       if (to.getX() <= -29) connect(player, "creative");
       else if (to.getX() >= 29) connect(player, "survival");
+    } else if (palace
+        && !isBuildMode(player)
+        && to.getY() >= 65
+        && to.getY() < 73
+        && Math.abs(to.getX()) < 3.5
+        && to.getZ() >= SKYBLOCK_GATE_Z - 3
+        && to.getZ() < SKYBLOCK_GATE_Z
+        && skyblockGateBuilt(player.getWorld())) {
+      connect(player, "skyblock");
     }
   }
 }
