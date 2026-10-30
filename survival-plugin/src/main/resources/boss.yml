@@ -249,7 +249,7 @@ bosses:
     summon:
       item: frost_heart
       mode: free
-      worlds: [sb_world, sb_hub]
+      worlds: [sb_world]
       cooldown-seconds: 180
       require-island-member: true
       max-concurrent: 1
@@ -316,7 +316,7 @@ bosses:
     summon:
       item: matriarch_egg
       mode: free
-      worlds: [sb_world, sb_hub]
+      worlds: [sb_world]
       cooldown-seconds: 180
       require-island-member: true
       max-concurrent: 1
@@ -382,7 +382,7 @@ bosses:
     summon:
       item: leviathan_scale
       mode: free
-      worlds: [sb_world, sb_hub]
+      worlds: [sb_world]
       cooldown-seconds: 180
       require-island-member: true
       require-water: true
@@ -814,7 +814,7 @@ slayers:
 mob-drops:
   - { item: void_sigil, entities: [ENDERMAN], worlds: [sb_end], chance: 0.0015 }
   - { item: magma_core, entities: [MAGMA_CUBE, BLAZE], worlds: [sb_nether], chance: 0.0012 }
-  - { item: frost_heart, entities: [STRAY, SNOW_GOLEM], chance: 0.0015 }
+  - { item: frost_heart, entities: [STRAY], chance: 0.0015 }
   - { item: matriarch_egg, entities: [SPIDER, CAVE_SPIDER], chance: 0.0008 }
   - { item: leviathan_scale, entities: [ELDER_GUARDIAN, GUARDIAN, DROWNED], chance: 0.0012 }
 

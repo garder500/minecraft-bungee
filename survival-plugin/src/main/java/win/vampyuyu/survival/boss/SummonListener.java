@@ -186,12 +186,7 @@ public final class SummonListener implements Listener {
         if (killer == null || Tags.isOurs(dead) || manager.config().mobDrops().isEmpty()) {
             return;
         }
-        boolean spawner = false;
-        try {
-            spawner = dead.getEntitySpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER;
-        } catch (RuntimeException ignored) {
-            // unknown reason: treated as natural
-        }
+        boolean spawner = SpawnSources.isArtificial(dead);
         for (BossConfig.MobDrop drop : manager.config().mobDrops()) {
             if (!drop.entities().contains(dead.getType()) || (spawner && !drop.allowSpawner())
                 || (!drop.worlds().isEmpty() && !drop.worlds().contains(dead.getWorld().getName()))) {

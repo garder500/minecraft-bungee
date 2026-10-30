@@ -112,6 +112,9 @@ fight is lost (the quest returns to READY).
   health once that exists (boss damage is vanilla HP before `damage-scale`).
 * Offline participants get coins and queued items but no Wings, no combat XP and no pity bookkeeping (the profile
   read would block).
-* Slayer kills count only for mobs in the slayer's `worlds`, and spawner mobs are ignored (the check relies on
-  `CreatureSpawnEvent.SpawnReason.SPAWNER`).
+* Slayer progress and summon-item mob drops ignore farmable sources (`SpawnSources`: spawners, spawn eggs, breeding,
+  built golems/snowmen/withers, infection, cure, eggs, slime splits); mob drops never use snow golems, iron golems or
+  withers. Not verified in game that Paper reports these reasons for every farm design.
+* Summon items of the Frost Revenant, Matriarch and Leviathan work only in `sb_world` (islands), not the hub, so nobody can
+  lock pearls and building in the hub; edit `summon.worlds` to change it.
 * No custom sounds or translated names (pack rules): vanilla sounds only.

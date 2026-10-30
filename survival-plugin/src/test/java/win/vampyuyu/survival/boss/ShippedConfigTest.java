@@ -118,6 +118,16 @@ public class ShippedConfigTest {
     }
 
     @Test
+    public void noMobDropComesFromAPlayerBuiltMob() throws Exception {
+        for (BossConfig.MobDrop drop : shipped().mobDrops()) {
+            for (var type : List.of(org.bukkit.entity.EntityType.SNOW_GOLEM, org.bukkit.entity.EntityType.IRON_GOLEM,
+                    org.bukkit.entity.EntityType.WITHER)) {
+                assertFalse(drop.item() + " must not drop from " + type, drop.entities().contains(type));
+            }
+        }
+    }
+
+    @Test
     public void everySummonItemHasABossAndARecipeOrDrop() throws Exception {
         BossConfig config = shipped();
         for (String item : List.of("void_sigil", "magma_core", "frost_heart", "matriarch_egg", "leviathan_scale")) {

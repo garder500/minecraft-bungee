@@ -43,8 +43,6 @@ public final class SlayerManager implements Listener {
     /** Stat modifier source of every slayer perk. */
     public static final String SOURCE = "slayer";
     private static final MiniMessage MINI = MiniMessage.miniMessage();
-    private static final Set<SpawnReason> IGNORED = EnumSet.of(SpawnReason.SPAWNER, SpawnReason.TRIAL_SPAWNER,
-        SpawnReason.SPAWNER_EGG, SpawnReason.DISPENSE_EGG);
 
     private final Core core;
     private final BossManager bosses;
@@ -343,11 +341,7 @@ public final class SlayerManager implements Listener {
     }
 
     private static boolean fromIgnoredSource(LivingEntity dead) {
-        try {
-            return IGNORED.contains(dead.getEntitySpawnReason());
-        } catch (RuntimeException e) {
-            return false;
-        }
+        return win.vampyuyu.survival.boss.SpawnSources.isArtificial(dead);
     }
 
     // ---------------------------------------------------------------- bossbar progress (no action bar)
