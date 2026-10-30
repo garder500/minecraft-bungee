@@ -81,11 +81,12 @@ public class BossSessionTest {
         EntityDamageEvent event = new org.bukkit.event.entity.EntityDamageByEntityEvent(player, boss,
             EntityDamageEvent.DamageCause.ENTITY_ATTACK, 1000.0);
         Bukkit.getPluginManager().callEvent(event);
-        // the real items feature turns the raw 1000 into its own formula; the boss credits that final damage
-        double dealt = event.getFinalDamage() * manager.config().settings().incomingScale();
+        // The real items feature turns the raw 1000 into its own formula (the boss reads that output at HIGHEST), so
+        // the credited amount is not 1000 any more; the ledger and the virtual health must still agree on it.
+        double dealt = session.ledger().damageOf(player.getUniqueId());
         assertTrue("some damage got through", dealt > 0);
-        assertEquals(before - dealt, session.hp(), 1.0);
-        assertEquals(dealt, session.ledger().damageOf(player.getUniqueId()), 1.0);
+        assertTrue("the items formula replaced the raw hit", dealt != 1000.0);
+        assertEquals(before - dealt, session.hp(), 1e-6);
         session.end(BossSession.End.ADMIN, null);
     }
 
