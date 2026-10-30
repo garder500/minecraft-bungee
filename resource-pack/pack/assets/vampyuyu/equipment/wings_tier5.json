@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "vampyuyu:wings_torso"
+      }
+    ],
+    "wings": [
+      {
+        "texture": "vampyuyu:wings_tier5"
+      }
+    ]
+  }
+}

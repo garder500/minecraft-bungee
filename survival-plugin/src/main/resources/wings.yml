@@ -1,0 +1,147 @@
+# The Wings: configuration (plugins/VampyuyuSurvival/wings.yml). /wings reload re-reads it.
+# Keys missing from your copy fall back to the defaults shipped in the jar.
+
+# Worlds where the Wings let you fly. Names, exact match.
+worlds:
+  allowed: [sb_hub, sb_world, sb_nether, sb_end, world]
+  # Any world whose name starts with one of these never allows flight (dungeon runs).
+  denied-prefixes: [sb_dungeon_]
+
+# No-fly zones (boss arenas, events). Three ways to flag a player, all documented in docs/skyblock-notes/wings.md:
+#  1. any feature sets the player's PDC long "vampyuyu:no_fly_until" to a future epoch-millis (self healing);
+#  2. any feature adds the scoreboard tag below to the player;
+#  3. static boxes listed here.
+no-fly:
+  tag: sb_no_fly
+  regions: []
+  # A boss (vanilla Boss entity or a mob with the scoreboard tag combat.boss-tag) within this many blocks counts as a
+  # no-fly zone, so the arenas are safe even when the boss feature does not flag its players. 0 disables.
+  boss-radius: 40
+  # Example:
+  # regions:
+  #   - world: sb_world
+  #     min: [100, 0, 100]
+  #     max: [160, 120, 160]
+
+max-level: 10
+
+# Per level tables (index 0 is level 1). Each list must have max-level entries; short lists repeat their last value.
+levels:
+  # Added to the Flight Energy stat (base 100) while the Wings are worn, through the "wings" stat modifier source.
+  capacity-bonus: [40, 80, 120, 160, 200, 250, 300, 360, 430, 500]
+  # Multiplies energy regeneration.
+  regen-multiplier: [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.65, 1.8, 1.95, 2.2]
+  # Multiplies energy drain (lower is better).
+  drain-multiplier: [1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55]
+  # Bukkit fly speed (default vanilla value is 0.1, hard limit 1.0).
+  fly-speed: [0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.18, 0.20, 0.22]
+  # Particle trail: PARTICLE:count[:spread]. Only particles without extra data work.
+  # Extra stats granted while the Wings are worn (stat source "wings"), one value per level. They make up part of
+  # the chestplate you give up. Any Stat name works; remove the block to grant nothing.
+  stats:
+    DEFENSE: [2, 4, 6, 8, 10, 13, 16, 20, 25, 30]
+    HEALTH: [0, 0, 5, 10, 15, 20, 25, 30, 40, 50]
+    SPEED: [0, 0, 0, 2, 4, 6, 8, 10, 12, 15]
+  trail:
+    - CLOUD:1
+    - CLOUD:2
+    - END_ROD:1
+    - END_ROD:2
+    - ELECTRIC_SPARK:2
+    - SNOWFLAKE:2
+    - WAX_ON:2
+    - SOUL_FIRE_FLAME:2
+    - TOTEM_OF_UNDYING:2
+    - FIREWORK:3
+
+energy:
+  # Units of energy per second.
+  drain-fly: 4.0
+  drain-sprint: 10.0
+  drain-hover: 2.0
+  # Gliding (the Wings are also an elytra): energy per second, and per firework rocket boost. Gliding and rockets are
+  # refused without energy and wherever flying is refused.
+  drain-glide: 1.0
+  firework-cost: 12.0
+  # Diving (steep descent while gliding) gives energy back, per second, from abilities.dive-recovery.level.
+  dive-regen: 3.0
+  # Drain factor while flying over an island (any island).
+  island-drain-factor: 0.5
+  # Regeneration per second on the ground, and the multiplier on an island (inside its border).
+  regen-ground: 10.0
+  regen-island-multiplier: 2.0
+  # Ticks without flying before regeneration starts.
+  regen-delay-ticks: 20
+  # After running dry you cannot take off again before this fraction of the capacity is back.
+  resume-fraction: 0.15
+  # The bar turns red and a warning sound plays under this fraction.
+  low-fraction: 0.2
+  # The energy bar disappears this many seconds after being full while on the ground.
+  bar-hide-seconds: 4
+
+combat:
+  # Flight is disabled for this long after taking damage from the sources below.
+  seconds: 8
+  from-players: true
+  from-bosses: true
+  from-mobs: false
+  # Also tag the attacker when a player hits another player.
+  # Tagging the attacker too stops hit-and-fly-away in the air; the COMBAT emergency reason below keeps it safe.
+  tag-attackers: true
+  # A mob counts as a boss when it has this scoreboard tag, is a vanilla Boss, or has at least this much max health.
+  boss-tag: sb_boss
+  boss-min-health: 300
+
+emergency:
+  # Slow falling (no fall damage) when flight ends in mid air for one of these reasons:
+  # ENERGY, UNEQUIP, WORLD, COMBAT, ZONE.
+  reasons: [ENERGY, UNEQUIP, WORLD, COMBAT, ZONE]
+  # Safety cap on the slow fall effect (it is removed on landing).
+  max-seconds: 120
+  # While a slow fall is active (and a few seconds after), void damage is cancelled and the player is teleported back
+  # to the last solid ground they stood on (else their island home, else the world spawn). Nobody dies of an empty bar.
+  void-rescue: true
+
+# Abilities unlocked by the Wings level (listed in /wings).
+abilities:
+  # Press the swap-hands key (F) in the air to dash where you look. Costs energy.
+  dash: {enabled: true, level: 4, cost: 25, cooldown-seconds: 4, power: 1.6}
+  # Steep dives while gliding refill the bar (energy.dive-regen per second).
+  dive-recovery: {level: 6}
+  # Fall damage is absorbed by a burst of wind on landing.
+  landing-burst: {level: 8, cooldown-seconds: 8}
+
+effects:
+  sounds: true
+  # Ticks between wing beats while flying (halved when sprint flying).
+  beat-interval-ticks: 14
+  trail: true
+
+preferences:
+  # Defaults for new players (changed with /wings toggle).
+  trail: true
+  bar: true
+  double-jump: true
+  sounds: true
+
+# Cost of going from level N to N+1: core tier, number of cores, coins (0 = free, ignored without the economy).
+upgrades:
+  1: {core: 1, amount: 1, coins: 0}
+  2: {core: 1, amount: 3, coins: 5000}
+  3: {core: 2, amount: 1, coins: 15000}
+  4: {core: 2, amount: 3, coins: 40000}
+  5: {core: 3, amount: 1, coins: 100000}
+  6: {core: 3, amount: 3, coins: 250000}
+  7: {core: 4, amount: 1, coins: 600000}
+  8: {core: 4, amount: 2, coins: 1500000}
+  9: {core: 5, amount: 1, coins: 4000000}
+
+# Recovering lost Wings (burned in the void, lost item entity): /wings claim.
+claim:
+  coins: 25000
+  cooldown-hours: 24
+
+# Wing Cores (items wings_core_1 .. wings_core_5). Bosses of tier N should drop core N, e.g. with
+# core.items().create("wings_core_3"). Names are shown to players.
+cores:
+  names: ["Feather Core", "Gilded Core", "Radiant Core", "Celestial Core", "Voidwyrm Core"]
