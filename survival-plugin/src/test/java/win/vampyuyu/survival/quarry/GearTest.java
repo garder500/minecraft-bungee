@@ -134,4 +134,32 @@ public class GearTest {
         Bukkit.getPluginManager().callEvent(click);
         assertTrue("the plan item is used up by the guide, not placed or dropped", click.isCancelled());
     }
+
+    @Test
+    public void aPlayerWhoStartedBeforeThePlanKeepsWhatTheirDataProves() {
+        PlayerMock player = server.addPlayer("Veteran");
+        org.bukkit.World sky = Bukkit.getWorld(win.vampyuyu.survival.core.SkyblockWorlds.WORLD);
+        player.teleport(sky.getSpawnLocation());
+        QuarryData data = plugin.core().require(QuarryService.class).data(player.getUniqueId());
+        data.generatorTier = 3;
+        data.blocks = 600;
+        player.performCommand("quests categories");
+        var quests = plugin.core().profiles().section(player.getUniqueId(), "quests",
+            win.vampyuyu.survival.menu.QuestData.class, win.vampyuyu.survival.menu.QuestData::new);
+        assertTrue(quests.planMigrated);
+        var catalog = new win.vampyuyu.survival.menu.MenuConfig(
+            org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(new java.io.InputStreamReader(
+                getClass().getResourceAsStream("/menu.yml"))), null, true,
+            org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(new java.io.InputStreamReader(
+                getClass().getResourceAsStream("/quests.yml")))).catalog;
+        for (var def : catalog.tutorial()) {
+            if (def.type() == win.vampyuyu.survival.menu.QuestType.GENERATOR_TIER) {
+                assertEquals(def.id(), def.amount() <= 3, quests.completed.contains(def.id()));
+            }
+            if (def.type() == win.vampyuyu.survival.menu.QuestType.BREAK_BLOCK && def.target().equals("COBBLESTONE")) {
+                assertEquals(def.id(), def.amount() <= 600, quests.completed.contains(def.id()));
+            }
+        }
+        assertFalse("nothing else is handed out", quests.completed.contains("q001"));
+    }
 }

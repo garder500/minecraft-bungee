@@ -65,10 +65,42 @@ final class QuestService {
         }
         QuestData data = rt.quests(player.getUniqueId());
         QuestEngine engine = rt.engine();
+        migrate(player, data);
         boolean changed = engine.ensureDay(data, today(), rt.config().dailyCount);
         List<Completion> done = new ArrayList<>(engine.sync(data, def -> probe(player, def)));
         finish(player, data, done, changed || !done.isEmpty());
         flushPending(player);
+    }
+
+    /**
+     * A player who started before the quest plan keeps what their data proves, once and without paying anything: the
+     * tier quests up to the generator tier they reached, and the cobblestone mining quests up to the generator blocks
+     * they broke. Everything else (ores, forging, placing) counts again from the plan's first quest.
+     */
+    private void migrate(Player player, QuestData data) {
+        QuestEngine engine = rt.engine();
+        if (data.planMigrated || engine.catalog().categories().isEmpty()) {
+            return;
+        }
+        data.planMigrated = true;
+        var api = rt.core.service(win.vampyuyu.survival.api.GeneratorApi.class);
+        if (api.isEmpty()) {
+            data.planMigrated = false; // the quarry feature is not loaded yet: try again at the next sync
+            return;
+        }
+        int tier = api.get().tier(player.getUniqueId());
+        long blocks = api.get().blocksMined(player.getUniqueId());
+        for (QuestDef def : engine.catalog().tutorial()) {
+            boolean proven = switch (def.type()) {
+                case GENERATOR_TIER -> def.amount() <= tier;
+                case BREAK_BLOCK -> def.target().equalsIgnoreCase("COBBLESTONE") && def.amount() <= blocks;
+                default -> false;
+            };
+            if (proven) {
+                data.completed.add(def.id());
+            }
+        }
+        rt.dirty(player.getUniqueId());
     }
 
     private OptionalInt probe(Player player, QuestDef def) {

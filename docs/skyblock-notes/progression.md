@@ -50,3 +50,10 @@ dungeon records, Skyblock inventory and bed. Kept on purpose: Wings, island sett
   `armor_set:<tier>`. Endless Bucket (reward of the tier III quest) and Generator Plan (reward of the market quest) exist.
 - World bosses are parked (they do not work): no ancient_colossus/storm_roc, empty pool, `/worldboss` not registered.
   Wings quests became dungeon floor 6 and 7 quests. `resetall` also resets the Wings.
+
+## Players who started before the plan
+The first time a player's quests sync after the update (`QuestService#migrate`, flag `QuestData.planMigrated`), the plan
+marks as done, without paying, the tier quests up to the tier they reached and the cobblestone mining quests up to the
+generator blocks they broke. Their old quest ids are ignored; daily quests, generator and skins are untouched. Everything
+else counts again from the first quest. Servers with an older `quarry.yml` need it replaced to get the new Forge
+recipes and the machine limit of 60.

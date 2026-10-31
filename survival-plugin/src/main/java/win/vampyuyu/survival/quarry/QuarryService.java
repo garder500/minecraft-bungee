@@ -55,6 +55,11 @@ public final class QuarryService implements win.vampyuyu.survival.api.EndAccessA
     }
 
     @Override
+    public long blocksMined(UUID player) {
+        return data(player).blocks;
+    }
+
+    @Override
     public int tier(UUID owner) {
         return Math.max(1, Math.min(data(owner).generatorTier, config.tiers));
     }
