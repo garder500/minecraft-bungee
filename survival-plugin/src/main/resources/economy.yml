@@ -1095,3 +1095,13 @@ auction:
   # Refuse an item whose serialised form is larger than this (stops giant shulker boxes bloating the file).
   max-item-chars: 200000
   persist-delay-ticks: 10
+
+# Never bought or sold by a merchant or in the Bazaar: ultra rare items can only be traded in the Auction House.
+# The built-in list (diamonds, netherite, nether stars, totems, elytra, beacons...) always applies; add more here.
+# A trailing * matches a prefix. Items carrying the PDC flag vampyuyu:untradable (Wings, trophies, skins) are traded
+# nowhere, the Auction House included.
+market:
+  never-traded:
+    - sunstone
+    - starcore
+    - wings_core_*

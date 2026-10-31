@@ -16,7 +16,8 @@ public final class MenuFeature implements Feature {
 
     @Override public void enable(Core core) {
         this.core = core;
-        MenuConfig cfg = new MenuConfig(core.featureConfig("menu"));
+        MenuConfig cfg = new MenuConfig(core.featureConfig("menu"),
+            core.featureConfig("quarry").getConfigurationSection("quests.tutorial"));
         MenuRuntime rt = new MenuRuntime(core, cfg);
         source = cfg.redisEnabled ? RedisHandoffSource.fromEnvironment(core.getPlugin().getLogger(),
             cfg.redisHost, cfg.redisPort, cfg.redisPasswordFile, cfg.redisConnectTimeoutMs,

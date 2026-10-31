@@ -80,14 +80,14 @@ public final class BossItems {
             stats(Stat.STRENGTH, 180, Stat.CRIT_DAMAGE, 110, Stat.ATTACK_SPEED, 15),
             "<gray>A tooth of the Voidwyrm, sharp enough to", "<gray>cut the dark between stars."));
         // magma warden
-        t.add(spec("warden_heart", "Warden's Heart", Rarity.EPIC, Material.FIRE_CHARGE, "MATERIAL", false, none,
-            "<gray>Still warm. Do not drop it."));
+        t.add(spec("warden_heart", "Nether Key", Rarity.EPIC, Material.FIRE_CHARGE, "BOSS KEY", false, none,
+            "<gray>Torn from the Magma Warden. Still warm.", "<gray>One of the three keys of the Void Sigil."));
         t.add(spec("ember_blade", "Ember Blade", Rarity.EPIC, Material.GOLDEN_SWORD, "SWORD", false,
             stats(Stat.STRENGTH, 120, Stat.FEROCITY, 20),
             "<gray>Forged in the pools of the Magma Warden."));
         // frost revenant
-        t.add(spec("frost_shard", "Frost Shard", Rarity.EPIC, Material.AMETHYST_SHARD, "MATERIAL", false, none,
-            "<gray>A sliver of the Revenant's frozen armor."));
+        t.add(spec("frost_shard", "Frost Key", Rarity.EPIC, Material.AMETHYST_SHARD, "BOSS KEY", false, none,
+            "<gray>A sliver of the Frost Revenant's armor.", "<gray>One of the three keys of the Void Sigil."));
         t.add(spec("glacial_edge", "Glacial Edge", Rarity.EPIC, Material.IRON_SWORD, "SWORD", false,
             stats(Stat.STRENGTH, 110, Stat.CRIT_CHANCE, 10, Stat.SPEED, 10),
             "<gray>A blade of ice that never melts."));
@@ -98,8 +98,8 @@ public final class BossItems {
             stats(Stat.CRIT_DAMAGE, 80, Stat.CRIT_CHANCE, 15, Stat.ATTACK_SPEED, 25),
             "<gray>A fang taken from the Matriarch,", "<gray>still dripping."));
         // abyssal leviathan
-        t.add(spec("leviathan_tooth", "Leviathan Tooth", Rarity.EPIC, Material.PRISMARINE_SHARD, "MATERIAL", false, none,
-            "<gray>From the deepest jaws of the sea."));
+        t.add(spec("leviathan_tooth", "Abyss Key", Rarity.EPIC, Material.PRISMARINE_SHARD, "BOSS KEY", false, none,
+            "<gray>From the deepest jaws of the sea.", "<gray>One of the three keys of the Void Sigil."));
         t.add(spec("tidal_trident", "Tidal Trident", Rarity.LEGENDARY, Material.TRIDENT, "TRIDENT", true,
             stats(Stat.STRENGTH, 150, Stat.SEA_CREATURE_CHANCE, 4, Stat.FISHING_SPEED, 20),
             "<gray>The tide answers to whoever holds it."));

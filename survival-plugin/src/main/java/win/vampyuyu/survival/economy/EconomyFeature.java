@@ -44,6 +44,7 @@ public final class EconomyFeature implements Feature {
         CoinCommands coins = new CoinCommands(core, economy, balTop);
         coins.register();
         core.listen(new PurseListener(core, economy, coins));
+        core.listen(new EconomyGuard(core));
         prompts = new Prompts(core);
         prompts.register();
         BankUi bankUi = new BankUi(core, economy, bank);

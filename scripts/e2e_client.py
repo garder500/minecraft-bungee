@@ -19,7 +19,7 @@ import build_pack
 
 WORK = ROOT / ".e2e"
 PAPER = ("26.3", "223", "f8e684a4fef2a8b46d03aac049b49d59275e9ce5367dba7c6075cb5780f38470")
-MC_PORT, RCON_PORT, HTTP_PORT, DISPLAY = 25599, 25598, 25597, ":99"
+MC_PORT, RCON_PORT, HTTP_PORT, DISPLAY = 25599, 25598, int(os.environ.get("E2E_HTTP_PORT", 25597)), ":99"
 RCON_PASSWORD = "e2e-only"
 DEBUG_PORT = 25596
 DEBUG = False
@@ -1157,9 +1157,357 @@ def skyblock_scenario(ctx):
     say(f"skyblock: two beds checked; Skyblock={sky_respawn}, Survival={normal_respawn}")
 
 
+def quarry_scenario(ctx):
+    """The Quarry with a real client: custom item icons, the Forge menu, machines placed with real clicks, and a coal
+    generator powering a Miner I that breaks generator cobble into a barrel."""
+    import math
+    tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
+    xdo, rcon = tools["xdotool"], Rcon()
+
+    def command(text):
+        subprocess.run([xdo, "key", "slash"], env=env)
+        time.sleep(.5)
+        subprocess.run([xdo, "type", "--delay", "35", text], env=env)
+        subprocess.run([xdo, "key", "Return"], env=env)
+        time.sleep(3)
+
+    def as_bot(text):
+        return rcon.command("execute as E2EBot at E2EBot run " + text)
+
+    def dimension():
+        return rcon.command("data get entity E2EBot Dimension")
+
+    def what(x, yy, z):
+        for name in ("lava", "water", "cobblestone", "obsidian", "air", "stone", "stonecutter", "lodestone", "barrel"):
+            if "passed" in as_bot(f"execute if block {x} {yy} {z} minecraft:{name}"):
+                return name
+        return "?"
+
+    def stand(x, y, z, yaw, pitch):
+        as_bot(f"tp @s {x} {y} {z} {yaw} {pitch}")  # as_bot keeps the dimension: a bare tp would leave Skyblock
+        time.sleep(1.5)
+
+    def use(slot, x, y, z, yaw, pitch):
+        subprocess.run([xdo, "key", str(slot)], env=env)
+        time.sleep(.5)
+        stand(x, y, z, yaw, pitch)
+        subprocess.run([xdo, "click", "3"], env=env)
+        time.sleep(1.5)
+
+    rcon.command("op E2EBot")
+    rcon.command("gamemode survival E2EBot")
+    rcon.command("gamerule spawn_mobs false")
+    rcon.command("kill @e[type=slime]")
+    command("menu skyblock")
+    for _ in range(150):
+        if "sb_world" in dimension():
+            break
+        time.sleep(1)
+    else:
+        failures.append("never reached sb_world: " + dimension())
+        return
+    time.sleep(8)
+    pos = player_state(rcon)["pos"]
+    cx, y, cz = math.floor(pos[0]) + 6, math.floor(pos[1]), math.floor(pos[2])
+    # a flat arena: floor, walls, a lava source and a water source with one empty block between them
+    as_bot(f"fill {cx-3} {y-1} {cz-3} {cx+6} {y-1} {cz+9} stone")
+    as_bot(f"fill {cx-3} {y} {cz-3} {cx+6} {y+4} {cz+9} air")
+    as_bot(f"fill {cx-1} {y} {cz-1} {cx+3} {y} {cz-1} stone")
+    as_bot(f"setblock {cx-1} {y} {cz} stone")
+    as_bot(f"setblock {cx} {y} {cz} stone")
+    as_bot(f"setblock {cx+3} {y} {cz} stone")
+    # the lava source sits above the empty block and is walled in: its flow falls into that block, where the water
+    # source next to it turns it into cobblestone (a lava source touched by water would become obsidian instead)
+    for dx, dz in ((0, 0), (2, 0), (1, -1), (1, 1)):
+        as_bot(f"setblock {cx+dx} {y+1} {cz+dz} stone")
+    as_bot(f"setblock {cx+2} {y} {cz+1} stone")  # keeps the water from spreading south
+    rcon.command("clear E2EBot")
+    for item in ("forge 1", "coal_generator 1", "miner_1 1"):
+        rcon.command("sbgive " + item + " E2EBot")
+    rcon.command("give E2EBot minecraft:barrel 1")
+    rcon.command("give E2EBot minecraft:coal 16")
+    rcon.command("sbgive bronzite 12 E2EBot")
+    rcon.command("sbgive bronze_pick 1 E2EBot")
+    rcon.command("sbgive rimeblade 1 E2EBot")
+    rcon.command("sbgive miner_2 1 E2EBot")
+    rcon.command("sbgive battery 2 E2EBot")
+    rcon.command("sbgive cable 8 E2EBot")
+    time.sleep(2)
+    stand(cx + 1.5, y, cz + 6.5, 180, 25)
+    shot(tools, shots / "qa-1-hotbar.png")
+    subprocess.run([xdo, "key", "e"], env=env)
+    time.sleep(2)
+    shot(tools, shots / "qa-2-inventory.png")
+    subprocess.run([xdo, "key", "Escape"], env=env)
+    time.sleep(1)
+    command("forge")
+    shot(tools, shots / "qa-3-forge-menu.png")
+    subprocess.run([xdo, "key", "Escape"], env=env)
+    time.sleep(1)
+    # generator (slot 2), miner (slot 3) and barrel (slot 4) with real clicks on the floor
+    use(2, cx + 0.5, y, cz + 3.5, 180, 39)
+    use(3, cx + 1.5, y, cz + 3.5, 180, 39)
+    use(4, cx + 1.5, y, cz + 4.5, 180, 39)
+    # the Forge block (slot 1), then open it
+    use(1, cx + 4.5, y, cz + 6.5, 180, 39)
+    stand(cx + 4.5, y, cz + 7.5, 180, 24)
+    subprocess.run([xdo, "click", "3"], env=env)
+    time.sleep(2)
+    shot(tools, shots / "qa-4-forge-block-menu.png")
+    subprocess.run([xdo, "key", "Escape"], env=env)
+    time.sleep(1)
+    # fuel the generator with coal (slot 5)
+    subprocess.run([xdo, "key", "5"], env=env)
+    time.sleep(.5)
+    stand(cx + 0.5, y, cz + 5.5, 180, 24)
+    subprocess.run([xdo, "click", "3"], env=env)
+    time.sleep(2)
+    # only now the lava and the water: the machines are in place, so the fluids cannot flood the arena
+    as_bot(f"setblock {cx+1} {y+1} {cz} lava")
+    as_bot(f"setblock {cx+2} {y} {cz} water")
+    for t in (2, 4, 6):
+        time.sleep(2)
+        say(f"quarry t+{t}s: lava-above={what(cx+1, y+1, cz)} spot={what(cx+1, y, cz)} water={what(cx+2, y, cz)} "
+            f"west={what(cx, y, cz)} north={what(cx+1, y, cz-1)}")
+    stand(cx + 1.5, y + 1, cz + 8.0, 180, 28)
+    shot(tools, shots / "qa-5-machines.png")
+    cobble = as_bot(f"data get block {cx+1} {y} {cz}")
+    say("quarry: block between lava and water: " + cobble.strip()[:80])
+    time.sleep(45)  # the generator makes 10 Flux/s, a Miner I draws 8 and breaks a block every 2 s
+    shot(tools, shots / "qa-6-after-mining.png")
+    for label, bx, bz, block in (("spot cobble", cx + 1, cz, "cobblestone"),
+                                 ("spot air", cx + 1, cz, "air"), ("spot obsidian", cx + 1, cz, "obsidian"),
+                                 ("water", cx + 2, cz, "water"), ("generator", cx, cz + 1, "stonecutter"),
+                                 ("miner", cx + 1, cz + 1, "lodestone"), ("barrel", cx + 1, cz + 2, "barrel")):
+        say(f"quarry check {label}: " + as_bot(f"execute if block {bx} {y} {bz} minecraft:{block}").strip())
+    say(f"quarry end: lava-above={what(cx+1, y+1, cz)} spot={what(cx+1, y, cz)} water={what(cx+2, y, cz)}")
+    say("quarry check lava above: " + as_bot(f"execute if block {cx+1} {y+1} {cz} minecraft:lava").strip())
+    saved = server / "plugins" / "VampyuyuSurvival" / "quarry" / "machines.json"
+    say("quarry machines.json: " + (saved.read_text()[:600].replace("\n", " ") if saved.exists() else "(not written yet)"))
+    barrel = as_bot(f"data get block {cx+1} {y} {cz+2} Items")
+    say("quarry: barrel items: " + barrel.strip()[:1200])
+    if "id:" not in barrel:
+        failures.append("the Miner I did not put any ore in the barrel: " + barrel.strip()[:120])
+    log = (server / "console.log").read_text(errors="replace")
+    for line in log.splitlines():
+        if ("Exception" in line or "SEVERE" in line) and " WARN]" not in line \
+                and ("Quarry" in line or "quarry" in line or "VampyuyuSurvival" in line):
+            failures.append("server error: " + line[:160])
+            break
+    rcon.command("gamemode creative E2EBot")
+
+
+def progress_scenario(ctx):
+    """Progression with a real client: no End gate on the island, /island end sealed until the Void Lens, tiers II to IV,
+    the End platform, the Matriarch and the Voidwyrm summoned, skin token and /skins, the dungeon menu and a run."""
+    import math
+    tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
+    xdo, rcon = tools["xdotool"], Rcon()
+
+    def command(text, wait=3):
+        subprocess.run([xdo, "key", "slash"], env=env)
+        time.sleep(.5)
+        subprocess.run([xdo, "type", "--delay", "35", text], env=env)
+        subprocess.run([xdo, "key", "Return"], env=env)
+        time.sleep(wait)
+
+    def as_bot(text):
+        return rcon.command("execute as E2EBot at E2EBot run " + text)
+
+    def dimension():
+        return rcon.command("data get entity E2EBot Dimension")
+
+    def wait_dimension(name, seconds=90):
+        for _ in range(seconds):
+            if name in dimension():
+                return True
+            time.sleep(1)
+        failures.append("expected dimension " + name + ": " + dimension())
+        return False
+
+    def use(slot, pitch=0):
+        subprocess.run([xdo, "key", str(slot)], env=env)
+        time.sleep(.6)
+        as_bot(f"tp @s ~ ~ ~ 0 {pitch}")
+        time.sleep(.6)
+        subprocess.run([xdo, "click", "3"], env=env)
+        time.sleep(2)
+
+    def active_bosses():
+        return rcon.command("boss active")
+
+    rcon.command("op E2EBot")
+    rcon.command("gamemode survival E2EBot")
+    rcon.command("gamerule spawn_mobs false")
+    rcon.command("kill @e[type=slime]")
+    command("menu skyblock")
+    if not wait_dimension("sb_world", 150):
+        return
+    time.sleep(8)
+    pos = player_state(rcon)["pos"]
+    cx, y, cz = math.floor(pos[0]), math.floor(pos[1]), math.floor(pos[2])
+    # 1. the old End gate stood 6 blocks north of the island centre, one layer below the feet
+    frames = 0
+    for dx in range(-3, 4):
+        for dz in range(-9, -3):
+            if "passed" in as_bot(f"execute if block {cx+dx} {y-1} {cz+dz} minecraft:end_portal_frame"):
+                frames += 1
+    say(f"progress: end portal frames around the old gate spot: {frames}")
+    if frames:
+        failures.append(f"the island still has {frames} End portal frames")
+    as_bot(f"tp @s {cx+0.5} {y} {cz+2.5} 0 20")
+    time.sleep(2)
+    shot(tools, shots / "pr-1-no-end-gate.png")
+    # 2. sealed End
+    command("island end")
+    time.sleep(2)
+    shot(tools, shots / "pr-2-end-sealed.png")
+    if "sb_end" in dimension():
+        failures.append("/island end worked without a Void Lens")
+    # 3. tiers II, III and IV then the End
+    rcon.command("clear E2EBot")
+    for item in ("bronze_core", "ember_core", "void_lens", "void_sigil", "matriarch_egg", "skin_flame_brand",
+                 "bronze_cleaver", "voidglass", "solar_panel"):
+        rcon.command(f"sbgive {item} 1 E2EBot")
+    rcon.command("sbgive starcore 1 E2EBot")
+    time.sleep(2)
+    shot(tools, shots / "pr-3-items.png")
+    subprocess.run([xdo, "key", "e"], env=env)
+    time.sleep(2)
+    shot(tools, shots / "pr-3b-inventory.png")
+    subprocess.run([xdo, "key", "Escape"], env=env)
+    time.sleep(1)
+    use(3)  # the lens before tier III: refused
+    shot(tools, shots / "pr-4-lens-refused.png")
+    use(1)
+    use(2)
+    use(3)
+    shot(tools, shots / "pr-5-lens-used.png")
+    command("island end")
+    if not wait_dimension("sb_end", 90):
+        return
+    time.sleep(6)
+    shot(tools, shots / "pr-6-the-end.png")
+    # 4. the Voidwyrm at the island's altar
+    rcon.command("gamemode creative E2EBot")  # the Voidwyrm kills a bare player in two seconds: the bot only looks
+    use(4)
+    time.sleep(6)
+    shot(tools, shots / "pr-7-voidwyrm.png")
+    out = active_bosses()
+    say("progress: boss active (End): " + out.strip()[:160].replace("\n", " "))
+    if "voidwyrm" not in out.lower():
+        failures.append("the Void Sigil did not summon the Voidwyrm: " + out.strip()[:120])
+    rcon.command("boss kill all")
+    rcon.command("gamemode survival E2EBot")
+    time.sleep(2)
+    command("island home")
+    if not wait_dimension("sb_world", 60):
+        return
+    time.sleep(5)
+    # 5. the Matriarch on the island
+    rcon.command("gamemode creative E2EBot")
+    use(5, 20)
+    time.sleep(5)
+    shot(tools, shots / "pr-8-matriarch.png")
+    out = active_bosses()
+    say("progress: boss active (island): " + out.strip()[:160].replace("\n", " "))
+    if "matriarch" not in out.lower():
+        failures.append("the Matriarch Egg did not summon the boss: " + out.strip()[:120])
+    rcon.command("boss kill all")
+    rcon.command("gamemode survival E2EBot")
+    time.sleep(2)
+    # 6. skin token then /skins
+    use(6)
+    shot(tools, shots / "pr-9-skin-unlocked.png")
+    command("skins", 4)
+    shot(tools, shots / "pr-10-skins-menu.png")
+    subprocess.run([xdo, "key", "Escape"], env=env)
+    time.sleep(1)
+    # 7. dungeons
+    command("dungeon", 4)
+    shot(tools, shots / "pr-11-dungeon-menu.png")
+    subprocess.run([xdo, "key", "Escape"], env=env)
+    time.sleep(1)
+    command("dungeon start 1", 5)
+    for _ in range(120):
+        if "sb_dungeon" in dimension():
+            break
+        time.sleep(1)
+    else:
+        failures.append("the dungeon run never started: " + dimension())
+        return
+    time.sleep(8)
+    shot(tools, shots / "pr-12-in-dungeon.png")
+    command("dungeon leave", 6)
+    if not wait_dimension("sb_world", 60):
+        return
+    shot(tools, shots / "pr-13-back-on-island.png")
+    log = (server / "console.log").read_text(errors="replace")
+    for line in log.splitlines():
+        if ("Exception" in line or "SEVERE" in line) and " WARN]" not in line and "VampyuyuSurvival" in line:
+            failures.append("server error: " + line[:160])
+            break
+    rcon.command("gamemode creative E2EBot")
+
+
+def bosses_scenario(ctx):
+    """One screenshot of every boss, spawned with the admin command in front of a creative bot."""
+    import math
+    tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
+    xdo, rcon = tools["xdotool"], Rcon()
+
+    def command(text, wait=3):
+        subprocess.run([xdo, "key", "slash"], env=env)
+        time.sleep(.5)
+        subprocess.run([xdo, "type", "--delay", "35", text], env=env)
+        subprocess.run([xdo, "key", "Return"], env=env)
+        time.sleep(wait)
+
+    def as_bot(text):
+        return rcon.command("execute as E2EBot at E2EBot run " + text)
+
+    rcon.command("op E2EBot")
+    rcon.command("gamemode creative E2EBot")
+    rcon.command("gamerule spawn_mobs false")
+    command("menu skyblock")
+    for _ in range(150):
+        if "sb_world" in rcon.command("data get entity E2EBot Dimension"):
+            break
+        time.sleep(1)
+    else:
+        failures.append("never reached sb_world")
+        return
+    time.sleep(8)
+    pos = player_state(rcon)["pos"]
+    cx, y, cz = math.floor(pos[0]) + 8, math.floor(pos[1]), math.floor(pos[2])
+    as_bot(f"time set day")
+    as_bot(f"fill {cx-45} {y-1} {cz-45} {cx+45} {y-1} {cz+45} stone")
+    as_bot(f"fill {cx-45} {y} {cz-45} {cx+45} {y+30} {cz+45} air")
+    # a pool for the sea boss
+    as_bot(f"fill {cx+24} {y-12} {cz-8} {cx+36} {y-1} {cz+8} water")
+    for boss, back, pitch, dx in (("voidwyrm", 26, 10, 0), ("magma_warden", 12, 14, 0), ("frost_revenant", 12, 14, 0),
+                                  ("sylvan_matriarch", 9, 14, 0), ("abyssal_leviathan", 14, 14, 30), ("abyssal_leviathan", 16, 14, 0),
+                                  ("crypt_lord", 14, 14, 0), ("ancient_colossus", 24, 10, 0), ("storm_roc", 26, 6, 0)):
+        rcon.command("boss kill all")
+        as_bot(f"tp @s {cx+dx+0.5} {y} {cz+0.5} 0 0")
+        time.sleep(1.5)
+        out = rcon.command(f"boss spawn {boss} {cx+dx+0.5} {y} {cz+0.5} sb_world")  # a console proxy has no location
+        import re as _re
+        clean = _re.sub(r"\u00a7x(\u00a7[0-9a-f]){6}|\u00a7.", "", out).strip()
+        say(f"bosses: spawn {boss}: " + clean[:160])
+        say("bosses: active: " + _re.sub(r"\u00a7x(\u00a7[0-9a-f]){6}|\u00a7.", "", rcon.command("boss active")).strip()[:160].replace("\n", " "))
+        time.sleep(1.5)
+        as_bot(f"tp @s {cx+dx+0.5} {y+2} {cz+0.5+back} 180 {pitch}")
+        time.sleep(4)
+        say(f"bosses: {boss} displays near: " + as_bot("execute if entity @e[type=minecraft:item_display,distance=..80]").strip()
+            + " pos " + as_bot("data get entity @e[type=minecraft:item_display,sort=nearest,limit=1,distance=..80] Pos").strip()[-60:])
+        shot(tools, shots / f"boss-{boss}-{dx}.png")
+    rcon.command("boss kill all")
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -1168,7 +1516,7 @@ def main():
     if args.scenario == "dev":
         return dev_server()
     global WITH_SURVIVAL
-    WITH_SURVIVAL = args.scenario in ("back", "skyblock")
+    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses")
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
@@ -1191,7 +1539,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -1222,7 +1570,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -1259,6 +1607,12 @@ def main():
             back_scenario(ctx)
         elif args.scenario == "skyblock":
             skyblock_scenario(ctx)
+        elif args.scenario == "quarry":
+            quarry_scenario(ctx)
+        elif args.scenario == "progress":
+            progress_scenario(ctx)
+        elif args.scenario == "bosses":
+            bosses_scenario(ctx)
         else:
             shader_scenario(ctx)
     finally:

@@ -84,6 +84,7 @@ public class IslandFeatureTest {
         Island island = service.registry().create(owner.getUniqueId(), owner.getName(), "classic", System.currentTimeMillis());
         island.state(Island.State.READY);
         island.platformsReady = true;
+        island.endReady = true;
         return island;
     }
 
@@ -139,7 +140,7 @@ public class IslandFeatureTest {
             assertTrue(service.isSkyblockWorld(world));
         }
         assertEquals(World.Environment.NETHER, Bukkit.getWorld(SkyblockWorlds.NETHER).getEnvironment());
-        assertNull(Bukkit.getWorld(SkyblockWorlds.END));
+        assertEquals(World.Environment.THE_END, Bukkit.getWorld(SkyblockWorlds.END).getEnvironment());
         assertNull(Bukkit.getWorld(SkyblockWorlds.HUB));
         assertFalse(service.isSkyblockWorld(null));
     }
@@ -582,7 +583,7 @@ public class IslandFeatureTest {
         Location inNether = new Location(nether, center(island).getX(), 65, center(island).getZ());
         assertEquals("same cell in the Nether", island.id, service.islandAt(inNether).orElseThrow().id());
         assertEquals(1, service.all().size());
-        assertTrue(service.dragonAltar(island.id).isEmpty());
+        assertEquals(SkyblockWorlds.END, service.dragonAltar(island.id).orElseThrow().getWorld().getName());
         assertEquals(SkyblockWorlds.NETHER, service.netherSpawn(island.id).orElseThrow().getWorld().getName());
         assertTrue(service.dragonAltarAt(inNether).isEmpty());
     }
@@ -603,7 +604,9 @@ public class IslandFeatureTest {
 
         PlayerPortalEvent end = new PlayerPortalEvent(owner, from, from.clone(), TeleportCause.END_PORTAL);
         server.getPluginManager().callEvent(end);
-        assertTrue(end.isCancelled());
+        assertFalse(end.isCancelled());
+        assertEquals("the End portal leads to the island's own End", SkyblockWorlds.END, end.getTo().getWorld().getName());
+        assertEquals(service.grid().cellOf(from.getX()), service.grid().cellOf(end.getTo().getX()));
 
         // from the island Nether back to the overworld home
         Location nether = event.getTo();

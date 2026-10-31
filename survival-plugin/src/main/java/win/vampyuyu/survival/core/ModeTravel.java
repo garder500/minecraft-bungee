@@ -72,7 +72,8 @@ public final class ModeTravel implements Listener {
     }
     public static boolean retired(World world) {
         return world != null && sky(world) && !SkyblockWorlds.WORLD.equals(world.getName())
-            && !SkyblockWorlds.NETHER.equals(world.getName());
+            && !SkyblockWorlds.NETHER.equals(world.getName()) && !SkyblockWorlds.END.equals(world.getName())
+            && !SkyblockWorlds.isDungeon(world.getName());
     }
 
     /** Used only by the explicit mode selector and island-home entry. No asynchronous permit can leak. */

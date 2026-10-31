@@ -74,6 +74,11 @@ public final class MenuConfig {
     private final List<String> problems = new ArrayList<>();
 
     public MenuConfig(ConfigurationSection c) {
+        this(c, null);
+    }
+
+    /** {@code extraTutorial}: tutorial quests contributed by another feature (the Quarry), appended to the line. */
+    public MenuConfig(ConfigurationSection c, ConfigurationSection extraTutorial) {
         String noKeyText = c.getString("join.no-key", "hub").toLowerCase(Locale.ROOT);
         noKey = noKeyText.equals("stay") ? JoinRouter.NoKey.STAY : JoinRouter.NoKey.HUB;
         if (!noKeyText.equals("hub") && !noKeyText.equals("stay")) {
@@ -146,7 +151,7 @@ public final class MenuConfig {
 
         questsEnabled = c.getBoolean("quests.enabled", true);
         ConfigurationSection quests = c.getConfigurationSection("quests");
-        catalog = questsEnabled ? QuestCatalog.parse(quests) : QuestCatalog.empty();
+        catalog = questsEnabled ? QuestCatalog.parse(quests, extraTutorial) : QuestCatalog.empty();
         problems.addAll(catalog.problems());
         DailyClock clock;
         try {

@@ -29,6 +29,11 @@ public final class QuestCatalog {
      * {@link #problems()}; the other quests still load.
      */
     public static QuestCatalog parse(ConfigurationSection quests) {
+        return parse(quests, null);
+    }
+
+    /** Same, with more tutorial quests (from another feature's config) appended after the main ones. */
+    public static QuestCatalog parse(ConfigurationSection quests, ConfigurationSection extraTutorial) {
         List<String> problems = new ArrayList<>();
         Map<String, QuestDef> tutorial = new LinkedHashMap<>();
         Map<String, QuestDef> daily = new LinkedHashMap<>();
@@ -36,6 +41,7 @@ public final class QuestCatalog {
             read(quests.getConfigurationSection("tutorial"), tutorial, problems);
             read(quests.getConfigurationSection("daily.pool"), daily, problems);
         }
+        read(extraTutorial, tutorial, problems);
         for (QuestDef def : List.copyOf(tutorial.values())) {
             for (String req : def.requires()) {
                 if (!tutorial.containsKey(req)) {

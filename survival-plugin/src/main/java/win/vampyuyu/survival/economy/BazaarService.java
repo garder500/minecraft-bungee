@@ -96,8 +96,12 @@ final class BazaarService implements EconomyAudit.Contributor {
         file.delay(c.getLong("bazaar.persist-delay-ticks", 10));
         products.clear();
         ConfigurationSection cats = c.getConfigurationSection("bazaar.categories");
+        java.util.function.Predicate<String> never = MarketRules.neverTraded(c);
         for (Category cat : Category.values()) {
             for (String key : cats == null ? List.<String>of() : cats.getStringList(cat.name().toLowerCase(Locale.ROOT))) {
+                if (never.test(key)) {
+                    continue; // ultra rare: the Auction House only
+                }
                 products.putIfAbsent(key, cat);
             }
         }

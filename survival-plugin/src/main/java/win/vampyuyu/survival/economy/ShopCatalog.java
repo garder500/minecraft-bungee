@@ -86,6 +86,8 @@ final class ShopCatalog {
         if (section == null) {
             return new ShopCatalog(out);
         }
+        java.util.function.Predicate<String> never = MarketRules.neverTraded(c);
+        int refused = 0;
         for (String id : section.getKeys(false)) {
             ConfigurationSection s = section.getConfigurationSection(id);
             if (s == null) {
@@ -99,6 +101,10 @@ final class ShopCatalog {
             ConfigurationSection list = s.getConfigurationSection("items");
             if (list != null) {
                 for (String key : list.getKeys(false)) {
+                    if (never.test(key)) {
+                        refused++;
+                        continue;
+                    }
                     ConfigurationSection price = list.getConfigurationSection(key);
                     if (price == null) {
                         log.warning("Shop " + id + ": item " + key + " needs {buy: x, sell: y}");
@@ -116,6 +122,9 @@ final class ShopCatalog {
             out.put(id.toLowerCase(java.util.Locale.ROOT), new ShopDef(id.toLowerCase(java.util.Locale.ROOT), name,
                 s.getString("npc-name", "<yellow>" + name), icon, s.getString("profession", "NONE"),
                 s.getString("npc-type", "VILLAGER"), s.getString("description", ""), List.copyOf(items)));
+        }
+        if (refused > 0) {
+            log.info("Shops: " + refused + " ultra rare entries are never traded by merchants (market.never-traded)");
         }
         return new ShopCatalog(out);
     }

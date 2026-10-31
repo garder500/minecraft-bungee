@@ -3,7 +3,7 @@ package win.vampyuyu.survival.island;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import win.vampyuyu.survival.core.SkyblockWorlds;
 
-/** Nether portals link sb_world and sb_nether in the same grid cell. Every End route is refused. */
+/** Portals link sb_world with sb_nether (Nether portal) and sb_end (End portal), in the same grid cell, and back. */
 public final class PortalMapper {
     /** A destination: the world, and either a fixed offset from the island centre or the island's overworld home. */
     public record Route(String world, int[] offset, boolean home) {}
@@ -20,6 +20,14 @@ public final class PortalMapper {
                 return new Route(SkyblockWorlds.NETHER, IslandTemplates.NETHER_PORTAL, false);
             }
             if (SkyblockWorlds.NETHER.equals(fromWorld)) {
+                return new Route(SkyblockWorlds.WORLD, null, true);
+            }
+        }
+        if (cause == TeleportCause.END_PORTAL && endOn) {
+            if (SkyblockWorlds.WORLD.equals(fromWorld)) {
+                return new Route(SkyblockWorlds.END, IslandTemplates.END_SPAWN, false);
+            }
+            if (SkyblockWorlds.END.equals(fromWorld)) {
                 return new Route(SkyblockWorlds.WORLD, null, true);
             }
         }

@@ -60,7 +60,7 @@ final class ItemKeys {
 
     /** The key of a stack, or null for air / null. */
     String keyOf(ItemStack stack) {
-        if (stack == null || stack.getType().isAir()) {
+        if (stack == null || stack.getType().isAir() || MarketRules.bound(stack)) {
             return null;
         }
         return items().idOf(stack).orElse(stack.getType().name());
@@ -68,7 +68,7 @@ final class ItemKeys {
 
     /** True when the stack can be traded: see the class comment. */
     boolean clean(ItemStack stack) {
-        if (stack == null || stack.getType().isAir()) {
+        if (stack == null || stack.getType().isAir() || MarketRules.bound(stack)) {
             return false;
         }
         var id = items().idOf(stack);

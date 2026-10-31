@@ -53,7 +53,7 @@ public class DungeonFeatureTest {
 
     @Test
     public void featureIsEnabledAndPublishesTheApi() {
-        assertTrue(win.vampyuyu.survival.LegacyFeatureFixture.features(plugin).enabledIds().contains("dungeon"));
+        assertTrue(plugin.features().enabledIds().contains("dungeon"));
         assertTrue(plugin.features().failedIds().isEmpty());
         assertTrue(plugin.core().service(DungeonApi.class).isPresent());
         for (String c : List.of("dungeon", "party", "pc")) {

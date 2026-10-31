@@ -412,22 +412,22 @@ public class ReviewFixesTest {
         YamlConfiguration cfg = new YamlConfiguration();
         cfg.set("shops.t.items.WHEAT.buy", 8);
         cfg.set("shops.t.items.WHEAT.sell", 2);
-        cfg.set("shops.t.items.DIAMOND.sell", 100);
+        cfg.set("shops.t.items.EMERALD.sell", 100);
         ShopCatalog catalog = ShopCatalog.parse(cfg, java.util.logging.Logger.getAnonymousLogger());
         bz.npcPrices(() -> catalog);
         assertEquals("floor 2 coins", 20, bz.npcFloorTicks("WHEAT"));
         assertEquals("ceiling 8 coins", 80, bz.npcCeilingTicks("WHEAT"));
         assertEquals("geometric mean of 20 and 80", 40, bz.seedTicks("WHEAT"));
-        assertEquals("sell-only: the floor", 1000, bz.seedTicks("DIAMOND"));
+        assertEquals("sell-only: the floor", 1000, bz.seedTicks("EMERALD"));
         assertEquals(0, bz.seedTicks("COBBLESTONE"));
 
         long now = System.currentTimeMillis();
         // the first order cannot be 100M for a diamond (reference 100 coins, band 5)
-        assertFalse(bz.market().checkSellOrder("x", "DIAMOND", 1_000_000_000L, 1, now).ok());
-        assertTrue(bz.market().checkSellOrder("x", "DIAMOND", 1_200, 1, now).ok());
-        assertFalse(bz.market().checkBuyOrder("x", "DIAMOND", 10, 1, now).ok());
+        assertFalse(bz.market().checkSellOrder("x", "EMERALD", 1_000_000_000L, 1, now).ok());
+        assertTrue(bz.market().checkSellOrder("x", "EMERALD", 1_200, 1, now).ok());
+        assertFalse(bz.market().checkBuyOrder("x", "EMERALD", 10, 1, now).ok());
         // once it trades, the real history takes over
-        assertEquals(1000, bz.reference("DIAMOND", now));
+        assertEquals(1000, bz.reference("EMERALD", now));
     }
 
     @Test

@@ -32,7 +32,7 @@ public class BossFeatureBootTest {
 
     @Test
     public void bossFeatureEnabledAndPublishesTheApi() {
-        assertTrue(win.vampyuyu.survival.LegacyFeatureFixture.features(plugin).enabledIds().contains("boss"));
+        assertTrue(plugin.features().enabledIds().contains("boss"));
         assertFalse(plugin.features().failedIds().contains("boss"));
         BossApi api = plugin.core().service(BossApi.class).orElseThrow();
         assertTrue(api.bossIds().containsAll(List.of("voidwyrm", "magma_warden", "frost_revenant",

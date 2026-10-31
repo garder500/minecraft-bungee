@@ -48,6 +48,18 @@ final class ShopUi {
             })
             .tab((s, c, l, a) -> a.length == 1
                 ? Targets.filter(new ArrayList<>(shops.catalog().shops().keySet()), a[0]) : List.of()).register();
+        core.commands().command("market")
+            .description("Open the market: merchants that buy and sell everyday items")
+            .usage("/market")
+            .permission("vampyuyu.sb.economy.market", PermissionDefault.TRUE)
+            .executor((s, c, l, a) -> {
+                if (s instanceof Player p) {
+                    openHub(p);
+                } else {
+                    core.msg().error(s, "Only players can shop.");
+                }
+                return true;
+            }).register();
         core.commands().command("sellall").aliases("sellinventory")
             .description("Sell everything the merchants would buy from your inventory")
             .usage("/sellall")

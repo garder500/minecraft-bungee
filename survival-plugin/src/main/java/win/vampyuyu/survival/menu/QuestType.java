@@ -29,7 +29,13 @@ public enum QuestType {
     /** Collect fairy souls (target ignored). */
     COLLECT_SOUL(false, "Collect Fairy Souls"),
     /** Enchant an item (target ignored). */
-    ENCHANT_ITEM(false, "Enchant an item");
+    ENCHANT_ITEM(false, "Enchant an item"),
+    /** Find an ore in a cobble generator. Target: ore id (bronzite, diamond...) or ANY. */
+    ORE_FOUND(false, "Find ores in your generator"),
+    /** Collect an item from the Forge. Target: custom item id or ANY. */
+    FORGE_ITEM(false, "Forge items"),
+    /** Upgrade the cobble generator. Target: the tier reached ("2", "3") or ANY. */
+    GENERATOR_UPGRADE(false, "Upgrade your generator");
 
     private final boolean absolute;
     private final String label;

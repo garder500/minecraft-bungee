@@ -59,6 +59,7 @@ public final class IslandFeature implements Feature {
         prepare(setup, cfg, "world", SkyblockWorlds.WORLD, World.Environment.NORMAL, Biome.PLAINS, islandSpawnY, 0, 0);
         prepare(setup, cfg, "nether", SkyblockWorlds.NETHER, World.Environment.NETHER, Biome.NETHER_WASTES,
             islandSpawnY, 0, 0);
+        prepare(setup, cfg, "end", SkyblockWorlds.END, World.Environment.THE_END, Biome.THE_END, islandSpawnY, 0, 0);
     }
 
     private static void prepare(WorldSetup setup, IslandConfig cfg, String key, String name, World.Environment env,

@@ -54,6 +54,7 @@ public final class IslandCommands {
         {"transfer", "transfer <player>", "Give the island to a member (confirm)"},
         {"border", "border", "Show or hide the island border for you"},
         {"nether", "nether", "Go to your island's Nether platform"},
+        {"end", "end", "Go to your island's End platform"},
         {"help", "help", "This list"},
     };
 
@@ -172,7 +173,7 @@ public final class IslandCommands {
                 }
             }
             case "nether" -> reply(player, service.shortcut(player, true));
-            case "end" -> err(player, "Skyblock has no End.");
+            case "end" -> reply(player, service.shortcut(player, false));
             case "sethome" -> reply(player, service.setHome(player));
             case "visit", "v" -> visit(player, args);
             case "invite" -> target(player, args, 1).ifPresent(t -> reply(player, service.invite(player, t)));
