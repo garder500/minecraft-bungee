@@ -145,11 +145,11 @@ def frost_revenant():
                                 ("cloak", (30, 40, 90), "plain"), ("blade", (210, 240, 255), "frost")], 22)
     s.mirror_x((5, 0, 6), (7.7, 10, 10), "deep")                    # legs
     s.mirror_x((4.6, 0, 5.4), (8, 3.5, 10.6), "silver")             # boots
-    s.box((4, 10, 5), (12, 22, 11), "silver", top="ice")            # torso
+    s.box((5, 10, 5.6), (11, 22, 10.4), "silver", top="ice")        # torso: the slimmest of the bosses
     s.box((5, 13, 4.6), (11, 20, 5), "ice")                         # chest crystal
     s.box((6.5, 14, 4.3), (9.5, 18, 4.7), "eye")
     s.mirror_x((0.5, 19, 4.5), (5, 24, 11.5), "ice", rot=("z", 22.5, [3, 21, 8]))   # pauldron crystals
-    s.mirror_x((-1, 9, 6), (3, 20, 10), "deep")                     # arms
+    s.mirror_x((0, 9, 6.4), (3, 20, 9.6), "deep")                   # thin arms
     s.mirror_x((-1.4, 8, 5.6), (3.4, 11, 10.4), "silver")           # gauntlets
     s.box((5.5, 22, 5.5), (10.5, 28, 10.5), "silver", top="ice")    # helm
     s.box((6, 24, 5.2), (10, 25.4, 5.6), "eye")                     # visor glow
@@ -170,8 +170,8 @@ def sylvan_matriarch():
     s = Skin("sylvan_matriarch", [("chitin", (30, 70, 40), "plain"), ("leaf", (60, 140, 50), "spots"),
                                   ("bark", (80, 60, 36), "plain"), ("eye", (190, 255, 80), "glow"),
                                   ("bloom", (255, 120, 190), "glow"), ("web", (225, 235, 225), "frost")], 33)
-    s.box((5, 6, 2), (11, 12, 8), "chitin", top="leaf")             # head and thorax
-    s.box((4, 6, 8), (12, 16, 17), "leaf", top="leaf")              # leafy abdomen
+    s.box((5, 4, 2), (11, 10, 8), "chitin", top="leaf")             # head and thorax, low to the ground
+    s.box((3, 4, 8), (13, 14, 18), "leaf", top="leaf")              # wide, low leafy abdomen
     s.box((5, 15.5, 9), (11, 18, 15), "bark")
     s.mirror_x((5.5, 9, 1.5), (7, 10.5, 2.3), "eye")                # eyes
     s.mirror_x((6.4, 7.5, 1.5), (7.2, 8.6, 2.3), "eye")
