@@ -73,12 +73,29 @@ public final class MenuConfig {
 
     private final List<String> problems = new ArrayList<>();
 
+    /**
+     * False for a tutorial quest that nobody can complete in the Skyblock as it is now: skills, fairy souls,
+     * enchanting, minions and the retired hub are not loaded.
+     */
+    static boolean completable(QuestDef def) {
+        return switch (def.type()) {
+            case SKILL_LEVEL, COLLECT_SOUL, ENCHANT_ITEM -> false;
+            case VISIT_WORLD -> !def.target().equalsIgnoreCase("hub");
+            default -> !def.target().toLowerCase(java.util.Locale.ROOT).startsWith("custom:minion");
+        };
+    }
+
     public MenuConfig(ConfigurationSection c) {
-        this(c, null);
+        this(c, null, false);
     }
 
     /** {@code extraTutorial}: tutorial quests contributed by another feature (the Quarry), appended to the line. */
     public MenuConfig(ConfigurationSection c, ConfigurationSection extraTutorial) {
+        this(c, extraTutorial, false);
+    }
+
+    /** {@code filterDead}: drop the tutorial quests no loaded system can complete (see {@link #completable}). */
+    public MenuConfig(ConfigurationSection c, ConfigurationSection extraTutorial, boolean filterDead) {
         String noKeyText = c.getString("join.no-key", "hub").toLowerCase(Locale.ROOT);
         noKey = noKeyText.equals("stay") ? JoinRouter.NoKey.STAY : JoinRouter.NoKey.HUB;
         if (!noKeyText.equals("hub") && !noKeyText.equals("stay")) {
@@ -151,7 +168,8 @@ public final class MenuConfig {
 
         questsEnabled = c.getBoolean("quests.enabled", true);
         ConfigurationSection quests = c.getConfigurationSection("quests");
-        catalog = questsEnabled ? QuestCatalog.parse(quests, extraTutorial) : QuestCatalog.empty();
+        catalog = questsEnabled ? QuestCatalog.parse(quests, extraTutorial, filterDead ? MenuConfig::completable : def -> true)
+            : QuestCatalog.empty();
         problems.addAll(catalog.problems());
         DailyClock clock;
         try {

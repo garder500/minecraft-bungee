@@ -34,6 +34,15 @@ public final class QuestCatalog {
 
     /** Same, with more tutorial quests (from another feature's config) appended after the main ones. */
     public static QuestCatalog parse(ConfigurationSection quests, ConfigurationSection extraTutorial) {
+        return parse(quests, extraTutorial, def -> true);
+    }
+
+    /**
+     * Same, keeping only the tutorial quests {@code available} accepts: a quest nobody can complete (its system is not
+     * loaded) is dropped, and so is every quest that needs it.
+     */
+    public static QuestCatalog parse(ConfigurationSection quests, ConfigurationSection extraTutorial,
+            java.util.function.Predicate<QuestDef> available) {
         List<String> problems = new ArrayList<>();
         Map<String, QuestDef> tutorial = new LinkedHashMap<>();
         Map<String, QuestDef> daily = new LinkedHashMap<>();
@@ -42,6 +51,12 @@ public final class QuestCatalog {
             read(quests.getConfigurationSection("daily.pool"), daily, problems);
         }
         read(extraTutorial, tutorial, problems);
+        java.util.Set<String> gone = new java.util.HashSet<>();
+        tutorial.values().removeIf(def -> !available.test(def) && gone.add(def.id()));
+        boolean more = !gone.isEmpty();
+        while (more) { // a quest that needs a dropped one is dropped too, without a warning
+            more = tutorial.values().removeIf(def -> def.requires().stream().anyMatch(gone::contains) && gone.add(def.id()));
+        }
         for (QuestDef def : List.copyOf(tutorial.values())) {
             for (String req : def.requires()) {
                 if (!tutorial.containsKey(req)) {
