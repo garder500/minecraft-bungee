@@ -39,6 +39,7 @@ public final class SidebarLines {
             lines.add("<aqua>Objective");
             lines.add("<yellow>" + esc(cut(v.questName(), QUEST_WIDTH))
                 + (v.questProgress() == null ? "" : " <gray>" + esc(v.questProgress())));
+            lines.add("<gray>Type <green>/guide <gray>for help");
             lines.add("");
         }
         if (!v.serverName().isBlank()) {

@@ -50,6 +50,21 @@ public class GuideTest {
     }
 
     @Test
+    public void everyQuarryQuestSaysWhatToDoAndWhichCommand() {
+        var menu = YamlConfiguration.loadConfiguration(new InputStreamReader(getClass().getResourceAsStream("/menu.yml")));
+        var quarry = YamlConfiguration.loadConfiguration(new InputStreamReader(getClass().getResourceAsStream("/quarry.yml")));
+        var catalog = new MenuConfig(menu, quarry.getConfigurationSection("quests.tutorial"), true).catalog;
+        for (String id : new String[] {"lucky_cobble", "nugget_stash", "build_forge", "find_bronzite", "forge_cleaver",
+                "forge_core", "upgrade_vein", "find_frostium", "forge_rimeblade", "forge_ember"}) {
+            var def = catalog.tutorialQuest(id).orElseThrow();
+            assertNotNull(id + " has a hint", GuideCommands.hint(def));
+        }
+        assertTrue(GuideCommands.hint(catalog.tutorialQuest("forge_cleaver").get()).contains("/forge"));
+        assertTrue(catalog.tutorialQuest("build_forge").get().description().contains("/forge"));
+        assertTrue(catalog.tutorialQuest("forge_core").get().description().contains("/forge"));
+    }
+
+    @Test
     public void aPlayerGetsTheTutorialAndTheGuideReadsIt() {
         PlayerMock player = server.addPlayer("Newbie");
         player.performCommand("guide");

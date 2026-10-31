@@ -58,7 +58,8 @@ public class SidebarLogicTest {
             "1,234", "2/4", "Break wood", "(2/5)", "Skyblock", "<yellow>play.example"));
         assertEquals(List.of("<gray>Late Summer 15th", "<gray>7:10pm <blue>☽", "", "<gray>⏣ <aqua>Your Island", "",
             "<white>Purse: <gold>1,234", "<white>Members: <green>2/4", "", "<aqua>Objective",
-            "<yellow>Break wood <gray>(2/5)", "", "<white>Server: <green>Skyblock", "<yellow>play.example"), lines);
+            "<yellow>Break wood <gray>(2/5)", "<gray>Type <green>/guide <gray>for help", "", "<white>Server: <green>Skyblock",
+            "<yellow>play.example"), lines);
     }
 
     @Test

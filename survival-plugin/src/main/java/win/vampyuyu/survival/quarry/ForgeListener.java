@@ -52,6 +52,8 @@ final class ForgeListener implements Listener {
             return;
         }
         forges.add(event.getBlockPlaced());
+        BlockModels.show(event.getBlockPlaced(), core.items().create(QuarryItems.FORGE),
+            BlockModels.facing(event.getPlayer().getLocation().getYaw()));
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -61,6 +63,7 @@ final class ForgeListener implements Listener {
             return;
         }
         forges.remove(block);
+        BlockModels.hide(block);
         event.setDropItems(false);
         block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0.5, 0.5), core.items().create(QuarryItems.FORGE));
     }

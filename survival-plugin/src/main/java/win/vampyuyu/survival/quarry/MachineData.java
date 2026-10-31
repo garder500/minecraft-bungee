@@ -13,6 +13,8 @@ public final class MachineData {
     public int fuel;
     /** Miners: cycles accumulated (a cycle runs when it reaches 1). */
     public double progress;
+    /** Yaw of the 3D model (its front faces the player who placed it). */
+    public float yaw = 180f;
 
     MachineType kind() {
         try {

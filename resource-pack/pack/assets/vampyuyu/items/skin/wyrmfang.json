@@ -1,6 +1,19 @@
 {
-  "model": {
-    "type": "minecraft:model",
-    "model": "vampyuyu:item/skin/wyrmfang"
+ "model": {
+  "type": "minecraft:select",
+  "property": "minecraft:display_context",
+  "cases": [
+   {
+    "when": "gui",
+    "model": {
+     "type": "minecraft:model",
+     "model": "vampyuyu:item/skin/wyrmfang"
+    }
+   }
+  ],
+  "fallback": {
+   "type": "minecraft:model",
+   "model": "vampyuyu:item/skin/wyrmfang_3d"
   }
+ }
 }

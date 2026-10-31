@@ -1277,6 +1277,21 @@ def quarry_scenario(ctx):
             f"west={what(cx, y, cz)} north={what(cx+1, y, cz-1)}")
     stand(cx + 1.5, y + 1, cz + 8.0, 180, 28)
     shot(tools, shots / "qa-5-machines.png")
+    stand(cx + 1.0, y + 1, cz + 6.2, 180, 38)
+    shot(tools, shots / "qa-5b-machines-close.png")
+    # a second row for the render: miner II, battery, cable and solar panel on slots 1 to 4 (the lava is far to the east)
+    rcon.command("clear E2EBot")
+    for item in ("miner_2", "battery", "cable", "solar_panel"):
+        rcon.command(f"sbgive {item} 1 E2EBot")
+    for slot, dx in ((1, -1.5), (2, -2.5), (3, -3.5), (4, -4.5)):
+        use(slot, cx + dx, y, cz + 5.5, 180, 39)
+    rcon.command("clear E2EBot")
+    stand(cx + 4.5, y, cz + 8.4, 180, 15)
+    shot(tools, shots / "qa-5c-forge-close.png")
+    stand(cx - 3.0, y, cz + 8.0, 180, 18)
+    shot(tools, shots / "qa-5d-row.png")
+    stand(cx + 1.0, y, cz + 5.6, 180, 18)
+    shot(tools, shots / "qa-5e-generator-close.png")
     cobble = as_bot(f"data get block {cx+1} {y} {cz}")
     say("quarry: block between lava and water: " + cobble.strip()[:80])
     time.sleep(45)  # the generator makes 10 Flux/s, a Miner I draws 8 and breaks a block every 2 s
@@ -1456,6 +1471,32 @@ def progress_scenario(ctx):
     rcon.command("gamemode creative E2EBot")
 
 
+def swords_scenario(ctx):
+    """The two weapons and the six skins as real 3D box models: each one held in first person, then the inventory."""
+    tools, env, shots = (ctx[k] for k in ("tools", "env", "shots"))
+    xdo, rcon = tools["xdotool"], Rcon()
+    rcon.command("op E2EBot")
+    rcon.command("gamemode creative E2EBot")
+    rcon.command("clear E2EBot")
+    models = ["weapon/bronze_cleaver", "weapon/rimeblade", "skin/kitsune", "skin/titan_edge", "skin/crystal_saber",
+              "skin/flame_brand", "skin/frost_fang", "skin/wyrmfang"]
+    for i, m in enumerate(models):
+        rcon.command(f'item replace entity E2EBot hotbar.{i} with minecraft:iron_sword[item_model="vampyuyu:{m}"]')
+    time.sleep(3)
+    for i, m in enumerate(models):
+        subprocess.run([xdo, "key", str(i + 1)], env=env)
+        time.sleep(1.5)
+        shot(tools, shots / f"sw-{i + 1}-{m.split('/')[1]}.png")
+    subprocess.run([xdo, "key", "e"], env=env)
+    time.sleep(2)
+    shot(tools, shots / "sw-9-inventory.png")
+    subprocess.run([xdo, "key", "Escape"], env=env)
+    time.sleep(1)
+    subprocess.run([xdo, "key", "F5", "F5"], env=env)  # third person, from the front: the sword in the model's hand
+    time.sleep(2)
+    shot(tools, shots / "sw-10-third-person.png")
+
+
 def bosses_scenario(ctx):
     """One screenshot of every boss, spawned with the admin command in front of a creative bot."""
     import math
@@ -1513,7 +1554,7 @@ def bosses_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -1522,7 +1563,7 @@ def main():
     if args.scenario == "dev":
         return dev_server()
     global WITH_SURVIVAL
-    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses")
+    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords")
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
@@ -1576,7 +1617,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -1619,6 +1660,8 @@ def main():
             progress_scenario(ctx)
         elif args.scenario == "bosses":
             bosses_scenario(ctx)
+        elif args.scenario == "swords":
+            swords_scenario(ctx)
         else:
             shader_scenario(ctx)
     finally:

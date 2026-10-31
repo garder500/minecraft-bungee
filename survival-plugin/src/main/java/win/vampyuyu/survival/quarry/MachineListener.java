@@ -62,7 +62,10 @@ final class MachineListener implements Listener {
         data.type = type.get().name();
         data.owner = island.owner().toString();
         data.island = island.id().toString();
+        data.yaw = BlockModels.facing(player.getLocation().getYaw());
         machines.store().put(block.getWorld().getName(), MachineStore.pos(block), data);
+        core.getPlugin().getServer().getScheduler().runTask(core.getPlugin(),
+            () -> BlockModels.show(block, core.items().create(type.get().itemId), data.yaw));
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -74,6 +77,7 @@ final class MachineListener implements Listener {
         }
         MachineType type = data.kind();
         machines.store().remove(block.getWorld().getName(), MachineStore.pos(block));
+        BlockModels.hide(block);
         event.setDropItems(false);
         if (type != null) {
             block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0.5, 0.5), core.items().create(type.itemId));

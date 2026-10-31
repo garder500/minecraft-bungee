@@ -79,7 +79,30 @@ final class GuideCommands {
         QuestDef def = tracked.get().def();
         rt.core.msg().info(player, "Current quest: " + def.name() + " (" + tracked.get().progress() + "/" + def.amount() + ")");
         rt.core.msg().info(player, def.description());
+        String how = hint(def);
+        if (how != null) {
+            rt.core.msg().ok(player, "How: " + how);
+        }
         rt.core.msg().info(player, "/quests lists them all, /track <id> picks the one on your side panel, /hud hides it.");
+    }
+
+    /** The command or the action that moves a quest forward, by what the quest counts. */
+    static String hint(QuestDef def) {
+        String target = def.target().toLowerCase(Locale.ROOT);
+        return switch (def.type()) {
+            case ORE_FOUND -> "break the cobble or stone your generator makes (water meeting lava). A Miner next to it does it for you.";
+            case FORGE_ITEM -> "open the Forge with /forge (or right-click your Forge block), pick the recipe and come back when the timer ends.";
+            case GENERATOR_UPGRADE -> "forge the core with /forge, then right-click it in your hand on your island.";
+            case CRAFT_ITEM -> target.contains("forge")
+                ? "craft it in a crafting table, place it on your island, then open it with /forge."
+                : "craft it in a crafting table.";
+            case BOSS_KILL -> "forge the summon item with /forge and use it on your island.";
+            case COMMAND -> "type the command named in the quest.";
+            case ISLAND_CREATE -> "use /island to create your island.";
+            case VISIT_WORLD -> "use /island nether or /island end, or take the portal.";
+            case COINS_EARN -> "sell your items at the market with /market, or to other players with /ah.";
+            default -> null;
+        };
     }
 
     private void track(Player player, String[] args) {

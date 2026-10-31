@@ -247,7 +247,7 @@ quests:
       rewards: {coins: 100}
     build_forge:
       name: "Forge Ahead"
-      description: "Craft a Forge: a blast furnace, 4 iron ingots and 4 coal."
+      description: "Craft a Forge in a crafting table: a blast furnace, 4 iron ingots and 4 coal. Place it, then open it with /forge."
       type: CRAFT_ITEM
       target: custom:forge
       amount: 1
@@ -265,7 +265,7 @@ quests:
       rewards: {coins: 200}
     forge_cleaver:
       name: "First Blade"
-      description: "Forge a Bronze Cleaver. Place the Forge, right-click it, pick the recipe."
+      description: "Forge a Bronze Cleaver: type /forge (or right-click your Forge block), pick the recipe, and collect it when the timer ends."
       type: FORGE_ITEM
       target: bronze_cleaver
       amount: 1
@@ -274,7 +274,7 @@ quests:
       rewards: {coins: 150, items: {skin_kitsune: 1}}
     forge_core:
       name: "A Better Generator"
-      description: "Forge a Bronze Core (32 Bronzite and 8 iron ingots)."
+      description: "Forge a Bronze Core with /forge (32 Bronzite and 8 iron ingots)."
       type: FORGE_ITEM
       target: bronze_core
       amount: 1
@@ -283,7 +283,7 @@ quests:
       rewards: {coins: 250}
     upgrade_vein:
       name: "Into the Vein"
-      description: "Right-click the Bronze Core on your island to reach generator tier II."
+      description: "Hold the Bronze Core and right-click on your island to reach generator tier II."
       type: GENERATOR_UPGRADE
       target: "2"
       amount: 1
@@ -301,7 +301,7 @@ quests:
       rewards: {coins: 400}
     forge_rimeblade:
       name: "Cold Steel"
-      description: "Forge a Rimeblade from a Bronze Cleaver and 10 Frostium."
+      description: "Forge a Rimeblade with /forge, from a Bronze Cleaver and 10 Frostium."
       type: FORGE_ITEM
       target: rimeblade
       amount: 1
@@ -310,7 +310,7 @@ quests:
       rewards: {coins: 500}
     forge_ember:
       name: "Kindling"
-      description: "Forge an Ember Core and use it on your island for generator tier III."
+      description: "Forge an Ember Core with /forge, then hold it and right-click on your island for generator tier III."
       type: GENERATOR_UPGRADE
       target: "3"
       amount: 1

@@ -28,6 +28,10 @@ public final class QuarryService implements win.vampyuyu.survival.api.EndAccessA
     private final Items items;
     private volatile QuarryConfig config;
 
+    Core core() {
+        return core;
+    }
+
     QuarryService(Core core, QuarryConfig config) {
         this.core = core;
         this.items = core.items();

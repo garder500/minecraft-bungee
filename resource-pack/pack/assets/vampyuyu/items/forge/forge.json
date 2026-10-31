@@ -1,6 +1,6 @@
 {
-  "model": {
-    "type": "minecraft:model",
-    "model": "vampyuyu:item/forge/forge"
-  }
+ "model": {
+  "type": "minecraft:model",
+  "model": "vampyuyu:item/forge/forge_3d"
+ }
 }

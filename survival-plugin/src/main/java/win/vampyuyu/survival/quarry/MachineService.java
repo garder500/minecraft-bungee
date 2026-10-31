@@ -43,6 +43,7 @@ final class MachineService {
 
     void tick() {
         MachineSettings cfg = settings();
+        Map<Block, MachineData> unmodelled = new LinkedHashMap<>();
         for (String worldName : store.worlds()) {
             World world = Bukkit.getWorld(worldName);
             if (world == null) {
@@ -57,8 +58,13 @@ final class MachineService {
                 }
                 MachineType type = entry.getValue().kind();
                 if (type == null || world.getBlockAt(p.x(), p.y(), p.z()).getType() != type.block) {
+                    BlockModels.hide(world.getBlockAt(p.x(), p.y(), p.z()));
                     store.remove(worldName, p); // the block is gone (broken by something that is not a player)
                     continue;
+                }
+                Block block = world.getBlockAt(p.x(), p.y(), p.z());
+                if (!BlockModels.has(block)) {
+                    unmodelled.put(block, entry.getValue());
                 }
                 live.put(p, entry.getValue());
             }
@@ -77,6 +83,10 @@ final class MachineService {
                 }
                 store.markDirty();
             }
+        }
+        if (!unmodelled.isEmpty()) { // not inside the tick: spawning an entity may run other tasks
+            Bukkit.getScheduler().runTask(quarry.core().getPlugin(), () -> unmodelled.forEach((block, data) ->
+                BlockModels.show(block, quarry.core().items().create(data.kind().itemId), data.yaw)));
         }
         if (++ticks % SAVE_EVERY == 0) {
             store.flush();

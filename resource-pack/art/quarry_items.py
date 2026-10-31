@@ -346,8 +346,16 @@ def sheet(path):
         + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b""))
 
 
+# Blocks are drawn only as 3D box models (item_models.py). Everything else keeps this sprite for the GUI and gets a
+# 3D model (sword_models.py, item_models.py) for the hand, the ground and item frames.
+SWORDS_3D = {"forge/forge", "machine/coal_generator", "machine/battery", "machine/cable", "machine/solar_panel",
+             "machine/miner_1", "machine/miner_2"}  # blocks only: the flat sprite is kept for every other item
+
+
 def main():
     for icon_id in ICONS:
+        if icon_id in SWORDS_3D:
+            continue
         tex = b.PACK / "textures" / "item" / f"{icon_id}.png"
         tex.parent.mkdir(parents=True, exist_ok=True)
         tex.write_bytes(draw(icon_id).png())

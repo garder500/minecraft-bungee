@@ -56,3 +56,12 @@ offline catch-up yet. Breaking one gives the item back and forgets its fuel and 
 
 Perfect forges, solar panels and the Void reactor, compactor and sorter machines, offline catch-up, bosses and dungeons (retired modules still target `sb_hub` and `sb_end`), skins. Decision needed first: the
 design puts generator IV and the Voidwyrm in an End platform, which the live Skyblock does not have.
+
+## 3D models
+
+Every custom item has a real 3D box model: swords and skins (`art/sword_models.py`), ores, cores, lens, picks, Forge
+and machines (`art/item_models.py`). Non-block items keep their flat sprite in the GUI (item definition `select` on
+`display_context`: `gui` gives the sprite, anything else `<name>_3d`); the Forge and the machines are 3D everywhere.
+Placed, the Forge and each machine is an `ItemDisplay` over the vanilla block (`BlockModels.java`): the block stays the
+hitbox, the display is lit at 15, faces the player who placed it (`MachineData.yaw`) and is re-created by the machine
+tick if it vanishes. `quarry_items.py` skips the blocks, so rerun both scripts after any art change.
