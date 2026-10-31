@@ -1778,6 +1778,13 @@ def bosses_scenario(ctx):
         say(f"bosses: {boss} displays near: " + as_bot("execute if entity @e[type=minecraft:item_display,distance=..80]").strip()
             + " pos " + as_bot("data get entity @e[type=minecraft:item_display,sort=nearest,limit=1,distance=..80] Pos").strip()[-60:])
         shot(tools, shots / f"boss-{boss}-{dx}.png")
+        # closer from the front, then from behind: the weak spots and the back details (cauldron, antlers, sacs, sail)
+        as_bot(f"tp @s {cx+dx+0.5} {y+3} {cz+0.5+back*0.55} 180 {pitch * 0.6}")
+        time.sleep(2)
+        shot(tools, shots / f"boss-{boss}-{dx}-close.png")
+        as_bot(f"tp @s {cx+dx+0.5} {y+3} {cz+0.5-back*0.55} 0 {pitch * 0.6}")
+        time.sleep(2)
+        shot(tools, shots / f"boss-{boss}-{dx}-back.png")
     rcon.command("boss kill all")
 
 
