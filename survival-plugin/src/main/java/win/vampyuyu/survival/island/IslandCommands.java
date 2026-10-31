@@ -87,7 +87,7 @@ public final class IslandCommands {
             }).register();
         core.commands().command("islandadmin").aliases("isadmin")
             .description("Island administration")
-            .usage("/islandadmin <info|tp|level|rebuild|platforms|delete|list> [player]")
+            .usage("/islandadmin <info|tp|level|rebuild|platforms|delete|list|resetall> [player]")
             .permission(IslandService.ADMIN, PermissionDefault.OP)
             .executor(this::admin).tab(this::tabAdmin).register();
     }
@@ -492,7 +492,7 @@ public final class IslandCommands {
 
     private boolean admin(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            err(sender, "Usage: /islandadmin <info|tp|level|rebuild|platforms|delete|list> [player]");
+            err(sender, "Usage: /islandadmin <info|tp|level|rebuild|platforms|delete|list|resetall> [player]");
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
@@ -502,6 +502,18 @@ public final class IslandCommands {
             islands.stream().limit(30).forEach(i -> sender.sendMessage(Component.text(
                 service.registry().nameOf(i.owner) + " - cell " + i.cellX + "," + i.cellZ + " - " + i.state().name().toLowerCase(Locale.ROOT)
                     + " - level " + i.level, NamedTextColor.GRAY)));
+            return true;
+        }
+        if (sub.equals("resetall")) {
+            UUID asker = sender instanceof Player p ? p.getUniqueId() : new UUID(0, 0);
+            if (!service.confirms().consume(asker, "admin-resetall", "")) {
+                service.confirms().arm(asker, "admin-resetall", "", cfg.confirmSeconds * 1000L);
+                core.msg().warn(sender, "This wipes and rebuilds EVERY island (" + service.registry().count()
+                    + ") and resets the quests, fairy souls and Skyblock inventory of everyone who has one. "
+                    + "Repeat /islandadmin resetall within " + cfg.confirmSeconds + " s to confirm.");
+            } else {
+                ok(sender, "Resetting " + service.resetAll() + " islands. They are rebuilt one after another.");
+            }
             return true;
         }
         Optional<UUID> who = target(sender, args, 1);
@@ -542,8 +554,8 @@ public final class IslandCommands {
 
     private List<String> tabAdmin(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return filter(List.of("info", "tp", "level", "rebuild", "platforms", "delete", "list"), args[0]);
+            return filter(List.of("info", "tp", "level", "rebuild", "platforms", "delete", "list", "resetall"), args[0]);
         }
-        return args.length == 2 && !args[0].equalsIgnoreCase("list") ? players(args[1]) : List.of();
+        return args.length == 2 && !args[0].equalsIgnoreCase("list") && !args[0].equalsIgnoreCase("resetall") ? players(args[1]) : List.of();
     }
 }

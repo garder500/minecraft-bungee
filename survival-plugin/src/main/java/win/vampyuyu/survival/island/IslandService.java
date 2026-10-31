@@ -33,6 +33,7 @@ import win.vampyuyu.survival.api.IslandInfo;
 import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.Cooldowns;
 import win.vampyuyu.survival.core.Msg;
+import win.vampyuyu.survival.core.ModeTravel;
 import win.vampyuyu.survival.core.SkyblockWorlds;
 import win.vampyuyu.survival.island.IslandAccess.Action;
 import win.vampyuyu.survival.island.IslandAccess.Cap;
@@ -1069,6 +1070,80 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
             }
         });
         return Result.ok("Resetting your island... you will be teleported home when it is ready.");
+    }
+
+    /**
+     * Admin: starts over for everybody who has an island. Every island is wiped and rebuilt with the full starter
+     * chest, and its owner and members lose their quests, fairy souls, Skyblock inventory and Skyblock bed. Members,
+     * flags, upgrades and the Wings are kept. Returns the number of islands being reset.
+     */
+    public int resetAll() {
+        Set<UUID> people = new java.util.LinkedHashSet<>();
+        int count = 0;
+        for (Island island : new ArrayList<>(registry.all())) {
+            IslandConfig.TemplateCfg template = cfg.templates.get(island.template);
+            if (template == null || !template.enabled() || !IslandTemplates.exists(template.id())) {
+                template = templates().stream().findFirst().orElse(null);
+            }
+            if (template == null) {
+                continue;
+            }
+            IslandConfig.TemplateCfg chosen = template;
+            people.add(island.owner);
+            people.addAll(island.members.keySet());
+            island.kitOwed = true;
+            island.lootOwed = true;
+            island.kitFor = island.owner;
+            island.lootFor = island.owner;
+            int gen = ++island.generation; // drops every callback of the island's earlier builds, platform jobs and scans
+            island.state(Island.State.RESETTING);
+            island.lastResetAt = now();
+            island.template = chosen.id();
+            island.home = null;
+            island.warp = null;
+            island.value = 0;
+            island.level = 0;
+            island.levelAt = 0;
+            island.platformsReady = false;
+            registry.changed();
+            evict(island, p -> true, "An admin reset every island. Yours will be ready in a moment.");
+            wipeWithRetry(() -> wipeAll(island), () -> current(island, gen), 0, ok -> {
+                if (ok) {
+                    build(island, chosen, gen, 0, island.owner);
+                } else {
+                    wipeFailed(island);
+                }
+            });
+            count++;
+        }
+        for (UUID id : people) {
+            Player online = Bukkit.getPlayer(id);
+            if (online != null) {
+                core.modes().resetSkyblockProgress(online);
+                // Only a player who is in Skyblock right now is pulled back to the rebuilt island; a Survival
+                // player is never moved, and gets the empty Skyblock state the next time they enter it.
+                if (ModeTravel.sky(online.getWorld())) {
+                    core.modes().awaitIsland(online);
+                }
+            }
+        }
+        core.scheduler().async(() -> {
+            for (UUID id : people) {
+                try {
+                    core.profiles().removeSections(id, "quests", "fairy_souls");
+                    core.profiles().edit(id, "island", PlayerIslandData.class, PlayerIslandData::new, d -> {
+                        d.starterClaimed = false;
+                        d.lootClaimed = false;
+                    });
+                    if (Bukkit.getPlayer(id) == null) {
+                        core.modes().resetSkyblockProgressOffline(id);
+                    }
+                } catch (RuntimeException e) {
+                    log.warning("Reset of the progress of " + id + " failed: " + e);
+                }
+            }
+        });
+        return count;
     }
 
     /**

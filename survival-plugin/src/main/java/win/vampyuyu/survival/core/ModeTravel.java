@@ -54,6 +54,8 @@ public final class ModeTravel implements Listener {
         public Stash survival;
         /** Mode the live inventory currently belongs to (null = never recorded). */
         public String live;
+        /** An admin reset happened while the player was offline with the Skyblock inventory live: empty it on join. */
+        public boolean wipeLive;
     }
     private final Core core;
     private final Set<UUID> crossing = new HashSet<>();
@@ -199,6 +201,11 @@ public final class ModeTravel implements Listener {
             stashes.live = sky(player.getWorld()) ? "skyblock" : "survival";
             core.profiles().markDirty(player.getUniqueId());
         }
+        if (stashes.wipeLive) {
+            stashes.wipeLive = false;
+            if ("skyblock".equals(stashes.live)) clearLive(player);
+            core.profiles().markDirty(player.getUniqueId());
+        }
         Points points = points(player);
         if (!points.imported) {
             // Preserve the one pre-upgrade vanilla point in the mode its WORLD belongs to.
@@ -258,18 +265,42 @@ public final class ModeTravel implements Listener {
         Stashes stashes = core.profiles().section(player.getUniqueId(), "mode_inventories", Stashes.class, Stashes::new);
         boolean liveSky = stashes.live != null ? "skyblock".equals(stashes.live) : sky(player.getWorld());
         if (liveSky) {
-            player.getInventory().clear();
-            player.getEnderChest().clear();
-            player.setLevel(0);
-            player.setExp(0);
-            player.setFoodLevel(20);
-            player.setSaturation(5);
-            var max = player.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
-            player.setHealth(max == null ? 20 : max.getValue());
+            clearLive(player);
         } else {
             stashes.skyblock = null; // Skyblock state is in the stash; Survival is live
         }
         core.profiles().markDirty(player.getUniqueId());
+    }
+
+    private static void clearLive(Player player) {
+        player.getInventory().clear();
+        player.getEnderChest().clear();
+        player.setLevel(0);
+        player.setExp(0);
+        player.setFoodLevel(20);
+        player.setSaturation(5);
+        var max = player.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+        player.setHealth(max == null ? 20 : max.getValue());
+    }
+
+    /** Admin reset of an online player: empties the Skyblock state and forgets the Skyblock bed or anchor. */
+    public void resetSkyblockProgress(Player player) {
+        resetSkyblockState(player);
+        points(player).skyblock = null;
+        if (sky(player.getWorld())) restoreNativeSpawn(player, true);
+        core.profiles().markDirty(player.getUniqueId());
+    }
+
+    /**
+     * Admin reset of a player who may be offline: the Skyblock stash is dropped, and a Skyblock inventory that is
+     * still live is emptied at the next join. Any thread (an offline profile is read from disk).
+     */
+    public void resetSkyblockProgressOffline(java.util.UUID id) {
+        core.profiles().edit(id, "mode_inventories", Stashes.class, Stashes::new, stashes -> {
+            stashes.skyblock = null;
+            if ("skyblock".equals(stashes.live)) stashes.wipeLive = true;
+        });
+        core.profiles().edit(id, "mode_respawns", Points.class, Points::new, points -> points.skyblock = null);
     }
 
     /** Puts the live state in the stash of the mode it belongs to and loads the other mode's stash (empty the first time). */

@@ -475,6 +475,52 @@ public class IslandFeatureTest {
         assertFalse("the cell is parked until wiped", service.registry().dirtyCells().isEmpty());
     }
 
+    @Test
+    public void resetAllRebuildsEveryIslandWithTheFullKitAndClearsTheProgress() throws Exception {
+        PlayerMock admin = player("Boss");
+        PlayerMock owner = player("Veteran");
+        Island island = readyIsland(owner);
+        island.kitOwed = false;
+        service.data(owner.getUniqueId()).starterClaimed = true;
+        var quests = plugin.core().profiles().section(owner.getUniqueId(), "quests",
+            win.vampyuyu.survival.menu.QuestData.class, win.vampyuyu.survival.menu.QuestData::new);
+        quests.completed.add("first_tree");
+        admin.performCommand("islandadmin resetall");
+        assertEquals("first call only arms", Island.State.READY, island.state());
+        owner.performCommand("islandadmin resetall");
+        assertEquals("needs the admin permission", Island.State.READY, island.state());
+        admin.setOp(true);
+        admin.performCommand("islandadmin resetall");
+        assertEquals("first call only arms", Island.State.READY, island.state());
+        admin.performCommand("islandadmin resetall");
+        assertEquals(Island.State.RESETTING, island.state());
+        assertTrue("the full starter chest is owed again", island.kitOwed);
+        assertEquals(owner.getUniqueId(), island.kitFor);
+        server.getScheduler().performTicks(5);
+        server.getScheduler().waitAsyncTasksFinished();
+        assertFalse(service.data(owner.getUniqueId()).starterClaimed);
+        assertTrue(plugin.core().profiles().section(owner.getUniqueId(), "quests",
+            win.vampyuyu.survival.menu.QuestData.class, win.vampyuyu.survival.menu.QuestData::new).completed.isEmpty());
+    }
+
+    @Test
+    public void resetAllNeverPullsASurvivalPlayerToTheIsland() {
+        PlayerMock admin = player("Boss2");
+        PlayerMock owner = player("Farmer");
+        Island island = readyIsland(owner);
+        World survival = server.addSimpleWorld("world");
+        owner.teleport(new Location(survival, 0, 70, 0));
+        plugin.core().modes().enterSurvival(owner); // the join router may have marked the owner as waiting
+        assertFalse(plugin.core().modes().awaitingIsland(owner));
+        admin.setOp(true);
+        admin.performCommand("islandadmin resetall");
+        admin.performCommand("islandadmin resetall");
+        assertEquals(Island.State.RESETTING, island.state());
+        assertFalse("a Survival player is not waiting for the island",
+            plugin.core().modes().awaitingIsland(owner));
+        assertEquals("still in Survival", survival, owner.getWorld());
+    }
+
     // ---------------------------------------------------------------- protection
 
     @Test

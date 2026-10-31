@@ -192,6 +192,27 @@ public final class PlayerProfiles implements Listener {
         }
     }
 
+    /**
+     * Deletes whole sections: the next {@link #section} call starts again from the defaults. Safe from any thread,
+     * also for offline players (an offline profile is read from disk, so do not call it on the main thread for them).
+     */
+    public void removeSections(UUID player, String... keys) {
+        while (true) {
+            Profile profile = acquire(player);
+            synchronized (profile) {
+                if (profile.evicted) {
+                    continue;
+                }
+                for (String key : keys) {
+                    profile.typed.remove(key);
+                    profile.raw.remove(key);
+                }
+                profile.dirty = true;
+                return;
+            }
+        }
+    }
+
     /** Flags the profile as changed so the next save writes it. Cheap; no-op for a profile that is not loaded. */
     public void markDirty(UUID player) {
         Profile profile = cache.get(player);
