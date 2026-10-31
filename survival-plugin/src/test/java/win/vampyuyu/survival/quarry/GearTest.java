@@ -162,4 +162,16 @@ public class GearTest {
         }
         assertFalse("nothing else is handed out", quests.completed.contains("q001"));
     }
+
+    @Test
+    public void thePebbleRecipeIsTheOnlyOneThatMayTakeAQuarryItem() {
+        var pebbles = new org.bukkit.inventory.ShapelessRecipe(new org.bukkit.NamespacedKey(plugin, QuarryFeature.PEBBLE_RECIPE),
+            new ItemStack(org.bukkit.Material.COBBLESTONE));
+        var other = new org.bukkit.inventory.ShapelessRecipe(new org.bukkit.NamespacedKey(plugin, "something_else"),
+            new ItemStack(org.bukkit.Material.COBBLESTONE));
+        assertTrue(QuarryGuard.isPebbleRecipe(pebbles));
+        assertFalse(QuarryGuard.isPebbleRecipe(other));
+        assertFalse("a missing recipe lets the guard clear the result", QuarryGuard.isPebbleRecipe(null));
+        assertNotNull("the recipe is registered", Bukkit.getRecipe(new org.bukkit.NamespacedKey(plugin, QuarryFeature.PEBBLE_RECIPE)));
+    }
 }

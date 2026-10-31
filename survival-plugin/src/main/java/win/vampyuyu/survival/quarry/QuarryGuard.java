@@ -20,8 +20,16 @@ final class QuarryGuard implements Listener {
         return core.items().idOf(stack).isPresent();
     }
 
+    /** The pebble recipe is the one place a Quarry item may be an ingredient: 9 pebbles make a cobblestone. */
+    static boolean isPebbleRecipe(org.bukkit.inventory.Recipe recipe) {
+        return recipe instanceof org.bukkit.Keyed keyed && keyed.getKey().getKey().equals(QuarryFeature.PEBBLE_RECIPE);
+    }
+
     @EventHandler(priority = EventPriority.HIGH)
     public void onPrepare(PrepareItemCraftEvent event) {
+        if (isPebbleRecipe(event.getRecipe())) {
+            return;
+        }
         for (ItemStack ingredient : event.getInventory().getMatrix()) {
             if (ingredient != null && custom(ingredient)) {
                 event.getInventory().setResult(null);

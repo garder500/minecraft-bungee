@@ -1726,6 +1726,110 @@ def start_scenario(ctx):
             break
 
 
+def craft_scenario(ctx):
+    """Nine pebbles in a real crafting table make a cobblestone (the Quarry guard must let this recipe through)."""
+    import math
+    tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
+    xdo, rcon = tools["xdotool"], Rcon()
+
+    def as_bot(text):
+        return rcon.command("execute as E2EBot at E2EBot run " + text)
+
+    rcon.command("op E2EBot")
+    rcon.command("gamemode survival E2EBot")
+    rcon.command("gamerule spawn_mobs false")
+    rcon.command("kill @e[type=slime]")
+    subprocess.run([xdo, "key", "slash"], env=env)
+    time.sleep(.5)
+    subprocess.run([xdo, "type", "--delay", "35", "menu skyblock"], env=env)
+    subprocess.run([xdo, "key", "Return"], env=env)
+    for _ in range(150):
+        if "sb_world" in rcon.command("data get entity E2EBot Dimension"):
+            break
+        time.sleep(1)
+    else:
+        failures.append("never reached sb_world")
+        return
+    time.sleep(8)
+    pos = player_state(rcon)["pos"]
+    cx, y, cz = math.floor(pos[0]) + 6, math.floor(pos[1]), math.floor(pos[2])
+    as_bot(f"fill {cx-3} {y-1} {cz-3} {cx+6} {y-1} {cz+6} grass_block")
+    as_bot(f"fill {cx-3} {y} {cz-3} {cx+6} {y+3} {cz+6} air")
+    as_bot(f"setblock {cx} {y} {cz} crafting_table")
+    rcon.command("clear E2EBot")
+    rcon.command("sbgive pebble 9 E2EBot")
+    as_bot(f"tp @s {cx+0.5} {y} {cz+2.5} 180 35")
+    time.sleep(2)
+    subprocess.run([xdo, "click", "3"], env=env)
+    time.sleep(2)
+    shot(tools, shots / "cr-1-table.png")
+    # the 1280x720 screen: the pebbles in the first hotbar slot, the 3x3 grid, the result slot
+    grid = [(538 + 36 * c, 244 + 36 * r) for r in range(3) for c in range(3)]
+    subprocess.run([xdo, "mousemove", "495", "494"], env=env)
+    time.sleep(.3)
+    subprocess.run([xdo, "click", "1"], env=env)
+    time.sleep(.4)
+    for x, yy in grid:
+        subprocess.run([xdo, "mousemove", str(x), str(yy)], env=env)
+        time.sleep(.3)
+        subprocess.run([xdo, "click", "3"], env=env)
+        time.sleep(.4)
+    time.sleep(1)
+    shot(tools, shots / "cr-2-filled.png")
+    subprocess.run([xdo, "mousemove", "727", "280"], env=env)
+    time.sleep(.3)
+    subprocess.run([xdo, "keydown", "shift", "click", "1", "keyup", "shift"], env=env)
+    time.sleep(1)
+    shot(tools, shots / "cr-3-crafted.png")
+    subprocess.run([xdo, "key", "Escape"], env=env)
+    time.sleep(1)
+    inv = rcon.command("data get entity E2EBot Inventory")
+    say("craft: inventory after crafting: " + inv.strip()[:400])
+    if "cobblestone" not in inv:
+        failures.append("nine pebbles did not craft a cobblestone in a real crafting table")
+    # the Fountain: 4 cobblestone and 4 logs, then a Spring Stone: stone bricks around a water bucket
+    def fill(stacks_to_cells):
+        for hotbar_x, cells in stacks_to_cells:
+            subprocess.run([xdo, "mousemove", str(hotbar_x), "494"], env=env)
+            time.sleep(.3)
+            subprocess.run([xdo, "click", "1"], env=env)
+            time.sleep(.4)
+            for x, yy in cells:
+                subprocess.run([xdo, "mousemove", str(x), str(yy)], env=env)
+                time.sleep(.3)
+                subprocess.run([xdo, "click", "3"], env=env)
+                time.sleep(.4)
+            subprocess.run([xdo, "mousemove", str(hotbar_x), "494"], env=env)
+            subprocess.run([xdo, "click", "1"], env=env)  # put what is left back
+            time.sleep(.4)
+
+    def craft_and_check(name, items, stacks, expect):
+        rcon.command("clear E2EBot")
+        for item in items:
+            rcon.command("give E2EBot " + item)
+        as_bot(f"tp @s {cx+0.5} {y} {cz+2.5} 180 35")
+        time.sleep(1.5)
+        subprocess.run([xdo, "click", "3"], env=env)
+        time.sleep(2)
+        fill(stacks)
+        shot(tools, shots / f"cr-{name}-filled.png")
+        subprocess.run([xdo, "mousemove", "727", "280"], env=env)
+        time.sleep(.3)
+        subprocess.run([xdo, "keydown", "shift", "click", "1", "keyup", "shift"], env=env)
+        time.sleep(1)
+        subprocess.run([xdo, "key", "Escape"], env=env)
+        time.sleep(1)
+        have = rcon.command("data get entity E2EBot Inventory[{Slot:8b}].id")
+        say(f"craft: {name}: slot 8 holds " + have.strip()[:120])
+        if expect not in have:
+            failures.append(f"{name} was not crafted in a real crafting table")
+
+    craft_and_check("fountain", ["minecraft:cobblestone 4", "minecraft:oak_log 4"],
+                    [(495, grid[0:4]), (531, grid[4:8])], "smooth_stone")
+    craft_and_check("spring", ["minecraft:stone_bricks 8", "minecraft:water_bucket 1"],
+                    [(495, [g for i, g in enumerate(grid) if i != 4]), (531, [grid[4]])], "prismarine_bricks")
+
+
 def bosses_scenario(ctx):
     """One screenshot of every boss, spawned with the admin command in front of a creative bot."""
     import math
@@ -1790,7 +1894,7 @@ def bosses_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "start", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "start", "craft", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -1799,7 +1903,7 @@ def main():
     if args.scenario == "dev":
         return dev_server()
     global WITH_SURVIVAL
-    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "start")
+    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "start", "craft")
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
@@ -1822,7 +1926,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "start"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "start", "craft"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -1853,7 +1957,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "start"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "start", "craft"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -1900,6 +2004,8 @@ def main():
             swords_scenario(ctx)
         elif args.scenario == "start":
             start_scenario(ctx)
+        elif args.scenario == "craft":
+            craft_scenario(ctx)
         else:
             shader_scenario(ctx)
     finally:

@@ -105,11 +105,14 @@ public final class QuarryFeature implements Feature {
         core.register(MachineService.class, machines);
     }
 
+    /** Key of the recipe that turns nine pebbles into a cobblestone (QuarryGuard lets it through). */
+    static final String PEBBLE_RECIPE = "pebbles_to_cobble";
+
     private final java.util.List<NamespacedKey> startKeys = new java.util.ArrayList<>();
 
     /** Nine pebbles make a cobblestone; the Fountain is four cobblestone and four logs. */
     private void addStartRecipes() {
-        NamespacedKey pebbles = new NamespacedKey(core.getPlugin(), "pebbles_to_cobble");
+        NamespacedKey pebbles = new NamespacedKey(core.getPlugin(), PEBBLE_RECIPE);
         ShapelessRecipe toCobble = new ShapelessRecipe(pebbles, new org.bukkit.inventory.ItemStack(Material.COBBLESTONE));
         org.bukkit.inventory.ItemStack pebble = core.items().create(QuarryItems.PEBBLE);
         for (int i = 0; i < 9; i++) {
