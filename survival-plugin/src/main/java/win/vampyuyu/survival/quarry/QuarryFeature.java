@@ -35,7 +35,13 @@ public final class QuarryFeature implements Feature {
         QuarryService service = new QuarryService(core, config);
         ForgeGui gui = new ForgeGui(core, service);
         core.listen(new CobbleListener(core, service));
-        core.listen(new ForgeListener(core, service, gui));
+        ForgeListener forgeListener = new ForgeListener(core, service, gui);
+        core.listen(forgeListener);
+        core.scheduler().nextTick(() -> org.bukkit.Bukkit.getWorlds().forEach(w -> {
+            for (org.bukkit.Chunk chunk : w.getLoadedChunks()) {
+                forgeListener.convert(chunk);
+            }
+        }));
         core.listen(new WeaponListener(core));
         core.listen(new PebbleListener(core, service));
         core.listen(new OutputListener(core));
@@ -107,6 +113,8 @@ public final class QuarryFeature implements Feature {
 
     /** Key of the recipe that turns nine pebbles into a cobblestone (QuarryGuard lets it through). */
     static final String PEBBLE_RECIPE = "pebbles_to_cobble";
+    /** Names of every crafting-table recipe of the Quarry: custom materials may be ingredients of these and only these. */
+    static final java.util.Set<String> RECIPE_KEYS = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     private final java.util.List<NamespacedKey> startKeys = new java.util.ArrayList<>();
 
@@ -143,6 +151,26 @@ public final class QuarryFeature implements Feature {
         magmaRecipe.addIngredient(Material.COAL);
         Bukkit.addRecipe(magmaRecipe);
         startKeys.add(magma);
+        // compact bars: nine of an ore make one bar, one bar gives the nine back (the bars are not blocks, so they never
+        // become a vanilla block when placed)
+        for (String ore : new String[] {QuarryItems.BRONZITE, QuarryItems.FROSTIUM, QuarryItems.SUNSTONE}) {
+            String bar = ore + "_bar";
+            NamespacedKey pack = new NamespacedKey(core.getPlugin(), "pack_" + ore);
+            ShapelessRecipe packRecipe = new ShapelessRecipe(pack, core.items().create(bar));
+            for (int i = 0; i < 9; i++) {
+                packRecipe.addIngredient(new org.bukkit.inventory.RecipeChoice.ExactChoice(core.items().create(ore)));
+            }
+            Bukkit.addRecipe(packRecipe);
+            startKeys.add(pack);
+            NamespacedKey unpack = new NamespacedKey(core.getPlugin(), "unpack_" + ore);
+            org.bukkit.inventory.ItemStack nine = core.items().create(ore);
+            nine.setAmount(9);
+            ShapelessRecipe unpackRecipe = new ShapelessRecipe(unpack, nine);
+            unpackRecipe.addIngredient(new org.bukkit.inventory.RecipeChoice.ExactChoice(core.items().create(bar)));
+            Bukkit.addRecipe(unpackRecipe);
+            startKeys.add(unpack);
+        }
+        startKeys.forEach(key -> RECIPE_KEYS.add(key.getKey()));
     }
 
     private void addForgeRecipe(QuarryConfig config) {
@@ -166,6 +194,7 @@ public final class QuarryFeature implements Feature {
             recipe.addIngredient(entry.getValue(), material);
         }
         Bukkit.addRecipe(recipe);
+        RECIPE_KEYS.add(recipeKey.getKey());
     }
 
     @Override
@@ -178,6 +207,7 @@ public final class QuarryFeature implements Feature {
         }
         startKeys.forEach(Bukkit::removeRecipe);
         startKeys.clear();
+        RECIPE_KEYS.clear();
         if (recipeKey != null) {
             Bukkit.removeRecipe(recipeKey);
         }

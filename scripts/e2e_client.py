@@ -1688,6 +1688,23 @@ def start_scenario(ctx):
     say("start: inventory after the bucket click: " + bucket.strip()[:300])
     if "water_bucket" not in bucket:
         failures.append("a bucket was not filled from the Spring Stone")
+    # a machine is a barrier under a model: a survival player breaks it with one punch and gets the item back
+    is_barrier = as_bot(f"execute if block {cx+4} {y} {cz+6} minecraft:barrier")
+    say("start: the lone Spring Stone block is a barrier: " + is_barrier.strip())
+    if "passed" not in is_barrier:
+        failures.append("a placed Spring Stone is not a barrier under its model")
+    rcon.command("gamemode survival E2EBot")
+    stand(cx + 4.5, y, cz + 8.5, 180, 39)
+    subprocess.run([xdo, "mousedown", "1"], env=env)
+    time.sleep(2.5)
+    subprocess.run([xdo, "mouseup", "1"], env=env)
+    time.sleep(1)
+    gone = as_bot(f"execute if block {cx+4} {y} {cz+6} minecraft:air")
+    dropped_item = rcon.command('execute if entity @e[type=item,nbt={Item:{components:{"minecraft:item_model":"vampyuyu:machine/spring_stone"}}}]')
+    say(f"start: punched the Spring Stone: block gone {gone.strip()}, item dropped {dropped_item.strip()}")
+    shot(tools, shots / "st-punch.png")
+    if "passed" not in gone or "passed" not in dropped_item:
+        failures.append("one punch did not break the Spring Stone barrier and drop its item")
     # 4c. the Endless Bucket pours water and stays full; the Generator Plan prints the plans
     rcon.command("clear E2EBot")
     rcon.command("sbgive endless_bucket 1 E2EBot")
@@ -1806,7 +1823,10 @@ def craft_scenario(ctx):
     def craft_and_check(name, items, stacks, expect):
         rcon.command("clear E2EBot")
         for item in items:
-            rcon.command("give E2EBot " + item)
+            if item.startswith("sbgive:"):
+                rcon.command("sbgive " + item[7:] + " E2EBot")
+            else:
+                rcon.command("give E2EBot " + item)
         as_bot(f"tp @s {cx+0.5} {y} {cz+2.5} 180 35")
         time.sleep(1.5)
         subprocess.run([xdo, "click", "3"], env=env)
@@ -1824,10 +1844,23 @@ def craft_scenario(ctx):
         if expect not in have:
             failures.append(f"{name} was not crafted in a real crafting table")
 
+    craft_and_check("bronzite_bar", ["sbgive:bronzite 9"], [(495, grid)], "copper_ingot")
     craft_and_check("fountain", ["minecraft:cobblestone 4", "minecraft:oak_log 4"],
                     [(495, grid[0:4]), (531, grid[4:8])], "smooth_stone")
     craft_and_check("spring", ["minecraft:stone_bricks 8", "minecraft:water_bucket 1"],
                     [(495, [g for i, g in enumerate(grid) if i != 4]), (531, [grid[4]])], "prismarine_bricks")
+    # the recipe book lists the Quarry recipes without anyone unlocking them by hand
+    rcon.command("clear E2EBot")
+    as_bot(f"tp @s {cx+0.5} {y} {cz+2.5} 180 35")
+    time.sleep(1.5)
+    subprocess.run([xdo, "click", "3"], env=env)
+    time.sleep(2)
+    subprocess.run([xdo, "mousemove", "491", "280"], env=env)
+    time.sleep(.3)
+    subprocess.run([xdo, "click", "1"], env=env)
+    time.sleep(1.5)
+    shot(tools, shots / "cr-recipe-book.png")
+    subprocess.run([xdo, "key", "Escape"], env=env)
 
 
 def bosses_scenario(ctx):

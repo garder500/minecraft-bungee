@@ -38,7 +38,7 @@ final class ForgeListener implements Listener {
     }
 
     boolean isForge(Block block) {
-        return block.getType() == Material.BLAST_FURNACE && forges.has(block);
+        return (block.getType() == Material.BARRIER || block.getType() == Material.BLAST_FURNACE) && forges.has(block);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -52,10 +52,35 @@ final class ForgeListener implements Listener {
             return;
         }
         forges.add(event.getBlockPlaced());
+        event.getBlockPlaced().setType(Material.BARRIER, false); // an invisible hitbox under the 3D model
         org.bukkit.Bukkit.getPluginManager().callEvent(
             new win.vampyuyu.survival.api.event.QuarryProgressEvent(event.getPlayer(), "EVENT", "forge_placed", 1));
         BlockModels.show(event.getBlockPlaced(), core.items().create(QuarryItems.FORGE),
             BlockModels.facing(event.getPlayer().getLocation().getYaw()));
+    }
+
+    /** A Forge from an older version (a blast furnace) becomes the barrier + model setup when its chunk loads. */
+    @EventHandler
+    public void onChunk(org.bukkit.event.world.ChunkLoadEvent event) {
+        convert(event.getChunk());
+    }
+
+    void convert(org.bukkit.Chunk chunk) {
+        for (Block block : forges.blocks(chunk)) {
+            if (block.getType() == Material.BLAST_FURNACE) {
+                block.setType(Material.BARRIER, false);
+                core.scheduler().nextTick(() -> BlockModels.show(block, core.items().create(QuarryItems.FORGE), 180f));
+            } else if (block.getType() == Material.BARRIER && !BlockModels.has(block)) {
+                core.scheduler().nextTick(() -> BlockModels.show(block, core.items().create(QuarryItems.FORGE), 180f));
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onDamage(org.bukkit.event.block.BlockDamageEvent event) {
+        if (event.getBlock().getType() == Material.BARRIER && forges.has(event.getBlock())) {
+            event.setInstaBreak(true);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

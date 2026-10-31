@@ -41,6 +41,25 @@ def pebble(c):
     c.outline()
 
 
+def bar(c, color, light):
+    c.fill_shape(lambda x, y: 2 <= x <= 14 and 6 <= y <= 12 and x - 2 + (12 - y) * 0.0 >= 0, color)
+    c.rect(3, 7, 13, 7, b.shade(light, 1.0))
+    c.rect(2, 11, 14, 12, b.shade(color, 0.7))
+    c.outline()
+
+
+def bronzite_bar(c):
+    bar(c, BRONZE, GOLD)
+
+
+def frostium_bar(c):
+    bar(c, FROST, (0xFF, 0xFF, 0xFF))
+
+
+def sunstone_bar(c):
+    bar(c, (0xF2, 0xC1, 0x4E), (0xFF, 0xF3, 0xB0))
+
+
 def bronze_core(c):
     c.fill_shape(b.diamond(8, 8, 6.2, 6.2), BRONZE)
     c.fill_shape(b.diamond(8, 8, 3.4, 3.4), b.mix(BRONZE, GOLD, 0.6))
@@ -328,6 +347,9 @@ def solar_panel(c):
 
 ICONS = {
     "ore/pebble": pebble,
+    "ore/bronzite_bar": bronzite_bar,
+    "ore/frostium_bar": frostium_bar,
+    "ore/sunstone_bar": sunstone_bar,
     "ore/bronzite": bronzite,
     "ore/bronze_core": bronze_core,
     "forge/forge": forge,

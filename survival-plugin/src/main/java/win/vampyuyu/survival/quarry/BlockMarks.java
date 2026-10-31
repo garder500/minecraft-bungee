@@ -17,6 +17,18 @@ final class BlockMarks {
         return ((long) (block.getY() + 2048) << 8) | ((long) (block.getX() & 15) << 4) | (block.getZ() & 15);
     }
 
+    /** Every block marked in a chunk (the marks keep only the position, so the block type is up to the caller). */
+    java.util.List<Block> blocks(org.bukkit.Chunk chunk) {
+        long[] marks = chunk.getPersistentDataContainer().get(key, PersistentDataType.LONG_ARRAY);
+        java.util.List<Block> out = new java.util.ArrayList<>();
+        if (marks != null) {
+            for (long mark : marks) {
+                out.add(chunk.getBlock((int) ((mark >> 4) & 15), (int) ((mark >> 8) - 2048), (int) (mark & 15)));
+            }
+        }
+        return out;
+    }
+
     boolean has(Block block) {
         long[] marks = block.getChunk().getPersistentDataContainer().get(key, PersistentDataType.LONG_ARRAY);
         if (marks == null) {

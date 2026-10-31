@@ -78,6 +78,9 @@ final class ForgeGui {
         if (page + 1 < pages) {
             gui.set(53, Guis.icon(Material.ARROW, "<green>Next page", "<gray>Page " + (page + 2) + " of " + pages), click -> render(gui, player, page + 1));
         }
+        gui.set(4, Guis.icon(Material.BOOK, "<gold>How the Forge works",
+            "<gray>1. Click a recipe above to start it.", "<gray>2. It keeps running while you are away.",
+            "<gray>3. The finished item appears in the", "<gray>   bottom row: click it to take it."));
         var jobs = service.data(player.getUniqueId()).jobs;
         for (int i = 0; i < cfg.forgeSlots && i < 7; i++) {
             int at = 46 + i;
@@ -89,9 +92,17 @@ final class ForgeGui {
             ForgeRecipe recipe = cfg.recipes.get(job.recipe);
             String name = recipe == null ? job.recipe : core.items().def(recipe.result()).map(d -> d.name()).orElse(job.recipe);
             boolean done = job.finishAt <= now;
-            gui.set(at, Guis.icon(done ? Material.LIME_STAINED_GLASS_PANE : Material.ORANGE_STAINED_GLASS_PANE,
-                    "<white>" + name,
-                    done ? "<green>Ready: click to collect" : "<gray>Ready in " + Msg.duration(job.finishAt - now)),
+            // the item itself: a finished one is the thing to click, a running one shows how long is left
+            String itemId = recipe == null ? null : recipe.result();
+            ItemStack shown = itemId != null && core.items().def(itemId).isPresent()
+                ? icon(itemId, done
+                    ? List.of("<green><bold>READY</bold> <gray>- click to take it", "<gray>It goes to your inventory.")
+                    : List.of("<yellow>Forging...", "<gray>Ready in " + Msg.duration(job.finishAt - now)))
+                : Guis.icon(Material.BARRIER, "<white>" + name, "<gray>Unknown recipe");
+            if (done) {
+                shown.editMeta(meta -> meta.setEnchantmentGlintOverride(true));
+            }
+            gui.set(at, shown,
                 click -> {
                     for (String got : service.collect(player, System.currentTimeMillis(), id -> org.bukkit.Bukkit.getPluginManager()
                             .callEvent(new win.vampyuyu.survival.api.event.QuarryProgressEvent(player, "FORGE_ITEM", id, 1)))) {

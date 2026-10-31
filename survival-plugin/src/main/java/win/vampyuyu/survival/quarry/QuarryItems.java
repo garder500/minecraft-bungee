@@ -23,6 +23,7 @@ final class QuarryItems {
     static final String STARCORE = "starcore";
     static final String ENDLESS_BUCKET = "endless_bucket";
     static final String GENERATOR_PLAN = "generator_plan";
+    static final String BRONZITE_BAR = "bronzite_bar";
     static final String PEBBLE = "pebble";
     static final String FOUNTAIN = "fountain";
     static final String SPRING_STONE = "spring_stone";
@@ -155,6 +156,15 @@ final class QuarryItems {
                 .itemModel("vampyuyu:machine/miner_2").type("MACHINE").glint(true)
                 .lore("<gray>Breaks the generator cobble next to it", "<gray>and fills the chest next to it.",
                     "<gray>Uses <white>20 Flux/s<gray>, <white>1 block per second<gray>.").build(),
+            CustomItemDef.builder("bronzite_bar", "Bronzite Bar", Rarity.UNCOMMON, Material.COPPER_INGOT)
+                .itemModel("vampyuyu:ore/bronzite_bar").type("ORE")
+                .lore("<gray>Nine Bronzite pressed together.", "<gray>Craft it back to get the nine.").build(),
+            CustomItemDef.builder("frostium_bar", "Frostium Bar", Rarity.RARE, Material.PRISMARINE_SHARD)
+                .itemModel("vampyuyu:ore/frostium_bar").type("ORE")
+                .lore("<gray>Nine Frostium pressed together.", "<gray>Craft it back to get the nine.").build(),
+            CustomItemDef.builder("sunstone_bar", "Sunstone Bar", Rarity.EPIC, Material.GOLD_INGOT)
+                .itemModel("vampyuyu:ore/sunstone_bar").type("GEM")
+                .lore("<gray>Nine Sunstone pressed together.", "<gray>Craft it back to get the nine.").build(),
             CustomItemDef.builder(ENDLESS_BUCKET, "Endless Bucket", Rarity.EPIC, Material.WATER_BUCKET)
                 .type("TOOL").glint(true).pdc("untradable", 1L)
                 .lore("<gray>Pours water anywhere and is never", "<gray>emptied. Bound to you.").build(),

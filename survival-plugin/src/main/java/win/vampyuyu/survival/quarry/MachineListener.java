@@ -64,6 +64,9 @@ final class MachineListener implements Listener {
         data.island = island.id().toString();
         data.yaw = BlockModels.facing(player.getLocation().getYaw());
         machines.store().put(block.getWorld().getName(), MachineStore.pos(block), data);
+        if (type.get() != MachineType.CABLE) {
+            block.setType(type.get().block, false); // the vanilla block the item placed becomes an invisible hitbox
+        }
         fire(player, "machine_placed:" + type.get().itemId);
         fire(player, "machine_placed");
         core.getPlugin().getServer().getScheduler().runTask(core.getPlugin(),
@@ -87,6 +90,16 @@ final class MachineListener implements Listener {
         event.setDropItems(false);
         if (type != null) {
             block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0.5, 0.5), core.items().create(type.itemId));
+        }
+    }
+
+    /** A barrier cannot be broken in survival: a machine or Forge barrier breaks at the first punch instead. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onDamage(org.bukkit.event.block.BlockDamageEvent event) {
+        Block block = event.getBlock();
+        if (block.getType() == Material.BARRIER
+                && machines.store().get(block.getWorld().getName(), MachineStore.pos(block)) != null) {
+            event.setInstaBreak(true);
         }
     }
 

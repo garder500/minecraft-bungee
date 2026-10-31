@@ -59,6 +59,9 @@ final class MachineService {
                 MachineType type = entry.getValue().kind();
                 if (type == MachineType.CABLE && world.getBlockAt(p.x(), p.y(), p.z()).getType() == Material.LIGHTNING_ROD) {
                     migrateCable(world.getBlockAt(p.x(), p.y(), p.z())); // cables used to be lightning rods
+                } else if (type != null && type != MachineType.CABLE && type.legacy != type.block
+                        && world.getBlockAt(p.x(), p.y(), p.z()).getType() == type.legacy) {
+                    world.getBlockAt(p.x(), p.y(), p.z()).setType(type.block, false); // a vanilla block of an older version: now an invisible hitbox under the model
                 }
                 if (type == null || world.getBlockAt(p.x(), p.y(), p.z()).getType() != type.block) {
                     BlockModels.hide(world.getBlockAt(p.x(), p.y(), p.z()));
@@ -154,9 +157,9 @@ final class MachineService {
     /** What stands at (dx, dz) from the Fountain: a Spring Stone counts only when the machine store knows it. */
     private Material ringAt(Block fountain, int dx, int dz) {
         Block b = fountain.getRelative(dx, 0, dz);
-        if (b.getType() == GeneratorStructure.SPRING) {
+        if (b.getType() == Material.BARRIER || b.getType() == GeneratorStructure.SPRING) {
             MachineData d = store.get(b.getWorld().getName(), MachineStore.pos(b));
-            return d != null && d.kind() == MachineType.SPRING_STONE ? GeneratorStructure.SPRING : Material.AIR;
+            return d != null && d.kind() == MachineType.SPRING_STONE ? GeneratorStructure.SPRING : b.getType();
         }
         return b.getType();
     }

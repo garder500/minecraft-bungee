@@ -47,6 +47,16 @@ final class GearListener implements Listener {
         }
     }
 
+    /** Every Quarry recipe is in the recipe book from the first join: the book shows the pebbles, the Fountain, the bars. */
+    @EventHandler
+    public void onJoin(org.bukkit.event.player.PlayerJoinEvent event) {
+        java.util.List<org.bukkit.NamespacedKey> keys = new java.util.ArrayList<>();
+        for (String name : QuarryFeature.RECIPE_KEYS) {
+            keys.add(new org.bukkit.NamespacedKey(core.getPlugin(), name));
+        }
+        event.getPlayer().discoverRecipes(keys);
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBucket(PlayerBucketEmptyEvent event) {
         ItemStack held = event.getPlayer().getInventory().getItem(event.getHand());

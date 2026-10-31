@@ -169,9 +169,13 @@ public class GearTest {
             new ItemStack(org.bukkit.Material.COBBLESTONE));
         var other = new org.bukkit.inventory.ShapelessRecipe(new org.bukkit.NamespacedKey(plugin, "something_else"),
             new ItemStack(org.bukkit.Material.COBBLESTONE));
-        assertTrue(QuarryGuard.isPebbleRecipe(pebbles));
-        assertFalse(QuarryGuard.isPebbleRecipe(other));
-        assertFalse("a missing recipe lets the guard clear the result", QuarryGuard.isPebbleRecipe(null));
+        assertTrue(QuarryGuard.isQuarryRecipe(pebbles));
+        assertFalse(QuarryGuard.isQuarryRecipe(other));
+        assertFalse("a missing recipe lets the guard clear the result", QuarryGuard.isQuarryRecipe(null));
+        for (String name : List.of("pack_bronzite", "unpack_bronzite", "pack_frostium", "pack_sunstone", "fountain", "spring_stone", "magma_block", "forge_block")) {
+            assertTrue(name + " is a Quarry recipe", QuarryFeature.RECIPE_KEYS.contains(name));
+            assertNotNull(name + " is registered", Bukkit.getRecipe(new org.bukkit.NamespacedKey(plugin, name)));
+        }
         assertNotNull("the recipe is registered", Bukkit.getRecipe(new org.bukkit.NamespacedKey(plugin, QuarryFeature.PEBBLE_RECIPE)));
     }
 }
