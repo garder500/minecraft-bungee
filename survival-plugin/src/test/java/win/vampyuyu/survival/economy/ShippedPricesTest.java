@@ -53,7 +53,7 @@ public class ShippedPricesTest {
         assertEquals(List.of("farmer", "miner", "lumberjack", "fisherman", "mob_hunter", "alchemist", "adventurer",
             "weaponsmith", "builder", "rancher"), new ArrayList<>(catalog.shops().keySet()));
         for (var shop : catalog.shops().values()) {
-            assertTrue(shop.id() + " has items", shop.items().size() >= 15);
+            assertTrue(shop.id() + " has items", shop.items().size() >= 10);
             assertFalse(shop.name().isBlank());
         }
     }

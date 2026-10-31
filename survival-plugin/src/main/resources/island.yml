@@ -202,7 +202,7 @@ platforms:
     - END_ROD:4
     - COOKED_BEEF:8
   # Legacy field: End gates are no longer generated, regardless of this value.
-  end-gate-lit: false
+  end-gate-lit: true
 
 protection:
   # Trusted guests may open containers even when the island's visitor_chests setting is off.
@@ -250,7 +250,7 @@ respawn:
 portals:
   # 1:1 coordinates between sb_world and sb_nether. Skyblock End portals are always blocked.
   nether: true
-  end: false
+  end: true
   # /is nether shortcut (no portal needed, the platforms must be ready). Cooldown in seconds.
   shortcuts: true
   shortcut-cooldown-seconds: 10

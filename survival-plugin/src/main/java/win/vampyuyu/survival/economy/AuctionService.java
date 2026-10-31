@@ -314,6 +314,9 @@ final class AuctionService implements EconomyAudit.Contributor {
     }
 
     private String refuseOne(ItemStack stack) {
+        if (MarketRules.bound(stack)) {
+            return "That item is bound to you and cannot be sold.";
+        }
         if (settings.blocked().contains(stack.getType())) {
             return "That item cannot be auctioned.";
         }

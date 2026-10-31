@@ -139,6 +139,7 @@ rewards:
     - {item: "mc:DIAMOND", weight: 12, min: 1, max: 3, min-floor: 3, min-grade: B}
     - {item: dungeon_spirit_dust, weight: 12, min: 1, max: 3, min-floor: 4, min-grade: A}
     - {item: "mc:NETHERITE_SCRAP", weight: 6, min: 1, max: 2, min-floor: 5, min-grade: A}
+    - {item: skin_titan_edge, weight: 4, min: 1, max: 1, min-floor: 4, min-grade: S}
     - {item: dungeon_relic, weight: 3, min: 1, max: 1, min-floor: 5, min-grade: S}
     - {item: dungeon_dark_scroll, weight: 1, min: 1, max: 1, min-floor: 7, min-grade: S+}
 

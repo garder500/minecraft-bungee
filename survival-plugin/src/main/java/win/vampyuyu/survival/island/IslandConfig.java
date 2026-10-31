@@ -126,7 +126,7 @@ public final class IslandConfig {
         this.starterRepeat = items(c.getStringList("starter-chest.repeat-items"), log);
         this.netherChest = items(c.getStringList("platforms.nether-chest"), log);
         this.endChest = items(c.getStringList("platforms.end-chest"), log);
-        this.endGateLit = false;
+        this.endGateLit = c.getBoolean("platforms.end-gate-lit", true);
         this.trustedContainers = c.getBoolean("protection.trusted-containers", false);
         this.messageCooldownMs = Math.max(0, c.getLong("protection.message-cooldown-ms", 1500));
         for (IslandFlag flag : IslandFlag.values()) {
@@ -139,7 +139,7 @@ public final class IslandConfig {
         this.voidMessage = c.getString("void.message", "You fell into the void and were pulled back to safety.");
         this.respawnHome = !"HUB".equalsIgnoreCase(c.getString("respawn.mode", "HOME"));
         this.netherPortals = c.getBoolean("portals.nether", true);
-        this.endPortals = false; // Legacy configuration cannot restore the removed End.
+        this.endPortals = c.getBoolean("portals.end", true);
         this.shortcuts = c.getBoolean("portals.shortcuts", true);
         this.shortcutCooldownSeconds = Math.max(0, c.getInt("portals.shortcut-cooldown-seconds", 10));
         this.inviteExpirySeconds = Math.max(5, c.getInt("invites.expire-seconds", 120));

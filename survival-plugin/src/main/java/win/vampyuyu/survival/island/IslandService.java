@@ -384,11 +384,17 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         return Result.ok("Going to your island...");
     }
 
-    /** /is nether goes to the personal Nether platform. The End shortcut is retired. */
+    /** /is nether and /is end: straight to the platform of the player's own island, no portal needed. */
     public Result shortcut(Player player, boolean nether) {
         String where = nether ? "Nether" : "End";
-        if (!nether || !cfg.shortcuts || !cfg.netherPortals) {
+        if (!cfg.shortcuts || !(nether ? cfg.netherPortals : cfg.endPortals)) {
             return Result.fail("The " + where + " shortcut is disabled.");
+        }
+        if (!nether) {
+            var gate = core.service(win.vampyuyu.survival.api.EndAccessApi.class);
+            if (gate.isPresent() && !gate.get().canEnterEnd(player.getUniqueId())) {
+                return Result.fail(gate.get().endLockedMessage());
+            }
         }
         if (inDungeon(player)) {
             return Result.fail(DUNGEON_REFUSAL);
@@ -400,7 +406,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         if (island.state() != Island.State.READY) {
             return Result.fail("Your island is not ready yet.");
         }
-        if (!island.platformsReady) {
+        if (nether ? !island.platformsReady : !island.endReady) {
             return Result.fail("The " + where + " of your island is still being generated. Try again in a moment.");
         }
         Location to = nether ? spot(island, SkyblockWorlds.NETHER, IslandTemplates.NETHER_SPAWN, 180)
@@ -826,6 +832,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         }
         island.state(Island.State.BUILDING);
         island.platformsReady = false;
+        island.endReady = false;
         registry.changed();
         List<ItemSpec> chest = island.kitOwed ? template.chest() : cfg.starterRepeat;
         BlockPlan plan = IslandTemplates.overworld(template.id(), IslandTemplates.random(island.id, gen, 0), chest,
@@ -884,8 +891,9 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
             return;
         }
         World nether = world(SkyblockWorlds.NETHER);
-        if (nether == null) {
-            log.warning("Skyblock Nether missing: island " + island.id + " has no platform");
+        World end = world(SkyblockWorlds.END);
+        if (nether == null || end == null) {
+            log.warning("Nether/End worlds missing: island " + island.id + " has no platforms");
             return;
         }
         int ox = grid.centerOf(island.cellX);
@@ -893,32 +901,60 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         boolean loot = island.lootOwed;
         BlockPlan netherPlan = IslandTemplates.nether(IslandTemplates.random(island.id, gen, 1),
             loot ? cfg.netherChest : List.of());
+        BlockPlan endPlan = IslandTemplates.end(IslandTemplates.random(island.id, gen, 2), loot ? cfg.endChest : List.of());
         CompletableFuture<Boolean> a = runner.submit(lane(SkyblockWorlds.NETHER, island.cellX, island.cellZ),
             jobs.plan("island " + island.id + " nether", nether, netherPlan, ox, cfg.islandY, oz));
-        a.thenAccept(ok -> {
+        CompletableFuture<Boolean> b = runner.submit(lane(SkyblockWorlds.END, island.cellX, island.cellZ),
+            jobs.plan("island " + island.id + " end", end, endPlan, ox, cfg.islandY, oz));
+        a.thenCombine(b, (x, y) -> x && y).thenAccept(ok -> {
             if (!current(island, gen)) {
                 return;
             }
             if (ok) {
                 island.platformsReady = true;
+                island.endReady = true;
                 if (island.lootOwed) {
                     island.lootOwed = false;
                     editData(island.lootFor != null ? island.lootFor : island.owner, d -> d.lootClaimed = true);
                 }
                 registry.changed();
             } else if (attempt < cfg.buildRetries) {
-                log.warning("The Nether platform of island " + island.id + " failed (attempt " + (attempt + 1)
+                log.warning("The Nether/End platforms of island " + island.id + " failed (attempt " + (attempt + 1)
                     + "), retrying");
                 core.scheduler().later(retryDelay(attempt), () -> buildPlatforms(island, gen, attempt + 1));
             } else {
-                log.warning("The Nether platform of island " + island.id + " could not be generated; "
+                log.warning("The Nether/End platforms of island " + island.id + " could not be generated; "
                     + "/islandadmin platforms or a restart retries");
             }
         });
     }
 
+    /** Builds only the End platform (islands made before the End came back); the Nether platform is not touched. */
+    private void buildEndOnly(Island island, int gen, int attempt) {
+        World end = world(SkyblockWorlds.END);
+        if (end == null || !current(island, gen)) {
+            return;
+        }
+        BlockPlan plan = IslandTemplates.end(IslandTemplates.random(island.id, gen, 2), List.of());
+        runner.submit(lane(SkyblockWorlds.END, island.cellX, island.cellZ),
+            jobs.plan("island " + island.id + " end", end, plan, grid.centerOf(island.cellX), cfg.islandY,
+                grid.centerOf(island.cellZ))).thenAccept(ok -> {
+                if (!current(island, gen)) {
+                    return;
+                }
+                if (ok) {
+                    island.endReady = true;
+                    registry.changed();
+                } else if (attempt < cfg.buildRetries) {
+                    core.scheduler().later(retryDelay(attempt), () -> buildEndOnly(island, gen, attempt + 1));
+                } else {
+                    log.warning("The End platform of island " + island.id + " could not be generated");
+                }
+            });
+    }
+
     /**
-     * Admin / recovery: generates the Nether platform of a READY island again (wiping them first, the
+     * Admin / recovery: generates the Nether and End platforms of a READY island again (wiping them first, the
      * overworld stays untouched).
      */
     public Result rebuildPlatforms(Island island) {
@@ -930,12 +966,13 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         }
         int gen = ++island.generation;
         island.platformsReady = false;
+        island.endReady = false;
         registry.changed();
         evict(island, p -> {
             String at = p.getWorld().getName();
             return SkyblockWorlds.NETHER.equals(at) || SkyblockWorlds.END.equals(at);
-        }, "The Nether of this island is being rebuilt.");
-        wipeWithRetry(() -> wipeDims(island, SkyblockWorlds.NETHER), () -> current(island, gen), 0,
+        }, "The Nether and End of this island are being rebuilt.");
+        wipeWithRetry(() -> wipeDims(island, SkyblockWorlds.NETHER, SkyblockWorlds.END), () -> current(island, gen), 0,
             ok -> {
                 if (ok) {
                     buildPlatforms(island, gen, 0);
@@ -971,7 +1008,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
     }
 
     private CompletableFuture<Boolean> wipeAll(Island island) {
-        return wipeDims(island, SkyblockWorlds.WORLD, SkyblockWorlds.NETHER);
+        return wipeDims(island, SkyblockWorlds.WORLD, SkyblockWorlds.NETHER, SkyblockWorlds.END);
     }
 
     /**
@@ -1058,6 +1095,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         island.level = 0;
         island.levelAt = 0;
         island.platformsReady = false;
+        island.endReady = false;
         registry.changed();
         evict(island, p -> true, "The island is being reset.");
         notifyCoop(island, registry.nameOf(island.owner) + " reset the island. It will be ready in a moment.", id);
@@ -1090,6 +1128,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         int gen = ++island.generation;
         island.state(Island.State.RESETTING);
         island.platformsReady = false;
+        island.endReady = false;
         registry.changed();
         evict(island, p -> true, "The island is being rebuilt.");
         wipeWithRetry(() -> wipeAll(island), () -> current(island, gen), 0, ok -> {
@@ -1144,7 +1183,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         for (int[] cell : registry.dirtyCells()) {
             wipeWithRetry(() -> {
                 CompletableFuture<Boolean> all = CompletableFuture.completedFuture(true);
-                for (String name : List.of(SkyblockWorlds.WORLD, SkyblockWorlds.NETHER)) {
+                for (String name : List.of(SkyblockWorlds.WORLD, SkyblockWorlds.NETHER, SkyblockWorlds.END)) {
                     all = all.thenCombine(cellWipe(name, cell), (x, y) -> x && y);
                 }
                 return all;

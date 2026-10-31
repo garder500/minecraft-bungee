@@ -41,6 +41,8 @@ public final class Island {
     public long lastResetAt;
     /** True once the Nether and End platforms exist. */
     public boolean platformsReady;
+    /** The island's End platform exists (islands made before the End came back get it at the next start). */
+    public boolean endReady;
     public long visits;
     public Warp warp;
     /**

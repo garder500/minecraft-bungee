@@ -288,6 +288,7 @@ public final class DungeonConfig {
         new RewardEntry("mc:DIAMOND", 12, 1, 3, 3, Grade.B),
         new RewardEntry("dungeon_spirit_dust", 12, 1, 3, 4, Grade.A),
         new RewardEntry("mc:NETHERITE_SCRAP", 6, 1, 2, 5, Grade.A),
+        new RewardEntry("skin_titan_edge", 4, 1, 1, 4, Grade.S),
         new RewardEntry("dungeon_relic", 3, 1, 1, 5, Grade.S),
         new RewardEntry("dungeon_dark_scroll", 1, 1, 1, 7, Grade.S_PLUS));
 

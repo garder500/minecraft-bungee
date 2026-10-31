@@ -33,13 +33,15 @@ public final class LegacyFeatureFixture {
         worlds.ensure(SkyblockWorlds.HUB, World.Environment.NORMAL, Biome.PLAINS, 101);
         worlds.ensure(SkyblockWorlds.END, World.Environment.THE_END, Biome.THE_END, 65);
         new HubManager(core, (IslandService) core.require(IslandApi.class)).start();
-        FeatureManager features = new FeatureManager(plugin.getLogger(), id -> true, List.of(
+        // economy and boss are live features now: only load the retired ones the plugin did not start itself
+        var live = plugin.features().enabledIds();
+        FeatureManager features = new FeatureManager(plugin.getLogger(), id -> true, List.<win.vampyuyu.survival.core.Feature>of(
             new win.vampyuyu.survival.economy.EconomyFeature(),
             new win.vampyuyu.survival.items.ItemsFeature(),
             new win.vampyuyu.survival.skills.SkillsFeature(),
             new win.vampyuyu.survival.boss.BossFeature(),
             new win.vampyuyu.survival.minions.MinionsFeature(),
-            new win.vampyuyu.survival.dungeon.DungeonFeature()));
+            new win.vampyuyu.survival.dungeon.DungeonFeature()).stream().filter(f -> !live.contains(f.id())).toList());
         instances.put(plugin, features);
         features.enableAll(core);
         core.listen(new Listener() {

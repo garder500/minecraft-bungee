@@ -32,7 +32,7 @@ public class DungeonConfigTest {
         assertEquals(Grade.values().length, c.tiers.size());
         assertEquals(300, (int) c.thresholds.get(Grade.S_PLUS));
         assertEquals(0, (int) c.thresholds.get(Grade.D));
-        assertEquals(10, c.rewardItems.size());
+        assertEquals(11, c.rewardItems.size());
         assertEquals("the built-in reward table mirrors the file", DungeonConfig.DEFAULT_REWARDS, c.rewardItems);
         DungeonConfig defaults = DungeonConfig.parse(null);
         for (int f = 1; f <= 7; f++) {

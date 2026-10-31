@@ -384,9 +384,10 @@ public final class RunManager {
         if (!inDungeonWorld(p)) {
             return;
         }
-        World target = Bukkit.getWorld(SkyblockWorlds.HUB);
+        // Skyblock has no hub: the island world, never a Survival world (modes stay isolated)
+        World target = Bukkit.getWorld(SkyblockWorlds.WORLD);
         if (target == null) {
-            target = Bukkit.getWorlds().stream().filter(x -> !SkyblockWorlds.isDungeon(x.getName())).findFirst().orElse(null);
+            target = Bukkit.getWorld(SkyblockWorlds.HUB);
         }
         if (target != null) {
             ctx.teleport(p, target.getSpawnLocation());

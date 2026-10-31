@@ -148,3 +148,17 @@ the IO thread then waits for those writes (`awaitWrites`) and only afterwards wr
 
 * A per-player save in `PlayerProfiles` (`save(UUID)`) would let the markets flush only the players involved instead of every dirty profile
   on the main thread before each market write (`saveDirty` serialises all dirty profiles; cheap with few players, measurable with many).
+
+## Game loop rules (milestone 3, 2026-10-31)
+
+* The economy feature is live again (after `wings`, before `quarry`): coins, bank, merchants, Bazaar, Auction House.
+* **Skyblock only.** `EconomyGuard` cancels every economy command (`/bal /pay /bank /bz /ah /market /shop ...`, also the
+  namespaced forms) outside the Skyblock worlds. Coins never reach Survival.
+* **`/market`** (everyone) opens the merchants menu from anywhere in Skyblock: the "market admin" for everyday items
+  (prices in `economy.yml`, buy high / sell low).
+* **Ultra rare items are never bought or sold by a merchant or the Bazaar** (`MarketRules.neverTraded`: built-in list
+  of diamonds, netherite, nether stars, totems, elytra, beacons, plus `market.never-traded` in `economy.yml`;
+  a trailing `*` matches a prefix). Those entries are dropped when the shop tables and Bazaar categories load. Custom
+  items only trade when a shop table or Bazaar category lists them, so Quarry ores are Auction House only.
+* **Bound items trade nowhere.** The PDC long `vampyuyu:untradable` >= 1 (Wings, trophies, skins) makes `ItemKeys`
+  return no key and no clean stack, and `AuctionService` refuses it, also inside containers.

@@ -1,0 +1,319 @@
+# The Quarry: cobble draw, custom ores and the Forge. Every number is a proposal and can be changed freely.
+#
+# Cobble draw. A block of cobblestone formed by water meeting lava on an island (a "generator") is marked; breaking a
+# marked block rolls this table. Placed cobblestone is never marked, so it cannot be farmed.
+generator:
+  # Percent of blocks that are a geode: 3 to 6 of the first "geode: true" ore the generator tier can give.
+  geode-chance: 0.05
+  geode-min: 3
+  geode-max: 6
+  # Mining luck (from the held pickaxe) is capped here.
+  luck-cap: 300
+  # Number of generator tiers whose chance lists are given below. The Bronze Core unlocks tier II (Vein), the Ember
+  # Core tier III (Ember), the Void Lens tier IV (Void).
+  # Geodes of tier IV or higher also add one Starcore Shard now and then.
+  geode-bonus: {ore: starcore, percent: 5, from-tier: 4}
+  tiers: 4
+
+# Rarest first. chance: percent per block for tier I, II, III, IV (0 = not available). pity: blocks without this ore after
+# which the next block is guaranteed to give it (0 = none). item: a vanilla material or custom:<item id>.
+ores:
+  starcore:
+    item: custom:starcore
+    chance: [0, 0, 0, 0]
+  voidglass:
+    item: custom:voidglass
+    chance: [0, 0, 0, 0.04]
+    pity: 7500
+    geode: true
+  ancient_debris:
+    item: ANCIENT_DEBRIS
+    chance: [0, 0, 0.15, 0.2]
+    pity: 2000
+  sunstone:
+    item: custom:sunstone
+    chance: [0, 0, 0.25, 0.3]
+    pity: 1500
+    geode: true
+  diamond:
+    item: DIAMOND
+    chance: [0, 0.5, 0.6, 0.6]
+    pity: 600
+  frostium:
+    item: custom:frostium
+    chance: [0, 0.8, 1.0, 0.8]
+    pity: 400
+    geode: true
+  bronzite:
+    item: custom:bronzite
+    chance: [3.0, 3.0, 2.0, 1.0]
+    pity: 120
+    geode: true
+  gold_nugget:
+    item: GOLD_NUGGET
+    chance: [0, 3.0, 3.0, 2.0]
+  iron_nugget:
+    item: IRON_NUGGET
+    chance: [10.0, 10.0, 8.0, 6.0]
+  copper:
+    item: RAW_COPPER
+    chance: [7.0, 7.0, 6.0, 5.0]
+  coal:
+    item: COAL
+    chance: [6.0, 6.0, 5.0, 4.0]
+
+# The Forge: a placeable block that turns ores into equipment. Jobs keep running while the player is offline.
+forge:
+  # Shapeless recipe of the Forge block (a crafting grid has 9 slots).
+  recipe:
+    BLAST_FURNACE: 1
+    IRON_INGOT: 4
+    COAL: 4
+  # Jobs that can run at the same time.
+  slots: 3
+  recipes:
+    bronze_core:
+      result: bronze_core
+      seconds: 1200
+      cost:
+        custom:bronzite: 32
+        IRON_INGOT: 8
+    bronze_cleaver:
+      result: bronze_cleaver
+      seconds: 600
+      cost:
+        custom:bronzite: 12
+        IRON_SWORD: 1
+    bronze_pick:
+      result: bronze_pick
+      seconds: 600
+      cost:
+        custom:bronzite: 12
+        IRON_PICKAXE: 1
+    matriarch_egg:
+      result: matriarch_egg
+      seconds: 1800
+      cost:
+        custom:bronzite: 24
+        STRING: 16
+        SPIDER_EYE: 16
+    magma_core:
+      result: magma_core
+      seconds: 3600
+      cost:
+        custom:frostium: 12
+        MAGMA_BLOCK: 8
+        BLAZE_ROD: 4
+    frost_heart:
+      result: frost_heart
+      seconds: 3600
+      cost:
+        custom:frostium: 16
+        BLUE_ICE: 24
+    leviathan_scale:
+      result: leviathan_scale
+      seconds: 3600
+      cost:
+        custom:frostium: 12
+        PRISMARINE_SHARD: 16
+        PRISMARINE_CRYSTALS: 16
+    void_sigil:
+      result: void_sigil
+      seconds: 21600
+      cost:
+        custom:warden_heart: 1
+        custom:frost_shard: 1
+        custom:leviathan_tooth: 1
+        custom:voidglass: 6
+        custom:starcore: 1
+    solar_panel:
+      result: solar_panel
+      seconds: 600
+      cost:
+        custom:sunstone: 4
+        GLASS: 6
+        COPPER_INGOT: 3
+        REDSTONE: 2
+    skin_crystal_saber:
+      result: skin_crystal_saber
+      seconds: 1800
+      cost:
+        custom:sunstone: 12
+        DIAMOND: 6
+    void_lens:
+      result: void_lens
+      seconds: 10800
+      cost:
+        custom:sunstone: 8
+        custom:frostium: 8
+        DIAMOND: 4
+    ember_core:
+      result: ember_core
+      seconds: 7200
+      cost:
+        custom:frostium: 16
+        custom:bronzite: 16
+        GLOWSTONE_DUST: 16
+    rimeblade:
+      result: rimeblade
+      seconds: 3600
+      cost:
+        custom:frostium: 10
+        custom:bronze_cleaver: 1
+    rime_pick:
+      result: rime_pick
+      seconds: 3600
+      cost:
+        custom:frostium: 10
+        custom:bronze_pick: 1
+
+    cable:
+      result: cable
+      amount: 8
+      seconds: 30
+      cost:
+        COPPER_INGOT: 3
+    coal_generator:
+      result: coal_generator
+      seconds: 120
+      cost:
+        IRON_INGOT: 8
+        COPPER_INGOT: 4
+        FURNACE: 1
+    battery:
+      result: battery
+      seconds: 120
+      cost:
+        IRON_INGOT: 4
+        COPPER_INGOT: 6
+        REDSTONE: 4
+    miner_1:
+      result: miner_1
+      seconds: 300
+      cost:
+        IRON_INGOT: 6
+        COPPER_INGOT: 4
+        REDSTONE: 2
+        custom:bronzite: 4
+        IRON_PICKAXE: 1
+    miner_2:
+      result: miner_2
+      seconds: 900
+      cost:
+        custom:miner_1: 1
+        custom:frostium: 8
+        custom:bronzite: 8
+        REDSTONE: 4
+
+# Machines: blocks that touch each other share their Flux (the energy unit). Cables conduct, generators make Flux from
+# coal (right-click one holding coal), batteries store it, miners break the generator cobble next to them and put the
+# ore in a chest or barrel next to them. They only work while their chunk is loaded.
+machines:
+  max-per-island: 6
+  coal-generator:
+    output: 10
+    coal-seconds: 40
+  battery:
+    capacity: 10000
+  solar-panel:
+    output: 6
+  miner-1:
+    consume: 8
+    cycles-per-second: 0.5
+  miner-2:
+    consume: 20
+    cycles-per-second: 1
+
+# Tutorial quests of the Quarry. The quest feature appends them to its own tutorial line (see menu.yml for the format);
+# ORE_FOUND, FORGE_ITEM and GENERATOR_UPGRADE are fed by this feature.
+quests:
+  tutorial:
+    lucky_cobble:
+      name: "Lucky Cobble"
+      description: "Break cobblestone from a generator (water meeting lava) until an ore drops."
+      type: ORE_FOUND
+      amount: 1
+      icon: COBBLESTONE
+      requires: [craft_pickaxe]
+      rewards: {coins: 50}
+    nugget_stash:
+      name: "Nugget Stash"
+      description: "Collect 36 iron nuggets from your generator. Nine nuggets make an iron ingot."
+      type: ORE_FOUND
+      target: iron_nugget
+      amount: 36
+      icon: IRON_NUGGET
+      requires: [lucky_cobble]
+      rewards: {coins: 100}
+    build_forge:
+      name: "Forge Ahead"
+      description: "Craft a Forge: a blast furnace, 4 iron ingots and 4 coal."
+      type: CRAFT_ITEM
+      target: custom:forge
+      amount: 1
+      icon: BLAST_FURNACE
+      requires: [nugget_stash]
+      rewards: {coins: 150}
+    find_bronzite:
+      name: "Bronze Age"
+      description: "Find 12 Bronzite in your generator."
+      type: ORE_FOUND
+      target: bronzite
+      amount: 12
+      icon: RAW_COPPER
+      requires: [build_forge]
+      rewards: {coins: 200}
+    forge_cleaver:
+      name: "First Blade"
+      description: "Forge a Bronze Cleaver. Place the Forge, right-click it, pick the recipe."
+      type: FORGE_ITEM
+      target: bronze_cleaver
+      amount: 1
+      icon: IRON_SWORD
+      requires: [find_bronzite]
+      rewards: {coins: 150, items: {skin_kitsune: 1}}
+    forge_core:
+      name: "A Better Generator"
+      description: "Forge a Bronze Core (32 Bronzite and 8 iron ingots)."
+      type: FORGE_ITEM
+      target: bronze_core
+      amount: 1
+      icon: AMETHYST_SHARD
+      requires: [find_bronzite]
+      rewards: {coins: 250}
+    upgrade_vein:
+      name: "Into the Vein"
+      description: "Right-click the Bronze Core on your island to reach generator tier II."
+      type: GENERATOR_UPGRADE
+      target: "2"
+      amount: 1
+      icon: GOLD_NUGGET
+      requires: [forge_core]
+      rewards: {coins: 300}
+    find_frostium:
+      name: "Cold Find"
+      description: "Find 10 Frostium. Tier II generators can drop it."
+      type: ORE_FOUND
+      target: frostium
+      amount: 10
+      icon: PRISMARINE_CRYSTALS
+      requires: [upgrade_vein]
+      rewards: {coins: 400}
+    forge_rimeblade:
+      name: "Cold Steel"
+      description: "Forge a Rimeblade from a Bronze Cleaver and 10 Frostium."
+      type: FORGE_ITEM
+      target: rimeblade
+      amount: 1
+      icon: DIAMOND_SWORD
+      requires: [find_frostium, forge_cleaver]
+      rewards: {coins: 500}
+    forge_ember:
+      name: "Kindling"
+      description: "Forge an Ember Core and use it on your island for generator tier III."
+      type: GENERATOR_UPGRADE
+      target: "3"
+      amount: 1
+      icon: FIRE_CHARGE
+      requires: [find_frostium]
+      rewards: {coins: 600}

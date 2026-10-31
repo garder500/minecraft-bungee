@@ -50,7 +50,7 @@ public class ReviewFixesTest {
         try {
             java.lang.reflect.Field field = win.vampyuyu.survival.core.FeatureManager.class.getDeclaredField("running");
             field.setAccessible(true);
-            for (Object feature : (List<?>) field.get(win.vampyuyu.survival.LegacyFeatureFixture.features(plugin))) {
+            for (Object feature : (List<?>) field.get(plugin.features())) {
                 if (feature instanceof BossFeature boss) {
                     return boss;
                 }

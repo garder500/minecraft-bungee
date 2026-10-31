@@ -55,7 +55,7 @@ public final class IslandPortals implements Listener {
             say(player, service.enterDenyReason(player, cell));
             return;
         }
-        if (!route.home() && !cell.platformsReady) {
+        if (!route.home() && !(SkyblockWorlds.END.equals(route.world()) ? cell.endReady : cell.platformsReady)) {
             event.setCancelled(true);
             say(player, "The other side of this portal is still being generated. Try again in a moment.");
             return;

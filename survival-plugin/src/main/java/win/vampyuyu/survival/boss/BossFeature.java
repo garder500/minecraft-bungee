@@ -25,6 +25,7 @@ public final class BossFeature implements Feature {
     private SlayerManager slayer;
     private WorldBossManager worldBoss;
     private SummonListener summon;
+    private BossSkinService skins;
 
     @Override
     public String id() {
@@ -48,6 +49,9 @@ public final class BossFeature implements Feature {
             slayer = new SlayerManager(core, manager);
             core.listen(slayer);
             SlayerGui gui = new SlayerGui(core, slayer);
+            skins = new BossSkinService(core, manager);
+            skins.start();
+            core.listen(new HiddenBossMelee(manager));
             worldBoss = new WorldBossManager(core, manager);
             worldBoss.start();
             registerPermissions();
@@ -116,6 +120,10 @@ public final class BossFeature implements Feature {
 
     @Override
     public void disable() {
+        if (skins != null) {
+            skins.stop();
+            skins = null;
+        }
         if (worldBoss != null) {
             worldBoss.stop();
         }

@@ -90,7 +90,7 @@ public class ShippedConfigTest {
     @Test
     public void worldBossPoolIsValid() throws Exception {
         BossConfig config = shipped();
-        assertTrue(config.worldBoss().enabled());
+        assertFalse("world bosses are off: their plaza was in the retired hub", config.worldBoss().enabled());
         assertFalse(config.worldBoss().locations().isEmpty());
         for (var entry : config.worldBoss().pool()) {
             assertEquals(BossDefinition.Kind.WORLD, config.bosses().get(entry.boss()).kind());
@@ -101,6 +101,7 @@ public class ShippedConfigTest {
     public void everyReferencedCustomItemIsRegistered() throws Exception {
         BossConfig config = shipped();
         Set<String> known = new java.util.HashSet<>(BossItems.tableIds());
+        known.addAll(List.of("skin_flame_brand", "skin_frost_fang", "skin_wyrmfang")); // registered by the quarry feature
         List<String> missing = new ArrayList<>();
         List<BossDefinition> all = new ArrayList<>(config.bosses().values());
         config.slayers().values().forEach(s -> s.tiers().forEach(t -> all.add(t.boss())));
@@ -128,13 +129,25 @@ public class ShippedConfigTest {
     }
 
     @Test
+    public void everyBossSkinBelongsToARealBoss() throws Exception {
+        BossConfig config = shipped();
+        for (var entry : BossSkinService.LOOKS.entrySet()) {
+            assertTrue(entry.getKey(), config.bosses().containsKey(entry.getKey()));
+            assertTrue(entry.getValue().model().startsWith("vampyuyu:boss/skin/"));
+            assertTrue(entry.getValue().scale() > 0);
+        }
+        assertEquals("every Skyblock boss has a custom look", 6, BossSkinService.LOOKS.size());
+        assertTrue("the dragon ignores invisibility, so it is hidden", BossSkinService.LOOKS.get("voidwyrm").hide());
+    }
+
+    @Test
     public void everySummonItemHasABossAndADrop() throws Exception {
         BossConfig config = shipped();
         for (String item : List.of("void_sigil", "magma_core", "frost_heart", "matriarch_egg", "leviathan_scale")) {
             assertTrue(item, config.bosses().values().stream()
                 .anyMatch(d -> d.summon() != null && d.summon().item().equals(item)));
-            assertTrue(item, config.mobDrops().stream().anyMatch(d -> d.item().equals(item)));
         }
+        assertTrue("summon items are forged, they do not drop from vanilla mobs", config.mobDrops().isEmpty());
         assertTrue("recipes ship disabled (a wither farm would make the payouts an endless faucet)",
             config.recipes().isEmpty());
     }

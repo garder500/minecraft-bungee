@@ -28,6 +28,7 @@ import org.bukkit.inventory.ItemStack;
 import win.vampyuyu.survival.api.event.BossKillEvent;
 import win.vampyuyu.survival.api.event.CoinsChangeEvent;
 import win.vampyuyu.survival.api.event.IslandEnterEvent;
+import win.vampyuyu.survival.api.event.QuarryProgressEvent;
 import win.vampyuyu.survival.api.event.SkillLevelUpEvent;
 import win.vampyuyu.survival.core.Cooldowns;
 
@@ -47,6 +48,19 @@ final class QuestListener implements Listener {
     private boolean counts(Player player) {
         return rt.config().questsEnabled && player.getGameMode() != GameMode.CREATIVE
             && player.getGameMode() != GameMode.SPECTATOR && MenuRuntime.inSkyblock(player.getWorld());
+    }
+
+    // ---------------------------------------------------------------- the Quarry
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onQuarry(QuarryProgressEvent event) {
+        QuestType type;
+        try {
+            type = QuestType.valueOf(event.getKind());
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        quests.record(event.getPlayer(), type, event.getSubject(), event.getAmount());
     }
 
     // ---------------------------------------------------------------- blocks

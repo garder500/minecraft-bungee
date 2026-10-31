@@ -100,13 +100,13 @@ public class SimpleSkyblockTest {
         assertTrue(plugin.core().modes().enterSurvival(player));
         assertTrue(player.getInventory().contains(Material.DIAMOND));
     }
-    @Test public void onlyTwoSkyblockWorldsAndNoProgressionFeatures() {
+    @Test public void skyblockHasOverworldNetherEndAndDungeonsButNoHub() {
         assertNull(server.getWorld(SkyblockWorlds.HUB));
-        assertNull(server.getWorld(SkyblockWorlds.END));
+        assertNotNull(server.getWorld(SkyblockWorlds.END));
         assertNotNull(server.getWorld(SkyblockWorlds.NETHER));
-        assertEquals(java.util.List.of("utility","island","wings","menu"),plugin.features().enabledIds());
+        assertEquals(java.util.List.of("utility","island","wings","economy","quarry","boss","dungeon","menu"),plugin.features().enabledIds());
         assertNotNull(server.getCommandMap().getCommand("sbmenu"));
-        assertNull(server.getCommandMap().getCommand("dungeon"));
+        assertNotNull(server.getCommandMap().getCommand("dungeon"));
     }
     @Test public void bedPointsNeverOverwriteEachOtherAndSurviveReloadingProfiles() throws Exception {
         Location sb = bed(sky,islands.grid().centerOf(personal.cellX));
@@ -188,8 +188,8 @@ public class SimpleSkyblockTest {
         assertTrue(islands.teleportHome(guest));
         assertEquals(theirs.id,islands.islandAtLocation(guest.getLocation()).id);
     }
-    @Test public void legacyConfigCannotEnableEndAndTemplatesContainNoEndPortal() {
-        assertNull(PortalMapper.route(SkyblockWorlds.WORLD,PlayerTeleportEvent.TeleportCause.END_PORTAL,true,true));
+    @Test public void noTemplateHasAnEndGateAndTheEndPortalRoutesToTheIslandEnd() {
+        assertEquals(SkyblockWorlds.END,PortalMapper.route(SkyblockWorlds.WORLD,PlayerTeleportEvent.TeleportCause.END_PORTAL,true,true).world());
         for(var template:islands.config().enabledTemplates()) {
             BlockPlan plan=IslandTemplates.overworld(template.id(),new java.util.Random(1),java.util.List.of(),"",true);
             assertEquals(0,plan.count(Material.END_PORTAL));
