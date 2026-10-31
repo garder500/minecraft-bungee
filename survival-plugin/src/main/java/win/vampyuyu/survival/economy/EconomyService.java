@@ -182,8 +182,17 @@ public final class EconomyService implements EconomyApi {
         });
     }
 
-    /** Admin reset: purse, bank, tier and interest clock back to nothing. */
+    private volatile java.util.function.Consumer<UUID> resetHook = id -> { };
+
+    /** Called by an admin reset after the purse is emptied (the markets drop the player's orders). */
+    void onReset(java.util.function.Consumer<UUID> hook) {
+        this.resetHook = hook;
+    }
+
+    /** Admin reset: purse, bank, tier and interest clock back to nothing, and their auctions and orders gone. */
+    @Override
     public void reset(UUID player) {
+        resetHook.accept(player);
         update(player, (d, txs) -> {
             if (d.cents > 0) {
                 applyDebit(d, player, d.cents, "admin:reset", txs);

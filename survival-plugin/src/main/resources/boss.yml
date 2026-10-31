@@ -467,106 +467,10 @@ bosses:
         - { item: "custom:necro_scepter", chance: 0.04, min: 1, max: 1, min-share: 0.10, max-rank: 5, pity: 0.002, pity-cap: 0.04 }
         - { item: "vanilla:BONE", chance: 1.0, min: 16, max: 48, magic-find: false }
 
-  # ----------------------------------------------------------------------------------------------------------
-  # World bosses (scheduled events). They are listed here so the event pool can reference them.
-  ancient_colossus:
-    kind: world
-    name: "<gradient:#b0b0b0:#ffd27f><bold>Ancient Colossus</bold></gradient>"
-    description: "A giant of iron that wakes every few hours. Everyone who fights shares the spoils."
-    entity: IRON_GOLEM
-    health: 1200000
-    damage: 14
-    scale: 3.5
-    speed: 0.9
-    knockback-resistance: 1.0
-    bar: { color: YELLOW, overlay: NOTCHED_12 }
-    arena:
-      radius: 50
-      leash: 70
-      projectile-range: 58
-      min-players: 1
-      scale-per-player: 0.2
-      scale-cap: 6.0
-      enrage-seconds: 780
-      idle-despawn-seconds: 120
-      time-limit-seconds: 900
-      max-minions: 8
-    options: { contact-radius: 5.5 }
-    phases:
-      - name: "Awakened"
-        at: 1.0
-        abilities:
-          - { type: ground_slam, cooldown: 10, telegraph: 1.5, damage: 1.8, radius: 20, speed: 1.0 }
-          - { type: charge_dash, cooldown: 14, telegraph: 1.5, damage: 2.0, distance: 22, speed: 1.4 }
-      - name: "Overloaded"
-        at: 0.50
-        title: "<gold><bold>THE COLOSSUS OVERLOADS"
-        subtitle: "<gray>Sparks are flying!"
-        damage: 1.3
-        speed: 1.15
-        abilities:
-          - { type: ground_slam, cooldown: 8, telegraph: 1.2, damage: 2.0, radius: 24, speed: 1.2 }
-          - { type: lightning_strikes, cooldown: 12, telegraph: 1.3, damage: 1.6, target: all, count: 6 }
-          - { type: laser_beam, cooldown: 15, telegraph: 1.5, damage: 1.2, length: 40, duration: 4, target: top }
-    loot:
-      coins: 500000
-      combat-xp: 50000
-      rank-bonus: [1.5, 1.25, 1.1]
-      drops:
-        - { item: "custom:colossus_core", chance: 0.12, min: 1, max: 1, min-share: 0.05, pity: 0.01, pity-cap: 0.2 }
-        - { item: "vanilla:IRON_BLOCK", chance: 1.0, min: 4, max: 12, magic-find: false }
-
-  storm_roc:
-    kind: world
-    name: "<gradient:#7fdcff:#fff27f><bold>Storm Roc</bold></gradient>"
-    description: "A thunderbird that dives from the clouds. Everyone who fights shares the spoils."
-    entity: PHANTOM
-    health: 900000
-    damage: 12
-    scale: 5.0
-    speed: 1.1
-    knockback-resistance: 1.0
-    bar: { color: BLUE, overlay: NOTCHED_10 }
-    arena:
-      radius: 55
-      leash: 80
-      projectile-range: 64
-      min-players: 1
-      scale-per-player: 0.2
-      scale-cap: 6.0
-      enrage-seconds: 780
-      idle-despawn-seconds: 120
-      time-limit-seconds: 900
-      max-minions: 6
-    options: { contact-radius: 6 }
-    phases:
-      - name: "Gathering Storm"
-        at: 1.0
-        abilities:
-          - { type: dive_bomb, cooldown: 14, telegraph: 1.8, damage: 2.0, target: random, flat: false }
-          - { type: lightning_strikes, cooldown: 12, telegraph: 1.5, damage: 1.3, target: random, count: 4 }
-      - name: "Eye of the Storm"
-        at: 0.50
-        title: "<aqua><bold>THE STORM BREAKS"
-        subtitle: "<gray>Lightning everywhere!"
-        damage: 1.3
-        speed: 1.2
-        abilities:
-          - { type: dive_bomb, cooldown: 10, telegraph: 1.4, damage: 2.2, target: top, flat: false }
-          - { type: lightning_strikes, cooldown: 8, telegraph: 1.2, damage: 1.6, target: all, count: 7 }
-          - { type: vacuum, cooldown: 18, telegraph: 1.5, damage: 1.5, radius: 24, duration: 3 }
-    loot:
-      coins: 450000
-      combat-xp: 45000
-      rank-bonus: [1.5, 1.25, 1.1]
-      drops:
-        - { item: "custom:roc_feather", chance: 0.12, min: 1, max: 1, min-share: 0.05, pity: 0.01, pity-cap: 0.2 }
-        - { item: "vanilla:FEATHER", chance: 1.0, min: 16, max: 48, magic-find: false }
-
 # ------------------------------------------------------------------------------------------------------------
 # World boss events. The event picks a boss from the pool and a spot, warns everyone, spawns it, ranks the damagers.
 world-bosses:
-  enabled: false                  # the plaza spots are in sb_hub, which the Skyblock no longer has
+  enabled: false                  # parked: the world boss events do not work (and the plaza spots are in sb_hub, which is gone)
   interval-minutes: 120           # server uptime between two events
   first-spawn-delay-minutes: 30   # delay before the first event after a fresh install
   min-players: 1                  # players online in Skyblock worlds needed to start an event
@@ -581,9 +485,7 @@ world-bosses:
   locations:
     - { world: sb_hub, x: 0, y: -999, z: -14, name: "Hub Plaza" }
     - { world: sb_hub, x: 12, y: -999, z: -14, name: "Plaza Rim" }
-  pool:
-    - { boss: ancient_colossus, weight: 1.0 }
-    - { boss: storm_roc, weight: 1.0 }
+  pool: []                        # parked: no world boss until the events work
 
 # ------------------------------------------------------------------------------------------------------------
 # Slayers: kill the matching mobs to fill the quest, pay coins, fight a personal boss (only its owner can hurt it).

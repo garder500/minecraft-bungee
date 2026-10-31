@@ -105,6 +105,27 @@ public final class Items {
             }
             meta.setEquippable(equippable);
         }
+        Long extraArmor = def.pdcLongs().get("extra_armor");
+        Long extraToughness = def.pdcLongs().get("extra_toughness");
+        if (def.equippable() != null && ((extraArmor != null && extraArmor > 0) || (extraToughness != null && extraToughness > 0))) {
+            try {
+            // an attribute list replaces the base material's, so keep its values and add the bonus on top
+            org.bukkit.inventory.EquipmentSlotGroup group = def.equippable().slot().getGroup();
+            com.google.common.collect.Multimap<org.bukkit.attribute.Attribute, org.bukkit.attribute.AttributeModifier> all =
+                com.google.common.collect.HashMultimap.create(def.material().getDefaultAttributeModifiers(def.equippable().slot()));
+            if (extraArmor != null && extraArmor > 0) {
+                all.put(org.bukkit.attribute.Attribute.ARMOR, new org.bukkit.attribute.AttributeModifier(
+                    key("bonus_armor_" + def.id()), extraArmor, org.bukkit.attribute.AttributeModifier.Operation.ADD_NUMBER, group));
+            }
+            if (extraToughness != null && extraToughness > 0) {
+                all.put(org.bukkit.attribute.Attribute.ARMOR_TOUGHNESS, new org.bukkit.attribute.AttributeModifier(
+                    key("bonus_toughness_" + def.id()), extraToughness, org.bukkit.attribute.AttributeModifier.Operation.ADD_NUMBER, group));
+            }
+            meta.setAttributeModifiers(all);
+            } catch (RuntimeException e) {
+                // a test server that cannot read default attributes: the item keeps its base values
+            }
+        }
         meta.itemName(ItemRenderer.name(def));
         meta.lore(ItemRenderer.lore(def, Map.of()));
         stack.setItemMeta(meta);

@@ -1495,6 +1495,235 @@ def swords_scenario(ctx):
     subprocess.run([xdo, "key", "F5", "F5"], env=env)  # third person, from the front: the sword in the model's hand
     time.sleep(2)
     shot(tools, shots / "sw-10-third-person.png")
+    # starcore armor is tougher than void armor (both are netherite underneath)
+    rcon.command("clear E2EBot")
+    armor_values = {}
+    for tier in ("void", "starcore"):
+        rcon.command(f"sbgive {tier}_chestplate 1 E2EBot")
+        total, listed = 0.0, []
+        for idx in range(6):
+            data = rcon.command(f'data get entity E2EBot Inventory[0].components."minecraft:attribute_modifiers"[{idx}]')
+            if "Found no elements" in data:
+                break
+            m = re.search(r'type: "minecraft:(armor|armor_toughness)", amount: ([0-9.]+)', data)
+            if m:
+                listed.append(f"{m.group(1)}={m.group(2)}")
+                if m.group(1) == "armor":
+                    total += float(m.group(2))
+        # a piece without its own list wears the base material's: 8 armor for a netherite chestplate
+        armor_values[tier] = total if listed else 8.0
+        say(f"armor: {tier}_chestplate -> {armor_values[tier]} ({listed or 'base material'})")
+        rcon.command("clear E2EBot")
+    if not armor_values["starcore"] > armor_values["void"]:
+        ctx["failures"].append(f"starcore armor is not tougher than void armor: {armor_values}")
+    # the five armor tiers worn, seen from the front in third person
+    rcon.command("clear E2EBot")
+    for tier in ("bronze", "rime", "ember", "void", "starcore"):
+        for i, slot in enumerate(("helmet", "chestplate", "leggings", "boots")):
+            rcon.command(f"sbgive {tier}_{slot} 1 E2EBot")
+        for source, target in ((0, "head"), (1, "chest"), (2, "legs"), (3, "feet")):
+            rcon.command(f"item replace entity E2EBot armor.{target} from entity E2EBot container.{source}")
+        rcon.command("clear E2EBot minecraft:chainmail_helmet")
+        time.sleep(2)
+        shot(tools, shots / f"ar-{tier}.png")
+        rcon.command("item replace entity E2EBot armor.head with minecraft:air")
+        rcon.command("item replace entity E2EBot armor.chest with minecraft:air")
+        rcon.command("item replace entity E2EBot armor.legs with minecraft:air")
+        rcon.command("item replace entity E2EBot armor.feet with minecraft:air")
+        rcon.command("clear E2EBot")
+
+
+def start_scenario(ctx):
+    """The start of the game with a real client: pebbles from the ground, the Fountain, a stone ring that makes it a
+    generator, a Spring Stone, cables on redstone, and the quest menus."""
+    import math
+    tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
+    xdo, rcon = tools["xdotool"], Rcon()
+
+    def command(text, wait=3):
+        subprocess.run([xdo, "key", "slash"], env=env)
+        time.sleep(.5)
+        subprocess.run([xdo, "type", "--delay", "35", text], env=env)
+        subprocess.run([xdo, "key", "Return"], env=env)
+        time.sleep(wait)
+
+    def as_bot(text):
+        return rcon.command("execute as E2EBot at E2EBot run " + text)
+
+    def stand(x, y, z, yaw, pitch):
+        as_bot(f"tp @s {x} {y} {z} {yaw} {pitch}")
+        time.sleep(1.5)
+
+    def use(slot, x, y, z, yaw, pitch):
+        subprocess.run([xdo, "key", str(slot)], env=env)
+        time.sleep(.5)
+        stand(x, y, z, yaw, pitch)
+        subprocess.run([xdo, "click", "3"], env=env)
+        time.sleep(1.5)
+
+    rcon.command("op E2EBot")
+    rcon.command("gamemode survival E2EBot")
+    rcon.command("gamerule spawn_mobs false")
+    rcon.command("kill @e[type=slime]")
+    command("menu skyblock")
+    for _ in range(150):
+        if "sb_world" in rcon.command("data get entity E2EBot Dimension"):
+            break
+        time.sleep(1)
+    else:
+        failures.append("never reached sb_world")
+        return
+    time.sleep(8)
+    pos = player_state(rcon)["pos"]
+    cx, y, cz = math.floor(pos[0]) + 6, math.floor(pos[1]), math.floor(pos[2])
+    as_bot(f"fill {cx-3} {y-1} {cz-3} {cx+8} {y-1} {cz+9} grass_block")
+    as_bot(f"fill {cx-3} {y} {cz-3} {cx+8} {y+4} {cz+9} air")
+    rcon.command("clear E2EBot")
+    # 1. pebbles: right-click the ground with an empty hand
+    stand(cx + 1.5, y, cz + 4.5, 180, 40)
+    for _ in range(6):
+        subprocess.run([xdo, "click", "3"], env=env)
+        time.sleep(0.8)
+    shot(tools, shots / "st-1-pebbles.png")
+    inv = rcon.command("data get entity E2EBot Inventory")
+    say("start: inventory after the clicks: " + inv.strip()[:200])
+    if "count: 6" not in inv and "count: 5" not in inv:
+        failures.append("right-clicking the ground gave no pebble")
+    # 2. craft cobblestone and the Fountain are checked by the unit tests; give the items for the build
+    rcon.command("clear E2EBot")
+    for item in ("fountain 1", "spring_stone 2", "cable 3"):
+        rcon.command("sbgive " + item + " E2EBot")
+    # the ring of stone bricks around the Fountain at (cx, y, cz), with the Spring Stone on the south side
+    use(1, cx + 0.5, y, cz + 2.5, 180, 39)  # Fountain on the floor in front
+    as_bot("")
+    time.sleep(1)
+    shot(tools, shots / "st-2-fountain.png")
+    for dx, dz in ((-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (1, 1)):
+        as_bot(f"setblock {cx+dx} {y} {cz+dz} stone_bricks")
+    time.sleep(1)
+    stand(cx + 0.5, y, cz + 4.5, 180, 28)
+    shot(tools, shots / "st-3-ring-missing-spring.png")
+    # right-click the Fountain: it says what is missing
+    stand(cx + 0.5, y, cz + 3.5, 180, 40)
+    subprocess.run([xdo, "click", "3"], env=env)
+    time.sleep(1)
+    shot(tools, shots / "st-4-missing-message.png")
+    # 3. the Spring Stone on the south side (slot 2)
+    use(2, cx + 0.5, y, cz + 3.5, 180, 40)
+    time.sleep(2)
+    stand(cx + 0.5, y, cz + 5.5, 180, 25)
+    shot(tools, shots / "st-5-generator.png")
+    block_above = as_bot(f"data get block {cx} {y+1} {cz} id")
+    time.sleep(3)
+    above = as_bot(f"execute if block {cx} {y+1} {cz} minecraft:cobblestone")
+    say("start: above raw: " + repr(above) + " / " + repr(block_above))
+    say("start: block above the generator: " + above.strip())
+    if "passed" not in above:
+        failures.append("the generator made no cobblestone above the Fountain")
+    # 4. cables: three in a row on the floor to the east (slot 3)
+    for dx in (4, 5, 6):
+        use(3, cx + dx + 0.5, y, cz + 2.5, 180, 39)
+    stand(cx + 5.0, y, cz + 5.5, 180, 30)
+    shot(tools, shots / "st-6-cables.png")
+    # 4b. the other generators and a bucket from the Spring Stone, each in its own corner of a bigger floor
+    as_bot(f"fill {cx-14} {y-1} {cz-14} {cx+16} {y-1} {cz+16} grass_block")
+    as_bot(f"fill {cx-14} {y} {cz-14} {cx+16} {y+4} {cz+16} air")
+    rcon.command("clear E2EBot")
+    rcon.command("sbgive fountain 3 E2EBot")
+    rcon.command("sbgive spring_stone 3 E2EBot")
+    rcon.command("give E2EBot minecraft:bucket 1")
+    kinds = (("dunes", "sandstone", "spring", -9, 0, ("sand", "gravel", "red_sand")),
+             ("frost", "glass", "spring", 10, 0, ("snow_block", "packed_ice")),
+             ("ember", "nether_bricks", "magma_block", 0, -9, ("netherrack", "soul_sand")))
+    for name, ring, south, fx, fz, outputs in kinds:
+        use(1, cx + fx + 0.5, y, cz + fz + 2.5, 180, 39)   # Fountain
+        for dx, dz in ((-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (1, 1)):
+            as_bot(f"setblock {cx+fx+dx} {y} {cz+fz+dz} {ring}")
+        if south == "spring":
+            use(2, cx + fx + 0.5, y, cz + fz + 3.5, 180, 40)   # Spring Stone on the south side
+        else:
+            as_bot(f"setblock {cx+fx} {y} {cz+fz+1} {south}")
+    time.sleep(4)
+    for name, ring, south, fx, fz, outputs in kinds:
+        as_bot(f"setblock {cx+fx} {y+1} {cz+fz} air")  # the plain cobblestone made before the ring was complete
+    time.sleep(4)
+    for name, ring, south, fx, fz, outputs in kinds:
+        stand(cx + fx + 0.5, y, cz + fz + 6.5, 180, 22)
+        shot(tools, shots / f"st-gen-{name}.png")
+        found = [o for o in outputs if "passed" in as_bot(f"execute if block {cx+fx} {y+1} {cz+fz} minecraft:{o}")]
+        say(f"start: {name} generator makes: {found}")
+        if not found:
+            failures.append(f"the {name} generator made none of {outputs} above its Fountain")
+    # the ore of the frost and ember generators: hold the left button on the block above the Fountain and wait
+    rcon.command("gamemode creative E2EBot")
+    for name, ring, south, fx, fz, outputs in kinds[1:]:
+        want = "frostium" if name == "frost" else "sunstone"
+        rcon.command("clear E2EBot")
+        stand(cx + fx + 0.5, y, cz + fz + 3.5, 180, 4)
+        subprocess.run([xdo, "mousedown", "1"], env=env)
+        found = False
+        for _ in range(40):
+            time.sleep(5)
+            dropped = rcon.command('execute if entity @e[type=item,nbt={Item:{components:{"minecraft:item_model":"vampyuyu:ore/'
+                                   + want + '"}}}]')
+            if "passed" in dropped or want in rcon.command("data get entity E2EBot Inventory"):
+                found = True
+                break
+        subprocess.run([xdo, "mouseup", "1"], env=env)
+        shot(tools, shots / f"st-ore-{name}.png")
+        say(f"start: {name} generator dropped {want} in the real client: {found}")
+        if not found:
+            failures.append(f"no {want} dropped from the {name} generator blocks in 200 s")
+    rcon.command("gamemode survival E2EBot")
+    # a bucket filled from a lone Spring Stone (the ore waiting cleared the inventory)
+    rcon.command("clear E2EBot")
+    rcon.command("sbgive spring_stone 1 E2EBot")
+    rcon.command("give E2EBot minecraft:bucket 1")
+    use(1, cx + 4.5, y, cz + 8.5, 180, 39)
+    subprocess.run([xdo, "key", "2"], env=env)
+    time.sleep(.5)
+    subprocess.run([xdo, "click", "3"], env=env)
+    time.sleep(1.5)
+    bucket = rcon.command("data get entity E2EBot Inventory")
+    say("start: inventory after the bucket click: " + bucket.strip()[:300])
+    if "water_bucket" not in bucket:
+        failures.append("a bucket was not filled from the Spring Stone")
+    # 4c. the Endless Bucket pours water and stays full; the Generator Plan prints the plans
+    rcon.command("clear E2EBot")
+    rcon.command("sbgive endless_bucket 1 E2EBot")
+    rcon.command("sbgive generator_plan 1 E2EBot")
+    subprocess.run([xdo, "key", "1"], env=env)
+    time.sleep(.5)
+    stand(cx + 12.5, y, cz + 12.5, 180, 40)
+    subprocess.run([xdo, "click", "3"], env=env)
+    time.sleep(1.5)
+    water = as_bot(f"execute if block {cx+12} {y} {cz+10} minecraft:water")
+    inv = rcon.command("data get entity E2EBot Inventory")
+    say("start: after pouring the Endless Bucket: " + inv.strip()[:200])
+    shot(tools, shots / "st-bucket.png")
+    if "endless_bucket" not in inv.replace("minecraft:water_bucket", "endless_bucket") or "water_bucket" not in inv:
+        failures.append("the Endless Bucket was emptied or lost")
+    subprocess.run([xdo, "key", "2"], env=env)
+    time.sleep(.5)
+    subprocess.run([xdo, "click", "3"], env=env)
+    time.sleep(1.5)
+    shot(tools, shots / "st-plan.png")
+    # 5. the quest menus
+    command("quests categories")
+    shot(tools, shots / "st-7-categories.png")
+    subprocess.run([xdo, "key", "Escape"], env=env)
+    time.sleep(1)
+    command("quests category start")
+    shot(tools, shots / "st-8-category-start.png")
+    subprocess.run([xdo, "key", "Escape"], env=env)
+    time.sleep(1)
+    command("guide generators")
+    shot(tools, shots / "st-9-guide-generators.png")
+    log = (server / "console.log").read_text(errors="replace")
+    for line in log.splitlines():
+        if ("Exception" in line or "SEVERE" in line) and " WARN]" not in line and "VampyuyuSurvival" in line:
+            failures.append("server error: " + line[:160])
+            break
 
 
 def bosses_scenario(ctx):
@@ -1534,7 +1763,7 @@ def bosses_scenario(ctx):
     as_bot(f"fill {cx+24} {y-12} {cz-8} {cx+36} {y-1} {cz+8} water")
     for boss, back, pitch, dx in (("voidwyrm", 26, 10, 0), ("magma_warden", 12, 14, 0), ("frost_revenant", 12, 14, 0),
                                   ("sylvan_matriarch", 9, 14, 0), ("abyssal_leviathan", 14, 14, 30), ("abyssal_leviathan", 16, 14, 0),
-                                  ("crypt_lord", 14, 14, 0), ("ancient_colossus", 24, 10, 0), ("storm_roc", 26, 6, 0)):
+                                  ("crypt_lord", 14, 14, 0)):
         rcon.command("boss kill all")
         as_bot(f"tp @s {cx+dx+0.5} {y} {cz+0.5} 0 0")
         time.sleep(1.5)
@@ -1554,7 +1783,7 @@ def bosses_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "start", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -1563,7 +1792,7 @@ def main():
     if args.scenario == "dev":
         return dev_server()
     global WITH_SURVIVAL
-    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords")
+    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "start")
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
@@ -1586,7 +1815,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "start"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -1617,7 +1846,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "start"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -1662,6 +1891,8 @@ def main():
             bosses_scenario(ctx)
         elif args.scenario == "swords":
             swords_scenario(ctx)
+        elif args.scenario == "start":
+            start_scenario(ctx)
         else:
             shader_scenario(ctx)
     finally:

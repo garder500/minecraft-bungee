@@ -124,16 +124,18 @@ def magma_warden():
     s.box((5, 11, 3.5), (11, 17, 4), "lava")                        # chest core
     s.box((4.5, 10.5, 3.7), (11.5, 11, 4.2), "ember")
     s.box((5, 12, 11.8), (11, 18, 12.2), "ember")                   # back vent
-    s.mirror_x((-1.5, 16, 3), (3.5, 21, 13), "obs", top="rock")     # pauldrons
+    s.mirror_x((-3.5, 16, 2.5), (3.5, 21.5, 13.5), "obs", top="rock")     # wide pauldrons: the widest silhouette
     s.mirror_x((-1, 21, 6), (1.5, 27, 10), "rock", rot=("z", 22.5, [0, 21, 8]))   # shoulder spikes
-    s.mirror_x((-2, 6, 5), (2, 17, 11), "rock")                     # arms
+    s.mirror_x((-4, 6, 4.5), (2, 17, 11.5), "rock")                 # thick arms: the widest body of all bosses
+    s.mirror_x((-4, 11, 4.2), (-3.2, 16, 11.8), "lava")             # molten veins down the arms
     s.mirror_x((-3, 1, 4), (3, 7.5, 12), "lava")                    # molten fists
     s.mirror_x((-2.5, 7.5, 4.5), (2.5, 9, 11.5), "obs")             # wrists
     s.box((5, 20, 5), (11, 26, 11), "obs", top="rock")              # head
     s.mirror_x((6, 22, 4.6), (7.8, 23.8, 5), "eye")                 # eyes
     s.box((5.5, 26, 5.5), (10.5, 27.5, 10.5), "lava")               # molten crown
     s.mirror_x((3.5, 25, 7), (6, 32, 9.5), "rock", rot=("z", 22.5, [5, 25, 8]))   # horns
-    s.mirror_x((6.5, 27.5, 5.5), (8, 31, 7), "ember")               # crown flames
+    s.mirror_x((6.5, 27.5, 5.5), (8, 32, 7), "ember")               # crown flames, the tallest thing on the field
+    s.box((7, 27.5, 7), (9, 32, 9), "lava")
     s.write()
 
 
@@ -154,10 +156,12 @@ def frost_revenant():
     for i, h in enumerate((2.5, 4, 3, 4, 2.5)):                       # crown of icicles
         x = 5.8 + i * 1.0
         s.box((x, 28, 7), (x + 0.8, 28 + h, 8.4), "ice")
-    s.box((15, 3, 7.4), (16.6, 24, 8.6), "blade")                   # greatsword
+    s.box((15, 3, 7.4), (16.6, 27, 8.6), "blade")                   # greatsword, longer than he is tall
     s.box((13, 10.5, 6.8), (18.6, 12, 9.2), "silver")
-    s.box((15.4, 24, 7.6), (16.2, 29, 8.4), "blade")
-    s.box((4, 6, 10.5), (12, 24, 11.4), "cloak")                    # cloak
+    s.box((15.4, 27, 7.6), (16.2, 32, 8.4), "blade")
+    s.box((4, 2, 10.5), (12, 24, 11.4), "cloak")                    # long cloak, torn at the hem
+    for i in range(4):
+        s.box((4 + i * 2.2, -0.5, 10.7), (5.6 + i * 2.2, 3 + (i % 2) * 1.5, 11.3), "cloak")
     s.box((3.5, 4, 11.2), (12.5, 20, 11.8), "deep")
     s.write()
 
@@ -173,7 +177,7 @@ def sylvan_matriarch():
     s.mirror_x((6.4, 7.5, 1.5), (7.2, 8.6, 2.3), "eye")
     s.mirror_x((7, 5, 2), (7.9, 7, 3.2), "web")                     # fangs
     for i, z in enumerate((3, 5.5, 8, 10.5)):                       # four legs a side
-        reach = 5 + (i % 2) * 1.5
+        reach = 6.5 + (i % 2) * 1.5
         s.mirror_x((11, 8.5, z), (11 + reach, 10, z + 1.4), "bark", rot=("z", 22.5, [11, 9, z]))
         s.mirror_x((11 + reach - 0.4, 0, z), (11 + reach + 1.2, 9.4, z + 1.4), "chitin")
     s.mirror_x((5, 14.5, 10), (8, 16.5, 13), "bloom")               # flowers
@@ -198,10 +202,10 @@ def abyssal_leviathan():
     s.box((5, 6, 10), (11, 14, 18), "scale", top="deep")            # body
     s.box((5.5, 4.5, 10), (10.5, 6, 18), "belly")
     s.box((7, 14, 11), (9, 17.5, 17), "fin")
-    s.box((5.5, 5, 18), (10.5, 12, 25), "scale")                    # tail
-    s.box((7, 12, 18.5), (9, 15, 24), "fin")
-    s.box((6.2, 4, 25), (9.8, 10, 29), "scale")
-    s.box((7.2, 1, 28), (8.8, 16, 31.5), "fin")                     # tail fin
+    s.box((7.5, 5, 18), (12.5, 12, 25), "scale")                    # tail, curving out: the S shape
+    s.box((9, 12, 18.5), (11, 15, 24), "fin")
+    s.box((4.2, 4, 25), (7.8, 10, 29), "scale")
+    s.box((3.2, 1, 28), (4.8, 16, 31.5), "fin")                     # tail fin
     s.write()
 
 
@@ -227,7 +231,8 @@ def crypt_lord():
     s.box((4, 5, 10.6), (12, 24, 11.4), "cape")                     # cape
     s.box((3.4, 3, 11.2), (12.6, 19, 11.8), "cape")
     s.box((14, 4, 7.4), (15.2, 24, 8.6), "dark")                    # scepter
-    s.box((13.6, 24, 7), (15.6, 27, 9), "eye")
+    s.box((13, 24, 6.4), (16.2, 28, 9.6), "eye")                    # the orb: the glowing weak spot
+    s.box((13.6, 28, 7), (15.6, 30, 9), "gold")
     s.write()
 
 

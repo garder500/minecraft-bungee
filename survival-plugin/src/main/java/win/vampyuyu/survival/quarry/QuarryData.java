@@ -19,6 +19,12 @@ public final class QuarryData {
     /** Sword skins unlocked by the account (ids of {@link Skin}). */
     public List<String> skins = new ArrayList<>();
 
+    /** Pebbles picked up on {@link #pebbleDay} (UTC epoch day), for the daily cap. */
+    public long pebbleDay;
+    public int pebbles;
+    /** The player made a Fountain: pebbles stop. */
+    public boolean fountainMade;
+
     /** A Forge job: finished when {@code now >= finishAt}. */
     public static final class Job {
         public String recipe;

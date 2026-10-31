@@ -12,11 +12,22 @@ public final class QuestCatalog {
     private final Map<String, QuestDef> tutorial;
     private final Map<String, QuestDef> daily;
     private final List<String> problems;
+    private final Map<String, Category> categories;
+
+    /** A group of quests in the quest menu: the main path is played in order, the others in parallel. */
+    public record Category(String id, String name, String description, boolean main, org.bukkit.Material icon,
+            String unlock) {}
 
     private QuestCatalog(Map<String, QuestDef> tutorial, Map<String, QuestDef> daily, List<String> problems) {
+        this(tutorial, daily, problems, Map.of());
+    }
+
+    private QuestCatalog(Map<String, QuestDef> tutorial, Map<String, QuestDef> daily, List<String> problems,
+            Map<String, Category> categories) {
         this.tutorial = tutorial;
         this.daily = daily;
         this.problems = List.copyOf(problems);
+        this.categories = categories;
     }
 
     /** An empty catalog (quests switched off). */
@@ -67,6 +78,63 @@ public final class QuestCatalog {
             }
         }
         return new QuestCatalog(tutorial, daily, problems);
+    }
+
+    /**
+     * The quest plan: the tutorial line, the categories and their quests come from {@code plan}
+     * ({@code quests.yml}); the daily pool still comes from {@code quests}. Nothing of the older tutorial is loaded.
+     */
+    public static QuestCatalog parsePlan(ConfigurationSection quests, ConfigurationSection plan) {
+        List<String> problems = new ArrayList<>();
+        Map<String, QuestDef> tutorial = new LinkedHashMap<>();
+        Map<String, QuestDef> daily = new LinkedHashMap<>();
+        Map<String, Category> categories = new LinkedHashMap<>();
+        if (quests != null) {
+            read(quests.getConfigurationSection("daily.pool"), daily, problems);
+        }
+        if (plan != null) {
+            read(plan.getConfigurationSection("quests.tutorial"), tutorial, problems);
+            ConfigurationSection cats = plan.getConfigurationSection("categories");
+            if (cats != null) {
+                for (String id : cats.getKeys(false)) {
+                    ConfigurationSection c = cats.getConfigurationSection(id);
+                    if (c == null) {
+                        continue;
+                    }
+                    org.bukkit.Material icon = org.bukkit.Material.matchMaterial(c.getString("icon", "PAPER"));
+                    categories.put(id, new Category(id, c.getString("name", id), c.getString("description", ""),
+                        c.getBoolean("main", false), icon == null || icon.isAir() ? org.bukkit.Material.PAPER : icon,
+                        c.getString("unlock", "")));
+                }
+            }
+        }
+        for (QuestDef def : List.copyOf(tutorial.values())) {
+            for (String req : def.requires()) {
+                if (!tutorial.containsKey(req)) {
+                    problems.add("quest '" + def.id() + "': requires unknown quest '" + req + "'; quest skipped");
+                    tutorial.remove(def.id());
+                    break;
+                }
+            }
+            if (!def.category().isEmpty() && !categories.containsKey(def.category())) {
+                problems.add("quest '" + def.id() + "': unknown category '" + def.category() + "'");
+            }
+        }
+        return new QuestCatalog(tutorial, daily, problems, categories);
+    }
+
+    /** The categories in config order; empty for the older tutorial. */
+    public List<Category> categories() {
+        return List.copyOf(categories.values());
+    }
+
+    public Optional<Category> category(String id) {
+        return Optional.ofNullable(categories.get(id));
+    }
+
+    /** The tutorial quests of one category, in order. */
+    public List<QuestDef> questsOf(String category) {
+        return tutorial.values().stream().filter(d -> d.category().equals(category)).toList();
     }
 
     private static void read(ConfigurationSection section, Map<String, QuestDef> into, List<String> problems) {

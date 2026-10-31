@@ -21,10 +21,52 @@ final class QuarryItems {
     static final String VOID_LENS = "void_lens";
     static final String VOIDGLASS = "voidglass";
     static final String STARCORE = "starcore";
+    static final String ENDLESS_BUCKET = "endless_bucket";
+    static final String GENERATOR_PLAN = "generator_plan";
+    static final String PEBBLE = "pebble";
+    static final String FOUNTAIN = "fountain";
+    static final String SPRING_STONE = "spring_stone";
     /** PDC key (long) read from the held pickaxe: mining luck. */
     static final String MINING_LUCK = "mining_luck";
 
     private QuarryItems() {}
+
+    private static final String[] TIERS = {"bronze", "rime", "ember", "void", "starcore"};
+    private static final String[] SLOTS = {"helmet", "chestplate", "leggings", "boots"};
+
+    /** The tiered swords, pickaxes and armor. Armor keeps the armor values of its base material. */
+    private static List<CustomItemDef> gear() {
+        List<CustomItemDef> out = new java.util.ArrayList<>();
+        Rarity[] rarity = {Rarity.UNCOMMON, Rarity.RARE, Rarity.EPIC, Rarity.LEGENDARY, Rarity.MYTHIC};
+        String[] base = {"CHAINMAIL", "IRON", "DIAMOND", "NETHERITE", "NETHERITE"};
+        long[] luck = {10, 25, 45, 70, 100};
+        String[] weapon = {"IRON_SWORD", "IRON_SWORD", "DIAMOND_SWORD", "NETHERITE_SWORD", "NETHERITE_SWORD"};
+        String[] pick = {"IRON_PICKAXE", "IRON_PICKAXE", "DIAMOND_PICKAXE", "NETHERITE_PICKAXE", "NETHERITE_PICKAXE"};
+        org.bukkit.inventory.EquipmentSlot[] slots = {org.bukkit.inventory.EquipmentSlot.HEAD,
+            org.bukkit.inventory.EquipmentSlot.CHEST, org.bukkit.inventory.EquipmentSlot.LEGS, org.bukkit.inventory.EquipmentSlot.FEET};
+        for (int t = 0; t < TIERS.length; t++) {
+            String tier = TIERS[t];
+            String title = Character.toUpperCase(tier.charAt(0)) + tier.substring(1);
+            for (int s = 0; s < SLOTS.length; s++) {
+                String id = tier + "_" + SLOTS[s];
+                out.add(CustomItemDef.builder(id, title + " " + Character.toUpperCase(SLOTS[s].charAt(0)) + SLOTS[s].substring(1),
+                        rarity[t], Material.valueOf(base[t] + "_" + SLOTS[s].toUpperCase(java.util.Locale.ROOT)))
+                    .itemModel("vampyuyu:armor/" + id).type(SLOTS[s].toUpperCase(java.util.Locale.ROOT))
+                    .equippable(slots[s], "vampyuyu:" + tier).glint(t >= 3)
+                    .pdc("extra_armor", t == 4 ? new long[] {1, 2, 1, 1}[s] : 0L).pdc("extra_toughness", t == 4 ? 1L : 0L)
+                    .lore("<gray>Part of the " + title + " armor.", "<gray>Wear all four pieces to be known by it.").build());
+            }
+            if (t >= 2) { // bronze and rime already have their sword and pickaxe
+                out.add(CustomItemDef.builder(tier + "_sword", title + " Sword", rarity[t], Material.valueOf(weapon[t]))
+                    .itemModel("vampyuyu:weapon/" + tier + "_sword").type("SWORD").glint(t >= 3)
+                    .lore("<gray>A " + tier + " blade forged from the deep ores.").build());
+                out.add(CustomItemDef.builder(tier + "_pick", title + " Pick", rarity[t], Material.valueOf(pick[t]))
+                    .itemModel("vampyuyu:tool/" + tier + "_pick").type("PICKAXE").pdc(MINING_LUCK, luck[t]).glint(t >= 3)
+                    .lore("<gray>Mining Luck: <green>+" + luck[t], "<gray>Better odds in your generator.").build());
+            }
+        }
+        return out;
+    }
 
     private static CustomItemDef skinToken(Skin skin) {
         Rarity rarity = switch (skin.rarity) {
@@ -39,7 +81,7 @@ final class QuarryItems {
     }
 
     static List<String> register(Items items) {
-        List<CustomItemDef> defs = List.of(
+        List<CustomItemDef> defs = new java.util.ArrayList<>(List.of(
             CustomItemDef.builder(BRONZITE, "Bronzite", Rarity.UNCOMMON, Material.RAW_COPPER)
                 .itemModel("vampyuyu:ore/bronzite").type("ORE")
                 .lore("<gray>A warm, brassy ore hidden in", "<gray>cobble from your generator.").build(),
@@ -72,6 +114,16 @@ final class QuarryItems {
                 .itemModel("vampyuyu:tool/rime_pick").type("PICKAXE")
                 .pdc(MINING_LUCK, 25L)
                 .lore("<gray>Mining Luck: <green>+25", "<gray>Better odds in your generator.").build(),
+            CustomItemDef.builder(PEBBLE, "Stone Pebble", Rarity.COMMON, Material.FLINT)
+                .itemModel("vampyuyu:ore/pebble").type("ORE")
+                .lore("<gray>Picked up from the ground of your island.", "<gray>Nine of them craft a cobblestone.").build(),
+            CustomItemDef.builder(FOUNTAIN, "Fountain", Rarity.UNCOMMON, Material.SMOOTH_STONE)
+                .itemModel("vampyuyu:machine/fountain").type("MACHINE")
+                .lore("<gray>Place it: it makes cobblestone", "<gray>above itself, no water or lava.", "<gray>Build a ring around it to upgrade it.").build(),
+            CustomItemDef.builder(SPRING_STONE, "Spring Stone", Rarity.RARE, Material.PRISMARINE_BRICKS)
+                .itemModel("vampyuyu:machine/spring_stone").type("MACHINE")
+                .lore("<gray>A water source that never runs dry.", "<gray>Right-click it with an empty bucket.",
+                    "<gray>Also the water cell of a generator.").build(),
             skinToken(Skin.KITSUNE), skinToken(Skin.TITAN_EDGE), skinToken(Skin.CRYSTAL_SABER),
             skinToken(Skin.FLAME_BRAND), skinToken(Skin.FROST_FANG), skinToken(Skin.WYRMFANG),
             CustomItemDef.builder(VOIDGLASS, "Voidglass", Rarity.LEGENDARY, Material.ECHO_SHARD)
@@ -83,7 +135,7 @@ final class QuarryItems {
             CustomItemDef.builder(VOID_LENS, "Void Lens", Rarity.EPIC, Material.ENDER_EYE)
                 .itemModel("vampyuyu:ore/void_lens").type("KEY").glint(true)
                 .lore("<gray>Needs a tier III generator.", "<gray>Right-click on your island to open", "<gray>your <light_purple>End <gray>and the tier IV generator.").build(),
-            CustomItemDef.builder("cable", "Copper Cable", Rarity.COMMON, Material.LIGHTNING_ROD)
+            CustomItemDef.builder("cable", "Copper Cable", Rarity.COMMON, Material.REDSTONE)
                 .itemModel("vampyuyu:machine/cable").type("MACHINE")
                 .lore("<gray>Touching machines share Flux.", "<gray>Place it between them.").build(),
             CustomItemDef.builder("solar_panel", "Solar Panel", Rarity.RARE, Material.DAYLIGHT_DETECTOR)
@@ -102,7 +154,14 @@ final class QuarryItems {
             CustomItemDef.builder("miner_2", "Miner II", Rarity.RARE, Material.LODESTONE)
                 .itemModel("vampyuyu:machine/miner_2").type("MACHINE").glint(true)
                 .lore("<gray>Breaks the generator cobble next to it", "<gray>and fills the chest next to it.",
-                    "<gray>Uses <white>20 Flux/s<gray>, <white>1 block per second<gray>.").build());
+                    "<gray>Uses <white>20 Flux/s<gray>, <white>1 block per second<gray>.").build(),
+            CustomItemDef.builder(ENDLESS_BUCKET, "Endless Bucket", Rarity.EPIC, Material.WATER_BUCKET)
+                .type("TOOL").glint(true).pdc("untradable", 1L)
+                .lore("<gray>Pours water anywhere and is never", "<gray>emptied. Bound to you.").build(),
+            CustomItemDef.builder(GENERATOR_PLAN, "Generator Plan", Rarity.COMMON, Material.PAPER)
+                .type("GUIDE")
+                .lore("<gray>Right-click to read the plans of", "<gray>the four generators (same as /guide generators).").build()));
+        defs.addAll(gear());
         defs.forEach(items::register);
         return defs.stream().map(CustomItemDef::id).toList();
     }

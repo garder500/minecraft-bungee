@@ -1112,8 +1112,9 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
 
     /**
      * Admin: starts over for everybody who has an island. Every island is wiped and rebuilt with the full starter
-     * chest, and its owner and members lose their quests, fairy souls, Skyblock inventory and Skyblock bed. Members,
-     * flags, upgrades and the Wings are kept. Returns the number of islands being reset.
+     * chest, and its owner and members lose their coins and bank, quests, fairy souls, generator progress, skills,
+     * minions, boss and dungeon records, Wings, Skyblock inventory and Skyblock bed. Members, flags and upgrades are
+     * kept. Returns the number of islands being reset.
      */
     public int resetAll() {
         Set<UUID> people = new java.util.LinkedHashSet<>();
@@ -1154,6 +1155,9 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
             });
             count++;
         }
+        for (org.bukkit.OfflinePlayer known : Bukkit.getOfflinePlayers()) {
+            people.add(known.getUniqueId()); // also players who left their island: their coins and quests go too
+        }
         for (UUID id : people) {
             Player online = Bukkit.getPlayer(id);
             if (online != null) {
@@ -1168,7 +1172,11 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         core.scheduler().async(() -> {
             for (UUID id : people) {
                 try {
-                    core.profiles().removeSections(id, "quests", "fairy_souls");
+                    core.service(win.vampyuyu.survival.api.EconomyApi.class).ifPresent(e -> e.reset(id));
+                    // Every Skyblock progress section: quests, fairy souls, generator tier and skins, skills, minions,
+                    // boss and dungeon records and the Wings. Island settings and menu preferences are kept.
+                    core.profiles().removeSections(id, "quests", "fairy_souls", "quarry", "skills", "minions", "boss",
+                        "dungeon", "wings");
                     core.profiles().edit(id, "island", PlayerIslandData.class, PlayerIslandData::new, d -> {
                         d.starterClaimed = false;
                         d.lootClaimed = false;

@@ -37,6 +37,9 @@ public final class QuarryFeature implements Feature {
         core.listen(new CobbleListener(core, service));
         core.listen(new ForgeListener(core, service, gui));
         core.listen(new WeaponListener(core));
+        core.listen(new PebbleListener(core, service));
+        core.listen(new OutputListener(core));
+        core.listen(new GearListener(core));
         SkinService skins = new SkinService(core, service);
         SkinGui skinGui = new SkinGui(core, skins);
         core.listen(new SkinListener(core, skins));
@@ -78,6 +81,7 @@ public final class QuarryFeature implements Feature {
         core.listen(new MachineListener(core, machines));
         machineTask = core.scheduler().repeating(20, 20, machines::tick);
         addForgeRecipe(config);
+        addStartRecipes();
         core.commands().command("forge")
             .description("Open the Forge")
             .usage("/forge")
@@ -97,7 +101,45 @@ public final class QuarryFeature implements Feature {
             }).register();
         core.register(QuarryService.class, service);
         core.register(win.vampyuyu.survival.api.EndAccessApi.class, service);
+        core.register(win.vampyuyu.survival.api.GeneratorApi.class, service);
         core.register(MachineService.class, machines);
+    }
+
+    private final java.util.List<NamespacedKey> startKeys = new java.util.ArrayList<>();
+
+    /** Nine pebbles make a cobblestone; the Fountain is four cobblestone and four logs. */
+    private void addStartRecipes() {
+        NamespacedKey pebbles = new NamespacedKey(core.getPlugin(), "pebbles_to_cobble");
+        ShapelessRecipe toCobble = new ShapelessRecipe(pebbles, new org.bukkit.inventory.ItemStack(Material.COBBLESTONE));
+        org.bukkit.inventory.ItemStack pebble = core.items().create(QuarryItems.PEBBLE);
+        for (int i = 0; i < 9; i++) {
+            toCobble.addIngredient(new org.bukkit.inventory.RecipeChoice.ExactChoice(pebble));
+        }
+        Bukkit.addRecipe(toCobble);
+        startKeys.add(pebbles);
+        NamespacedKey fountain = new NamespacedKey(core.getPlugin(), "fountain");
+        ShapelessRecipe fountainRecipe = new ShapelessRecipe(fountain, core.items().create(QuarryItems.FOUNTAIN));
+        fountainRecipe.addIngredient(4, Material.COBBLESTONE);
+        for (int i = 0; i < 4; i++) {
+            fountainRecipe.addIngredient(new org.bukkit.inventory.RecipeChoice.MaterialChoice(org.bukkit.Tag.LOGS));
+        }
+        Bukkit.addRecipe(fountainRecipe);
+        startKeys.add(fountain);
+        // more Spring Stones: a ring of stone bricks around a water bucket (the first one comes from the quests)
+        NamespacedKey spring = new NamespacedKey(core.getPlugin(), "spring_stone");
+        org.bukkit.inventory.ShapedRecipe springRecipe = new org.bukkit.inventory.ShapedRecipe(spring, core.items().create(QuarryItems.SPRING_STONE));
+        springRecipe.shape("SSS", "SWS", "SSS");
+        springRecipe.setIngredient('S', Material.STONE_BRICKS);
+        springRecipe.setIngredient('W', Material.WATER_BUCKET);
+        Bukkit.addRecipe(springRecipe);
+        startKeys.add(spring);
+        // the heat cell of the Ember generator, so it does not depend on finding magma in the Nether
+        NamespacedKey magma = new NamespacedKey(core.getPlugin(), "magma_block");
+        ShapelessRecipe magmaRecipe = new ShapelessRecipe(magma, new org.bukkit.inventory.ItemStack(Material.MAGMA_BLOCK));
+        magmaRecipe.addIngredient(4, Material.NETHERRACK);
+        magmaRecipe.addIngredient(Material.COAL);
+        Bukkit.addRecipe(magmaRecipe);
+        startKeys.add(magma);
     }
 
     private void addForgeRecipe(QuarryConfig config) {
@@ -131,6 +173,8 @@ public final class QuarryFeature implements Feature {
         if (machineStore != null) {
             machineStore.flush();
         }
+        startKeys.forEach(Bukkit::removeRecipe);
+        startKeys.clear();
         if (recipeKey != null) {
             Bukkit.removeRecipe(recipeKey);
         }

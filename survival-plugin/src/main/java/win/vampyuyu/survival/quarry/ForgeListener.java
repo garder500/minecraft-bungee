@@ -52,6 +52,8 @@ final class ForgeListener implements Listener {
             return;
         }
         forges.add(event.getBlockPlaced());
+        org.bukkit.Bukkit.getPluginManager().callEvent(
+            new win.vampyuyu.survival.api.event.QuarryProgressEvent(event.getPlayer(), "EVENT", "forge_placed", 1));
         BlockModels.show(event.getBlockPlaced(), core.items().create(QuarryItems.FORGE),
             BlockModels.facing(event.getPlayer().getLocation().getYaw()));
     }
@@ -117,7 +119,7 @@ final class ForgeListener implements Listener {
         }
         item.setAmount(item.getAmount() - 1);
         if (upgraded) {
-            org.bukkit.Bukkit.getPluginManager().callEvent(new win.vampyuyu.survival.api.event.QuarryProgressEvent(player, "GENERATOR_UPGRADE", "4", 1));
+            org.bukkit.Bukkit.getPluginManager().callEvent(new win.vampyuyu.survival.api.event.QuarryProgressEvent(player, "GENERATOR_UPGRADE", "4", 4));
         }
         core.msg().ok(player, "The Void Lens shatters. The way to your End is open (/island end)"
             + (upgraded ? " and your generator is now tier IV (Void)!" : "."));
@@ -145,7 +147,7 @@ final class ForgeListener implements Listener {
             return;
         }
         item.setAmount(item.getAmount() - 1);
-        org.bukkit.Bukkit.getPluginManager().callEvent(new win.vampyuyu.survival.api.event.QuarryProgressEvent(player, "GENERATOR_UPGRADE", String.valueOf(tier), 1));
+        org.bukkit.Bukkit.getPluginManager().callEvent(new win.vampyuyu.survival.api.event.QuarryProgressEvent(player, "GENERATOR_UPGRADE", String.valueOf(tier), tier));
         core.msg().ok(player, "Your cobble generator is now tier " + (tier == 2 ? "II (Vein)" : "III (Ember)") + "! New ores are waiting in the cobble.");
     }
 

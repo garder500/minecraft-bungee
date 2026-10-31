@@ -49,7 +49,7 @@ public class BossFeatureBootTest {
 
     @Test
     public void commandsAreRegistered() {
-        for (String name : List.of("boss", "slayer", "worldboss")) {
+        for (String name : List.of("boss", "slayer")) {
             assertNotNull(name, Bukkit.getCommandMap().getCommand(name));
         }
     }

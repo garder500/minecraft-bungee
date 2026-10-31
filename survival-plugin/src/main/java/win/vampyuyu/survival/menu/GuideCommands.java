@@ -26,14 +26,22 @@ final class GuideCommands {
             .description("What to do next: your current quest and how to do it")
             .usage("/guide")
             .permission("vampyuyu.sb.menu.guide", PermissionDefault.TRUE)
-            .executor((s, c, l, a) -> player(s, p -> guide(p))).register();
+            .executor((s, c, l, a) -> player(s, p -> guide(p, a)))
+            .tab((s, c, l, a) -> a.length == 1 ? List.of("generators") : List.of()).register();
         rt.core.commands().command("quests").aliases("quest")
             .description("Open the quest list")
             .usage("/quests")
             .permission("vampyuyu.sb.menu.quests", PermissionDefault.TRUE)
             .executor((s, c, l, a) -> player(s, p -> {
-                if (inSkyblock(p)) {
-                    gui.open(p);
+                if (!inSkyblock(p)) {
+                    return;
+                }
+                String sub = a.length == 0 ? "" : a[0].toLowerCase(Locale.ROOT);
+                switch (sub) {
+                    case "categories", "tutorial" -> gui.categories(p);
+                    case "category" -> gui.category(p, a.length > 1 ? a[1].toLowerCase(Locale.ROOT) : "");
+                    case "daily" -> gui.daily(p);
+                    default -> gui.open(p);
                 }
             })).register();
         rt.core.commands().command("track")
@@ -67,8 +75,12 @@ final class GuideCommands {
         return true;
     }
 
-    private void guide(Player player) {
+    private void guide(Player player, String[] args) {
         if (!inSkyblock(player)) {
+            return;
+        }
+        if (args.length > 0 && args[0].equalsIgnoreCase("generators")) {
+            generators(player);
             return;
         }
         var tracked = quests.tracked(player);
@@ -83,16 +95,29 @@ final class GuideCommands {
         if (how != null) {
             rt.core.msg().ok(player, "How: " + how);
         }
-        rt.core.msg().info(player, "/quests lists them all, /track <id> picks the one on your side panel, /hud hides it.");
+        rt.core.msg().info(player, "/quests lists them all, /guide generators shows the generator plans, /track <id> picks the one on your side panel, /hud hides it.");
+    }
+
+    /** The four ring plans around a Fountain, seen from above (north at the top). */
+    private void generators(Player player) {
+        rt.core.msg().info(player, "Generators: put a Fountain in the middle of a 3x3 ring at the same height. "
+            + "Right-click the Fountain to see what is missing.");
+        for (win.vampyuyu.survival.quarry.GeneratorStructure.Kind kind : win.vampyuyu.survival.quarry.GeneratorStructure.Kind.values()) {
+            rt.core.msg().info(player, kind.title + ":");
+            for (String line : win.vampyuyu.survival.quarry.GeneratorStructure.blueprint(kind)) {
+                rt.core.msg().info(player, "  " + line);
+            }
+        }
+        rt.core.msg().info(player, "The Spring Stone (water) goes on the south side; the Ember generator uses a magma block instead.");
     }
 
     /** The command or the action that moves a quest forward, by what the quest counts. */
     static String hint(QuestDef def) {
         String target = def.target().toLowerCase(Locale.ROOT);
         return switch (def.type()) {
-            case ORE_FOUND -> "break the cobble or stone your generator makes (water meeting lava). A Miner next to it does it for you.";
+            case ORE_FOUND -> "break the cobblestone your Fountain or generator makes above itself (the old water + lava generator works too). A Miner next to it does it for you.";
             case FORGE_ITEM -> "open the Forge with /forge (or right-click your Forge block), pick the recipe and come back when the timer ends.";
-            case GENERATOR_UPGRADE -> "forge the core with /forge, then right-click it in your hand on your island.";
+            case GENERATOR_TIER, GENERATOR_UPGRADE -> "forge the core with /forge, then right-click it in your hand on your island.";
             case CRAFT_ITEM -> target.contains("forge")
                 ? "craft it in a crafting table, place it on your island, then open it with /forge."
                 : "craft it in a crafting table.";
@@ -101,8 +126,31 @@ final class GuideCommands {
             case ISLAND_CREATE -> "use /island to create your island.";
             case VISIT_WORLD -> "use /island nether or /island end, or take the portal.";
             case COINS_EARN -> "sell your items at the market with /market, or to other players with /ah.";
+            case EVENT -> eventHint(target);
             default -> null;
         };
+    }
+
+    private static String eventHint(String key) {
+        if (key.equals("pebble")) {
+            return "right-click the ground of your island with an empty hand (or a stick).";
+        }
+        if (key.startsWith("machine_placed") || key.equals("forge_placed")) {
+            return "place it on your own island.";
+        }
+        if (key.startsWith("generator_built")) {
+            return "build the ring around a Fountain, right-click the Fountain to see what is missing, /guide generators shows the plans.";
+        }
+        if (key.equals("spring_filled")) {
+            return "right-click your Spring Stone holding an empty bucket.";
+        }
+        if (key.equals("machine_mined")) {
+            return "put a powered Miner next to your generator cobble and a chest next to the Miner.";
+        }
+        if (key.startsWith("dungeon_")) {
+            return "start a run with /dungeon.";
+        }
+        return null;
     }
 
     private void track(Player player, String[] args) {

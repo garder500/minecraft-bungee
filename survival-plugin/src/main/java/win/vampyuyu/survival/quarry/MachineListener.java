@@ -64,8 +64,14 @@ final class MachineListener implements Listener {
         data.island = island.id().toString();
         data.yaw = BlockModels.facing(player.getLocation().getYaw());
         machines.store().put(block.getWorld().getName(), MachineStore.pos(block), data);
+        fire(player, "machine_placed:" + type.get().itemId);
+        fire(player, "machine_placed");
         core.getPlugin().getServer().getScheduler().runTask(core.getPlugin(),
-            () -> BlockModels.show(block, core.items().create(type.get().itemId), data.yaw));
+            () -> BlockModels.show(block, machines.modelItem(block, data), data.yaw));
+    }
+
+    private static void fire(Player player, String key) {
+        org.bukkit.Bukkit.getPluginManager().callEvent(new win.vampyuyu.survival.api.event.QuarryProgressEvent(player, "EVENT", key, 1));
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -82,6 +88,24 @@ final class MachineListener implements Listener {
         if (type != null) {
             block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0.5, 0.5), core.items().create(type.itemId));
         }
+    }
+
+    /** A cable whose block underneath goes away gives back the cable item, never plain redstone dust. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPhysics(org.bukkit.event.block.BlockPhysicsEvent event) {
+        Block block = event.getBlock();
+        if (block.getType() != Material.REDSTONE_WIRE || block.getRelative(org.bukkit.block.BlockFace.DOWN).getType().isSolid()) {
+            return;
+        }
+        MachineData data = machines.store().get(block.getWorld().getName(), MachineStore.pos(block));
+        if (data == null || data.kind() != MachineType.CABLE) {
+            return;
+        }
+        event.setCancelled(true);
+        machines.store().remove(block.getWorld().getName(), MachineStore.pos(block));
+        BlockModels.hide(block);
+        block.setType(Material.AIR, false);
+        block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0.5, 0.5), core.items().create("cable"));
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -108,7 +132,24 @@ final class MachineListener implements Listener {
             core.msg().ok(player, "Added " + amount + " coal: " + Msg.duration(data.fuel * 1000L) + " of fuel.");
             return;
         }
+        if (type == MachineType.SPRING_STONE && held.getType() == Material.BUCKET) {
+            player.getInventory().setItemInMainHand(new ItemStack(Material.WATER_BUCKET));
+            core.msg().ok(player, "The Spring Stone never runs dry: bucket filled.");
+            fire(player, "spring_filled");
+            return;
+        }
         switch (type) {
+            case FOUNTAIN -> {
+                GeneratorStructure.Result found = machines.structureOf(block);
+                if (found.complete()) {
+                    core.msg().ok(player, found.kind().title + ": one block every second above this Fountain.");
+                } else {
+                    core.msg().info(player, "Fountain: one cobblestone every 2 seconds. To build the " + found.nearest().title
+                        + ", still missing: " + String.join(", ", found.missing()) + ". See /guide.");
+                }
+            }
+            case SPRING_STONE -> core.msg().info(player, "Spring Stone: right-click it with an empty bucket for water, "
+                + "or put it on the south side of a Fountain's ring.");
             case COAL_GENERATOR -> core.msg().info(player, "Coal Generator: " + (data.fuel > 0
                 ? Msg.duration(data.fuel * 1000L) + " of fuel left, " + (int) cfg.generatorOutput + " Flux/s."
                 : "out of fuel. Right-click it holding coal."));

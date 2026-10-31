@@ -510,7 +510,7 @@ public final class IslandCommands {
             if (!service.confirms().consume(asker, "admin-resetall", "")) {
                 service.confirms().arm(asker, "admin-resetall", "", cfg.confirmSeconds * 1000L);
                 core.msg().warn(sender, "This wipes and rebuilds EVERY island (" + service.registry().count()
-                    + ") and resets the quests, fairy souls and Skyblock inventory of everyone who has one. "
+                    + ") and resets the coins, bank, quests, fairy souls, generator progress, skills, minions, boss and dungeon records, Wings and Skyblock inventory of everyone who has one. "
                     + "Repeat /islandadmin resetall within " + cfg.confirmSeconds + " s to confirm.");
             } else {
                 ok(sender, "Resetting " + service.resetAll() + " islands. They are rebuilt one after another.");

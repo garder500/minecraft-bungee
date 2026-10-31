@@ -96,6 +96,11 @@ public final class MenuConfig {
 
     /** {@code filterDead}: drop the tutorial quests no loaded system can complete (see {@link #completable}). */
     public MenuConfig(ConfigurationSection c, ConfigurationSection extraTutorial, boolean filterDead) {
+        this(c, extraTutorial, filterDead, null);
+    }
+
+    /** {@code plan}: the quest plan ({@code quests.yml}); when it says {@code plan: true} it replaces the whole tutorial. */
+    public MenuConfig(ConfigurationSection c, ConfigurationSection extraTutorial, boolean filterDead, ConfigurationSection plan) {
         String noKeyText = c.getString("join.no-key", "hub").toLowerCase(Locale.ROOT);
         noKey = noKeyText.equals("stay") ? JoinRouter.NoKey.STAY : JoinRouter.NoKey.HUB;
         if (!noKeyText.equals("hub") && !noKeyText.equals("stay")) {
@@ -168,8 +173,9 @@ public final class MenuConfig {
 
         questsEnabled = c.getBoolean("quests.enabled", true);
         ConfigurationSection quests = c.getConfigurationSection("quests");
-        catalog = questsEnabled ? QuestCatalog.parse(quests, extraTutorial, filterDead ? MenuConfig::completable : def -> true)
-            : QuestCatalog.empty();
+        catalog = !questsEnabled ? QuestCatalog.empty()
+            : plan != null && plan.getBoolean("plan", false) ? QuestCatalog.parsePlan(quests, plan)
+            : QuestCatalog.parse(quests, extraTutorial, filterDead ? MenuConfig::completable : def -> true);
         problems.addAll(catalog.problems());
         DailyClock clock;
         try {

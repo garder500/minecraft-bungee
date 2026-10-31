@@ -49,10 +49,16 @@ final class QuestsGui {
         gui.border(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
         int done = data.completed.size();
         int total = engine.catalog().tutorial().size();
-        gui.set(11, Guis.icon(Material.WRITABLE_BOOK, "<yellow>Tutorial",
-            "<gray>A guided line of quests that", "<gray>teaches you the basics.", "",
-            "<gray>Completed: <green>" + done + "<gray>/" + total, bar(done, total), "", "<yellow>Click to open!"),
-            click -> tutorial(player));
+        boolean planned = !engine.catalog().categories().isEmpty();
+        List<String> overall = new ArrayList<>(List.of(planned
+            ? "<gray>The main path and the side quests,"  : "<gray>A guided line of quests that",
+            planned ? "<gray>in 14 categories." : "<gray>teaches you the basics.", "",
+            "<gray>Completed: <green>" + done + "<gray>/" + total, bar(done, total)));
+        engine.tracked(data).ifPresent(t -> overall.add("<gray>Tracking: <yellow>" + esc(t.def().name())));
+        overall.add("");
+        overall.add("<yellow>Click to open!");
+        gui.set(11, Guis.icon(Material.WRITABLE_BOOK, planned ? "<yellow>Quests" : "<yellow>Tutorial",
+            overall.toArray(String[]::new)), click -> { if (planned) categories(player); else tutorial(player); });
         long reset = rt.config().dailyClock.millisUntilReset(java.time.Instant.now());
         int dailyDone = (int) engine.dailyQuests(data).stream().filter(d -> data.dailyDone.contains(d.id())).count();
         gui.set(13, Guis.icon(Material.CLOCK, "<aqua>Daily Quests",
@@ -69,6 +75,84 @@ final class QuestsGui {
         gui.set(22, Guis.icon(Material.ARROW, "<green>Go Back", "<gray>To Skyblock Menu"), click -> back.accept(player));
         gui.open(player);
         rt.play(player, "click");
+    }
+
+    /** The category overview: the main path first, then the quests you can play in parallel. */
+    void categories(Player player) {
+        quests.sync(player);
+        QuestData data = rt.quests(player.getUniqueId());
+        QuestEngine engine = rt.engine();
+        QuestCatalog catalog = engine.catalog();
+        Gui gui = rt.core.guis().create(6, "<dark_gray>Quests");
+        gui.border(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
+        int[] slots = gui.innerSlots();
+        int main = 0;
+        int side = 7;
+        for (QuestCatalog.Category category : catalog.categories()) {
+            int slot = category.main() ? slots[main++] : slots[side++];
+            gui.set(slot, categoryIcon(data, category), click -> category(player, category.id()));
+        }
+        gui.set(slots[6], Guis.icon(Material.ORANGE_STAINED_GLASS_PANE, "<gold>Main path (left, in order)",
+            "<gray>Each category opens the next.", "<gray>The side quests below are played", "<gray>whenever you like."));
+        gui.set(49, Guis.icon(Material.ARROW, "<green>Go Back", "<gray>To Quests"), click -> open(player));
+        gui.open(player);
+        rt.play(player, "click");
+    }
+
+    private ItemStack categoryIcon(QuestData data, QuestCatalog.Category category) {
+        QuestEngine engine = rt.engine();
+        List<QuestDef> list = engine.catalog().questsOf(category.id());
+        int done = (int) list.stream().filter(d -> data.completed.contains(d.id())).count();
+        boolean open = category.unlock().isEmpty() || data.completed.contains(category.unlock());
+        List<String> lore = new ArrayList<>();
+        lore.add("<gray>" + esc(category.description()));
+        lore.add("");
+        lore.add(category.main() ? "<gold>Main path" : "<aqua>Side quests");
+        lore.add("<gray>Completed: <green>" + done + "<gray>/" + list.size());
+        lore.add(bar(done, list.size()));
+        lore.add("");
+        if (done == list.size()) {
+            lore.add("<green>Category complete!");
+        } else if (!open) {
+            String need = engine.catalog().tutorialQuest(category.unlock()).map(QuestDef::name).orElse(category.unlock());
+            lore.add("<red>Locked. Finish first: <yellow>" + esc(need));
+        } else {
+            list.stream().filter(d -> engine.isActive(data, d)).findFirst()
+                .ifPresent(d -> lore.add("<gray>Next: <yellow>" + esc(d.name())));
+            lore.add("<yellow>Click to open!");
+        }
+        String color = done == list.size() ? "<green>" : open ? (category.main() ? "<gold>" : "<aqua>") : "<gray>";
+        ItemStack stack = Guis.icon(category.icon(), color + esc(category.name()), lore.toArray(String[]::new));
+        if (done == list.size()) {
+            stack.editMeta(meta -> meta.setEnchantmentGlintOverride(true));
+        }
+        return stack;
+    }
+
+    /** One category's quests: the ones you can do now first, then the locked ones, then the finished ones. */
+    void category(Player player, String id) {
+        QuestData data = rt.quests(player.getUniqueId());
+        QuestEngine engine = rt.engine();
+        QuestCatalog.Category category = engine.catalog().category(id).orElse(null);
+        if (category == null) {
+            categories(player);
+            return;
+        }
+        List<QuestDef> list = new ArrayList<>(engine.catalog().questsOf(id));
+        int done = (int) list.stream().filter(d -> data.completed.contains(d.id())).count();
+        Gui gui = rt.core.guis().create(6, "<dark_gray>" + esc(category.name()) + " " + done + "/" + list.size());
+        gui.border(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
+        list.sort(java.util.Comparator.comparingInt(def -> data.completed.contains(def.id()) ? 2
+            : engine.isActive(data, def) ? 0 : 1));
+        gui.paginate(list, gui.innerSlots(), def -> icon(data, def, false), (click, def) -> {
+            if (engine.isActive(data, def) && quests.track(player, def.id())) {
+                rt.core.msg().ok(player, "Now tracking: " + def.name());
+                rt.play(player, "click");
+                category(player, id);
+            }
+        }, 45, 53);
+        gui.set(49, Guis.icon(Material.ARROW, "<green>Go Back", "<gray>To the categories"), click -> categories(player));
+        gui.open(player);
     }
 
     void tutorial(Player player) {

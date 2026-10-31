@@ -32,6 +32,15 @@ def bronzite(c):
     c.outline()
 
 
+def pebble(c):
+    gray = (0x9A, 0x98, 0x96)
+    c.fill_shape(b.union(b.circle(6.5, 9.5, 3.2), b.circle(10.2, 8, 2.6)), gray)
+    c.set(5, 8, b.shade(gray, 1.35))
+    c.set(9, 6, b.shade(gray, 1.35))
+    c.set(8, 10, b.shade(gray, 0.7))
+    c.outline()
+
+
 def bronze_core(c):
     c.fill_shape(b.diamond(8, 8, 6.2, 6.2), BRONZE)
     c.fill_shape(b.diamond(8, 8, 3.4, 3.4), b.mix(BRONZE, GOLD, 0.6))
@@ -81,6 +90,35 @@ def pick(c, metal, accent):
         c.line(x0, y0 + 1, x1, y1 + 1, b.shade(metal, 0.8))
     c.set(8, 3, b.shade(accent, 1.0))
     c.outline()
+
+
+EMBER = (0xD8, 0x68, 0x3A)
+VOID = (0x8A, 0x5C, 0xF0)
+STAR = (0xF2, 0xE0, 0x7A)
+
+
+def ember_sword(c):
+    blade(c, EMBER, (0xFF, 0xA2, 0x3A))
+
+
+def void_sword(c):
+    blade(c, VOID, (0xE4, 0x6A, 0xFF))
+
+
+def starcore_sword(c):
+    blade(c, STAR, (0xFF, 0xFF, 0xFF))
+
+
+def ember_pick(c):
+    pick(c, EMBER, (0xFF, 0xA2, 0x3A))
+
+
+def void_pick(c):
+    pick(c, VOID, (0xE4, 0x6A, 0xFF))
+
+
+def starcore_pick(c):
+    pick(c, STAR, (0xFF, 0xFF, 0xFF))
 
 
 def rime_pick(c):
@@ -289,6 +327,7 @@ def solar_panel(c):
 
 
 ICONS = {
+    "ore/pebble": pebble,
     "ore/bronzite": bronzite,
     "ore/bronze_core": bronze_core,
     "forge/forge": forge,
@@ -309,6 +348,12 @@ ICONS = {
     "skin/wyrmfang": skin_wyrmfang,
     "weapon/rimeblade": rimeblade,
     "tool/rime_pick": rime_pick,
+    "weapon/ember_sword": ember_sword,
+    "weapon/void_sword": void_sword,
+    "weapon/starcore_sword": starcore_sword,
+    "tool/ember_pick": ember_pick,
+    "tool/void_pick": void_pick,
+    "tool/starcore_pick": starcore_pick,
     "machine/cable": cable,
     "machine/battery": battery,
     "machine/coal_generator": coal_generator,
@@ -348,7 +393,7 @@ def sheet(path):
 
 # Blocks are drawn only as 3D box models (item_models.py). Everything else keeps this sprite for the GUI and gets a
 # 3D model (sword_models.py, item_models.py) for the hand, the ground and item frames.
-SWORDS_3D = {"forge/forge", "machine/coal_generator", "machine/battery", "machine/cable", "machine/solar_panel",
+SWORDS_3D = {"forge/forge", "machine/fountain", "machine/spring_stone", "machine/coal_generator", "machine/battery", "machine/cable", "machine/solar_panel",
              "machine/miner_1", "machine/miner_2"}  # blocks only: the flat sprite is kept for every other item
 
 

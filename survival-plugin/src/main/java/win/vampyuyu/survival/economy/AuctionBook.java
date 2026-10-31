@@ -127,6 +127,12 @@ final class AuctionBook {
         return (int) state.auctions.stream().filter(a -> a.active() && a.seller.equals(seller)).count();
     }
 
+    /** Admin reset: forgets every auction a player sold or bid on, and the refunds waiting for them. */
+    void wipe(String owner) {
+        state.auctions.removeIf(a -> a.seller.equals(owner) || a.bidder.equals(owner));
+        state.refunds.remove(owner);
+    }
+
     List<Auction> ownedBy(String owner) {
         List<Auction> out = new ArrayList<>();
         for (Auction a : state.auctions) {

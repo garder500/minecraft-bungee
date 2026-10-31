@@ -15,7 +15,7 @@ import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.Items;
 
 /** Generator tiers, the ore draw and the Forge queue. Main thread only. */
-public final class QuarryService implements win.vampyuyu.survival.api.EndAccessApi {
+public final class QuarryService implements win.vampyuyu.survival.api.EndAccessApi, win.vampyuyu.survival.api.GeneratorApi {
     public record Drop(String ore, ItemStack stack) {}
 
     /** Told about a draw: a geode was cracked, or a named custom ore was found (name null otherwise). */
@@ -54,6 +54,7 @@ public final class QuarryService implements win.vampyuyu.survival.api.EndAccessA
         core.profiles().markDirty(player);
     }
 
+    @Override
     public int tier(UUID owner) {
         return Math.max(1, Math.min(data(owner).generatorTier, config.tiers));
     }

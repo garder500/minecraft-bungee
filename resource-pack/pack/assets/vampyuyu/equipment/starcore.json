@@ -1,0 +1,14 @@
+{
+ "layers": {
+  "humanoid": [
+   {
+    "texture": "vampyuyu:starcore"
+   }
+  ],
+  "humanoid_leggings": [
+   {
+    "texture": "vampyuyu:starcore"
+   }
+  ]
+ }
+}

@@ -28,16 +28,23 @@ final class ForgeGui {
 
     void open(Player player) {
         Gui gui = core.guis().create(6, "<dark_gray>Forge");
-        render(gui, player);
+        render(gui, player, 0);
         gui.open(player);
     }
 
-    private void render(Gui gui, Player player) {
+    private static final int PER_PAGE = 27;
+
+    private void render(Gui gui, Player player, int page) {
         long now = System.currentTimeMillis();
         QuarryConfig cfg = service.config();
         gui.fill(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
         int slot = 9;
+        int index = 0;
+        int pages = Math.max(1, (cfg.recipes.size() + PER_PAGE - 1) / PER_PAGE);
         for (ForgeRecipe recipe : cfg.recipes.values()) {
+            if (index++ < page * PER_PAGE) {
+                continue;
+            }
             if (slot > 35) {
                 break;
             }
@@ -62,8 +69,14 @@ final class ForgeGui {
                 } else {
                     core.msg().ok(player, "Forging " + def.get().name() + ".");
                 }
-                render(gui, player);
+                render(gui, player, page);
             });
+        }
+        if (page > 0) {
+            gui.set(45, Guis.icon(Material.ARROW, "<green>Previous page", "<gray>Page " + page + " of " + pages), click -> render(gui, player, page - 1));
+        }
+        if (page + 1 < pages) {
+            gui.set(53, Guis.icon(Material.ARROW, "<green>Next page", "<gray>Page " + (page + 2) + " of " + pages), click -> render(gui, player, page + 1));
         }
         var jobs = service.data(player.getUniqueId()).jobs;
         for (int i = 0; i < cfg.forgeSlots && i < 7; i++) {
@@ -84,7 +97,7 @@ final class ForgeGui {
                             .callEvent(new win.vampyuyu.survival.api.event.QuarryProgressEvent(player, "FORGE_ITEM", id, 1)))) {
                         core.msg().ok(player, "You collected " + got + ".");
                     }
-                    render(gui, player);
+                    render(gui, player, page);
                 });
         }
     }

@@ -1,0 +1,19 @@
+{
+ "model": {
+  "type": "minecraft:select",
+  "property": "minecraft:display_context",
+  "cases": [
+   {
+    "when": "gui",
+    "model": {
+     "type": "minecraft:model",
+     "model": "vampyuyu:item/tool/ember_pick"
+    }
+   }
+  ],
+  "fallback": {
+   "type": "minecraft:model",
+   "model": "vampyuyu:item/tool/ember_pick_3d"
+  }
+ }
+}

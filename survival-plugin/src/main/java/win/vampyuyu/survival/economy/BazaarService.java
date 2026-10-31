@@ -234,6 +234,12 @@ final class BazaarService implements EconomyAudit.Contributor {
         return null;
     }
 
+    /** Admin reset of a player: their orders and claimable goods are dropped. */
+    void wipe(UUID player) {
+        market.wipe(player.toString());
+        persist();
+    }
+
     private void persist() {
         file.request(null);
     }

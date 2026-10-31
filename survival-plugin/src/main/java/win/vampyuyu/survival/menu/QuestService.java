@@ -74,6 +74,8 @@ final class QuestService {
     private OptionalInt probe(Player player, QuestDef def) {
         UUID id = player.getUniqueId();
         return switch (def.type()) {
+            case GENERATOR_TIER -> rt.core.service(win.vampyuyu.survival.api.GeneratorApi.class)
+                .map(api -> OptionalInt.of(api.tier(id))).orElse(OptionalInt.empty());
             case ISLAND_CREATE -> rt.islands().map(api -> OptionalInt.of(api.islandOf(id).isPresent() ? 1 : 0))
                 .orElse(OptionalInt.empty());
             case SKILL_LEVEL -> rt.skills().map(api -> {
@@ -104,6 +106,10 @@ final class QuestService {
         }
         for (Completion completion : all) {
             pay(player, data, completion);
+        }
+        int plan = (int) all.stream().filter(c -> !c.daily()).count();
+        if (plan > 0) {
+            record(player, QuestType.EVENT, "quest_done", plan); // the "complete N quests" quests count these
         }
         Optional<QuestEngine.StreakBonus> bonus = engine.claimDailyBonus(data, today());
         bonus.ifPresent(b -> payBonus(player, data, b));

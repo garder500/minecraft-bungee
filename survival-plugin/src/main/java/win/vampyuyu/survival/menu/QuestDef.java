@@ -10,7 +10,7 @@ import org.bukkit.configuration.ConfigurationSection;
 
 /** One quest from the config (tutorial or daily pool). Immutable. */
 public record QuestDef(String id, String name, String description, QuestType type, String target, int amount,
-        Material icon, List<String> requires, Rewards rewards) {
+        Material icon, List<String> requires, Rewards rewards, String category) {
 
     /** Skill experience / items / coins paid on completion. */
     public record Rewards(double coins, Map<String, Double> skillXp, Map<String, Integer> items) {
@@ -36,6 +36,13 @@ public record QuestDef(String id, String name, String description, QuestType typ
         target = target == null ? "" : target.trim();
         QuestMatcher.validate(target); // IllegalArgumentException for a bad regex: the quest is skipped and reported
         requires = List.copyOf(requires);
+        category = category == null ? "" : category;
+    }
+
+    /** A quest outside any category (the old tutorial and the daily pool). */
+    public QuestDef(String id, String name, String description, QuestType type, String target, int amount,
+            Material icon, List<String> requires, Rewards rewards) {
+        this(id, name, description, type, target, amount, icon, requires, rewards, "");
     }
 
     /** Parses one entry; throws IllegalArgumentException with the quest id on bad data. */
@@ -69,7 +76,7 @@ public record QuestDef(String id, String name, String description, QuestType typ
             }
             return new QuestDef(id, section.getString("name", id), section.getString("description", ""), type,
                 section.getString("target", ""), section.getInt("amount", 1), icon, new ArrayList<>(requires),
-                new Rewards(Math.max(0, section.getDouble("rewards.coins", 0)), xp, items));
+                new Rewards(Math.max(0, section.getDouble("rewards.coins", 0)), xp, items), section.getString("category", ""));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("quest '" + id + "': " + e.getMessage(), e);
         }

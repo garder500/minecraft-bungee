@@ -29,6 +29,9 @@ public interface EconomyApi {
     /** Adds coins. {@code amount} must be positive; non-positive values are ignored. */
     void add(UUID player, double amount, String reason);
 
+    /** Admin reset: purse, bank and bank tier back to nothing. The default does nothing, for fakes that hold no money. */
+    default void reset(UUID player) {}
+
     /**
      * Registers a listener called after each successful change, on the thread that made the change
      * (which may be async). A {@code CoinsChangeEvent} is fired as well.

@@ -145,8 +145,9 @@ def coal_generator(name, seed):
     s.box((3, 12, 3), (13, 14, 13), "dark")
     s.box((4, 13.5, 4), (12, 14.2, 12), "coal")
     s.box((11, 12, 11), (14.5, 16, 14.5), "dark")       # chimney
-    s.box((2, 3, 16.0), (14, 9, 16.5), "dark")
-    s.box((3.5, 4, 16.0), (12.5, 7.5, 16.7), "glow")
+    s.box((2, 2.5, 16.0), (14, 11, 16.4), "dark")
+    for k in range(4):                                              # four heat grills: they go out as the coal burns down
+        s.box((3, 3.3 + k * 1.9, 16.0), (13, 4.4 + k * 1.9, 16.7), "glow")
     return s
 
 
@@ -172,6 +173,24 @@ def cable(name, seed):
     s.box((6.5, 6.5, 6.5), (9.5, 9.5, 9.5), "glow")
     for k in (2, 13):
         s.box((5, k, 5), (11, k + 1, 11), "dark")
+    return s
+
+
+def cable_variant(name, mask, seed):
+    """A cable seen on the redstone dust under it: a node and one arm per connected side (N=1 E=2 S=4 W=8)."""
+    s = bs.Skin(name, [("copper", (200, 120, 70), "plain"), ("dark", (80, 50, 38), "plain"), ("glow", (255, 190, 90), "glow")], seed)
+    s.box((5, 0, 5), (11, 6, 11), "dark")
+    s.box((6, 1, 6), (10, 5, 10), "copper")
+    s.box((7, 2, 7), (9, 4, 9), "glow")
+    short = mask == 0
+    arms = {1: ((6, 0, 0), (10, 4, 5)), 2: ((11, 0, 6), (16, 4, 10)), 4: ((6, 0, 11), (10, 4, 16)), 8: ((0, 0, 6), (5, 4, 10))}
+    for bit, (a, b) in arms.items():
+        if mask & bit:
+            s.box(a, b, "copper")
+        elif short:
+            ia = tuple(a[i] + (0 if i != 0 and i != 2 else 0) for i in range(3))
+            stub = {1: ((6.5, 0, 3), (9.5, 3, 5)), 2: ((11, 0, 6.5), (13, 3, 9.5)), 4: ((6.5, 0, 11), (9.5, 3, 13)), 8: ((3, 0, 6.5), (5, 3, 9.5))}[bit]
+            s.box(stub[0], stub[1], "copper")
     return s
 
 
@@ -203,6 +222,42 @@ def miner(name, tier, seed):
     return s
 
 
+def pebble_model(name, seed):
+    s = bs.Skin(name, [("stone", (150, 148, 146), "plain"), ("dark", (104, 102, 100), "plain"),
+                       ("light", (190, 188, 184), "plain")], seed)
+    s.box((3, 0, 5), (9, 4, 11), "stone", rot=("y", 20, [6, 2, 8]))
+    s.box((8, 0, 7), (13, 3, 12), "dark", rot=("y", -25, [10, 2, 9]))
+    s.box((4, 4, 6), (8, 5, 10), "light", rot=("y", 20, [6, 4, 8]))
+    s.box((6, 0, 2), (10, 2.5, 5.5), "light", rot=("y", 40, [8, 1, 4]))
+    return s
+
+
+def fountain(name, seed):
+    s = bs.Skin(name, [("stone", (120, 124, 130), "plain"), ("dark", (70, 74, 80), "plain"),
+                       ("water", (60, 130, 220), "glow"), ("rim", (170, 174, 180), "plain")], seed)
+    s.box((0, 0, 0), (16, 12, 16), "stone")
+    s.box((0, 0, 0), (16, 2, 16), "dark")
+    s.box((0, 11, 0), (16, 13, 16), "rim")
+    s.box((3, 13, 3), (13, 14, 13), "water")
+    s.box((7, 13, 7), (9, 18, 9), "rim")
+    s.box((6.2, 18, 6.2), (9.8, 19, 9.8), "water")
+    s.box((2, 3, 16.0), (14, 9, 16.5), "dark")
+    s.box((4, 4, 16.0), (12, 8, 16.7), "water")
+    return s
+
+
+def spring_stone(name, seed):
+    s = bs.Skin(name, [("stone", (90, 170, 190), "plain"), ("dark", (40, 100, 130), "plain"),
+                       ("water", (110, 190, 255), "glow"), ("rim", (150, 215, 225), "plain")], seed)
+    s.box((0, 0, 0), (16, 14, 16), "stone")
+    s.box((0, 0, 0), (16, 2, 16), "dark")
+    s.box((0, 12, 0), (16, 14, 16), "rim")
+    s.box((3, 14, 3), (13, 15, 13), "water")
+    s.box((2, 3, 16.0), (14, 11, 16.5), "dark")
+    s.box((3.5, 4.5, 16.0), (12.5, 9.5, 16.7), "water")
+    return s
+
+
 def pick(name, head, edge, handle, seed):
     s = sm.Sword(name, [("head", head, "plain"), ("edge", edge, "plain"), ("handle", handle, "plain"),
                         ("wrap", shade(handle, 0.6), "plain")], seed)
@@ -226,14 +281,21 @@ def main():
         "ore/void_lens": (lens("void_lens", (80, 60, 130), (60, 40, 110), (200, 120, 255), 26), ITEM_DISPLAY),
         "ore/voidglass": (voidglass("voidglass", (110, 70, 180), (40, 24, 70), (210, 140, 255), 27), ITEM_DISPLAY),
         "ore/starcore": (starcore("starcore", (230, 200, 120), (255, 245, 200), (255, 250, 220), 28), ITEM_DISPLAY),
+        "ore/pebble": (pebble_model("pebble", 40), ITEM_DISPLAY),
+        "machine/fountain": (fountain("fountain", 41), BLOCK_DISPLAY),
+        "machine/spring_stone": (spring_stone("spring_stone", 42), BLOCK_DISPLAY),
         "forge/forge": (forge("forge", 29), BLOCK_DISPLAY),
         "machine/coal_generator": (coal_generator("coal_generator", 30), BLOCK_DISPLAY),
         "machine/battery": (battery("battery", 31), BLOCK_DISPLAY),
         "machine/cable": (cable("cable", 32), BLOCK_DISPLAY),
+        **{f"machine/cable_{m}": (cable_variant(f"cable_{m}", m, 60 + m), BLOCK_DISPLAY) for m in range(16)},
         "machine/solar_panel": (solar_panel("solar_panel", 33), BLOCK_DISPLAY),
         "machine/miner_1": (miner("miner_1", 1, 34), BLOCK_DISPLAY),
         "machine/miner_2": (miner("miner_2", 2, 35), BLOCK_DISPLAY),
         "tool/bronze_pick": (pick("bronze_pick", (201, 132, 66), (244, 190, 110), (110, 70, 40), 36), sm.DISPLAY),
+        "tool/ember_pick": (pick("ember_pick", (216, 104, 58), (255, 162, 58), (74, 40, 30), 43), sm.DISPLAY),
+        "tool/void_pick": (pick("void_pick", (74, 42, 144), (228, 106, 255), (28, 16, 56), 44), sm.DISPLAY),
+        "tool/starcore_pick": (pick("starcore_pick", (226, 215, 130), (255, 255, 255), (138, 106, 28), 45), sm.DISPLAY),
         "tool/rime_pick": (pick("rime_pick", (127, 200, 232), (214, 244, 255), (60, 80, 120), 37), sm.DISPLAY),
     }
     for model_id, (s, display) in out.items():

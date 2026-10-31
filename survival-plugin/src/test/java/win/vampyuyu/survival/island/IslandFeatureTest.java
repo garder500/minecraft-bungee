@@ -123,6 +123,11 @@ public class IslandFeatureTest {
         }
 
         @Override
+        public void reset(UUID player) {
+            balance = 0;
+        }
+
+        @Override
         public void addTransactionListener(java.util.function.Consumer<Transaction> listener) {}
     }
 
@@ -486,6 +491,24 @@ public class IslandFeatureTest {
         var quests = plugin.core().profiles().section(owner.getUniqueId(), "quests",
             win.vampyuyu.survival.menu.QuestData.class, win.vampyuyu.survival.menu.QuestData::new);
         quests.completed.add("first_tree");
+        plugin.core().profiles().edit(owner.getUniqueId(), "quarry", win.vampyuyu.survival.quarry.QuarryData.class,
+            win.vampyuyu.survival.quarry.QuarryData::new, d -> d.generatorTier = 3);
+        FakeEconomy economy = new FakeEconomy();
+        plugin.core().replace(EconomyApi.class, economy);
+        economy.balance = 500;
+        var profiles = plugin.core().profiles();
+        profiles.edit(owner.getUniqueId(), "quarry", win.vampyuyu.survival.quarry.QuarryData.class,
+            win.vampyuyu.survival.quarry.QuarryData::new, d -> d.skins.add("kitsune"));
+        profiles.edit(owner.getUniqueId(), "skills", win.vampyuyu.survival.skills.SkillsData.class,
+            win.vampyuyu.survival.skills.SkillsData::new, d -> d.xp.put("MINING", 900.0));
+        profiles.edit(owner.getUniqueId(), "minions", win.vampyuyu.survival.minions.MinionProfile.class,
+            win.vampyuyu.survival.minions.MinionProfile::new, d -> d.crafted.add("cobble_1"));
+        profiles.edit(owner.getUniqueId(), "boss", win.vampyuyu.survival.boss.BossData.class,
+            win.vampyuyu.survival.boss.BossData::new, d -> d.kills.put("voidwyrm", 3));
+        profiles.edit(owner.getUniqueId(), "dungeon", win.vampyuyu.survival.dungeon.DungeonData.class,
+            win.vampyuyu.survival.dungeon.DungeonData::new, d -> d.totalClears = 7);
+        plugin.core().profiles().edit(owner.getUniqueId(), "wings", win.vampyuyu.survival.wings.WingsData.class,
+            win.vampyuyu.survival.wings.WingsData::new, d -> { d.received = true; d.level = 4; });
         admin.performCommand("islandadmin resetall");
         assertEquals("first call only arms", Island.State.READY, island.state());
         owner.performCommand("islandadmin resetall");
@@ -502,6 +525,23 @@ public class IslandFeatureTest {
         assertFalse(service.data(owner.getUniqueId()).starterClaimed);
         assertTrue(plugin.core().profiles().section(owner.getUniqueId(), "quests",
             win.vampyuyu.survival.menu.QuestData.class, win.vampyuyu.survival.menu.QuestData::new).completed.isEmpty());
+        assertEquals("the generator progress is gone", 1, plugin.core().profiles().section(owner.getUniqueId(), "quarry",
+            win.vampyuyu.survival.quarry.QuarryData.class, win.vampyuyu.survival.quarry.QuarryData::new).generatorTier);
+        assertEquals("the coins are gone", 0, economy.balance, 0.001);
+        var wings = plugin.core().profiles().section(owner.getUniqueId(), "wings", win.vampyuyu.survival.wings.WingsData.class,
+            win.vampyuyu.survival.wings.WingsData::new);
+        assertTrue("the skins are gone", profiles.section(owner.getUniqueId(), "quarry",
+            win.vampyuyu.survival.quarry.QuarryData.class, win.vampyuyu.survival.quarry.QuarryData::new).skins.isEmpty());
+        assertTrue("the skills are gone", profiles.section(owner.getUniqueId(), "skills",
+            win.vampyuyu.survival.skills.SkillsData.class, win.vampyuyu.survival.skills.SkillsData::new).xp.isEmpty());
+        assertTrue("the minions are gone", profiles.section(owner.getUniqueId(), "minions",
+            win.vampyuyu.survival.minions.MinionProfile.class, win.vampyuyu.survival.minions.MinionProfile::new).crafted.isEmpty());
+        assertTrue("the boss records are gone", profiles.section(owner.getUniqueId(), "boss",
+            win.vampyuyu.survival.boss.BossData.class, win.vampyuyu.survival.boss.BossData::new).kills.isEmpty());
+        assertEquals("the dungeon records are gone", 0, profiles.section(owner.getUniqueId(), "dungeon",
+            win.vampyuyu.survival.dungeon.DungeonData.class, win.vampyuyu.survival.dungeon.DungeonData::new).totalClears);
+        assertFalse("the Wings are gone too", wings.received);
+        assertEquals(1, wings.level);
     }
 
     @Test

@@ -90,11 +90,7 @@ public final class BossFeature implements Feature {
             .usage("/slayer [start <slayer> <tier>|status|spawn|cancel]")
             .permission("vampyuyu.sb.boss.slayer", PermissionDefault.TRUE)
             .executor(slayerCommand).tab(slayerCommand).register();
-        WorldBossCommand worldCommand = new WorldBossCommand(core, manager, worldBoss);
-        core.commands().command("worldboss").aliases("wb").description("World boss events")
-            .usage("/worldboss status")
-            .permission("vampyuyu.sb.boss.worldboss", PermissionDefault.TRUE)
-            .executor(worldCommand).tab(worldCommand).register();
+        // /worldboss is parked: the world boss events do not work yet (boss.yml world-bosses.enabled is false)
     }
 
     /** Re-reads boss.yml. Running fights keep their definition; summon item names need a restart. */

@@ -191,6 +191,12 @@ final class AuctionService implements EconomyAudit.Contributor {
         file.close();
     }
 
+    /** Admin reset of a player: their auctions, bids and refunds are dropped. */
+    void wipe(UUID player) {
+        book.wipe(player.toString());
+        persist();
+    }
+
     private void persist() {
         file.request(null);
     }

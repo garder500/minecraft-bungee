@@ -35,7 +35,11 @@ public enum QuestType {
     /** Collect an item from the Forge. Target: custom item id or ANY. */
     FORGE_ITEM(false, "Forge items"),
     /** Upgrade the cobble generator. Target: the tier reached ("2", "3") or ANY. */
-    GENERATOR_UPGRADE(false, "Upgrade your generator");
+    GENERATOR_UPGRADE(false, "Upgrade your generator"),
+    /** Reach a generator tier. Absolute: amount = the tier, so an upgrade done before the quest opened still counts. */
+    GENERATOR_TIER(true, "Reach a generator tier"),
+    /** A keyed event fired by a feature (pebble, generator_built:dunes, machine_placed:miner_1...). Target: the key. */
+    EVENT(false, "Do something special");
 
     private final boolean absolute;
     private final String label;

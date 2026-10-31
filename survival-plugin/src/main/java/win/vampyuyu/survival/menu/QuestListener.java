@@ -61,6 +61,13 @@ final class QuestListener implements Listener {
             return;
         }
         quests.record(event.getPlayer(), type, event.getSubject(), event.getAmount());
+        if (type == QuestType.GENERATOR_UPGRADE) {
+            try {
+                quests.record(event.getPlayer(), QuestType.GENERATOR_TIER, "", Integer.parseInt(event.getSubject()));
+            } catch (NumberFormatException ignored) {
+                // an upgrade event without a tier number
+            }
+        }
     }
 
     // ---------------------------------------------------------------- blocks

@@ -93,6 +93,16 @@ final class Finale {
                 d.record(run.floorNumber(), ok, millis, score.total(), grade, secrets, kills, deaths);
                 d.catacombsXp += catacombsGain;
             });
+            if (ok && p != null) {
+                fire(p, "dungeon_clear");
+                fire(p, "dungeon_floor:" + run.floorNumber());
+                if (deaths == 0) {
+                    fire(p, "dungeon_clear_nodeath");
+                }
+                if (run.players.size() > 1) {
+                    fire(p, "dungeon_clear_party");
+                }
+            }
             if (!ok || rp.rewarded) {
                 continue;
             }
@@ -225,5 +235,9 @@ final class Finale {
             sb.append("<gray>, <white>").append(d.amount()).append("x ").append(d.item().replace("mc:", "").replace('_', ' ').toLowerCase());
         }
         run.say(p, sb.toString());
+    }
+
+    private static void fire(Player player, String key) {
+        Bukkit.getPluginManager().callEvent(new win.vampyuyu.survival.api.event.QuarryProgressEvent(player, "EVENT", key, 1));
     }
 }

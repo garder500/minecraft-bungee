@@ -198,6 +198,13 @@ final class BazaarMarket {
         return new ArrayList<>(byPrice.values());
     }
 
+    /** Admin reset: forgets every order of a player, live or waiting to be claimed, and the money and items in them. */
+    void wipe(String owner) {
+        state.orders.removeIf(o -> o.owner.equals(owner));
+        asks.values().forEach(l -> l.removeIf(o -> o.owner.equals(owner)));
+        bids.values().forEach(l -> l.removeIf(o -> o.owner.equals(owner)));
+    }
+
     List<Order> ordersOf(String owner) {
         List<Order> out = new ArrayList<>();
         for (Order o : state.orders) {

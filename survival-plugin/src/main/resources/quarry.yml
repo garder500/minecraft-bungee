@@ -204,12 +204,176 @@ forge:
         custom:frostium: 8
         custom:bronzite: 8
         REDSTONE: 4
+    bronze_helmet:
+      result: bronze_helmet
+      seconds: 600
+      cost:
+        custom:bronzite: 10
+        IRON_INGOT: 3
+    bronze_chestplate:
+      result: bronze_chestplate
+      seconds: 780
+      cost:
+        custom:bronzite: 16
+        IRON_INGOT: 5
+    bronze_leggings:
+      result: bronze_leggings
+      seconds: 720
+      cost:
+        custom:bronzite: 14
+        IRON_INGOT: 4
+    bronze_boots:
+      result: bronze_boots
+      seconds: 540
+      cost:
+        custom:bronzite: 8
+        IRON_INGOT: 3
+    rime_helmet:
+      result: rime_helmet
+      seconds: 900
+      cost:
+        custom:frostium: 10
+        custom:bronzite: 5
+    rime_chestplate:
+      result: rime_chestplate
+      seconds: 1080
+      cost:
+        custom:frostium: 16
+        custom:bronzite: 8
+    rime_leggings:
+      result: rime_leggings
+      seconds: 1020
+      cost:
+        custom:frostium: 14
+        custom:bronzite: 7
+    rime_boots:
+      result: rime_boots
+      seconds: 840
+      cost:
+        custom:frostium: 8
+        custom:bronzite: 4
+    ember_helmet:
+      result: ember_helmet
+      seconds: 1200
+      cost:
+        custom:sunstone: 5
+        custom:frostium: 5
+    ember_chestplate:
+      result: ember_chestplate
+      seconds: 1380
+      cost:
+        custom:sunstone: 8
+        custom:frostium: 8
+    ember_leggings:
+      result: ember_leggings
+      seconds: 1320
+      cost:
+        custom:sunstone: 7
+        custom:frostium: 7
+    ember_boots:
+      result: ember_boots
+      seconds: 1140
+      cost:
+        custom:sunstone: 4
+        custom:frostium: 4
+    void_helmet:
+      result: void_helmet
+      seconds: 1500
+      cost:
+        custom:voidglass: 3
+        custom:sunstone: 5
+    void_chestplate:
+      result: void_chestplate
+      seconds: 1680
+      cost:
+        custom:voidglass: 4
+        custom:sunstone: 8
+    void_leggings:
+      result: void_leggings
+      seconds: 1620
+      cost:
+        custom:voidglass: 4
+        custom:sunstone: 7
+    void_boots:
+      result: void_boots
+      seconds: 1440
+      cost:
+        custom:voidglass: 2
+        custom:sunstone: 4
+    starcore_helmet:
+      result: starcore_helmet
+      seconds: 1800
+      cost:
+        custom:starcore: 2
+        custom:voidglass: 3
+    starcore_chestplate:
+      result: starcore_chestplate
+      seconds: 1980
+      cost:
+        custom:starcore: 3
+        custom:voidglass: 4
+    starcore_leggings:
+      result: starcore_leggings
+      seconds: 1920
+      cost:
+        custom:starcore: 3
+        custom:voidglass: 4
+    starcore_boots:
+      result: starcore_boots
+      seconds: 1740
+      cost:
+        custom:starcore: 2
+        custom:voidglass: 2
+    ember_sword:
+      result: ember_sword
+      seconds: 900
+      cost:
+        custom:sunstone: 4
+        custom:frostium: 8
+        IRON_SWORD: 1
+    ember_pick:
+      result: ember_pick
+      seconds: 900
+      cost:
+        custom:sunstone: 4
+        custom:frostium: 8
+        IRON_PICKAXE: 1
+    void_sword:
+      result: void_sword
+      seconds: 1500
+      cost:
+        custom:voidglass: 2
+        custom:sunstone: 8
+        IRON_SWORD: 1
+    void_pick:
+      result: void_pick
+      seconds: 1500
+      cost:
+        custom:voidglass: 2
+        custom:sunstone: 8
+        IRON_PICKAXE: 1
+    starcore_sword:
+      result: starcore_sword
+      seconds: 2100
+      cost:
+        custom:starcore: 2
+        custom:voidglass: 3
+        custom:sunstone: 12
+        IRON_SWORD: 1
+    starcore_pick:
+      result: starcore_pick
+      seconds: 2100
+      cost:
+        custom:starcore: 2
+        custom:voidglass: 3
+        custom:sunstone: 12
+        IRON_PICKAXE: 1
 
 # Machines: blocks that touch each other share their Flux (the energy unit). Cables conduct, generators make Flux from
 # coal (right-click one holding coal), batteries store it, miners break the generator cobble next to them and put the
 # ore in a chest or barrel next to them. They only work while their chunk is loaded.
 machines:
-  max-per-island: 6
+  max-per-island: 60
   coal-generator:
     output: 10
     coal-seconds: 40

@@ -86,6 +86,10 @@ public final class EconomyFeature implements Feature {
         audit.addContributor(auctions);
         auctionTask = core.scheduler().repeating(40, 40, auctions::tick);
 
+        economy.onReset(id -> core.scheduler().sync(() -> { // the markets live on the main thread
+            auctions.wipe(id);
+            bazaar.wipe(id);
+        }));
         core.register(EconomyApi.class, economy);
     }
 

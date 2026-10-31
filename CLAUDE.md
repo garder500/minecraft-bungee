@@ -108,6 +108,15 @@ Google (consent, upload, refresh) is only testable with real credentials.
   `POST /servers/{id}/chat` of the controller and the panel (staff name = the session user, messages never audited).
   Real check: `python3 scripts/e2e_client.py --scenario staffchat` (screenshots of the in-game messages).
 
+## Skyblock progression (survival-plugin)
+
+Pebbles, Fountain, Spring Stone, multi-block generators, the 267-quest plan and category menu are described in
+`docs/skyblock-notes/progression.md`. Quests come from `scripts/gen_quests.py` -> `quests.yml` (do not edit the YAML by
+hand). `make plugin-test PLUGIN=survival TEST=QuestPlanTest` is the completability gate. Real-client checks:
+`python3 scripts/e2e_client.py --scenario start` (pebbles, Fountain, ring, Spring Stone, cables, quest menus),
+`--scenario quarry` (machines), `--scenario swords`. 3D item and block models: `resource-pack/art/item_models.py` and
+`sword_models.py` (run `quarry_items.py` first, it writes the flat sprites).
+
 ## Conventions
 
 - Commit only when asked. Commit messages end with the Co-Authored-By line given by the harness.

@@ -112,7 +112,7 @@ final class MenuCommands {
         String sub = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
         switch (sub) {
             case "" -> questsGui.open(player);
-            case "tutorial" -> questsGui.tutorial(player);
+            case "tutorial" -> { if (rt.engine().catalog().categories().isEmpty()) questsGui.tutorial(player); else questsGui.categories(player); }
             case "daily" -> questsGui.daily(player);
             case "list" -> {
                 QuestData data = rt.quests(player.getUniqueId());
