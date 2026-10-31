@@ -62,7 +62,7 @@ final class MachineListener implements Listener {
         data.type = type.get().name();
         data.owner = island.owner().toString();
         data.island = island.id().toString();
-        data.yaw = BlockModels.facing(player.getLocation().getYaw());
+        data.yaw = type.get() == MachineType.CABLE ? MachineService.CABLE_YAW : BlockModels.facing(player.getLocation().getYaw());
         machines.store().put(block.getWorld().getName(), MachineStore.pos(block), data);
         if (type.get() != MachineType.CABLE) {
             block.setType(type.get().block, false); // the vanilla block the item placed becomes an invisible hitbox
@@ -70,7 +70,10 @@ final class MachineListener implements Listener {
         fire(player, "machine_placed:" + type.get().itemId);
         fire(player, "machine_placed");
         core.getPlugin().getServer().getScheduler().runTask(core.getPlugin(),
-            () -> BlockModels.show(block, machines.modelItem(block, data), data.yaw));
+            () -> {
+                BlockModels.show(block, machines.modelItem(block, data), data.yaw);
+                machines.refreshCablesAround(block);
+            });
     }
 
     private static void fire(Player player, String key) {
@@ -87,6 +90,7 @@ final class MachineListener implements Listener {
         MachineType type = data.kind();
         machines.store().remove(block.getWorld().getName(), MachineStore.pos(block));
         BlockModels.hide(block);
+        machines.refreshCablesAround(block);
         event.setDropItems(false);
         if (type != null) {
             block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0.5, 0.5), core.items().create(type.itemId));

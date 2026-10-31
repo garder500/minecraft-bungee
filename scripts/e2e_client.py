@@ -1620,11 +1620,23 @@ def start_scenario(ctx):
     say("start: block above the generator: " + above.strip())
     if "passed" not in above:
         failures.append("the generator made no cobblestone above the Fountain")
-    # 4. cables: three in a row on the floor to the east (slot 3)
-    for dx in (4, 5, 6):
-        use(3, cx + dx + 0.5, y, cz + 2.5, 180, 39)
-    stand(cx + 5.0, y, cz + 5.5, 180, 30)
+    # 4. cables: placed while facing different ways, they must join each other and the machine next to them
+    #    an L: (cx+4,cz+2) and (cx+5,cz+2) placed facing east, (cx+5,cz+3) facing north, a Fountain's side at (cx+6,cz+2)
+    for x, z, yaw, dx_, dz_ in ((4, 2, -90, -2.0, 0), (5, 2, -90, -2.0, 0), (5, 3, 180, 0, 2.0)):
+        use(3, cx + x + 0.5 + dx_, y, cz + z + 0.5 + dz_, yaw, 39)
+    time.sleep(2)
+    stand(cx + 5.0, y + 7, cz + 3.0, 180, 85)
+    shot(tools, shots / "st-6-cables-above.png")
+    stand(cx + 5.0, y, cz + 6.5, 180, 30)
     shot(tools, shots / "st-6-cables.png")
+    masks = []
+    for x, z in ((4, 2), (5, 2), (5, 3)):
+        item = rcon.command(f"execute positioned {cx+x+0.5} {y+0.5} {cz+z+0.5} run data get entity "
+                            "@e[type=item_display,limit=1,sort=nearest] item.components.\"minecraft:item_model\"")
+        masks.append(item.strip().split()[-1])
+    say("start: cable models: " + str(masks))
+    if masks != ['"vampyuyu:machine/cable_2"', '"vampyuyu:machine/cable_12"', '"vampyuyu:machine/cable_1"']:
+        failures.append(f"the cables do not join: {masks}")
     # 4b. the other generators and a bucket from the Spring Stone, each in its own corner of a bigger floor
     as_bot(f"fill {cx-14} {y-1} {cz-14} {cx+16} {y-1} {cz+16} grass_block")
     as_bot(f"fill {cx-14} {y} {cz-14} {cx+16} {y+4} {cz+16} air")
@@ -1705,6 +1717,22 @@ def start_scenario(ctx):
     shot(tools, shots / "st-punch.png")
     if "passed" not in gone or "passed" not in dropped_item:
         failures.append("one punch did not break the Spring Stone barrier and drop its item")
+    # migration: a machine an older version left as a vanilla block becomes the barrier + model setup at the next tick
+    rcon.command("clear E2EBot")
+    rcon.command("sbgive coal_generator 1 E2EBot")
+    use(1, cx + 8.5, y, cz + 8.5, 180, 39)  # a generator at (cx+8, cz+6)
+    time.sleep(2)
+    as_bot(f"setblock {cx+8} {y} {cz+6} stonecutter")  # what an old world holds
+    time.sleep(4)
+    migrated = as_bot(f"execute if block {cx+8} {y} {cz+6} minecraft:barrier")
+    shown_at = rcon.command(f"execute positioned {cx+8.5} {y+0.5} {cz+6.5} run data get entity "
+                            "@e[type=item_display,limit=1,sort=nearest] Pos")
+    shown = "passed" if f"{cx+8.5}d" in shown_at and f"{cz+6.5}d" in shown_at else "failed: " + shown_at.strip()
+    say(f"start: old stonecutter machine migrated: barrier {migrated.strip()}, model {shown.strip()}")
+    say("start: displays near: " + rcon.command(f"execute positioned {cx+8.5} {y+0.5} {cz+6.5} run data get entity @e[type=item_display,limit=1,sort=nearest] Pos").strip()
+        + " / machine at: " + (server / "plugins" / "VampyuyuSurvival" / "quarry" / "machines.json").read_text()[-700:].replace("\n", " "))
+    if "passed" not in migrated or "passed" not in shown:
+        failures.append("a machine left as a vanilla block was not converted to the barrier + model setup")
     # 4c. the Endless Bucket pours water and stays full; the Generator Plan prints the plans
     rcon.command("clear E2EBot")
     rcon.command("sbgive endless_bucket 1 E2EBot")

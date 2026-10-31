@@ -71,6 +71,7 @@ final class MachineService {
                 Block block = world.getBlockAt(p.x(), p.y(), p.z());
                 boolean shapeChanged = false;
                 if (type == MachineType.CABLE) {
+                    entry.getValue().yaw = CABLE_YAW; // cables are drawn aligned with the world, whatever way they were placed
                     String mask = Integer.toString(cableMask(block));
                     shapeChanged = !mask.equals(entry.getValue().built);
                     entry.getValue().built = mask;
@@ -113,22 +114,40 @@ final class MachineService {
 
     private final BlockMarks outputs = new BlockMarks("genout");
 
-    /** Which sides of a redstone wire connect: N=1 E=2 S=4 W=8. Zero when the server cannot say (tests). */
-    static int cableMask(Block wire) {
-        try {
-            if (!(wire.getBlockData() instanceof org.bukkit.block.data.type.RedstoneWire data)) {
-                return 0;
+    /**
+     * Which sides of a cable the model joins: N=1 E=2 S=4 W=8. It follows the same rule as the energy network (a cable
+     * or any machine next to it), never the redstone wire underneath, which only joins other wires.
+     */
+    int cableMask(Block cable) {
+        int mask = 0;
+        int bit = 1;
+        for (BlockFace face : new BlockFace[] {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
+            Block next = cable.getRelative(face);
+            if (store.get(next.getWorld().getName(), MachineStore.pos(next)) != null) {
+                mask |= bit;
             }
-            int mask = 0;
-            if (data.getFace(BlockFace.NORTH) != org.bukkit.block.data.type.RedstoneWire.Connection.NONE) mask |= 1;
-            if (data.getFace(BlockFace.EAST) != org.bukkit.block.data.type.RedstoneWire.Connection.NONE) mask |= 2;
-            if (data.getFace(BlockFace.SOUTH) != org.bukkit.block.data.type.RedstoneWire.Connection.NONE) mask |= 4;
-            if (data.getFace(BlockFace.WEST) != org.bukkit.block.data.type.RedstoneWire.Connection.NONE) mask |= 8;
-            return mask;
-        } catch (RuntimeException e) {
-            return 0;
+            bit <<= 1;
+        }
+        return mask;
+    }
+
+    /** Cables around a block that was placed or removed show their new shape at once, not at the next tick. */
+    void refreshCablesAround(Block changed) {
+        for (BlockFace face : new BlockFace[] {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
+            Block next = changed.getRelative(face);
+            MachineData data = store.get(next.getWorld().getName(), MachineStore.pos(next));
+            if (data != null && data.kind() == MachineType.CABLE) {
+                String mask = Integer.toString(cableMask(next));
+                if (!mask.equals(data.built)) {
+                    data.built = mask;
+                    BlockModels.show(next, modelItem(next, data), CABLE_YAW);
+                }
+            }
         }
     }
+
+    /** The model's own orientation puts its +z face towards the player at yaw 180: that is the one aligned with the world. */
+    static final float CABLE_YAW = 180f;
 
     /** The item a machine's display shows: a cable picks the model of its connection shape. */
     ItemStack modelItem(Block block, MachineData data) {
