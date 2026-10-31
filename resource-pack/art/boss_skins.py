@@ -134,6 +134,13 @@ def magma_warden():
     s.mirror_x((6, 22, 4.6), (7.8, 23.8, 5), "eye")                 # eyes
     s.box((5.5, 26, 5.5), (10.5, 27.5, 10.5), "lava")               # molten crown
     s.mirror_x((3.5, 25, 7), (6, 32, 9.5), "rock", rot=("z", 22.5, [5, 25, 8]))   # horns
+    s.box((4, 13, 12), (12, 21, 15.5), "obs", top="rock")             # lava cauldron on the back
+    s.box((5, 20.5, 12.6), (11, 22.5, 14.9), "lava")
+    s.mirror_x((4.5, 21, 13), (6.5, 27, 15), "rock")                  # two smoke stacks
+    s.mirror_x((4.6, 26.5, 13.2), (6.4, 28, 14.8), "ember")
+    s.mirror_x((3, 12, 3.2), (7.5, 19, 4.2), "obs")                   # obsidian chest plates around the core
+    s.mirror_x((-4.6, 1, 4), (-3.4, 3.5, 5.6), "ember")               # knuckle spikes
+    s.mirror_x((-4.6, 1, 8.4), (-3.4, 3.5, 10), "ember")
     s.mirror_x((6.5, 27.5, 5.5), (8, 32, 7), "ember")               # crown flames, the tallest thing on the field
     s.box((7, 27.5, 7), (9, 32, 9), "lava")
     s.write()
@@ -163,6 +170,10 @@ def frost_revenant():
     for i in range(4):
         s.box((4 + i * 2.2, -0.5, 10.7), (5.6 + i * 2.2, 3 + (i % 2) * 1.5, 11.3), "cloak")
     s.box((3.5, 4, 11.2), (12.5, 20, 11.8), "deep")
+    s.mirror_x((2.5, 24, 2), (4, 28.5, 3.4), "ice", rot=("z", 22.5, [3, 26, 2.7]))   # shards orbiting the shoulders
+    s.mirror_x((1.5, 14, 12.5), (3, 19, 13.8), "ice", rot=("z", -22.5, [2, 16, 13]))
+    s.mirror_x((4.4, 3.5, 5.2), (8.2, 9, 10.8), "ice")                # ice greaves
+    s.box((4.2, 0, 11.6), (11.8, 4, 12.2), "ice")                     # frozen fringe of the cape
     s.write()
 
 
@@ -183,6 +194,11 @@ def sylvan_matriarch():
     s.mirror_x((5, 14.5, 10), (8, 16.5, 13), "bloom")               # flowers
     s.box((7, 17.5, 12), (9.5, 19.5, 14.5), "bloom")
     s.mirror_x((3.5, 8, 12), (5, 12, 15), "leaf")
+    s.mirror_x((5.4, 10, 3), (6.6, 16, 4.2), "bark", rot=("z", 22.5, [6, 10, 3.6]))      # branch antlers
+    s.mirror_x((5.2, 14, 3.2), (6.2, 18, 4.2), "bark", rot=("z", 40, [5.7, 14, 3.7]))
+    s.mirror_x((3.6, 3, 11), (6, 9, 14), "web")                       # silk sacs hanging below the abdomen
+    s.box((7, 0.5, 9), (9, 5, 12), "web")
+    s.mirror_x((3.2, 11, 15), (4.6, 17, 16.4), "leaf")                # trailing vines
     s.write()
 
 
@@ -206,6 +222,10 @@ def abyssal_leviathan():
     s.box((9, 12, 18.5), (11, 15, 24), "fin")
     s.box((4.2, 4, 25), (7.8, 10, 29), "scale")
     s.box((3.2, 1, 28), (4.8, 16, 31.5), "fin")                     # tail fin
+    s.box((7.4, 14, 10.5), (8.6, 23, 17.5), "fin", rot=("x", 22.5, [8, 14, 14]))   # tall dorsal sail
+    s.box((7.4, 12, 18), (8.6, 20, 24.5), "fin", rot=("x", 22.5, [8, 12, 21]))
+    s.box((7.5, 16, 0.5), (8.5, 25, 1.5), "deep", rot=("x", -22.5, [8, 16, 1]))    # the angler's stalk
+    s.box((7, 25, -2.5), (9, 27.5, -0.5), "eye")                      # and its glowing lure
     s.write()
 
 
@@ -233,6 +253,10 @@ def crypt_lord():
     s.box((14, 4, 7.4), (15.2, 24, 8.6), "dark")                    # scepter
     s.box((13, 24, 6.4), (16.2, 28, 9.6), "eye")                    # the orb: the glowing weak spot
     s.box((13.6, 28, 7), (15.6, 30, 9), "gold")
+    s.mirror_x((-1.5, 21.5, 5.4), (2.6, 25.5, 9.4), "bone")           # a skull on each shoulder
+    s.mirror_x((-0.8, 22.7, 4.9), (0.2, 23.7, 5.5), "void")
+    s.mirror_x((2.5, 27, 3), (4, 28.5, 4.5), "eye")                   # orbs circling the crown
+    s.box((7.2, 30.5, 7.2), (8.8, 32, 8.8), "eye")
     s.write()
 
 
@@ -276,6 +300,9 @@ def voidwyrm():
     s.mirror_x((5.2, 3.5, 16), (7.2, 9.2, 19), "scale")
     s.mirror_x((4.6, 2.6, 8.4), (7.4, 3.8, 12.6), "bone")
     s.mirror_x((4.6, 2.6, 15.4), (7.4, 3.8, 19.6), "bone")
+    s.mirror_x((1, 22, 3), (3, 28, 5), "vein", rot=("z", 22.5, [2, 25, 4]))        # floating void crystals
+    s.mirror_x((0, 26, 14), (1.8, 31, 15.8), "vein", rot=("z", -22.5, [1, 28, 15]))
+    s.mirror_x((3, 17, 24), (4.5, 22, 25.5), "void")
     s.write()
 
 

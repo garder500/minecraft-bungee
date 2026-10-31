@@ -46,8 +46,12 @@ public final class WorldBossManager {
         this.state = core.store().read(FILE, WorldBossState.class, WorldBossState::new);
     }
 
+    /**
+     * Parked: the world boss events do not work yet (no spot world exists), so the loop is never started, whatever an
+     * older boss.yml on a server says. Its "spot world is not loaded" warning filled the console every five minutes.
+     */
     public void start() {
-        loop = core.scheduler().repeating(100, 100, this::check);
+        core.getPlugin().getLogger().fine("World boss events are parked.");
     }
 
     public void stop() {
