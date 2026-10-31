@@ -40,9 +40,9 @@ final class OutputListener implements Listener {
         Material type = block.getType();
         String ore = null;
         String quartz = null;
-        if ((type == Material.SNOW_BLOCK || type == Material.PACKED_ICE) && random.nextInt(100) < 6) {
+        if ((type == Material.SNOW_BLOCK || type == Material.PACKED_ICE) && random.nextInt(100) < 12) {
             ore = QuarryItems.FROSTIUM;
-        } else if ((type == Material.NETHERRACK || type == Material.SOUL_SAND) && random.nextInt(100) < 3) {
+        } else if ((type == Material.NETHERRACK || type == Material.SOUL_SAND) && random.nextInt(100) < 8) {
             ore = QuarryItems.SUNSTONE;
         } else if (type == Material.NETHERRACK && random.nextInt(100) < 12) {
             quartz = "quartz";

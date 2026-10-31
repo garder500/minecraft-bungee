@@ -115,7 +115,9 @@ final class GuideCommands {
     static String hint(QuestDef def) {
         String target = def.target().toLowerCase(Locale.ROOT);
         return switch (def.type()) {
-            case ORE_FOUND -> "break the cobblestone your Fountain or generator makes above itself (the old water + lava generator works too). A Miner next to it does it for you.";
+            case ORE_FOUND -> target.equals("frostium") ? "break the blocks of a Frost generator (/guide generators): packed ice and snow blocks drop it."
+                : target.equals("sunstone") ? "break the blocks of an Ember generator (/guide generators): netherrack and soul sand drop it."
+                : "break the cobblestone your Fountain or generator makes above itself (the old water + lava generator works too). A Miner next to it does it for you.";
             case FORGE_ITEM -> "open the Forge with /forge (or right-click your Forge block), pick the recipe and come back when the timer ends.";
             case GENERATOR_TIER, GENERATOR_UPGRADE -> "forge the core with /forge, then right-click it in your hand on your island.";
             case CRAFT_ITEM -> target.contains("forge")

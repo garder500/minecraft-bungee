@@ -37,7 +37,7 @@ categories:
     description: "The Void Lens opens /island end. The Voidwyrm guards the Void."
     main: true
     icon: END_STONE
-    unlock: q066
+    unlock: q065
   farm:
     name: "Farming and Food"
     description: "A calm category. Play it alongside the generators."
@@ -73,13 +73,13 @@ categories:
     description: "Eight bosses of the world, each with its own silhouette and its glowing weak spot."
     main: false
     icon: DRAGON_HEAD
-    unlock: q214
+    unlock: q212
   mastery:
     name: "Mastery"
     description: "Long goals for players who have done it all."
     main: false
     icon: NETHER_STAR
-    unlock: q066
+    unlock: q065
   challenges:
     name: "Challenges"
     description: "Repeatable-feeling goals: bigger numbers, once each."
@@ -609,7 +609,7 @@ quests:
       rewards: {coins: 80}
     q053:
       name: "Frostium"
-      description: "Find your first Frostium in your generator."
+      description: "Find your first Frostium in the blocks of your Frost generator."
       category: variety
       type: ORE_FOUND
       target: "frostium"
@@ -619,7 +619,7 @@ quests:
       rewards: {coins: 100}
     q054:
       name: "Frostium Haul"
-      description: "Find 8 Frostium in your generator."
+      description: "Find 8 Frostium in the blocks of your Frost generator."
       category: variety
       type: ORE_FOUND
       target: "frostium"
@@ -717,16 +717,6 @@ quests:
       requires: [q062]
       rewards: {coins: 200}
     q064:
-      name: "Sunstone"
-      description: "Find your first Sunstone in your generator."
-      category: tiers
-      type: ORE_FOUND
-      target: "sunstone"
-      amount: 1
-      icon: GLOWSTONE_DUST
-      requires: [q063]
-      rewards: {coins: 250}
-    q065:
       name: "Ember Core"
       description: "Collect a ember core from the Forge (/forge)."
       category: tiers
@@ -734,18 +724,18 @@ quests:
       target: "ember_core"
       amount: 1
       icon: FIRE_CHARGE
-      requires: [q064]
+      requires: [q063]
       rewards: {coins: 250}
-    q066:
+    q065:
       name: "Tier III"
       description: "Reach generator tier III: forge an Ember Core and right-click it on your island."
       category: tiers
       type: GENERATOR_TIER
       amount: 3
       icon: FIRE_CHARGE
-      requires: [q065]
+      requires: [q064]
       rewards: {coins: 400, items: {endless_bucket: 1}}
-    q067:
+    q066:
       name: "Ancient Debris"
       description: "Find ancient debris in your generator."
       category: tiers
@@ -753,19 +743,9 @@ quests:
       target: "ancient_debris"
       amount: 1
       icon: ANCIENT_DEBRIS
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 400}
-    q068:
-      name: "Sunstone Hoard"
-      description: "Find 3 Sunstone in your generator."
-      category: tiers
-      type: ORE_FOUND
-      target: "sunstone"
-      amount: 3
-      icon: GLOWSTONE_DUST
-      requires: [q067]
-      rewards: {coins: 300}
-    q069:
+    q067:
       name: "Mine 2,000"
       description: "Break 2,000 cobblestone."
       category: tiers
@@ -773,9 +753,9 @@ quests:
       target: "COBBLESTONE"
       amount: 2000
       icon: COBBLESTONE
-      requires: [q068]
+      requires: [q066]
       rewards: {coins: 300}
-    q070:
+    q068:
       name: "Void Lens"
       description: "Collect a void lens from the Forge (/forge)."
       category: tiers
@@ -783,18 +763,18 @@ quests:
       target: "void_lens"
       amount: 1
       icon: ENDER_EYE
-      requires: [q069]
+      requires: [q067]
       rewards: {coins: 500}
-    q071:
+    q069:
       name: "The Void Lens"
       description: "Reach generator tier IV: right-click the Void Lens on your island. It also opens your End (/island end)."
       category: tiers
       type: GENERATOR_TIER
       amount: 4
       icon: ENDER_EYE
-      requires: [q070]
+      requires: [q068]
       rewards: {coins: 800}
-    q072:
+    q070:
       name: "Voidglass"
       description: "Find a Voidglass in your generator."
       category: tiers
@@ -802,9 +782,9 @@ quests:
       target: "voidglass"
       amount: 1
       icon: ECHO_SHARD
-      requires: [q071]
+      requires: [q069]
       rewards: {coins: 500}
-    q073:
+    q071:
       name: "Starcore"
       description: "Find a Starcore Shard in your generator."
       category: tiers
@@ -812,9 +792,9 @@ quests:
       target: "starcore"
       amount: 1
       icon: NETHER_STAR
-      requires: [q072]
+      requires: [q070]
       rewards: {coins: 800}
-    q074:
+    q072:
       name: "Mine 5,000"
       description: "Break 5,000 cobblestone."
       category: tiers
@@ -822,9 +802,9 @@ quests:
       target: "COBBLESTONE"
       amount: 5000
       icon: COBBLESTONE
-      requires: [q073]
+      requires: [q071]
       rewards: {coins: 500}
-    q075:
+    q073:
       name: "Nether Plan"
       description: "Read the Nether plan with /guide."
       category: nether
@@ -834,7 +814,7 @@ quests:
       icon: WRITABLE_BOOK
       requires: [q060]
       rewards: {coins: 50}
-    q076:
+    q074:
       name: "Flint and Steel"
       description: "Craft flint and steel."
       category: nether
@@ -842,9 +822,9 @@ quests:
       target: "FLINT_AND_STEEL"
       amount: 1
       icon: FLINT_AND_STEEL
-      requires: [q075]
+      requires: [q073]
       rewards: {coins: 80}
-    q077:
+    q075:
       name: "Light a Portal"
       description: "Place 10 obsidian."
       category: nether
@@ -852,9 +832,9 @@ quests:
       target: "OBSIDIAN"
       amount: 10
       icon: OBSIDIAN
-      requires: [q076]
+      requires: [q074]
       rewards: {coins: 100}
-    q078:
+    q076:
       name: "Enter the Nether"
       description: "Enter your Nether."
       category: nether
@@ -862,9 +842,9 @@ quests:
       target: "nether"
       amount: 1
       icon: NETHERRACK
-      requires: [q077]
+      requires: [q075]
       rewards: {coins: 150}
-    q079:
+    q077:
       name: "Netherrack"
       description: "Break 64 netherrack."
       category: nether
@@ -872,9 +852,9 @@ quests:
       target: "NETHERRACK"
       amount: 64
       icon: NETHERRACK
-      requires: [q078]
+      requires: [q076]
       rewards: {coins: 100}
-    q080:
+    q078:
       name: "Nether Bricks"
       description: "Craft 16 nether bricks."
       category: nether
@@ -882,9 +862,9 @@ quests:
       target: "NETHER_BRICKS"
       amount: 16
       icon: NETHER_BRICKS
-      requires: [q079]
+      requires: [q077]
       rewards: {coins: 100}
-    q081:
+    q079:
       name: "Magma Block"
       description: "Craft a magma block from 4 netherrack and 1 coal."
       category: nether
@@ -892,9 +872,9 @@ quests:
       target: "MAGMA_BLOCK"
       amount: 1
       icon: MAGMA_BLOCK
-      requires: [q080]
+      requires: [q078]
       rewards: {coins: 100}
-    q082:
+    q080:
       name: "Ember Ring"
       description: "Place 8 nether bricks around a Fountain."
       category: nether
@@ -902,9 +882,9 @@ quests:
       target: "NETHER_BRICKS"
       amount: 8
       icon: NETHER_BRICKS
-      requires: [q081]
+      requires: [q079]
       rewards: {coins: 150}
-    q083:
+    q081:
       name: "Ember Generator"
       description: "Complete the ring with a magma block on the south side: an Ember generator makes netherrack and soul sand."
       category: nether
@@ -912,9 +892,9 @@ quests:
       target: "generator_built:ember"
       amount: 1
       icon: MAGMA_BLOCK
-      requires: [q082]
+      requires: [q080]
       rewards: {coins: 300}
-    q084:
+    q082:
       name: "Quartz Block"
       description: "Craft a quartz block from 4 nether quartz (from the Ember generator or the market)."
       category: nether
@@ -922,9 +902,9 @@ quests:
       target: "QUARTZ_BLOCK"
       amount: 1
       icon: QUARTZ
-      requires: [q083]
+      requires: [q081]
       rewards: {coins: 120}
-    q085:
+    q083:
       name: "Soul Sand"
       description: "Break 32 soul sand."
       category: nether
@@ -932,19 +912,19 @@ quests:
       target: "SOUL_SAND"
       amount: 32
       icon: SOUL_SAND
-      requires: [q084]
+      requires: [q082]
       rewards: {coins: 120}
-    q086:
+    q084:
       name: "Ember Sunstone"
-      description: "Find a Sunstone in your generator."
+      description: "Find a Sunstone in the blocks of your Ember generator."
       category: nether
       type: ORE_FOUND
       target: "sunstone"
       amount: 1
       icon: GLOWSTONE_DUST
-      requires: [q085]
+      requires: [q083]
       rewards: {coins: 200}
-    q087:
+    q085:
       name: "Wart"
       description: "Break 16 nether wart."
       category: nether
@@ -952,9 +932,9 @@ quests:
       target: "NETHER_WART"
       amount: 16
       icon: NETHER_WART
-      requires: [q086]
+      requires: [q084]
       rewards: {coins: 120}
-    q088:
+    q086:
       name: "Magma Cubes"
       description: "Defeat 10 magma cubes (the Ember Spawn of the Magma Warden)."
       category: nether
@@ -962,9 +942,9 @@ quests:
       target: "MAGMA_CUBE"
       amount: 10
       icon: MAGMA_CREAM
-      requires: [q087]
+      requires: [q085]
       rewards: {coins: 250}
-    q089:
+    q087:
       name: "Piglin Hunter"
       description: "Defeat 20 zombified piglins."
       category: nether
@@ -972,9 +952,9 @@ quests:
       target: "ZOMBIFIED_PIGLIN"
       amount: 20
       icon: GOLD_INGOT
-      requires: [q088]
+      requires: [q086]
       rewards: {coins: 200}
-    q090:
+    q088:
       name: "Netherrack Digger"
       description: "Break 256 netherrack."
       category: nether
@@ -982,9 +962,9 @@ quests:
       target: "NETHERRACK"
       amount: 256
       icon: NETHERRACK
-      requires: [q089]
+      requires: [q087]
       rewards: {coins: 200}
-    q091:
+    q089:
       name: "Soul Digger"
       description: "Break 128 soul sand."
       category: nether
@@ -992,9 +972,9 @@ quests:
       target: "SOUL_SAND"
       amount: 128
       icon: SOUL_SAND
-      requires: [q090]
+      requires: [q088]
       rewards: {coins: 300}
-    q092:
+    q090:
       name: "Mine 1,000 Netherrack"
       description: "Break 1,000 netherrack."
       category: nether
@@ -1002,9 +982,9 @@ quests:
       target: "NETHERRACK"
       amount: 1000
       icon: NETHERRACK
-      requires: [q091]
+      requires: [q089]
       rewards: {coins: 300}
-    q093:
+    q091:
       name: "Enter the End"
       description: "Enter your End with /island end (needs the Void Lens)."
       category: end
@@ -1012,9 +992,9 @@ quests:
       target: "end"
       amount: 1
       icon: END_STONE
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 500}
-    q094:
+    q092:
       name: "End Stone"
       description: "Break 64 end stone."
       category: end
@@ -1022,9 +1002,9 @@ quests:
       target: "END_STONE"
       amount: 64
       icon: END_STONE
-      requires: [q093]
+      requires: [q091]
       rewards: {coins: 200}
-    q095:
+    q093:
       name: "Void Mites"
       description: "Defeat 15 endermites (the Void Mites of the Voidwyrm)."
       category: end
@@ -1032,9 +1012,9 @@ quests:
       target: "ENDERMITE"
       amount: 15
       icon: ENDER_PEARL
-      requires: [q094]
+      requires: [q092]
       rewards: {coins: 250}
-    q096:
+    q094:
       name: "End Bricks"
       description: "Craft 16 end stone bricks."
       category: end
@@ -1042,9 +1022,9 @@ quests:
       target: "END_STONE_BRICKS"
       amount: 16
       icon: END_STONE_BRICKS
-      requires: [q095]
+      requires: [q093]
       rewards: {coins: 200}
-    q097:
+    q095:
       name: "Void Sigil"
       description: "Collect a void sigil from the Forge (/forge)."
       category: end
@@ -1052,9 +1032,9 @@ quests:
       target: "void_sigil"
       amount: 1
       icon: NETHER_STAR
-      requires: [q096]
+      requires: [q094]
       rewards: {coins: 400}
-    q098:
+    q096:
       name: "Face the Voidwyrm"
       description: "Defeat the Voidwyrm."
       category: end
@@ -1062,9 +1042,9 @@ quests:
       target: "voidwyrm"
       amount: 1
       icon: DRAGON_HEAD
-      requires: [q097]
+      requires: [q095]
       rewards: {coins: 1500}
-    q099:
+    q097:
       name: "Voidwyrm Again"
       description: "Defeat the Voidwyrm 3 times."
       category: end
@@ -1072,9 +1052,9 @@ quests:
       target: "voidwyrm"
       amount: 3
       icon: DRAGON_HEAD
-      requires: [q098]
+      requires: [q096]
       rewards: {coins: 2000}
-    q100:
+    q098:
       name: "Voidwyrm Master"
       description: "Defeat the Voidwyrm 10 times."
       category: end
@@ -1082,9 +1062,9 @@ quests:
       target: "voidwyrm"
       amount: 10
       icon: DRAGON_HEAD
-      requires: [q099]
+      requires: [q097]
       rewards: {coins: 4000, items: {skin_wyrmfang: 1}}
-    q101:
+    q099:
       name: "Hoe"
       description: "Craft a wooden hoe."
       category: farm
@@ -1094,7 +1074,7 @@ quests:
       icon: WOODEN_HOE
       requires: [q013]
       rewards: {coins: 20}
-    q102:
+    q100:
       name: "Till the Soil"
       description: "Plant 16 crops or seeds."
       category: farm
@@ -1104,7 +1084,7 @@ quests:
       icon: WHEAT_SEEDS
       requires: [q013]
       rewards: {coins: 20}
-    q103:
+    q101:
       name: "Wheat"
       description: "Break 32 wheat."
       category: farm
@@ -1114,7 +1094,7 @@ quests:
       icon: WHEAT
       requires: [q013]
       rewards: {coins: 40}
-    q104:
+    q102:
       name: "Carrots"
       description: "Break 16 carrots."
       category: farm
@@ -1124,7 +1104,7 @@ quests:
       icon: CARROT
       requires: [q013]
       rewards: {coins: 40}
-    q105:
+    q103:
       name: "Potatoes"
       description: "Break 16 potatoes."
       category: farm
@@ -1134,7 +1114,7 @@ quests:
       icon: POTATO
       requires: [q013]
       rewards: {coins: 40}
-    q106:
+    q104:
       name: "Loaves"
       description: "Craft 8 bread."
       category: farm
@@ -1144,7 +1124,7 @@ quests:
       icon: BREAD
       requires: [q013]
       rewards: {coins: 30}
-    q107:
+    q105:
       name: "Plant a Forest"
       description: "Plant 8 saplings."
       category: farm
@@ -1154,7 +1134,7 @@ quests:
       icon: OAK_SAPLING
       requires: [q013]
       rewards: {coins: 30}
-    q108:
+    q106:
       name: "Lumber"
       description: "Break 64 logs."
       category: farm
@@ -1164,7 +1144,7 @@ quests:
       icon: OAK_LOG
       requires: [q013]
       rewards: {coins: 50}
-    q109:
+    q107:
       name: "Leaf Blower"
       description: "Break 64 oak leaves."
       category: farm
@@ -1174,7 +1154,7 @@ quests:
       icon: OAK_LEAVES
       requires: [q013]
       rewards: {coins: 30}
-    q110:
+    q108:
       name: "Hay Bale"
       description: "Craft a hay bale."
       category: farm
@@ -1184,7 +1164,7 @@ quests:
       icon: HAY_BLOCK
       requires: [q013]
       rewards: {coins: 50}
-    q111:
+    q109:
       name: "Sugar Cane"
       description: "Break 32 sugar cane."
       category: farm
@@ -1194,7 +1174,7 @@ quests:
       icon: SUGAR_CANE
       requires: [q013]
       rewards: {coins: 50}
-    q112:
+    q110:
       name: "Golden Carrot"
       description: "Craft a golden carrot from gold nuggets and a carrot."
       category: farm
@@ -1204,7 +1184,7 @@ quests:
       icon: GOLDEN_CARROT
       requires: [q013]
       rewards: {coins: 80}
-    q113:
+    q111:
       name: "Melons"
       description: "Break 16 melons."
       category: farm
@@ -1214,7 +1194,7 @@ quests:
       icon: MELON_SLICE
       requires: [q013]
       rewards: {coins: 50}
-    q114:
+    q112:
       name: "Pumpkins"
       description: "Break 8 pumpkins."
       category: farm
@@ -1224,7 +1204,7 @@ quests:
       icon: PUMPKIN
       requires: [q013]
       rewards: {coins: 50}
-    q115:
+    q113:
       name: "Farm Plot"
       description: "Plant 64 crops or seeds."
       category: farm
@@ -1234,7 +1214,7 @@ quests:
       icon: WHEAT_SEEDS
       requires: [q013]
       rewards: {coins: 100}
-    q116:
+    q114:
       name: "Harvest 256"
       description: "Break 256 crops."
       category: farm
@@ -1244,7 +1224,7 @@ quests:
       icon: WHEAT
       requires: [q013]
       rewards: {coins: 150}
-    q117:
+    q115:
       name: "Composter"
       description: "Craft a composter."
       category: farm
@@ -1254,7 +1234,7 @@ quests:
       icon: COMPOSTER
       requires: [q013]
       rewards: {coins: 60}
-    q118:
+    q116:
       name: "Golden Apple"
       description: "Craft a golden apple."
       category: farm
@@ -1264,7 +1244,7 @@ quests:
       icon: GOLDEN_APPLE
       requires: [q013]
       rewards: {coins: 150}
-    q119:
+    q117:
       name: "Harvest 1,000"
       description: "Break 1,000 crops."
       category: farm
@@ -1274,7 +1254,7 @@ quests:
       icon: HAY_BLOCK
       requires: [q013]
       rewards: {coins: 300}
-    q120:
+    q118:
       name: "Fisher"
       description: "Catch 20 fish."
       category: farm
@@ -1283,7 +1263,7 @@ quests:
       icon: FISHING_ROD
       requires: [q013]
       rewards: {coins: 120}
-    q121:
+    q119:
       name: "Bronze Cleaver"
       description: "Collect a bronze cleaver from the Forge (/forge)."
       category: forging
@@ -1293,7 +1273,7 @@ quests:
       icon: IRON_SWORD
       requires: [q057]
       rewards: {coins: 100}
-    q122:
+    q120:
       name: "Bronze Pick"
       description: "Collect a bronze pick from the Forge (/forge)."
       category: forging
@@ -1303,7 +1283,7 @@ quests:
       icon: IRON_PICKAXE
       requires: [q057]
       rewards: {coins: 100}
-    q123:
+    q121:
       name: "Rimeblade"
       description: "Collect a rimeblade from the Forge (/forge)."
       category: forging
@@ -1313,7 +1293,7 @@ quests:
       icon: IRON_SWORD
       requires: [q057]
       rewards: {coins: 200}
-    q124:
+    q122:
       name: "Rime Pick"
       description: "Collect a rime pick from the Forge (/forge)."
       category: forging
@@ -1323,7 +1303,7 @@ quests:
       icon: IRON_PICKAXE
       requires: [q057]
       rewards: {coins: 200}
-    q125:
+    q123:
       name: "Solar Panel"
       description: "Collect a solar panel from the Forge (/forge)."
       category: forging
@@ -1333,7 +1313,7 @@ quests:
       icon: DAYLIGHT_DETECTOR
       requires: [q057]
       rewards: {coins: 150}
-    q126:
+    q124:
       name: "Copper Cable"
       description: "Collect 4 cable from the Forge (/forge)."
       category: forging
@@ -1343,7 +1323,7 @@ quests:
       icon: LIGHTNING_ROD
       requires: [q057]
       rewards: {coins: 100}
-    q127:
+    q125:
       name: "Coal Generator"
       description: "Collect a coal generator from the Forge (/forge)."
       category: forging
@@ -1353,7 +1333,7 @@ quests:
       icon: STONECUTTER
       requires: [q057]
       rewards: {coins: 100}
-    q128:
+    q126:
       name: "Battery"
       description: "Collect a battery from the Forge (/forge)."
       category: forging
@@ -1363,7 +1343,7 @@ quests:
       icon: WAXED_COPPER_BLOCK
       requires: [q057]
       rewards: {coins: 120}
-    q129:
+    q127:
       name: "Miner I"
       description: "Collect a miner 1 from the Forge (/forge)."
       category: forging
@@ -1373,7 +1353,7 @@ quests:
       icon: LODESTONE
       requires: [q057]
       rewards: {coins: 200}
-    q130:
+    q128:
       name: "Miner II"
       description: "Collect a miner 2 from the Forge (/forge)."
       category: forging
@@ -1383,7 +1363,7 @@ quests:
       icon: LODESTONE
       requires: [q057]
       rewards: {coins: 400}
-    q131:
+    q129:
       name: "Magma Core"
       description: "Collect a magma core from the Forge (/forge)."
       category: forging
@@ -1393,7 +1373,7 @@ quests:
       icon: MAGMA_CREAM
       requires: [q057]
       rewards: {coins: 250}
-    q132:
+    q130:
       name: "Frost Heart"
       description: "Collect a frost heart from the Forge (/forge)."
       category: forging
@@ -1403,7 +1383,7 @@ quests:
       icon: BLUE_ICE
       requires: [q057]
       rewards: {coins: 250}
-    q133:
+    q131:
       name: "Matriarch Egg"
       description: "Collect a matriarch egg from the Forge (/forge)."
       category: forging
@@ -1413,7 +1393,7 @@ quests:
       icon: SPIDER_EYE
       requires: [q057]
       rewards: {coins: 250}
-    q134:
+    q132:
       name: "Leviathan Scale"
       description: "Collect a leviathan scale from the Forge (/forge)."
       category: forging
@@ -1423,7 +1403,7 @@ quests:
       icon: PRISMARINE_SHARD
       requires: [q057]
       rewards: {coins: 300}
-    q135:
+    q133:
       name: "Crystal Saber Skin"
       description: "Collect a skin crystal saber from the Forge (/forge)."
       category: forging
@@ -1433,7 +1413,7 @@ quests:
       icon: PAPER
       requires: [q057]
       rewards: {coins: 300}
-    q136:
+    q134:
       name: "Forge 5"
       description: "Collect 5 bronze core from the Forge (/forge)."
       category: forging
@@ -1443,7 +1423,7 @@ quests:
       icon: AMETHYST_SHARD
       requires: [q057]
       rewards: {coins: 200}
-    q137:
+    q135:
       name: "Forge 10 Cores"
       description: "Collect 10 bronze core from the Forge (/forge)."
       category: forging
@@ -1453,7 +1433,7 @@ quests:
       icon: AMETHYST_SHARD
       requires: [q057]
       rewards: {coins: 400}
-    q138:
+    q136:
       name: "Ember Cores"
       description: "Collect 3 ember core from the Forge (/forge)."
       category: forging
@@ -1463,7 +1443,7 @@ quests:
       icon: FIRE_CHARGE
       requires: [q057]
       rewards: {coins: 500}
-    q139:
+    q137:
       name: "Void Lenses"
       description: "Collect 2 void lens from the Forge (/forge)."
       category: forging
@@ -1473,7 +1453,7 @@ quests:
       icon: ENDER_EYE
       requires: [q057]
       rewards: {coins: 800}
-    q140:
+    q138:
       name: "Solar Farm"
       description: "Collect 5 solar panel from the Forge (/forge)."
       category: forging
@@ -1483,7 +1463,7 @@ quests:
       icon: DAYLIGHT_DETECTOR
       requires: [q057]
       rewards: {coins: 400}
-    q141:
+    q139:
       name: "Miners at Work"
       description: "Collect 3 miner 1 from the Forge (/forge)."
       category: forging
@@ -1493,7 +1473,7 @@ quests:
       icon: LODESTONE
       requires: [q057]
       rewards: {coins: 500}
-    q142:
+    q140:
       name: "Battery Bank"
       description: "Collect 5 battery from the Forge (/forge)."
       category: forging
@@ -1503,7 +1483,7 @@ quests:
       icon: WAXED_COPPER_BLOCK
       requires: [q057]
       rewards: {coins: 400}
-    q143:
+    q141:
       name: "Bronze Helmet"
       description: "Collect a bronze helmet from the Forge (/forge)."
       category: forging
@@ -1513,7 +1493,7 @@ quests:
       icon: CHAINMAIL_HELMET
       requires: [q057]
       rewards: {coins: 80}
-    q144:
+    q142:
       name: "Bronze Chestplate"
       description: "Collect a bronze chestplate from the Forge (/forge)."
       category: forging
@@ -1523,7 +1503,7 @@ quests:
       icon: CHAINMAIL_CHESTPLATE
       requires: [q057]
       rewards: {coins: 80}
-    q145:
+    q143:
       name: "Bronze Leggings"
       description: "Collect a bronze leggings from the Forge (/forge)."
       category: forging
@@ -1533,7 +1513,7 @@ quests:
       icon: CHAINMAIL_LEGGINGS
       requires: [q057]
       rewards: {coins: 80}
-    q146:
+    q144:
       name: "Bronze Boots"
       description: "Collect a bronze boots from the Forge (/forge)."
       category: forging
@@ -1543,7 +1523,7 @@ quests:
       icon: CHAINMAIL_BOOTS
       requires: [q057]
       rewards: {coins: 80}
-    q147:
+    q145:
       name: "Bronze Armor"
       description: "Wear a full set of bronze armor: helmet, chestplate, leggings and boots."
       category: forging
@@ -1553,7 +1533,7 @@ quests:
       icon: CHAINMAIL_CHESTPLATE
       requires: [q057]
       rewards: {coins: 160}
-    q148:
+    q146:
       name: "Rime Helmet"
       description: "Collect a rime helmet from the Forge (/forge)."
       category: forging
@@ -1563,7 +1543,7 @@ quests:
       icon: IRON_HELMET
       requires: [q057]
       rewards: {coins: 150}
-    q149:
+    q147:
       name: "Rime Chestplate"
       description: "Collect a rime chestplate from the Forge (/forge)."
       category: forging
@@ -1573,7 +1553,7 @@ quests:
       icon: IRON_CHESTPLATE
       requires: [q057]
       rewards: {coins: 150}
-    q150:
+    q148:
       name: "Rime Leggings"
       description: "Collect a rime leggings from the Forge (/forge)."
       category: forging
@@ -1583,7 +1563,7 @@ quests:
       icon: IRON_LEGGINGS
       requires: [q057]
       rewards: {coins: 150}
-    q151:
+    q149:
       name: "Rime Boots"
       description: "Collect a rime boots from the Forge (/forge)."
       category: forging
@@ -1593,7 +1573,7 @@ quests:
       icon: IRON_BOOTS
       requires: [q057]
       rewards: {coins: 150}
-    q152:
+    q150:
       name: "Rime Armor"
       description: "Wear a full set of rime armor: helmet, chestplate, leggings and boots."
       category: forging
@@ -1603,7 +1583,7 @@ quests:
       icon: IRON_CHESTPLATE
       requires: [q057]
       rewards: {coins: 300}
-    q153:
+    q151:
       name: "Ember Helmet"
       description: "Collect a ember helmet from the Forge (/forge)."
       category: forging
@@ -1613,7 +1593,7 @@ quests:
       icon: DIAMOND_HELMET
       requires: [q057]
       rewards: {coins: 300}
-    q154:
+    q152:
       name: "Ember Chestplate"
       description: "Collect a ember chestplate from the Forge (/forge)."
       category: forging
@@ -1623,7 +1603,7 @@ quests:
       icon: DIAMOND_CHESTPLATE
       requires: [q057]
       rewards: {coins: 300}
-    q155:
+    q153:
       name: "Ember Leggings"
       description: "Collect a ember leggings from the Forge (/forge)."
       category: forging
@@ -1633,7 +1613,7 @@ quests:
       icon: DIAMOND_LEGGINGS
       requires: [q057]
       rewards: {coins: 300}
-    q156:
+    q154:
       name: "Ember Boots"
       description: "Collect a ember boots from the Forge (/forge)."
       category: forging
@@ -1643,7 +1623,7 @@ quests:
       icon: DIAMOND_BOOTS
       requires: [q057]
       rewards: {coins: 300}
-    q157:
+    q155:
       name: "Ember Armor"
       description: "Wear a full set of ember armor: helmet, chestplate, leggings and boots."
       category: forging
@@ -1653,7 +1633,7 @@ quests:
       icon: DIAMOND_CHESTPLATE
       requires: [q057]
       rewards: {coins: 600}
-    q158:
+    q156:
       name: "Void Helmet"
       description: "Collect a void helmet from the Forge (/forge)."
       category: forging
@@ -1663,7 +1643,7 @@ quests:
       icon: NETHERITE_HELMET
       requires: [q057]
       rewards: {coins: 600}
-    q159:
+    q157:
       name: "Void Chestplate"
       description: "Collect a void chestplate from the Forge (/forge)."
       category: forging
@@ -1673,7 +1653,7 @@ quests:
       icon: NETHERITE_CHESTPLATE
       requires: [q057]
       rewards: {coins: 600}
-    q160:
+    q158:
       name: "Void Leggings"
       description: "Collect a void leggings from the Forge (/forge)."
       category: forging
@@ -1683,7 +1663,7 @@ quests:
       icon: NETHERITE_LEGGINGS
       requires: [q057]
       rewards: {coins: 600}
-    q161:
+    q159:
       name: "Void Boots"
       description: "Collect a void boots from the Forge (/forge)."
       category: forging
@@ -1693,7 +1673,7 @@ quests:
       icon: NETHERITE_BOOTS
       requires: [q057]
       rewards: {coins: 600}
-    q162:
+    q160:
       name: "Void Armor"
       description: "Wear a full set of void armor: helmet, chestplate, leggings and boots."
       category: forging
@@ -1703,7 +1683,7 @@ quests:
       icon: NETHERITE_CHESTPLATE
       requires: [q057]
       rewards: {coins: 1200}
-    q163:
+    q161:
       name: "Starcore Helmet"
       description: "Collect a starcore helmet from the Forge (/forge)."
       category: forging
@@ -1713,7 +1693,7 @@ quests:
       icon: NETHERITE_HELMET
       requires: [q057]
       rewards: {coins: 1000}
-    q164:
+    q162:
       name: "Starcore Chestplate"
       description: "Collect a starcore chestplate from the Forge (/forge)."
       category: forging
@@ -1723,7 +1703,7 @@ quests:
       icon: NETHERITE_CHESTPLATE
       requires: [q057]
       rewards: {coins: 1000}
-    q165:
+    q163:
       name: "Starcore Leggings"
       description: "Collect a starcore leggings from the Forge (/forge)."
       category: forging
@@ -1733,7 +1713,7 @@ quests:
       icon: NETHERITE_LEGGINGS
       requires: [q057]
       rewards: {coins: 1000}
-    q166:
+    q164:
       name: "Starcore Boots"
       description: "Collect a starcore boots from the Forge (/forge)."
       category: forging
@@ -1743,7 +1723,7 @@ quests:
       icon: NETHERITE_BOOTS
       requires: [q057]
       rewards: {coins: 1000}
-    q167:
+    q165:
       name: "Starcore Armor"
       description: "Wear a full set of starcore armor: helmet, chestplate, leggings and boots."
       category: forging
@@ -1753,7 +1733,7 @@ quests:
       icon: NETHERITE_CHESTPLATE
       requires: [q057]
       rewards: {coins: 2000, items: {skin_titan_edge: 1}}
-    q168:
+    q166:
       name: "Ember Sword"
       description: "Collect a ember sword from the Forge (/forge)."
       category: forging
@@ -1763,7 +1743,7 @@ quests:
       icon: DIAMOND_SWORD
       requires: [q057]
       rewards: {coins: 400}
-    q169:
+    q167:
       name: "Ember Pick"
       description: "Collect a ember pick from the Forge (/forge)."
       category: forging
@@ -1773,7 +1753,7 @@ quests:
       icon: DIAMOND_PICKAXE
       requires: [q057]
       rewards: {coins: 400}
-    q170:
+    q168:
       name: "Void Sword"
       description: "Collect a void sword from the Forge (/forge)."
       category: forging
@@ -1783,7 +1763,7 @@ quests:
       icon: NETHERITE_SWORD
       requires: [q057]
       rewards: {coins: 800}
-    q171:
+    q169:
       name: "Void Pick"
       description: "Collect a void pick from the Forge (/forge)."
       category: forging
@@ -1793,7 +1773,7 @@ quests:
       icon: NETHERITE_PICKAXE
       requires: [q057]
       rewards: {coins: 800}
-    q172:
+    q170:
       name: "Starcore Sword"
       description: "Collect a starcore sword from the Forge (/forge)."
       category: forging
@@ -1803,7 +1783,7 @@ quests:
       icon: NETHERITE_SWORD
       requires: [q057]
       rewards: {coins: 1500}
-    q173:
+    q171:
       name: "Starcore Pick"
       description: "Collect a starcore pick from the Forge (/forge)."
       category: forging
@@ -1813,7 +1793,7 @@ quests:
       icon: NETHERITE_PICKAXE
       requires: [q057]
       rewards: {coins: 1500}
-    q174:
+    q172:
       name: "Coal Power"
       description: "Place a Coal Generator."
       category: machines
@@ -1823,7 +1803,7 @@ quests:
       icon: STONECUTTER
       requires: [q021]
       rewards: {coins: 100}
-    q175:
+    q173:
       name: "Cables"
       description: "Place 8 Copper Cables."
       category: machines
@@ -1833,7 +1813,7 @@ quests:
       icon: LIGHTNING_ROD
       requires: [q021]
       rewards: {coins: 80}
-    q176:
+    q174:
       name: "Store It"
       description: "Place a Battery."
       category: machines
@@ -1843,7 +1823,7 @@ quests:
       icon: WAXED_COPPER_BLOCK
       requires: [q021]
       rewards: {coins: 80}
-    q177:
+    q175:
       name: "Sunlight"
       description: "Place a Solar Panel under the open sky."
       category: machines
@@ -1853,7 +1833,7 @@ quests:
       icon: DAYLIGHT_DETECTOR
       requires: [q021]
       rewards: {coins: 100}
-    q178:
+    q176:
       name: "Miner I"
       description: "Place a Miner I next to your generator."
       category: machines
@@ -1863,7 +1843,7 @@ quests:
       icon: LODESTONE
       requires: [q021]
       rewards: {coins: 150}
-    q179:
+    q177:
       name: "Miner II"
       description: "Place a Miner II."
       category: machines
@@ -1873,7 +1853,7 @@ quests:
       icon: LODESTONE
       requires: [q021]
       rewards: {coins: 300}
-    q180:
+    q178:
       name: "Two Batteries"
       description: "Place 3 more Batteries."
       category: machines
@@ -1883,7 +1863,7 @@ quests:
       icon: WAXED_COPPER_BLOCK
       requires: [q021]
       rewards: {coins: 150}
-    q181:
+    q179:
       name: "A Real Network"
       description: "Place 20 more Copper Cables."
       category: machines
@@ -1893,7 +1873,7 @@ quests:
       icon: LIGHTNING_ROD
       requires: [q021]
       rewards: {coins: 200}
-    q182:
+    q180:
       name: "Solar Farm"
       description: "Place 4 more Solar Panels."
       category: machines
@@ -1903,7 +1883,7 @@ quests:
       icon: DAYLIGHT_DETECTOR
       requires: [q021]
       rewards: {coins: 300}
-    q183:
+    q181:
       name: "More Miners"
       description: "Place 3 more Miner I."
       category: machines
@@ -1913,7 +1893,7 @@ quests:
       icon: LODESTONE
       requires: [q021]
       rewards: {coins: 300}
-    q184:
+    q182:
       name: "Mining Crew"
       description: "Place 3 more Miner II."
       category: machines
@@ -1923,7 +1903,7 @@ quests:
       icon: LODESTONE
       requires: [q021]
       rewards: {coins: 500}
-    q185:
+    q183:
       name: "Coal Plant"
       description: "Place 3 more Coal Generators."
       category: machines
@@ -1933,7 +1913,7 @@ quests:
       icon: STONECUTTER
       requires: [q021]
       rewards: {coins: 300}
-    q186:
+    q184:
       name: "Machine Mined 100"
       description: "Let your Miners break 100 generator blocks."
       category: machines
@@ -1943,7 +1923,7 @@ quests:
       icon: IRON_PICKAXE
       requires: [q021]
       rewards: {coins: 200}
-    q187:
+    q185:
       name: "Machine Mined 500"
       description: "Let your Miners break 500 generator blocks."
       category: machines
@@ -1953,7 +1933,7 @@ quests:
       icon: IRON_PICKAXE
       requires: [q021]
       rewards: {coins: 400}
-    q188:
+    q186:
       name: "Machine Mined 2,000"
       description: "Let your Miners break 2,000 generator blocks."
       category: machines
@@ -1963,7 +1943,7 @@ quests:
       icon: IRON_PICKAXE
       requires: [q021]
       rewards: {coins: 600}
-    q189:
+    q187:
       name: "Machine Mined 5,000"
       description: "Let your Miners break 5,000 generator blocks."
       category: machines
@@ -1973,7 +1953,7 @@ quests:
       icon: DIAMOND_PICKAXE
       requires: [q021]
       rewards: {coins: 1000}
-    q190:
+    q188:
       name: "Machine Mined 20,000"
       description: "Let your Miners break 20,000 generator blocks."
       category: machines
@@ -1983,7 +1963,7 @@ quests:
       icon: NETHERITE_PICKAXE
       requires: [q021]
       rewards: {coins: 2000}
-    q191:
+    q189:
       name: "Machine Park"
       description: "Place 10 more machines of any kind."
       category: machines
@@ -1993,7 +1973,7 @@ quests:
       icon: REDSTONE
       requires: [q021]
       rewards: {coins: 400}
-    q192:
+    q190:
       name: "Hopper"
       description: "Craft a hopper."
       category: machines
@@ -2003,7 +1983,7 @@ quests:
       icon: HOPPER
       requires: [q021]
       rewards: {coins: 150}
-    q193:
+    q191:
       name: "Lever"
       description: "Craft a lever."
       category: machines
@@ -2013,7 +1993,7 @@ quests:
       icon: LEVER
       requires: [q021]
       rewards: {coins: 80}
-    q194:
+    q192:
       name: "Browse the Auction House"
       description: "Open the auction house with /ah."
       category: market
@@ -2023,7 +2003,7 @@ quests:
       icon: GOLD_INGOT
       requires: [q021]
       rewards: {coins: 30}
-    q195:
+    q193:
       name: "Pocket Money"
       description: "Earn 500 coins."
       category: market
@@ -2032,7 +2012,7 @@ quests:
       icon: GOLD_NUGGET
       requires: [q021]
       rewards: {coins: 50}
-    q196:
+    q194:
       name: "Merchant"
       description: "Earn 2,000 coins."
       category: market
@@ -2041,7 +2021,7 @@ quests:
       icon: GOLD_INGOT
       requires: [q021]
       rewards: {coins: 100}
-    q197:
+    q195:
       name: "Trader"
       description: "Earn 5,000 coins."
       category: market
@@ -2050,7 +2030,7 @@ quests:
       icon: GOLD_INGOT
       requires: [q021]
       rewards: {coins: 150}
-    q198:
+    q196:
       name: "Dealer"
       description: "Earn 10,000 coins."
       category: market
@@ -2059,7 +2039,7 @@ quests:
       icon: GOLD_BLOCK
       requires: [q021]
       rewards: {coins: 200}
-    q199:
+    q197:
       name: "Wholesaler"
       description: "Earn 25,000 coins."
       category: market
@@ -2068,7 +2048,7 @@ quests:
       icon: GOLD_BLOCK
       requires: [q021]
       rewards: {coins: 400}
-    q200:
+    q198:
       name: "Tycoon"
       description: "Earn 100,000 coins."
       category: market
@@ -2077,7 +2057,7 @@ quests:
       icon: EMERALD
       requires: [q021]
       rewards: {coins: 1000}
-    q201:
+    q199:
       name: "Magnate"
       description: "Earn 500,000 coins."
       category: market
@@ -2086,7 +2066,7 @@ quests:
       icon: EMERALD_BLOCK
       requires: [q021]
       rewards: {coins: 2000}
-    q202:
+    q200:
       name: "Millionaire"
       description: "Earn 1,000,000 coins."
       category: market
@@ -2095,7 +2075,7 @@ quests:
       icon: DIAMOND
       requires: [q021]
       rewards: {coins: 5000}
-    q203:
+    q201:
       name: "Check Your Purse"
       description: "Check your balance with /balance."
       category: market
@@ -2105,7 +2085,7 @@ quests:
       icon: GOLD_NUGGET
       requires: [q021]
       rewards: {coins: 20}
-    q204:
+    q202:
       name: "Pay a Friend"
       description: "Pay someone with /pay."
       category: market
@@ -2115,7 +2095,7 @@ quests:
       icon: PAPER
       requires: [q021]
       rewards: {coins: 30}
-    q205:
+    q203:
       name: "Bank Visit"
       description: "Open your bank with /bank."
       category: market
@@ -2125,7 +2105,7 @@ quests:
       icon: CHEST
       requires: [q021]
       rewards: {coins: 40}
-    q206:
+    q204:
       name: "Top Players"
       description: "Open the balance leaderboard with /baltop."
       category: market
@@ -2135,7 +2115,7 @@ quests:
       icon: PLAYER_HEAD
       requires: [q021]
       rewards: {coins: 30}
-    q207:
+    q205:
       name: "Steady Income"
       description: "Earn 50,000 coins."
       category: market
@@ -2144,7 +2124,7 @@ quests:
       icon: EMERALD
       requires: [q021]
       rewards: {coins: 600}
-    q208:
+    q206:
       name: "Big Spender"
       description: "Earn 250,000 coins."
       category: market
@@ -2153,7 +2133,7 @@ quests:
       icon: EMERALD
       requires: [q021]
       rewards: {coins: 1500}
-    q209:
+    q207:
       name: "Selling Spree"
       description: "Earn 1,500 more coins."
       category: market
@@ -2162,7 +2142,7 @@ quests:
       icon: GOLD_INGOT
       requires: [q021]
       rewards: {coins: 200}
-    q210:
+    q208:
       name: "Selling Spree II"
       description: "Earn 15,000 more coins."
       category: market
@@ -2171,7 +2151,7 @@ quests:
       icon: GOLD_BLOCK
       requires: [q021]
       rewards: {coins: 500}
-    q211:
+    q209:
       name: "Selling Spree III"
       description: "Earn 75,000 more coins."
       category: market
@@ -2180,7 +2160,7 @@ quests:
       icon: EMERALD
       requires: [q021]
       rewards: {coins: 1200}
-    q212:
+    q210:
       name: "Selling Spree IV"
       description: "Earn 150,000 more coins."
       category: market
@@ -2189,7 +2169,7 @@ quests:
       icon: EMERALD_BLOCK
       requires: [q021]
       rewards: {coins: 2500}
-    q213:
+    q211:
       name: "Find the Dungeon"
       description: "Open the dungeon menu with /dungeon."
       category: dungeons
@@ -2199,7 +2179,7 @@ quests:
       icon: DEEPSLATE_BRICKS
       requires: [q036]
       rewards: {coins: 40}
-    q214:
+    q212:
       name: "First Clear"
       description: "Clear a dungeon floor."
       category: dungeons
@@ -2209,7 +2189,7 @@ quests:
       icon: DEEPSLATE_BRICKS
       requires: [q036]
       rewards: {coins: 150}
-    q215:
+    q213:
       name: "Floor 1"
       description: "Clear floor 1."
       category: dungeons
@@ -2219,7 +2199,7 @@ quests:
       icon: DEEPSLATE_BRICKS
       requires: [q036]
       rewards: {coins: 100}
-    q216:
+    q214:
       name: "Floor 2"
       description: "Clear floor 2."
       category: dungeons
@@ -2229,7 +2209,7 @@ quests:
       icon: DEEPSLATE_BRICKS
       requires: [q036]
       rewards: {coins: 150}
-    q217:
+    q215:
       name: "Floor 3"
       description: "Clear floor 3."
       category: dungeons
@@ -2239,7 +2219,7 @@ quests:
       icon: DEEPSLATE_BRICKS
       requires: [q036]
       rewards: {coins: 200}
-    q218:
+    q216:
       name: "Floor 4"
       description: "Clear floor 4."
       category: dungeons
@@ -2249,7 +2229,7 @@ quests:
       icon: DEEPSLATE_BRICKS
       requires: [q036]
       rewards: {coins: 300}
-    q219:
+    q217:
       name: "Floor 5"
       description: "Clear floor 5."
       category: dungeons
@@ -2259,7 +2239,7 @@ quests:
       icon: DEEPSLATE_BRICKS
       requires: [q036]
       rewards: {coins: 400}
-    q220:
+    q218:
       name: "Floor 6"
       description: "Clear floor 6."
       category: dungeons
@@ -2269,7 +2249,7 @@ quests:
       icon: CRACKED_DEEPSLATE_BRICKS
       requires: [q036]
       rewards: {coins: 600}
-    q221:
+    q219:
       name: "Floor 7"
       description: "Clear floor 7."
       category: dungeons
@@ -2279,7 +2259,7 @@ quests:
       icon: CRACKED_DEEPSLATE_BRICKS
       requires: [q036]
       rewards: {coins: 800}
-    q222:
+    q220:
       name: "Flawless"
       description: "Clear a floor without dying."
       category: dungeons
@@ -2289,7 +2269,7 @@ quests:
       icon: TOTEM_OF_UNDYING
       requires: [q036]
       rewards: {coins: 400}
-    q223:
+    q221:
       name: "Team Run"
       description: "Clear a floor with a party."
       category: dungeons
@@ -2299,7 +2279,7 @@ quests:
       icon: PLAYER_HEAD
       requires: [q036]
       rewards: {coins: 300}
-    q224:
+    q222:
       name: "Regular"
       description: "Clear 5 floors."
       category: dungeons
@@ -2309,7 +2289,7 @@ quests:
       icon: DEEPSLATE_BRICKS
       requires: [q036]
       rewards: {coins: 500}
-    q225:
+    q223:
       name: "Veteran"
       description: "Clear 15 floors."
       category: dungeons
@@ -2319,7 +2299,7 @@ quests:
       icon: DEEPSLATE_BRICKS
       requires: [q036]
       rewards: {coins: 800}
-    q226:
+    q224:
       name: "Dungeon Master"
       description: "Clear 30 floors."
       category: dungeons
@@ -2329,7 +2309,7 @@ quests:
       icon: DEEPSLATE_BRICKS
       requires: [q036]
       rewards: {coins: 1500, items: {skin_titan_edge: 1}}
-    q227:
+    q225:
       name: "Flawless x5"
       description: "Clear 5 floors without dying."
       category: dungeons
@@ -2339,7 +2319,7 @@ quests:
       icon: TOTEM_OF_UNDYING
       requires: [q036]
       rewards: {coins: 800}
-    q228:
+    q226:
       name: "Party x5"
       description: "Clear 5 floors with a party."
       category: dungeons
@@ -2349,7 +2329,7 @@ quests:
       icon: PLAYER_HEAD
       requires: [q036]
       rewards: {coins: 600}
-    q229:
+    q227:
       name: "Zombies"
       description: "Defeat 50 zombies."
       category: dungeons
@@ -2359,7 +2339,7 @@ quests:
       icon: ROTTEN_FLESH
       requires: [q036]
       rewards: {coins: 150}
-    q230:
+    q228:
       name: "Skeletons"
       description: "Defeat 50 skeletons."
       category: dungeons
@@ -2369,7 +2349,7 @@ quests:
       icon: BONE
       requires: [q036]
       rewards: {coins: 150}
-    q231:
+    q229:
       name: "Spiders"
       description: "Defeat 30 spiders."
       category: dungeons
@@ -2379,7 +2359,7 @@ quests:
       icon: STRING
       requires: [q036]
       rewards: {coins: 150}
-    q232:
+    q230:
       name: "Creepers"
       description: "Defeat 20 creepers."
       category: dungeons
@@ -2389,7 +2369,7 @@ quests:
       icon: GUNPOWDER
       requires: [q036]
       rewards: {coins: 150}
-    q233:
+    q231:
       name: "Magma Warden"
       description: "Defeat the Magma Warden."
       category: bosses
@@ -2397,9 +2377,9 @@ quests:
       target: "magma_warden"
       amount: 1
       icon: MAGMA_BLOCK
-      requires: [q214]
+      requires: [q212]
       rewards: {coins: 500}
-    q234:
+    q232:
       name: "Frost Revenant"
       description: "Defeat the Frost Revenant."
       category: bosses
@@ -2407,9 +2387,9 @@ quests:
       target: "frost_revenant"
       amount: 1
       icon: BLUE_ICE
-      requires: [q214]
+      requires: [q212]
       rewards: {coins: 500}
-    q235:
+    q233:
       name: "Sylvan Matriarch"
       description: "Defeat the Sylvan Matriarch."
       category: bosses
@@ -2417,9 +2397,9 @@ quests:
       target: "sylvan_matriarch"
       amount: 1
       icon: SPIDER_EYE
-      requires: [q214]
+      requires: [q212]
       rewards: {coins: 600}
-    q236:
+    q234:
       name: "Abyssal Leviathan"
       description: "Defeat the Abyssal Leviathan."
       category: bosses
@@ -2427,36 +2407,36 @@ quests:
       target: "abyssal_leviathan"
       amount: 1
       icon: PRISMARINE_SHARD
-      requires: [q214]
+      requires: [q212]
       rewards: {coins: 700}
-    q237:
+    q235:
       name: "Any Boss x3"
       description: "Defeat 3 bosses."
       category: bosses
       type: BOSS_KILL
       amount: 3
       icon: DRAGON_HEAD
-      requires: [q214]
+      requires: [q212]
       rewards: {coins: 400}
-    q238:
+    q236:
       name: "Any Boss x10"
       description: "Defeat 10 bosses."
       category: bosses
       type: BOSS_KILL
       amount: 10
       icon: DRAGON_HEAD
-      requires: [q214]
+      requires: [q212]
       rewards: {coins: 1000}
-    q239:
+    q237:
       name: "Any Boss x25"
       description: "Defeat 25 bosses."
       category: bosses
       type: BOSS_KILL
       amount: 25
       icon: DRAGON_HEAD
-      requires: [q214]
+      requires: [q212]
       rewards: {coins: 2500, items: {skin_flame_brand: 1}}
-    q240:
+    q238:
       name: "Magma Warden x3"
       description: "Defeat the Magma Warden 3 times."
       category: bosses
@@ -2464,9 +2444,9 @@ quests:
       target: "magma_warden"
       amount: 3
       icon: MAGMA_BLOCK
-      requires: [q214]
+      requires: [q212]
       rewards: {coins: 800}
-    q241:
+    q239:
       name: "Frost Revenant x3"
       description: "Defeat the Frost Revenant 3 times."
       category: bosses
@@ -2474,9 +2454,9 @@ quests:
       target: "frost_revenant"
       amount: 3
       icon: BLUE_ICE
-      requires: [q214]
+      requires: [q212]
       rewards: {coins: 800}
-    q242:
+    q240:
       name: "Matriarch x3"
       description: "Defeat the Sylvan Matriarch 3 times."
       category: bosses
@@ -2484,9 +2464,9 @@ quests:
       target: "sylvan_matriarch"
       amount: 3
       icon: SPIDER_EYE
-      requires: [q214]
+      requires: [q212]
       rewards: {coins: 900}
-    q243:
+    q241:
       name: "Leviathan x3"
       description: "Defeat the Abyssal Leviathan 3 times."
       category: bosses
@@ -2494,9 +2474,9 @@ quests:
       target: "abyssal_leviathan"
       amount: 3
       icon: PRISMARINE_SHARD
-      requires: [q214]
+      requires: [q212]
       rewards: {coins: 1000}
-    q244:
+    q242:
       name: "Crypt Lord"
       description: "Defeat the Crypt Lord, the boss of the dungeon floors (/dungeon)."
       category: bosses
@@ -2504,9 +2484,9 @@ quests:
       target: "crypt_lord"
       amount: 1
       icon: SKELETON_SKULL
-      requires: [q214]
+      requires: [q212]
       rewards: {coins: 800}
-    q245:
+    q243:
       name: "Crypt Lord x3"
       description: "Defeat the Crypt Lord 3 times."
       category: bosses
@@ -2514,27 +2494,27 @@ quests:
       target: "crypt_lord"
       amount: 3
       icon: SKELETON_SKULL
-      requires: [q214]
+      requires: [q212]
       rewards: {coins: 1100}
-    q246:
+    q244:
       name: "Any Boss x50"
       description: "Defeat 50 bosses."
       category: bosses
       type: BOSS_KILL
       amount: 50
       icon: DRAGON_HEAD
-      requires: [q214]
+      requires: [q212]
       rewards: {coins: 5000, items: {skin_kitsune: 1}}
-    q247:
+    q245:
       name: "Any Boss x100"
       description: "Defeat 100 bosses."
       category: bosses
       type: BOSS_KILL
       amount: 100
       icon: DRAGON_HEAD
-      requires: [q214]
+      requires: [q212]
       rewards: {coins: 10000}
-    q248:
+    q246:
       name: "Summon Items"
       description: "Collect 2 magma core from the Forge (/forge)."
       category: bosses
@@ -2542,9 +2522,9 @@ quests:
       target: "magma_core"
       amount: 2
       icon: MAGMA_CREAM
-      requires: [q214]
+      requires: [q212]
       rewards: {coins: 400}
-    q249:
+    q247:
       name: "Quest Starter"
       description: "Complete 10 more quests."
       category: mastery
@@ -2552,9 +2532,9 @@ quests:
       target: "quest_done"
       amount: 10
       icon: BOOK
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 200}
-    q250:
+    q248:
       name: "Quest Hunter"
       description: "Complete 25 more quests."
       category: mastery
@@ -2562,9 +2542,9 @@ quests:
       target: "quest_done"
       amount: 25
       icon: BOOK
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 500}
-    q251:
+    q249:
       name: "Quest Master"
       description: "Complete 50 more quests."
       category: mastery
@@ -2572,9 +2552,9 @@ quests:
       target: "quest_done"
       amount: 50
       icon: ENCHANTED_BOOK
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 1000}
-    q252:
+    q250:
       name: "Quest Legend"
       description: "Complete 100 more quests."
       category: mastery
@@ -2582,27 +2562,27 @@ quests:
       target: "quest_done"
       amount: 100
       icon: ENCHANTED_BOOK
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 3000}
-    q253:
+    q251:
       name: "Quarryman"
       description: "Break 10,000 blocks of any kind."
       category: mastery
       type: BREAK_BLOCK
       amount: 10000
       icon: DIAMOND_PICKAXE
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 1000}
-    q254:
+    q252:
       name: "Quarry Titan"
       description: "Break 50,000 blocks of any kind."
       category: mastery
       type: BREAK_BLOCK
       amount: 50000
       icon: NETHERITE_PICKAXE
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 3000}
-    q255:
+    q253:
       name: "Ore Hunter"
       description: "Break 250 ore blocks."
       category: mastery
@@ -2610,27 +2590,27 @@ quests:
       target: "ORES"
       amount: 250
       icon: IRON_ORE
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 600}
-    q256:
+    q254:
       name: "Monster Slayer"
       description: "Defeat 200 mobs of any kind."
       category: mastery
       type: KILL_MOB
       amount: 200
       icon: IRON_SWORD
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 600}
-    q257:
+    q255:
       name: "Monster Slayer II"
       description: "Defeat 1,000 mobs of any kind."
       category: mastery
       type: KILL_MOB
       amount: 1000
       icon: DIAMOND_SWORD
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 2000}
-    q258:
+    q256:
       name: "Bronzite 50"
       description: "Find 50 Bronzite in your generator."
       category: mastery
@@ -2638,29 +2618,29 @@ quests:
       target: "bronzite"
       amount: 50
       icon: RAW_COPPER
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 800}
-    q259:
+    q257:
       name: "Frostium 25"
-      description: "Find 25 Frostium in your generator."
+      description: "Find 25 Frostium in the blocks of your Frost generator."
       category: mastery
       type: ORE_FOUND
       target: "frostium"
       amount: 25
       icon: PRISMARINE_CRYSTALS
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 1000}
-    q260:
+    q258:
       name: "Sunstone 10"
-      description: "Find 10 Sunstone in your generator."
+      description: "Find 10 Sunstone in the blocks of your Ember generator."
       category: mastery
       type: ORE_FOUND
       target: "sunstone"
       amount: 10
       icon: GLOWSTONE_DUST
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 1500}
-    q261:
+    q259:
       name: "Diamonds 20"
       description: "Find 20 diamonds in your generator."
       category: mastery
@@ -2668,9 +2648,9 @@ quests:
       target: "diamond"
       amount: 20
       icon: DIAMOND
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 1000}
-    q262:
+    q260:
       name: "Debris 5"
       description: "Find 5 ancient debris in your generator."
       category: mastery
@@ -2678,9 +2658,9 @@ quests:
       target: "ancient_debris"
       amount: 5
       icon: ANCIENT_DEBRIS
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 1500}
-    q263:
+    q261:
       name: "Voidglass 3"
       description: "Find 3 Voidglass in your generator."
       category: mastery
@@ -2688,9 +2668,9 @@ quests:
       target: "voidglass"
       amount: 3
       icon: ECHO_SHARD
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 3000}
-    q264:
+    q262:
       name: "Starcore 2"
       description: "Find 2 Starcore Shards in your generator."
       category: mastery
@@ -2698,9 +2678,9 @@ quests:
       target: "starcore"
       amount: 2
       icon: NETHER_STAR
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 5000}
-    q265:
+    q263:
       name: "Floor 7 Again"
       description: "Clear floor 7 three more times."
       category: mastery
@@ -2708,9 +2688,9 @@ quests:
       target: "dungeon_floor:7"
       amount: 3
       icon: CRACKED_DEEPSLATE_BRICKS
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 2000}
-    q266:
+    q264:
       name: "Generators Everywhere"
       description: "Complete 3 more generator rings of any kind."
       category: mastery
@@ -2718,9 +2698,9 @@ quests:
       target: "generator_built"
       amount: 3
       icon: SMOOTH_STONE
-      requires: [q066]
+      requires: [q065]
       rewards: {coins: 1500}
-    q267:
+    q265:
       name: "Daily Miner"
       description: "Break 200 blocks."
       category: challenges
@@ -2730,7 +2710,7 @@ quests:
       icon: STONE_PICKAXE
       requires: [q021]
       rewards: {coins: 50}
-    q268:
+    q266:
       name: "Daily Woodcutter"
       description: "Break 100 logs."
       category: challenges
@@ -2740,7 +2720,7 @@ quests:
       icon: OAK_LOG
       requires: [q021]
       rewards: {coins: 50}
-    q269:
+    q267:
       name: "Daily Farmer"
       description: "Break 100 crops."
       category: challenges
@@ -2750,7 +2730,7 @@ quests:
       icon: WHEAT
       requires: [q021]
       rewards: {coins: 50}
-    q270:
+    q268:
       name: "Daily Hunter"
       description: "Defeat 40 mobs."
       category: challenges
@@ -2759,7 +2739,7 @@ quests:
       icon: IRON_SWORD
       requires: [q021]
       rewards: {coins: 50}
-    q271:
+    q269:
       name: "Daily Crafter"
       description: "Craft 20 planks."
       category: challenges
@@ -2769,7 +2749,7 @@ quests:
       icon: OAK_PLANKS
       requires: [q021]
       rewards: {coins: 50}
-    q272:
+    q270:
       name: "Daily Earner"
       description: "Earn 1,000 coins."
       category: challenges
@@ -2778,7 +2758,7 @@ quests:
       icon: GOLD_NUGGET
       requires: [q021]
       rewards: {coins: 50}
-    q273:
+    q271:
       name: "Weekly Miner"
       description: "Break 2,000 blocks."
       category: challenges
@@ -2788,7 +2768,7 @@ quests:
       icon: IRON_PICKAXE
       requires: [q021]
       rewards: {coins: 300}
-    q274:
+    q272:
       name: "Weekly Hunter"
       description: "Defeat 3 bosses."
       category: challenges
@@ -2797,7 +2777,7 @@ quests:
       icon: DRAGON_HEAD
       requires: [q021]
       rewards: {coins: 400}
-    q275:
+    q273:
       name: "Weekly Raider"
       description: "Clear 3 dungeon floors."
       category: challenges
@@ -2807,7 +2787,7 @@ quests:
       icon: DEEPSLATE_BRICKS
       requires: [q021]
       rewards: {coins: 400}
-    q276:
+    q274:
       name: "Weekly Earner"
       description: "Earn 5,000 coins."
       category: challenges
@@ -2816,7 +2796,7 @@ quests:
       icon: GOLD_INGOT
       requires: [q021]
       rewards: {coins: 300}
-    q277:
+    q275:
       name: "Weekly Digger"
       description: "Break 3,000 blocks."
       category: challenges
@@ -2826,7 +2806,7 @@ quests:
       icon: AMETHYST_SHARD
       requires: [q021]
       rewards: {coins: 500}
-    q278:
+    q276:
       name: "Hour of Power"
       description: "Break 1,000 blocks."
       category: challenges
@@ -2836,7 +2816,7 @@ quests:
       icon: DIAMOND_PICKAXE
       requires: [q021]
       rewards: {coins: 300}
-    q279:
+    q277:
       name: "Hundred Kills"
       description: "Defeat 100 mobs."
       category: challenges
@@ -2845,7 +2825,7 @@ quests:
       icon: IRON_SWORD
       requires: [q021]
       rewards: {coins: 300}
-    q280:
+    q278:
       name: "Lumber Baron"
       description: "Break 1,000 logs."
       category: challenges
@@ -2855,7 +2835,7 @@ quests:
       icon: OAK_LOG
       requires: [q021]
       rewards: {coins: 400}
-    q281:
+    q279:
       name: "Farm Baron"
       description: "Break 1,000 crops."
       category: challenges
@@ -2865,7 +2845,7 @@ quests:
       icon: HAY_BLOCK
       requires: [q021]
       rewards: {coins: 400}
-    q282:
+    q280:
       name: "Hundred Planks"
       description: "Craft 100 planks."
       category: challenges
@@ -2875,7 +2855,7 @@ quests:
       icon: OAK_PLANKS
       requires: [q021]
       rewards: {coins: 200}
-    q283:
+    q281:
       name: "Iron Works"
       description: "Craft 16 iron ingots."
       category: challenges
@@ -2885,7 +2865,7 @@ quests:
       icon: IRON_INGOT
       requires: [q021]
       rewards: {coins: 200}
-    q284:
+    q282:
       name: "Diamond Works"
       description: "Craft a diamond pickaxe."
       category: challenges
@@ -2895,7 +2875,7 @@ quests:
       icon: DIAMOND_PICKAXE
       requires: [q021]
       rewards: {coins: 400}
-    q285:
+    q283:
       name: "Fishing Day"
       description: "Catch 50 fish."
       category: challenges
@@ -2904,7 +2884,7 @@ quests:
       icon: FISHING_ROD
       requires: [q021]
       rewards: {coins: 300}
-    q286:
+    q284:
       name: "Fishing Week"
       description: "Catch 250 fish."
       category: challenges
@@ -2913,7 +2893,7 @@ quests:
       icon: FISHING_ROD
       requires: [q021]
       rewards: {coins: 1000}
-    q287:
+    q285:
       name: "Digger"
       description: "Break 5,000 blocks."
       category: challenges
@@ -2923,7 +2903,7 @@ quests:
       icon: NETHERITE_PICKAXE
       requires: [q021]
       rewards: {coins: 1000}
-    q288:
+    q286:
       name: "Zombie Wave"
       description: "Defeat 100 zombies."
       category: challenges
@@ -2933,7 +2913,7 @@ quests:
       icon: ROTTEN_FLESH
       requires: [q021]
       rewards: {coins: 300}
-    q289:
+    q287:
       name: "Skeleton Wave"
       description: "Defeat 100 skeletons."
       category: challenges
@@ -2943,7 +2923,7 @@ quests:
       icon: BONE
       requires: [q021]
       rewards: {coins: 300}
-    q290:
+    q288:
       name: "Spider Wave"
       description: "Defeat 60 spiders."
       category: challenges
@@ -2953,7 +2933,7 @@ quests:
       icon: STRING
       requires: [q021]
       rewards: {coins: 300}
-    q291:
+    q289:
       name: "Creeper Wave"
       description: "Defeat 40 creepers."
       category: challenges
@@ -2963,7 +2943,7 @@ quests:
       icon: GUNPOWDER
       requires: [q021]
       rewards: {coins: 300}
-    q292:
+    q290:
       name: "Endermite Wave"
       description: "Defeat 40 endermites."
       category: challenges
@@ -2973,7 +2953,7 @@ quests:
       icon: ENDER_PEARL
       requires: [q021]
       rewards: {coins: 400}
-    q293:
+    q291:
       name: "Zombie Siege"
       description: "Defeat 200 zombies."
       category: challenges

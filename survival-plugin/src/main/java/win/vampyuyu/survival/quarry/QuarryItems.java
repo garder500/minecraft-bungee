@@ -100,10 +100,10 @@ final class QuarryItems {
                 .lore("<gray>Mining Luck: <green>+10", "<gray>Better odds in your generator.").build(),
             CustomItemDef.builder(FROSTIUM, "Frostium", Rarity.RARE, Material.PRISMARINE_CRYSTALS)
                 .itemModel("vampyuyu:ore/frostium").type("ORE")
-                .lore("<gray>A pale blue ore, cold to the touch.", "<gray>Found in tier II generators.").build(),
+                .lore("<gray>A pale blue ore, cold to the touch.", "<gray>Dropped by the blocks of a Frost generator.").build(),
             CustomItemDef.builder(SUNSTONE, "Sunstone", Rarity.EPIC, Material.GLOWSTONE_DUST)
                 .itemModel("vampyuyu:ore/sunstone").type("GEM")
-                .lore("<gray>A gem that holds the light of noon.", "<gray>Found in tier III generators.").build(),
+                .lore("<gray>A gem that holds the light of noon.", "<gray>Dropped by the blocks of an Ember generator.").build(),
             CustomItemDef.builder(EMBER_CORE, "Ember Core", Rarity.RARE, Material.FIRE_CHARGE)
                 .itemModel("vampyuyu:ore/ember_core").type("UPGRADE").glint(true)
                 .lore("<gray>Right-click on your island to", "<gray>upgrade your cobble generator", "<gray>to tier III (Ember).").build(),

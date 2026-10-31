@@ -17,6 +17,7 @@ generator:
 
 # Rarest first. chance: percent per block for tier I, II, III, IV (0 = not available). pity: blocks without this ore after
 # which the next block is guaranteed to give it (0 = none). item: a vanilla material or custom:<item id>.
+# Frostium (Frost generator) and Sunstone (Ember generator) are not in this table: see OutputListener.
 ores:
   starcore:
     item: custom:starcore
@@ -30,20 +31,10 @@ ores:
     item: ANCIENT_DEBRIS
     chance: [0, 0, 0.15, 0.2]
     pity: 2000
-  sunstone:
-    item: custom:sunstone
-    chance: [0, 0, 0.25, 0.3]
-    pity: 1500
-    geode: true
   diamond:
     item: DIAMOND
     chance: [0, 0.5, 0.6, 0.6]
     pity: 600
-  frostium:
-    item: custom:frostium
-    chance: [0, 0.8, 1.0, 0.8]
-    pity: 400
-    geode: true
   bronzite:
     item: custom:bronzite
     chance: [3.0, 3.0, 2.0, 1.0]

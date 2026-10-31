@@ -57,3 +57,10 @@ marks as done, without paying, the tier quests up to the tier they reached and t
 generator blocks they broke. Their old quest ids are ignored; daily quests, generator and skins are untouched. Everything
 else counts again from the first quest. Servers with an older `quarry.yml` need it replaced to get the new Forge
 recipes and the machine limit of 60.
+
+## Where the ores come from
+- Water + lava, the Stone ring and the Fountain use the ore table of quarry.yml (iron nuggets, copper, coal, gold,
+  diamond, ancient debris, Bronzite, Voidglass at tier IV).
+- Frostium only drops from the blocks of a Frost generator (12 % of snow blocks and packed ice) and Sunstone only from
+  an Ember generator (8 % of netherrack and soul sand, 12 % quartz from netherrack). They are not in the ore table, and
+  `QuarryConfig.GENERATOR_ONLY` skips them even when an older quarry.yml on a server still lists them.

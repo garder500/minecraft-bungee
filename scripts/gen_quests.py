@@ -44,7 +44,8 @@ def forge(c, name, item, amount, icon, coins, **kw):
 
 
 def ore(c, name, what, ore_id, amount, icon, coins, **kw):
-    q(c, name, f"Find {what} in your generator.", "ORE_FOUND", ore_id, amount, icon, coins, **kw)
+    where = {"frostium": "the blocks of your Frost generator", "sunstone": "the blocks of your Ember generator"}.get(ore_id, "your generator")
+    q(c, name, f"Find {what} in {where}.", "ORE_FOUND", ore_id, amount, icon, coins, **kw)
 
 
 def kill(c, name, what, mob, amount, icon, coins, **kw):
@@ -130,11 +131,9 @@ q(c, "Raise the Generator", "Reach generator tier II: forge a Bronze Core and ri
 brk(c, "Tier II Mining", "500 more cobblestone", "COBBLESTONE", 500, "COBBLESTONE", 150)
 ore(c, "Bronzite Hoard", "12 Bronzite", "bronzite", 12, "RAW_COPPER", 150)
 ore(c, "Diamond", "a diamond", "diamond", 1, "DIAMOND", 200)
-ore(c, "Sunstone", "your first Sunstone", "sunstone", 1, "GLOWSTONE_DUST", 250)
 forge(c, "Ember Core", "ember_core", 1, "FIRE_CHARGE", 250)
 q(c, "Tier III", "Reach generator tier III: forge an Ember Core and right-click it on your island.", "GENERATOR_TIER", "", 3, "FIRE_CHARGE", 400, items={"endless_bucket": 1}, label="tier3")
 ore(c, "Ancient Debris", "ancient debris", "ancient_debris", 1, "ANCIENT_DEBRIS", 400)
-ore(c, "Sunstone Hoard", "3 Sunstone", "sunstone", 3, "GLOWSTONE_DUST", 300)
 brk(c, "Mine 2,000", "2,000 cobblestone", "COBBLESTONE", 2000, "COBBLESTONE", 300)
 forge(c, "Void Lens", "void_lens", 1, "ENDER_EYE", 500)
 q(c, "The Void Lens", "Reach generator tier IV: right-click the Void Lens on your island. It also opens your End (/island end).", "GENERATOR_TIER", "", 4, "ENDER_EYE", 800, label="tier4")

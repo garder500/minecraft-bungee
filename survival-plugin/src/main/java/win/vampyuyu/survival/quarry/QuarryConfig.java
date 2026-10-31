@@ -27,6 +27,9 @@ public final class QuarryConfig {
         this.machines = machines;
     }
 
+    /** Ores that only the ring generators drop (see OutputListener). */
+    static final java.util.Set<String> GENERATOR_ONLY = java.util.Set.of("frostium", "sunstone");
+
     public static QuarryConfig parse(ConfigurationSection root, Logger log) {
         ConfigurationSection gen = root.getConfigurationSection("generator");
         double geode = gen == null ? 0.05 : gen.getDouble("geode-chance", 0.05);
@@ -38,6 +41,9 @@ public final class QuarryConfig {
         ConfigurationSection oreSection = root.getConfigurationSection("ores");
         if (oreSection != null) {
             for (String id : oreSection.getKeys(false)) {
+                if (GENERATOR_ONLY.contains(id)) {
+                    continue; // Frostium and Sunstone come from the Frost and Ember generators only, whatever an older quarry.yml says
+                }
                 ConfigurationSection s = oreSection.getConfigurationSection(id);
                 if (s == null || !validItem(s.getString("item", ""))) {
                     log.warning("quarry.yml: ores." + id + ": bad or missing item; ore skipped");

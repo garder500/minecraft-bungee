@@ -81,7 +81,8 @@ public class QuestPlanTest {
         var quarry = YamlConfiguration.loadConfiguration(new InputStreamReader(getClass().getResourceAsStream("/quarry.yml")));
         var boss = YamlConfiguration.loadConfiguration(new InputStreamReader(getClass().getResourceAsStream("/boss.yml")));
         Set<String> forgeIds = quarry.getConfigurationSection("forge.recipes").getKeys(false);
-        Set<String> oreIds = quarry.getConfigurationSection("ores").getKeys(false);
+        Set<String> oreIds = new HashSet<>(quarry.getConfigurationSection("ores").getKeys(false));
+        oreIds.addAll(QuarryConfig.GENERATOR_ONLY); // dropped by the ring generators, not by the ore table
         Set<String> bosses = boss.getConfigurationSection("bosses").getKeys(false);
         Set<String> bad = new HashSet<>();
         for (QuestDef def : catalog.tutorial()) {
