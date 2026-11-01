@@ -1,5 +1,6 @@
 -- The Quarry: ore table, Forge recipes and machine numbers.
 -- Converted from the former quarry.yml by scripts/yaml_to_seed_quarry.py; edit it in the panel.
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.rend-tick-percent', 'real', '5.0', 'Each of the three ticks of Rend, in percent of the weapon damage.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.generator.geode-chance', 'real', '0.05', 'Percent of generator blocks that are a geode (3 to 6 of the first geode ore of the tier).');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.generator.geode-min', 'int', '3', 'Fewest ores in a geode.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.generator.geode-max', 'int', '6', 'Most ores in a geode.');

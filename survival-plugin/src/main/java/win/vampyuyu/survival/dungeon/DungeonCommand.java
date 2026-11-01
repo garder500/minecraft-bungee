@@ -120,7 +120,7 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
             msg.mini(to, "<gray>" + line);
         }
         if (to.hasPermission(RunListener.ADMIN)) {
-            msg.mini(to, "<gray>/dungeon admin <list|abort <id|all>|start <floor> [seed]|cleanup|reload>");
+            msg.mini(to, "<gray>/dungeon admin <list|abort <id|all>|start <floor> [seed]|goto <room type> [style]|hurtboss <percent>|cleanup|reload>");
         }
     }
 
@@ -283,9 +283,20 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
                     }
                 }
                 Party party = svc.parties.ensure(p.getUniqueId(), p.getName());
-                String err = svc.runs.start(party, p.getUniqueId(), floor, seed);
+                String err = svc.runs.startAsAdmin(party, p.getUniqueId(), floor, seed);
                 if (err != null) {
                     msg.error(sender, err);
+                }
+            }
+            case "goto", "hurtboss" -> {
+                var run = sender instanceof Player p ? svc.runs.runOf(p.getUniqueId()) : null;
+                if (run == null || args.length < 3) {
+                    msg.error(sender, "Inside a run: /dungeon admin goto <room type> [style], /dungeon admin hurtboss <percent>.");
+                    return;
+                }
+                boolean done = args[1].equalsIgnoreCase("goto") ? run.adminGoto(args[2], args.length > 3 ? args[3] : null) : run.adminHurtBoss(args[2]);
+                if (!done) {
+                    msg.error(sender, "Nothing to do for " + args[2] + ".");
                 }
             }
             case "cleanup" -> {

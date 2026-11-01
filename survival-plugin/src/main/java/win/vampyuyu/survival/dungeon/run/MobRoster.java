@@ -32,6 +32,9 @@ public final class MobRoster {
     public static final MobSpec CRYPT_LORD = new MobSpec("crypt_lord", "Crypt Lord", EntityType.WITHER_SKELETON, 2500, 2.0,
         1.1, Material.NETHERITE_SWORD, true, false, 1, 0, "<dark_red>");
 
+    /** What a shielded boss may ask to break: it stands still and glows, and it does not fight back. */
+    public static final MobSpec ANCHOR = new MobSpec("soul_anchor", "Anchor", EntityType.BLAZE, 30, 0.1, 1.0, Material.AIR, false, false, 1, 0, "<aqua>");
+
     private static final List<MobSpec> NORMAL = List.of(ZOMBIE_KNIGHT, SKELETON_SNIPER, CRYPTIC_WRAITH, STONE_GOLEM,
         BONE_BRUTE, CRYPT_WITCH, SHADOW_ASSASSIN);
 
@@ -52,7 +55,7 @@ public final class MobRoster {
                 return s;
             }
         }
-        for (MobSpec s : List.of(WARLORD, WATCHER_GUARD, CRYPT_LORD)) {
+        for (MobSpec s : List.of(WARLORD, WATCHER_GUARD, CRYPT_LORD, ANCHOR)) {
             if (s.id().equals(id)) {
                 return s;
             }

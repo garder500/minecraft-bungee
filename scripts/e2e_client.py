@@ -1471,6 +1471,177 @@ def progress_scenario(ctx):
     rcon.command("gamemode creative E2EBot")
 
 
+def dungeon_scenario(ctx):
+    """A real dungeon floor: three mob rooms, the floor's boss with its warned attacks and its shield, and the sword
+    effects on a target inside the dungeon. Admin shortcuts stand in for walking through the rooms."""
+    import re as _re
+    tools, env, shots = (ctx[k] for k in ("tools", "env", "shots"))
+    failures = ctx["failures"]
+    xdo, rcon = tools["xdotool"], Rcon()
+    rcon.command("op E2EBot")
+
+    def as_bot(cmd):
+        return rcon.command(f"execute as E2EBot at @s run {cmd}")
+
+    def typed(cmd):
+        """Admin commands that need a real player: the bot types them."""
+        subprocess.run([xdo, "key", "t"], env=env)
+        time.sleep(0.8)
+        subprocess.run([xdo, "type", "--delay", "20", "/" + cmd], env=env)
+        time.sleep(0.3)
+        subprocess.run([xdo, "key", "Return"], env=env)
+        time.sleep(0.6)
+
+    rcon.command("gamemode survival E2EBot")
+    typed("menu skyblock")  # a dungeon is reached from the Skyblock, not from another game mode
+    for _ in range(150):
+        if "sb_world" in rcon.command("data get entity E2EBot Dimension"):
+            break
+        time.sleep(1)
+    else:
+        failures.append("never reached sb_world")
+        return
+    time.sleep(6)
+    rcon.command("gamerule spawn_mobs false")
+    typed("dungeon admin start 5 7")
+    shot(tools, shots / "dg-start-typed.png")
+    dimension = ""
+    for _ in range(60):
+        time.sleep(2)
+        dimension = rcon.command("data get entity E2EBot Dimension")
+        if "sb_dungeon" in dimension:
+            break
+    else:
+        shot(tools, shots / "dg-start-failed.png")
+        failures.append("the dungeon floor never started: " + dimension[:100])
+        return
+    rcon.command("gamerule send_command_feedback false")
+
+    def protect():
+        """The bot does not fight back: it must stay alive to be moved around (a ghost is not)."""
+        rcon.command("effect give E2EBot minecraft:resistance 600 4 true")
+        rcon.command("effect give E2EBot minecraft:regeneration 600 4 true")
+
+    for _ in range(14):  # the countdown
+        protect()
+        time.sleep(1)
+    shot(tools, shots / "dg-0-entrance.png")
+    # the sword effects, on a plain target in the dungeon world
+    def health():
+        found = _re.findall(r"([0-9.]+)f", rcon.command("data get entity @e[tag=e2e_target,limit=1] Health"))
+        return float(found[0]) if found else None
+
+    rcon.command("kill @e[type=minecraft:zombie]")
+    found = _re.findall(r"(-?[0-9.]+)d", rcon.command("data get entity E2EBot Pos"))
+    x, y, z = [float(v) for v in found[:3]]
+    as_bot(f"tp @s {x} {y} {z} 180 10")
+    as_bot(f"summon zombie {x} {y} {z - 2} {{NoAI:1b,Silent:1b,Tags:[\"e2e_target\"],"
+           "attributes:[{id:\"minecraft:max_health\",base:1000}],Health:1000f}")
+    rcon.command("clear E2EBot")
+    rcon.command("sbgive bronze_cleaver 1 E2EBot")
+    subprocess.run([xdo, "key", "1"], env=env)
+    time.sleep(2)
+    before = health()
+    subprocess.run([xdo, "click", "1"], env=env)
+    time.sleep(0.5)
+    after_hit = health()
+    time.sleep(4)
+    after_bleed = health()
+    say(f"dungeon: Bronze Cleaver on a target: {before} -> {after_hit} after the hit, {after_bleed} after the bleed")
+    if None in (before, after_hit, after_bleed) or before - after_hit < 30:
+        failures.append(f"a Bronze Cleaver hit in a dungeon dealt {before} -> {after_hit}")
+    elif after_hit - after_bleed < 3:
+        failures.append(f"Rend did not bleed in a dungeon: {after_hit} -> {after_bleed}")
+    rcon.command("clear E2EBot")
+    rcon.command("sbgive rimeblade 1 E2EBot")
+    as_bot(f"tp @s {x} {y} {z} 180 10")
+    as_bot(f"tp @e[tag=e2e_target] {x} {y} {z - 2}")  # the cleaver's hit knocked it back
+    time.sleep(2)  # a full swing
+    subprocess.run([xdo, "click", "1"], env=env)
+    time.sleep(0.5)
+    effects = rcon.command("data get entity @e[tag=e2e_target,limit=1] active_effects")
+    say("dungeon: after a Rimeblade hit: " + effects[:120])
+    if "slowness" not in effects:
+        failures.append("Frostbite did not slow in a dungeon: " + effects[:120])
+    # two swings in a row: the bleed must not cost the second one its damage
+    rcon.command("kill @e[tag=e2e_target]")
+    rcon.command("clear E2EBot")
+    rcon.command("sbgive bronze_cleaver 1 E2EBot")
+    as_bot(f"summon zombie {x} {y} {z - 2} {{NoAI:1b,Silent:1b,Tags:[\"e2e_target\"],"
+           "attributes:[{id:\"minecraft:max_health\",base:1000}],Health:1000f}")
+    time.sleep(2)
+    before = health()
+    subprocess.run([xdo, "click", "1"], env=env)
+    time.sleep(1.5)
+    as_bot(f"tp @e[tag=e2e_target] {x} {y} {z - 2}")
+    subprocess.run([xdo, "click", "1"], env=env)
+    time.sleep(0.4)
+    two = health()
+    say(f"dungeon: two swings 1.5 s apart: {before} -> {two}")
+    if None in (before, two) or before - two < 60:
+        failures.append(f"two Bronze Cleaver swings only dealt {before} -> {two}")
+    rcon.command("kill @e[tag=e2e_target]")
+    rcon.command("clear E2EBot")
+
+    protect()
+    typed("dungeon admin goto BOSS")
+    time.sleep(0.8)
+    shot(tools, shots / "dg-2-boss-intro.png")
+    time.sleep(5)
+    shot(tools, shots / "dg-2-boss-spawned.png")
+    def clear_room():
+        """Only the boss stays: the guards and what they bring would stand in front of the camera."""
+        rcon.command("kill @e[type=!minecraft:player,type=!minecraft:wither_skeleton,type=!minecraft:item_display,type=!minecraft:text_display,type=!minecraft:armor_stand]")
+
+    found = _re.findall(r"(-?[0-9.]+)d", rcon.command("execute as E2EBot at @s run data get entity @e[type=minecraft:wither_skeleton,limit=1,sort=nearest] Pos"))
+    bx, by, bz = [float(v) for v in found[:3]]
+
+    def watch():
+        """A fixed spot of the boss room, looking at the boss and at the floor around it."""
+        as_bot(f"tp @s {bx} {by} {bz + 12} 180 24")
+
+    for i in range(16):
+        clear_room()
+        watch()
+        time.sleep(1.2)
+        shot(tools, shots / f"dg-3-attack{i}.png")
+    watch()
+    typed("dungeon admin hurtboss 50")
+    time.sleep(1.5)
+    def boss_health():
+        found = _re.findall(r"([0-9.]+)f", rcon.command("execute as E2EBot at @s run data get entity @e[type=minecraft:wither_skeleton,limit=1,sort=nearest] Health"))
+        return float(found[0]) if found else None
+
+    before = boss_health()
+    # far more than its whole health: through the shield this would end the fight
+    as_bot("damage @e[type=minecraft:wither_skeleton,limit=1,sort=nearest] 10000000 minecraft:player_attack by E2EBot")
+    time.sleep(0.5)
+    after = boss_health()
+    time.sleep(4)
+    later = boss_health()
+    say(f"dungeon: a huge hit on the shielded boss: {before} -> {after}, 4 s later {later}")
+    if later is not None and after is not None and later < after:
+        failures.append(f"the boss lost health with nobody hitting it: {after} -> {later}")
+    if before is None or after is None or after < before:
+        failures.append(f"the shield let a hit through: {before} -> {after}")
+    shot(tools, shots / "dg-4-shielded.png")
+    if "E2EBot" not in rcon.command("list"):
+        failures.append("the bot left the run")
+    rcon.command("kill @e[type=minecraft:blaze]")
+    time.sleep(2)
+    shot(tools, shots / "dg-5-shield-broken.png")
+
+    rcon.command("clear E2EBot")
+    for i in range(2):
+        protect()
+        typed("dungeon admin goto MOB" + (" HOLD" if i == 0 else ""))
+        as_bot("tp @s ~ ~ ~6 180 20")
+        time.sleep(0.8)
+        shot(tools, shots / f"dg-1-room{i}-title.png")
+        time.sleep(4)
+        shot(tools, shots / f"dg-1-room{i}-fight.png")
+
+
 def tools_scenario(ctx):
     """The bows, axes and shovels: held, in the inventory, a bow being drawn, and what an arrow really deals."""
     import re as _re
@@ -2089,7 +2260,7 @@ def bosses_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "start", "craft", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "dungeon", "start", "craft", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -2098,7 +2269,7 @@ def main():
     if args.scenario == "dev":
         return dev_server()
     global WITH_SURVIVAL
-    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "start", "craft")
+    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "dungeon", "start", "craft")
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
@@ -2121,7 +2292,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "start", "craft"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "dungeon", "start", "craft"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -2152,7 +2323,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "start", "craft"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "dungeon", "start", "craft"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -2199,6 +2370,8 @@ def main():
             swords_scenario(ctx)
         elif args.scenario == "tools":
             tools_scenario(ctx)
+        elif args.scenario == "dungeon":
+            dungeon_scenario(ctx)
         elif args.scenario == "start":
             start_scenario(ctx)
         elif args.scenario == "craft":

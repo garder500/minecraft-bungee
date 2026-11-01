@@ -175,6 +175,12 @@ public final class RunListener implements Listener {
                 event.setCancelled(true); // monsters never hurt each other
                 return;
             }
+            if (attacker != null && runOf(attacker) != null && runOf(attacker).boss.shields(victim)) {
+                event.setCancelled(true); // before the health pool: a shield really protects
+                attacker.sendActionBar(win.vampyuyu.survival.core.Msg.component("<aqua>Shielded! <white>"
+                    + runOf(attacker).boss.shieldGoal()));
+                return;
+            }
             if (attacker != null) {
                 RunPlayer rp = runOf(attacker) == null ? null : runOf(attacker).player(attacker.getUniqueId());
                 if (rp != null && !rp.alive()) {
@@ -216,6 +222,10 @@ public final class RunListener implements Listener {
         }
         if (event instanceof EntityDamageByEntityEvent byEntity) {
             scale(byEntity);
+        } else if (event.getCause() != EntityDamageEvent.DamageCause.KILL && event.getCause() != EntityDamageEvent.DamageCause.VOID
+                && (ctx.keys.hpOf(event.getEntity()) != null || "boss".equals(ctx.keys.kindOf(event.getEntity())))) {
+            event.setCancelled(true); // only a fight wears down a health pool or a boss, not the room it stands in
+            return;
         }
         if (!(event.getEntity() instanceof Player p)) {
             return;

@@ -40,7 +40,7 @@ public class QuarrySeedTest {
             assertEquals(66, count(db, "SELECT COUNT(*) FROM forge_recipe"));
             assertEquals(176, count(db, "SELECT COUNT(*) FROM forge_recipe_ingredient"));
             assertEquals(3, count(db, "SELECT COUNT(*) FROM forge_block_ingredient"));
-            assertEquals(17, count(db, "SELECT COUNT(*) FROM setting WHERE id GLOB 'quarry.*'"));
+            assertEquals(18, count(db, "SELECT COUNT(*) FROM setting WHERE id GLOB 'quarry.*'"));
         }
     }
 

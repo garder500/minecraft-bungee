@@ -20,6 +20,13 @@ public final class DungeonConfig {
             double damage, int mobLevel, int parSeconds, int secretsNeededPercent, double reward,
             int minCombatLevel, int tier, String weakness, String resistance) {}
 
+    /** One warned attack of a floor boss. */
+    public record BossAttack(String kind, String warning, String hint) {}
+
+    /** The boss of one floor. {@code phaseKind} is ADDS or ANCHORS; {@code phaseGoal} is what its shield asks for. */
+    public record BossKit(String name, String entity, String weapon, String color, String tagline, String phaseKind,
+            String phaseGoal, List<BossAttack> attacks) {}
+
     /**
      * One trade of the Crypt Forge. {@code cost} maps item ids (custom id or {@code mc:MATERIAL}) to amounts. Exactly one
      * outcome: {@code give} (+ {@code amount}), {@code cacheRolls} item rolls of a grade, or {@code coins}.
@@ -42,6 +49,10 @@ public final class DungeonConfig {
     public int closeDelaySeconds;
     public int runTimeoutMinutes;
     public int bossTimeoutMinutes;
+    public int bossWarningTicks;
+    public int bossPauseTicks;
+    public int holdSeconds;
+    public int eliteHealthPercent;
     /** From this floor on the boss feature's crypt_lord is used (0 = never, the scripted floor-scaled boss is used). */
     public int bossExternalFromFloor;
     public int readyCountdownSeconds;
@@ -103,6 +114,7 @@ public final class DungeonConfig {
     public final Map<Grade, Tier> tiers = new EnumMap<>(Grade.class);
     public final List<RewardEntry> rewardItems = new ArrayList<>();
     public final Map<Integer, Floor> floors = new LinkedHashMap<>();
+    public final Map<Integer, BossKit> bosses = new LinkedHashMap<>();
 
     private DungeonConfig() {}
 
@@ -112,6 +124,14 @@ public final class DungeonConfig {
     public int floorCount() { return floors.size(); }
 
     public Floor floor(int number) { return floors.get(number); }
+
+    /** The boss of a floor; a floor without a row meets a plain Crypt Lord. */
+    public BossKit boss(int floor) {
+        BossKit kit = bosses.get(floor);
+        return kit != null ? kit : new BossKit("Crypt Lord", "WITHER_SKELETON", "NETHERITE_SWORD", "<dark_red>", "It stirs...", "ADDS",
+            "kill his servants", List.of(new BossAttack("SLAM", "The Crypt Lord raises his sword!",
+                "<red>Red circle around the boss: <white>walk out of it.")));
+    }
 
     // ------------------------------------------------------------------ parsing
 
@@ -149,6 +169,20 @@ public final class DungeonConfig {
                     }
                     return row;
                 });
+            Map<String, List<BossAttack>> attacks = new LinkedHashMap<>();
+            Db.query(conn, "SELECT boss_id, kind, warning, hint FROM dungeon_boss_attack ORDER BY boss_id, position", rs -> {
+                attacks.computeIfAbsent(rs.getString(1), k -> new java.util.ArrayList<>())
+                    .add(new BossAttack(rs.getString(2), rs.getString(3), rs.getString(4)));
+                return null;
+            });
+            Db.query(conn, "SELECT id, floor, name, entity, weapon, color, tagline, phase_kind, phase_goal FROM dungeon_boss", rs -> {
+                List<BossAttack> list = attacks.get(rs.getString(1));
+                if (list != null) {
+                    c.bosses.put(rs.getInt(2), new BossKit(rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6),
+                        rs.getString(7), rs.getString(8), rs.getString(9), List.copyOf(list)));
+                }
+                return null;
+            });
             c.read(settings, grades, rewards, trades, floors);
             return null;
         });
@@ -180,6 +214,10 @@ public final class DungeonConfig {
         closeDelaySeconds = num(r, "close-delay-seconds", 45, 5, 3600);
         runTimeoutMinutes = num(r, "run-timeout-minutes", 75, 5, 600);
         bossTimeoutMinutes = num(r, "boss-timeout-minutes", 12, 1, 120);
+        bossWarningTicks = num(r, "boss.warning-ticks", 40, 10, 200);
+        bossPauseTicks = num(r, "boss.pause-ticks", 100, 20, 600);
+        holdSeconds = num(r, "rooms.hold-seconds", 20, 5, 120);
+        eliteHealthPercent = num(r, "rooms.elite-health-percent", 500, 100, 5000);
         bossExternalFromFloor = num(r, "boss-external-from-floor", 0, 0, 99);
         readyCountdownSeconds = num(r, "ready-countdown-seconds", 8, 0, 120);
         sidebar = r.getBoolean("sidebar", true);

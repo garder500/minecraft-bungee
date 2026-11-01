@@ -229,10 +229,49 @@ public final class DungeonRun {
         each(p -> p.sendMessage(c));
     }
 
+    /** Admin shortcut: the party goes to the next unvisited room of a type (MOB, BOSS...), whatever doors are in the way. */
+    public boolean adminGoto(String type, String style) {
+        if (!state.active()) {
+            return false;
+        }
+        if (style != null) {
+            try {
+                fights.forcedStyle = FightStyle.valueOf(style.toUpperCase(java.util.Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                return false;
+            }
+        }
+        for (RoomRt rt : rooms.values()) {
+            if (!rt.visited && rt.build.plan.type.name().equalsIgnoreCase(type)) {
+                Location at = loc(rt.build.spawn);
+                eachAlive(p -> ctx.teleport(p, at));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Admin shortcut: takes the boss down to a share of its health. */
+    public boolean adminHurtBoss(String percent) {
+        try {
+            return boss.hurtTo(Integer.parseInt(percent));
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
     void titleAll(String title, String subtitle) {
+        titleWhere(p -> true, title, subtitle);
+    }
+
+    void titleWhere(java.util.function.Predicate<Player> who, String title, String subtitle) {
         Title t = Title.title(Msg.component(title), Msg.component(subtitle),
             Title.Times.times(java.time.Duration.ofMillis(200), java.time.Duration.ofMillis(1400), java.time.Duration.ofMillis(400)));
-        each(p -> p.showTitle(t));
+        each(p -> {
+            if (who.test(p)) {
+                p.showTitle(t);
+            }
+        });
     }
 
     void soundAll(Sound s, float volume, float pitch) {
@@ -504,7 +543,7 @@ public final class DungeonRun {
         state = RunState.RUNNING;
         startMillis = System.currentTimeMillis();
         fights.unlockRoom(layout.entrance().index);
-        titleAll("<red><bold>GO!", "<gray>Find the blood key and slay the Crypt Lord");
+        titleAll("<red><bold>GO!", "<gray>Find the blood key and slay " + boss.name());
         soundAll(Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 1.2f);
         fights.spawnInitialGuards();
     }
@@ -695,7 +734,7 @@ public final class DungeonRun {
                 return;
             }
             if (state == RunState.BOSS && boss.timedOut()) {
-                sayAll("<red>The Crypt Lord's power was too great: the boss timer ran out.");
+                sayAll("<red>" + boss.name() + " was too strong: the boss timer ran out.");
                 finish(false, "The boss was not defeated in time.");
             }
         }

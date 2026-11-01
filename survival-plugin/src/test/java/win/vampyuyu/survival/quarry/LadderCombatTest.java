@@ -51,6 +51,19 @@ public class LadderCombatTest {
     }
 
     @Test
+    public void swordEffectsWorkInADungeonWorld() {
+        org.bukkit.World crypt = server.addSimpleWorld(win.vampyuyu.survival.core.SkyblockWorlds.dungeon("77"));
+        PlayerMock player = server.addPlayer("Delver");
+        player.teleport(crypt.getSpawnLocation());
+        LivingEntity zombie = (LivingEntity) crypt.spawnEntity(crypt.getSpawnLocation(), EntityType.ZOMBIE);
+
+        player.getInventory().setItemInMainHand(plugin.core().items().create("rimeblade"));
+        hit(player, zombie);
+        assertTrue("Frostbite slows in a dungeon", zombie.hasPotionEffect(org.bukkit.potion.PotionEffectType.SLOWNESS));
+
+    }
+
+    @Test
     public void aLadderBowsArrowDealsItsDamageScaledByTheDrawAndItsPunchDoesNot() {
         PlayerMock player = server.addPlayer("Archer");
         LivingEntity zombie = (LivingEntity) player.getWorld().spawnEntity(player.getLocation(), EntityType.ZOMBIE);

@@ -85,6 +85,7 @@ public final class ContentDomains {
         new Root("dungeon_reward", "id", null, List.of()),
         new Root("dungeon_trade", "id", null, List.of(new Child("dungeon_trade_cost", "trade_id"))),
         new Root("dungeon_floor", "id", null, List.of()),
+        new Root("dungeon_boss", "id", null, List.of(new Child("dungeon_boss_attack", "boss_id"))),
         settings("dungeon")));
 
     /** Plugin level settings: the debug flag and the feature toggles (read before any feature enables). */

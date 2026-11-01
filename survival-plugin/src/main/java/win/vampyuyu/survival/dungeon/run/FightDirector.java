@@ -30,6 +30,10 @@ import win.vampyuyu.survival.dungeon.gen.RoomType;
 
 /** Rooms, doors, keys, fights and the Watcher's guards of one run. */
 final class FightDirector {
+    static final double HOLD_RADIUS = 4.5;
+    private FightStyle lastStyle;
+    /** Admin shortcut: the style of the next mob rooms. */
+    FightStyle forcedStyle;
     private static final String LOCK = "iron_bars";
 
     private final DungeonRun run;
@@ -298,8 +302,7 @@ final class FightDirector {
     void firstEnter(RoomRt rt, Player p) {
         RoomPlan plan = rt.build.plan;
         switch (plan.type) {
-            case MOB -> startFight(rt, MobRoster.waves(run.floorNumber(), run.partySize(),
-                run.ctx.cfg.maxMobsPerRoom, run.rng()), false);
+            case MOB -> startStyledFight(rt);
             case MINIBOSS -> startFight(rt, miniBossWaves(), true);
             case PUZZLE -> {
                 rt.puzzle = PuzzleRuntime.create(run, rt);
@@ -382,6 +385,97 @@ final class FightDirector {
         return List.of(boss);
     }
 
+    /** A mob room: the next style, its waves, and a title that says what it asks. */
+    private void startStyledFight(RoomRt rt) {
+        FightStyle style = forcedStyle != null ? forcedStyle : FightStyle.pick(run.floorNumber(), lastStyle, run.rng());
+        lastStyle = style;
+        rt.style = style;
+        int cap = run.ctx.cfg.maxMobsPerRoom;
+        List<List<MobSpec>> waves = MobRoster.waves(run.floorNumber(), run.partySize(), cap, run.rng());
+        switch (style) {
+            case AMBUSH -> {
+                List<MobSpec> all = new ArrayList<>();
+                waves.forEach(all::addAll);
+                waves = List.of(new ArrayList<>(all.subList(0, Math.min(cap, all.size()))));
+            }
+            case ELITE -> {
+                MobSpec base = MobRoster.pick(run.floorNumber(), run.rng());
+                List<MobSpec> wave = new ArrayList<>(List.of(elite(base)));
+                for (int i = 0; i < 1 + run.partySize() && i < cap - 1; i++) {
+                    wave.add(MobRoster.pick(run.floorNumber(), run.rng()));
+                }
+                waves = List.of(wave);
+            }
+            case HOLD -> waves = List.of(new ArrayList<>(waves.get(0).subList(0, Math.min(2 + run.partySize(), waves.get(0).size()))));
+            default -> { }
+        }
+        startFight(rt, waves, false);
+        switch (style) {
+            case AMBUSH -> run.titleAll("<red><bold>AMBUSH!", "<gray>They all come at once");
+            case ELITE -> run.titleAll("<gold><bold>ELITE", "<gray>Bring down the glowing one");
+            case HOLD -> {
+                run.titleAll("<green><bold>HOLD THE RING", "<white>Stay in the green ring for " + run.ctx.cfg.holdSeconds + " seconds");
+                run.sayAll("<green>Stay in the green ring for " + run.ctx.cfg.holdSeconds + " seconds. <gray>The doors open when the time is up.");
+                rt.heldAt = run.tick;
+            }
+            default -> { }
+        }
+    }
+
+    /** The same monster, much tougher and easy to tell apart. */
+    private MobSpec elite(MobSpec base) {
+        return new MobSpec("elite_" + base.id(), "Elite " + base.name(), base.type(), base.health() * run.ctx.cfg.eliteHealthPercent / 100.0,
+            base.damage() * 1.25, base.speed(), base.weapon(), base.armored(), false, base.minFloor(), 0, "<gold>");
+    }
+
+    /** A Hold room: the time only runs with someone in the ring, and enemies keep coming until it is over. */
+    private boolean updateHold(RoomRt rt) {
+        Location center = run.loc(rt.build.spawn);
+        Particle.DustOptions dust = new Particle.DustOptions(org.bukkit.Color.LIME, 2.2f);
+        for (int i = 0; i < 72; i++) {
+            double a = Math.PI * 2 * i / 72;
+            Location at = center.clone().add(Math.cos(a) * HOLD_RADIUS, 0.15, Math.sin(a) * HOLD_RADIUS);
+            run.world.spawnParticle(Particle.DUST, at, 1, 0.03, 0, 0.03, 0, dust);
+            run.world.spawnParticle(Particle.HAPPY_VILLAGER, at, 1, 0, 0, 0, 0);
+        }
+        boolean[] inside = {false};
+        run.eachAlive(p -> inside[0] |= p.getWorld() == center.getWorld() && isHolding(p.getLocation(), center));
+        if (inside[0]) {
+            rt.held += run.tick - rt.heldAt;
+        }
+        rt.heldAt = run.tick;
+        long needed = run.ctx.cfg.holdSeconds * 20L;
+        if (rt.bar != null) {
+            int percent = (int) Math.min(100, rt.held * 100 / needed);
+            rt.bar.progress(Math.min(1f, (float) rt.held / needed));
+            rt.bar.color(inside[0] ? BossBar.Color.GREEN : BossBar.Color.RED);
+            rt.bar.name(Msg.component((inside[0] ? "<green>Holding the ring " : "<red>Get back in the ring! ") + "<white>" + percent + "%"));
+        }
+        if (rt.held >= needed) {
+            for (UUID id : new ArrayList<>(rt.mobs)) {
+                Entity e = Bukkit.getEntity(id);
+                if (e != null) {
+                    e.remove();
+                    run.mobsSpawned--; // sent away by the end of the room, not part of the kill ratio
+                }
+            }
+            rt.mobs.clear();
+            rt.queue.clear();
+            clear(rt);
+            return true;
+        }
+        if (rt.queue.isEmpty() && rt.mobs.size() < 2 + run.partySize()) {
+            rt.queue.add(MobRoster.pick(run.floorNumber(), run.rng()));
+        }
+        return false;
+    }
+
+    static boolean isHolding(Location at, Location center) {
+        double dx = at.getX() - center.getX();
+        double dz = at.getZ() - center.getZ();
+        return dx * dx + dz * dz <= HOLD_RADIUS * HOLD_RADIUS;
+    }
+
     void startFight(RoomRt rt, List<List<MobSpec>> waves, boolean mini) {
         rt.state = RoomRt.State.ACTIVE;
         rt.waves = waves;
@@ -399,7 +493,7 @@ final class FightDirector {
         rt.bar = BossBar.bossBar(Msg.component(mini ? "<dark_red><bold>Mini-boss" : "<red>Room fight"), 1f,
             mini ? BossBar.Color.PURPLE : BossBar.Color.RED, BossBar.Overlay.PROGRESS);
         run.eachAlive(p -> p.showBossBar(rt.bar));
-        run.sayAll(mini ? "<dark_red>A mini-boss blocks the way! <gray>The doors lock." : "<red>The doors lock! <gray>Defeat every enemy.");
+        run.sayAll(mini ? "<dark_red>A mini-boss blocks the way! <gray>The doors lock." : rt.style == FightStyle.HOLD ? "<red>The doors lock!" : "<red>The doors lock! <gray>Defeat every enemy.");
         run.soundAll(Sound.BLOCK_IRON_DOOR_CLOSE, 0.8f, 0.6f);
     }
 
@@ -516,7 +610,7 @@ final class FightDirector {
             }
         }
         // staggered spawning, within the caps
-        int budget = 2;
+        int budget = rt.style == FightStyle.AMBUSH ? 6 : 2;
         while (budget-- > 0 && !rt.queue.isEmpty() && rt.mobs.size() < run.ctx.cfg.maxMobsPerRoom
                 && liveMobs() < run.ctx.cfg.maxMobsPerRun) {
             MobSpec spec = rt.queue.poll();
@@ -525,9 +619,16 @@ final class FightDirector {
             if (e != null) {
                 rt.mobs.add(e.getUniqueId());
                 rt.spawnedTotal++;
+                if (spec.id().startsWith("elite_")) {
+                    e.setGlowing(true);
+                }
             } else {
                 rt.removed++;
             }
+        }
+        if (rt.style == FightStyle.HOLD) {
+            updateHold(rt);
+            return;
         }
         if (rt.bar != null) {
             int remaining = rt.queue.size() + rt.mobs.size()

@@ -34,11 +34,21 @@ Instanced, procedurally generated dungeons ("the Catacombs") for parties of 1 to
   the generator guarantees the floor is solvable). Secret doors open with a hidden lever (counts as a secret). The blood
   door opens with the blood key, forged when all of the Watcher's guards (sent progressively, one per newly visited
   room, the rest when the blood room is entered) are dead.
-* **Boss**: by default a scripted Crypt Lord whose health and damage follow the floor multipliers and the party size
-  (phases at 66% and 33% that summon adds, ground slam, boss bar). With `boss-external-from-floor: N` (default 0 =
+* **Mob rooms** have a style, never the same twice in a row (`FightStyle`): waves, an ambush (all at once), an elite (one
+  glowing strong enemy, `rooms.elite-health-percent`) or, from floor 2, holding a green ring (`rooms.hold-seconds`). A
+  title says what the room asks.
+* **Boss**: every floor has its own (`dungeon_boss`, `dungeon_boss_attack`): name, body, weapon, attacks. Every attack
+  warns first (`boss.warning-ticks`): a line of text and marks on the floor that show exactly what it will hit, while the
+  boss stands still. SLAM and MARKS hit inside a red circle, NOVA everywhere but inside a green one, CHARGE along a red
+  line (`BossAttacks`). The fight starts by teaching the floor's attacks in chat. At 66% and 33% a shield goes up: nothing
+  hurts the boss until the adds or the glowing anchors are dead, and the boss bar says so. Health and damage follow the
+  floor multipliers and the party size. With `boss-external-from-floor: N` (default 0 =
   never) floors N and up use `BossApi.spawn("crypt_lord", ...)` when the boss feature has that id (looked up lazily);
   that boss has the fixed HP of `boss.yml` and does NOT follow the floor multipliers (see NEEDS). Boss timeout
   `boss-timeout-minutes`.
+* **Admin shortcuts for tests**, inside a run: `/dungeon admin goto <room type> [style]` (the next unvisited room of that
+  type, optionally forcing the style of its fight) and `/dungeon admin hurtboss <percent>`. Admins skip the "clear the
+  previous floor" rule. `python3 scripts/e2e_client.py --scenario dungeon` uses them.
 * **Deaths**: lethal damage never kills. The first `rules.deaths-allowed` (3) deaths make a ghost (spectator, body
   marker). A ghost returns by itself after `ghost-seconds`, or a teammate sneaks next to the body for `revive-seconds`,
   or a Spirit Leaf is used. The next death eliminates the player (spectator). Everybody eliminated or gone = failed.

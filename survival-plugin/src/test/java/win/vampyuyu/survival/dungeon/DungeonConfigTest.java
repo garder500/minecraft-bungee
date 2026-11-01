@@ -9,6 +9,26 @@ import win.vampyuyu.survival.data.Db;
 import win.vampyuyu.survival.data.Db.DataException;
 
 public class DungeonConfigTest {
+    @Test
+    public void everyFloorHasItsOwnBossWithAttacksThatExistAndARealEntityAndWeapon() {
+        win.vampyuyu.survival.data.Db db = win.vampyuyu.survival.data.Db.memory();
+        win.vampyuyu.survival.data.Seeds.sync(db, win.vampyuyu.survival.data.ContentDomains.ALL, null);
+        DungeonConfig cfg = DungeonConfig.load(db);
+        java.util.Set<String> names = new java.util.HashSet<>();
+        for (int floor = 1; floor <= 7; floor++) {
+            DungeonConfig.BossKit kit = cfg.bosses.get(floor);
+            org.junit.Assert.assertNotNull("floor " + floor, kit);
+            org.junit.Assert.assertTrue(kit.name(), names.add(kit.name()));
+            org.junit.Assert.assertTrue(kit.name(), org.bukkit.entity.EntityType.valueOf(kit.entity()).isSpawnable());
+            org.junit.Assert.assertTrue(kit.name(), org.bukkit.Material.valueOf(kit.weapon()).isItem());
+            org.junit.Assert.assertFalse(kit.name(), kit.attacks().isEmpty());
+            org.junit.Assert.assertFalse(kit.name(), kit.phaseGoal().isBlank());
+            for (DungeonConfig.BossAttack attack : kit.attacks()) {
+                org.junit.Assert.assertTrue("shown as a subtitle, it must fit on the screen: " + attack.warning(), attack.warning().length() <= 26);
+            }
+        }
+    }
+
     private static void refused(Db db, String sql) {
         try {
             exec(db, sql);

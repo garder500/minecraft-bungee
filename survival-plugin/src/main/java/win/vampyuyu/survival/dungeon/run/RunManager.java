@@ -121,6 +121,10 @@ public final class RunManager {
 
     /** Everything that can refuse a start, checked before any resource is taken. Null when the party may go. */
     public String check(Party party, UUID starter, int floorNumber) {
+        return check(party, starter, floorNumber, false);
+    }
+
+    private String check(Party party, UUID starter, int floorNumber, boolean admin) {
         DungeonConfig cfg = ctx.cfg;
         DungeonConfig.Floor floor = cfg.floor(floorNumber);
         if (floor == null) {
@@ -146,7 +150,7 @@ public final class RunManager {
             if (inDungeonWorld(p)) {
                 return party.nameOf(m) + " is inside a dungeon world.";
             }
-            if (cfg.requirePreviousFloor && floorNumber > 1) {
+            if (cfg.requirePreviousFloor && !admin && floorNumber > 1) {
                 DungeonData d = ctx.core.profiles().section(m, "dungeon", DungeonData.class, DungeonData::new);
                 if (!d.cleared(floorNumber - 1)) {
                     return party.nameOf(m) + " has not cleared floor " + (floorNumber - 1) + " yet.";
@@ -164,7 +168,16 @@ public final class RunManager {
 
     /** Starts a run for the party. Returns a failure message or null when the run is on its way. */
     public String start(Party party, UUID starter, int floorNumber, Long forcedSeed) {
-        String problem = check(party, starter, floorNumber);
+        return start(party, starter, floorNumber, forcedSeed, false);
+    }
+
+    /** {@code /dungeon admin start}: any floor, whatever the party cleared before. */
+    public String startAsAdmin(Party party, UUID starter, int floorNumber, Long forcedSeed) {
+        return start(party, starter, floorNumber, forcedSeed, true);
+    }
+
+    private String start(Party party, UUID starter, int floorNumber, Long forcedSeed, boolean admin) {
+        String problem = check(party, starter, floorNumber, admin);
         if (problem != null) {
             return problem;
         }

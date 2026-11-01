@@ -22,7 +22,8 @@ public final class Migrations {
         "V011__boss",
         "V012__dungeon",
         "V013__items",
-        "V014__elements");
+        "V014__elements",
+        "V015__dungeon_bosses");
 
     private Migrations() {}
 

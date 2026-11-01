@@ -431,6 +431,58 @@ public class DungeonRunTest {
     }
 
     @Test
+    public void theRoomDoesNotWearDownAHealthPool() {
+        running();
+        var z = mob(1.0);
+        z.getPersistentDataContainer().set(svc.ctx.keys.hpMax, org.bukkit.persistence.PersistentDataType.DOUBLE, 4000.0);
+        z.getPersistentDataContainer().set(svc.ctx.keys.hp, org.bukkit.persistence.PersistentDataType.DOUBLE, 4000.0);
+        var heat = new EntityDamageEvent(z, EntityDamageEvent.DamageCause.HOT_FLOOR, 1.0);
+        server.getPluginManager().callEvent(heat);
+        assertTrue(heat.isCancelled());
+        var kill = new EntityDamageEvent(z, EntityDamageEvent.DamageCause.KILL, 1000.0);
+        server.getPluginManager().callEvent(kill);
+        assertFalse("an admin can still remove it", kill.isCancelled());
+    }
+
+    @Test
+    public void aBossAttackOnlyReachesWhoIsInTheBossRoomEvenANovaThatHitsEverywhereElse() {
+        running();
+        var bossRoom = run.layout.boss().index;
+        run.player(alice.getUniqueId()).room = bossRoom;
+        run.player(bob.getUniqueId()).room = run.layout.entrance().index;
+        alice.setHealth(20);
+        bob.setHealth(20);
+        run.boss.landForTest(mob(1.0), BossAttacks.Kind.NOVA, alice.getLocation().clone().add(30, 0, 30));
+        assertTrue("outside the green circle, in the boss room", alice.getHealth() < 20);
+        assertEquals("in another room", 20.0, bob.getHealth(), 0.001);
+    }
+
+    @Test
+    public void aShieldedBossLosesNothingUntilItsAddsAreDead() {
+        running();
+        itemsFormula(100.0);
+        var boss = mob(1.0);
+        boss.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).setBaseValue(100);
+        boss.setHealth(100);
+        boss.getPersistentDataContainer().set(svc.ctx.keys.hpMax, org.bukkit.persistence.PersistentDataType.DOUBLE, 4000.0);
+        boss.getPersistentDataContainer().set(svc.ctx.keys.hp, org.bukkit.persistence.PersistentDataType.DOUBLE, 4000.0);
+        var add = mob(1.0);
+        run.boss.shieldedForTest(boss, add);
+        assertTrue(run.boss.shields(boss));
+        var hit = new org.bukkit.event.entity.EntityDamageByEntityEvent(alice, boss, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 5.0);
+        server.getPluginManager().callEvent(hit);
+        assertTrue("the hit is refused", hit.isCancelled());
+        assertEquals("before the pool", 4000.0, svc.ctx.keys.hpOf(boss), 0.001);
+
+        add.remove();
+        run.boss.tick();
+        assertFalse("the adds are gone, so is the shield", run.boss.shields(boss));
+        var next = new org.bukkit.event.entity.EntityDamageByEntityEvent(alice, boss, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 5.0);
+        server.getPluginManager().callEvent(next);
+        assertEquals(3900.0, svc.ctx.keys.hpOf(boss), 0.001);
+    }
+
+    @Test
     public void theLastPointsOfAVirtualPoolKillTheEntity() {
         running();
         itemsFormula(500.0);

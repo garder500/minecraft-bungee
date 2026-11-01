@@ -31,6 +31,10 @@ final class RoomRt {
     long bossStartAtTick = -1;
     int fightTotal;
     int removed;
+    FightStyle style = FightStyle.WAVES;
+    /** Hold rooms: game ticks someone has stood in the ring, and when that was last counted. */
+    long held;
+    long heldAt;
 
     RoomRt(RoomBuild build) {
         this.build = build;

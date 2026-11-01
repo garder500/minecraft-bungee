@@ -256,6 +256,7 @@ public class FightDirectorTest {
         int keysBefore = run.witherKeys;
         run.fights.firstEnter(rt, alice);
         assertEquals("every spawn failed on the mock, so the queue drains at once", RoomRt.State.ACTIVE, rt.state);
+        rt.style = FightStyle.WAVES; // the style is picked at random; a Hold room has its own test
         for (int i = 0; i < 40 && rt.state == RoomRt.State.ACTIVE; i++) {
             run.tick += 5;
             run.fights.tick();
@@ -264,6 +265,28 @@ public class FightDirectorTest {
         assertTrue(rt.done);
         assertEquals(1, run.fightRoomsCleared);
         assertEquals(keysBefore + 1, run.witherKeys);
+    }
+
+    @Test
+    public void aHoldRoomOnlyCountsTimeWithSomeoneInTheRingThenOpens() {
+        RoomRt rt = run.rooms.values().stream().filter(r -> r.build.plan.type == RoomType.MOB).findFirst().orElseThrow();
+        run.fights.firstEnter(rt, alice);
+        rt.style = FightStyle.HOLD;
+        rt.heldAt = run.tick;
+        var center = run.loc(rt.build.spawn);
+        svc.ctx.teleport(alice, center.clone().add(20, 0, 0));
+        for (int i = 0; i < 20; i++) {
+            run.tick += 5;
+            run.fights.tick();
+        }
+        assertEquals("nobody in the ring: the time stands still", 0, rt.held);
+        assertEquals(RoomRt.State.ACTIVE, rt.state);
+        svc.ctx.teleport(alice, center);
+        for (int i = 0; i < svc.cfg().holdSeconds * 4 + 2 && rt.state == RoomRt.State.ACTIVE; i++) {
+            run.tick += 5;
+            run.fights.tick();
+        }
+        assertEquals("the time was held", RoomRt.State.CLEARED, rt.state);
     }
 
     @Test
