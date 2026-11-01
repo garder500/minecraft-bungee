@@ -668,11 +668,16 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
     public Island ensurePersonalIsland(Player player) {
         Island owned = registry.ofPlayer(player.getUniqueId()).orElse(null);
         if (owned != null) return owned; // one island per player: a co-op member never gets a second one
-        IslandConfig.TemplateCfg template = cfg.templates.values().stream().filter(IslandConfig.TemplateCfg::enabled)
-            .findFirst().orElse(null);
-        if (template == null) return null;
-        create(player, template.id());
+        create(player, null, true);
         return registry.ownedBy(player.getUniqueId()).orElse(null);
+    }
+
+    /**
+     * A new or reset island starts over: the quests, the fairy souls and the generator progress (Fountain, pebbles)
+     * are tied to the island, so they restart with it. Skills, coins, minions and the like are kept.
+     */
+    private void resetIslandProgress(UUID id) {
+        core.profiles().removeSections(id, "quests", "fairy_souls", "quarry");
     }
 
     /** Online players standing in any of the island's three cells. */
@@ -786,18 +791,30 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         return list;
     }
 
+    /** Creates the player's island with the default type: players do not pick an island. */
     public Result create(Player player, String templateId) {
+        return create(player, templateId, false);
+    }
+
+    /**
+     * {@code templateId} null or blank means the default (first enabled) type. {@code automatic} skips the create
+     * cooldown: a player who has no island (left a coop, was kicked) always gets a new one at once.
+     */
+    private Result create(Player player, String templateId, boolean automatic) {
         UUID id = player.getUniqueId();
         if (registry.ofPlayer(id).isPresent()) {
             return Result.fail("You already belong to an island. Use /island home.");
         }
-        IslandConfig.TemplateCfg template = templateId == null ? null : cfg.templates.get(templateId.toLowerCase(Locale.ROOT));
+        IslandConfig.TemplateCfg template = templateId == null || templateId.isBlank()
+            ? templates().stream().findFirst().orElse(null)
+            : cfg.templates.get(templateId.toLowerCase(Locale.ROOT));
         if (template == null || !template.enabled() || !IslandTemplates.exists(template.id())) {
-            return Result.fail("Unknown island type '" + templateId + "'. Open /island create to pick one.");
+            return Result.fail(templateId == null || templateId.isBlank() ? "No island type is available."
+                : "Unknown island type '" + templateId + "'.");
         }
         PlayerIslandData data = data(id);
         long wait = data.lastLostAt + cfg.createCooldownMinutes * 60_000L - now();
-        if (data.lastLostAt > 0 && cfg.createCooldownMinutes > 0 && wait > 0) {
+        if (!automatic && data.lastLostAt > 0 && cfg.createCooldownMinutes > 0 && wait > 0) {
             return Result.fail("You can create a new island in " + Msg.duration(wait) + ".");
         }
         if (world(SkyblockWorlds.WORLD) == null) {
@@ -811,9 +828,13 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         island.lootOwed = !cfg.starterOnce || !data.lootClaimed;
         island.kitFor = id;
         island.lootFor = id;
+        boolean hadIsland = data.islandsCreated > 0;
         data.islandsCreated++;
         data.lastIsland = island.id.toString();
         dirty(id);
+        if (hadIsland) {
+            resetIslandProgress(id); // the old quests and Fountain belonged to the island they lost
+        }
         build(island, template, ++island.generation, 0, id);
         return Result.ok("Building your " + template.name() + " island... you will be teleported when it is ready.");
     }
@@ -1074,8 +1095,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
             return check;
         }
         Island island = registry.ofPlayer(id).orElseThrow();
-        IslandConfig.TemplateCfg template = cfg.templates.get((templateId == null ? island.template : templateId)
-            .toLowerCase(Locale.ROOT));
+        IslandConfig.TemplateCfg template = cfg.templates.get(island.template.toLowerCase(Locale.ROOT)); // no choice
         if (template == null || !template.enabled() || !IslandTemplates.exists(template.id())) {
             return Result.fail("Unknown island type '" + templateId + "'.");
         }
@@ -1086,6 +1106,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         island.lootFor = id;
         int gen = ++island.generation; // drops every callback of the island's earlier builds, platform jobs and scans
         core.modes().resetSkyblockState(player);
+        resetIslandProgress(id);
         core.modes().awaitIsland(player);
         island.state(Island.State.RESETTING);
         island.lastResetAt = now();
@@ -1722,6 +1743,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         data.lastLostAt = now();
         dirty(id);
         notifyCoop(island, player.getName() + " left the island.", id);
+        ensurePersonalIsland(player); // no island left: a new one is built and the player is teleported when it is ready
         evict(island, p -> p.getUniqueId().equals(id), "You left the island.");
         if (tracker != null) {
             tracker.refreshPlayer(player);
@@ -1755,6 +1777,9 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
                 if (tracker != null) {
                     tracker.refreshPlayer(online);
                 }
+            }
+            if (online != null) {
+                ensurePersonalIsland(online);
             }
             evict(island, p -> p.getUniqueId().equals(target), "You were kicked from the island.");
             return Result.ok(nameOf(target) + " was removed from the island.");
