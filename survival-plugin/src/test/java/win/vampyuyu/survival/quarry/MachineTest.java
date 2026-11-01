@@ -91,6 +91,20 @@ public class MachineTest {
     }
 
     @Test
+    public void aBlockPlacedIntoACableCellIsRefusedAndTheCableStays() {
+        PlayerMock owner = server.addPlayer();
+        Block cell = base(island(owner));
+        assertTrue(place(owner, cell, "cable"));
+        for (ItemStack item : new ItemStack[] {plugin.core().items().create("cable"), new ItemStack(Material.COBBLESTONE)}) {
+            BlockPlaceEvent event = new BlockPlaceEvent(cell, cell.getState(), cell.getRelative(0, -1, 0), item, owner, true,
+                EquipmentSlot.HAND);
+            server.getPluginManager().callEvent(event);
+            assertTrue(event.isCancelled());
+            assertEquals(MachineType.CABLE, machines.store().get(sky.getName(), MachineStore.pos(cell)).kind());
+        }
+    }
+
+    @Test
     public void aBatteryPoweredMinerBreaksGeneratorCobbleIntoTheChest() {
         PlayerMock owner = server.addPlayer("Engineer");
         Island island = island(owner);
