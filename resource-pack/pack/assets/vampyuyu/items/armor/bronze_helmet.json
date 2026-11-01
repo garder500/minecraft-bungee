@@ -1,6 +1,19 @@
 {
  "model": {
-  "type": "minecraft:model",
-  "model": "vampyuyu:item/armor/bronze_helmet"
+  "type": "minecraft:select",
+  "property": "minecraft:display_context",
+  "cases": [
+   {
+    "when": "gui",
+    "model": {
+     "type": "minecraft:model",
+     "model": "vampyuyu:item/armor/bronze_helmet"
+    }
+   }
+  ],
+  "fallback": {
+   "type": "minecraft:model",
+   "model": "vampyuyu:item/armor/bronze_helmet_3d"
+  }
  }
 }

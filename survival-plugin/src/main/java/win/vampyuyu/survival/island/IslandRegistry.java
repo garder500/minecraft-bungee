@@ -139,9 +139,17 @@ public final class IslandRegistry {
         return Optional.ofNullable(byId.get(id));
     }
 
-    /** The island a player owns or belongs to. */
+    /**
+     * The island a player belongs to. A player normally has one; a legacy player who owns an island AND joined another
+     * one gets the co-op island (the one they joined) until they choose with /island keep-coop or /island leave.
+     */
     public Optional<Island> ofPlayer(UUID player) {
-        return ownedBy(player).or(() -> byId.values().stream().filter(i -> i.members.containsKey(player)).findFirst());
+        return memberOf(player).or(() -> ownedBy(player));
+    }
+
+    /** The island a player joined as a member or co-owner (never the one they own). */
+    public Optional<Island> memberOf(UUID player) {
+        return byId.values().stream().filter(i -> i.members.containsKey(player)).findFirst();
     }
 
     public Optional<Island> ownedBy(UUID player) {

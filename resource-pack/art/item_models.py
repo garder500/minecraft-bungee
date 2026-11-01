@@ -41,6 +41,8 @@ def write(model_id, s, display, block=False):
     kind, name = model_id.split("/")
     if imported(model_id) and kind in ("ore", "weapon", "tool", "armor"):  # flat imported sprite everywhere
         return
+    if imported(f"{model_id}_3d"):  # a textured block model from block_models.py
+        return
     three = f"vampyuyu:item/{kind}/{name}_3d"
     model = {"textures": {"0": three, "particle": three},
              "gui_light": "front", "display": display, "elements": s.elements}

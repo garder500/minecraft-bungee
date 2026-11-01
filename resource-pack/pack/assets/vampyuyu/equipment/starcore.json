@@ -9,6 +9,11 @@
    {
     "texture": "vampyuyu:starcore"
    }
+  ],
+  "wings": [
+   {
+    "texture": "vampyuyu:starcore_wings"
+   }
   ]
  }
 }

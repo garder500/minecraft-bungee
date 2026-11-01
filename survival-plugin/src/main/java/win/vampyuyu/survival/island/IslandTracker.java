@@ -187,6 +187,7 @@ public final class IslandTracker implements Listener {
         // Entry rules are only checked when moving; someone banned or locked out while offline logs in inside the
         // island. The menu feature is the only join router, so give its handoff time before acting.
         service.core().scheduler().later(cfg.joinCheckTicks, () -> enforceEntry(player));
+        service.core().scheduler().later(40, () -> service.notifyLegacy(player));
     }
 
     /** Moves a player out of the island cell they stand in when they may not be there (banned, locked, closed). */
@@ -209,6 +210,7 @@ public final class IslandTracker implements Listener {
             service.registry().byId(id).ifPresent(island -> fire(player, island, false));
         }
         service.confirms().clear(player.getUniqueId());
+        service.forgetLogin(player.getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

@@ -42,6 +42,9 @@ public final class IslandFeature implements Feature {
 
         service.start();
         service.recover();
+        for (org.bukkit.entity.Player online : org.bukkit.Bukkit.getOnlinePlayers()) {
+            service.notifyLegacy(online);
+        }
         if (cfg.levelAutoMinutes > 0) {
             long period = cfg.levelAutoMinutes * 60L * 20L;
             levelTask = core.scheduler().repeating(period, period, service::autoLevelOnline);

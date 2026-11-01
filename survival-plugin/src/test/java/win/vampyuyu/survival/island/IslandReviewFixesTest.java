@@ -347,6 +347,7 @@ public class IslandReviewFixesTest {
         assertTrue(service.data(resetter.getUniqueId()).lootClaimed);
         assertTrue(has(fake.lastOverworldChest(island), Material.ICE));
         // The former owner now owns a personal fallback island. Never overwrite it by transferring back.
+        readyIsland(resetter);
         assertFalse(service.registry().transfer(island, resetter.getUniqueId()));
         island.lastResetAt = 0;
         member.performCommand("island reset");
@@ -384,6 +385,23 @@ public class IslandReviewFixesTest {
         tick(10);
         assertEquals(Island.State.READY, island.state());
         assertFalse(fake.plans.isEmpty());
+    }
+
+    @Test
+    public void joiningACoopWipesAndReleasesTheSoloIslandCell() {
+        PlayerMock owner = player("Boss");
+        PlayerMock guest = player("Pal");
+        readyIsland(owner);
+        Island solo = readyIsland(guest);
+        int cx = solo.cellX;
+        int cz = solo.cellZ;
+        owner.performCommand("island invite Pal");
+        guest.performCommand("island accept");
+        guest.performCommand("island accept");
+        assertTrue(service.registry().byId(solo.id).isEmpty());
+        tick(10);
+        assertFalse("the cell was wiped and released", service.registry().isDirty(cx, cz));
+        assertTrue(fake.started.stream().anyMatch(l -> l.startsWith("wipe")));
     }
 
     @Test

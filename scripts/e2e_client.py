@@ -1495,6 +1495,22 @@ def swords_scenario(ctx):
     subprocess.run([xdo, "key", "F5", "F5"], env=env)  # third person, from the front: the sword in the model's hand
     time.sleep(2)
     shot(tools, shots / "sw-10-third-person.png")
+    # the same pose with a vanilla iron sword then the Bronze Cleaver: a ladder weapon must be held like a vanilla one
+    rcon.command("item replace entity E2EBot weapon.mainhand with minecraft:iron_sword")
+    time.sleep(1)
+    shot(tools, shots / "sw-11-vanilla-third.png")
+    subprocess.run([xdo, "key", "F5"], env=env)  # front -> first person
+    time.sleep(1)
+    shot(tools, shots / "sw-12-vanilla-first.png")
+    rcon.command("item replace entity E2EBot weapon.mainhand with minecraft:air")
+    rcon.command("sbgive bronze_cleaver 1 E2EBot")
+    time.sleep(1)
+    shot(tools, shots / "sw-13-cleaver-first.png")
+    subprocess.run([xdo, "key", "F5"], env=env)
+    time.sleep(0.5)
+    subprocess.run([xdo, "key", "F5"], env=env)  # first -> behind -> front
+    time.sleep(1)
+    shot(tools, shots / "sw-14-cleaver-third.png")
     # starcore armor is tougher than void armor (both are netherite underneath)
     rcon.command("clear E2EBot")
     armor_values = {}
@@ -1516,21 +1532,29 @@ def swords_scenario(ctx):
         rcon.command("clear E2EBot")
     if not armor_values["starcore"] > armor_values["void"]:
         ctx["failures"].append(f"starcore armor is not tougher than void armor: {armor_values}")
-    # the five armor tiers worn, seen from the front in third person
+    # the five armor tiers worn, seen from the front then the back in third person, without the HUD and chat
     rcon.command("clear E2EBot")
+    subprocess.run([xdo, "key", "F1"], env=env)
     for tier in ("bronze", "rime", "ember", "void", "starcore"):
         for i, slot in enumerate(("helmet", "chestplate", "leggings", "boots")):
             rcon.command(f"sbgive {tier}_{slot} 1 E2EBot")
         for source, target in ((0, "head"), (1, "chest"), (2, "legs"), (3, "feet")):
             rcon.command(f"item replace entity E2EBot armor.{target} from entity E2EBot container.{source}")
-        rcon.command("clear E2EBot minecraft:chainmail_helmet")
         time.sleep(2)
         shot(tools, shots / f"ar-{tier}.png")
+        subprocess.run([xdo, "key", "F5"], env=env)  # front -> first person
+        time.sleep(0.5)
+        subprocess.run([xdo, "key", "F5"], env=env)  # -> from behind (the wings)
+        time.sleep(1.5)
+        shot(tools, shots / f"ar-{tier}-back.png")
+        subprocess.run([xdo, "key", "F5"], env=env)  # -> from the front again
+        time.sleep(1)
         rcon.command("item replace entity E2EBot armor.head with minecraft:air")
         rcon.command("item replace entity E2EBot armor.chest with minecraft:air")
         rcon.command("item replace entity E2EBot armor.legs with minecraft:air")
         rcon.command("item replace entity E2EBot armor.feet with minecraft:air")
         rcon.command("clear E2EBot")
+    subprocess.run([xdo, "key", "F1"], env=env)
 
 
 def start_scenario(ctx):

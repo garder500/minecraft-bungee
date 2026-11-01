@@ -39,12 +39,13 @@ final class QuarryItems {
         List<CustomItemDef> out = new java.util.ArrayList<>();
         Rarity[] rarity = {Rarity.UNCOMMON, Rarity.RARE, Rarity.EPIC, Rarity.LEGENDARY, Rarity.MYTHIC};
         long[] luck = {10, 25, 45, 70, 100};
+        long[] durability = {1500, 3000, 5000, 8000, 12000};
         String[] pick = {"IRON_PICKAXE", "IRON_PICKAXE", "DIAMOND_PICKAXE", "NETHERITE_PICKAXE", "NETHERITE_PICKAXE"};
         for (int t = 2; t < TIERS.length; t++) { // bronze and rime already have their pickaxe
             String tier = TIERS[t];
             String title = Character.toUpperCase(tier.charAt(0)) + tier.substring(1);
             out.add(CustomItemDef.builder(tier + "_pick", title + " Pick", rarity[t], Material.valueOf(pick[t]))
-                .itemModel("vampyuyu:tool/" + tier + "_pick").type("PICKAXE").pdc(MINING_LUCK, luck[t]).glint(t >= 3)
+                .itemModel("vampyuyu:tool/" + tier + "_pick").type("PICKAXE").pdc(MINING_LUCK, luck[t]).pdc(Items.MAX_DURABILITY, durability[t]).glint(t >= 3)
                 .lore("<gray>Mining Luck: <green>+" + luck[t], "<gray>Better odds in your generator.").build());
         }
         return out;
@@ -79,7 +80,7 @@ final class QuarryItems {
                 .lore("<gray>Place it on your island and", "<gray>right-click it to forge gear.").build(),
             CustomItemDef.builder(BRONZE_PICK, "Bronze Pick", Rarity.UNCOMMON, Material.IRON_PICKAXE)
                 .itemModel("vampyuyu:tool/bronze_pick").type("PICKAXE")
-                .pdc(MINING_LUCK, 10L)
+                .pdc(MINING_LUCK, 10L).pdc(Items.MAX_DURABILITY, 1500L)
                 .lore("<gray>Mining Luck: <green>+10", "<gray>Better odds in your generator.").build(),
             CustomItemDef.builder(FROSTIUM, "Frostium", Rarity.RARE, Material.PRISMARINE_CRYSTALS)
                 .itemModel("vampyuyu:ore/frostium").type("ORE")
@@ -92,7 +93,7 @@ final class QuarryItems {
                 .lore("<gray>Right-click on your island to", "<gray>upgrade your cobble generator", "<gray>to tier III (Ember).").build(),
             CustomItemDef.builder(RIME_PICK, "Rime Pick", Rarity.RARE, Material.IRON_PICKAXE)
                 .itemModel("vampyuyu:tool/rime_pick").type("PICKAXE")
-                .pdc(MINING_LUCK, 25L)
+                .pdc(MINING_LUCK, 25L).pdc(Items.MAX_DURABILITY, 3000L)
                 .lore("<gray>Mining Luck: <green>+25", "<gray>Better odds in your generator.").build(),
             CustomItemDef.builder(PEBBLE, "Stone Pebble", Rarity.COMMON, Material.FLINT)
                 .itemModel("vampyuyu:ore/pebble").type("ORE")

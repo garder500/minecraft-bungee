@@ -173,20 +173,22 @@ public class SimpleSkyblockTest {
         assertFalse(player.teleport(islands.defaultSpawn(personal)));
         assertTrue(plugin.core().modes().enterIsland(player));
     }
-    @Test public void invitationsPreserveBothPersonalIslandsAndPersistMembership() {
+    @Test public void invitationsReplaceTheSoloIslandAndPersistMembership() {
         PlayerMock guest=server.addPlayer("Guest");
         Island theirs=islands.registry().create(guest.getUniqueId(),guest.getName(),"classic",1);
         theirs.state(Island.State.READY); floor(islands.defaultSpawn(theirs));
         plugin.core().modes().enterIsland(player); plugin.core().modes().enterIsland(guest);
         assertTrue(islands.invite(player,guest.getUniqueId()).ok());
-        assertTrue(islands.accept(guest,player.getName()).ok());
+        assertTrue(islands.accept(guest,player.getName()).ok()); // warning only
         assertSame(theirs,islands.registry().ownedBy(guest.getUniqueId()).orElseThrow());
+        assertTrue(islands.accept(guest,player.getName()).ok());
+        assertTrue(islands.registry().ownedBy(guest.getUniqueId()).isEmpty());
         assertTrue(personal.members.containsKey(guest.getUniqueId()));
         var restored=IslandRegistry.fromJson(islands.registry().toJson(),plugin.getLogger(),null);
-        assertEquals(theirs.id,restored.ownedBy(guest.getUniqueId()).orElseThrow().id);
+        assertTrue(restored.ownedBy(guest.getUniqueId()).isEmpty());
         assertTrue(restored.byId(personal.id).orElseThrow().members.containsKey(guest.getUniqueId()));
         assertTrue(islands.teleportHome(guest));
-        assertEquals(theirs.id,islands.islandAtLocation(guest.getLocation()).id);
+        assertEquals(personal.id,islands.islandAtLocation(guest.getLocation()).id);
     }
     @Test public void noTemplateHasAnEndGateAndTheEndPortalRoutesToTheIslandEnd() {
         assertEquals(SkyblockWorlds.END,PortalMapper.route(SkyblockWorlds.WORLD,PlayerTeleportEvent.TeleportCause.END_PORTAL,true,true).world());

@@ -7,7 +7,8 @@ import org.bukkit.Material;
 enum MachineType {
     COAL_GENERATOR("coal_generator", Material.BARRIER, Material.STONECUTTER, "Coal Generator"),
     BATTERY("battery", Material.BARRIER, Material.WAXED_COPPER_BLOCK, "Battery"),
-    CABLE("cable", Material.REDSTONE_WIRE, Material.LIGHTNING_ROD, "Copper Cable"),
+    // an invisible, walk-through block under the copper model (it used to be redstone wire, whose red dust showed)
+    CABLE("cable", Material.STRUCTURE_VOID, Material.REDSTONE_WIRE, "Copper Cable"),
     SOLAR_PANEL("solar_panel", Material.BARRIER, Material.DAYLIGHT_DETECTOR, "Solar Panel"),
     MINER_1("miner_1", Material.BARRIER, Material.LODESTONE, "Miner I"),
     MINER_2("miner_2", Material.BARRIER, Material.LODESTONE, "Miner II"),

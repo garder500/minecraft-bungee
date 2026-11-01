@@ -275,6 +275,8 @@ public class IslandFeatureTest {
         owner.performCommand("island leave");
         assertTrue(said(owner).contains("owner cannot leave"));
         owner.performCommand("island invite Pal");
+        guest.performCommand("island accept Boss"); // Pal owns the island created when they left: warning first
+        assertEquals(IslandRole.VISITOR, island.roleOf(guest.getUniqueId()));
         guest.performCommand("island accept Boss");
         assertEquals(IslandRole.MEMBER, island.roleOf(guest.getUniqueId()));
         owner.performCommand("island kick Pal");

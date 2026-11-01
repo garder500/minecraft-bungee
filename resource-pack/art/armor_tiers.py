@@ -117,9 +117,14 @@ def write_json(path, data):
 
 def main():
     for tier in TIERS:
-        write_json(ASSETS / "equipment" / f"{tier}.json", {"layers": {
-            "humanoid": [{"texture": f"vampyuyu:{tier}"}], "humanoid_leggings": [{"texture": f"vampyuyu:{tier}"}]}})
+        asset = ASSETS / "equipment" / f"{tier}.json"
+        layers = {"humanoid": [{"texture": f"vampyuyu:{tier}"}], "humanoid_leggings": [{"texture": f"vampyuyu:{tier}"}]}
+        if asset.exists():  # keep the layers other scripts add (helmet_models.py: the starcore wings)
+            layers = {**json.loads(asset.read_text())["layers"], **layers}
+        write_json(asset, {"layers": layers})
         for folder, leggings in (("humanoid", False), ("humanoid_leggings", True)):
+            if imported(f"equipment/{tier}"):  # painted by armor_layers.py from the sprite's palette
+                continue
             path = ASSETS / "textures" / "entity" / "equipment" / folder / f"{tier}.png"
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(bs.png(layer(tier, leggings)))

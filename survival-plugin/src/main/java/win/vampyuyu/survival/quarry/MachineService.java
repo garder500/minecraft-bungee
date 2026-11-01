@@ -59,7 +59,7 @@ final class MachineService {
                 MachineType type = entry.getValue().kind();
                 if (type == MachineType.CABLE && world.getBlockAt(p.x(), p.y(), p.z()).getType() == Material.LIGHTNING_ROD) {
                     migrateCable(world.getBlockAt(p.x(), p.y(), p.z())); // cables used to be lightning rods
-                } else if (type != null && type != MachineType.CABLE && type.legacy != type.block
+                } else if (type != null && type.legacy != type.block
                         && world.getBlockAt(p.x(), p.y(), p.z()).getType() == type.legacy) {
                     world.getBlockAt(p.x(), p.y(), p.z()).setType(type.block, false); // a vanilla block of an older version: now an invisible hitbox under the model
                 }
@@ -72,9 +72,11 @@ final class MachineService {
                 boolean shapeChanged = false;
                 if (type == MachineType.CABLE) {
                     entry.getValue().yaw = CABLE_YAW; // cables are drawn aligned with the world, whatever way they were placed
-                    String mask = Integer.toString(cableMask(block));
-                    shapeChanged = !mask.equals(entry.getValue().built);
-                    entry.getValue().built = mask;
+                    // "built" holds the drawn shape, plus "p" while the cable carries Flux (lit copper)
+                    String old = entry.getValue().built == null ? "" : entry.getValue().built;
+                    String key = cableMask(block) + (old.endsWith(POWERED) ? POWERED : "");
+                    shapeChanged = !key.equals(old);
+                    entry.getValue().built = key;
                 }
                 if (shapeChanged || !BlockModels.has(block)) {
                     unmodelled.put(block, entry.getValue());
@@ -93,6 +95,20 @@ final class MachineService {
                 }
                 Map<Pos, MachineData> network = new LinkedHashMap<>();
                 group.forEach(p -> network.put(p, live.get(p)));
+                boolean powered = EnergyNetwork.hasFlux(network, p -> sunny(world, p));
+                for (Map.Entry<Pos, MachineData> cable : network.entrySet()) {
+                    MachineData data = cable.getValue();
+                    if (data.kind() != MachineType.CABLE) {
+                        continue;
+                    }
+                    String shape = data.built == null ? "" : data.built.replace(POWERED, "");
+                    String key = shape + (powered ? POWERED : "");
+                    if (!key.equals(data.built)) { // the cable lights up or goes dark
+                        data.built = key;
+                        Pos at = cable.getKey();
+                        unmodelled.put(world.getBlockAt(at.x(), at.y(), at.z()), data);
+                    }
+                }
                 for (EnergyNetwork.Fire fire : EnergyNetwork.tick(network, cfg, p -> ready(world, p), p -> sunny(world, p))) {
                     for (int i = 0; i < fire.cycles(); i++) {
                         if (!mine(world, fire.pos(), network.get(fire.pos()))) {
@@ -148,22 +164,25 @@ final class MachineService {
 
     /** The model's own orientation puts its +z face towards the player at yaw 180: that is the one aligned with the world. */
     static final float CABLE_YAW = 180f;
+    /** Suffix of a cable's drawn state while its network has Flux. */
+    static final String POWERED = "p";
 
     /** The item a machine's display shows: a cable picks the model of its connection shape. */
     ItemStack modelItem(Block block, MachineData data) {
         ItemStack stack = quarry.core().items().create(data.kind().itemId);
         if (data.kind() == MachineType.CABLE) {
             int mask = cableMask(block);
-            stack.editMeta(meta -> meta.setItemModel(new org.bukkit.NamespacedKey("vampyuyu", "machine/cable_" + mask)));
+            String lit = data.built != null && data.built.endsWith(POWERED) ? "_on" : "";
+            stack.editMeta(meta -> meta.setItemModel(new org.bukkit.NamespacedKey("vampyuyu", "machine/cable_" + mask + lit)));
         }
         return stack;
     }
 
-    /** An old cable (a lightning rod) becomes redstone wire when the block under it can carry it, else the item comes back. */
+    /** An old cable (a lightning rod) becomes a cable block when the block under it can carry it, else the item comes back. */
     private void migrateCable(Block rod) {
         MachineData data = store.get(rod.getWorld().getName(), MachineStore.pos(rod));
         if (rod.getRelative(BlockFace.DOWN).getType().isSolid()) {
-            rod.setType(Material.REDSTONE_WIRE, true);
+            rod.setType(MachineType.CABLE.block, false);
         } else {
             rod.setType(Material.AIR);
             rod.getWorld().dropItemNaturally(rod.getLocation().add(0.5, 0.5, 0.5), quarry.core().items().create("cable"));

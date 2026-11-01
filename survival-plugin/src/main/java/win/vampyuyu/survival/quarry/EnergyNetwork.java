@@ -63,6 +63,22 @@ final class EnergyNetwork {
         return tick(network, cfg, ready, p -> false);
     }
 
+    /**
+     * True when the network has Flux this second: a solar panel in the sun, a burning coal generator or a charged
+     * battery. Read before {@link #tick}, which spends the fuel and the charge.
+     */
+    static boolean hasFlux(Map<Pos, MachineData> network, Predicate<Pos> sunny) {
+        for (Map.Entry<Pos, MachineData> entry : network.entrySet()) {
+            MachineData m = entry.getValue();
+            MachineType type = m.kind();
+            if ((type == MachineType.SOLAR_PANEL && sunny.test(entry.getKey()))
+                    || (type == MachineType.COAL_GENERATOR && m.fuel > 0) || (type == MachineType.BATTERY && m.charge > 0)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Same, with {@code sunny}: whether a solar panel at that position is in daylight under the open sky. */
     static List<Fire> tick(Map<Pos, MachineData> network, MachineSettings cfg, Predicate<Pos> ready, Predicate<Pos> sunny) {
         double pool = 0;

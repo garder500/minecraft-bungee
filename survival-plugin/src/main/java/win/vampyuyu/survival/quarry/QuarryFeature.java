@@ -44,6 +44,7 @@ public final class QuarryFeature implements Feature {
         }));
         core.listen(new WeaponListener(core));
         core.listen(new LadderCombat(core)); // ladder damage when the full stat engine is not loaded
+        core.listen(new LadderDefense(core)); // ladder Ward and Vitality, same condition
         core.listen(new PebbleListener(core, service));
         core.listen(new OutputListener(core, service));
         core.listen(new GearListener(core));

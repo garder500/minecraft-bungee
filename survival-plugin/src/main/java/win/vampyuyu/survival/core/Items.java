@@ -26,6 +26,8 @@ import win.vampyuyu.survival.api.Stat;
 public final class Items {
     /** PDC namespace of everything this plugin writes on items. */
     public static final String NAMESPACE = "vampyuyu";
+    /** Long on a definition: the item's durability, far above the base material's (iron, diamond...). */
+    public static final String MAX_DURABILITY = "max_durability";
     /** PDC key (inside the namespace) holding the item id. */
     public static final String ID_KEY = "item_id";
     /** Prefix of the per-item stat bonus keys. */
@@ -94,10 +96,14 @@ public final class Items {
         if (def.maxStackSize() != null) {
             meta.setMaxStackSize(def.maxStackSize());
         }
+        applyDurability(def, meta);
         if (def.equippable() != null) {
             EquippableComponent equippable = meta.getEquippable();
             equippable.setSlot(def.equippable().slot());
-            if (def.equippable().assetId() != null) {
+            if (def.equippable().assetId() == null) {
+                // no worn texture: a head piece is then drawn as its own (3D) item model, like a carved pumpkin
+                equippable.setModel(null);
+            } else {
                 NamespacedKey asset = NamespacedKey.fromString(def.equippable().assetId());
                 if (asset == null) {
                     throw new IllegalArgumentException("Bad equipment asset key: " + def.equippable().assetId());
@@ -309,5 +315,44 @@ public final class Items {
         ItemMeta meta = stack.getItemMeta();
         meta.getPersistentDataContainer().set(key(key), type, value);
         stack.setItemMeta(meta);
+    }
+
+    /** Sets the definition's {@link #MAX_DURABILITY} on a damageable item. True when it changed something. */
+    static boolean applyDurability(CustomItemDef def, org.bukkit.inventory.meta.ItemMeta meta) {
+        Long max = def.pdcLongs().get(MAX_DURABILITY);
+        if (max == null || max <= 0 || def.unbreakable() || !(meta instanceof org.bukkit.inventory.meta.Damageable damageable)) {
+            return false;
+        }
+        int wanted = (int) Math.min(Integer.MAX_VALUE, max);
+        if (damageable.hasMaxDamage() && damageable.getMaxDamage() == wanted) {
+            return false;
+        }
+        damageable.setMaxDamage(wanted);
+        return true;
+    }
+
+    /**
+     * Brings a stack made before its definition changed up to date: its durability (wear already taken is kept as
+     * the same number of points, so an old item only gains life) and its worn look (a helmet that lost its equipment
+     * texture is now drawn as its 3D model).
+     */
+    public boolean upgradeDurability(org.bukkit.inventory.ItemStack stack) {
+        java.util.Optional<CustomItemDef> def = idOf(stack).flatMap(this::def);
+        if (def.isEmpty()) {
+            return false;
+        }
+        org.bukkit.inventory.meta.ItemMeta meta = stack.getItemMeta();
+        boolean changed = applyDurability(def.get(), meta);
+        if (def.get().equippable() != null && def.get().equippable().assetId() == null && meta.hasEquippable()
+                && meta.getEquippable().getModel() != null) {
+            EquippableComponent equippable = meta.getEquippable();
+            equippable.setModel(null);
+            meta.setEquippable(equippable);
+            changed = true;
+        }
+        if (changed) {
+            stack.setItemMeta(meta);
+        }
+        return changed;
     }
 }

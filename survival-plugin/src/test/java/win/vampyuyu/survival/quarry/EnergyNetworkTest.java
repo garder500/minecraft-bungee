@@ -20,6 +20,26 @@ public class EnergyNetworkTest {
     }
 
     @Test
+    public void aNetworkHasFluxFromSunCoalOrACharge() {
+        var cable = machine(MachineType.CABLE);
+        var coal = machine(MachineType.COAL_GENERATOR);
+        var battery = machine(MachineType.BATTERY);
+        var solar = machine(MachineType.SOLAR_PANEL);
+        java.util.Map<Pos, MachineData> net = new java.util.LinkedHashMap<>();
+        net.put(new Pos(0, 0, 0), cable);
+        net.put(new Pos(1, 0, 0), coal);
+        net.put(new Pos(2, 0, 0), battery);
+        net.put(new Pos(3, 0, 0), solar);
+        assertFalse("no fuel, no charge, night: the cables stay dark", EnergyNetwork.hasFlux(net, p -> false));
+        assertTrue("a solar panel in the sun lights them", EnergyNetwork.hasFlux(net, p -> true));
+        coal.fuel = 3;
+        assertTrue(EnergyNetwork.hasFlux(net, p -> false));
+        coal.fuel = 0;
+        battery.charge = 10;
+        assertTrue(EnergyNetwork.hasFlux(net, p -> false));
+    }
+
+    @Test
     public void touchingMachinesFormOneNetworkAndApartOnesDoNot() {
         var set = new LinkedHashSet<>(List.of(new Pos(0, 0, 0), new Pos(1, 0, 0), new Pos(2, 0, 0), new Pos(10, 0, 0),
             new Pos(10, 1, 0)));

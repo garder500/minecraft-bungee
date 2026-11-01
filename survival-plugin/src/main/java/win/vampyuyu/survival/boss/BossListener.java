@@ -8,7 +8,6 @@ import org.bukkit.Location;
 import org.bukkit.entity.AreaEffectCloud;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EnderCrystal;
-import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -233,14 +232,10 @@ public final class BossListener implements Listener {
         if (session == null || session.inAbilityHit()) {
             return; // an ability hit: the amount already includes its multiplier
         }
-        if (damager instanceof EnderDragon || !hasAttackAttribute(damager)) {
-            event.setDamage(Math.max(0.5, session.hitDamage(1.0)));
-        }
+        // always the boss's own number: the held weapon and the world difficulty must not add to it
+        event.setDamage(Math.max(0.5, session.hitDamage(1.0)));
     }
 
-    private static boolean hasAttackAttribute(Entity e) {
-        return e instanceof org.bukkit.attribute.Attributable a && a.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE) != null;
-    }
 
     // ---------------------------------------------------------------- deaths and cleanup
 

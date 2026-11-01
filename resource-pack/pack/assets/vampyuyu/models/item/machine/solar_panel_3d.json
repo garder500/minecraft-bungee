@@ -1,7 +1,10 @@
 {
  "textures": {
-  "0": "vampyuyu:item/machine/solar_panel_3d",
-  "particle": "vampyuyu:item/machine/solar_panel_3d"
+  "top": "vampyuyu:block/machine/solar_panel_top",
+  "side": "vampyuyu:block/machine/solar_panel_side",
+  "front": "vampyuyu:block/machine/solar_panel_side",
+  "bottom": "vampyuyu:block/machine/bottom",
+  "particle": "vampyuyu:block/machine/solar_panel_side"
  },
  "gui_light": "front",
  "display": {
@@ -104,335 +107,131 @@
    ],
    "to": [
     16,
+    4,
+    16
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      12,
+      16,
+      16
+     ],
+     "texture": "#side"
+    },
+    "east": {
+     "uv": [
+      0,
+      12,
+      16,
+      16
+     ],
+     "texture": "#side"
+    },
+    "south": {
+     "uv": [
+      0,
+      12,
+      16,
+      16
+     ],
+     "texture": "#front"
+    },
+    "west": {
+     "uv": [
+      0,
+      12,
+      16,
+      16
+     ],
+     "texture": "#side"
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#top"
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#bottom"
+    }
+   }
+  },
+  {
+   "from": [
+    1,
+    4,
+    1
+   ],
+   "to": [
+    15,
     6,
-    16
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      8,
-      0,
-      12,
-      4
-     ],
-     "texture": "#0"
-    },
-    "east": {
-     "uv": [
-      8,
-      0,
-      12,
-      4
-     ],
-     "texture": "#0"
-    },
-    "south": {
-     "uv": [
-      8,
-      0,
-      12,
-      4
-     ],
-     "texture": "#0"
-    },
-    "west": {
-     "uv": [
-      8,
-      0,
-      12,
-      4
-     ],
-     "texture": "#0"
-    },
-    "down": {
-     "uv": [
-      8,
-      0,
-      12,
-      4
-     ],
-     "texture": "#0"
-    },
-    "up": {
-     "uv": [
-      8,
-      0,
-      12,
-      4
-     ],
-     "texture": "#0"
-    }
-   }
-  },
-  {
-   "from": [
-    0,
-    5,
-    0
-   ],
-   "to": [
-    16,
-    6.5,
-    16
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      0,
-      0,
-      4,
-      4
-     ],
-     "texture": "#0"
-    },
-    "east": {
-     "uv": [
-      0,
-      0,
-      4,
-      4
-     ],
-     "texture": "#0"
-    },
-    "south": {
-     "uv": [
-      0,
-      0,
-      4,
-      4
-     ],
-     "texture": "#0"
-    },
-    "west": {
-     "uv": [
-      0,
-      0,
-      4,
-      4
-     ],
-     "texture": "#0"
-    },
-    "down": {
-     "uv": [
-      0,
-      0,
-      4,
-      4
-     ],
-     "texture": "#0"
-    },
-    "up": {
-     "uv": [
-      0,
-      0,
-      4,
-      4
-     ],
-     "texture": "#0"
-    }
-   }
-  },
-  {
-   "from": [
-    1,
-    6.5,
-    1
-   ],
-   "to": [
-    15,
-    7.5,
     15
    ],
    "faces": {
     "north": {
      "uv": [
-      4,
-      0,
-      8,
-      4
+      1,
+      10,
+      15,
+      12
      ],
-     "texture": "#0"
+     "texture": "#side"
     },
     "east": {
      "uv": [
-      4,
-      0,
-      8,
-      4
+      1,
+      10,
+      15,
+      12
      ],
-     "texture": "#0"
+     "texture": "#side"
     },
     "south": {
      "uv": [
-      4,
-      0,
-      8,
-      4
+      1,
+      10,
+      15,
+      12
      ],
-     "texture": "#0"
+     "texture": "#front"
     },
     "west": {
      "uv": [
-      4,
-      0,
-      8,
-      4
+      1,
+      10,
+      15,
+      12
      ],
-     "texture": "#0"
-    },
-    "down": {
-     "uv": [
-      4,
-      0,
-      8,
-      4
-     ],
-     "texture": "#0"
+     "texture": "#side"
     },
     "up": {
      "uv": [
-      4,
-      0,
-      8,
-      4
+      1,
+      1,
+      15,
+      15
      ],
-     "texture": "#0"
-    }
-   }
-  },
-  {
-   "from": [
-    7.6,
-    7.5,
-    1
-   ],
-   "to": [
-    8.4,
-    7.9,
-    15
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      12,
-      0,
-      16,
-      4
-     ],
-     "texture": "#0"
-    },
-    "east": {
-     "uv": [
-      12,
-      0,
-      16,
-      4
-     ],
-     "texture": "#0"
-    },
-    "south": {
-     "uv": [
-      12,
-      0,
-      16,
-      4
-     ],
-     "texture": "#0"
-    },
-    "west": {
-     "uv": [
-      12,
-      0,
-      16,
-      4
-     ],
-     "texture": "#0"
+     "texture": "#top"
     },
     "down": {
      "uv": [
-      12,
-      0,
-      16,
-      4
+      1,
+      1,
+      15,
+      15
      ],
-     "texture": "#0"
-    },
-    "up": {
-     "uv": [
-      12,
-      0,
-      16,
-      4
-     ],
-     "texture": "#0"
-    }
-   }
-  },
-  {
-   "from": [
-    1,
-    7.5,
-    7.6
-   ],
-   "to": [
-    15,
-    7.9,
-    8.4
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      12,
-      0,
-      16,
-      4
-     ],
-     "texture": "#0"
-    },
-    "east": {
-     "uv": [
-      12,
-      0,
-      16,
-      4
-     ],
-     "texture": "#0"
-    },
-    "south": {
-     "uv": [
-      12,
-      0,
-      16,
-      4
-     ],
-     "texture": "#0"
-    },
-    "west": {
-     "uv": [
-      12,
-      0,
-      16,
-      4
-     ],
-     "texture": "#0"
-    },
-    "down": {
-     "uv": [
-      12,
-      0,
-      16,
-      4
-     ],
-     "texture": "#0"
-    },
-    "up": {
-     "uv": [
-      12,
-      0,
-      16,
-      4
-     ],
-     "texture": "#0"
+     "texture": "#bottom"
     }
    }
   }

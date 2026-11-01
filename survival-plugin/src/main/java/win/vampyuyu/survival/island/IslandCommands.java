@@ -32,6 +32,7 @@ public final class IslandCommands {
         {"accept", "accept [player]", "Accept an invitation"},
         {"deny", "deny [player]", "Decline an invitation"},
         {"leave", "leave", "Leave the island you joined"},
+        {"keep-coop", "keep-coop", "Delete your old island and stay in the coop (confirm)"},
         {"kick", "kick <player>", "Remove a member"},
         {"ban", "ban <player>", "Ban a player from the island"},
         {"unban", "unban <player>", "Lift a ban"},
@@ -45,6 +46,7 @@ public final class IslandCommands {
         {"upgrades", "upgrades", "Open the upgrades menu"},
         {"upgrade", "upgrade <type>", "Buy the next tier (radius, members)"},
         {"reset", "reset [type]", "Wipe and rebuild the island (owner)"},
+        {"delete", "delete", "Delete your island when it has no members (confirm)"},
         {"info", "info [player]", "Show an island"},
         {"level", "level", "Recalculate the island level"},
         {"top", "top", "Open the leaderboard"},
@@ -180,6 +182,8 @@ public final class IslandCommands {
             case "accept" -> reply(player, service.accept(player, args.length > 1 ? args[1] : null));
             case "deny" -> reply(player, service.deny(player, args.length > 1 ? args[1] : null));
             case "leave" -> reply(player, service.leave(player));
+            case "keep-coop", "keepcoop" -> reply(player, service.keepCoop(player));
+            case "delete" -> reply(player, service.deleteOwn(player, args.length > 1 && args[1].equalsIgnoreCase("confirm")));
             case "kick" -> target(player, args, 1).ifPresent(t -> reply(player, service.kick(player, t)));
             case "ban" -> target(player, args, 1).ifPresent(t -> reply(player, service.ban(player, t)));
             case "unban" -> target(player, args, 1).ifPresent(t -> reply(player, service.unban(player, t)));
@@ -446,6 +450,9 @@ public final class IslandCommands {
                     List<String> options = new ArrayList<>(List.of("set", "remove", "list"));
                     service.publicWarps().forEach(i -> options.add(service.registry().nameOf(i.owner)));
                     return filter(options, args[1]);
+                }
+                case "delete" -> {
+                    return filter(List.of("confirm"), args[1]);
                 }
                 case "accept", "deny" -> {
                     if (sender instanceof Player p) {

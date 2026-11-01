@@ -129,6 +129,18 @@ public class MachineTest {
     }
 
     @Test
+    public void deletingAnIslandForgetsItsMachines() {
+        PlayerMock owner = server.addPlayer("Leaver");
+        Island island = island(owner);
+        Block start = base(island);
+        assertTrue(place(owner, start, "cable"));
+        assertTrue(place(owner, start.getRelative(2, 0, 0), "battery"));
+        assertEquals(2, machines.store().countOnIsland(island.id.toString()));
+        server.getPluginManager().callEvent(new win.vampyuyu.survival.api.event.IslandDeleteEvent(island.id));
+        assertEquals(0, machines.store().countOnIsland(island.id.toString()));
+    }
+
+    @Test
     public void breakingAMachineGivesTheItemBackAndForgetsIt() {
         PlayerMock owner = server.addPlayer("Breaker");
         Island island = island(owner);

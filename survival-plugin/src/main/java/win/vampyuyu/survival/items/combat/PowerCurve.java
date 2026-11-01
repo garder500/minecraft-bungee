@@ -39,6 +39,10 @@ public final class PowerCurve {
 
     private final Rules rules;
     private final Tier[] tiers; // index tier - 1, null = not defined by the data
+    /** Ward and Vitality of the full armor of each tier (index tier - 1); how many boss hits that armor should take. */
+    private final double[] ward = new double[TIERS];
+    private final double[] vitality = new double[TIERS];
+    private int hitsToDown = 8;
 
     public PowerCurve(Rules rules, Tier... defined) {
         this.rules = rules;
@@ -59,6 +63,8 @@ public final class PowerCurve {
             items.getDouble("combat.surge-multiplier", 2.0), items.getDouble("combat.element-weakness", 1.5),
             items.getDouble("combat.element-resistance", 0.6));
         Tier[] found = new Tier[TIERS];
+        double[] armorWard = new double[TIERS];
+        double[] armorVitality = new double[TIERS];
         db.read(c -> {
             Db.query(c, "SELECT tier, damage, element FROM item_def WHERE owner = 'quarry' AND tier IS NOT NULL "
                 + "AND damage IS NOT NULL ORDER BY tier", rs -> {
@@ -70,6 +76,8 @@ public final class PowerCurve {
                 + "WHERE d.owner = 'quarry' AND d.tier IS NOT NULL AND d.equip_slot IS NOT NULL", rs -> {
                     int t = rs.getInt(1);
                     for (Stat.Converted conv : Stat.resolve(rs.getString(2))) {
+                        if (conv.stat() == Stat.WARD) armorWard[t - 1] += rs.getDouble(3) * conv.factor();
+                        if (conv.stat() == Stat.VITALITY) armorVitality[t - 1] += rs.getDouble(3) * conv.factor();
                         if (conv.stat() == Stat.MIGHT && found[t - 1] != null) {
                             Tier old = found[t - 1];
                             found[t - 1] = new Tier(t, old.damage(), old.might() + rs.getDouble(3) * conv.factor(), old.element());
@@ -79,7 +87,27 @@ public final class PowerCurve {
                 });
             return null;
         });
-        return new PowerCurve(rules, found);
+        PowerCurve curve = new PowerCurve(rules, found);
+        System.arraycopy(armorWard, 0, curve.ward, 0, TIERS);
+        System.arraycopy(armorVitality, 0, curve.vitality, 0, TIERS);
+        curve.hitsToDown = Math.max(2, boss.getInt("settings.hits-to-down", 8));
+        return curve;
+    }
+
+    /**
+     * Health a player of this tier has where the full stat engine is off: the vanilla 20 plus the armor's Vitality / 5
+     * (100 Vitality is the 20 of a bare player).
+     */
+    public double playerHealth(int tier) {
+        return 20 + vitality[tier - 1] / 5.0;
+    }
+
+    /**
+     * The hit of a boss of this tier: a player wearing the full armor of the tier goes down after {@code hitsToDown}
+     * hits ({@code boss.settings.hits-to-down}), counting the armor's Ward ({@code x 100 / (100 + Ward)} per hit).
+     */
+    public double bossHitDamage(int tier) {
+        return playerHealth(tier) * (1 + ward[tier - 1] / 100.0) / hitsToDown;
     }
 
     public Rules rules() {

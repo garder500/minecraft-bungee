@@ -150,6 +150,9 @@ public final class BossRepo {
             health = curve.bossHealth(tier, seconds); // the written health is only the fallback
         }
         double damage = rs.getDouble("damage");
+        if (curve != null && rs.getInt("hp_auto") == 1 && tier > 0 && curve.has(tier)) {
+            damage = curve.bossHitDamage(tier); // tuned to the armor of the tier, like the health
+        }
         double scale = rs.getDouble("scale");
         double speed = rs.getDouble("speed");
         double kb = rs.getDouble("knockback_resistance");

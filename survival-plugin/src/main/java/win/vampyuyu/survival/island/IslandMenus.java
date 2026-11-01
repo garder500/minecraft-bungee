@@ -146,6 +146,16 @@ public final class IslandMenus {
         if (role == IslandRole.OWNER) {
             gui.set(34, Guis.icon(Material.TNT, "<red>Reset island", "<gray>Wipe everything and start again",
                 "<gray>Cooldown: " + cfg.resetCooldownMinutes + " min"), click -> resetFlow(click.player()));
+            if (island.size() == 1) {
+                gui.set(35, Guis.icon(Material.LAVA_BUCKET, "<red>Delete island",
+                    "<gray>Remove your island for good", "<gray>Only without members"),
+                    click -> confirm(click.player(), "<red>Delete your island?",
+                        List.of("<gray>Blocks and machines are destroyed", "<gray>Your inventory stays with you"), () -> {
+                            service.deleteOwn(click.player(), false); // arms
+                            reply(click.player(), service.deleteOwn(click.player(), true));
+                            click.close();
+                        }));
+            }
         } else {
             gui.set(34, Guis.icon(Material.RED_BED, "<red>Leave island", "<gray>Leave this co-op"),
                 click -> confirm(click.player(), "<red>Leave the island?", List.of("<gray>You will lose access."),

@@ -58,9 +58,7 @@ final class MachineListener implements Listener {
         data.island = island.id().toString();
         data.yaw = type.get() == MachineType.CABLE ? MachineService.CABLE_YAW : BlockModels.facing(player.getLocation().getYaw());
         machines.store().put(block.getWorld().getName(), MachineStore.pos(block), data);
-        if (type.get() != MachineType.CABLE) {
-            block.setType(type.get().block, false); // the vanilla block the item placed becomes an invisible hitbox
-        }
+        block.setType(type.get().block, false); // the vanilla block the item placed becomes an invisible hitbox
         fire(player, "machine_placed:" + type.get().itemId);
         fire(player, "machine_placed");
         core.getPlugin().getServer().getScheduler().runTask(core.getPlugin(),
@@ -105,7 +103,7 @@ final class MachineListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPhysics(org.bukkit.event.block.BlockPhysicsEvent event) {
         Block block = event.getBlock();
-        if (block.getType() != Material.REDSTONE_WIRE || block.getRelative(org.bukkit.block.BlockFace.DOWN).getType().isSolid()) {
+        if (block.getType() != MachineType.CABLE.block || block.getRelative(org.bukkit.block.BlockFace.DOWN).getType().isSolid()) {
             return;
         }
         MachineData data = machines.store().get(block.getWorld().getName(), MachineStore.pos(block));
@@ -170,5 +168,11 @@ final class MachineListener implements Listener {
             default -> core.msg().info(player, type.title + ": needs generator cobble and a chest or barrel next to it, and "
                 + String.format(Locale.ROOT, "%.0f", cfg.consume(type)) + " Flux/s from a network.");
         }
+    }
+
+    /** A deleted island leaves no machines behind (they would keep working on the empty cell). */
+    @EventHandler
+    public void onIslandDeleted(win.vampyuyu.survival.api.event.IslandDeleteEvent event) {
+        machines.store().removeIsland(event.getIslandId().toString());
     }
 }

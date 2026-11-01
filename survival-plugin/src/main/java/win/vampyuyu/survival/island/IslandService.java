@@ -666,8 +666,8 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
 
     /** Creates a missing personal island without altering existing memberships or islands. */
     public Island ensurePersonalIsland(Player player) {
-        Island owned = registry.ownedBy(player.getUniqueId()).orElse(null);
-        if (owned != null) return owned;
+        Island owned = registry.ofPlayer(player.getUniqueId()).orElse(null);
+        if (owned != null) return owned; // one island per player: a co-op member never gets a second one
         IslandConfig.TemplateCfg template = cfg.templates.values().stream().filter(IslandConfig.TemplateCfg::enabled)
             .findFirst().orElse(null);
         if (template == null) return null;
@@ -788,8 +788,8 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
 
     public Result create(Player player, String templateId) {
         UUID id = player.getUniqueId();
-        if (registry.ownedBy(id).isPresent()) {
-            return Result.fail("You already own an island. Use /island home.");
+        if (registry.ofPlayer(id).isPresent()) {
+            return Result.fail("You already belong to an island. Use /island home.");
         }
         IslandConfig.TemplateCfg template = templateId == null ? null : cfg.templates.get(templateId.toLowerCase(Locale.ROOT));
         if (template == null || !template.enabled() || !IslandTemplates.exists(template.id())) {
@@ -1226,24 +1226,50 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
 
     /** Admin: removes an island completely. Its cell is wiped and then reused. */
     public Result delete(UUID owner) {
-        Island island = registry.ofPlayer(owner).orElse(null);
+        Island island = registry.ownedBy(owner).or(() -> registry.ofPlayer(owner)).orElse(null);
         if (island == null) {
             return Result.fail("That player has no island.");
         }
-        evict(island, p -> true, "This island was deleted.");
+        removeIsland(island, "Your island was deleted by an administrator.", null);
+        return Result.ok("Deleted the island of " + registry.nameOf(owner) + " (the cell is being cleaned).");
+    }
+
+    /**
+     * Removes an island completely (registry, invites, tracker) and wipes its cell before releasing it. Shared by the
+     * admin delete, the owner's /island delete, /island keep-coop and accepting a coop invitation.
+     *
+     * @param memberMessage told to the former members (and counted as a loss); null when the owner chose this
+     * @param actor the owner who chose it: stays out of the eviction (the caller moves them)
+     */
+    private void removeIsland(Island island, String memberMessage, Player actor) {
+        if (actor == null) {
+            evict(island, p -> true, "This island was deleted.");
+        }
         Set<UUID> former = island.coop();
         island.generation++; // callbacks of jobs still queued for this island must not touch it any more
         registry.delete(island);
         invites.dropIsland(island.id);
+        Bukkit.getPluginManager().callEvent(new win.vampyuyu.survival.api.event.IslandDeleteEvent(island.id));
         for (UUID member : former) {
             Player online = Bukkit.getPlayer(member);
-            if (online != null) {
-                core.msg().warn(online, "Your island was deleted by an administrator.");
-                data(member).lastLostAt = now();
-                dirty(member);
+            if (memberMessage != null) {
+                if (online != null) {
+                    core.msg().warn(online, memberMessage);
+                }
+                if (online != null) {
+                    data(member).lastLostAt = now();
+                    dirty(member);
+                }
             }
             if (tracker != null) {
                 tracker.forget(member);
+            }
+        }
+        if (actor != null) {
+            for (Player p : playersIn(island)) {
+                if (p != actor) {
+                    sendAway(p, "This island was deleted.");
+                }
             }
         }
         int cx = island.cellX;
@@ -1255,7 +1281,108 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
                 log.warning("The cell " + cx + "," + cz + " could not be cleaned; it stays parked until the next start");
             }
         });
-        return Result.ok("Deleted the island of " + registry.nameOf(owner) + " (the cell is being cleaned).");
+    }
+
+    /** After a deletion: to the player's remaining island, else to the survival spawn (never creates an island). */
+    private void sendAway(Player player, String message) {
+        Island other = registry.ofPlayer(player.getUniqueId()).filter(i -> i.state() == Island.State.READY).orElse(null);
+        Location target = other == null ? null : overworldHome(other);
+        if (target != null) {
+            teleport(player, target);
+            core.msg().warn(player, message);
+        } else if (core.modes().enterSurvival(player)) {
+            core.msg().warn(player, message);
+        }
+    }
+
+    private Result sharedWarning() {
+        return Result.fail("Transfer your island (/island transfer <player>) or remove its members before joining another one.");
+    }
+
+    /** /island delete: the owner removes their own island, only when nobody else is in it. */
+    public Result deleteOwn(Player player, boolean confirm) {
+        UUID id = player.getUniqueId();
+        Island island = registry.ownedBy(id).orElse(null);
+        if (island == null) {
+            return Result.fail("You do not own an island.");
+        }
+        if (island.size() > 1) {
+            return Result.fail("Transfer the island or remove its members first.");
+        }
+        if (!confirm || !confirms.consume(id, "delete", null)) {
+            confirms.arm(id, "delete", null, cfg.confirmSeconds * 1000L);
+            return Result.ok("This deletes your island, its blocks and its machines. Your inventory and ender chest stay with you."
+                + " Type /island delete confirm within " + cfg.confirmSeconds + " seconds to confirm.");
+        }
+        boolean inside = playersIn(island).contains(player);
+        removeIsland(island, null, player);
+        if (inside) {
+            core.modes().enterSurvival(player);
+        }
+        if (tracker != null) {
+            tracker.refreshPlayer(player);
+        }
+        return Result.ok("Your island was deleted. Use /island create to start a new one.");
+    }
+
+    /** True for a legacy player who owns an island and also joined another one. */
+    public boolean legacyDouble(UUID id) {
+        return registry.ownedBy(id).isPresent() && registry.memberOf(id).isPresent();
+    }
+
+    /** /island keep-coop: deletes the old solo island of a legacy double player and stays in the coop. */
+    public Result keepCoop(Player player) {
+        UUID id = player.getUniqueId();
+        Island own = registry.ownedBy(id).orElse(null);
+        Island coop = registry.memberOf(id).orElse(null);
+        if (own == null || coop == null) {
+            return Result.fail("You do not own an island besides the one you joined.");
+        }
+        if (own.size() > 1) {
+            return sharedWarning();
+        }
+        if (!confirms.consume(id, "keep-coop", null)) {
+            confirms.arm(id, "keep-coop", null, cfg.confirmSeconds * 1000L);
+            return Result.ok("This deletes your own island, its blocks and its machines, and keeps you in "
+                + registry.nameOf(coop.owner) + "'s island. Your inventory and ender chest stay with you."
+                + " Type /island keep-coop again within " + cfg.confirmSeconds + " seconds to confirm.");
+        }
+        boolean inside = playersIn(own).contains(player);
+        removeIsland(own, null, player);
+        if (inside) {
+            visit(player, coop, false);
+        }
+        if (tracker != null) {
+            tracker.refreshPlayer(player);
+        }
+        return Result.ok("Your old island was deleted. You stay in " + registry.nameOf(coop.owner) + "'s island.");
+    }
+
+    private final Set<UUID> legacyTold = new HashSet<>();
+
+    /** Once per login: tells a legacy double player how to choose. Nothing is deleted without their confirmation. */
+    public void notifyLegacy(Player player) {
+        UUID id = player.getUniqueId();
+        if (!player.isOnline() || !legacyDouble(id) || !legacyTold.add(id)) {
+            return;
+        }
+        Island own = registry.ownedBy(id).orElseThrow();
+        Island coop = registry.memberOf(id).orElseThrow();
+        String owner = registry.nameOf(coop.owner);
+        if (own.size() > 1) {
+            core.msg().warn(player, "You belong to " + owner + "'s island and still own your old island, which has members. "
+                + "Transfer your island (/island transfer <player>) or remove its members, then use /island keep-coop,"
+                + " or use /island leave to leave the coop and keep your island.");
+        } else {
+            core.msg().warn(player, "You belong to " + owner + "'s island and still own your old island. "
+                + "Type /island keep-coop to delete your old island and stay in the coop, "
+                + "or /island leave to leave the coop and keep your island.");
+        }
+    }
+
+    /** Forgets the once-per-login flag. */
+    void forgetLogin(UUID id) {
+        legacyTold.remove(id);
     }
 
     /**
@@ -1495,19 +1622,52 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
             }
             wanted = theirs.id;
         }
-        Invites.Invite invite = invites.take(id, wanted).orElse(null);
+        Invites.Invite invite = null;
+        for (Invites.Invite candidate : invites.pending(id)) { // same pick as take(): the newest, or the asked island
+            if (wanted == null || candidate.island().equals(wanted)) {
+                invite = candidate;
+                if (wanted != null) {
+                    break;
+                }
+            }
+        }
         if (invite == null) {
             return Result.fail("You have no pending invitation" + (fromName == null ? "" : " from " + fromName) + ".");
         }
         Island island = registry.byId(invite.island()).orElse(null);
         if (island == null || island.state() != Island.State.READY) {
+            invites.take(id, invite.island());
             return Result.fail("That invitation is no longer valid.");
         }
         if (island.banned.contains(id)) {
+            invites.take(id, invite.island());
             return Result.fail("You are banned from that island.");
         }
         if (island.size() >= cfg.memberSlotsFor(island)) {
+            invites.take(id, invite.island());
             return Result.fail("That island is full.");
+        }
+        if (island.roleOf(id).isCoop()) {
+            invites.take(id, invite.island());
+            return Result.fail("You are already in that island.");
+        }
+        // One island per player: joining another one replaces the player's own island, after a clear warning.
+        Island mine = registry.ownedBy(id).orElse(null);
+        if (mine != null) {
+            if (mine.size() > 1) {
+                return sharedWarning();
+            }
+            String owner = registry.nameOf(island.owner);
+            if (!confirms.consume(id, "accept", island.id.toString())) {
+                confirms.arm(id, "accept", island.id.toString(), cfg.confirmSeconds * 1000L);
+                return Result.ok("Joining " + owner + "'s island deletes your own island and its blocks and machines."
+                    + " Your inventory and ender chest stay with you. Type /island accept " + owner
+                    + " again within " + cfg.confirmSeconds + " seconds to confirm.");
+            }
+        }
+        invites.take(id, island.id);
+        if (mine != null) {
+            removeIsland(mine, null, player); // visit() below moves the player
         }
         if (!registry.addMember(island, id, IslandRole.MEMBER)) {
             return Result.fail("Could not join that island.");
@@ -1520,7 +1680,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
             tracker.refreshPlayer(player);
         }
         visit(player, island, false);
-        return Result.ok("You joined " + registry.nameOf(island.owner) + "'s island. Your personal island is preserved.");
+        return Result.ok("You joined " + registry.nameOf(island.owner) + "'s island.");
     }
 
     public Result deny(Player player, String fromName) {
@@ -1546,7 +1706,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
 
     public Result leave(Player player) {
         UUID id = player.getUniqueId();
-        Island island = own(player);
+        Island island = registry.memberOf(id).orElseGet(() -> own(player));
         if (island == null) {
             return Result.fail("You do not have an island.");
         }

@@ -53,6 +53,7 @@ public final class Core {
         debug = coreSettings().getBoolean("debug", false);
         Bukkit.getPluginManager().registerEvents(profiles, plugin);
         Bukkit.getPluginManager().registerEvents(guis, plugin);
+        Bukkit.getPluginManager().registerEvents(new DurabilityUpgrade(items), plugin);
         try {
             Bukkit.getPluginManager().registerEvents(new SwingCharge(), plugin);
         } catch (RuntimeException e) {

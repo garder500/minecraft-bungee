@@ -82,6 +82,20 @@ final class MachineStore {
         return new java.util.LinkedHashSet<>(doc.worlds.keySet());
     }
 
+    /** Forgets every machine of an island (it was deleted). Returns how many. */
+    int removeIsland(String islandId) {
+        int n = 0;
+        for (Map<String, MachineData> m : doc.worlds.values()) {
+            int before = m.size();
+            m.values().removeIf(d -> islandId.equals(d.island));
+            n += before - m.size();
+        }
+        if (n > 0) {
+            markDirty();
+        }
+        return n;
+    }
+
     int countOnIsland(String islandId) {
         int n = 0;
         for (Map<String, MachineData> m : doc.worlds.values()) {

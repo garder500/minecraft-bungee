@@ -224,9 +224,11 @@ INSERT INTO item_mob (entity, level, health, damage, weakness, resistance) VALUE
 
 
 INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('bronze_cleaver', 'quarry', 151, 'Bronze Cleaver', 'UNCOMMON', 'IRON_SWORD', 'vampyuyu:weapon/bronze_cleaver', 'SWORD', 40.0, 0, 1, 0, NULL, NULL, NULL, 'EARTH', 1);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('bronze_cleaver', 'max_durability', 'long', '1500');
 INSERT INTO item_lore (item_id, position, line) VALUES ('bronze_cleaver', 0, '<gray>Rend: <white>hits make the target');
 INSERT INTO item_lore (item_id, position, line) VALUES ('bronze_cleaver', 1, '<gray>bleed for 3 seconds.');
-INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('bronze_helmet', 'quarry', 152, 'Bronze Helmet', 'UNCOMMON', 'CHAINMAIL_HELMET', 'vampyuyu:armor/bronze_helmet', 'HELMET', NULL, 0, 1, 0, NULL, 'HEAD', 'vampyuyu:bronze', NULL, 1);
+INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('bronze_helmet', 'quarry', 152, 'Bronze Helmet', 'UNCOMMON', 'CHAINMAIL_HELMET', 'vampyuyu:armor/bronze_helmet', 'HELMET', NULL, 0, 1, 0, NULL, 'HEAD', NULL, NULL, 1);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('bronze_helmet', 'max_durability', 'long', '600');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('bronze_helmet', 'might', 4.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('bronze_helmet', 'ward', 9.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('bronze_helmet', 'vitality', 11.0);
@@ -235,6 +237,7 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('bronze_helmet', 1, '<gr
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('bronze_helmet', 'extra_armor', 'long', '0');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('bronze_helmet', 'extra_toughness', 'long', '0');
 INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('bronze_chestplate', 'quarry', 153, 'Bronze Chestplate', 'UNCOMMON', 'CHAINMAIL_CHESTPLATE', 'vampyuyu:armor/bronze_chestplate', 'CHESTPLATE', NULL, 0, 1, 0, NULL, 'CHEST', 'vampyuyu:bronze', NULL, 1);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('bronze_chestplate', 'max_durability', 'long', '600');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('bronze_chestplate', 'might', 6.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('bronze_chestplate', 'ward', 13.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('bronze_chestplate', 'vitality', 16.0);
@@ -243,6 +246,7 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('bronze_chestplate', 1, 
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('bronze_chestplate', 'extra_armor', 'long', '0');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('bronze_chestplate', 'extra_toughness', 'long', '0');
 INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('bronze_leggings', 'quarry', 154, 'Bronze Leggings', 'UNCOMMON', 'CHAINMAIL_LEGGINGS', 'vampyuyu:armor/bronze_leggings', 'LEGGINGS', NULL, 0, 1, 0, NULL, 'LEGS', 'vampyuyu:bronze', NULL, 1);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('bronze_leggings', 'max_durability', 'long', '600');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('bronze_leggings', 'might', 5.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('bronze_leggings', 'ward', 11.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('bronze_leggings', 'vitality', 14.0);
@@ -251,6 +255,7 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('bronze_leggings', 1, '<
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('bronze_leggings', 'extra_armor', 'long', '0');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('bronze_leggings', 'extra_toughness', 'long', '0');
 INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('bronze_boots', 'quarry', 155, 'Bronze Boots', 'UNCOMMON', 'CHAINMAIL_BOOTS', 'vampyuyu:armor/bronze_boots', 'BOOTS', NULL, 0, 1, 0, NULL, 'FEET', 'vampyuyu:bronze', NULL, 1);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('bronze_boots', 'max_durability', 'long', '600');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('bronze_boots', 'might', 4.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('bronze_boots', 'ward', 8.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('bronze_boots', 'vitality', 9.0);
@@ -259,9 +264,11 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('bronze_boots', 1, '<gra
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('bronze_boots', 'extra_armor', 'long', '0');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('bronze_boots', 'extra_toughness', 'long', '0');
 INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('rimeblade', 'quarry', 156, 'Rimeblade', 'RARE', 'IRON_SWORD', 'vampyuyu:weapon/rimeblade', 'SWORD', 70.0, 0, 1, 0, NULL, NULL, NULL, 'FROST', 2);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('rimeblade', 'max_durability', 'long', '3000');
 INSERT INTO item_lore (item_id, position, line) VALUES ('rimeblade', 0, '<gray>Frostbite: <white>hits slow the target');
 INSERT INTO item_lore (item_id, position, line) VALUES ('rimeblade', 1, '<gray>for 2 seconds.');
-INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('rime_helmet', 'quarry', 157, 'Rime Helmet', 'RARE', 'IRON_HELMET', 'vampyuyu:armor/rime_helmet', 'HELMET', NULL, 0, 1, 0, NULL, 'HEAD', 'vampyuyu:rime', NULL, 2);
+INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('rime_helmet', 'quarry', 157, 'Rime Helmet', 'RARE', 'IRON_HELMET', 'vampyuyu:armor/rime_helmet', 'HELMET', NULL, 0, 1, 0, NULL, 'HEAD', NULL, NULL, 2);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('rime_helmet', 'max_durability', 'long', '1100');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('rime_helmet', 'might', 6.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('rime_helmet', 'ward', 17.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('rime_helmet', 'vitality', 22.0);
@@ -270,6 +277,7 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('rime_helmet', 1, '<gray
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('rime_helmet', 'extra_armor', 'long', '0');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('rime_helmet', 'extra_toughness', 'long', '0');
 INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('rime_chestplate', 'quarry', 158, 'Rime Chestplate', 'RARE', 'IRON_CHESTPLATE', 'vampyuyu:armor/rime_chestplate', 'CHESTPLATE', NULL, 0, 1, 0, NULL, 'CHEST', 'vampyuyu:rime', NULL, 2);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('rime_chestplate', 'max_durability', 'long', '1100');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('rime_chestplate', 'might', 9.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('rime_chestplate', 'ward', 26.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('rime_chestplate', 'vitality', 32.0);
@@ -278,6 +286,7 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('rime_chestplate', 1, '<
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('rime_chestplate', 'extra_armor', 'long', '0');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('rime_chestplate', 'extra_toughness', 'long', '0');
 INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('rime_leggings', 'quarry', 159, 'Rime Leggings', 'RARE', 'IRON_LEGGINGS', 'vampyuyu:armor/rime_leggings', 'LEGGINGS', NULL, 0, 1, 0, NULL, 'LEGS', 'vampyuyu:rime', NULL, 2);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('rime_leggings', 'max_durability', 'long', '1100');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('rime_leggings', 'might', 8.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('rime_leggings', 'ward', 22.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('rime_leggings', 'vitality', 27.0);
@@ -286,6 +295,7 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('rime_leggings', 1, '<gr
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('rime_leggings', 'extra_armor', 'long', '0');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('rime_leggings', 'extra_toughness', 'long', '0');
 INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('rime_boots', 'quarry', 160, 'Rime Boots', 'RARE', 'IRON_BOOTS', 'vampyuyu:armor/rime_boots', 'BOOTS', NULL, 0, 1, 0, NULL, 'FEET', 'vampyuyu:rime', NULL, 2);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('rime_boots', 'max_durability', 'long', '1100');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('rime_boots', 'might', 5.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('rime_boots', 'ward', 15.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('rime_boots', 'vitality', 19.0);
@@ -294,8 +304,10 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('rime_boots', 1, '<gray>
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('rime_boots', 'extra_armor', 'long', '0');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('rime_boots', 'extra_toughness', 'long', '0');
 INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('ember_sword', 'quarry', 161, 'Ember Sword', 'EPIC', 'DIAMOND_SWORD', 'vampyuyu:weapon/ember_sword', 'SWORD', 120.0, 0, 1, 0, NULL, NULL, NULL, 'EMBER', 3);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('ember_sword', 'max_durability', 'long', '5000');
 INSERT INTO item_lore (item_id, position, line) VALUES ('ember_sword', 0, '<gray>An ember blade forged from the deep ores.');
-INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('ember_helmet', 'quarry', 162, 'Ember Helmet', 'EPIC', 'DIAMOND_HELMET', 'vampyuyu:armor/ember_helmet', 'HELMET', NULL, 0, 1, 0, NULL, 'HEAD', 'vampyuyu:ember', NULL, 3);
+INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('ember_helmet', 'quarry', 162, 'Ember Helmet', 'EPIC', 'DIAMOND_HELMET', 'vampyuyu:armor/ember_helmet', 'HELMET', NULL, 0, 1, 0, NULL, 'HEAD', NULL, NULL, 3);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('ember_helmet', 'max_durability', 'long', '1800');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('ember_helmet', 'might', 9.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('ember_helmet', 'ward', 30.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('ember_helmet', 'vitality', 37.0);
@@ -304,6 +316,7 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('ember_helmet', 1, '<gra
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('ember_helmet', 'extra_armor', 'long', '0');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('ember_helmet', 'extra_toughness', 'long', '0');
 INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('ember_chestplate', 'quarry', 163, 'Ember Chestplate', 'EPIC', 'DIAMOND_CHESTPLATE', 'vampyuyu:armor/ember_chestplate', 'CHESTPLATE', NULL, 0, 1, 0, NULL, 'CHEST', 'vampyuyu:ember', NULL, 3);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('ember_chestplate', 'max_durability', 'long', '1800');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('ember_chestplate', 'might', 13.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('ember_chestplate', 'ward', 45.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('ember_chestplate', 'vitality', 55.0);
@@ -312,6 +325,7 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('ember_chestplate', 1, '
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('ember_chestplate', 'extra_armor', 'long', '0');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('ember_chestplate', 'extra_toughness', 'long', '0');
 INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('ember_leggings', 'quarry', 164, 'Ember Leggings', 'EPIC', 'DIAMOND_LEGGINGS', 'vampyuyu:armor/ember_leggings', 'LEGGINGS', NULL, 0, 1, 0, NULL, 'LEGS', 'vampyuyu:ember', NULL, 3);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('ember_leggings', 'max_durability', 'long', '1800');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('ember_leggings', 'might', 11.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('ember_leggings', 'ward', 38.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('ember_leggings', 'vitality', 46.0);
@@ -320,6 +334,7 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('ember_leggings', 1, '<g
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('ember_leggings', 'extra_armor', 'long', '0');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('ember_leggings', 'extra_toughness', 'long', '0');
 INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('ember_boots', 'quarry', 165, 'Ember Boots', 'EPIC', 'DIAMOND_BOOTS', 'vampyuyu:armor/ember_boots', 'BOOTS', NULL, 0, 1, 0, NULL, 'FEET', 'vampyuyu:ember', NULL, 3);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('ember_boots', 'max_durability', 'long', '1800');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('ember_boots', 'might', 8.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('ember_boots', 'ward', 26.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('ember_boots', 'vitality', 32.0);
@@ -328,8 +343,10 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('ember_boots', 1, '<gray
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('ember_boots', 'extra_armor', 'long', '0');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('ember_boots', 'extra_toughness', 'long', '0');
 INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('void_sword', 'quarry', 166, 'Void Sword', 'LEGENDARY', 'NETHERITE_SWORD', 'vampyuyu:weapon/void_sword', 'SWORD', 200.0, 0, 1, 1, NULL, NULL, NULL, 'VOID', 4);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('void_sword', 'max_durability', 'long', '8000');
 INSERT INTO item_lore (item_id, position, line) VALUES ('void_sword', 0, '<gray>A void blade forged from the deep ores.');
-INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('void_helmet', 'quarry', 167, 'Void Helmet', 'LEGENDARY', 'NETHERITE_HELMET', 'vampyuyu:armor/void_helmet', 'HELMET', NULL, 0, 1, 1, NULL, 'HEAD', 'vampyuyu:void', NULL, 4);
+INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('void_helmet', 'quarry', 167, 'Void Helmet', 'LEGENDARY', 'NETHERITE_HELMET', 'vampyuyu:armor/void_helmet', 'HELMET', NULL, 0, 1, 0, NULL, 'HEAD', NULL, NULL, 4);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('void_helmet', 'max_durability', 'long', '2800');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('void_helmet', 'might', 12.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('void_helmet', 'ward', 48.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('void_helmet', 'vitality', 56.0);
@@ -337,7 +354,8 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('void_helmet', 0, '<gray
 INSERT INTO item_lore (item_id, position, line) VALUES ('void_helmet', 1, '<gray>Wear all four pieces to be known by it.');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('void_helmet', 'extra_armor', 'long', '0');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('void_helmet', 'extra_toughness', 'long', '0');
-INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('void_chestplate', 'quarry', 168, 'Void Chestplate', 'LEGENDARY', 'NETHERITE_CHESTPLATE', 'vampyuyu:armor/void_chestplate', 'CHESTPLATE', NULL, 0, 1, 1, NULL, 'CHEST', 'vampyuyu:void', NULL, 4);
+INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('void_chestplate', 'quarry', 168, 'Void Chestplate', 'LEGENDARY', 'NETHERITE_CHESTPLATE', 'vampyuyu:armor/void_chestplate', 'CHESTPLATE', NULL, 0, 1, 0, NULL, 'CHEST', 'vampyuyu:void', NULL, 4);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('void_chestplate', 'max_durability', 'long', '2800');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('void_chestplate', 'might', 18.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('void_chestplate', 'ward', 71.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('void_chestplate', 'vitality', 84.0);
@@ -345,7 +363,8 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('void_chestplate', 0, '<
 INSERT INTO item_lore (item_id, position, line) VALUES ('void_chestplate', 1, '<gray>Wear all four pieces to be known by it.');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('void_chestplate', 'extra_armor', 'long', '0');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('void_chestplate', 'extra_toughness', 'long', '0');
-INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('void_leggings', 'quarry', 169, 'Void Leggings', 'LEGENDARY', 'NETHERITE_LEGGINGS', 'vampyuyu:armor/void_leggings', 'LEGGINGS', NULL, 0, 1, 1, NULL, 'LEGS', 'vampyuyu:void', NULL, 4);
+INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('void_leggings', 'quarry', 169, 'Void Leggings', 'LEGENDARY', 'NETHERITE_LEGGINGS', 'vampyuyu:armor/void_leggings', 'LEGGINGS', NULL, 0, 1, 0, NULL, 'LEGS', 'vampyuyu:void', NULL, 4);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('void_leggings', 'max_durability', 'long', '2800');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('void_leggings', 'might', 15.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('void_leggings', 'ward', 59.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('void_leggings', 'vitality', 70.0);
@@ -353,7 +372,8 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('void_leggings', 0, '<gr
 INSERT INTO item_lore (item_id, position, line) VALUES ('void_leggings', 1, '<gray>Wear all four pieces to be known by it.');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('void_leggings', 'extra_armor', 'long', '0');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('void_leggings', 'extra_toughness', 'long', '0');
-INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('void_boots', 'quarry', 170, 'Void Boots', 'LEGENDARY', 'NETHERITE_BOOTS', 'vampyuyu:armor/void_boots', 'BOOTS', NULL, 0, 1, 1, NULL, 'FEET', 'vampyuyu:void', NULL, 4);
+INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('void_boots', 'quarry', 170, 'Void Boots', 'LEGENDARY', 'NETHERITE_BOOTS', 'vampyuyu:armor/void_boots', 'BOOTS', NULL, 0, 1, 0, NULL, 'FEET', 'vampyuyu:void', NULL, 4);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('void_boots', 'max_durability', 'long', '2800');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('void_boots', 'might', 11.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('void_boots', 'ward', 42.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('void_boots', 'vitality', 49.0);
@@ -362,8 +382,10 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('void_boots', 1, '<gray>
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('void_boots', 'extra_armor', 'long', '0');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('void_boots', 'extra_toughness', 'long', '0');
 INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('starcore_sword', 'quarry', 171, 'Starcore Sword', 'MYTHIC', 'NETHERITE_SWORD', 'vampyuyu:weapon/starcore_sword', 'SWORD', 320.0, 0, 1, 1, NULL, NULL, NULL, 'ASTRAL', 5);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('starcore_sword', 'max_durability', 'long', '12000');
 INSERT INTO item_lore (item_id, position, line) VALUES ('starcore_sword', 0, '<gray>A starcore blade forged from the deep ores.');
-INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('starcore_helmet', 'quarry', 172, 'Starcore Helmet', 'MYTHIC', 'NETHERITE_HELMET', 'vampyuyu:armor/starcore_helmet', 'HELMET', NULL, 0, 1, 1, NULL, 'HEAD', 'vampyuyu:starcore', NULL, 5);
+INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('starcore_helmet', 'quarry', 172, 'Starcore Helmet', 'MYTHIC', 'NETHERITE_HELMET', 'vampyuyu:armor/starcore_helmet', 'HELMET', NULL, 0, 1, 0, NULL, 'HEAD', NULL, NULL, 5);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('starcore_helmet', 'max_durability', 'long', '4000');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('starcore_helmet', 'might', 16.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('starcore_helmet', 'ward', 69.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('starcore_helmet', 'vitality', 82.0);
@@ -371,7 +393,8 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('starcore_helmet', 0, '<
 INSERT INTO item_lore (item_id, position, line) VALUES ('starcore_helmet', 1, '<gray>Wear all four pieces to be known by it.');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('starcore_helmet', 'extra_armor', 'long', '1');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('starcore_helmet', 'extra_toughness', 'long', '1');
-INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('starcore_chestplate', 'quarry', 173, 'Starcore Chestplate', 'MYTHIC', 'NETHERITE_CHESTPLATE', 'vampyuyu:armor/starcore_chestplate', 'CHESTPLATE', NULL, 0, 1, 1, NULL, 'CHEST', 'vampyuyu:starcore', NULL, 5);
+INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('starcore_chestplate', 'quarry', 173, 'Starcore Chestplate', 'MYTHIC', 'NETHERITE_CHESTPLATE', 'vampyuyu:armor/starcore_chestplate', 'CHESTPLATE', NULL, 0, 1, 0, NULL, 'CHEST', 'vampyuyu:starcore', NULL, 5);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('starcore_chestplate', 'max_durability', 'long', '4000');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('starcore_chestplate', 'might', 25.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('starcore_chestplate', 'ward', 104.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('starcore_chestplate', 'vitality', 123.0);
@@ -379,7 +402,8 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('starcore_chestplate', 0
 INSERT INTO item_lore (item_id, position, line) VALUES ('starcore_chestplate', 1, '<gray>Wear all four pieces to be known by it.');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('starcore_chestplate', 'extra_armor', 'long', '2');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('starcore_chestplate', 'extra_toughness', 'long', '1');
-INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('starcore_leggings', 'quarry', 174, 'Starcore Leggings', 'MYTHIC', 'NETHERITE_LEGGINGS', 'vampyuyu:armor/starcore_leggings', 'LEGGINGS', NULL, 0, 1, 1, NULL, 'LEGS', 'vampyuyu:starcore', NULL, 5);
+INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('starcore_leggings', 'quarry', 174, 'Starcore Leggings', 'MYTHIC', 'NETHERITE_LEGGINGS', 'vampyuyu:armor/starcore_leggings', 'LEGGINGS', NULL, 0, 1, 0, NULL, 'LEGS', 'vampyuyu:starcore', NULL, 5);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('starcore_leggings', 'max_durability', 'long', '4000');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('starcore_leggings', 'might', 21.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('starcore_leggings', 'ward', 86.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('starcore_leggings', 'vitality', 103.0);
@@ -387,7 +411,8 @@ INSERT INTO item_lore (item_id, position, line) VALUES ('starcore_leggings', 0, 
 INSERT INTO item_lore (item_id, position, line) VALUES ('starcore_leggings', 1, '<gray>Wear all four pieces to be known by it.');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('starcore_leggings', 'extra_armor', 'long', '1');
 INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('starcore_leggings', 'extra_toughness', 'long', '1');
-INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('starcore_boots', 'quarry', 175, 'Starcore Boots', 'MYTHIC', 'NETHERITE_BOOTS', 'vampyuyu:armor/starcore_boots', 'BOOTS', NULL, 0, 1, 1, NULL, 'FEET', 'vampyuyu:starcore', NULL, 5);
+INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('starcore_boots', 'quarry', 175, 'Starcore Boots', 'MYTHIC', 'NETHERITE_BOOTS', 'vampyuyu:armor/starcore_boots', 'BOOTS', NULL, 0, 1, 0, NULL, 'FEET', 'vampyuyu:starcore', NULL, 5);
+INSERT INTO item_pdc (item_id, key, kind, value) VALUES ('starcore_boots', 'max_durability', 'long', '4000');
 INSERT INTO item_stat (item_id, stat, value) VALUES ('starcore_boots', 'might', 14.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('starcore_boots', 'ward', 61.0);
 INSERT INTO item_stat (item_id, stat, value) VALUES ('starcore_boots', 'vitality', 72.0);
