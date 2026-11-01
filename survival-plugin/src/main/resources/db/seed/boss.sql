@@ -1,8 +1,8 @@
 -- Bosses, slayers, summon recipes and world boss spots; the global knobs are 'boss.*' setting rows.
 -- Converted from the former boss.yml by scripts/yaml_to_seed_boss.py; edit it in the panel.
 -- Loot balance: pity is +0.1 percentage point per dry kill, capped at +1.5 points.
-INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-scale', 'real', '1.0', 'Multiplies every boss health pool.');
-INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.damage-scale', 'real', '1.0', 'Multiplies every hit bosses deal to players.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-scale', 'real', '0.5', 'Multiplies every boss health pool.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.damage-scale', 'real', '0.6', 'Multiplies every hit bosses deal to players.');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.incoming-damage-scale', 'real', '1.0', 'Multiplies every hit players deal to bosses (calibrate to the items damage formula).');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.target-seconds', 'real', '240', 'A boss of the tier is built to die in this many seconds to one player with the tier''s sword and armor (hit the weakness).');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.slayer.target-seconds', 'real', '90', 'Same for a slayer boss of the tier, against a target with no weakness.');
