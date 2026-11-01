@@ -102,6 +102,16 @@ def patch(piece, cx, cy, size, darken=1.0):
     return out
 
 
+def backplate(chest):
+    """The back of the chestplate, which the concept does not draw: the plates left of the front emblem, mirrored to
+    the right, so the back is symmetric armour with a spine in the middle, a little darker than the front."""
+    half = fitted(chest, 0.31, 0.55, 0.9, 4 / 12, (16, 48), SHADE["back"])
+    out = Image.new("RGBA", (32, 48))
+    out.alpha_composite(half, (0, 0))
+    out.alpha_composite(half.transpose(Image.FLIP_LEFT_RIGHT), (16, 0))
+    return out
+
+
 def place(canvas, rect, img):
     x0, y0, x1, y1 = rect
     canvas.alpha_composite(img.resize((x1 - x0, y1 - y0), Image.LANCZOS), (x0, y0))
@@ -143,9 +153,10 @@ def worn(pieces):
     body = faces("body")
     # the chest picture (with its emblem) on the front only, at the 8x12 face's own shape
     place(canvas, body["front"], fitted(chest, 0.5, 0.55, 0.9, 8 / 12, (32, 48)))
-    for face in ("right", "left", "back"):
+    for face in ("right", "left"):
         x0, y0, x1, y1 = body[face]
         place(canvas, body[face], patch(chest, 0.5, 0.72, (x1 - x0, y1 - y0), SHADE[face]))
+    place(canvas, body["back"], backplate(chest))
     place(canvas, body["top"], patch(chest, 0.5, 0.72, (32, 16), 1.1))
     place(canvas, body["bottom"], patch(chest, 0.5, 0.72, (32, 16), 0.7))
     arm = faces("arm")
@@ -161,7 +172,7 @@ def worn(pieces):
     for face in SIDES:  # boots: the last 4 rows of the leg
         x0, _, x1, y1 = leg[face]
         top = y1 - 4 * X
-        img = fitted(boots, 0.27, 0.6, 0.8, 1.0, (16, 16), SHADE[face]) if face == "front" \
+        img = fitted(boots, 0.27, 0.6, 0.8, 1.0, (16, 16), SHADE[face]) if face in ("front", "back") \
             else patch(boots, 0.27, 0.6, (16, 16), SHADE[face])
         place(canvas, (x0, top, x1, y1), img)
         band(canvas, x0, x1, top)
@@ -184,7 +195,7 @@ def leggings(pieces):
     for face in SIDES:
         x0, y0, x1, y1 = leg[face]
         plate = (x0, y0, x1, y1 - 3 * X)  # down to the boots
-        img = fitted(legs, 0.27, 0.58, 0.82, 4 / 9, (16, 36), SHADE[face]) if face == "front" \
+        img = fitted(legs, 0.27, 0.58, 0.82, 4 / 9, (16, 36), SHADE[face]) if face in ("front", "back") \
             else patch(legs, 0.27, 0.45, (16, 36), SHADE[face])
         place(canvas, plate, img)
     place(canvas, leg["top"], patch(legs, 0.27, 0.2, (16, 16), 1.1))
