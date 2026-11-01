@@ -7,7 +7,9 @@ All user-facing text is English (menus, HUD, chat); the user talks to Claude in 
 
 ## Test procedure (do all of it, never just say "I did it")
 
-1. **Unit tests**: `make plugin-test PLUGIN=arena [TEST=SomeTestClass]` (docker maven, silent when green).
+1. **Unit tests**: `make plugin-test PLUGIN=arena [TEST=SomeTestClass]` (docker maven, silent when green). The survival
+   plugin runs its test classes in parallel JVMs (`tests.forks`, one per core in its pom): the whole suite takes about
+   1m45 instead of 7m30, one class about 7 s, so test one class while iterating and the whole suite once at the end.
    Pack and HUD: `make test-pack` (also `python3 scripts/test_hud_sheet.py`).
 2. **Build and deploy to the local stack** (Paper 26.3 + Velocity 4.3.0 in docker, same version as
    `scripts/e2e_client.py`): `make plugin PLUGIN=arena` builds the jar, overrides it on
