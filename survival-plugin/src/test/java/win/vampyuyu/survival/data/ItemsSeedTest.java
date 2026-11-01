@@ -41,9 +41,9 @@ public class ItemsSeedTest {
 
     @Test
     public void onlyTheOreLadderIsLeftTheInactiveCatalogIsGone() {
-        assertEquals(25, count("item_def"));
+        assertEquals(40, count("item_def"));
         assertEquals(0, TestDb.count(db, "SELECT COUNT(*) FROM item_def WHERE owner = 'items'"));
-        assertEquals(25, TestDb.count(db, "SELECT COUNT(*) FROM item_def WHERE owner = 'quarry'"));
+        assertEquals(40, TestDb.count(db, "SELECT COUNT(*) FROM item_def WHERE owner = 'quarry'"));
         assertEquals(0, count("armor_set"));
         assertEquals(13, count("item_mob"));
         assertEquals(0, count("item_recipe"));
@@ -58,7 +58,7 @@ public class ItemsSeedTest {
         List<CustomItemDef> ladder = ItemDefs.load(db, "quarry", problems);
         assertEquals(problems.toString(), 0, problems.size());
         assertEquals(0, items.size());
-        assertEquals(25, ladder.size());
+        assertEquals(40, ladder.size());
     }
 
     @Test

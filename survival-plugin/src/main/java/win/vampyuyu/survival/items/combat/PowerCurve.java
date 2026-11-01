@@ -67,7 +67,7 @@ public final class PowerCurve {
         double[] armorVitality = new double[TIERS];
         db.read(c -> {
             Db.query(c, "SELECT tier, damage, element FROM item_def WHERE owner = 'quarry' AND tier IS NOT NULL "
-                + "AND damage IS NOT NULL ORDER BY tier", rs -> {
+                + "AND damage IS NOT NULL AND type_label = 'SWORD' ORDER BY tier", rs -> { // a tier's weapon is its sword, not its axe or bow
                     int t = rs.getInt(1);
                     found[t - 1] = new Tier(t, rs.getDouble(2), 0, Element.parse(rs.getString(3)));
                     return null;

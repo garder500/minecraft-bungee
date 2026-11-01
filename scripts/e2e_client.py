@@ -1471,6 +1471,69 @@ def progress_scenario(ctx):
     rcon.command("gamemode creative E2EBot")
 
 
+def tools_scenario(ctx):
+    """The bows, axes and shovels: held, in the inventory, a bow being drawn, and what an arrow really deals."""
+    import re as _re
+    tools, env, shots = (ctx[k] for k in ("tools", "env", "shots"))
+    failures = ctx["failures"]
+    xdo, rcon = tools["xdotool"], Rcon()
+    rcon.command("op E2EBot")
+    rcon.command("gamemode creative E2EBot")
+    rcon.command("clear E2EBot")
+    tiers = ["bronze", "rime", "ember", "void", "starcore"]
+    kinds = ["axe", "shovel", "bow"]
+    for kind in kinds:
+        rcon.command("clear E2EBot")
+        for tier in tiers:
+            rcon.command(f"sbgive {tier}_{kind} 1 E2EBot")
+        time.sleep(2)
+        for i, tier in enumerate(tiers):
+            subprocess.run([xdo, "key", str(i + 1)], env=env)
+            time.sleep(1.2)
+            shot(tools, shots / f"to-{kind}-{tier}.png")
+        subprocess.run([xdo, "key", "e"], env=env)
+        time.sleep(2)
+        shot(tools, shots / f"to-{kind}-inventory.png")
+        subprocess.run([xdo, "key", "Escape"], env=env)
+        time.sleep(1)
+        subprocess.run([xdo, "key", "F5", "F5"], env=env)  # third person, from the front
+        time.sleep(2)
+        shot(tools, shots / f"to-{kind}-third-person.png")
+        subprocess.run([xdo, "key", "F5"], env=env)
+        time.sleep(1)
+    # a full draw and a real arrow on a still dummy, in survival, at a void bow (damage 180)
+    rcon.command("clear E2EBot")
+    rcon.command("sbgive void_bow 1 E2EBot")
+    rcon.command("give E2EBot minecraft:arrow 16")
+    rcon.command("gamemode survival E2EBot")
+    pos = rcon.command("data get entity E2EBot Pos")
+    x, y, z = [float(v) for v in _re.findall(r"(-?[0-9.]+)d", pos)][:3]
+    rcon.command(f"execute as E2EBot run tp @s {x} {y} {z} 180 0")
+    rcon.command(f"summon zombie {x} {y} {z - 4} {{NoAI:1b,Silent:1b,Tags:[\"e2e_dummy\"],"
+                 "attributes:[{id:\"minecraft:max_health\",base:1000}],Health:1000f}")
+    time.sleep(2)
+    subprocess.run([xdo, "key", "1"], env=env)
+    time.sleep(0.5)
+
+    def dummy_health():
+        found = _re.findall(r"([0-9.]+)f", rcon.command("data get entity @e[tag=e2e_dummy,limit=1] Health"))
+        return float(found[0]) if found else None
+
+    before = dummy_health()
+    subprocess.run([xdo, "mousedown", "3"], env=env)
+    time.sleep(0.25)
+    shot(tools, shots / "to-bow-draw-start.png")
+    time.sleep(1.2)
+    shot(tools, shots / "to-bow-draw-full.png")
+    subprocess.run([xdo, "mouseup", "3"], env=env)
+    time.sleep(2)
+    after = dummy_health()
+    dealt = None if before is None or after is None else before - after
+    say(f"tools: a full draw of the Void Bow on the dummy: health {before} -> {after}, dealt {dealt}")
+    if dealt is None or dealt < 100:
+        failures.append(f"a Void Bow arrow dealt {dealt} (expected about 180, vanilla would be about 6-9)")
+
+
 def swords_scenario(ctx):
     """The two weapons and the six skins as real 3D box models: each one held in first person, then the inventory."""
     tools, env, shots = (ctx[k] for k in ("tools", "env", "shots"))
@@ -2015,7 +2078,7 @@ def bosses_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "start", "craft", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "start", "craft", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -2024,7 +2087,7 @@ def main():
     if args.scenario == "dev":
         return dev_server()
     global WITH_SURVIVAL
-    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "start", "craft")
+    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "start", "craft")
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
@@ -2047,7 +2110,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "start", "craft"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "start", "craft"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -2078,7 +2141,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "start", "craft"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "start", "craft"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -2123,6 +2186,8 @@ def main():
             bosses_scenario(ctx)
         elif args.scenario == "swords":
             swords_scenario(ctx)
+        elif args.scenario == "tools":
+            tools_scenario(ctx)
         elif args.scenario == "start":
             start_scenario(ctx)
         elif args.scenario == "craft":

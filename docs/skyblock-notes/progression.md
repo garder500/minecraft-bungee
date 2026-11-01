@@ -46,6 +46,7 @@ dungeon records, Skyblock inventory and bed. Kept on purpose: Wings, island sett
   lightning-rod cables migrate at the next machine tick. A cable whose floor goes away gives the cable back.
 - Gear: five tiers (bronze, rime, ember, void, starcore) of helmet, chestplate, leggings and boots (`armor_tiers.py`,
   worn textures included; armor values come from the base material: chainmail, iron, diamond, netherite, netherite, and starcore adds +1 or +2 armor and +1 toughness per piece on top of netherite),
+  a bow, an axe and a shovel per tier (true 3D models, `item_models.py`; bow damage goes through `LadderCombat`),
   ember/void/starcore swords and picks, all made in the Forge (the Forge menu now has pages). Wearing a full set fires
   `armor_set:<tier>`. Endless Bucket (reward of the tier III quest) and Generator Plan (reward of the market quest) exist.
 - World bosses are parked (they do not work): no ancient_colossus/storm_roc, empty pool, `/worldboss` not registered.

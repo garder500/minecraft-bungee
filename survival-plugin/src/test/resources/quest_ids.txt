@@ -303,3 +303,18 @@ forge_deep_miners forging FORGE_ITEM miner_2
 retired q134
 retired q135
 retired q136
+forge_bronze_bow forging FORGE_ITEM bronze_bow
+forge_bronze_axe forging FORGE_ITEM bronze_axe
+forge_bronze_shovel forging FORGE_ITEM bronze_shovel
+forge_rime_bow forging FORGE_ITEM rime_bow
+forge_rime_axe forging FORGE_ITEM rime_axe
+forge_rime_shovel forging FORGE_ITEM rime_shovel
+forge_ember_bow forging FORGE_ITEM ember_bow
+forge_ember_axe forging FORGE_ITEM ember_axe
+forge_ember_shovel forging FORGE_ITEM ember_shovel
+forge_void_bow forging FORGE_ITEM void_bow
+forge_void_axe forging FORGE_ITEM void_axe
+forge_void_shovel forging FORGE_ITEM void_shovel
+forge_starcore_bow forging FORGE_ITEM starcore_bow
+forge_starcore_axe forging FORGE_ITEM starcore_axe
+forge_starcore_shovel forging FORGE_ITEM starcore_shovel

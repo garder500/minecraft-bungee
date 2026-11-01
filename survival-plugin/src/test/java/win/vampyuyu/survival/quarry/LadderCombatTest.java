@@ -51,6 +51,31 @@ public class LadderCombatTest {
     }
 
     @Test
+    public void aLadderBowsArrowDealsItsDamageScaledByTheDrawAndItsPunchDoesNot() {
+        PlayerMock player = server.addPlayer("Archer");
+        LivingEntity zombie = (LivingEntity) player.getWorld().spawnEntity(player.getLocation(), EntityType.ZOMBIE);
+        org.bukkit.inventory.ItemStack bow = plugin.core().items().create("void_bow");
+        player.getInventory().setItemInMainHand(bow);
+        double punch = hit(player, zombie);
+        assertTrue("a punch with the bow is no 180 damage hit: " + punch, punch < 50);
+        double full = arrow(player, zombie, bow, 1f);
+        assertTrue("a full draw of the Void Bow (180): " + full, full >= 180);
+        double half = arrow(player, zombie, bow, 0.5f);
+        assertTrue("half a draw is half the damage: " + half + " of " + full, half < full * 0.75);
+    }
+
+    private double arrow(PlayerMock player, LivingEntity target, org.bukkit.inventory.ItemStack bow, float force) {
+        org.bukkit.entity.Arrow arrow = player.getWorld().spawn(player.getLocation(), org.bukkit.entity.Arrow.class);
+        arrow.setShooter(player);
+        server.getPluginManager().callEvent(new org.bukkit.event.entity.EntityShootBowEvent(player, bow,
+            new org.bukkit.inventory.ItemStack(org.bukkit.Material.ARROW), arrow, org.bukkit.inventory.EquipmentSlot.HAND, force, true));
+        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(arrow, target, EntityDamageEvent.DamageCause.PROJECTILE,
+            org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.ARROW).build(), 3);
+        server.getPluginManager().callEvent(event);
+        return event.getDamage();
+    }
+
+    @Test
     public void ladderSwordsHitForTheirDamageWithArmorMightElementAndSurge() {
         PlayerMock player = server.addPlayer("Knight");
         LivingEntity zombie = (LivingEntity) player.getWorld().spawnEntity(player.getLocation(), EntityType.ZOMBIE);

@@ -3,12 +3,14 @@ package win.vampyuyu.survival.quarry;
 import java.util.Optional;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import win.vampyuyu.survival.api.Stat;
@@ -26,12 +28,16 @@ import win.vampyuyu.survival.items.gear.Keys;
  * Skyblock: a sword with a damage value hits for {@code (damage + flat bonus) x (1 + Might of the worn armor and the weapon / 100)},
  * scaled by the swing charge, times the element (weakness / resistance of the target) and the Surge (every Nth fully charged
  * hit on the same target). The same formulas as the items feature, so the power curve and the boss health hold either
- * way. When the items feature is loaded its combat listener does this and this one stays out of the way.
+ * way. A ladder bow works the same when the arrow lands, its damage scaled by the draw. When the items feature is
+ * loaded its combat listener does this and this one stays out of the way.
  */
 final class LadderCombat implements Listener {
     private final Core core;
     private final ItemsSettings settings;
     private final SurgeTracker surges = new SurgeTracker();
+    private static final org.bukkit.NamespacedKey ARROW_DAMAGE = new org.bukkit.NamespacedKey("vampyuyu", "ladder_arrow_damage");
+    private static final org.bukkit.NamespacedKey ARROW_ELEMENT = new org.bukkit.NamespacedKey("vampyuyu", "ladder_arrow_element");
+    private static final org.bukkit.NamespacedKey ARROW_FULL = new org.bukkit.NamespacedKey("vampyuyu", "ladder_arrow_full");
 
     LadderCombat(Core core) {
         this.core = core;
@@ -48,7 +54,7 @@ final class LadderCombat implements Listener {
         ItemStack weapon = player.getInventory().getItemInMainHand();
         Optional<CustomItemDef> def = core.items().idOf(weapon).flatMap(core.items()::def);
         Double damage = weaponDamage(weapon, def.orElse(null));
-        if (damage == null) {
+        if (damage == null || weapon.getType() == org.bukkit.Material.BOW) { // a bow's damage is for its arrows, not a punch
             return;
         }
         double charge = attackStrength(player);
@@ -64,6 +70,49 @@ final class LadderCombat implements Listener {
         }
         if (settings.useAttackCooldown) {
             hit *= charge;
+        }
+        event.setDamage(hit);
+    }
+
+    /** Remembers on the arrow what the bow and the draw are worth. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onShoot(EntityShootBowEvent event) {
+        if (!(event.getEntity() instanceof Player player) || !(event.getProjectile() instanceof AbstractArrow arrow)
+                || event.getBow() == null || core.service(StatsApi.class).isPresent()) {
+            return;
+        }
+        Optional<CustomItemDef> def = core.items().idOf(event.getBow()).flatMap(core.items()::def);
+        Double damage = weaponDamage(event.getBow(), def.orElse(null));
+        if (damage == null) {
+            return;
+        }
+        var pdc = arrow.getPersistentDataContainer();
+        pdc.set(ARROW_DAMAGE, PersistentDataType.DOUBLE, DamageFormula.base(damage, settings.damageBonus, worn(player, Stat.MIGHT))
+            * DamageFormula.drawFactor(event.getForce()));
+        pdc.set(ARROW_FULL, PersistentDataType.BOOLEAN, event.getForce() >= settings.surgeMinCharge);
+        if (def.get().element() != null) {
+            pdc.set(ARROW_ELEMENT, PersistentDataType.STRING, def.get().element().name());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onArrowHit(EntityDamageByEntityEvent event) {
+        if (!(event.getDamager() instanceof AbstractArrow arrow) || !(event.getEntity() instanceof LivingEntity target)
+                || !(arrow.getShooter() instanceof Player player)) {
+            return;
+        }
+        var pdc = arrow.getPersistentDataContainer();
+        Double damage = pdc.get(ARROW_DAMAGE, PersistentDataType.DOUBLE);
+        if (damage == null) {
+            return;
+        }
+        String element = pdc.get(ARROW_ELEMENT, PersistentDataType.STRING);
+        ElementTraits.Traits traits = ElementTraits.read(target);
+        double hit = damage * DamageFormula.elementMultiplier(element == null ? null : win.vampyuyu.survival.api.Element.valueOf(element),
+            traits.weakTo(), traits.resists(), worn(player, Stat.ATTUNEMENT), settings.elementWeakness, settings.elementResistance);
+        if (surges.hit(player.getUniqueId(), target.getUniqueId(), Boolean.TRUE.equals(pdc.get(ARROW_FULL, PersistentDataType.BOOLEAN)),
+                (int) settings.surgeEvery)) {
+            hit *= settings.surgeMultiplier;
         }
         event.setDamage(hit);
     }

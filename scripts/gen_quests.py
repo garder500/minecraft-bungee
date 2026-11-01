@@ -245,6 +245,12 @@ forge(c, "Cloud Anchor", "cloud_anchor", 1, "RECOVERY_COMPASS", 300, qid="gadget
 forge(c, "Rain Totem", "rain_totem", 1, "HEART_OF_THE_SEA", 300, qid="gadget_rain_totem")
 forge(c, "Satchel", "satchel", 1, "RABBIT_HIDE", 500, qid="gadget_satchel")
 forge(c, "Void Net", "void_net", 1, "PHANTOM_MEMBRANE", 600, qid="gadget_void_net")
+for tier, coins, axe, shovel in (("bronze", 100, "IRON_AXE", "IRON_SHOVEL"), ("rime", 200, "IRON_AXE", "IRON_SHOVEL"),
+                                 ("ember", 400, "DIAMOND_AXE", "DIAMOND_SHOVEL"), ("void", 800, "NETHERITE_AXE", "NETHERITE_SHOVEL"),
+                                 ("starcore", 1500, "NETHERITE_AXE", "NETHERITE_SHOVEL")):
+    forge(c, f"{tier.title()} Bow", f"{tier}_bow", 1, "BOW", coins, qid=f"forge_{tier}_bow")
+    forge(c, f"{tier.title()} Axe", f"{tier}_axe", 1, axe, coins, qid=f"forge_{tier}_axe")
+    forge(c, f"{tier.title()} Shovel", f"{tier}_shovel", 1, shovel, coins, qid=f"forge_{tier}_shovel")
 
 c = cat("machines", "Machines and Energy", "Coal, cables on redstone, batteries, solar panels, then Miners that break the generator for you.", False, "stone_gen", "REDSTONE")
 ev(c, "Coal Power", "Place a Coal Generator.", "machine_placed:coal_generator", 1, "STONECUTTER", 100)

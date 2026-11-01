@@ -53,6 +53,21 @@ public class GearTest {
     }
 
     @Test
+    public void everyTierHasABowAnAxeAndAShovelWithARecipeAndAQuest() {
+        QuarryService quarry = plugin.core().require(QuarryService.class);
+        var catalog = win.vampyuyu.survival.menu.QuestRepo.load(plugin.core().data());
+        for (String tier : List.of("bronze", "rime", "ember", "void", "starcore")) {
+            for (String kind : List.of("bow", "axe", "shovel")) {
+                String id = tier + "_" + kind;
+                assertTrue(id, plugin.core().items().def(id).isPresent());
+                assertNotNull(id + " has a Forge recipe", quarry.config().recipes.get(id));
+                assertTrue(id + " has a quest", catalog.tutorialQuest("forge_" + id).isPresent());
+                assertEquals(id, "vampyuyu:tool/" + id, plugin.core().items().def(id).get().itemModel());
+            }
+        }
+    }
+
+    @Test
     public void aFullSetOfOneTierFiresTheQuestEventOnce() {
         PlayerMock player = server.addPlayer("Knight");
         List<String> seen = new ArrayList<>();

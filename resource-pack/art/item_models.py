@@ -276,8 +276,149 @@ def pick(name, head, edge, handle, seed):
     return s
 
 
+TOOL_COLOURS = {
+    "bronze": ((201, 132, 66), (244, 190, 110), (110, 70, 40), None),
+    "rime": ((127, 200, 232), (214, 244, 255), (60, 80, 120), (200, 245, 255)),
+    "ember": ((216, 104, 58), (255, 162, 58), (74, 40, 30), (255, 140, 40)),
+    "void": ((74, 42, 144), (228, 106, 255), (28, 16, 56), (200, 100, 255)),
+    "starcore": ((226, 215, 130), (255, 255, 255), (138, 106, 28), (255, 250, 220)),
+}
+BOW_DISPLAY = {  # the hand transforms of a vanilla bow, so it is aimed and drawn like one
+    "thirdperson_righthand": {"rotation": [-80, 260, -40], "translation": [-1, -2, 2.5], "scale": [0.9, 0.9, 0.9]},
+    "thirdperson_lefthand": {"rotation": [-80, -280, 40], "translation": [-1, -2, 2.5], "scale": [0.9, 0.9, 0.9]},
+    "firstperson_righthand": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.5, 0.5, 0.5]},
+    "firstperson_lefthand": {"rotation": [0, 90, -25], "translation": [1.13, 3.2, 1.13], "scale": [0.5, 0.5, 0.5]},
+    "ground": {"translation": [0, 2, 0], "scale": [0.5, 0.5, 0.5]},
+    "fixed": {"rotation": [0, 180, 0]},
+    "gui": {"rotation": [8, -20, 0], "scale": [0.95, 0.95, 0.95]},
+}
+TOOL_DISPLAY = {  # a sword's hold, smaller in first person since the heads are wider than a blade, bigger as an icon
+    **sm.DISPLAY,
+    "firstperson_righthand": {"rotation": [0, -90, 25], "translation": [1.13, 3.0, 1.13], "scale": [0.34, 0.34, 0.34]},
+    "firstperson_lefthand": {"rotation": [0, 90, -25], "translation": [1.13, 3.0, 1.13], "scale": [0.34, 0.34, 0.34]},
+    "gui": {"rotation": [30, 225, 0], "translation": [0, -0.5, 0], "scale": [0.95, 0.95, 0.95]},
+}
+
+
+def tool_materials(tier):
+    head, edge, handle, glow = TOOL_COLOURS[tier]
+    mats = [("head", head, "plain"), ("edge", edge, "plain"), ("handle", handle, "plain"),
+            ("wrap", shade(handle, 0.6), "plain"), ("dark", shade(head, 0.62), "plain")]
+    if glow:
+        mats.append(("gem", glow, "glow"))
+    return mats, bool(glow)
+
+
+def axe(tier, seed):
+    mats, glow = tool_materials(tier)
+    s = sm.Sword(f"{tier}_axe", mats, seed)
+    s.box((7.3, -1.5, 7.3), (8.7, 13.4, 8.7), "handle")
+    s.box((7.05, -2.2, 7.05), (8.95, -1.0, 8.95), "dark")                  # butt of the handle
+    for k in range(3):
+        s.box((7.15, 0.2 + k * 1.3, 7.15), (8.85, 0.9 + k * 1.3, 8.85), "wrap")
+    s.box((6.8, 9.2, 6.9), (9.2, 13.6, 9.1), "dark")                       # socket
+    s.box((9.2, 9.8, 7.3), (11.4, 13.0, 8.7), "head")                      # cheek
+    s.box((11.4, 8.8, 7.5), (13.4, 14.0, 8.5), "head")                     # blade, flaring out
+    s.box((13.4, 7.8, 7.65), (15.2, 15.0, 8.35), "edge")                   # bit
+    s.box((5.0, 10.4, 7.4), (6.8, 12.4, 8.6), "head")                      # poll
+    s.box((4.2, 10.8, 7.5), (5.0, 12.0, 8.5), "edge")
+    if glow:
+        s.box((10.0, 10.8, 8.7), (11.2, 12.0, 8.95), "gem")                # gem on both cheeks
+        s.box((10.0, 10.8, 7.05), (11.2, 12.0, 7.3), "gem")
+    return s
+
+
+def shovel(tier, seed):
+    mats, glow = tool_materials(tier)
+    s = sm.Sword(f"{tier}_shovel", mats, seed)
+    s.box((7.35, -1.0, 7.35), (8.65, 11.2, 8.65), "handle")
+    s.box((5.8, -2.4, 7.3), (10.2, -1.0, 8.7), "dark")                     # T grip
+    for k in range(3):
+        s.box((7.2, 1.0 + k * 1.3, 7.2), (8.8, 1.7 + k * 1.3, 8.8), "wrap")
+    s.box((6.9, 10.4, 7.0), (9.1, 12.2, 9.0), "dark")                      # socket
+    s.box((5.2, 12.2, 7.55), (10.8, 16.6, 8.45), "head")                   # blade
+    s.box((5.8, 16.6, 7.6), (10.2, 17.8, 8.4), "head")
+    s.box((6.8, 17.8, 7.65), (9.2, 18.8, 8.35), "edge")                    # tip
+    s.box((4.8, 12.6, 7.65), (5.2, 16.2, 8.35), "edge")                    # rim
+    s.box((10.8, 12.6, 7.65), (11.2, 16.2, 8.35), "edge")
+    s.box((7.6, 12.2, 8.45), (8.4, 16.4, 8.7), "dark")                     # spine on both faces
+    s.box((7.6, 12.2, 7.3), (8.4, 16.4, 7.55), "dark")
+    if glow:
+        s.box((7.3, 13.2, 8.7), (8.7, 14.6, 8.95), "gem")
+        s.box((7.3, 13.2, 7.05), (8.7, 14.6, 7.3), "gem")
+    return s
+
+
+def bow(tier, pull, seed):
+    """Written with the arrow flying towards +x, then mirrored and turned to the diagonal of a vanilla bow's sprite: the
+    arrow points to the upper left, which the hand transforms aim forward. pull: 0 is at rest, 1 to 3 are the draw
+    stages: the string comes back, the limbs bend and the arrow shows."""
+    mats, glow = tool_materials(tier)
+    mats = mats + [("string", (235, 235, 225), "plain"), ("shaft", (120, 90, 60), "plain"), ("tip", (200, 205, 212), "plain"),
+                   ("fletch", (235, 235, 235), "plain")]
+    s = sm.Sword(f"{tier}_bow_{pull}", mats, seed)
+
+    def box(a, b, mat):
+        s.box((16 - b[0], a[1], a[2]), (16 - a[0], b[1], b[2]), mat)
+
+    box((9.2, 5.8, 7.2), (10.8, 10.2, 8.8), "handle")                      # grip
+    for k in range(2):
+        box((9.05, 6.4 + k * 2.0, 7.05), (10.95, 7.2 + k * 2.0, 8.95), "wrap")
+    bend = pull * 0.14
+    limbs = [(8.9, 10.2, 11.8, "head"), (7.7, 11.8, 13.4, "head"), (6.3, 13.4, 14.8, "edge"), (4.9, 14.8, 16.0, "head")]
+    for i, (x, y0, y1, mat) in enumerate(limbs):
+        shift = bend * i
+        lo, hi = 16 - y1, 16 - y0                                          # the lower limb mirrors the upper one
+        box((x - shift, y0, 7.4), (x + 1.5 - shift + bend, y1, 8.6), mat)
+        box((x - shift, lo, 7.4), (x + 1.5 - shift + bend, hi, 8.6), mat)
+    tip = 4.9 - bend * 3
+    if glow:
+        box((10.8, 7.4, 7.5), (11.25, 8.6, 8.5), "gem")                    # a gem on the riser
+    if pull == 0:
+        box((tip + 0.2, 0.6, 7.85), (tip + 0.55, 15.4, 8.15), "string")
+    else:
+        nock = tip - pull * 1.3
+        steps = 6
+        for k in range(steps):                                             # the string in steps from the tips to the nock
+            x = tip + (nock - tip) * (k + 0.5) / steps
+            y0, y1 = 15.4 - (7.4 / steps) * (k + 1), 15.4 - (7.4 / steps) * k
+            box((x, y0, 7.85), (x + 0.45, y1, 8.15), "string")
+            box((x, 16 - y1, 7.85), (x + 0.45, 16 - y0, 8.15), "string")
+        box((nock, 7.7, 7.75), (nock + 0.5, 8.3, 8.25), "fletch")
+        head = nock + 12.2
+        box((nock + 0.3, 7.8, 7.8), (head, 8.2, 8.2), "shaft")             # the arrow
+        box((nock + 0.5, 7.55, 7.9), (nock + 2.0, 8.45, 8.1), "fletch")
+        box((head, 7.55, 7.75), (head + 1.0, 8.45, 8.25), "tip")
+        box((head + 1.0, 7.8, 7.85), (head + 1.6, 8.2, 8.15), "tip")
+    return s
+
+
+def write_bow(tier, seed):
+    """A bow's models and its definition: at rest, then the three draw stages of a vanilla bow."""
+    kind, name = "tool", f"{tier}_bow"
+    refs = []
+    for pull in range(4):
+        s = bow(tier, pull, seed + pull)
+        three = f"vampyuyu:item/{kind}/{name}_{pull}"
+        model = {"textures": {"0": three, "particle": three}, "gui_light": "front", "display": BOW_DISPLAY,
+                 "elements": s.elements}
+        (bs.PACK / "models" / "item" / kind / f"{name}_{pull}.json").write_text(json.dumps(model, indent=1) + "\n", encoding="utf-8")
+        (bs.PACK / "textures" / "item" / kind / f"{name}_{pull}.png").write_bytes(bs.png(s.atlas()))
+        refs.append({"type": "minecraft:model", "model": three})
+    definition = {"model": {
+        "type": "minecraft:condition", "property": "minecraft:using_item",
+        "on_false": refs[0],
+        "on_true": {"type": "minecraft:range_dispatch", "property": "minecraft:use_duration", "scale": 0.05, "fallback": refs[1],
+                    "entries": [{"threshold": 0.65, "model": refs[2]}, {"threshold": 0.9, "model": refs[3]}]}}}
+    (bs.PACK / "items" / kind / f"{name}.json").write_text(json.dumps(definition, indent=1) + "\n", encoding="utf-8")
+
+
 def main():
+    for i, tier in enumerate(TOOL_COLOURS):
+        write_bow(tier, 70 + i * 4)
     out = {
+        **{f"tool/{tier}_axe": (axe(tier, 90 + i), TOOL_DISPLAY) for i, tier in enumerate(TOOL_COLOURS)},
+        **{f"tool/{tier}_shovel": (shovel(tier, 95 + i), TOOL_DISPLAY) for i, tier in enumerate(TOOL_COLOURS)},
         "ore/bronzite": (crystals("bronzite", (96, 92, 90), (201, 132, 66), (255, 206, 130), 21), ITEM_DISPLAY),
         "ore/frostium": (crystals("frostium", (92, 100, 108), (127, 200, 232), (225, 247, 255), 22), ITEM_DISPLAY),
         "ore/sunstone": (crystals("sunstone", (110, 90, 70), (242, 193, 78), (255, 240, 170), 23), ITEM_DISPLAY),
@@ -304,7 +445,7 @@ def main():
         "tool/rime_pick": (pick("rime_pick", (127, 200, 232), (214, 244, 255), (60, 80, 120), 37), sm.DISPLAY),
     }
     for model_id, (s, display) in out.items():
-        write(model_id, s, display, display is BLOCK_DISPLAY)
+        write(model_id, s, display, display is BLOCK_DISPLAY or model_id.endswith(("_axe", "_shovel")))
     print(f"wrote {len(out)} 3D item models")
 
 
