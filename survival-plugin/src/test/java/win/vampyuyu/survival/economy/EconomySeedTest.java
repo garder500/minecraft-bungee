@@ -22,7 +22,7 @@ public class EconomySeedTest {
         assertEquals(6, c.tiers().size());
         assertEquals("Starter", c.tiers().get(0).name());
         assertEquals("Prestige", c.tiers().get(5).name());
-        assertEquals(Map.of("minion_enchanted_", 150.0, "minion_super_", 22500.0), c.pressurePrefixes());
+        assertEquals(Map.of(), c.pressurePrefixes());
         assertEquals(468, c.products().size());
         Map<String, Long> perCategory = c.products().stream()
             .collect(Collectors.groupingBy(EconomyConfig.Product::category, Collectors.counting()));

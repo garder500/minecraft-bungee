@@ -18,8 +18,7 @@ final class MarketRules {
 
     /** Always applies, on top of the {@code market_never_traded} table. A trailing {@code *} matches a prefix. */
     private static final List<String> DEFAULTS = List.of("DIAMOND", "DIAMOND_*", "ANCIENT_DEBRIS", "NETHERITE_*",
-        "NETHER_STAR", "TOTEM_OF_UNDYING", "ELYTRA", "BEACON", "ENCHANTED_GOLDEN_APPLE", "DRAGON_EGG", "DRAGON_HEAD",
-        "minion_enchanted_diamond*", "minion_super_diamond*");
+        "NETHER_STAR", "TOTEM_OF_UNDYING", "ELYTRA", "BEACON", "ENCHANTED_GOLDEN_APPLE", "DRAGON_EGG", "DRAGON_HEAD");
 
     private MarketRules() {}
 

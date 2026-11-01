@@ -38,7 +38,6 @@ public final class IslandConfig {
     public final int chunkTimeoutTicks;
     public final List<Tier> radiusTiers;
     public final List<Tier> memberTiers;
-    public final List<Tier> minionTiers;
     public final Map<String, TemplateCfg> templates = new LinkedHashMap<>();
     public final boolean starterOnce;
     public final List<ItemSpec> starterRepeat;
@@ -62,7 +61,6 @@ public final class IslandConfig {
     public final int maxPendingInvites;
     public final int resetCooldownMinutes;
     public final int confirmSeconds;
-    public final boolean minionUpgrade;
     public final int buildRetries;
     public final int retryDelayTicks;
     public final boolean visitorPickup;
@@ -100,7 +98,6 @@ public final class IslandConfig {
         int maxRadius = cell / 2 - edgeMargin;
         this.radiusTiers = tiers(rows.tiers("radius"), "upgrades.radius", List.of(new Tier(30, 0)), maxRadius, log);
         this.memberTiers = tiers(rows.tiers("members"), "upgrades.members", List.of(new Tier(3, 0)), 1000, log);
-        this.minionTiers = tiers(rows.tiers("minions"), "upgrades.minions", List.of(new Tier(0, 0)), 1000, log);
 
         for (IslandRepo.TemplateRow t : rows.templates()) {
             Material icon = Material.matchMaterial(t.icon());
@@ -132,7 +129,6 @@ public final class IslandConfig {
         this.maxPendingInvites = Math.max(1, c.getInt("invites.max-pending-per-player", 5));
         this.resetCooldownMinutes = Math.max(0, c.getInt("reset.cooldown-minutes", 60));
         this.confirmSeconds = Math.max(5, c.getInt("reset.confirm-seconds", 30));
-        this.minionUpgrade = c.getBoolean("upgrades.minions-enabled", false);
         this.buildRetries = Math.max(0, c.getInt("generation.retries", 3));
         this.retryDelayTicks = Math.max(20, c.getInt("generation.retry-delay-ticks", 100));
         this.visitorPickup = c.getBoolean("protection.visitor-pickup", false);
@@ -168,13 +164,6 @@ public final class IslandConfig {
 
     public int memberSlotsFor(Island island) {
         return memberTiers.get(Math.min(Math.max(0, island.memberTier), memberTiers.size() - 1)).value();
-    }
-
-    public int minionSlotsFor(Island island) {
-        if (!minionUpgrade) {
-            return 0;
-        }
-        return minionTiers.get(Math.min(Math.max(0, island.minionTier), minionTiers.size() - 1)).value();
     }
 
     /** Enabled templates in menu order. */

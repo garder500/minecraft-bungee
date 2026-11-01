@@ -40,7 +40,7 @@ import win.vampyuyu.survival.island.IslandAccess.Action;
 /**
  * Regression tests of the island review: lifecycle state machine (owed kit, failed wipes and builds, stale callbacks,
  * per-cell job order, platform recovery), full-height sweeps, protection allow-list, pickups, void rescue, dungeon
- * guard, shortcuts, hidden minion upgrade and the join-time entry check. The block jobs are scripted; MockBukkit has
+ * guard, shortcuts, the join-time entry check. The block jobs are scripted; MockBukkit has
  * no chunk tickets, so a real world sweep is never exercised here.
  */
 public class IslandReviewFixesTest {
@@ -593,26 +593,6 @@ public class IslandReviewFixesTest {
         assertTrue(said(p).contains("Slow down"));
         PlayerMock nobody = player("Nobody");
         assertFalse(service.shortcut(nobody, false).ok());
-    }
-
-    // ---------------------------------------------------------------- minion upgrade
-
-    @Test
-    public void theMinionUpgradeIsHiddenUntilEnabled() {
-        PlayerMock p = player("Spender");
-        Island island = readyIsland(p);
-        assertFalse(service.config().minionUpgrade);
-        assertFalse(service.upgrade(p, IslandService.Upgrade.MINIONS).ok());
-        assertEquals(0, island.minionTier);
-        assertEquals(0, service.minionSlotBonus(p.getUniqueId()));
-        p.performCommand("island upgrade minions");
-        assertTrue(said(p).contains("Unknown upgrade"));
-        assertFalse(IslandCommands.buyable(service.config()).contains(IslandService.Upgrade.MINIONS));
-        p.performCommand("island upgrades");
-        var gui = (win.vampyuyu.survival.core.Gui) p.getOpenInventory().getTopInventory().getHolder();
-        assertNotNull(gui);
-        assertNull("no minion icon", p.getOpenInventory().getTopInventory().getItem(15));
-        assertNotNull(p.getOpenInventory().getTopInventory().getItem(12));
     }
 
     // ---------------------------------------------------------------- protection allow-list

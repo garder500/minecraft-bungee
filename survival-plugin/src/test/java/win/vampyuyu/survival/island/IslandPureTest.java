@@ -213,7 +213,6 @@ public class IslandPureTest {
         for (String key : List.of("hub", "world", "nether", "end")) {
             assertNotNull("world config " + key, cfg.worlds.get(key));
         }
-        assertEquals(0.0, cfg.minionSlotsFor(new Island()), 0);
     }
 
     @Test
@@ -336,7 +335,6 @@ public class IslandPureTest {
         island.locked = true;
         island.radiusTier = 2;
         island.memberTier = 1;
-        island.minionTier = 3;
         island.value = 1234.5;
         island.level = 12;
         island.platformsReady = true;
@@ -361,7 +359,6 @@ public class IslandPureTest {
         assertTrue(copy.locked);
         assertEquals(2, copy.radiusTier);
         assertEquals(1, copy.memberTier);
-        assertEquals(3, copy.minionTier);
         assertEquals(1234.5, copy.value, 0);
         assertEquals(12, copy.level);
         assertTrue(copy.platformsReady);

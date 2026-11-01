@@ -139,13 +139,11 @@ public final class IslandCommands {
         }
     }
 
-    /** The upgrade families that can be bought right now (minion slots stay hidden until the minions feature reads them). */
+    /** The upgrade families that can be bought right now. */
     static List<Upgrade> buyable(IslandConfig cfg) {
         List<Upgrade> list = new ArrayList<>();
         for (Upgrade upgrade : Upgrade.values()) {
-            if (upgrade != Upgrade.MINIONS || cfg.minionUpgrade) {
-                list.add(upgrade);
-            }
+            list.add(upgrade);
         }
         return list;
     }
@@ -507,7 +505,7 @@ public final class IslandCommands {
             if (!service.confirms().consume(asker, "admin-resetall", "")) {
                 service.confirms().arm(asker, "admin-resetall", "", cfg.confirmSeconds * 1000L);
                 core.msg().warn(sender, "This wipes and rebuilds EVERY island (" + service.registry().count()
-                    + ") and resets the coins, bank, quests, wisps, generator progress, skills, minions, boss and dungeon records, Wings and Skyblock inventory of everyone who has one. "
+                    + ") and resets the coins, bank, quests, wisps, generator progress, skills, boss and dungeon records, Wings and Skyblock inventory of everyone who has one. "
                     + "Repeat /islandadmin resetall within " + cfg.confirmSeconds + " s to confirm.");
             } else {
                 ok(sender, "Resetting " + service.resetAll() + " islands. They are rebuilt one after another.");

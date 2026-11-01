@@ -151,35 +151,4 @@ public class ShippedPricesTest {
         assertTrue(config.settings().getInt("buyback.seconds", 0) > 0);
     }
 
-    /** Compacted minion items (160 raw -> enchanted, 160 enchanted -> super in the minions data) must never out-earn the raw goods. */
-    @Test
-    public void compactedMinionItemsAreSellOnlyAndBelowTheCompactionRatio() {
-        int checked = 0;
-        for (var shop : catalog.shops().values()) {
-            for (var i : shop.items()) {
-                String key = i.key();
-                boolean ench = key.startsWith("minion_enchanted_");
-                boolean sup = key.startsWith("minion_super_");
-                if (!ench && !sup) {
-                    continue;
-                }
-                checked++;
-                assertEquals(key + " must be sell only", 0, i.buyCents());
-                String base = key.substring(ench ? "minion_enchanted_".length() : "minion_super_".length());
-                String raw = base.toUpperCase(java.util.Locale.ROOT);
-                long rawSell = maxSell(raw);
-                assertTrue(shop.id() + " sells " + key + " but no shop buys " + raw, rawSell > 0);
-                long enchSell = maxSell("minion_enchanted_" + base);
-                if (ench) {
-                    assertTrue(key + " above 150 x raw", i.sellCents() <= 150 * rawSell);
-                    assertTrue(key + " not above the raw buy price x 160",
-                        minBuy(raw) == Long.MAX_VALUE || i.sellCents() <= 160 * minBuy(raw));
-                } else {
-                    assertTrue(key + " has no enchanted form sold", enchSell > 0);
-                    assertTrue(key + " above 150 x enchanted", i.sellCents() <= 150 * enchSell);
-                }
-            }
-        }
-        assertTrue("the shipped shops list compacted items", checked >= 40);
-    }
 }

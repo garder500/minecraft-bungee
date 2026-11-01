@@ -270,35 +270,6 @@ public class QuestServiceTest extends MenuTestBase {
     }
 
     @Test
-    public void onlyARealMinionCountsForTheMinionQuests() {
-        QuestDef tutorial = shipped().catalog.tutorialQuest("craft_minion").orElseThrow();
-        QuestDef daily = shipped().catalog.dailyPool().get("craft_minion");
-        for (QuestDef def : new QuestDef[] {tutorial, daily}) {
-            if (def == null) {
-                continue;
-            }
-            assertTrue(def.target(), QuestMatcher.matches(def.target(), "CUSTOM:minion_cobblestone_1"));
-            assertTrue(QuestMatcher.matches(def.target(), "CUSTOM:minion_nether_wart_11"));
-            for (String other : List.of("minion_enchanted_cobblestone", "minion_fuel_coal", "minion_fuel_3",
-                    "minion_upgrade_compactor", "minion_skin_pirate", "minion_super_cobblestone", "bazaar_thing")) {
-                assertFalse(other, QuestMatcher.matches(def.target(), "CUSTOM:" + other));
-            }
-            assertFalse(QuestMatcher.matches(def.target(), "COBBLESTONE"));
-        }
-    }
-
-    @Test
-    public void craftingEnchantedCobblestoneDoesNotCompleteAutomation() {
-        data().completed.addAll(List.of("create_island", "break_wood", "craft_table", "craft_pickaxe", "mine_stone",
-            "mining_3"));
-        quests.sync(player);
-        quests.record(player, QuestType.CRAFT_ITEM, "CUSTOM:minion_enchanted_cobblestone", 1);
-        assertFalse(data().completed.contains("craft_minion"));
-        quests.record(player, QuestType.CRAFT_ITEM, "CUSTOM:minion_cobblestone_1", 1);
-        assertTrue(data().completed.contains("craft_minion"));
-    }
-
-    @Test
     public void aBadRegexTargetIsReportedAtLoadAndTheQuestSkipped() {
         try (win.vampyuyu.survival.data.Db db = win.vampyuyu.survival.data.TestDb.seeded()) {
             win.vampyuyu.survival.data.TestDb.exec(db, "INSERT INTO quest (id, pool, position, name, type, target, amount) "

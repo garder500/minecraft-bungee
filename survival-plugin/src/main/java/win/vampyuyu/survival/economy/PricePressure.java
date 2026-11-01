@@ -11,7 +11,7 @@ import org.bukkit.Material;
  * The sell price multiplier is {@code 1 / (1 + pressure / softCap)} (never below {@code minMultiplier}), so a farm
  * that dumps endlessly sees the price fall while a normal player barely notices. Thread confined to the main thread.
  *
- * <p>Compacted items share the pool of the raw item they are made of: {@code minion_enchanted_wheat} records into
+ * <p>Compacted items share the pool of the raw item they are made of: {@code enchanted_wheat} records into
  * {@code WHEAT} weighted by the compaction ratio ({@code price_pressure_prefix}), so one enchanted item moves the
  * price as much as the raw items it stands for and selling compacted goods cannot dodge (or exploit) the raw price.
  */
@@ -39,8 +39,6 @@ final class PricePressure {
 
     private static Map<String, Double> defaultPrefixes() {
         Map<String, Double> m = new LinkedHashMap<>();
-        m.put("minion_super_", 22_500.0);
-        m.put("minion_enchanted_", 150.0);
         return m;
     }
 
@@ -67,7 +65,7 @@ final class PricePressure {
             for (var e : compact.entrySet()) {
                 m.put(e.getKey(), Math.max(1.0, e.getValue()));
             }
-            // longest prefix first so "minion_super_" is not shadowed by a shorter one
+            // longest prefix first so "super_" is not shadowed by a shorter one
             Map<String, Double> sorted = new LinkedHashMap<>();
             m.entrySet().stream().sorted((a, b) -> b.getKey().length() - a.getKey().length())
                 .forEach(e -> sorted.put(e.getKey(), e.getValue()));

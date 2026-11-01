@@ -289,14 +289,8 @@ public final class IslandMenus {
             return;
         }
         Gui gui = gui(4, "<green>Island upgrades");
-        if (cfg.minionUpgrade) {
-            upgradeIcon(gui, 11, island, Upgrade.RADIUS, Material.SPYGLASS, "blocks");
-            upgradeIcon(gui, 13, island, Upgrade.MEMBERS, Material.PLAYER_HEAD, "players");
-            upgradeIcon(gui, 15, island, Upgrade.MINIONS, Material.REDSTONE_LAMP, "extra slots");
-        } else {
-            upgradeIcon(gui, 12, island, Upgrade.RADIUS, Material.SPYGLASS, "blocks");
-            upgradeIcon(gui, 14, island, Upgrade.MEMBERS, Material.PLAYER_HEAD, "players");
-        }
+        upgradeIcon(gui, 12, island, Upgrade.RADIUS, Material.SPYGLASS, "blocks");
+        upgradeIcon(gui, 14, island, Upgrade.MEMBERS, Material.PLAYER_HEAD, "players");
         back(gui, 31, this::main);
         gui.open(player);
     }

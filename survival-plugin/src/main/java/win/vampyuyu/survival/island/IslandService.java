@@ -51,7 +51,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
 
     /** Upgrade families bought in the upgrades menu. */
     public enum Upgrade {
-        RADIUS("Island radius"), MEMBERS("Member slots"), MINIONS("Minion slots");
+        RADIUS("Island radius"), MEMBERS("Member slots");
 
         private final String label;
 
@@ -474,14 +474,6 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
                 (float) Math.toDegrees(Math.atan2(pad.x(), -pad.z())), 0));
         }
         return pads;
-    }
-
-    @Override
-    public int minionSlotBonus(UUID player) {
-        if (!cfg.minionUpgrade) {
-            return 0;
-        }
-        return registry.ofPlayer(player).map(cfg::minionSlotsFor).orElse(0);
     }
 
     @Override
@@ -1196,7 +1188,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
                     core.service(win.vampyuyu.survival.api.EconomyApi.class).ifPresent(e -> e.reset(id));
                     // Every Skyblock progress section: quests, fairy souls, generator tier and skins, skills, minions,
                     // boss and dungeon records and the Wings. Island settings and menu preferences are kept.
-                    core.profiles().removeSections(id, "quests", "fairy_souls", "quarry", "skills", "minions", "boss",
+                    core.profiles().removeSections(id, "quests", "fairy_souls", "quarry", "skills", "boss",
                         "dungeon", "wings");
                     core.profiles().edit(id, "island", PlayerIslandData.class, PlayerIslandData::new, d -> {
                         d.starterClaimed = false;
@@ -1991,7 +1983,6 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         return switch (type) {
             case RADIUS -> cfg.radiusTiers;
             case MEMBERS -> cfg.memberTiers;
-            case MINIONS -> cfg.minionTiers;
         };
     }
 
@@ -1999,7 +1990,6 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         int tier = switch (type) {
             case RADIUS -> island.radiusTier;
             case MEMBERS -> island.memberTier;
-            case MINIONS -> island.minionTier;
         };
         return Math.min(Math.max(0, tier), tiers(type).size() - 1);
     }
@@ -2014,9 +2004,6 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         }
         if (!IslandAccess.has(island.roleOf(actor.getUniqueId()), Cap.UPGRADE)) {
             return Result.fail("Only the owner and co-owners can buy upgrades.");
-        }
-        if (type == Upgrade.MINIONS && !cfg.minionUpgrade) {
-            return Result.fail("Minion slots cannot be bought yet.");
         }
         int current = tierOf(island, type);
         List<Tier> tiers = tiers(type);
@@ -2036,7 +2023,6 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         switch (type) {
             case RADIUS -> island.radiusTier = current + 1;
             case MEMBERS -> island.memberTier = current + 1;
-            case MINIONS -> island.minionTier = current + 1;
         }
         registry.changed();
         if (tracker != null) {

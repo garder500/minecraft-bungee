@@ -30,8 +30,6 @@ INSERT INTO quest (id, pool, position, category, name, description, type, target
 INSERT INTO quest_reward_xp (quest_id, skill, amount) VALUES ('craft_planks', 'CARPENTRY', 50.0);
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('craft_torches', 'daily', 14, '', 'Let There Be Light', 'Craft 32 torches.', 'CRAFT_ITEM', 'TORCH', 32, 'TORCH', 90.0);
 INSERT INTO quest_reward_xp (quest_id, skill, amount) VALUES ('craft_torches', 'CARPENTRY', 50.0);
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('craft_minion', 'daily', 15, '', 'Minion Maker', 'Craft a minion.', 'CRAFT_ITEM', 'custom:re:minion_(?!fuel_|upgrade_|skin_|enchanted_|super_)[a-z_]+_[0-9]+', 1, 'ARMOR_STAND', 300.0);
-INSERT INTO quest_reward_xp (quest_id, skill, amount) VALUES ('craft_minion', 'CARPENTRY', 100.0);
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('enchant_item', 'daily', 16, '', 'Enchanter', 'Enchant 3 items.', 'ENCHANT_ITEM', '', 3, 'ENCHANTING_TABLE', 200.0);
 INSERT INTO quest_reward_xp (quest_id, skill, amount) VALUES ('enchant_item', 'ENCHANTING', 120.0);
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('place_saplings', 'daily', 17, '', 'Reforestation', 'Plant 20 saplings.', 'PLACE_BLOCK', 'SAPLINGS', 20, 'OAK_SAPLING', 100.0);
