@@ -6,7 +6,7 @@
 A helmet item with no equipment asset is drawn on the head as its item model (like a carved pumpkin); the head fills
 about 1.5-14.5 of the model space, so the helmet is grown to clear it (GROW). Each helmet is built from
 several boxes instead of one cube: a rounded dome and cap, cheek guards, a face plate under a real visor slit (the
-player's eyes show through it), a gold brow band, and the tier's ornaments (a bronze crest and nasal, a ring of rime
+player's eyes show through it), a brow band, and the tier's ornaments (a bronze crest and nasal, a ring of rime
 crystals, an ember sun disc with rays, void horns and blade, starcore feather wings). The textures are clean pixel art
 drawn here from each tier's palette: plates with a light-to-dark sheen and rivets, gold trim, dark visor, gems.
 In menus the helmet keeps its flat sprite. The Starcore chestplate also gets a "wings" equipment layer (the elytra
@@ -109,8 +109,7 @@ def shell():
         box((2, 2, 2), (4, 9, 7), "plate"),                  # cheek guards
         box((12, 2, 2), (14, 9, 7), "plate"),
         box((4, 2, 1.6), (12, 6.4, 2.2), "plate"),           # face plate under the visor slit (6.4 - 7.8 is open)
-        box((1.8, 7.8, 1.6), (14.2, 9.2, 2.2), "trim"),      # brow band above the slit
-        box((1.8, 1.6, 1.8), (14.2, 2.4, 14.2), "trim"),     # gold rim at the bottom edge
+        box((1.8, 7.8, 1.6), (14.2, 9.2, 2.2), "plate"),     # brow band above the slit
     ]
 
 
