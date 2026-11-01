@@ -161,7 +161,7 @@ final class GuideCommands {
             return "right-click your Spring Stone holding an empty bucket.";
         }
         if (key.equals("machine_mined")) {
-            return "put a powered Miner next to your generator cobble and a chest next to the Miner.";
+            return "put a powered Miner next to the block your generator makes (cobble, sand, snow, netherrack...) and a chest next to the Miner.";
         }
         if (key.startsWith("dungeon_")) {
             return "start a run with /dungeon.";

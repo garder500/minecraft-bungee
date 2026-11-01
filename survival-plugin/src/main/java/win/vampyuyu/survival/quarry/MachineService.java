@@ -16,7 +16,7 @@ import org.bukkit.inventory.ItemStack;
 import win.vampyuyu.survival.api.event.QuarryProgressEvent;
 import win.vampyuyu.survival.quarry.EnergyNetwork.Pos;
 
-/** Runs the machines once per second: networks, fuel, batteries, and the miners breaking generator cobble. */
+/** Runs the machines once per second: networks, fuel, batteries, and the miners breaking generator blocks. */
 final class MachineService {
     private static final BlockFace[] SIDES = {BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH,
         BlockFace.EAST, BlockFace.WEST};
@@ -296,10 +296,12 @@ final class MachineService {
         return world.getBlockAt(p.x(), p.y(), p.z());
     }
 
+    /** The generator block a miner can break: Fountain or stone generator cobble, or what a ring generator made. */
     private Block cobbleNextTo(Block miner) {
         for (BlockFace face : SIDES) {
             Block side = miner.getRelative(face);
-            if (CobbleListener.generatorBlock(side.getType()) && cobble.has(side)) {
+            if ((CobbleListener.generatorBlock(side.getType()) && cobble.has(side))
+                    || (!side.getType().isAir() && outputs.has(side))) {
                 return side;
             }
         }
@@ -340,6 +342,10 @@ final class MachineService {
         } catch (IllegalArgumentException e) {
             return false;
         }
+        if (outputs.has(target)) {
+            mineOutput(world, miner, target, container, owner, data);
+            return true;
+        }
         cobble.remove(target);
         target.setType(Material.AIR); // the water and lava next to it form the next block
         quarry.draw(owner, 0, random, drop -> {
@@ -352,5 +358,32 @@ final class MachineService {
         }, (geode, pity, name) -> { });
         announce(data, "machine_mined");
         return true;
+    }
+
+    /**
+     * A block of a dune, frost or ember generator: the block itself goes to the chest (whole, as with Silk Touch, so
+     * packed ice is not lost) and the ring's ores are rolled with the owner's pity counters, as for a player.
+     */
+    private void mineOutput(World world, Block miner, Block target, Container container, UUID owner, MachineData data) {
+        Material type = target.getType();
+        outputs.remove(target);
+        target.setType(Material.AIR); // the generator makes the next one above its Fountain
+        java.util.List<ItemStack> got = new java.util.ArrayList<>();
+        got.add(new ItemStack(type));
+        String source = OutputListener.source(type);
+        java.util.Optional<QuarryService.Drop> ore = source == null ? java.util.Optional.empty()
+            : quarry.drawOutput(owner, source, type, random);
+        ore.ifPresent(drop -> got.add(drop.stack()));
+        for (ItemStack stack : got) {
+            for (ItemStack left : container.getInventory().addItem(stack).values()) {
+                world.dropItemNaturally(miner.getLocation().add(0.5, 1.2, 0.5), left);
+            }
+        }
+        if (ore.isPresent() && quarry.core().items().idOf(ore.get().stack()).isPresent()) {
+            for (Player online : islandMembers(data.owner)) {
+                Bukkit.getPluginManager().callEvent(new QuarryProgressEvent(online, "ORE_FOUND", ore.get().ore(), 1));
+            }
+        }
+        announce(data, "machine_mined");
     }
 }

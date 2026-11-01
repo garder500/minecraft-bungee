@@ -130,11 +130,11 @@ final class QuarryItems {
                 .lore("<gray>Right-click it holding coal.", "<gray>Makes <white>10 Flux/s <gray>while it burns.").build(),
             CustomItemDef.builder("miner_1", "Miner I", Rarity.UNCOMMON, Material.LODESTONE)
                 .itemModel("vampyuyu:machine/miner_1").type("MACHINE")
-                .lore("<gray>Breaks the generator cobble next to it", "<gray>and fills the chest next to it.",
+                .lore("<gray>Breaks the generator block next to it", "<gray>(cobble, sand, snow, ice, netherrack...)", "<gray>and fills the chest next to it.",
                     "<gray>Uses <white>8 Flux/s<gray>, <white>1 block per 2 s<gray>.").build(),
             CustomItemDef.builder("miner_2", "Miner II", Rarity.RARE, Material.LODESTONE)
                 .itemModel("vampyuyu:machine/miner_2").type("MACHINE").glint(true)
-                .lore("<gray>Breaks the generator cobble next to it", "<gray>and fills the chest next to it.",
+                .lore("<gray>Breaks the generator block next to it", "<gray>(cobble, sand, snow, ice, netherrack...)", "<gray>and fills the chest next to it.",
                     "<gray>Uses <white>20 Flux/s<gray>, <white>1 block per second<gray>.").build(),
             CustomItemDef.builder("bronzite_bar", "Bronzite Bar", Rarity.UNCOMMON, Material.COPPER_INGOT)
                 .itemModel("vampyuyu:ore/bronzite_bar").type("ORE")

@@ -102,6 +102,37 @@ public class MachineTest {
     }
 
     @Test
+    public void aMinerAlsoBreaksTheBlocksOfARingGeneratorAndRollsItsOres() {
+        PlayerMock owner = server.addPlayer("Icebreaker");
+        Island island = island(owner);
+        Block miner = base(island);
+        assertTrue(place(owner, miner, "miner_2"));
+        Block battery = miner.getRelative(1, 0, 0);
+        assertTrue(place(owner, battery, "battery"));
+        Block barrel = miner.getRelative(0, 1, 0);
+        barrel.setType(Material.BARREL);
+        Block ice = miner.getRelative(-1, 0, 0);
+        ice.setType(Material.PACKED_ICE);
+        new BlockMarks("genout").add(ice); // what a Frost generator made above its Fountain
+        quarry.data(owner.getUniqueId()).counters.put("frostium", 59); // the pity forces a Frostium
+        machines.store().get(sky.getName(), MachineStore.pos(battery)).charge = 100;
+
+        machines.tick();
+
+        assertEquals("the packed ice was broken", Material.AIR, ice.getType());
+        Container container = (Container) barrel.getState();
+        boolean iceKept = false;
+        boolean frostium = false;
+        for (ItemStack stack : container.getInventory().getContents()) {
+            if (stack == null) continue;
+            iceKept |= stack.getType() == Material.PACKED_ICE;
+            frostium |= plugin.core().items().idOf(stack).filter("frostium"::equals).isPresent();
+        }
+        assertTrue("the packed ice itself is kept, as with Silk Touch", iceKept);
+        assertTrue("the ring's ore is rolled with the pity", frostium);
+    }
+
+    @Test
     public void aMinerWithoutPowerOrChestDoesNothing() {
         PlayerMock owner = server.addPlayer("Idle");
         Island island = island(owner);
