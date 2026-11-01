@@ -287,7 +287,9 @@ public class IslandReviewFixesTest {
         tick(10);
         assertEquals(Island.State.READY, island.state());
         assertTrue("the rebuild after an interrupted first build gives the real kit",
-            has(fake.lastOverworldChest(), Material.ICE) && has(fake.lastOverworldChest(), Material.LAVA_BUCKET));
+            has(fake.lastOverworldChest(), Material.CRAFTING_TABLE));
+        assertFalse("no lava bucket in the starter chest", has(fake.lastOverworldChest(), Material.LAVA_BUCKET));
+        assertFalse("no ice in the starter chest", has(fake.lastOverworldChest(), Material.ICE));
         assertTrue(service.data(p.getUniqueId()).starterClaimed);
         assertFalse(island.kitOwed);
     }
