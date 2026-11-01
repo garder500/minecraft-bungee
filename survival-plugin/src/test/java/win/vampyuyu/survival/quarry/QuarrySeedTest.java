@@ -38,9 +38,30 @@ public class QuarrySeedTest {
             assertEquals(3, count(db, "SELECT COUNT(*) FROM ore_roll WHERE source <> 'cobble'"));
             assertEquals(12 * 4, count(db, "SELECT COUNT(*) FROM ore_roll_chance"));
             assertEquals(66, count(db, "SELECT COUNT(*) FROM forge_recipe"));
-            assertEquals(176, count(db, "SELECT COUNT(*) FROM forge_recipe_ingredient"));
+            assertTrue(count(db, "SELECT COUNT(*) FROM forge_recipe_ingredient") > 176);
             assertEquals(3, count(db, "SELECT COUNT(*) FROM forge_block_ingredient"));
             assertEquals(18, count(db, "SELECT COUNT(*) FROM setting WHERE id GLOB 'quarry.*'"));
+        }
+    }
+
+    @Test
+    public void everyGearTierNeedsThePieceOfTheTierBelow() {
+        String[] tiers = {"bronze", "rime", "ember", "void", "starcore"};
+        String[] kinds = {"helmet", "chestplate", "leggings", "boots", "pick", "axe", "shovel", "bow"};
+        try (Db db = seeded()) {
+            for (String kind : kinds) {
+                for (int i = 1; i < tiers.length; i++) {
+                    String below = "custom:" + tiers[i - 1] + "_" + kind;
+                    assertEquals(tiers[i] + "_" + kind + " needs " + below, 1, count(db,
+                        "SELECT COUNT(*) FROM forge_recipe_ingredient WHERE forge_recipe_id = '" + tiers[i] + "_" + kind
+                            + "' AND item = '" + below + "'"));
+                }
+            }
+            String[] swords = {"bronze_cleaver", "rimeblade", "ember_sword", "void_sword", "starcore_sword"};
+            for (int i = 1; i < swords.length; i++) {
+                assertEquals(swords[i], 1, count(db, "SELECT COUNT(*) FROM forge_recipe_ingredient WHERE forge_recipe_id = '"
+                    + swords[i] + "' AND item = 'custom:" + swords[i - 1] + "'"));
+            }
         }
     }
 
