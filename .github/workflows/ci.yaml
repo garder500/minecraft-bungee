@@ -1,6 +1,8 @@
 name: Check, publish and deploy
 on:
+  # `dev` is a stacking branch: pull requests INTO dev run no CI. The checks run when dev is proposed to main.
   pull_request:
+    branches-ignore: [dev]
   push:
     branches: [main]
   # Re-runs the checks on the selected branch. Images are published and deployed ONLY when the selected
@@ -15,6 +17,8 @@ concurrency:
 jobs:
   # Only the parts a change touches are checked. A change to the Dockerfile or this workflow checks everything.
   changes:
+    # Manual runs on the stacking branch `dev` do nothing either (every other job needs this one).
+    if: github.ref != 'refs/heads/dev'
     runs-on: ubuntu-latest
     permissions:
       contents: read
