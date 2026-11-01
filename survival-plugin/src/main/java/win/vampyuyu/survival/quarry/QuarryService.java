@@ -172,13 +172,7 @@ public final class QuarryService implements win.vampyuyu.survival.api.EndAccessA
 
     boolean canAfford(Player player, ForgeRecipe recipe) {
         for (Map.Entry<String, Integer> need : recipe.cost().entrySet()) {
-            int have = 0;
-            for (ItemStack stack : player.getInventory().getStorageContents()) {
-                if (matches(need.getKey(), stack)) {
-                    have += stack.getAmount();
-                }
-            }
-            if (have < need.getValue()) {
+            if (heldItem(player, need.getKey()) < need.getValue()) {
                 return false;
             }
         }
@@ -187,20 +181,57 @@ public final class QuarryService implements win.vampyuyu.survival.api.EndAccessA
 
     private void take(Player player, ForgeRecipe recipe) {
         for (Map.Entry<String, Integer> need : recipe.cost().entrySet()) {
-            int left = need.getValue();
-            ItemStack[] contents = player.getInventory().getStorageContents();
-            for (int i = 0; i < contents.length && left > 0; i++) {
-                if (matches(need.getKey(), contents[i])) {
-                    int used = Math.min(left, contents[i].getAmount());
-                    left -= used;
-                    contents[i].setAmount(contents[i].getAmount() - used);
-                    if (contents[i].getAmount() <= 0) {
-                        contents[i] = null;
-                    }
+            takeItem(player, need.getKey(), need.getValue());
+        }
+    }
+
+    private int heldItem(Player player, String key) {
+        int have = 0;
+        for (ItemStack stack : player.getInventory().getStorageContents()) {
+            if (matches(key, stack)) {
+                have += stack.getAmount();
+            }
+        }
+        return have;
+    }
+
+    private void takeItem(Player player, String key, int amount) {
+        int left = amount;
+        ItemStack[] contents = player.getInventory().getStorageContents();
+        for (int i = 0; i < contents.length && left > 0; i++) {
+            if (matches(key, contents[i])) {
+                int used = Math.min(left, contents[i].getAmount());
+                left -= used;
+                contents[i].setAmount(contents[i].getAmount() - used);
+                if (contents[i].getAmount() <= 0) {
+                    contents[i] = null;
                 }
             }
-            player.getInventory().setStorageContents(contents);
         }
+        player.getInventory().setStorageContents(contents);
+    }
+
+    private Optional<String> oreItem(String ore) {
+        return java.util.stream.Stream.concat(config.roller.ores().stream(), config.outputs.ores().stream())
+            .filter(o -> o.id().equals(ore)).map(OreRoller.Ore::item).findFirst();
+    }
+
+    @Override
+    public int oreHeld(Player player, String ore) {
+        return oreItem(ore).map(key -> heldItem(player, key)).orElse(0);
+    }
+
+    @Override
+    public int takeOre(Player player, String ore, int max) {
+        Optional<String> key = oreItem(ore);
+        if (key.isEmpty()) {
+            return 0;
+        }
+        int taken = Math.min(max, heldItem(player, key.get()));
+        if (taken > 0) {
+            takeItem(player, key.get(), taken);
+        }
+        return taken;
     }
 
     /** Result of {@link #start}: null on success, otherwise the reason. */

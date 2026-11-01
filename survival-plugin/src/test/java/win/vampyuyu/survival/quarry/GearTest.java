@@ -160,6 +160,23 @@ public class GearTest {
     }
 
     @Test
+    public void noForgeRecipeNeedsAnItemTheMainPathStillHoldsBack() {
+        var catalog = win.vampyuyu.survival.menu.QuestRepo.load(plugin.core().data());
+        var engine = new win.vampyuyu.survival.menu.QuestEngine(catalog);
+        var fresh = new win.vampyuyu.survival.menu.QuestData();
+        for (var def : catalog.tutorial()) {
+            if (def.type() == win.vampyuyu.survival.menu.QuestType.FORGE_ITEM
+                    && catalog.category(def.category()).orElseThrow().main()) {
+                for (ForgeRecipe recipe : plugin.core().require(QuarryService.class).config().recipes.values()) {
+                    assertFalse(recipe.id() + " needs " + def.target() + ", locked until " + def.id(),
+                        recipe.cost().containsKey("custom:" + def.target()));
+                }
+            }
+        }
+        assertTrue(engine.forgeLock(fresh, "bronze_core").isPresent());
+    }
+
+    @Test
     public void aForgeQuestAcceptsTheUpgradeAlreadyUsedOrTheItemCarried() {
         PlayerMock player = server.addPlayer("Early");
         player.teleport(Bukkit.getWorld(win.vampyuyu.survival.core.SkyblockWorlds.WORLD).getSpawnLocation());

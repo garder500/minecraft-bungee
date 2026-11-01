@@ -49,6 +49,22 @@ public class QuestFlowTest {
     }
 
     @Test
+    public void aForgeRecipeOpensWithItsMainPathQuestNotWithASideQuest() {
+        QuestData data = new QuestData();
+        QuestDef lens = engine.catalog().tutorialQuest("q068").orElseThrow();
+        assertEquals("Void Lens", engine.forgeLock(data, "void_lens").orElseThrow().name());
+        data.completed.addAll(engine.catalog().tutorialQuest("q137").orElseThrow().requires());
+        assertTrue("the side quest asking for 2 lenses is open", engine.isActive(data, engine.catalog().tutorialQuest("q137").orElseThrow()));
+        assertTrue("the lens still waits for the main path", engine.forgeLock(data, "void_lens").isPresent());
+        assertTrue("a side quest item opens with its side quest", engine.forgeLock(data, "solar_panel").isEmpty());
+        data.completed.addAll(lens.requires());
+        assertTrue(engine.forgeLock(data, "void_lens").isEmpty());
+        data.completed.add(lens.id());
+        assertTrue("stays open afterwards", engine.forgeLock(data, "void_lens").isEmpty());
+        assertTrue("no quest asks for it", engine.forgeLock(new QuestData(), "no_such_item").isEmpty());
+    }
+
+    @Test
     public void aLensForgedBeforeItsQuestUnlockedIsNotAskedForAgain() {
         QuestData data = new QuestData();
         engine.apply(data, new QuestEngine.Event(QuestType.FORGE_ITEM, "void_lens", 1));

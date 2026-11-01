@@ -23,11 +23,43 @@ import win.vampyuyu.survival.menu.QuestEngine.Completion;
  * Glue between game events and the {@link QuestEngine}: records progress (main thread, Skyblock worlds only), pays
  * rewards exactly once and keeps unpaid rewards pending when the economy or skills feature is unavailable.
  */
-final class QuestService {
+final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
     private final MenuRuntime rt;
 
     QuestService(MenuRuntime rt) {
         this.rt = rt;
+    }
+
+    @Override
+    public Optional<String> forgeLock(UUID player, String item) {
+        return active() ? rt.engine().forgeLock(rt.quests(player), item).map(QuestDef::name) : Optional.empty();
+    }
+
+    /** How many items the player could hand in to an active ore quest right now. */
+    int handInAvailable(Player player, QuestDef def) {
+        QuestData data = rt.quests(player.getUniqueId());
+        if (!active() || def.type() != QuestType.ORE_FOUND || !rt.engine().isActive(data, def)
+                || !MenuRuntime.inSkyblock(player.getWorld())) {
+            return 0;
+        }
+        if (player.getGameMode() == org.bukkit.GameMode.CREATIVE || player.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
+            return 0; // record() would ignore it and the items would be lost
+        }
+        int missing = def.amount() - rt.engine().progress(data, def, false);
+        return rt.core.service(win.vampyuyu.survival.api.GeneratorApi.class)
+            .map(api -> Math.min(missing, api.oreHeld(player, def.target()))).orElse(0);
+    }
+
+    /** Takes what an active ore quest still needs from the inventory (a Miner's chest, ores found earlier). Returns how many. */
+    int handIn(Player player, QuestDef def) {
+        int count = handInAvailable(player, def);
+        if (count <= 0) {
+            return 0;
+        }
+        int taken = rt.core.service(win.vampyuyu.survival.api.GeneratorApi.class)
+            .map(api -> api.takeOre(player, def.target(), count)).orElse(0);
+        record(player, QuestType.ORE_FOUND, def.target(), taken);
+        return taken;
     }
 
     private boolean active() {

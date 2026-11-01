@@ -223,6 +223,20 @@ public final class QuestEngine {
         return all;
     }
 
+    /**
+     * The quest a Forge recipe waits for, empty when the recipe is open: it opens with its first quest on the main path,
+     * or, for an item only side quests ask for, with any of them. An item no quest asks for is always open.
+     */
+    public Optional<QuestDef> forgeLock(QuestData data, String item) {
+        List<QuestDef> asks = catalog.tutorial().stream()
+            .filter(def -> def.type() == QuestType.FORGE_ITEM && def.target().equals(item)).toList();
+        List<QuestDef> main = asks.stream()
+            .filter(def -> catalog.category(def.category()).map(QuestCatalog.Category::main).orElse(false)).toList();
+        List<QuestDef> gate = main.isEmpty() ? asks : main;
+        boolean open = gate.stream().anyMatch(def -> data.completed.contains(def.id()) || isActive(data, def));
+        return open ? Optional.empty() : gate.stream().findFirst();
+    }
+
     private List<Completion> creditForged(QuestData data, Function<QuestDef, OptionalInt> probe) {
         List<Completion> done = new ArrayList<>();
         for (QuestDef def : activeTutorial(data)) {

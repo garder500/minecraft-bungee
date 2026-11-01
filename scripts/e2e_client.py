@@ -1790,6 +1790,12 @@ def start_scenario(ctx):
     time.sleep(1)
     command("guide generators")
     shot(tools, shots / "st-9-guide-generators.png")
+    # a fresh player: the first recipe (Bronze Core) waits for its quest
+    command("forge")
+    subprocess.run([xdo, "mousemove", "495", "226"], env=env)
+    time.sleep(1)
+    shot(tools, shots / "st-forge-locked.png")
+    subprocess.run([xdo, "key", "Escape"], env=env)
     log = (server / "console.log").read_text(errors="replace")
     for line in log.splitlines():
         if ("Exception" in line or "SEVERE" in line) and " WARN]" not in line and "VampyuyuSurvival" in line:

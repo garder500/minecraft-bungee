@@ -127,7 +127,11 @@ final class QuestsGui {
         List<QuestDef> list = new ArrayList<>(engine.catalog().questsOf(id));
         int done = (int) list.stream().filter(d -> data.completed.contains(d.id())).count();
         Gui gui = rt.core.guis().create(6, "<dark_gray>" + esc(category.name()) + " " + done + "/" + list.size());
-        gui.paginate(list, gui.innerSlots(), def -> icon(data, def, false), (click, def) -> {
+        gui.paginate(list, gui.innerSlots(), def -> icon(player, data, def, false), (click, def) -> {
+            if (click.right() && handIn(player, def)) {
+                category(player, id);
+                return;
+            }
             if (engine.isActive(data, def) && quests.track(player, def.id())) {
                 rt.core.msg().ok(player, "Now tracking: " + def.name());
                 rt.play(player, "click");
@@ -146,7 +150,11 @@ final class QuestsGui {
         // active first, then locked, then completed
         all.sort(java.util.Comparator.comparingInt(def -> data.completed.contains(def.id()) ? 2
             : engine.isActive(data, def) ? 0 : 1));
-        gui.paginate(all, gui.innerSlots(), def -> icon(data, def, false), (click, def) -> {
+        gui.paginate(all, gui.innerSlots(), def -> icon(player, data, def, false), (click, def) -> {
+            if (click.right() && handIn(player, def)) {
+                tutorial(player);
+                return;
+            }
             if (engine.isActive(data, def) && quests.track(player, def.id())) {
                 rt.core.msg().ok(player, "Now tracking: " + def.name());
                 rt.play(player, "click");
@@ -165,7 +173,7 @@ final class QuestsGui {
         int[] slots = gui.innerSlots();
         for (int i = 0; i < dailies.size() && i < slots.length; i++) {
             QuestDef def = dailies.get(i);
-            gui.set(slots[i], icon(data, def, true), click -> {
+            gui.set(slots[i], icon(player, data, def, true), click -> {
                 if (!data.dailyDone.contains(def.id()) && quests.track(player, "daily:" + def.id())) {
                     rt.core.msg().ok(player, "Now tracking: " + def.name());
                     rt.play(player, "click");
@@ -185,7 +193,7 @@ final class QuestsGui {
         gui.open(player);
     }
 
-    ItemStack icon(QuestData data, QuestDef def, boolean daily) {
+    ItemStack icon(Player player, QuestData data, QuestDef def, boolean daily) {
         QuestEngine engine = rt.engine();
         boolean complete = daily ? data.dailyDone.contains(def.id()) : data.completed.contains(def.id());
         boolean active = daily ? !complete : engine.isActive(data, def);
@@ -215,8 +223,22 @@ final class QuestsGui {
         String key = daily ? "daily:" + def.id() : def.id();
         boolean tracked = key.equals(data.tracked) || engine.tracked(data).map(t -> t.def().id().equals(def.id())
             && t.daily() == daily).orElse(false);
+        int handIn = daily ? 0 : quests.handInAvailable(player, def);
+        if (handIn > 0) {
+            lore.add(Guis.ACCENT + "▸ Right-click: hand in " + handIn + " from your inventory");
+        }
         lore.add(tracked ? "<aqua>Tracking in the sidebar" : Guis.ACCENT + "▸ Track");
         return Guis.icon(def.icon(), "<yellow>" + name, lore.toArray(String[]::new));
+    }
+
+    private boolean handIn(Player player, QuestDef def) {
+        int taken = quests.handIn(player, def);
+        if (taken <= 0) {
+            return false;
+        }
+        rt.core.msg().ok(player, "Handed in " + taken + " for " + def.name() + ".");
+        rt.play(player, "click");
+        return true;
     }
 
     private List<String> rewards(QuestDef def) {

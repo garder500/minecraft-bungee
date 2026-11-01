@@ -29,6 +29,7 @@ public final class MenuFeature implements Feature {
             cfg.redisHost, cfg.redisPort, cfg.redisPasswordFile, cfg.redisConnectTimeoutMs,
             cfg.redisSocketTimeoutMs, cfg.redisBackoffMs) : null;
         quests = new QuestService(rt);
+        rt.core.register(win.vampyuyu.survival.api.QuestGateApi.class, quests);
         QuestsGui questsGui = new QuestsGui(rt, quests);
         sidebar = new SidebarService(rt, quests);
         JoinFlow join = new JoinFlow(rt, source, this::arrive);

@@ -28,6 +28,8 @@ final class ForgeGui {
     }
 
     void open(Player player) {
+        // the Forge block and the main menu count for "Open the Forge" too, not only a typed /forge
+        org.bukkit.Bukkit.getPluginManager().callEvent(new win.vampyuyu.survival.api.event.QuarryProgressEvent(player, "COMMAND", "forge", 1));
         Gui gui = core.guis().create(MenuArt.Kind.FORGE, "<dark_gray>Forge");
         render(gui, player, 0);
         gui.open(player);
@@ -65,9 +67,16 @@ final class ForgeGui {
                 lore.add("<gray>- " + need.getValue() + " x " + label(need.getKey()));
             }
             lore.add("");
-            lore.add(ok ? Guis.ACCENT + "▸ Forge" : "<red>Missing materials");
+            java.util.Optional<String> locked = core.service(win.vampyuyu.survival.api.QuestGateApi.class)
+                .flatMap(api -> api.forgeLock(player.getUniqueId(), recipe.result()));
+            lore.add(locked.map(quest -> "<red>Locked until the quest: <yellow>" + quest)
+                .orElse(ok ? Guis.ACCENT + "▸ Forge" : "<red>Missing materials"));
             ItemStack icon = icon(def.get().id(), lore);
             gui.set(slot++, icon, click -> {
+                if (locked.isPresent()) {
+                    core.msg().warn(player, "Locked until the quest: " + locked.get() + ".");
+                    return;
+                }
                 String problem = service.start(player, recipe.id(), System.currentTimeMillis());
                 if (problem != null) {
                     core.msg().warn(player, problem);
