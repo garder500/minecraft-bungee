@@ -23,7 +23,7 @@ VANILLA = "minecraft/textures/block"
 
 # sheet -> (columns, rows, size, seamless, [target per cell, row by row; None = unused]); CROP narrows a sheet whose
 # cells hold a drawn object rather than a flat texture to the object's middle
-CROP = {"helmet_faces.png": 0.55}
+CROP = {}
 SHEETS = {
     "machine_faces.png": (6, 4, 32, False, [
         f"{MACHINE}/fountain_top", f"{MACHINE}/fountain_side", f"{MACHINE}/spring_stone_top",
@@ -34,9 +34,6 @@ SHEETS = {
         f"{MACHINE}/miner_2_side", f"{MACHINE}/miner_2_top", f"{MACHINE}/forge_front",
         f"{MACHINE}/forge_side", f"{MACHINE}/forge_top", f"{MACHINE}/cable",
         f"{MACHINE}/bottom", None, None]),
-    "helmet_faces.png": (5, 5, 16, False, [f"vampyuyu/textures/item/armor/helm/{tier}_{face}"
-                                           for tier in ("bronze", "rime", "ember", "void", "starcore")
-                                           for face in ("front", "side", "top", "back", "ornament")]),
     "generator_blocks.png": (3, 3, 16, True, [
         f"{VANILLA}/stone", f"{VANILLA}/cobblestone", f"{VANILLA}/sand",
         f"{VANILLA}/red_sand", f"{VANILLA}/gravel", f"{VANILLA}/snow",
