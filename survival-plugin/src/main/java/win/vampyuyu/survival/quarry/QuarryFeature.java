@@ -86,6 +86,7 @@ public final class QuarryFeature implements Feature {
         core.listen(new QuarryGuard(core));
         machineStore = new MachineStore(core.store(), core.getPlugin().getLogger());
         MachineService machines = new MachineService(service, machineStore);
+        core.register(win.vampyuyu.survival.api.MachineApi.class, (owner, itemId) -> machineStore.count(owner.toString(), itemId));
         core.listen(new MachineListener(core, machines));
         machineTask = core.scheduler().repeating(20, 20, machines::tick);
         addForgeRecipe(config);

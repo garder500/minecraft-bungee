@@ -62,6 +62,19 @@ final class MachineStore {
         return gone;
     }
 
+    /** Machines of one kind on the island of {@code owner}, in every world. */
+    int count(String owner, String itemId) {
+        int count = 0;
+        for (Map<String, MachineData> world : doc.worlds.values()) {
+            for (MachineData data : world.values()) {
+                if (owner.equals(data.owner) && data.kind() != null && data.kind().itemId.equals(itemId)) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
     /** Positions and machines of one world (a copy). */
     Map<Pos, MachineData> all(String world) {
         Map<Pos, MachineData> out = new HashMap<>();

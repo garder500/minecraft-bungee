@@ -1,6 +1,7 @@
 package win.vampyuyu.survival.api;
 
 import java.util.Collection;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -18,6 +19,9 @@ public interface BossApi {
 
     /** Ids of every registered boss. */
     Collection<String> bossIds();
+
+    /** How many times the player helped defeat this boss. */
+    int kills(UUID player, String bossId);
 
     /** Registers a hook that adds loot to every boss kill. Hooks live until the plugin disables. */
     void registerLootHook(BossLootHook hook);

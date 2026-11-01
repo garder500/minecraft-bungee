@@ -164,24 +164,35 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
         };
     }
 
-    /** What a player's state proves was forged before the Forge tally existed: an upgrade already used, items carried. */
+    /**
+     * What a player's state proves was forged before the Forge tally existed: an upgrade already used, a Voidwyrm
+     * defeated (its sigil is used up by the summon), machines standing on the island, items carried.
+     */
     private int forgedProof(Player player, String item) {
         UUID id = player.getUniqueId();
         int tier = rt.core.service(win.vampyuyu.survival.api.GeneratorApi.class).map(api -> api.tier(id)).orElse(1);
-        boolean used = switch (item) {
-            case "bronze_core" -> tier >= 2;
-            case "ember_core" -> tier >= 3;
+        int count = switch (item) {
+            case "bronze_core" -> tier >= 2 ? 1 : 0;
+            case "ember_core" -> tier >= 3 ? 1 : 0;
             case "void_lens" -> tier >= 4 || rt.core.service(win.vampyuyu.survival.api.EndAccessApi.class)
-                .map(api -> api.canEnterEnd(id)).orElse(false);
-            default -> false;
+                .map(api -> api.canEnterEnd(id)).orElse(false) ? 1 : 0;
+            case "void_sigil" -> rt.core.service(win.vampyuyu.survival.api.BossApi.class)
+                .map(api -> api.kills(id, "voidwyrm")).orElse(0) > 0 ? 1 : 0;
+            // a Miner II is forged out of a Miner I
+            case "miner_1" -> placed(id, "miner_1") + placed(id, "miner_2");
+            default -> placed(id, item);
         };
-        int count = used ? 1 : 0;
         for (org.bukkit.inventory.ItemStack stack : player.getInventory().getContents()) {
             if (item.equals(rt.core.items().idOf(stack).orElse(null))) {
                 count += stack.getAmount();
             }
         }
         return count;
+    }
+
+    private int placed(UUID player, String item) {
+        return rt.islands().flatMap(api -> api.islandOf(player)).flatMap(island -> rt.core
+            .service(win.vampyuyu.survival.api.MachineApi.class).map(api -> api.placed(island.owner(), item))).orElse(0);
     }
 
     private void finish(Player player, QuestData data, List<Completion> done, boolean dirty) {

@@ -160,6 +160,22 @@ public class GearTest {
     }
 
     @Test
+    public void aDefeatedVoidwyrmProvesItsSigil() {
+        PlayerMock player = server.addPlayer("Slayer");
+        player.teleport(Bukkit.getWorld(win.vampyuyu.survival.core.SkyblockWorlds.WORLD).getSpawnLocation());
+        var quests = plugin.core().profiles().section(player.getUniqueId(), "quests",
+            win.vampyuyu.survival.menu.QuestData.class, win.vampyuyu.survival.menu.QuestData::new);
+        var sigil = win.vampyuyu.survival.menu.QuestRepo.load(plugin.core().data()).tutorialQuest("q095").orElseThrow();
+        quests.completed.addAll(sigil.requires());
+        player.performCommand("quests categories");
+        assertFalse("no proof yet", quests.completed.contains(sigil.id()));
+        plugin.core().profiles().section(player.getUniqueId(), "boss", win.vampyuyu.survival.boss.BossData.class,
+            win.vampyuyu.survival.boss.BossData::new).kills.put("voidwyrm", 1);
+        player.performCommand("quests categories");
+        assertTrue(quests.completed.contains(sigil.id()));
+    }
+
+    @Test
     public void noForgeRecipeNeedsAnItemTheMainPathStillHoldsBack() {
         var catalog = win.vampyuyu.survival.menu.QuestRepo.load(plugin.core().data());
         var engine = new win.vampyuyu.survival.menu.QuestEngine(catalog);

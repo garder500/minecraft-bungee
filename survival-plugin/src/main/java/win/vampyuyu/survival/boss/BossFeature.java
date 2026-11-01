@@ -57,7 +57,7 @@ public final class BossFeature implements Feature {
             registerPermissions();
             registerCommands(gui);
             core.scheduler().nextTick(this::purgeLoadedWorlds);
-            core.register(BossApi.class, new BossApiImpl(manager));
+            core.register(BossApi.class, new BossApiImpl(core, manager));
         } catch (RuntimeException e) {
             disable();
             throw e;
