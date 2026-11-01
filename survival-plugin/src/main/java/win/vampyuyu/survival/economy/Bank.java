@@ -3,7 +3,6 @@ package win.vampyuyu.survival.economy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import win.vampyuyu.survival.core.Core;
 
@@ -30,24 +29,23 @@ public final class Bank {
     private volatile long periodMs = 24 * 3_600_000L;
     private volatile int maxCatchup = 3;
 
-    public Bank(Core core, EconomyService economy, ConfigurationSection config) {
+    public Bank(Core core, EconomyService economy, EconomyConfig config) {
         this.core = core;
         this.economy = economy;
         reload(config);
     }
 
-    void reload(ConfigurationSection c) {
+    void reload(EconomyConfig config) {
+        var c = config.settings();
         periodMs = Math.max(60_000L, (long) (c.getDouble("bank.interest-period-hours", 24.0) * 3_600_000L));
         maxCatchup = EconomySettings.clamp(c.getInt("bank.max-catchup-periods", 3), 1, 1000);
         List<Tier> out = new ArrayList<>();
-        for (java.util.Map<?, ?> raw : c.getMapList("bank.tiers")) {
-            Object name = raw.get("name");
-            long capacity = coins(raw.get("capacity"), 5_000_000);
-            double rate = num(raw.get("rate"), 0.5);
-            long maxInterest = coins(raw.get("max-interest"), 100_000);
-            long cost = coins(raw.get("cost"), 0);
-            out.add(new Tier(name == null ? "Tier " + (out.size() + 1) : name.toString(), capacity,
-                (int) Math.round(Math.max(0, Math.min(100, rate)) * 100), maxInterest, cost));
+        for (EconomyConfig.TierRow raw : config.tiers()) {
+            String name = raw.name();
+            out.add(new Tier(name == null || name.isBlank() ? "Tier " + (out.size() + 1) : name,
+                coins(raw.capacity(), 5_000_000),
+                (int) Math.round(Math.max(0, Math.min(100, raw.rate())) * 100),
+                coins(raw.maxInterest(), 100_000), coins(raw.cost(), 0)));
         }
         if (out.isEmpty()) {
             out.add(new Tier("Starter", 500_000_000L, 50, 2_500_000L, 0));
@@ -55,12 +53,8 @@ public final class Bank {
         tiers = List.copyOf(out);
     }
 
-    private static double num(Object o, double fallback) {
-        return o instanceof Number n ? n.doubleValue() : fallback;
-    }
-
-    private static long coins(Object o, double fallback) {
-        return Money.toCents(num(o, fallback)).orElse(Math.round(fallback * 100));
+    private static long coins(double value, double fallback) {
+        return Money.toCents(value).orElse(Math.round(fallback * 100));
     }
 
     public List<Tier> tiers() { return tiers; }

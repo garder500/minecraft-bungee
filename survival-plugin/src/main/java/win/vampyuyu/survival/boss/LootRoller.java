@@ -37,7 +37,7 @@ public final class LootRoller {
             }
             String key = dryKey(bossId, entry);
             int streak = dry.getOrDefault(key, 0);
-            double pity = LootMath.pityBonus(streak, entry.pity(), entry.pityCap());
+            double pity = LootMath.pityBonus(streak, entry.pity(), entry.pityCap(), entry.chance());
             double chance = LootMath.chance(entry.chance(), pity, rankMult, magicFind, entry.magicFind());
             if (LootMath.roll(chance, random)) {
                 drops.add(new Drop(entry, LootMath.amount(entry, random), chance));

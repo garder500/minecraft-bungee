@@ -98,12 +98,12 @@ public class SettingsAndSidebarTest extends MenuTestBase {
         player.teleport(new Location(world("sb_world"), 2, 64, 2));
         quests.sync(player);
         List<String> lines = sidebar.build(player);
-        assertTrue(lines.toString(), lines.contains("<white>Purse: <gold>"
+        assertTrue(lines.toString(), lines.contains("<white>Coins: <gold>"
             + win.vampyuyu.survival.core.Msg.grouped(economy.coins(player.getUniqueId()))));
         assertTrue("syncing the island pays the first tutorial reward", economy.coins(player.getUniqueId()) > 1234);
-        assertTrue(lines.toString(), lines.contains("<white>Members: <green>1/1"));
+        assertTrue(lines.toString(), lines.contains("<white>Crew: <green>1/1"));
         assertTrue(lines.toString(), lines.stream().anyMatch(l -> l.contains("Your Island")));
-        assertTrue(lines.toString(), lines.contains("<aqua>Objective"));
+        assertTrue(lines.toString(), lines.contains("<aqua>Next step"));
         assertEquals("<yellow>vampyuyu.win", lines.get(lines.size() - 1));
     }
 

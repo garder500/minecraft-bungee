@@ -414,15 +414,35 @@ public class DungeonRunTest {
     }
 
     @Test
-    public void playersAreDividedByTheHealthFactorAfterTheItemsFormula() {
+    public void aMonsterWithAVirtualPoolTakesTheRealDamageFromItAndTheEntityMirrorsThePercentage() {
         running();
         itemsFormula(100.0);
         var z = mob(1.0);
-        z.getPersistentDataContainer().set(svc.ctx.keys.factor, org.bukkit.persistence.PersistentDataType.DOUBLE, 4.0);
+        // 4000 health in the pool, 100 on the entity (it mirrors the percentage)
+        z.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).setBaseValue(100);
+        z.setHealth(100);
+        z.getPersistentDataContainer().set(svc.ctx.keys.hpMax, org.bukkit.persistence.PersistentDataType.DOUBLE, 4000.0);
         var hit = new org.bukkit.event.entity.EntityDamageByEntityEvent(alice, z,
             EntityDamageEvent.DamageCause.ENTITY_ATTACK, 5.0);
         server.getPluginManager().callEvent(hit);
-        assertEquals(25.0, hit.getDamage(), 0.001);
+        // the items formula said 100; the pool lost exactly that, the entity loses 100 / 4000 of its 100 health
+        assertEquals(3900.0, svc.ctx.keys.hpOf(z), 0.001);
+        assertEquals(2.5, hit.getDamage(), 0.001);
+    }
+
+    @Test
+    public void theLastPointsOfAVirtualPoolKillTheEntity() {
+        running();
+        itemsFormula(500.0);
+        var z = mob(1.0);
+        z.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).setBaseValue(100);
+        z.setHealth(100);
+        z.getPersistentDataContainer().set(svc.ctx.keys.hpMax, org.bukkit.persistence.PersistentDataType.DOUBLE, 400.0);
+        var hit = new org.bukkit.event.entity.EntityDamageByEntityEvent(alice, z,
+            EntityDamageEvent.DamageCause.ENTITY_ATTACK, 5.0);
+        server.getPluginManager().callEvent(hit);
+        assertEquals(0.0, svc.ctx.keys.hpOf(z), 0.001);
+        assertTrue("lethal for the entity", hit.getDamage() >= z.getHealth());
     }
 
     @Test

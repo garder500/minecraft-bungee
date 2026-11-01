@@ -58,7 +58,7 @@ public final class WorldSetup {
                 guard(world, "advance_time", () -> world.setGameRule(GameRules.ADVANCE_TIME, false));
                 guard(world, "time", () -> world.setTime(lock.ticks()));
             } else {
-                log.warning("island.yml: unknown time '" + cfg.time() + "' for " + world.getName());
+                log.warning("island world time: unknown value '" + cfg.time() + "' for " + world.getName());
             }
         }
         if (cfg.weatherClear()) {
@@ -102,7 +102,7 @@ public final class WorldSetup {
     private void applyRule(World world, String name, Object value) {
         GameRule<?> rule = knownRules().get(name.toLowerCase(Locale.ROOT));
         if (rule == null) {
-            log.warning("island.yml: unknown game rule '" + name + "' for " + world.getName());
+            log.warning("island world: unknown game rule '" + name + "' for " + world.getName());
             return;
         }
         guard(world, "game rule " + name, () -> set(world, rule, value));

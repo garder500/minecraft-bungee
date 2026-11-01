@@ -72,12 +72,12 @@ public final class CombatService {
         }
     }
 
-    /** Ability damage of a player: {@code base * (1 + int/100) * (1 + abilityDamage%)}. */
+    /** Ability damage of a player: {@code base * (1 + aether / divisor) * (1 + might / 100)}. */
     public double abilityDamage(Player player, double base) {
         PlayerState st = engine.state(player);
         ItemsSettings s = engine.settings();
-        return DamageFormula.ability(base, st.stat(Stat.INTELLIGENCE), s.abilityIntelligenceDivisor,
-            st.stat(Stat.ABILITY_DAMAGE));
+        return DamageFormula.ability(base, st.stat(Stat.AETHER), s.abilityAetherDivisor,
+            st.stat(Stat.MIGHT));
     }
 
     /** True the first time a victim is seen (full health, untouched). Used by First Strike. */

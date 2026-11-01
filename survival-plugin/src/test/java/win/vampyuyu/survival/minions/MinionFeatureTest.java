@@ -285,6 +285,7 @@ public class MinionFeatureTest {
         new MinionGui(core, manager).open(player, d);
         assertTrue(player.getOpenInventory().getTopInventory().getHolder() instanceof win.vampyuyu.survival.core.Gui);
         assertEquals(54, player.getOpenInventory().getTopInventory().getSize());
+        win.vampyuyu.survival.core.MenuRules.check(player.getOpenInventory().getTopInventory(), "minion menu");
         click(1, ClickType.LEFT);
         assertEquals(200, count("m:COBBLESTONE"));
         assertTrue(d.storage.isEmpty());

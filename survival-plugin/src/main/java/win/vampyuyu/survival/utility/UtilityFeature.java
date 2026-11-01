@@ -2,7 +2,6 @@ package win.vampyuyu.survival.utility;
 
 import java.nio.file.Path;
 import org.bukkit.command.PluginCommand;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -40,8 +39,7 @@ public final class UtilityFeature implements Feature {
     @Override
     public void enable(Core core) {
         Settings settings = new Settings();
-        YamlConfiguration yaml = core.featureConfig("utility");
-        settings.current = UtilityConfig.from(yaml);
+        settings.current = UtilityRepo.load(core.data());
 
         CombatTag combat = new CombatTag(System::currentTimeMillis);
         teleports = new TeleportService(core, () -> settings.current, combat);
@@ -72,7 +70,7 @@ public final class UtilityFeature implements Feature {
         new SpawnCommands(core, teleports, () -> settings.current).register();
         new TpaCommands(core, teleports, () -> settings.current, manager, cooldowns).register();
         new RtpCommand(core, teleports, () -> settings.current, cooldowns).register();
-        new PortableCommands(core, teleports, yaml).register();
+        new PortableCommands(core, teleports, UtilityRepo.portables(core.data())).register();
         new MiscCommands(core, () -> settings.current).register();
         sit = new SitManager(core, () -> settings.current, teleports);
         sit.register();
@@ -80,7 +78,7 @@ public final class UtilityFeature implements Feature {
         trash.register();
         core.listen(new DeathNotice(core.msg()));
         new UtilityHelp(core, () -> {
-            UtilityConfig reloaded = UtilityConfig.from(core.featureConfig("utility"));
+            UtilityConfig reloaded = UtilityRepo.load(core.data());
             settings.current = reloaded;
             manager.configure(reloaded.tpaExpireSeconds() * 1000L, reloaded.tpaSendCooldownSeconds() * 1000L,
                 reloaded.tpaMaxPending());

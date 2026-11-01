@@ -24,7 +24,6 @@ import win.vampyuyu.survival.items.menu.ItemMenu;
 public final class AccessoryMenu extends ItemMenu {
     private static final int INFO = 49;
     private static final int UPGRADE = 51;
-    private static final int CLOSE = 53;
 
     private final AccessoryService service;
     private final Costs costs;
@@ -46,16 +45,12 @@ public final class AccessoryMenu extends ItemMenu {
             if (slot < unlocked) {
                 inventory.setItem(slot, slot < stacks.size() ? stacks.get(slot) : null);
             } else {
-                inventory.setItem(slot, Guis.icon(Material.RED_STAINED_GLASS_PANE, "<red>Locked slot",
+                inventory.setItem(slot, Guis.icon(Material.RED_DYE, "<red>Locked slot",
                     "<gray>Buy slot upgrades with the button below."));
             }
         }
-        for (int slot = 45; slot < 54; slot++) {
-            inventory.setItem(slot, Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
-        }
         inventory.setItem(INFO, info());
         inventory.setItem(UPGRADE, upgradeIcon());
-        inventory.setItem(CLOSE, Guis.icon(Material.BARRIER, "<red>Close"));
     }
 
     private ItemStack info() {
@@ -88,7 +83,7 @@ public final class AccessoryMenu extends ItemMenu {
         double cost = service.nextUpgradeCost(id);
         return Guis.icon(Material.EMERALD, "<green>Unlock " + service.settings().bagSlotsPerUpgrade + " more slots",
             "<gray>Cost: <gold>" + Costs.price(cost), "<gray>Slots: <white>" + unlocked + "/" + service.settings().bagMaxSlots,
-            "", "<yellow>Click to buy");
+            "<#F6D58E>▸ Buy");
     }
 
     private static String trim(double value) {
@@ -147,8 +142,6 @@ public final class AccessoryMenu extends ItemMenu {
             save();
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.5f);
             core.msg().ok(player, "Unlocked " + (unlocked - before) + " more accessory slots (" + unlocked + " total).");
-        } else if (slot == CLOSE) {
-            core.scheduler().nextTick(player::closeInventory);
         }
     }
 

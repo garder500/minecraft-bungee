@@ -153,8 +153,8 @@ final class Finale {
         Grade g = score.grade();
         run.each(p -> {
             p.sendMessage(Msg.component("<dark_gray><strikethrough>                                                  "));
-            p.sendMessage(Msg.component(ok ? "<gold><bold>  CATACOMBS FLOOR " + run.floorNumber() + " CLEARED"
-                : "<red><bold>  CATACOMBS FLOOR " + run.floorNumber() + " FAILED"));
+            p.sendMessage(Msg.component(ok ? "<gold><bold>  CRYPT DEPTHS FLOOR " + run.floorNumber() + " CLEARED"
+                : "<red><bold>  CRYPT DEPTHS FLOOR " + run.floorNumber() + " FAILED"));
             if (!ok && !reason.isBlank()) {
                 p.sendMessage(Msg.component("<gray>  " + reason));
             }
@@ -170,11 +170,11 @@ final class Finale {
                 p.sendMessage(Msg.component("<gray>  Reward: <gold>" + Msg.coins(myCoins) + "<gray> and <aqua>" + Msg.number(myXp)
                     + " Combat XP<gray> (the items are in your inventory)"));
                 if (mine != null && mine[2] > 0) {
-                    p.sendMessage(Msg.component("<gray>  Catacombs level bonus: <green>+" + String.format("%.0f", mine[2]) + "%"));
+                    p.sendMessage(Msg.component("<gray>  Crypt Depths level bonus: <green>+" + String.format("%.0f", mine[2]) + "%"));
                 }
                 int[] lv = levels.get(p.getUniqueId());
                 if (lv != null && lv[1] > lv[0]) {
-                    p.sendMessage(Msg.component("<aqua><bold>  CATACOMBS LEVEL " + lv[1] + "<reset><gray> (was " + lv[0] + ")"));
+                    p.sendMessage(Msg.component("<aqua><bold>  CRYPT DEPTHS LEVEL " + lv[1] + "<reset><gray> (was " + lv[0] + ")"));
                     p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
                 }
             }
@@ -201,7 +201,6 @@ final class Finale {
         DungeonConfig.Tier tier = run.ctx.cfg.tiers.get(grade);
         Guis guis = run.ctx.core.guis();
         var gui = guis.create(3, grade.color() + "<bold>" + (tier == null ? "Reward Chest" : tier.chest()));
-        gui.fill(Guis.icon(Material.BLACK_STAINED_GLASS_PANE, " "));
         gui.set(4, Guis.icon(Material.GOLD_INGOT, "<gold>" + Msg.coins(coins), "<gray>Added to your balance",
             "<aqua>+" + Msg.number(xp) + " Combat XP"));
         int slot = 10;
@@ -215,7 +214,6 @@ final class Finale {
                 gui.set(slot++, s);
             }
         }
-        gui.set(22, Guis.icon(Material.BARRIER, "<red>Close"), c -> c.close());
         gui.open(p);
     }
 

@@ -114,6 +114,8 @@ public final class QuestMatcher {
                 || material == Material.NETHER_WART || material == Material.PUMPKIN || material == Material.MELON
                 || material == Material.COCOA || material == Material.CACTUS;
             case "SAPLINGS" -> Tag.SAPLINGS.isTagged(material);
+            case "GLASSES" -> material == Material.GLASS || material == Material.TINTED_GLASS
+                || material.name().endsWith("_STAINED_GLASS");
             case "FLOWERS" -> Tag.FLOWERS.isTagged(material);
             default -> false;
         };

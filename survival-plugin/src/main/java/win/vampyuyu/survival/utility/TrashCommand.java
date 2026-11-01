@@ -79,7 +79,7 @@ final class TrashCommand implements Listener {
         Inventory inventory = Bukkit.createInventory(holder, ROWS * 9,
             Msg.component("<dark_gray>Trash <red>(destroyed on close)"));
         holder.inventory = inventory;
-        ItemStack pane = Guis.icon(Material.RED_STAINED_GLASS_PANE, " ");
+        ItemStack pane = Guis.icon(Material.RED_DYE, " ");
         for (int slot = TRASH_SLOTS; slot < ROWS * 9; slot++) {
             inventory.setItem(slot, pane);
         }

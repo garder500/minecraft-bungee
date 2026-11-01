@@ -274,7 +274,6 @@ final class HomeCommands {
         UtilityData data = data(player.getUniqueId());
         int limit = limit(player);
         Gui gui = core.guis().create(6, "<dark_gray>Your homes");
-        gui.border(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
         List<String> names = new ArrayList<>(data.homes.keySet());
         gui.set(49, Guis.icon(Material.BOOK, "<gold>Homes: <white>" + names.size() + "/" + limit,
             "<gray>/sethome [name] saves a new home",
@@ -300,7 +299,7 @@ final class HomeCommands {
             "<gray>Position: <white>" + (int) Math.floor(home.x) + ", " + (int) Math.floor(home.y) + ", "
                 + (int) Math.floor(home.z),
             "",
-            "<yellow>Click to teleport",
+            "<#F6D58E>▸ Teleport",
             "<red>Shift + right click to delete");
     }
 

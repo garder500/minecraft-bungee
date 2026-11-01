@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Entity;
@@ -25,6 +27,7 @@ import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import win.vampyuyu.survival.api.Element;
 import win.vampyuyu.survival.api.Stat;
 import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.SkyblockWorlds;
@@ -40,18 +43,20 @@ import win.vampyuyu.survival.items.stats.StatsEngine;
 /**
  * The Skyblock damage model, active only in Skyblock worlds.
  * <ul>
- * <li>Outgoing player melee: {@code (weapon + 5) * (1 + strength/100) * (1 + enchants) * crit}, vanilla armor ignored.</li>
- * <li>Outgoing arrows: the same formula computed when the arrow is shot, crit rolled on impact.</li>
- * <li>Incoming damage on players: vanilla number times a per-cause scale, divided by {@code 1 + defense/100};
+ * <li>Outgoing player melee: {@code weapon * (1 + might/100) * (1 + enchants) * element}, then {@code x2} on every Nth
+ *     fully charged hit on the same target (Surge). No dice: the same swing always deals the same damage.
+ *     Vanilla armor is ignored.</li>
+ * <li>Outgoing arrows: the same formula computed when the arrow is shot, element and Surge on impact.</li>
+ * <li>Incoming damage on players: vanilla number times a per-cause scale (x5), times {@code 100 / (100 + ward)};
  *     void, starvation and similar causes are true damage as a percentage of max health.</li>
  * </ul>
  */
 public final class CombatListener implements Listener, win.vampyuyu.survival.items.ability.ArrowTagger {
     private static final NamespacedKey ARROW_DAMAGE = new NamespacedKey("vampyuyu", "sb_arrow_damage");
-    private static final NamespacedKey ARROW_CRIT_CHANCE = new NamespacedKey("vampyuyu", "sb_arrow_crit_chance");
-    private static final NamespacedKey ARROW_CRIT_DAMAGE = new NamespacedKey("vampyuyu", "sb_arrow_crit_damage");
     private static final NamespacedKey ARROW_REND = new NamespacedKey("vampyuyu", "sb_arrow_rend");
-    private static final NamespacedKey ARROW_FEROCITY = new NamespacedKey("vampyuyu", "sb_arrow_ferocity");
+    private static final NamespacedKey ARROW_ELEMENT = new NamespacedKey("vampyuyu", "sb_arrow_element");
+    private static final NamespacedKey ARROW_ATTUNEMENT = new NamespacedKey("vampyuyu", "sb_arrow_attunement");
+    private static final NamespacedKey ARROW_FULL = new NamespacedKey("vampyuyu", "sb_arrow_full");
 
     private final Core core;
     private final StatsEngine engine;
@@ -61,9 +66,10 @@ public final class CombatListener implements Listener, win.vampyuyu.survival.ite
     private final AbilityRegistry abilities;
 
     /** What the MONITOR pass needs to show a number. */
-    private record Hit(boolean crit, boolean byPlayer) {}
+    private record Hit(boolean surge, boolean byPlayer) {}
 
     private final Map<UUID, Hit> hits = new HashMap<>();
+    private final SurgeTracker surge = new SurgeTracker();
 
     public CombatListener(Core core, StatsEngine engine, Gear gear, CombatService service,
             DamageIndicators indicators, AbilityRegistry abilities) {
@@ -195,18 +201,44 @@ public final class CombatListener implements Listener, win.vampyuyu.survival.ite
             enchantBonus += st.soulEaterBonus;
             st.soulEaterBonus = 0;
         }
-        double critChance = st.stat(Stat.CRIT_CHANCE);
-        boolean crit = DamageFormula.rollCrit(critChance, ThreadLocalRandom.current()::nextDouble);
-        double damage = DamageFormula.hit(weapon, s.damageBonus, st.stat(Stat.STRENGTH), enchantBonus, crit,
-            st.stat(Stat.CRIT_DAMAGE));
+        double strength = attackStrength(attacker);
+        double damage = DamageFormula.hit(weapon, s.damageBonus, st.stat(Stat.MIGHT), enchantBonus);
+        Element element = info.map(i -> i.def().element()).orElse(null);
+        damage *= elementMultiplier(element, victim, st, s);
+        boolean surged = surge.hit(attacker.getUniqueId(), victim.getUniqueId(), strength >= s.surgeMinCharge,
+            (int) s.surgeEvery);
+        if (surged) {
+            damage *= s.surgeMultiplier;
+            surgeFeedback(victim);
+        }
         if (s.useAttackCooldown) {
-            damage *= attackStrength(attacker);
+            damage *= strength;
         }
         event.setDamage(damage);
-        putHit(victim, new Hit(crit, true));
+        putHit(victim, new Hit(surged, true));
         fireHit(attacker, victim, damage);
         afterMelee(attacker, victim, st, damage, levels, s);
         return true;
+    }
+
+    /** The element multiplier of a hit by {@code element} on {@code victim}. */
+    private double elementMultiplier(Element element, LivingEntity victim, PlayerState st, ItemsSettings s) {
+        if (element == null) {
+            return 1.0;
+        }
+        ElementTraits.Traits traits = ElementTraits.read(victim);
+        return DamageFormula.elementMultiplier(element, traits.weakTo(), traits.resists(), st.stat(Stat.ATTUNEMENT),
+            s.elementWeakness, s.elementResistance);
+    }
+
+    /** A small spark and a click on the Surge hit, so the pattern can be learned. */
+    private static void surgeFeedback(LivingEntity victim) {
+        try {
+            victim.getWorld().spawnParticle(Particle.CRIT, victim.getEyeLocation(), 10, 0.25, 0.25, 0.25, 0.1);
+            victim.getWorld().playSound(victim.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 0.7f, 1.4f);
+        } catch (RuntimeException ignored) {
+            // a world that cannot show particles: the hit still counts
+        }
     }
 
     private boolean isHeldTool(GearInfo info) {
@@ -215,11 +247,7 @@ public final class CombatListener implements Listener, win.vampyuyu.survival.ite
     }
 
     private static double attackStrength(Player player) {
-        try {
-            return Math.max(0.2, Math.min(1.0, player.getAttackCooldown()));
-        } catch (RuntimeException | LinkageError e) {
-            return 1.0;
-        }
+        return win.vampyuyu.survival.core.SwingCharge.of(player);
     }
 
     private void fireHit(Player attacker, LivingEntity victim, double damage) {
@@ -232,7 +260,7 @@ public final class CombatListener implements Listener, win.vampyuyu.survival.ite
         }
     }
 
-    /** Ferocity, Cleave and Life Steal, run after the main hit has been decided. */
+    /** Cleave and Life Steal, run after the main hit has been decided. */
     private void afterMelee(Player attacker, LivingEntity victim, PlayerState st, double damage,
             Map<String, Integer> levels, ItemsSettings s) {
         EnchantRegistry registry = gear.enchants();
@@ -260,15 +288,6 @@ public final class CombatListener implements Listener, win.vampyuyu.survival.ite
                 });
             }
         }
-        int strikes = DamageFormula.ferocityStrikes(st.stat(Stat.FEROCITY), ThreadLocalRandom.current()::nextDouble);
-        for (int i = 1; i <= strikes; i++) {
-            long delay = Math.max(1, Math.round(s.ferocityDelayTicks * i));
-            core.scheduler().later(delay, () -> {
-                if (attacker.isOnline() && victim.isValid() && !victim.isDead()) {
-                    service.strike(attacker, victim, damage, false, false);
-                }
-            });
-        }
     }
 
     // ---------------------------------------------------------------- arrows
@@ -292,8 +311,8 @@ public final class CombatListener implements Listener, win.vampyuyu.survival.ite
         double ench = levels.containsKey("one_for_all") ? 0
             : registry.value("power", levels.getOrDefault("power", 0)) / 100.0
                 + registry.value("rend", levels.getOrDefault("rend", 0)) / 100.0;
-        double damage = DamageFormula.hit(weapon, s.damageBonus, st.stat(Stat.STRENGTH), ench, false, 0) * force;
-        tag(arrow, damage, st, levels);
+        double damage = DamageFormula.hit(weapon, s.damageBonus, st.stat(Stat.MIGHT), ench) * force;
+        tag(arrow, damage, st, levels, info.map(i -> i.def().element()).orElse(null), force >= s.surgeMinCharge);
 
         int quiver = levels.getOrDefault("infinite_quiver", 0);
         if (quiver > 0 && !levels.containsKey("one_for_all")
@@ -305,12 +324,15 @@ public final class CombatListener implements Listener, win.vampyuyu.survival.ite
         abilities.onShoot(player, bow, info.orElse(null), event);
     }
 
-    private void tag(AbstractArrow arrow, double damage, PlayerState st, Map<String, Integer> levels) {
+    private void tag(AbstractArrow arrow, double damage, PlayerState st, Map<String, Integer> levels, Element element,
+            boolean full) {
         PersistentDataContainer pdc = arrow.getPersistentDataContainer();
         pdc.set(ARROW_DAMAGE, PersistentDataType.DOUBLE, damage);
-        pdc.set(ARROW_CRIT_CHANCE, PersistentDataType.DOUBLE, st.stat(Stat.CRIT_CHANCE));
-        pdc.set(ARROW_CRIT_DAMAGE, PersistentDataType.DOUBLE, st.stat(Stat.CRIT_DAMAGE));
-        pdc.set(ARROW_FEROCITY, PersistentDataType.DOUBLE, st.stat(Stat.FEROCITY));
+        pdc.set(ARROW_ATTUNEMENT, PersistentDataType.DOUBLE, st.stat(Stat.ATTUNEMENT));
+        pdc.set(ARROW_FULL, PersistentDataType.INTEGER, full ? 1 : 0);
+        if (element != null) {
+            pdc.set(ARROW_ELEMENT, PersistentDataType.STRING, element.key());
+        }
         if (levels.getOrDefault("rend", 0) > 0) {
             pdc.set(ARROW_REND, PersistentDataType.INTEGER, levels.get("rend"));
         }
@@ -327,9 +349,15 @@ public final class CombatListener implements Listener, win.vampyuyu.survival.ite
             return;
         }
         b.set(ARROW_DAMAGE, PersistentDataType.DOUBLE, damage * factor);
-        copy(a, b, ARROW_CRIT_CHANCE);
-        copy(a, b, ARROW_CRIT_DAMAGE);
-        copy(a, b, ARROW_FEROCITY);
+        copy(a, b, ARROW_ATTUNEMENT);
+        String element = a.get(ARROW_ELEMENT, PersistentDataType.STRING);
+        if (element != null) {
+            b.set(ARROW_ELEMENT, PersistentDataType.STRING, element);
+        }
+        Integer full = a.get(ARROW_FULL, PersistentDataType.INTEGER);
+        if (full != null) {
+            b.set(ARROW_FULL, PersistentDataType.INTEGER, full);
+        }
         Integer rend = a.get(ARROW_REND, PersistentDataType.INTEGER);
         if (rend != null) {
             b.set(ARROW_REND, PersistentDataType.INTEGER, rend);
@@ -351,9 +379,6 @@ public final class CombatListener implements Listener, win.vampyuyu.survival.ite
         if (base == null) {
             return false;
         }
-        Double chance = pdc.get(ARROW_CRIT_CHANCE, PersistentDataType.DOUBLE);
-        Double critDamage = pdc.get(ARROW_CRIT_DAMAGE, PersistentDataType.DOUBLE);
-        boolean crit = DamageFormula.rollCrit(chance == null ? 0 : chance, ThreadLocalRandom.current()::nextDouble);
         double damage = base;
         Optional<GearInfo> bow = gear.read(shooter.getInventory().getItemInMainHand());
         Map<String, Integer> levels = bow.map(GearInfo::enchants).orElse(Map.of());
@@ -363,25 +388,26 @@ public final class CombatListener implements Listener, win.vampyuyu.survival.ite
                 : projectile.getOrigin().distance(victim.getLocation());
             damage *= 1.0 + DamageFormula.snipe(snipe, gear.enchants().perLevel("snipe"), distance);
         }
-        if (crit) {
-            damage *= DamageFormula.critMultiplier(critDamage == null ? 0 : critDamage);
+        Element element = Element.parse(pdc.get(ARROW_ELEMENT, PersistentDataType.STRING));
+        if (element != null) {
+            ElementTraits.Traits traits = ElementTraits.read(victim);
+            Double attunement = pdc.get(ARROW_ATTUNEMENT, PersistentDataType.DOUBLE);
+            damage *= DamageFormula.elementMultiplier(element, traits.weakTo(), traits.resists(),
+                attunement == null ? 0 : attunement, settings().elementWeakness, settings().elementResistance);
+        }
+        Integer full = pdc.get(ARROW_FULL, PersistentDataType.INTEGER);
+        boolean surged = surge.hit(shooter.getUniqueId(), victim.getUniqueId(), full != null && full == 1,
+            (int) settings().surgeEvery);
+        if (surged) {
+            damage *= settings().surgeMultiplier;
+            surgeFeedback(victim);
         }
         event.setDamage(damage);
-        putHit(victim, new Hit(crit, true));
+        putHit(victim, new Hit(surged, true));
         fireHit(shooter, victim, damage);
         Integer rend = pdc.get(ARROW_REND, PersistentDataType.INTEGER);
         if (rend != null && rend > 0) {
             bleed(shooter, victim, damage * 0.1);
-        }
-        Double ferocity = pdc.get(ARROW_FEROCITY, PersistentDataType.DOUBLE);
-        int strikes = DamageFormula.ferocityStrikes(ferocity == null ? 0 : ferocity, ThreadLocalRandom.current()::nextDouble);
-        final double dmg = damage;
-        for (int i = 1; i <= strikes; i++) {
-            core.scheduler().later(Math.max(1, Math.round(settings().ferocityDelayTicks * i)), () -> {
-                if (shooter.isOnline() && victim.isValid()) {
-                    service.strike(shooter, victim, dmg, false, false);
-                }
-            });
         }
         return true;
     }
@@ -402,15 +428,15 @@ public final class CombatListener implements Listener, win.vampyuyu.survival.ite
         PlayerState st = engine.state(victim);
         DamageCause cause = event.getCause();
         double max = maxHealth(victim);
-        double defense = st.stat(Stat.DEFENSE) * (1.0 + lastStand(st, victim, max));
+        double ward = st.stat(Stat.WARD) * (1.0 + lastStand(st, victim, max));
         double damage;
         Double truePercent = s.trueCausePercent.get(cause.name());
         if (truePercent != null) {
-            damage = DamageFormula.mitigate(max * truePercent / 100.0, st.stat(Stat.TRUE_DEFENSE));
+            damage = max * truePercent / 100.0; // true damage: Ward does not apply
         } else {
             double vanilla = event.getDamage();
             double scale = playerAttack ? 1.0 : s.incomingScaleByCause.getOrDefault(cause.name(), s.incomingScale);
-            damage = DamageFormula.incoming(vanilla, scale, defense);
+            damage = DamageFormula.incoming(vanilla, scale, ward);
             if (cause == DamageCause.FALL) {
                 damage *= 1.0 - Math.min(0.9, gear.enchants().value("feather_falling", st.enchantLevel("feather_falling")) / 100.0);
             } else if (cause == DamageCause.DROWNING) {
@@ -448,7 +474,7 @@ public final class CombatListener implements Listener, win.vampyuyu.survival.ite
         }
     }
 
-    /** Last Stand: defense bonus fraction while below 40% health. */
+    /** Last Stand: Ward bonus fraction while below 40% health. */
     private double lastStand(PlayerState st, Player victim, double max) {
         int level = st.enchantLevel("last_stand");
         if (level <= 0 || victim.getHealth() > max * 0.4) {
@@ -467,7 +493,13 @@ public final class CombatListener implements Listener, win.vampyuyu.survival.ite
             return;
         }
         if (hit.byPlayer() || entity instanceof Player) {
-            indicators.show(living.getEyeLocation().add(0, 0.1, 0), event.getFinalDamage(), hit.crit());
+            double shown = event.getFinalDamage();
+            // a monster with a virtual health pool (dungeon) reports the real damage of the hit
+            for (org.bukkit.metadata.MetadataValue value : living.getMetadata("sb_shown_damage")) {
+                shown = value.asDouble();
+            }
+            living.removeMetadata("sb_shown_damage", core.getPlugin());
+            indicators.show(living.getEyeLocation().add(0, 0.1, 0), shown, hit.surge());
         }
     }
 

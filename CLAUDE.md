@@ -108,14 +108,30 @@ Google (consent, upload, refresh) is only testable with real credentials.
   `POST /servers/{id}/chat` of the controller and the panel (staff name = the session user, messages never audited).
   Real check: `python3 scripts/e2e_client.py --scenario staffchat` (screenshots of the in-game messages).
 
+## Skyblock content database (survival-plugin)
+
+No YAML: every Skyblock content and tuning value (quests, items, bosses, dungeon, ores and pity, Forge recipes, economy,
+island, minions, skills, wings, menu, feature toggles) lives in SQLite `plugins/VampyuyuSurvival/skyblock.db`, typed
+tables (`survival-plugin/src/main/java/win/vampyuyu/survival/data/`). Schema: `src/main/resources/db/migrations/V*.sql`
+listed in `Migrations.ALL` (never edit a shipped migration: add a new one). Defaults: `db/seed/<domain>.sql` (plain
+INSERTs), registered in `ContentDomains`; at start a changed seed replaces the `origin='seed'` rows, rows edited in the
+panel (`origin='panel'`) are kept, `Seeds.reset` restores one. Scalars are `setting` rows `<domain>.<path>` read with
+`Settings`. Tests seed an in-memory DB (`Db.memory()` + `Seeds.sync`). `scripts/yaml_to_seed*.py` only document the
+one-off conversion from the old YAML.
+
 ## Skyblock progression (survival-plugin)
 
-Pebbles, Fountain, Spring Stone, multi-block generators, the 267-quest plan and category menu are described in
-`docs/skyblock-notes/progression.md`. Quests come from `scripts/gen_quests.py` -> `quests.yml` (do not edit the YAML by
-hand). `make plugin-test PLUGIN=survival TEST=QuestPlanTest` is the completability gate. Real-client checks:
-`python3 scripts/e2e_client.py --scenario start` (pebbles, Fountain, ring, Spring Stone, cables, quest menus),
-`--scenario quarry` (machines), `--scenario swords`. 3D item and block models: `resource-pack/art/item_models.py` and
-`sword_models.py` (run `quarry_items.py` first, it writes the flat sprites).
+Pebbles, Fountain, Spring Stone, multi-block generators, the quest plan and category menu are described in
+`docs/skyblock-notes/progression.md`. Quests come from `scripts/gen_quests.py` -> `db/seed/quests.sql` (do not edit the
+seed by hand). Quest types: craft (crafting table only), OBTAIN_ITEM (furnace, stonecutter, pickup: smelted things),
+place, break, events... A built generator ring catches up a stuck chain (`QuestEngine.catchUp`); generator and miner
+events credit every island member. `make plugin-test PLUGIN=survival TEST=QuestPlanTest,QuestFlowTest` is the
+completability gate. Real-client checks: `python3 scripts/e2e_client.py --scenario start` (pebbles, Fountain, ring,
+Spring Stone, cables, quest menus), `--scenario quarry` (machines), `--scenario swords`. Item sprites: concept sheets
+(generated images, one item per cell on magenta) in `resource-pack/art/concepts/` -> `art/import_textures.py` (needs
+Pillow: `nix-shell -p "python3.withPackages (p: [p.pillow])"`) -> 32x32 sprites listed in `art/imported.txt`, which the
+procedural scripts skip. Remaining 3D models: `resource-pack/art/item_models.py` and `sword_models.py`. Skyblock menu
+backgrounds: `art/sky_menus.py` via `render.py sb_main sb_panel sb_small sb_forge` (headless Chrome).
 
 ## Conventions
 

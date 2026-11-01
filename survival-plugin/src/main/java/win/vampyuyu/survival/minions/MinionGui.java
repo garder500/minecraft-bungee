@@ -103,7 +103,6 @@ public final class MinionGui {
             return;
         }
         Gui gui = core.guis().create(6, "<dark_gray>" + MinionItems.minionName(type, d.tier));
-        gui.border(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
         render(gui, p, d);
         UUID viewer = p.getUniqueId();
         Viewer mine = new Viewer(gui, d.id);
@@ -140,14 +139,14 @@ public final class MinionGui {
                     return null;
                 }));
             } else {
-                gui.set(STORAGE[i], Guis.icon(Material.BLACK_STAINED_GLASS_PANE, "<dark_gray>Empty storage slot"));
+                gui.clear(STORAGE[i]);
             }
         }
         if (stacks.size() > STORAGE.length) {
             gui.set(44, Guis.icon(Material.CHEST, "<yellow>+" + (stacks.size() - STORAGE.length) + " more stacks",
                 "<gray>Collect to see the rest."));
         } else {
-            gui.set(44, Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
+            gui.clear(44);
         }
 
         // ---- top bar
@@ -208,17 +207,17 @@ public final class MinionGui {
                 }));
             } else if (i < d.upgrades.size()) {
                 String stale = d.upgrades.get(i);
-                gui.set(slot, Guis.icon(Material.BARRIER, "<red>Unknown upgrade", "<gray>Click to clear the slot."),
+                gui.set(slot, Guis.icon(Material.BARRIER, "<red>Unknown upgrade", "<#F6D58E>▸ Clear the slot"),
                     c -> act(c.player(), id, (pl, m) -> manager.removeUpgrade(pl, m, stale)));
             } else {
-                gui.set(slot, Guis.icon(Material.LIGHT_GRAY_STAINED_GLASS_PANE, "<gray>Upgrade slot",
-                    "<yellow>Click to add an upgrade", "<gray>from your inventory."),
+                gui.set(slot, Guis.icon(Material.LIGHT_GRAY_DYE, "<gray>Upgrade slot",
+                    "<#F6D58E>▸ Add an upgrade", "<gray>from your inventory."),
                     c -> core.scheduler().nextTick(() -> openUpgradePicker(c.player(), id)));
             }
         }
         Skin skin = d.skin == null ? null : config().skins.get(d.skin);
         gui.set(SLOT_HAT, skin != null ? skinIcon(skin, true)
-            : Guis.icon(Material.LEATHER_HELMET, "<gray>Hat slot", "<yellow>Click to pick a hat", "<gray>from your inventory."),
+            : Guis.icon(Material.LEATHER_HELMET, "<gray>Hat slot", "<#F6D58E>▸ Pick a hat", "<gray>from your inventory."),
             c -> core.scheduler().nextTick(() -> openHatPicker(c.player(), id)));
         gui.set(SLOT_PICKUP, Guis.icon(Material.BARRIER, "<red>Pick up", "<gray>Takes the minion back with its",
             "<gray>upgrades, hat and unused fuel.", "", "<gray>Collect the storage first."),
@@ -292,7 +291,7 @@ public final class MinionGui {
         List<Component> lore = meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
         lore.add(Component.empty());
         lore.add(line("<yellow>Click: take this stack"));
-        lore.add(line("<yellow>Shift-click: take all of it"));
+        lore.add(line("<#F6D58E>▸ Shift: Take all of it"));
         meta.lore(lore);
         item.setItemMeta(meta);
         return item;
@@ -361,13 +360,13 @@ public final class MinionGui {
             "<gray>Storage: <yellow>" + config().storageSlots(next) + " slots",
             "<gray>Working area: <yellow>" + (config().radius(next, 0) * 2 + 1) + "x" + (config().radius(next, 0) * 2 + 1),
             "", "<gray>Cost: " + (have >= cost.amount() ? "<green>" : "<red>") + cost.amount() + " " + name,
-            "<gray>In your inventory: <white>" + have, "", "<yellow>Click to upgrade");
+            "<gray>In your inventory: <white>" + have, "", "<#F6D58E>▸ Upgrade");
     }
 
     private ItemStack fuelIcon(MinionData d, Fuel fuel) {
         if (fuel == null) {
             return Guis.icon(Material.COAL, "<gray>Fuel slot", "<gray>Fuel makes the minion faster.",
-                "<gray>It burns only while the minion works.", "", "<yellow>Click to add fuel", "<gray>from your inventory.");
+                "<gray>It burns only while the minion works.", "", "<#F6D58E>▸ Add fuel", "<gray>from your inventory.");
         }
         ItemStack icon = MinionItems.fuelStack(core.items(), fuel);
         ItemMeta meta = icon.getItemMeta();
@@ -376,7 +375,7 @@ public final class MinionGui {
         lore.add(line("<gray>Left: <white>" + Msg.duration(Math.round(d.fuelMs / Math.max(0.1, manager.logic().speeds(d,
             manager.config().types.get(d.type)).burn())))));
         lore.add(Component.empty());
-        lore.add(line("<yellow>Click to add more fuel"));
+        lore.add(line("<#F6D58E>▸ Add more fuel"));
         meta.lore(lore);
         meta.displayName(line("<white>" + fuel.name() + " <gray>(burning)"));
         icon.setItemMeta(meta);
@@ -388,7 +387,7 @@ public final class MinionGui {
         ItemMeta meta = icon.getItemMeta();
         List<Component> lore = meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
         lore.add(Component.empty());
-        lore.add(line("<red>Click to remove"));
+        lore.add(line("<red>▸ Remove"));
         meta.lore(lore);
         icon.setItemMeta(meta);
         return icon;
@@ -399,7 +398,7 @@ public final class MinionGui {
         ItemMeta meta = icon.getItemMeta();
         List<Component> lore = meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
         lore.add(Component.empty());
-        lore.add(line(installed ? "<yellow>Click to change the hat" : "<yellow>Click to wear it"));
+        lore.add(line(installed ? "<#F6D58E>▸ Change the hat" : "<#F6D58E>▸ Wear it"));
         meta.lore(lore);
         icon.setItemMeta(meta);
         return icon;
@@ -411,7 +410,6 @@ public final class MinionGui {
 
     private void picker(Player p, String id, String title, List<Choice> choices, String emptyHint) {
         Gui gui = core.guis().create(4, "<dark_gray>" + title);
-        gui.border(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
         int[] slots = gui.innerSlots();
         for (int i = 0; i < Math.min(choices.size(), slots.length); i++) {
             Choice choice = choices.get(i);
@@ -420,7 +418,7 @@ public final class MinionGui {
         if (choices.isEmpty()) {
             gui.set(13, Guis.icon(Material.BARRIER, "<red>Nothing to add", "<gray>" + emptyHint));
         }
-        gui.set(31, Guis.icon(Material.ARROW, "<yellow>Back", "<gray>Return to the minion."),
+        gui.back("Return to the minion.",
             c -> core.scheduler().nextTick(() -> manager.store().get(id).ifPresent(m -> open(c.player(), m))));
         gui.open(p);
     }
@@ -456,7 +454,7 @@ public final class MinionGui {
                     icon.setItemMeta(meta);
                 }
                 choices.add(new Choice(withLore(icon, "<gray>You have: <white>" + have, "<yellow>Click: add one",
-                    "<yellow>Shift-click: add as many as fit"), c -> act(c.player(), id, (pl, m) -> {
+                    "<#F6D58E>▸ Shift: Add as many as fit"), c -> act(c.player(), id, (pl, m) -> {
                         MinionManager.Result r = manager.addFuel(pl, m, fuel, c.shift());
                         if (r.ok()) {
                             core.msg().ok(pl, fuel.name() + " added.");
@@ -478,7 +476,7 @@ public final class MinionGui {
             long have = manager.countIn(p, List.of(up.key()));
             if (have > 0 && (!d.upgrades.contains(up.id()) || up.effect() == MinionConfig.Effect.SPEED)) {
                 choices.add(new Choice(withLore(core.items().create(MinionItems.upgradeId(up.id())),
-                    "<gray>You have: <white>" + have, "<yellow>Click to install"), c -> act(c.player(), id, (pl, m) -> {
+                    "<gray>You have: <white>" + have, "<#F6D58E>▸ Install"), c -> act(c.player(), id, (pl, m) -> {
                         MinionManager.Result r = manager.installUpgrade(pl, m, up);
                         if (r.ok()) {
                             core.msg().ok(pl, up.name() + " installed.");

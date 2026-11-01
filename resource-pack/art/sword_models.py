@@ -14,6 +14,7 @@ import json
 import pathlib
 
 import boss_skins as bs
+from imported import imported
 
 PACK = bs.PACK
 TURN = ("z", -45, [8, 8, 8])
@@ -35,6 +36,8 @@ class Sword(bs.Skin):
 
     def write_to(self, kind, name):
         """3D model as <name>_3d; the GUI keeps the flat sprite (see item_models.write)."""
+        if imported(f"{kind}/{name}"):  # shown as its imported flat sprite everywhere (import_textures.py)
+            return
         three = f"vampyuyu:item/{kind}/{name}_3d"
         model = {"textures": {"0": three, "particle": three},
                  "gui_light": "front", "display": DISPLAY, "elements": self.elements}

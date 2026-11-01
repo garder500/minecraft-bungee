@@ -12,7 +12,6 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import win.vampyuyu.survival.core.Core;
@@ -79,35 +78,36 @@ final class BazaarService implements EconomyAudit.Contributor {
         this.env = env;
     }
 
-    void enable(ConfigurationSection config) {
+    void enable(EconomyConfig config) {
         BazaarMarket.State state = core.store().read(FILE, BazaarMarket.State.class, BazaarMarket.State::new);
-        market = new BazaarMarket(state, rules(config));
+        market = new BazaarMarket(state, rules(config.settings()));
         market.seed(this::seedTicks);
         file = new DurableFile(core.store(), FILE, market::state, env,
             () -> core.profiles().saveDirty(), () -> core.profiles().awaitWrites(), core.getPlugin().getLogger(),
-            config.getLong("bazaar.persist-delay-ticks", 10));
+            config.settings().getLong("bazaar.persist-delay-ticks", 10));
         reload(config);
     }
 
-    void reload(ConfigurationSection c) {
+    void reload(EconomyConfig config) {
+        var c = config.settings();
         enabled = c.getBoolean("bazaar.enabled", true);
         saveData = c.getBoolean("safety.save-player-data", true);
         market.rules(rules(c));
         file.delay(c.getLong("bazaar.persist-delay-ticks", 10));
         products.clear();
-        ConfigurationSection cats = c.getConfigurationSection("bazaar.categories");
-        java.util.function.Predicate<String> never = MarketRules.neverTraded(c);
+        java.util.function.Predicate<String> never = MarketRules.neverTraded(config.neverTraded());
         for (Category cat : Category.values()) {
-            for (String key : cats == null ? List.<String>of() : cats.getStringList(cat.name().toLowerCase(Locale.ROOT))) {
-                if (never.test(key)) {
+            String name = cat.name().toLowerCase(Locale.ROOT);
+            for (EconomyConfig.Product product : config.products()) {
+                if (!product.category().equals(name) || never.test(product.key())) {
                     continue; // ultra rare: the Auction House only
                 }
-                products.putIfAbsent(key, cat);
+                products.putIfAbsent(product.key(), cat);
             }
         }
     }
 
-    private static BazaarMarket.Rules rules(ConfigurationSection c) {
+    private static BazaarMarket.Rules rules(win.vampyuyu.survival.data.Settings c) {
         return new BazaarMarket.Rules(
             EconomySettings.clamp((int) Math.round(c.getDouble("bazaar.tax-percent", 1.25) * 100), 0, 5000),
             EconomySettings.clamp(c.getInt("bazaar.max-orders", 14), 1, 200),
@@ -226,10 +226,10 @@ final class BazaarService implements EconomyAudit.Contributor {
 
     private Outcome gate(Player player, String product) {
         if (!enabled()) {
-            return Outcome.fail("The Bazaar is closed right now.");
+            return Outcome.fail("The Sky Exchange is closed right now.");
         }
         if (!isProduct(product)) {
-            return Outcome.fail("The Bazaar does not trade that.");
+            return Outcome.fail("The Sky Exchange does not trade that.");
         }
         return null;
     }
@@ -290,7 +290,7 @@ final class BazaarService implements EconomyAudit.Contributor {
             String text = "Bought " + got + "x " + keys.name(product) + " for " + Money.coins(paid) + ".";
             return got < amount ? Outcome.ok(text + " " + (amount - got)
                 + " did not fit and wait in /bz claim.") : Outcome.ok(text);
-        }, "The Bazaar could not save. Your " + keys.name(product) + " is waiting in /bz claim.", done);
+        }, "The Sky Exchange could not save. Your " + keys.name(product) + " is waiting in /bz claim.", done);
     }
 
     /**
@@ -346,7 +346,7 @@ final class BazaarService implements EconomyAudit.Contributor {
      */
     void sellInventory(Player player, Consumer<Outcome> done) {
         if (!enabled()) {
-            done.accept(Outcome.fail("The Bazaar is closed right now."));
+            done.accept(Outcome.fail("The Sky Exchange is closed right now."));
             return;
         }
         Set<String> carried = new java.util.LinkedHashSet<>();
@@ -363,7 +363,7 @@ final class BazaarService implements EconomyAudit.Contributor {
             }
         }
         if (sellable.isEmpty()) {
-            done.accept(Outcome.fail(carried.isEmpty() ? "You carry nothing the Bazaar trades."
+            done.accept(Outcome.fail(carried.isEmpty() ? "You carry nothing the Sky Exchange trades."
                 : "Nobody has a buy order for what you carry."));
             return;
         }
@@ -423,7 +423,7 @@ final class BazaarService implements EconomyAudit.Contributor {
             ? Outcome.ok("Sold " + amount + "x " + keys.name(product) + " for " + Money.coins(net) + " (tax included).")
             : Outcome.ok("Sold " + amount + "x " + keys.name(product) + " for " + Money.coins(net)
                 + " (tax included). Your purse is full: " + Money.coins(net - d.cents()) + " waits in /bz claim."),
-            "The Bazaar could not save. Your " + Money.coins(net) + " is waiting in /bz claim.", done);
+            "The Sky Exchange could not save. Your " + Money.coins(net) + " is waiting in /bz claim.", done);
     }
 
     /** Tells every online owner of a resting order that part of it was filled. */
@@ -515,7 +515,7 @@ final class BazaarService implements EconomyAudit.Contributor {
 
     Outcome cancel(Player player, long orderId) {
         if (!enabled()) {
-            return Outcome.fail("The Bazaar is closed right now.");
+            return Outcome.fail("The Sky Exchange is closed right now.");
         }
         if (!market.cancel(orderId, id(player))) {
             return Outcome.fail("Order #" + orderId + " cannot be cancelled (not yours, or already finished).");
@@ -537,7 +537,7 @@ final class BazaarService implements EconomyAudit.Contributor {
     /** Collects everything that fits. {@code done} receives the message once delivered (or refused). */
     void claim(Player player, Consumer<Outcome> done) {
         if (!enabled()) {
-            done.accept(Outcome.fail("The Bazaar is closed right now."));
+            done.accept(Outcome.fail("The Sky Exchange is closed right now."));
             return;
         }
         UUID uid = player.getUniqueId();
@@ -576,7 +576,7 @@ final class BazaarService implements EconomyAudit.Contributor {
                 text.setLength(text.length() - 1);
             }
             return Outcome.ok(text + ".");
-        }, "The Bazaar could not save, your claim was kept. Try again.", done);
+        }, "The Sky Exchange could not save, your claim was kept. Try again.", done);
     }
 
     /**
@@ -662,7 +662,7 @@ final class BazaarService implements EconomyAudit.Contributor {
         BazaarMarket.Claim claim = market.claimable(id(player));
         if (!claim.empty()) {
             int items = claim.items().values().stream().mapToInt(Integer::intValue).sum();
-            core.msg().info(player, "Your Bazaar orders have something for you: "
+            core.msg().info(player, "Your Sky Exchange orders have something for you: "
                 + (items > 0 ? items + " item(s) " : "") + (claim.cents() > 0 ? Money.coins(claim.cents()) + " " : "")
                 + "waiting in /bz claim.");
             Sfx.notice(player);
@@ -674,8 +674,8 @@ final class BazaarService implements EconomyAudit.Contributor {
     @Override
     public void audit(EconomyAudit.Report report) {
         long inFlightCents = inFlight.stream().mapToLong(InFlight::cents).sum();
-        report.extras.put("Bazaar escrow and unclaimed coins", market.escrowedCents() + inFlightCents);
-        report.burns.put("Bazaar tax burned", market.state().taxBurnedCents);
+        report.extras.put("Sky Exchange escrow and unclaimed coins", market.escrowedCents() + inFlightCents);
+        report.burns.put("Sky Exchange tax burned", market.state().taxBurnedCents);
         for (String problem : market.verify()) {
             report.problems.add("bazaar: " + problem);
         }

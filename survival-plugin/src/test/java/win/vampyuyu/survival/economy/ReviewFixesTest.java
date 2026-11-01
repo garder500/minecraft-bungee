@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.BundleMeta;
@@ -46,9 +45,8 @@ public class ReviewFixesTest {
         MockBukkit.unmock();
     }
 
-    private static YamlConfiguration shipped() {
-        return YamlConfiguration.loadConfiguration(new InputStreamReader(
-            ReviewFixesTest.class.getResourceAsStream("/economy.yml"), StandardCharsets.UTF_8));
+    private static EconomyConfig shipped() {
+        return EconomyFixtures.shipped();
     }
 
     // ---------------------------------------------------------------- pressure
@@ -56,7 +54,7 @@ public class ReviewFixesTest {
     @Test
     public void compactedItemsPoolTheirPressureWithTheRawItem() {
         PricePressure p = new PricePressure();
-        YamlConfiguration cfg = shipped();
+        EconomyConfig cfg = shipped();
         p.reload(cfg);
         long now = System.currentTimeMillis();
         // 20,000 raw wheat halve the price ...
@@ -105,10 +103,10 @@ public class ReviewFixesTest {
 
     @Test
     public void everyShippedCompactedKeyPoolsIntoARealMaterial() {
-        YamlConfiguration cfg = shipped();
+        EconomyConfig cfg = shipped();
         PricePressure p = new PricePressure();
         p.reload(cfg);
-        ShopCatalog catalog = ShopCatalog.parse(cfg, java.util.logging.Logger.getAnonymousLogger());
+        ShopCatalog catalog = ShopCatalog.of(cfg, java.util.logging.Logger.getAnonymousLogger());
         int seen = 0;
         for (var shop : catalog.shops().values()) {
             for (var item : shop.items()) {
@@ -192,7 +190,7 @@ public class ReviewFixesTest {
         long burned = eco.flows().burned();
         eco.takeCents(id, 400, "shop:buy:test");
         assertEquals(burned + 400, eco.flows().burned());
-        Bank bank = new Bank(plugin.core(), eco, plugin.core().featureConfig("economy"));
+        Bank bank = new Bank(plugin.core(), eco, EconomyConfig.load(plugin.core().data()));
         eco.addCents(id, 10_000_000, "seed");
         long now = System.currentTimeMillis();
         eco.update(id, (d, txs) -> {
@@ -227,19 +225,19 @@ public class ReviewFixesTest {
 
     @Test
     public void customBooksThatStoreTheirEnchantmentInItemDataAreNotBazaarProducts() {
-        YamlConfiguration cfg = shipped();
-        for (String cat : cfg.getConfigurationSection("bazaar.categories").getKeys(false)) {
-            assertFalse(cat, cfg.getStringList("bazaar.categories." + cat).contains("enchanted_book"));
+        EconomyConfig cfg = shipped();
+        for (EconomyConfig.Product product : cfg.products()) {
+            assertNotEquals(product.category() + ": enchanted_book", "enchanted_book", product.key());
         }
     }
 
     @Test
     public void marketsReportTheirBurnedCoinsToTheAudit() {
         BazaarService bz = new BazaarService(plugin.core(), eco, new ItemKeys(plugin.core()), new DurableFile.Inline());
-        bz.enable(plugin.core().featureConfig("economy"));
+        bz.enable(EconomyConfig.load(plugin.core().data()));
         EconomyAudit.Report report = new EconomyAudit.Report();
         bz.audit(report);
-        assertTrue(report.burns.containsKey("Bazaar tax burned"));
+        assertTrue(report.burns.containsKey("Sky Exchange tax burned"));
     }
 
     // ---------------------------------------------------------------- bank tuning
@@ -269,7 +267,7 @@ public class ReviewFixesTest {
 
     private AuctionService auction() {
         AuctionService ah = new AuctionService(plugin.core(), eco, new ItemKeys(plugin.core()), new DurableFile.Inline());
-        ah.enable(plugin.core().featureConfig("economy"));
+        ah.enable(EconomyConfig.load(plugin.core().data()));
         return ah;
     }
 
@@ -381,18 +379,15 @@ public class ReviewFixesTest {
 
     @Test
     public void shippedTablesPriceBossAndDungeonMaterials() {
-        YamlConfiguration cfg = shipped();
-        ShopCatalog catalog = ShopCatalog.parse(cfg, java.util.logging.Logger.getAnonymousLogger());
+        EconomyConfig cfg = shipped();
+        ShopCatalog catalog = ShopCatalog.of(cfg, java.util.logging.Logger.getAnonymousLogger());
         for (String id : List.of("dungeon_bone_fragment", "dungeon_crypt_shard", "dungeon_wither_essence",
                 "dungeon_spirit_dust", "dungeon_relic", "dungeon_dark_scroll", "voidwyrm_scale", "warden_heart",
                 "frost_shard", "matriarch_silk", "leviathan_tooth", "lord_bone", "colossus_core", "roc_feather",
                 "revenant_flesh", "tarantula_web", "ravager_tooth", "null_sphere", "demon_ember", "revenant_catalyst")) {
             assertTrue(id + " has a sell price", catalog.bestSell(id).isPresent());
             assertTrue(id + " is never for sale", catalog.lowestBuy(id).isEmpty());
-            boolean listed = false;
-            for (String cat : cfg.getConfigurationSection("bazaar.categories").getKeys(false)) {
-                listed |= cfg.getStringList("bazaar.categories." + cat).contains(id);
-            }
+            boolean listed = cfg.products().stream().anyMatch(p -> p.key().equals(id));
             assertTrue(id + " is a bazaar product", listed);
         }
         // summon items, weapons and the wing core are not priced
@@ -408,12 +403,12 @@ public class ReviewFixesTest {
     public void aProductWithoutHistoryIsAnchoredToTheNpcPrices() {
         ItemKeys keys = new ItemKeys(plugin.core());
         BazaarService bz = new BazaarService(plugin.core(), eco, keys, new DurableFile.Inline());
-        bz.enable(plugin.core().featureConfig("economy"));
-        YamlConfiguration cfg = new YamlConfiguration();
-        cfg.set("shops.t.items.WHEAT.buy", 8);
-        cfg.set("shops.t.items.WHEAT.sell", 2);
-        cfg.set("shops.t.items.EMERALD.sell", 100);
-        ShopCatalog catalog = ShopCatalog.parse(cfg, java.util.logging.Logger.getAnonymousLogger());
+        bz.enable(EconomyConfig.load(plugin.core().data()));
+        ShopCatalog catalog;
+        try (var rows = new EconomyFixtures.Custom()) {
+            catalog = ShopCatalog.of(rows.merchant("t", "T").offer("t", "WHEAT", 8, 2).offer("t", "EMERALD", 0, 100).build(),
+                java.util.logging.Logger.getAnonymousLogger());
+        }
         bz.npcPrices(() -> catalog);
         assertEquals("floor 2 coins", 20, bz.npcFloorTicks("WHEAT"));
         assertEquals("ceiling 8 coins", 80, bz.npcCeilingTicks("WHEAT"));

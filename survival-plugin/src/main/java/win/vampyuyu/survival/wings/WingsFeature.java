@@ -20,7 +20,7 @@ public final class WingsFeature implements Feature {
 
     @Override
     public void enable(Core core) {
-        WingsSettings settings = WingsSettings.from(core.featureConfig("wings"));
+        WingsSettings settings = WingsRepo.load(core.data());
         items = new WingsItems(core.items());
         items.register(settings);
         try {
@@ -32,7 +32,7 @@ public final class WingsFeature implements Feature {
 
             core.permissions().register(WingsCommand.ADMIN, "Administer the Wings", PermissionDefault.OP);
             Runnable reload = () -> {
-                WingsSettings fresh = WingsSettings.from(core.featureConfig("wings"));
+                WingsSettings fresh = WingsRepo.load(core.data());
                 items.register(fresh);
                 service.settings(fresh);
                 flight.settings(fresh);

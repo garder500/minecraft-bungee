@@ -96,15 +96,14 @@ public class GuisTest {
     }
 
     @Test
-    public void borderFillAndRowsValidation() {
+    public void borderAndFillDoNothingAndRowsAreValidated() {
         Gui gui = guis.create(3, Component.text("T"));
-        ItemStack pane = Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack pane = Guis.icon(Material.GRAY_DYE, " ");
         gui.border(pane);
-        assertNotNull(gui.getInventory().getItem(0));
-        assertNotNull(gui.getInventory().getItem(26));
-        assertNull(gui.getInventory().getItem(13));
         gui.fill(pane);
-        assertNotNull(gui.getInventory().getItem(13));
+        for (int slot = 0; slot < gui.size(); slot++) {
+            assertNull("slot " + slot, gui.getInventory().getItem(slot));
+        }
         assertEquals(7, gui.innerSlots().length);
         try {
             guis.create(7, Component.text("bad"));
@@ -114,16 +113,58 @@ public class GuisTest {
     }
 
     @Test
+    public void everyMenuHasAPaintedBackgroundInItsTitle() {
+        assertEquals(3, guis.create(1, Component.text("a")).rows());
+        assertEquals(3, guis.create(3, Component.text("a")).rows());
+        assertEquals(6, guis.create(4, Component.text("a")).rows());
+        assertEquals(6, guis.create(5, Component.text("a")).rows());
+        assertEquals(6, guis.create(MenuArt.Kind.MAIN, "<dark_gray>Isles").rows());
+        assertEquals(6, guis.create(MenuArt.Kind.FORGE, "Forge").rows());
+        String main = plain(MenuArt.title(MenuArt.Kind.MAIN, Component.text("Isles")));
+        // 6 tile rows of 4 tiles from U+F100, seams between tiles, then the text
+        assertTrue(main.contains("\uF100\uE003\uF101\uE003\uF102\uE003\uF103\uE002\uF104"));
+        assertTrue(main.contains("\uF117"));
+        assertTrue(main.endsWith("\uE001Isles"));
+        String small = plain(MenuArt.title(MenuArt.Kind.SMALL, Component.empty()));
+        assertTrue(small.contains("\uF30F"));
+        assertFalse(small.contains("\uF310"));
+        assertTrue(plain(MenuArt.title(MenuArt.Kind.PANEL, Component.empty())).contains("\uF217"));
+        assertTrue(plain(MenuArt.title(MenuArt.Kind.FORGE, Component.empty())).contains("\uF417"));
+    }
+
+    private static String plain(Component c) {
+        return net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(c);
+    }
+
+    @Test
+    public void tooltipStyleAndBackButton() {
+        ItemStack b = Guis.button(Material.DIAMOND, "<aqua>Gem", "Shiny.", "Open");
+        List<Component> lore = b.getItemMeta().lore();
+        assertEquals(2, lore.size());
+        assertEquals("Shiny.", plain(lore.get(0)));
+        assertEquals("▸ Open", plain(lore.get(1)));
+        assertEquals("12/30 · 40%", Guis.progress(12, 30));
+        Gui small = guis.create(3, Component.text("S"));
+        Gui big = guis.create(6, Component.text("B"));
+        assertEquals(18, small.backSlot());
+        assertEquals(45, big.backSlot());
+        big.back("To the Isles", c -> { });
+        assertEquals("Back", plain(big.getInventory().getItem(45).getItemMeta().displayName()));
+        assertEquals(Material.ARROW, big.getInventory().getItem(45).getType());
+    }
+
+    @Test
     public void paginationShowsPagesAndNavigates() {
         List<Integer> numbers = new ArrayList<>();
         for (int i = 0; i < 5; i++) numbers.add(i);
         List<Integer> clicked = new ArrayList<>();
         Gui gui = guis.create(3, Component.text("P"));
         Gui.Pager<Integer> pager = gui.paginate(numbers, new int[] {10, 11}, n -> new ItemStack(Material.STONE, n + 1),
-            (c, n) -> clicked.add(n), 18, 26);
+            (c, n) -> clicked.add(n));
         assertEquals(3, pager.pages());
-        assertNull(gui.getInventory().getItem(18));
-        assertNotNull(gui.getInventory().getItem(26));
+        assertNull(gui.getInventory().getItem(gui.prevSlot()));
+        assertNotNull(gui.getInventory().getItem(gui.nextSlot()));
+        assertEquals("Next", plain(gui.getInventory().getItem(26).getItemMeta().displayName()));
         gui.open(player);
         InventoryView view = player.getOpenInventory();
         click(view, 26, ClickType.LEFT);

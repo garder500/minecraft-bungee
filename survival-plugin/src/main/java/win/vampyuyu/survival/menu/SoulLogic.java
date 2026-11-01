@@ -159,45 +159,4 @@ public final class SoulLogic {
         int filled = total <= 0 ? 0 : (int) Math.round((double) Math.min(found, total) / total * width);
         return "█".repeat(filled) + "░".repeat(Math.max(0, width - filled));
     }
-
-    /** Parses a list of soul entries from a config list of maps ({@code id, world, x, y, z}). */
-    public static List<SoulDef> parse(List<Map<?, ?>> raw, boolean relative, List<String> problems) {
-        List<SoulDef> out = new ArrayList<>();
-        for (Map<?, ?> map : raw) {
-            try {
-                Object world = map.get("world");
-                if (world == null && !relative) {
-                    throw new IllegalArgumentException("missing 'world'");
-                }
-                out.add(new SoulDef(String.valueOf(map.get("id")), world != null ? String.valueOf(world) : "world",
-                    num(map, "x"), num(map, "y"), num(map, "z"), relative));
-            } catch (RuntimeException e) {
-                problems.add("fairy soul " + map + ": " + e.getMessage());
-            }
-        }
-        return out;
-    }
-
-    private static double num(Map<?, ?> map, String key) {
-        Object value = map.get(key);
-        if (value instanceof Number n) {
-            return n.doubleValue();
-        }
-        throw new IllegalArgumentException("missing number '" + key + "'");
-    }
-
-    /** Parses {@code stat-cycle: [{stat: HEALTH, amount: 2}]}; unknown stats are reported and skipped. */
-    public static List<StatStep> parseCycle(List<Map<?, ?>> raw, List<String> problems) {
-        List<StatStep> steps = new ArrayList<>();
-        for (Map<?, ?> map : raw) {
-            try {
-                Stat stat = Stat.valueOf(String.valueOf(map.get("stat")).toUpperCase(Locale.ROOT));
-                steps.add(new StatStep(stat, num(map, "amount")));
-            } catch (RuntimeException e) {
-                problems.add("fairy stat step " + map + ": " + e.getMessage());
-            }
-        }
-        return steps;
-    }
-
 }

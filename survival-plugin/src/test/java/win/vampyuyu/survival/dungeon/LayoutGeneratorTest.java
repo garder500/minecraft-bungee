@@ -14,7 +14,7 @@ import win.vampyuyu.survival.dungeon.gen.RoomPlan;
 import win.vampyuyu.survival.dungeon.gen.RoomType;
 
 public class LayoutGeneratorTest {
-    private static final DungeonConfig CFG = DungeonConfig.parse(null);
+    private static final DungeonConfig CFG = DungeonConfig.defaults();
 
     @Test
     public void sameSeedGivesSameLayout() {

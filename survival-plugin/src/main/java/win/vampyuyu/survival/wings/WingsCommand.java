@@ -78,7 +78,7 @@ public final class WingsCommand implements CommandExecutor, TabCompleter {
             core.msg().info(sender, "/wings info <player> - status of a player");
             core.msg().info(sender, "/wings give <player> [level] - give (or replace) the Wings");
             core.msg().info(sender, "/wings revoke <player> [reset] - take the Wings away");
-            core.msg().info(sender, "/wings reload - reload wings.yml");
+            core.msg().info(sender, "/wings reload - reload the wings settings");
         }
     }
 

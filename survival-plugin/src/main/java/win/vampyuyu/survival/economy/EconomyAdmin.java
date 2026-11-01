@@ -114,7 +114,7 @@ final class EconomyAdmin {
         switch (args[0].toLowerCase(Locale.ROOT)) {
             case "reload" -> {
                 reload.run();
-                core.msg().ok(sender, "economy.yml reloaded (shops, prices, bank, bazaar and auction settings).");
+                core.msg().ok(sender, "Economy data reloaded from the database (shops, prices, bank, bazaar and auction settings).");
             }
             case "audit" -> {
                 core.msg().info(sender, "Auditing every profile and market, this can take a moment...");
@@ -187,7 +187,7 @@ final class EconomyAdmin {
 
     private void sendReport(CommandSender sender, EconomyAudit.Report r) {
         core.msg().info(sender, "Economy audit: " + r.players + " profiles");
-        core.msg().info(sender, "  Purses: " + Money.coins(r.purseCents));
+        core.msg().info(sender, "  Coins held: " + Money.coins(r.purseCents));
         core.msg().info(sender, "  Banks: " + Money.coins(r.bankCents));
         r.extras.forEach((k, v) -> core.msg().info(sender, "  " + k + ": " + Money.coins(v)));
         core.msg().info(sender, "  Total in the economy: " + Money.coins(r.totalCents()));

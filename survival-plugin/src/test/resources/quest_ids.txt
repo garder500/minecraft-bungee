@@ -1,0 +1,299 @@
+# Shipped quest ids: id category type target. Player progress is stored by these ids, so an id must keep
+# meaning the same quest forever (QuestPlanTest). Append new quests; never renumber or reuse an id.
+q001 start BREAK_BLOCK LOGS
+q002 start CRAFT_ITEM PLANKS
+q003 start CRAFT_ITEM CRAFTING_TABLE
+q004 start CRAFT_ITEM STICK
+q005 start CRAFT_ITEM WOODEN_PICKAXE
+q006 start EVENT pebble
+q007 start CRAFT_ITEM COBBLESTONE
+q008 start CRAFT_ITEM STONE_PICKAXE
+q009 start CRAFT_ITEM WOODEN_SWORD
+q010 start PLACE_BLOCK SAPLINGS
+q011 start BREAK_BLOCK CROPS
+q012 start CRAFT_ITEM BREAD
+q013 start CRAFT_ITEM custom:fountain
+q014 start EVENT machine_placed:fountain
+q015 start BREAK_BLOCK COBBLESTONE
+q016 start BREAK_BLOCK COBBLESTONE
+q017 generator COMMAND guide
+q018 generator EVENT machine_placed:spring_stone
+q019 generator OBTAIN_ITEM STONE_BRICKS
+q020 generator PLACE_BLOCK STONE_BRICKS
+q021 generator EVENT generator_built:stone
+q022 generator BREAK_BLOCK COBBLESTONE
+q023 generator ORE_FOUND iron_nugget
+q024 generator ORE_FOUND iron_nugget
+q025 generator CRAFT_ITEM IRON_INGOT
+q026 generator CRAFT_ITEM BUCKET
+q027 generator EVENT spring_filled
+q028 generator ORE_FOUND copper
+q029 generator ORE_FOUND coal
+q030 generator ORE_FOUND gold_nugget
+q031 generator ORE_FOUND bronzite
+q032 generator BREAK_BLOCK COBBLESTONE
+q033 generator BREAK_BLOCK COBBLESTONE
+q034 generator CRAFT_ITEM FURNACE
+q035 generator CRAFT_ITEM CHEST
+q036 generator CRAFT_ITEM IRON_PICKAXE
+q037 variety COMMAND market
+q038 variety COINS_EARN 
+q039 variety COMMAND guide
+q040 variety CRAFT_ITEM SANDSTONE
+q041 variety PLACE_BLOCK SANDSTONE
+q042 variety EVENT generator_built:dunes
+q043 variety BREAK_BLOCK SAND
+q044 variety BREAK_BLOCK GRAVEL
+q045 variety BREAK_BLOCK RED_SAND
+q046 variety OBTAIN_ITEM GLASS
+q047 variety CRAFT_ITEM WHITE_CONCRETE_POWDER
+q048 variety OBTAIN_ITEM GLASSES
+q049 variety PLACE_BLOCK GLASS
+q050 variety EVENT generator_built:frost
+q051 variety BREAK_BLOCK SNOW_BLOCK
+q052 variety BREAK_BLOCK PACKED_ICE
+q053 variety ORE_FOUND frostium
+q054 variety ORE_FOUND frostium
+q055 variety EVENT machine_placed:spring_stone
+q056 variety EVENT machine_placed:fountain
+q057 tiers EVENT forge_placed
+q058 tiers COMMAND forge
+q059 tiers FORGE_ITEM bronze_core
+q060 tiers GENERATOR_TIER 
+q061 tiers BREAK_BLOCK COBBLESTONE
+q062 tiers ORE_FOUND bronzite
+q063 tiers ORE_FOUND diamond
+q064 tiers FORGE_ITEM ember_core
+q065 tiers GENERATOR_TIER 
+q066 tiers ORE_FOUND ancient_debris
+q067 tiers BREAK_BLOCK COBBLESTONE
+q068 tiers FORGE_ITEM void_lens
+q069 tiers GENERATOR_TIER 
+q070 tiers ORE_FOUND voidglass
+q071 tiers ORE_FOUND starcore
+q072 tiers BREAK_BLOCK COBBLESTONE
+q073 nether COMMAND guide
+q074 nether CRAFT_ITEM FLINT_AND_STEEL
+q075 nether PLACE_BLOCK OBSIDIAN
+q076 nether VISIT_WORLD nether
+q077 nether BREAK_BLOCK NETHERRACK
+q078 nether CRAFT_ITEM NETHER_BRICKS
+q079 nether CRAFT_ITEM MAGMA_BLOCK
+q080 nether PLACE_BLOCK NETHER_BRICKS
+q081 nether EVENT generator_built:ember
+q082 nether CRAFT_ITEM QUARTZ_BLOCK
+q083 nether BREAK_BLOCK SOUL_SAND
+q084 nether ORE_FOUND sunstone
+q085 nether BREAK_BLOCK NETHER_WART
+q086 nether KILL_MOB MAGMA_CUBE
+q087 nether KILL_MOB ZOMBIFIED_PIGLIN
+q088 nether BREAK_BLOCK NETHERRACK
+q089 nether BREAK_BLOCK SOUL_SAND
+q090 nether BREAK_BLOCK NETHERRACK
+q091 end VISIT_WORLD end
+q092 end BREAK_BLOCK END_STONE
+q093 end KILL_MOB ENDERMITE
+q094 end CRAFT_ITEM END_STONE_BRICKS
+q095 end FORGE_ITEM void_sigil
+q096 end BOSS_KILL voidwyrm
+q097 end BOSS_KILL voidwyrm
+q098 end BOSS_KILL voidwyrm
+q099 farm CRAFT_ITEM WOODEN_HOE
+q100 farm PLACE_BLOCK CROPS
+q101 farm BREAK_BLOCK WHEAT
+q102 farm BREAK_BLOCK CARROTS
+q103 farm BREAK_BLOCK POTATOES
+q104 farm CRAFT_ITEM BREAD
+q105 farm PLACE_BLOCK SAPLINGS
+q106 farm BREAK_BLOCK LOGS
+q107 farm BREAK_BLOCK OAK_LEAVES
+q108 farm CRAFT_ITEM HAY_BLOCK
+q109 farm BREAK_BLOCK SUGAR_CANE
+q110 farm CRAFT_ITEM GOLDEN_CARROT
+q111 farm BREAK_BLOCK MELON
+q112 farm BREAK_BLOCK PUMPKIN
+q113 farm PLACE_BLOCK CROPS
+q114 farm BREAK_BLOCK CROPS
+q115 farm CRAFT_ITEM COMPOSTER
+q116 farm CRAFT_ITEM GOLDEN_APPLE
+q117 farm BREAK_BLOCK CROPS
+q118 farm FISH 
+q119 forging FORGE_ITEM bronze_cleaver
+q120 forging FORGE_ITEM bronze_pick
+q121 forging FORGE_ITEM rimeblade
+q122 forging FORGE_ITEM rime_pick
+q123 forging FORGE_ITEM solar_panel
+q124 forging FORGE_ITEM cable
+q125 forging FORGE_ITEM coal_generator
+q126 forging FORGE_ITEM battery
+q127 forging FORGE_ITEM miner_1
+q128 forging FORGE_ITEM miner_2
+q129 forging FORGE_ITEM magma_core
+q130 forging FORGE_ITEM frost_heart
+q131 forging FORGE_ITEM matriarch_egg
+q132 forging FORGE_ITEM leviathan_scale
+q133 forging FORGE_ITEM skin_crystal_saber
+q134 forging FORGE_ITEM bronze_core
+q135 forging FORGE_ITEM bronze_core
+q136 forging FORGE_ITEM ember_core
+q137 forging FORGE_ITEM void_lens
+q138 forging FORGE_ITEM solar_panel
+q139 forging FORGE_ITEM miner_1
+q140 forging FORGE_ITEM battery
+q141 forging FORGE_ITEM bronze_helmet
+q142 forging FORGE_ITEM bronze_chestplate
+q143 forging FORGE_ITEM bronze_leggings
+q144 forging FORGE_ITEM bronze_boots
+q145 forging EVENT armor_set:bronze
+q146 forging FORGE_ITEM rime_helmet
+q147 forging FORGE_ITEM rime_chestplate
+q148 forging FORGE_ITEM rime_leggings
+q149 forging FORGE_ITEM rime_boots
+q150 forging EVENT armor_set:rime
+q151 forging FORGE_ITEM ember_helmet
+q152 forging FORGE_ITEM ember_chestplate
+q153 forging FORGE_ITEM ember_leggings
+q154 forging FORGE_ITEM ember_boots
+q155 forging EVENT armor_set:ember
+q156 forging FORGE_ITEM void_helmet
+q157 forging FORGE_ITEM void_chestplate
+q158 forging FORGE_ITEM void_leggings
+q159 forging FORGE_ITEM void_boots
+q160 forging EVENT armor_set:void
+q161 forging FORGE_ITEM starcore_helmet
+q162 forging FORGE_ITEM starcore_chestplate
+q163 forging FORGE_ITEM starcore_leggings
+q164 forging FORGE_ITEM starcore_boots
+q165 forging EVENT armor_set:starcore
+q166 forging FORGE_ITEM ember_sword
+q167 forging FORGE_ITEM ember_pick
+q168 forging FORGE_ITEM void_sword
+q169 forging FORGE_ITEM void_pick
+q170 forging FORGE_ITEM starcore_sword
+q171 forging FORGE_ITEM starcore_pick
+gadget_skyhook forging FORGE_ITEM skyhook
+gadget_ore_compass forging FORGE_ITEM ore_compass
+gadget_cloud_anchor forging FORGE_ITEM cloud_anchor
+gadget_rain_totem forging FORGE_ITEM rain_totem
+gadget_satchel forging FORGE_ITEM satchel
+gadget_void_net forging FORGE_ITEM void_net
+q172 machines EVENT machine_placed:coal_generator
+q173 machines EVENT machine_placed:cable
+q174 machines EVENT machine_placed:battery
+q175 machines EVENT machine_placed:solar_panel
+q176 machines EVENT machine_placed:miner_1
+q177 machines EVENT machine_placed:miner_2
+q178 machines EVENT machine_placed:battery
+q179 machines EVENT machine_placed:cable
+q180 machines EVENT machine_placed:solar_panel
+q181 machines EVENT machine_placed:miner_1
+q182 machines EVENT machine_placed:miner_2
+q183 machines EVENT machine_placed:coal_generator
+q184 machines EVENT machine_mined
+q185 machines EVENT machine_mined
+q186 machines EVENT machine_mined
+q187 machines EVENT machine_mined
+q188 machines EVENT machine_mined
+q189 machines EVENT machine_placed
+q190 machines CRAFT_ITEM HOPPER
+q191 machines CRAFT_ITEM LEVER
+q192 market COMMAND ah
+q193 market COINS_EARN 
+q194 market COINS_EARN 
+q195 market COINS_EARN 
+q196 market COINS_EARN 
+q197 market COINS_EARN 
+q198 market COINS_EARN 
+q199 market COINS_EARN 
+q200 market COINS_EARN 
+q201 market COMMAND balance
+q202 market COMMAND pay
+q203 market COMMAND bank
+q204 market COMMAND baltop
+q205 market COINS_EARN 
+q206 market COINS_EARN 
+q207 market COINS_EARN 
+q208 market COINS_EARN 
+q209 market COINS_EARN 
+q210 market COINS_EARN 
+q211 dungeons COMMAND dungeon
+q212 dungeons EVENT dungeon_clear
+q213 dungeons EVENT dungeon_floor:1
+q214 dungeons EVENT dungeon_floor:2
+q215 dungeons EVENT dungeon_floor:3
+q216 dungeons EVENT dungeon_floor:4
+q217 dungeons EVENT dungeon_floor:5
+q218 dungeons EVENT dungeon_floor:6
+q219 dungeons EVENT dungeon_floor:7
+q220 dungeons EVENT dungeon_clear_nodeath
+q221 dungeons EVENT dungeon_clear_party
+q222 dungeons EVENT dungeon_clear
+q223 dungeons EVENT dungeon_clear
+q224 dungeons EVENT dungeon_clear
+q225 dungeons EVENT dungeon_clear_nodeath
+q226 dungeons EVENT dungeon_clear_party
+q227 dungeons KILL_MOB ZOMBIE
+q228 dungeons KILL_MOB SKELETON
+q229 dungeons KILL_MOB SPIDER
+q230 dungeons KILL_MOB CREEPER
+q231 bosses BOSS_KILL magma_warden
+q232 bosses BOSS_KILL frost_revenant
+q233 bosses BOSS_KILL sylvan_matriarch
+q234 bosses BOSS_KILL abyssal_leviathan
+q235 bosses BOSS_KILL 
+q236 bosses BOSS_KILL 
+q237 bosses BOSS_KILL 
+q238 bosses BOSS_KILL magma_warden
+q239 bosses BOSS_KILL frost_revenant
+q240 bosses BOSS_KILL sylvan_matriarch
+q241 bosses BOSS_KILL abyssal_leviathan
+q242 bosses BOSS_KILL crypt_lord
+q243 bosses BOSS_KILL crypt_lord
+q244 bosses BOSS_KILL 
+q245 bosses BOSS_KILL 
+q246 bosses FORGE_ITEM magma_core
+q247 mastery EVENT quest_done
+q248 mastery EVENT quest_done
+q249 mastery EVENT quest_done
+q250 mastery EVENT quest_done
+q251 mastery BREAK_BLOCK 
+q252 mastery BREAK_BLOCK 
+q253 mastery BREAK_BLOCK ORES
+q254 mastery KILL_MOB 
+q255 mastery KILL_MOB 
+q256 mastery ORE_FOUND bronzite
+q257 mastery ORE_FOUND frostium
+q258 mastery ORE_FOUND sunstone
+q259 mastery ORE_FOUND diamond
+q260 mastery ORE_FOUND ancient_debris
+q261 mastery ORE_FOUND voidglass
+q262 mastery ORE_FOUND starcore
+q263 mastery EVENT dungeon_floor:7
+q264 mastery EVENT generator_built
+q265 challenges BREAK_BLOCK STONE
+q266 challenges BREAK_BLOCK LOGS
+q267 challenges BREAK_BLOCK CROPS
+q268 challenges KILL_MOB 
+q269 challenges CRAFT_ITEM PLANKS
+q270 challenges COINS_EARN 
+q271 challenges BREAK_BLOCK STONE
+q272 challenges BOSS_KILL 
+q273 challenges EVENT dungeon_clear
+q274 challenges COINS_EARN 
+q275 challenges BREAK_BLOCK STONE
+q276 challenges BREAK_BLOCK STONE
+q277 challenges KILL_MOB 
+q278 challenges BREAK_BLOCK LOGS
+q279 challenges BREAK_BLOCK CROPS
+q280 challenges CRAFT_ITEM PLANKS
+q281 challenges OBTAIN_ITEM IRON_INGOT
+q282 challenges CRAFT_ITEM DIAMOND_PICKAXE
+q283 challenges FISH 
+q284 challenges FISH 
+q285 challenges BREAK_BLOCK STONE
+q286 challenges KILL_MOB ZOMBIE
+q287 challenges KILL_MOB SKELETON
+q288 challenges KILL_MOB SPIDER
+q289 challenges KILL_MOB CREEPER
+q290 challenges KILL_MOB ENDERMITE
+q291 challenges KILL_MOB ZOMBIE

@@ -33,38 +33,19 @@ final class QuarryItems {
     private QuarryItems() {}
 
     private static final String[] TIERS = {"bronze", "rime", "ember", "void", "starcore"};
-    private static final String[] SLOTS = {"helmet", "chestplate", "leggings", "boots"};
 
-    /** The tiered swords, pickaxes and armor. Armor keeps the armor values of its base material. */
+    /** The tiered pickaxes above the first two (swords and armor are {@code item_def} rows of the quarry owner). */
     private static List<CustomItemDef> gear() {
         List<CustomItemDef> out = new java.util.ArrayList<>();
         Rarity[] rarity = {Rarity.UNCOMMON, Rarity.RARE, Rarity.EPIC, Rarity.LEGENDARY, Rarity.MYTHIC};
-        String[] base = {"CHAINMAIL", "IRON", "DIAMOND", "NETHERITE", "NETHERITE"};
         long[] luck = {10, 25, 45, 70, 100};
-        String[] weapon = {"IRON_SWORD", "IRON_SWORD", "DIAMOND_SWORD", "NETHERITE_SWORD", "NETHERITE_SWORD"};
         String[] pick = {"IRON_PICKAXE", "IRON_PICKAXE", "DIAMOND_PICKAXE", "NETHERITE_PICKAXE", "NETHERITE_PICKAXE"};
-        org.bukkit.inventory.EquipmentSlot[] slots = {org.bukkit.inventory.EquipmentSlot.HEAD,
-            org.bukkit.inventory.EquipmentSlot.CHEST, org.bukkit.inventory.EquipmentSlot.LEGS, org.bukkit.inventory.EquipmentSlot.FEET};
-        for (int t = 0; t < TIERS.length; t++) {
+        for (int t = 2; t < TIERS.length; t++) { // bronze and rime already have their pickaxe
             String tier = TIERS[t];
             String title = Character.toUpperCase(tier.charAt(0)) + tier.substring(1);
-            for (int s = 0; s < SLOTS.length; s++) {
-                String id = tier + "_" + SLOTS[s];
-                out.add(CustomItemDef.builder(id, title + " " + Character.toUpperCase(SLOTS[s].charAt(0)) + SLOTS[s].substring(1),
-                        rarity[t], Material.valueOf(base[t] + "_" + SLOTS[s].toUpperCase(java.util.Locale.ROOT)))
-                    .itemModel("vampyuyu:armor/" + id).type(SLOTS[s].toUpperCase(java.util.Locale.ROOT))
-                    .equippable(slots[s], "vampyuyu:" + tier).glint(t >= 3)
-                    .pdc("extra_armor", t == 4 ? new long[] {1, 2, 1, 1}[s] : 0L).pdc("extra_toughness", t == 4 ? 1L : 0L)
-                    .lore("<gray>Part of the " + title + " armor.", "<gray>Wear all four pieces to be known by it.").build());
-            }
-            if (t >= 2) { // bronze and rime already have their sword and pickaxe
-                out.add(CustomItemDef.builder(tier + "_sword", title + " Sword", rarity[t], Material.valueOf(weapon[t]))
-                    .itemModel("vampyuyu:weapon/" + tier + "_sword").type("SWORD").glint(t >= 3)
-                    .lore("<gray>A " + tier + " blade forged from the deep ores.").build());
-                out.add(CustomItemDef.builder(tier + "_pick", title + " Pick", rarity[t], Material.valueOf(pick[t]))
-                    .itemModel("vampyuyu:tool/" + tier + "_pick").type("PICKAXE").pdc(MINING_LUCK, luck[t]).glint(t >= 3)
-                    .lore("<gray>Mining Luck: <green>+" + luck[t], "<gray>Better odds in your generator.").build());
-            }
+            out.add(CustomItemDef.builder(tier + "_pick", title + " Pick", rarity[t], Material.valueOf(pick[t]))
+                .itemModel("vampyuyu:tool/" + tier + "_pick").type("PICKAXE").pdc(MINING_LUCK, luck[t]).glint(t >= 3)
+                .lore("<gray>Mining Luck: <green>+" + luck[t], "<gray>Better odds in your generator.").build());
         }
         return out;
     }
@@ -81,7 +62,11 @@ final class QuarryItems {
             .lore("<gray>Right-click to unlock this sword skin", "<gray>for your account. Bound to you.").build();
     }
 
-    static List<String> register(Items items) {
+    /**
+     * Registers the Quarry items: the ones written here plus the swords and armor of the ore ladder, which are rows of
+     * the {@code item_def} tables (owner {@code quarry}) with their damage, element, tier and stats.
+     */
+    static List<String> register(Items items, win.vampyuyu.survival.data.Db db, java.util.logging.Logger log) {
         List<CustomItemDef> defs = new java.util.ArrayList<>(List.of(
             CustomItemDef.builder(BRONZITE, "Bronzite", Rarity.UNCOMMON, Material.RAW_COPPER)
                 .itemModel("vampyuyu:ore/bronzite").type("ORE")
@@ -92,9 +77,6 @@ final class QuarryItems {
             CustomItemDef.builder(FORGE, "Forge", Rarity.UNCOMMON, Material.BLAST_FURNACE)
                 .itemModel("vampyuyu:forge/forge").type("MACHINE")
                 .lore("<gray>Place it on your island and", "<gray>right-click it to forge gear.").build(),
-            CustomItemDef.builder(BRONZE_CLEAVER, "Bronze Cleaver", Rarity.UNCOMMON, Material.IRON_SWORD)
-                .itemModel("vampyuyu:weapon/bronze_cleaver").type("SWORD")
-                .lore("<gray>Rend: <white>hits make the target", "<gray>bleed for 3 seconds.").build(),
             CustomItemDef.builder(BRONZE_PICK, "Bronze Pick", Rarity.UNCOMMON, Material.IRON_PICKAXE)
                 .itemModel("vampyuyu:tool/bronze_pick").type("PICKAXE")
                 .pdc(MINING_LUCK, 10L)
@@ -108,9 +90,6 @@ final class QuarryItems {
             CustomItemDef.builder(EMBER_CORE, "Ember Core", Rarity.RARE, Material.FIRE_CHARGE)
                 .itemModel("vampyuyu:ore/ember_core").type("UPGRADE").glint(true)
                 .lore("<gray>Right-click on your island to", "<gray>upgrade your cobble generator", "<gray>to tier III (Ember).").build(),
-            CustomItemDef.builder(RIMEBLADE, "Rimeblade", Rarity.RARE, Material.IRON_SWORD)
-                .itemModel("vampyuyu:weapon/rimeblade").type("SWORD")
-                .lore("<gray>Frostbite: <white>hits slow the target", "<gray>for 2 seconds.").build(),
             CustomItemDef.builder(RIME_PICK, "Rime Pick", Rarity.RARE, Material.IRON_PICKAXE)
                 .itemModel("vampyuyu:tool/rime_pick").type("PICKAXE")
                 .pdc(MINING_LUCK, 25L)
@@ -172,6 +151,9 @@ final class QuarryItems {
                 .type("GUIDE")
                 .lore("<gray>Right-click to read the plans of", "<gray>the four generators (same as /guide generators).").build()));
         defs.addAll(gear());
+        List<String> problems = new java.util.ArrayList<>();
+        defs.addAll(win.vampyuyu.survival.items.catalog.ItemDefs.load(db, "quarry", problems));
+        problems.forEach(row -> log.warning("Quarry item row skipped: " + row));
         defs.forEach(items::register);
         return defs.stream().map(CustomItemDef::id).toList();
     }

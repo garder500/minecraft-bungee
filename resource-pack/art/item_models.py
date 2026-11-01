@@ -10,6 +10,7 @@ Forge are drawn as full blocks: in the world the plugin puts them on an item dis
 import json
 
 import boss_skins as bs
+from imported import imported
 import sword_models as sm
 
 PACK = bs.PACK
@@ -38,6 +39,8 @@ BLOCK_DISPLAY = {
 def write(model_id, s, display, block=False):
     """3D model as <name>_3d; in the GUI (inventory, hotbar) a non-block item shows its flat sprite instead."""
     kind, name = model_id.split("/")
+    if imported(model_id) and kind in ("ore", "weapon", "tool", "armor"):  # flat imported sprite everywhere
+        return
     three = f"vampyuyu:item/{kind}/{name}_3d"
     model = {"textures": {"0": three, "particle": three},
              "gui_light": "front", "display": display, "elements": s.elements}

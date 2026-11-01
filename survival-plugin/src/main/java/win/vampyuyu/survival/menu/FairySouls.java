@@ -96,7 +96,7 @@ final class FairySouls implements Listener {
                 try {
                     adminSouls.add(new SoulDef(soul.id, soul.world, soul.x, soul.y, soul.z, false));
                 } catch (RuntimeException e) {
-                    rt.core.debug("Ignoring bad admin fairy soul " + soul.id + ": " + e.getMessage());
+                    rt.core.debug("Ignoring bad admin wisp " + soul.id + ": " + e.getMessage());
                 }
             }
         }
@@ -249,7 +249,7 @@ final class FairySouls implements Listener {
             try {
                 scan(player, view, collect);
             } catch (RuntimeException e) {
-                rt.core.getPlugin().getLogger().warning("Fairy soul scan failed for " + player.getName() + ": " + e);
+                rt.core.getPlugin().getLogger().warning("Wisp scan failed for " + player.getName() + ": " + e);
             }
         }
         // despawn souls nobody is near, and forget dead entities
@@ -358,7 +358,7 @@ final class FairySouls implements Listener {
         Location at = new Location(player.getWorld(), spot.x(), spot.y(), spot.z());
         safe(() -> player.spawnParticle(Particle.TOTEM_OF_UNDYING, at, 24, 0.3, 0.4, 0.3, 0.2));
         int count = data.found.size();
-        rt.core.msg().mini(player, "<light_purple><bold>FAIRY SOUL</bold> <gray>You found a soul! <dark_gray>(<light_purple>"
+        rt.core.msg().mini(player, "<light_purple><bold>WISP</bold> <gray>You found a wisp! <dark_gray>(<light_purple>"
             + count + "<dark_gray>/<light_purple>" + total() + "<dark_gray>)");
         rt.play(player, "soul-found");
         payMilestones(player, data);
@@ -449,11 +449,11 @@ final class FairySouls implements Listener {
         FairyData data = rt.fairy(player.getUniqueId());
         MenuConfig cfg = rt.config();
         if (!cfg.fairyEnabled) {
-            rt.core.msg().warn(player, "Fairy Souls are switched off on this server.");
+            rt.core.msg().warn(player, "Wisps are switched off on this server.");
             return;
         }
         int count = data.found.size();
-        rt.core.msg().mini(player, "<light_purple>Fairy Souls: <white>" + count + "<gray>/<white>" + total()
+        rt.core.msg().mini(player, "<light_purple>Wisps: <white>" + count + "<gray>/<white>" + total()
             + (cfg.fairyEvery > 0 ? " <dark_gray>(next reward in " + SoulLogic.untilNext(count, cfg.fairyEvery) + ")" : ""));
         if (!MenuRuntime.inSkyblock(player.getWorld())) {
             return;

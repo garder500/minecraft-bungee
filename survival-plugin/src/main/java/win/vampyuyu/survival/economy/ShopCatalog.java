@@ -6,11 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
 
 /**
- * The merchant definitions of economy.yml. Item keys are kept as written; whether a custom item exists is only
+ * The merchant definitions of the economy tables. Item keys are kept as written; whether a custom item exists is only
  * checked when a menu is built (the feature that registers it may enable after the economy).
  */
 final class ShopCatalog {
@@ -44,8 +44,8 @@ final class ShopCatalog {
     }
 
     /** Every item key any shop trades. */
-    java.util.Set<String> keys() {
-        java.util.Set<String> out = new java.util.HashSet<>();
+    Set<String> keys() {
+        Set<String> out = new java.util.HashSet<>();
         for (ShopDef shop : shops.values()) {
             for (ShopItem i : shop.items()) {
                 out.add(i.key());
@@ -80,51 +80,45 @@ final class ShopCatalog {
         return best > 0 ? OptionalLong.of(best) : OptionalLong.empty();
     }
 
-    static ShopCatalog parse(ConfigurationSection c, java.util.logging.Logger log) {
+    /** Builds the catalog from the merchant and offer rows; a bad row is skipped (and logged when it matters). */
+    static ShopCatalog of(EconomyConfig c, java.util.logging.Logger log) {
         Map<String, ShopDef> out = new LinkedHashMap<>();
-        ConfigurationSection section = c.getConfigurationSection("shops");
-        if (section == null) {
-            return new ShopCatalog(out);
-        }
-        java.util.function.Predicate<String> never = MarketRules.neverTraded(c);
+        java.util.function.Predicate<String> never = MarketRules.neverTraded(c.neverTraded());
         int refused = 0;
-        for (String id : section.getKeys(false)) {
-            ConfigurationSection s = section.getConfigurationSection(id);
-            if (s == null) {
-                continue;
-            }
-            Material icon = Material.matchMaterial(s.getString("icon", "CHEST"));
+        for (EconomyConfig.Merchant m : c.merchants()) {
+            String id = m.id().toLowerCase(java.util.Locale.ROOT);
+            Material icon = Material.matchMaterial(m.icon());
             if (icon == null || !icon.isItem()) {
                 icon = Material.CHEST;
             }
             List<ShopItem> items = new ArrayList<>();
-            ConfigurationSection list = s.getConfigurationSection("items");
-            if (list != null) {
-                for (String key : list.getKeys(false)) {
-                    if (never.test(key)) {
-                        refused++;
-                        continue;
-                    }
-                    ConfigurationSection price = list.getConfigurationSection(key);
-                    if (price == null) {
-                        log.warning("Shop " + id + ": item " + key + " needs {buy: x, sell: y}");
-                        continue;
-                    }
-                    long buy = Money.toCents(price.getDouble("buy", 0)).orElse(0);
-                    long sell = Money.toCents(price.getDouble("sell", 0)).orElse(0);
-                    if (buy <= 0 && sell <= 0) {
-                        continue;
-                    }
-                    items.add(new ShopItem(key, buy, sell));
+            for (EconomyConfig.Offer offer : c.offersOf(m.id())) {
+                if (never.test(offer.key())) {
+                    refused++;
+                    continue;
                 }
+                long buy = Money.toCents(offer.buy()).orElse(0);
+                long sell = Money.toCents(offer.sell()).orElse(0);
+                if (buy <= 0 && sell <= 0) {
+                    continue;
+                }
+                items.add(new ShopItem(offer.key(), buy, sell));
             }
-            String name = s.getString("name", ItemKeys.pretty(id));
-            out.put(id.toLowerCase(java.util.Locale.ROOT), new ShopDef(id.toLowerCase(java.util.Locale.ROOT), name,
-                s.getString("npc-name", "<yellow>" + name), icon, s.getString("profession", "NONE"),
-                s.getString("npc-type", "VILLAGER"), s.getString("description", ""), List.copyOf(items)));
+            String name = m.name().isBlank() ? ItemKeys.pretty(m.id()) : m.name();
+            out.put(id, new ShopDef(id, name, m.npcName().isBlank() ? "<yellow>" + name : m.npcName(), icon,
+                m.profession(), m.npcType(), m.description(), List.copyOf(items)));
+        }
+        Set<String> known = new java.util.HashSet<>();
+        for (EconomyConfig.Merchant m : c.merchants()) {
+            known.add(m.id());
+        }
+        for (EconomyConfig.Offer offer : c.offers()) {
+            if (!known.contains(offer.merchant())) {
+                log.warning("Offer " + offer.key() + ": unknown merchant " + offer.merchant());
+            }
         }
         if (refused > 0) {
-            log.info("Shops: " + refused + " ultra rare entries are never traded by merchants (market.never-traded)");
+            log.info("Shops: " + refused + " ultra rare entries are never traded by merchants (market_never_traded)");
         }
         return new ShopCatalog(out);
     }

@@ -88,3 +88,70 @@ func TestChatUsesTheSessionNameAndAuditsWithoutTheText(t *testing.T) {
 		t.Fatal(w.Code)
 	}
 }
+
+func TestSkyblockDataUsesTheSessionUserAndAuditsChanges(t *testing.T) {
+	s, _ := setup(t)
+	var seen, bodies []string
+	controller := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		seen = append(seen, r.Method+" "+r.URL.Path+"?"+r.URL.Query().Encode())
+		bodies = append(bodies, string(b))
+		io.WriteString(w, `{"ok":true}`)
+	}))
+	defer controller.Close()
+	s.Controller = controller.URL
+	base := "/api/v1/servers/survival/skyblock/data"
+	if w := request(t, s, "GET", base, "", nil, ""); w.Code != 401 {
+		t.Fatal(w.Code)
+	}
+	cookie, csrf := login(t, s)
+	if w := request(t, s, "GET", base+"/quests/quest/rows?q=x&evil=1", "", cookie, ""); w.Code != 200 {
+		t.Fatal(w.Code)
+	}
+	if seen[0] != "GET /servers/survival/skyblock/data/quests/quest/rows?q=x" {
+		t.Fatal(seen)
+	}
+	put := base + "/quests/quest/row?key=q046&actor=mallory"
+	if w := request(t, s, "PUT", put, `{"row":{"amount":3},"children":{"quest_requirement":[]}}`, cookie, ""); w.Code != 403 {
+		t.Fatal("a change without CSRF passed", w.Code)
+	}
+	if w := request(t, s, "PUT", put, `{"row":{"amount":3},"extra":1}`, cookie, csrf); w.Code != 400 {
+		t.Fatal("unknown field accepted", w.Code)
+	}
+	if w := request(t, s, "PUT", put, `{"row":{"amount":3},"children":{"quest_requirement":[]}}`, cookie, csrf); w.Code != 200 {
+		t.Fatal(w.Code)
+	}
+	if w := request(t, s, "POST", base+"/quests/quest/reset?key=q046", "", cookie, csrf); w.Code != 200 {
+		t.Fatal(w.Code)
+	}
+	if w := request(t, s, "DELETE", base+"/quests/quest/row?key=q046", "", cookie, csrf); w.Code != 200 {
+		t.Fatal(w.Code)
+	}
+	if w := request(t, s, "DELETE", base+"/quests/quest/row", "", cookie, csrf); w.Code != 400 {
+		t.Fatal(w.Code)
+	}
+	if w := request(t, s, "GET", "/api/v1/servers/velocity/skyblock/data", "", cookie, ""); w.Code != 400 {
+		t.Fatal(w.Code)
+	}
+	if len(seen) != 4 || seen[1] != "PUT /servers/survival/skyblock/data/quests/quest/row?actor=admin&key=q046" ||
+		bodies[1] != `{"row":{"amount":3},"children":{"quest_requirement":[]}}` ||
+		seen[2] != "POST /servers/survival/skyblock/data/quests/quest/reset?actor=admin&key=q046" ||
+		seen[3] != "DELETE /servers/survival/skyblock/data/quests/quest/row?actor=admin&key=q046" {
+		t.Fatal("the actor must be the session user:", seen)
+	}
+	rows, e := s.DB.Query("SELECT username, action, result FROM audit WHERE action LIKE 'skyblock-%' ORDER BY id")
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer rows.Close()
+	var got []string
+	for rows.Next() {
+		var u, a string
+		var r int
+		rows.Scan(&u, &a, &r)
+		got = append(got, u+" "+a+" "+http.StatusText(r))
+	}
+	if strings.Join(got, "|") != "admin skyblock-put:quests.quest:q046 OK|admin skyblock-reset:quests.quest:q046 OK|admin skyblock-delete:quests.quest:q046 OK" {
+		t.Fatal(got)
+	}
+}

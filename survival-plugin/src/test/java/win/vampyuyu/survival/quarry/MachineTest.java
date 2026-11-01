@@ -84,7 +84,7 @@ public class MachineTest {
         Block cobble = miner.getRelative(-1, 0, 0);
         cobble.setType(Material.COBBLESTONE);
         server.getPluginManager().callEvent(new BlockFormEvent(cobble, cobble.getState()));
-        quarry.data(owner.getUniqueId()).counters.put("bronzite", 119); // the pity forces a bronzite
+        quarry.data(owner.getUniqueId()).counters.put("bronzite", 299); // the pity forces a bronzite
         machines.store().get(sky.getName(), MachineStore.pos(battery)).charge = 100;
 
         machines.tick();
@@ -115,18 +115,17 @@ public class MachineTest {
     }
 
     @Test
-    public void machinesOnlyGoOnYourOwnIslandAndOnlyUpToTheLimit() {
+    public void machinesOnlyGoOnYourOwnIslandWithNoLimit() {
         PlayerMock owner = server.addPlayer("Builder");
         PlayerMock stranger = server.addPlayer("Stranger");
         Island island = island(owner);
         Block start = base(island);
         assertFalse("not your island", place(stranger, start, "battery"));
         assertEquals(0, machines.store().countOnIsland(island.id.toString()));
-        for (int i = 0; i < machines.settings().maxPerIsland; i++) {
-            assertTrue(place(owner, start.getRelative(i * 2, 0, 0), "cable"));
+        for (int i = 0; i < 80; i++) { // well past the old cap of 60
+            assertTrue(place(owner, start.getRelative(i % 20 * 2, 0, i / 20 * 2), "cable"));
         }
-        assertFalse("limit reached", place(owner, start.getRelative(40, 0, 0), "cable"));
-        assertEquals(machines.settings().maxPerIsland, machines.store().countOnIsland(island.id.toString()));
+        assertEquals(80, machines.store().countOnIsland(island.id.toString()));
     }
 
     @Test

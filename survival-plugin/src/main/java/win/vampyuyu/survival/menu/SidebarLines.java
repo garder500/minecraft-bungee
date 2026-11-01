@@ -21,22 +21,22 @@ public final class SidebarLines {
     /** The lines from top to bottom; a blank line is the empty string. */
     public static List<String> build(View v) {
         List<String> lines = new ArrayList<>();
-        lines.add("<gray>" + esc(v.date()));
+        lines.add("<#8FD3FF>" + esc(v.date()));
         lines.add("<gray>" + esc(v.time()) + (v.day() ? " <yellow>☀" : " <blue>☽"));
         lines.add("");
-        lines.add("<gray>⏣ <aqua>" + esc(v.zone()));
+        lines.add("<#F6D58E>✧ <aqua>" + esc(v.zone()));
         lines.add("");
         if (v.coins() != null) {
-            lines.add("<white>Purse: <gold>" + esc(v.coins()));
+            lines.add("<white>Coins: <gold>" + esc(v.coins()));
         }
         if (v.members() != null) {
-            lines.add("<white>Members: <green>" + esc(v.members()));
+            lines.add("<white>Crew: <green>" + esc(v.members()));
         }
         if (v.coins() != null || v.members() != null) {
             lines.add("");
         }
         if (v.questName() != null) {
-            lines.add("<aqua>Objective");
+            lines.add("<aqua>Next step");
             lines.add("<yellow>" + esc(cut(v.questName(), QUEST_WIDTH))
                 + (v.questProgress() == null ? "" : " <gray>" + esc(v.questProgress())));
             lines.add("<gray>Type <green>/guide <gray>for help");

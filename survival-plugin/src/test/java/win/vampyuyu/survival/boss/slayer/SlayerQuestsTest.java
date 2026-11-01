@@ -2,7 +2,6 @@ package win.vampyuyu.survival.boss.slayer;
 
 import static org.junit.Assert.*;
 
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
 import org.junit.After;
 import org.junit.Before;
@@ -18,11 +17,8 @@ public class SlayerQuestsTest {
     @Before
     public void setUp() throws Exception {
         MockBukkit.mock();
-        try (var reader = new java.io.InputStreamReader(getClass().getResourceAsStream("/boss.yml"),
-                java.nio.charset.StandardCharsets.UTF_8)) {
-            BossConfig config = BossConfig.load(YamlConfiguration.loadConfiguration(reader));
-            zombie = config.slayers().get("zombie");
-        }
+        BossConfig config = win.vampyuyu.survival.boss.BossTestData.shipped();
+        zombie = config.slayers().get("zombie");
         assertNotNull(zombie);
     }
 

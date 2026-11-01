@@ -41,7 +41,7 @@ final class UtilityHelp {
         new Entry("/seen <player>", "When a player was last online", Perms.INFO),
         new Entry("/ping [player]", "Your latency", Perms.INFO),
         new Entry("/setspawn", "Set the survival world spawn (admin)", Perms.ADMIN),
-        new Entry("/utility reload", "Reload utility.yml (admin)", Perms.ADMIN));
+        new Entry("/utility reload", "Reload the utility settings (admin)", Perms.ADMIN));
 
     private final Core core;
     private final Msg msg;
@@ -79,7 +79,7 @@ final class UtilityHelp {
                     msg.error(sender, "You do not have permission to reload the utility configuration.");
                 } else {
                     reload.run();
-                    msg.ok(sender, "utility.yml reloaded.");
+                    msg.ok(sender, "Utility settings reloaded.");
                 }
             }
             default -> msg.error(sender, "Unknown option '" + args[0] + "'. Use /utility help.");

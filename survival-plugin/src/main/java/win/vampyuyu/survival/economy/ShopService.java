@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.OptionalLong;
 import java.util.UUID;
 import java.util.function.ToLongFunction;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import win.vampyuyu.survival.core.Core;
@@ -51,12 +50,13 @@ final class ShopService {
         this.pressure = pressure;
     }
 
-    void reload(ConfigurationSection c) {
-        catalog = ShopCatalog.parse(c, core.getPlugin().getLogger());
+    void reload(EconomyConfig config) {
+        var c = config.settings();
+        catalog = ShopCatalog.of(config, core.getPlugin().getLogger());
         buybackSize = EconomySettings.clamp(c.getInt("buyback.size", 18), 1, 45);
         buybackMillis = Math.max(10, c.getLong("buyback.seconds", 300)) * 1000;
         protectHotbar = c.getBoolean("sell.protect-hotbar", false);
-        pressure.reload(c);
+        pressure.reload(config);
     }
 
     ShopCatalog catalog() {

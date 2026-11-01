@@ -22,7 +22,7 @@ final class SkyblockMenuItem {
         if (core.items().def(ID).isPresent()) {
             core.items().unregister(ID);
         }
-        core.items().register(CustomItemDef.builder(ID, "Skyblock Menu", Rarity.SPECIAL, Material.NETHER_STAR)
+        core.items().register(CustomItemDef.builder(ID, "Isles", Rarity.SPECIAL, Material.NETHER_STAR)
             .itemModel(MODEL)
             .type("MENU")
             .lore("<gray>View all of your Skyblock progress,", "<gray>skills, collections, quests and more.", "",

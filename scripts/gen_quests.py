@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-"""Writes survival-plugin/src/main/resources/quests.yml: the Skyblock quest plan (categories and quests).
+"""Writes survival-plugin/src/main/resources/db/seed/quests.sql: the Skyblock quest plan (categories and quests).
 
     python3 scripts/gen_quests.py
 
 The plan (docs/skyblock-notes/progression.md) is the spec. Every quest uses an existing quest type or the keyed
 EVENT type; the events are fired by the quarry, dungeon and quest code (see QuarryProgressEvent users). A test loads
-the written file and checks that every quest can be completed. In-game text is English.
+the written seed and checks that every quest can be completed. In-game text is English. Quests edited in the panel
+keep their edits when this seed changes (see win.vampyuyu.survival.data.Seeds).
 """
-import pathlib
-
-OUT = pathlib.Path(__file__).resolve().parent.parent / "survival-plugin/src/main/resources/quests.yml"
+from sqlseed import insert, write
 
 CATEGORIES = []
 
@@ -21,13 +20,20 @@ def cat(cid, name, blurb, main, unlock, icon):
     return c
 
 
-def q(c, name, desc, typ, target, amount, icon, coins, items=None, label=None):
+def q(c, name, desc, typ, target, amount, icon, coins, items=None, label=None, qid=None):
+    """qid: a fixed id for a quest added after the plan shipped (players' progress is stored by id, so the numbered
+    ids q001... of the original plan must never shift: new quests get a named id instead of a number)."""
     c["quests"].append(dict(name=name, desc=desc, type=typ, target=target, amount=amount, icon=icon, coins=coins,
-                            items=items or {}, label=label))
+                            items=items or {}, label=label, qid=qid))
 
 
 def craft(c, name, what, mat, amount, icon, coins, **kw):
     q(c, name, f"Craft {what}.", "CRAFT_ITEM", mat, amount, icon, coins, **kw)
+
+
+def obtain(c, name, desc, mat, amount, icon, coins, **kw):
+    """Items that reach the inventory any way: furnace, pickup, stonecutter, auto-smelt (glass, ingots...)."""
+    q(c, name, desc, "OBTAIN_ITEM", mat, amount, icon, coins, **kw)
 
 
 def brk(c, name, what, target, amount, icon, coins, **kw):
@@ -82,8 +88,8 @@ brk(c, "Fountain Cobble II", "128 more cobblestone", "COBBLESTONE", 128, "COBBLE
 c = cat("generator", "The First Real Generator", "The Spring Stone and the stone generator: a ring around your Fountain. A wrong ring never costs you anything.", True, "fountain_craft", "STONE_BRICKS")
 cmd(c, "Read the Plan", "Read the generator plan with /guide.", "guide", "WRITABLE_BOOK", 20, items={"spring_stone": 1}, label="read_plan")
 ev(c, "Spring Stone", "Place the Spring Stone on the south side of your Fountain's ring.", "machine_placed:spring_stone", 1, "PRISMARINE_BRICKS", 40)
-craft(c, "Stone Bricks", "16 stone bricks", "STONE_BRICKS", 16, "STONE_BRICKS", 30)
-q(c, "The Ring", "Place 8 stone bricks around your Fountain.", "PLACE_BLOCK", "STONE_BRICKS", 8, "STONE_BRICKS", 60)
+obtain(c, "Stone Bricks", "Get 16 stone bricks: craft them from stone, or use a stonecutter.", "STONE_BRICKS", 16, "STONE_BRICKS", 30)
+q(c, "The Ring", "Place 7 stone bricks around your Fountain (the Spring Stone takes the south side).", "PLACE_BLOCK", "STONE_BRICKS", 7, "STONE_BRICKS", 60)
 ev(c, "Stone Generator", "Complete the ring: your Fountain becomes a Stone generator (right-click it to check what is missing).", "generator_built:stone", 1, "FURNACE", 120, label="stone_gen")
 brk(c, "Mine the Generator", "64 cobblestone from it", "COBBLESTONE", 64, "IRON_PICKAXE", 50)
 ore(c, "Iron Nugget", "your first iron nugget", "iron_nugget", 1, "IRON_NUGGET", 30)
@@ -106,15 +112,15 @@ cmd(c, "Visit the Market", "Open the market with /market.", "market", "EMERALD",
 earn(c, "First Sales", 200, "GOLD_NUGGET", 60)
 cmd(c, "Dune Plan", "Read the plans of the other generators with /guide.", "guide", "WRITABLE_BOOK", 30, label="dune_plan")
 craft(c, "Sandstone", "16 sandstone", "SANDSTONE", 16, "SANDSTONE", 40)
-q(c, "Dune Ring", "Place 8 sandstone blocks around a second Fountain.", "PLACE_BLOCK", "SANDSTONE", 8, "SANDSTONE", 80)
+q(c, "Dune Ring", "Place 7 sandstone blocks around a second Fountain (a Spring Stone on the south side).", "PLACE_BLOCK", "SANDSTONE", 7, "SANDSTONE", 80)
 ev(c, "Dune Generator", "Complete the sandstone ring: a Dune generator makes sand, gravel and red sand.", "generator_built:dunes", 1, "SAND", 150, label="dune_gen")
 brk(c, "Sand", "64 sand", "SAND", 64, "SAND", 60)
 brk(c, "Gravel", "64 gravel", "GRAVEL", 64, "GRAVEL", 60)
 brk(c, "Red Sand", "16 red sand", "RED_SAND", 16, "RED_SAND", 40)
-craft(c, "Glass", "8 glass", "GLASS", 8, "GLASS", 50)
+obtain(c, "Glass", "Smelt 8 glass: put sand in a furnace and take the glass out.", "GLASS", 8, "GLASS", 50)
 craft(c, "Concrete", "8 concrete powder", "WHITE_CONCRETE_POWDER", 8, "WHITE_CONCRETE_POWDER", 60)
-craft(c, "More Glass", "16 glass", "GLASS", 16, "GLASS", 60)
-q(c, "Frost Ring", "Place 8 glass blocks around a third Fountain.", "PLACE_BLOCK", "GLASS", 8, "GLASS", 100)
+obtain(c, "More Glass", "Smelt 16 more glass (stained glass counts too).", "GLASSES", 16, "GLASS", 60)
+q(c, "Frost Ring", "Place 7 glass blocks around a third Fountain (a Spring Stone on the south side).", "PLACE_BLOCK", "GLASS", 7, "GLASS", 100)
 ev(c, "Frost Generator", "Complete the glass ring: a Frost generator makes snow blocks, packed ice and Frostium.", "generator_built:frost", 1, "PACKED_ICE", 200, label="frost_gen")
 brk(c, "Snow", "32 snow blocks", "SNOW_BLOCK", 32, "SNOW_BLOCK", 60)
 brk(c, "Ice", "16 packed ice", "PACKED_ICE", 16, "PACKED_ICE", 80)
@@ -149,7 +155,7 @@ q(c, "Enter the Nether", "Enter your Nether.", "VISIT_WORLD", "nether", 1, "NETH
 brk(c, "Netherrack", "64 netherrack", "NETHERRACK", 64, "NETHERRACK", 100)
 craft(c, "Nether Bricks", "16 nether bricks", "NETHER_BRICKS", 16, "NETHER_BRICKS", 100)
 q(c, "Magma Block", "Craft a magma block from 4 netherrack and 1 coal.", "CRAFT_ITEM", "MAGMA_BLOCK", 1, "MAGMA_BLOCK", 100)
-q(c, "Ember Ring", "Place 8 nether bricks around a Fountain.", "PLACE_BLOCK", "NETHER_BRICKS", 8, "NETHER_BRICKS", 150)
+q(c, "Ember Ring", "Place 7 nether bricks around a Fountain (a magma block on the south side).", "PLACE_BLOCK", "NETHER_BRICKS", 7, "NETHER_BRICKS", 150)
 ev(c, "Ember Generator", "Complete the ring with a magma block on the south side: an Ember generator makes netherrack and soul sand.", "generator_built:ember", 1, "MAGMA_BLOCK", 300, label="ember_gen")
 craft(c, "Quartz Block", "a quartz block from 4 nether quartz (from the Ember generator or the market)", "QUARTZ_BLOCK", 1, "QUARTZ", 120)
 brk(c, "Soul Sand", "32 soul sand", "SOUL_SAND", 32, "SOUL_SAND", 120)
@@ -226,6 +232,13 @@ for tier, coins in (("ember", 400), ("void", 800), ("starcore", 1500)):
     forge(c, f"{tier.title()} Sword", f"{tier}_sword", 1, "NETHERITE_SWORD" if tier != "ember" else "DIAMOND_SWORD", coins)
     forge(c, f"{tier.title()} Pick", f"{tier}_pick", 1, "NETHERITE_PICKAXE" if tier != "ember" else "DIAMOND_PICKAXE", coins)
 
+forge(c, "Skyhook", "skyhook", 1, "LEAD", 150, qid="gadget_skyhook")
+forge(c, "Ore Compass", "ore_compass", 1, "COMPASS", 150, qid="gadget_ore_compass")
+forge(c, "Cloud Anchor", "cloud_anchor", 1, "RECOVERY_COMPASS", 300, qid="gadget_cloud_anchor")
+forge(c, "Rain Totem", "rain_totem", 1, "HEART_OF_THE_SEA", 300, qid="gadget_rain_totem")
+forge(c, "Satchel", "satchel", 1, "RABBIT_HIDE", 500, qid="gadget_satchel")
+forge(c, "Void Net", "void_net", 1, "PHANTOM_MEMBRANE", 600, qid="gadget_void_net")
+
 c = cat("machines", "Machines and Energy", "Coal, cables on redstone, batteries, solar panels, then Miners that break the generator for you.", False, "stone_gen", "REDSTONE")
 ev(c, "Coal Power", "Place a Coal Generator.", "machine_placed:coal_generator", 1, "STONECUTTER", 100)
 ev(c, "Cables", "Place 8 Copper Cables.", "machine_placed:cable", 8, "LIGHTNING_ROD", 80)
@@ -249,7 +262,7 @@ craft(c, "Hopper", "a hopper", "HOPPER", 1, "HOPPER", 150)
 craft(c, "Lever", "a lever", "LEVER", 1, "LEVER", 80)
 
 c = cat("market", "Market and Economy", "Sell, buy and auction. The market never sells or buys ultra-rare items.", False, "stone_gen", "EMERALD")
-cmd(c, "Browse the Auction House", "Open the auction house with /ah.", "ah", "GOLD_INGOT", 30)
+cmd(c, "Browse the Drift Market", "Open the Drift Market with /ah.", "ah", "GOLD_INGOT", 30)
 earn(c, "Pocket Money", 500, "GOLD_NUGGET", 50)
 earn(c, "Merchant", 2000, "GOLD_INGOT", 100)
 earn(c, "Trader", 5000, "GOLD_INGOT", 150)
@@ -327,7 +340,7 @@ ore(c, "Debris 5", "5 ancient debris", "ancient_debris", 5, "ANCIENT_DEBRIS", 15
 ore(c, "Voidglass 3", "3 Voidglass", "voidglass", 3, "ECHO_SHARD", 3000)
 ore(c, "Starcore 2", "2 Starcore Shards", "starcore", 2, "NETHER_STAR", 5000)
 ev(c, "Floor 7 Again", "Clear floor 7 three more times.", "dungeon_floor:7", 3, "CRACKED_DEEPSLATE_BRICKS", 2000)
-ev(c, "Generators Everywhere", "Complete 3 more generator rings of any kind.", "generator_built", 3, "SMOOTH_STONE", 1500)
+ev(c, "Generators Everywhere", "Complete 3 more generator rings of any kind (each ring counts once).", "generator_built", 3, "SMOOTH_STONE", 1500)
 
 # --------------------------------------------------------------------------------------------- daily style
 c = cat("challenges", "Challenges", "Repeatable-feeling goals: bigger numbers, once each.", False, "stone_gen", "TARGET")
@@ -347,7 +360,7 @@ kill(c, "Hundred Kills", "100 mobs", "", 100, "IRON_SWORD", 300)
 brk(c, "Lumber Baron", "1,000 logs", "LOGS", 1000, "OAK_LOG", 400)
 brk(c, "Farm Baron", "1,000 crops", "CROPS", 1000, "HAY_BLOCK", 400)
 craft(c, "Hundred Planks", "100 planks", "PLANKS", 100, "OAK_PLANKS", 200)
-craft(c, "Iron Works", "16 iron ingots", "IRON_INGOT", 16, "IRON_INGOT", 200)
+obtain(c, "Iron Works", "Get 16 iron ingots: smelt them or craft them from nuggets.", "IRON_INGOT", 16, "IRON_INGOT", 200)
 craft(c, "Diamond Works", "a diamond pickaxe", "DIAMOND_PICKAXE", 1, "DIAMOND_PICKAXE", 400)
 q(c, "Fishing Day", "Catch 50 fish.", "FISH", "", 50, "FISHING_ROD", 300)
 q(c, "Fishing Week", "Catch 250 fish.", "FISH", "", 250, "FISHING_ROD", 1000)
@@ -360,50 +373,44 @@ kill(c, "Endermite Wave", "40 endermites", "ENDERMITE", 40, "ENDER_PEARL", 400)
 kill(c, "Zombie Siege", "200 zombies", "ZOMBIE", 200, "ROTTEN_FLESH", 400)
 
 
-def yaml_str(text):
-    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
-
-
 def main():
     ids = {}
     n = 0
     for category in CATEGORIES:
         for item in category["quests"]:
-            n += 1
-            item["id"] = f"q{n:03d}"
+            if item["qid"]:
+                item["id"] = item["qid"]
+            else:
+                n += 1
+                item["id"] = f"q{n:03d}"
             if item["label"]:
                 ids[item["label"]] = item["id"]
-    lines = ["# Generated by scripts/gen_quests.py from docs/skyblock-notes/progression.md. Edit the script, not this file.",
-             "# Main path categories are chains (each quest needs the one before it); the others open all their quests after the unlock quest.",
-             "plan: true", "categories:"]
-    for category in CATEGORIES:
-        first = category["quests"][0]["id"]
-        last = category["quests"][-1]["id"]
-        unlock = ids.get(category["unlock"]) if category["unlock"] else None
-        lines += [f"  {category['id']}:", f"    name: {yaml_str(category['name'])}", f"    description: {yaml_str(category['blurb'])}",
-                  f"    main: {'true' if category['main'] else 'false'}", f"    icon: {category['icon']}",
-                  f"    unlock: {unlock if unlock else '\"\"'}"]
-    lines.append("quests:")
-    lines.append("  tutorial:")
+    rows = []
+    for pos, category in enumerate(CATEGORIES):
+        unlock = ids.get(category["unlock"]) if category["unlock"] else ""
+        rows.append(insert("quest_category", {"id": category["id"], "position": pos, "name": category["name"],
+                                              "description": category["blurb"], "main": category["main"],
+                                              "icon": category["icon"], "unlock": unlock}))
+    pos = 0
     for category in CATEGORIES:
         unlock = ids.get(category["unlock"]) if category["unlock"] else None
         previous = None
         for item in category["quests"]:
-            chained = category["main"]
-            requires = [previous] if previous and chained else ([unlock] if unlock else [])
+            requires = [previous] if previous and category["main"] else ([unlock] if unlock else [])
             previous = item["id"]
-            lines += [f"    {item['id']}:", f"      name: {yaml_str(item['name'])}", f"      description: {yaml_str(item['desc'])}",
-                      f"      category: {category['id']}", f"      type: {item['type']}"]
-            if item["target"]:
-                lines.append(f"      target: {yaml_str(item['target'])}")
-            lines += [f"      amount: {item['amount']}", f"      icon: {item['icon']}",
-                      f"      requires: [{', '.join(requires)}]"]
-            rewards = f"coins: {item['coins']}" if item["coins"] else "coins: 0"
-            if item["items"]:
-                rewards += ", items: {" + ", ".join(f"{k}: {v}" for k, v in item["items"].items()) + "}"
-            lines.append(f"      rewards: {{{rewards}}}")
-    OUT.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"wrote {n} quests in {len(CATEGORIES)} categories to {OUT}")
+            rows.append(insert("quest", {"id": item["id"], "pool": "plan", "position": pos, "category": category["id"],
+                                         "name": item["name"], "description": item["desc"], "type": item["type"],
+                                         "target": item["target"] or "", "amount": item["amount"], "icon": item["icon"],
+                                         "reward_coins": float(item["coins"] or 0)}))
+            pos += 1
+            for i, req in enumerate(requires):
+                rows.append(insert("quest_requirement", {"quest_id": item["id"], "position": i, "requires": req}))
+            for key, amount in item["items"].items():
+                rows.append(insert("quest_reward_item", {"quest_id": item["id"], "item": key, "amount": amount}))
+    out = write("quests", ["Generated by scripts/gen_quests.py from docs/skyblock-notes/progression.md. Edit the script, not this file.",
+                           "Main path categories are chains (each quest needs the one before it); the others open all their",
+                           "quests after the unlock quest."], rows)
+    print(f"wrote {n} quests in {len(CATEGORIES)} categories to {out}")
 
 
 if __name__ == "__main__":

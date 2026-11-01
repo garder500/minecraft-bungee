@@ -32,12 +32,12 @@ public class SlayerMathTest {
 
     @Test
     public void perksAccumulateByLevel() {
-        List<SlayerDefinition.Perk> perks = List.of(new SlayerDefinition.Perk(1, Stat.HEALTH, 2),
-            new SlayerDefinition.Perk(2, Stat.HEALTH, 3), new SlayerDefinition.Perk(3, Stat.DEFENSE, 1));
+        List<SlayerDefinition.Perk> perks = List.of(new SlayerDefinition.Perk(1, Stat.VITALITY, 2),
+            new SlayerDefinition.Perk(2, Stat.VITALITY, 3), new SlayerDefinition.Perk(3, Stat.WARD, 1));
         assertEquals(Map.of(), SlayerMath.perkTotals(perks, 0));
-        assertEquals(5.0, SlayerMath.perkTotals(perks, 2).get(Stat.HEALTH), 0);
-        assertNull(SlayerMath.perkTotals(perks, 2).get(Stat.DEFENSE));
-        assertEquals(1.0, SlayerMath.perkTotals(perks, 9).get(Stat.DEFENSE), 0);
+        assertEquals(5.0, SlayerMath.perkTotals(perks, 2).get(Stat.VITALITY), 0);
+        assertNull(SlayerMath.perkTotals(perks, 2).get(Stat.WARD));
+        assertEquals(1.0, SlayerMath.perkTotals(perks, 9).get(Stat.WARD), 0);
     }
 
     @Test

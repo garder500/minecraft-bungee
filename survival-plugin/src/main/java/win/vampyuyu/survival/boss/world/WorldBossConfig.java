@@ -3,12 +3,11 @@ package win.vampyuyu.survival.boss.world;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.bukkit.configuration.ConfigurationSection;
-import org.jspecify.annotations.Nullable;
 import win.vampyuyu.survival.boss.BossDefinition;
+import win.vampyuyu.survival.data.Settings;
 
 /**
- * The {@code world-bosses:} section of boss.yml.
+ * The {@code boss.world.*} settings and the world boss spot and pool tables.
  *
  * @param enabled master switch
  * @param intervalMinutes minutes between two events
@@ -42,58 +41,38 @@ public record WorldBossConfig(boolean enabled, int intervalMinutes, int firstDel
         return new WorldBossConfig(false, 120, 30, 1, List.of(), 15, 5, List.of(), List.of(), 5, 10);
     }
 
-    /** Parses and validates; pool entries must exist in {@code bosses}. */
-    public static WorldBossConfig parse(@Nullable ConfigurationSection s, Map<String, BossDefinition> bosses,
-            List<String> errors) {
-        if (s == null) {
-            return disabled();
-        }
-        int interval = s.getInt("interval-minutes", 120);
-        int first = s.getInt("first-spawn-delay-minutes", 30);
-        int minPlayers = s.getInt("min-players", 1);
-        int duration = s.getInt("duration-minutes", 15);
-        int retry = s.getInt("retry-minutes", 5);
+    /**
+     * Validates the {@code boss.world.*} settings and the spot and pool rows; pool entries must exist in {@code bosses}.
+     * {@code announce} are the warning times as read (sorted here, non-positive ones dropped).
+     */
+    public static WorldBossConfig parse(Settings s, List<Integer> announce, List<Spot> spots, List<Entry> rawPool,
+            Map<String, BossDefinition> bosses, List<String> errors) {
+        int interval = s.getInt("world.interval-minutes", 120);
+        int first = s.getInt("world.first-spawn-delay-minutes", 30);
+        int minPlayers = s.getInt("world.min-players", 1);
+        int duration = s.getInt("world.duration-minutes", 15);
+        int retry = s.getInt("world.retry-minutes", 5);
         if (interval < 1 || first < 0 || minPlayers < 1 || duration < 1 || retry < 1) {
             errors.add("world-bosses: interval-minutes, duration-minutes, retry-minutes, min-players must be >= 1");
         }
-        List<Integer> announce = new ArrayList<>();
-        for (Object o : s.getList("announce-before-seconds", List.of(300, 60, 10))) {
-            if (o instanceof Number n && n.intValue() > 0) {
-                announce.add(n.intValue());
-            }
-        }
-        announce.sort((a, b) -> b - a);
-        List<Spot> spots = new ArrayList<>();
-        for (Map<?, ?> m : s.getMapList("locations")) {
-            Object world = m.get("world");
-            if (world == null || !(m.get("x") instanceof Number x) || !(m.get("y") instanceof Number y)
-                || !(m.get("z") instanceof Number z)) {
-                errors.add("world-bosses.locations: each entry needs world, x, y, z");
-                continue;
-            }
-            Object name = m.get("name");
-            spots.add(new Spot(String.valueOf(world), x.doubleValue(), y.doubleValue(), z.doubleValue(),
-                name == null ? String.valueOf(world) : String.valueOf(name)));
-        }
+        List<Integer> warnings = new ArrayList<>(announce.stream().filter(n -> n > 0).toList());
+        warnings.sort((a, b) -> b - a);
         List<Entry> pool = new ArrayList<>();
-        for (Map<?, ?> m : s.getMapList("pool")) {
-            String id = String.valueOf(m.get("boss"));
-            Object w = m.get("weight");
-            double weight = w instanceof Number n ? n.doubleValue() : 1;
-            if (!bosses.containsKey(id)) {
-                errors.add("world-bosses.pool: unknown boss '" + id + "'");
-            } else if (weight <= 0) {
-                errors.add("world-bosses.pool: weight of " + id + " must be positive");
+        for (Entry e : rawPool) {
+            if (!bosses.containsKey(e.boss())) {
+                errors.add("world-bosses.pool: unknown boss '" + e.boss() + "'");
+            } else if (e.weight() <= 0) {
+                errors.add("world-bosses.pool: weight of " + e.boss() + " must be positive");
             } else {
-                pool.add(new Entry(id, weight));
+                pool.add(e);
             }
         }
-        boolean enabled = s.getBoolean("enabled", false);
+        boolean enabled = s.getBoolean("world.enabled", false);
         if (enabled && (spots.isEmpty() || pool.isEmpty())) {
             errors.add("world-bosses: enabled but no valid locations or pool; events are off");
             enabled = false;
         }
-        return new WorldBossConfig(enabled, interval, first, minPlayers, announce, duration, retry, spots, pool,
-            Math.max(1, s.getInt("leaderboard-size", 5)), Math.max(1, s.getInt("history-size", 10)));
+        return new WorldBossConfig(enabled, interval, first, minPlayers, warnings, duration, retry, spots, pool,
+            Math.max(1, s.getInt("world.leaderboard-size", 5)), Math.max(1, s.getInt("world.history-size", 10)));
     }
 }

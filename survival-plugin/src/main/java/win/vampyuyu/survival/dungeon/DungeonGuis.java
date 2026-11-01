@@ -62,8 +62,7 @@ public final class DungeonGuis {
     public void floors(Player p) {
         DungeonConfig cfg = svc.cfg();
         DungeonData data = svc.core.profiles().section(p.getUniqueId(), "dungeon", DungeonData.class, DungeonData::new);
-        Gui gui = svc.core.guis().create(5, "<dark_red><bold>The Catacombs");
-        gui.border(Guis.icon(Material.BLACK_STAINED_GLASS_PANE, " "));
+        Gui gui = svc.core.guis().create(5, "<dark_red><bold>The Crypt Depths");
         List<DungeonConfig.Floor> floors = new ArrayList<>(cfg.floors.values());
         gui.paginate(floors, gui.innerSlots(), f -> floorIcon(p, f, data), (click, f) -> {
             click.close();
@@ -71,14 +70,14 @@ public final class DungeonGuis {
                 svc.command.start(click.player(), f.number(), null);
             }
         }, 39, 41);
-        gui.set(37, Guis.icon(Material.PLAYER_HEAD, "<light_purple>Party", partyLine(p), "<yellow>Click to manage"),
+        gui.set(37, Guis.icon(Material.PLAYER_HEAD, "<light_purple>Party", partyLine(p), "<#F6D58E>▸ Manage"),
             c -> party(c.player()));
         gui.set(38, Guis.icon(Material.GOLDEN_HELMET, "<gold>Leaderboard", "<gray>Fastest clears per floor"),
             c -> leaderboard(c.player(), 1));
         int waiting = data.pendingCount();
         gui.set(42, Guis.icon(waiting > 0 ? Material.CHEST_MINECART : Material.MINECART, "<green>Claim rewards",
             waiting > 0 ? "<gray>" + waiting + " item(s) waiting" : "<gray>Nothing waiting",
-            waiting > 0 ? "<yellow>Click to claim" : ""), c -> {
+            waiting > 0 ? "<#F6D58E>▸ Claim" : ""), c -> {
                 c.close();
                 svc.core.getPlugin().getServer().dispatchCommand(c.player(), "dungeon claim");
             });
@@ -89,12 +88,12 @@ public final class DungeonGuis {
                 svc.core.getPlugin().getServer().dispatchCommand(c.player(), "dungeon stats");
             });
         int level = Catacombs.level(cfg, data.catacombsXp);
-        gui.set(36, Guis.icon(Material.EXPERIENCE_BOTTLE, "<aqua>Catacombs level " + level,
+        gui.set(36, Guis.icon(Material.EXPERIENCE_BOTTLE, "<aqua>Crypt Depths level " + level,
             "<gray>Reward bonus: <white>+" + String.format("%.0f", Catacombs.bonusPercent(cfg, level)) + "%",
             level >= cfg.catacombsMaxLevel ? "<gray>Max level" : "<gray>Next level at <white>"
                 + Catacombs.xpForLevel(cfg, level + 1) + " <gray>XP (you have <white>" + data.catacombsXp + "<gray>)"));
         gui.set(44, Guis.icon(Material.ANVIL, "<gold>Crypt Forge", "<gray>Trade dungeon materials for", "<gray>consumables, caches and coins",
-            "<yellow>Click to open"), c -> {
+            "<#F6D58E>▸ Open"), c -> {
                 if (svc.runs.runOf(c.player().getUniqueId()) == null) {
                     svc.forge.open(c.player());
                 }
@@ -105,8 +104,6 @@ public final class DungeonGuis {
                 c.close();
                 svc.runs.leave(c.player());
             });
-        } else {
-            gui.set(40, Guis.icon(Material.BARRIER, "<red>Close"), c -> c.close());
         }
         gui.open(p);
     }
@@ -132,8 +129,8 @@ public final class DungeonGuis {
             }
         }
         lore.add("");
-        lore.add(lock == null ? "<yellow>Click to start" : "<red>" + lock);
-        Material m = lock == null ? material(f.palette()) : Material.RED_STAINED_GLASS_PANE;
+        lore.add(lock == null ? "<#F6D58E>▸ Start" : "<red>" + lock);
+        Material m = lock == null ? material(f.palette()) : Material.RED_DYE;
         return Guis.icon(m, (lock == null ? "<gold><bold>" : "<red><bold>") + "Floor " + f.number() + " <gray>- <white>" + f.name(),
             lore.toArray(new String[0]));
     }
@@ -144,7 +141,6 @@ public final class DungeonGuis {
         UUID id = p.getUniqueId();
         Party party = svc.parties.partyOf(id);
         Gui gui = svc.core.guis().create(3, "<light_purple><bold>Dungeon party");
-        gui.fill(Guis.icon(Material.BLACK_STAINED_GLASS_PANE, " "));
         if (party == null) {
             gui.set(13, Guis.icon(Material.EMERALD, "<green>Create a party", "<gray>Then invite friends with /party invite"),
                 c -> {
@@ -152,7 +148,7 @@ public final class DungeonGuis {
                     svc.core.msg().ok(c.player(), r.message());
                     party(c.player());
                 });
-            gui.set(22, Guis.icon(Material.ARROW, "<gray>Back"), c -> floors(c.player()));
+            gui.back(null, c -> floors(c.player()));
             gui.open(p);
             return;
         }
@@ -169,8 +165,8 @@ public final class DungeonGuis {
                 List<Component> lore = new ArrayList<>();
                 lore.add(Msg.component(party.isLeader(m) ? "<gray>Party leader" : "<gray>Member"));
                 if (leader && !m.equals(id)) {
-                    lore.add(Msg.component("<yellow>Left-click: make leader"));
-                    lore.add(Msg.component("<red>Shift-click: remove"));
+                    lore.add(Msg.component("<#F6D58E>▸ Left-click: make leader"));
+                    lore.add(Msg.component("<red>▸ Shift: Remove"));
                 }
                 meta.lore(lore);
                 head.setItemMeta(meta);
@@ -191,7 +187,7 @@ public final class DungeonGuis {
         gui.set(15, Guis.icon(Material.NAME_TAG, "<aqua>Invite a player", "<gray>Click, then type the name",
             "<gray>Up to " + svc.parties.maxSize() + " players"), c -> {
                 c.close();
-                c.player().sendMessage(Msg.component("<aqua>Click to invite: ").append(Msg.component("<yellow>[/party invite ]")
+                c.player().sendMessage(Msg.component("<#F6D58E>▸ Invite: ").append(Msg.component("<yellow>[/party invite ]")
                     .clickEvent(ClickEvent.suggestCommand("/party invite "))));
             });
         gui.set(16, Guis.icon(Material.LIME_DYE, "<green>Ready check", "<gray>Ask everyone to confirm"), c -> {
@@ -209,7 +205,7 @@ public final class DungeonGuis {
                 svc.core.getPlugin().getServer().dispatchCommand(c.player(), "party warp");
             });
         gui.set(22, Guis.icon(Material.OAK_SIGN, svc.parties.partyChat(id) ? "<green>Party chat: ON" : "<gray>Party chat: OFF",
-            "<gray>Click to toggle"), c -> {
+            "<#F6D58E>▸ Toggle"), c -> {
                 svc.parties.togglePartyChat(id);
                 party(c.player());
             });
@@ -222,7 +218,7 @@ public final class DungeonGuis {
                 svc.core.msg().error(c.player(), r.message());
             }
         });
-        gui.set(26, Guis.icon(Material.ARROW, "<gray>Back to the floors"), c -> floors(c.player()));
+        gui.back("To the floors", c -> floors(c.player()));
         gui.open(p);
     }
 
@@ -232,7 +228,6 @@ public final class DungeonGuis {
         DungeonConfig cfg = svc.cfg();
         int f = Math.max(1, Math.min(cfg.floorCount(), floor));
         Gui gui = svc.core.guis().create(4, "<gold><bold>Leaderboard - Floor " + f);
-        gui.fill(Guis.icon(Material.BLACK_STAINED_GLASS_PANE, " "));
         DungeonConfig.Floor fl = cfg.floor(f);
         gui.set(4, Guis.icon(material(fl.palette()), "<gold>Floor " + f + " <white>" + fl.name(), "<gray>Fastest clears"));
         if (f > 1) {
@@ -257,7 +252,7 @@ public final class DungeonGuis {
             }
             gui.set(slots[i], Guis.icon(m, "<gold>#" + (i + 1) + " <white>" + clock(e.millis), lore.toArray(new String[0])));
         }
-        gui.set(31, Guis.icon(Material.ARROW, "<gray>Back"), c -> floors(c.player()));
+        gui.back(null, c -> floors(c.player()));
         gui.open(p);
     }
 }

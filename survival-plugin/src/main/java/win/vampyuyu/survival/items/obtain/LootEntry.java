@@ -7,7 +7,7 @@ import java.util.Map;
 import org.bukkit.configuration.ConfigurationSection;
 
 /**
- * One row of the loot tables ({@code loot.entries} in items.yml).
+ * One row of the loot tables ({@code item_loot} rows).
  *
  * @param kind {@code item} (catalog id), {@code book} (enchanted book) or {@code pet} (pet egg)
  * @param id catalog id, enchant id (or {@code @ultimate} for a random ultimate) or pet species id;
@@ -80,7 +80,7 @@ public record LootEntry(String kind, String id, int level, int maxLevel, String 
         return value instanceof Number n ? n.doubleValue() : def;
     }
 
-    /** The shipped table (must stay equal to the one in items.yml: a test compares them). */
+    /** The shipped table (must stay equal to the shipped seed: a test compares them). */
     public static final List<LootEntry> DEFAULTS = List.of(
             new LootEntry("book", "sharpness", 6, 0, "", 1, 0.12, List.of("mob")),
             new LootEntry("book", "power", 6, 0, "", 1, 0.12, List.of("mob")),

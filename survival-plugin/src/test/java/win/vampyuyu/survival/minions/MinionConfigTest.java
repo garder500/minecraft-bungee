@@ -6,7 +6,6 @@ import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.Test;
 import win.vampyuyu.survival.minions.MinionConfig.Kind;
 
@@ -21,7 +20,7 @@ public class MinionConfigTest {
             @Override public void flush() {}
             @Override public void close() {}
         });
-        MinionConfig c = MinionConfig.load(TestConfig.yaml(), log);
+        MinionConfig c = TestConfig.load(db -> {}, log);
         assertEquals(java.util.List.of(), warnings);
         assertTrue("types: " + c.types.size(), c.types.size() >= 18);
         for (Kind kind : Kind.values()) {
@@ -49,13 +48,6 @@ public class MinionConfigTest {
 
     @Test
     public void aBadRecipeIsSkippedWithAWarning() {
-        YamlConfiguration yaml = TestConfig.yaml();
-        yaml.set("recipes.broken.result", "upgrade:nope");
-        yaml.set("recipes.broken.shape", java.util.List.of("EE"));
-        yaml.set("recipes.broken.ingredients.E", "COAL");
-        yaml.set("recipes.no_ingredient.result", "upgrade:compactor");
-        yaml.set("recipes.no_ingredient.shape", java.util.List.of("EX"));
-        yaml.set("recipes.no_ingredient.ingredients.E", "COAL");
         java.util.List<String> warnings = new java.util.ArrayList<>();
         Logger log = Logger.getAnonymousLogger();
         log.setUseParentHandlers(false);
@@ -64,7 +56,14 @@ public class MinionConfigTest {
             @Override public void flush() {}
             @Override public void close() {}
         });
-        MinionConfig c = MinionConfig.load(yaml, log);
+        MinionConfig c = TestConfig.load(db -> {
+            TestConfig.sql(db, "INSERT INTO minion_recipe (id, position, result) VALUES ('broken', 90, 'upgrade:nope')");
+            TestConfig.sql(db, "INSERT INTO minion_recipe_row (recipe_id, position, pattern) VALUES ('broken', 0, 'EE')");
+            TestConfig.sql(db, "INSERT INTO minion_recipe_ingredient (recipe_id, letter, spec) VALUES ('broken', 'E', 'COAL')");
+            TestConfig.sql(db, "INSERT INTO minion_recipe (id, position, result) VALUES ('no_ingredient', 91, 'upgrade:compactor')");
+            TestConfig.sql(db, "INSERT INTO minion_recipe_row (recipe_id, position, pattern) VALUES ('no_ingredient', 0, 'EX')");
+            TestConfig.sql(db, "INSERT INTO minion_recipe_ingredient (recipe_id, letter, spec) VALUES ('no_ingredient', 'E', 'COAL')");
+        }, log);
         assertFalse(c.itemRecipes.containsKey("broken"));
         assertFalse(c.itemRecipes.containsKey("no_ingredient"));
         assertEquals(2, warnings.size());
@@ -73,10 +72,9 @@ public class MinionConfigTest {
 
     @Test
     public void aCompressedFuelMustBeAResourceAMinionMakes() {
-        YamlConfiguration yaml = TestConfig.yaml();
-        yaml.set("fuels.bad.material", "COAL");
-        yaml.set("fuels.bad.compressed", "BEDROCK");
-        MinionConfig c = MinionConfig.load(yaml, Logger.getAnonymousLogger());
+        MinionConfig c = TestConfig.load(db -> TestConfig.sql(db,
+            "INSERT INTO minion_fuel (id, position, material, compressed) VALUES ('bad', 90, 'COAL', 'BEDROCK')"),
+            Logger.getAnonymousLogger());
         assertFalse(c.fuels.containsKey("bad"));
         assertEquals(Material.COAL, c.fuels.get("enchanted_coal").compressed());
         assertFalse(c.fuels.get("enchanted_coal").custom());
@@ -130,31 +128,35 @@ public class MinionConfigTest {
 
     @Test
     public void aBadEntryIsSkippedNotFatal() {
-        YamlConfiguration y = new YamlConfiguration();
-        y.set("types.good.kind", "MINING");
-        y.set("types.good.block", "STONE");
-        y.set("types.good.recipe.ingredient", "STONE");
-        y.set("types.good.recipe.center", "STICK");
-        y.set("types.good.drops", java.util.List.of(java.util.Map.of("item", "STONE")));
-        y.set("types.bad.kind", "FLYING");
-        y.set("types.worse.kind", "MINING");
-        y.set("types.worse.block", "NOT_A_BLOCK");
-        y.set("fuels.f.material", "NOPE");
         Logger log = Logger.getAnonymousLogger();
         log.setUseParentHandlers(false);
-        MinionConfig c = MinionConfig.load(y, log);
+        MinionConfig c = TestConfig.loadEmpty(db -> {
+            TestConfig.sql(db, "INSERT INTO minion_type (id, position, name, kind, action_seconds, hand, hat, block, "
+                + "recipe_ingredient, recipe_center) VALUES ('good', 0, 'Good', 'MINING', 10, 'WOODEN_PICKAXE', 'IRON_HELMET', "
+                + "'STONE', 'STONE', 'STICK')");
+            TestConfig.sql(db, "INSERT INTO minion_drop (type_id, position, item, min_amount, max_amount) VALUES ('good', 0, 'STONE', 1, 1)");
+            // no drops
+            TestConfig.sql(db, "INSERT INTO minion_type (id, position, name, kind, action_seconds, hand, hat, block, "
+                + "recipe_ingredient, recipe_center) VALUES ('bad', 1, 'Bad', 'MINING', 10, 'WOODEN_PICKAXE', 'IRON_HELMET', "
+                + "'STONE', 'STONE', 'STICK')");
+            // a block that does not exist
+            TestConfig.sql(db, "INSERT INTO minion_type (id, position, name, kind, action_seconds, hand, hat, block, "
+                + "recipe_ingredient, recipe_center) VALUES ('worse', 2, 'Worse', 'MINING', 10, 'WOODEN_PICKAXE', 'IRON_HELMET', "
+                + "'NOT_A_BLOCK', 'STONE', 'STICK')");
+            TestConfig.sql(db, "INSERT INTO minion_drop (type_id, position, item, min_amount, max_amount) VALUES ('worse', 0, 'STONE', 1, 1)");
+            TestConfig.sql(db, "INSERT INTO minion_fuel (id, position, material) VALUES ('f', 0, 'NOPE')");
+        }, log);
         assertEquals(java.util.Set.of("good"), c.types.keySet());
         assertTrue(c.fuels.isEmpty());
     }
 
     @Test
-    public void wrongTierTableLengthFallsBackToDefaults() {
-        YamlConfiguration y = new YamlConfiguration();
-        y.set("tiers.storage-slots", java.util.List.of(1, 2, 3));
+    public void missingTierRowsFallBackToDefaults() {
         Logger log = Logger.getAnonymousLogger();
         log.setUseParentHandlers(false);
-        MinionConfig c = MinionConfig.load(y, log);
+        MinionConfig c = TestConfig.loadEmpty(db -> {}, log);
         assertEquals(30, c.storageSlots(11));
+        assertEquals(5, c.baseSlots);
     }
 
     @Test

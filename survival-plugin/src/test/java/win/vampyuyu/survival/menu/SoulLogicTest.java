@@ -67,13 +67,13 @@ public class SoulLogicTest {
 
     @Test
     public void statCycleAccumulates() {
-        List<StatStep> cycle = List.of(new StatStep(Stat.HEALTH, 2), new StatStep(Stat.DEFENSE, 1),
-            new StatStep(Stat.STRENGTH, 1));
+        List<StatStep> cycle = List.of(new StatStep(Stat.VITALITY, 2), new StatStep(Stat.WARD, 1),
+            new StatStep(Stat.MIGHT, 1));
         assertTrue(SoulLogic.milestoneStats(0, cycle).isEmpty());
         Map<Stat, Double> five = SoulLogic.milestoneStats(5, cycle);
-        assertEquals(4.0, five.get(Stat.HEALTH), 0); // milestones 1 and 4
-        assertEquals(2.0, five.get(Stat.DEFENSE), 0); // 2 and 5
-        assertEquals(1.0, five.get(Stat.STRENGTH), 0);
+        assertEquals(4.0, five.get(Stat.VITALITY), 0); // milestones 1 and 4
+        assertEquals(2.0, five.get(Stat.WARD), 0); // 2 and 5
+        assertEquals(1.0, five.get(Stat.MIGHT), 0);
         assertTrue(SoulLogic.milestoneStats(3, List.of()).isEmpty());
     }
 
@@ -88,18 +88,21 @@ public class SoulLogicTest {
     }
 
     @Test
-    public void badConfigEntriesAreReportedNotThrown() {
-        List<String> problems = new ArrayList<>();
-        List<SoulDef> parsed = SoulLogic.parse(List.of(Map.of("id", "ok_1", "world", "hub", "x", 1, "y", 2, "z", 3),
-            Map.of("id", "Bad Id", "world", "hub", "x", 1, "y", 2, "z", 3), Map.of("id", "no_z", "world", "hub",
-                "x", 1, "y", 2)), false, problems);
-        assertEquals(1, parsed.size());
-        assertEquals(2, problems.size());
-        List<String> stepProblems = new ArrayList<>();
-        List<StatStep> steps = SoulLogic.parseCycle(List.of(Map.of("stat", "health", "amount", 2),
-            Map.of("stat", "MANA", "amount", 1)), stepProblems);
-        assertEquals(1, steps.size());
-        assertEquals(1, stepProblems.size());
+    public void badRowsAreReportedNotThrown() {
+        try (win.vampyuyu.survival.data.Db db = win.vampyuyu.survival.data.TestDb.seeded()) {
+            win.vampyuyu.survival.data.TestDb.exec(db, "DELETE FROM menu_fairy_soul");
+            win.vampyuyu.survival.data.TestDb.exec(db, "DELETE FROM menu_fairy_stat");
+            win.vampyuyu.survival.data.TestDb.exec(db, "INSERT INTO menu_fairy_soul (id, kind, position, world, x, y, z) "
+                + "VALUES ('ok_1', 'fixed', 0, 'hub', 1, 2, 3)");
+            win.vampyuyu.survival.data.TestDb.exec(db, "INSERT INTO menu_fairy_soul (id, kind, position, world, x, y, z) "
+                + "VALUES ('Bad Id', 'fixed', 1, 'hub', 1, 2, 3)");
+            win.vampyuyu.survival.data.TestDb.exec(db, "INSERT INTO menu_fairy_stat (id, position, stat, amount) VALUES ('a', 0, 'HEALTH', 2)");
+            win.vampyuyu.survival.data.TestDb.exec(db, "INSERT INTO menu_fairy_stat (id, position, stat, amount) VALUES ('b', 1, 'MANA', 1)");
+            MenuRepo.Rows rows = MenuRepo.rows(db);
+            assertEquals(1, rows.fairyFixed().size());
+            assertEquals(1, rows.fairyCycle().size());
+            assertEquals(2, rows.problems().size());
+        }
     }
 
     @Test
@@ -113,14 +116,16 @@ public class SoulLogicTest {
     }
 
     @Test
-    public void parseKeepsTheWorldOfIslandSoulsAndRequiresOneForFixedSouls() {
-        List<String> problems = new java.util.ArrayList<>();
-        List<SoulDef> island = SoulLogic.parse(List.of(Map.of("id", "a", "world", "end", "x", 1, "y", 1, "z", 1),
-            Map.of("id", "b", "x", 1, "y", 1, "z", 1)), true, problems);
-        assertEquals(List.of("end", "world"), island.stream().map(SoulDef::world).toList());
-        assertTrue(problems.isEmpty());
-        assertEquals(0, SoulLogic.parse(List.of(Map.of("id", "c", "x", 1, "y", 1, "z", 1)), false, problems).size());
-        assertEquals(1, problems.size());
+    public void shippedSoulsLoadWithTheirKind() {
+        try (win.vampyuyu.survival.data.Db db = win.vampyuyu.survival.data.TestDb.seeded()) {
+            MenuRepo.Rows rows = MenuRepo.rows(db);
+            assertEquals(16, rows.fairyFixed().size());
+            assertEquals(27, rows.fairyIsland().size());
+            assertTrue(rows.fairyIsland().stream().allMatch(SoulDef::relative));
+            assertEquals(List.of("world", "nether", "end"), rows.fairyIsland().stream().map(SoulDef::world).distinct().toList());
+            assertEquals(8, rows.fairyCycle().size());
+            assertTrue(rows.problems().isEmpty());
+        }
     }
 
     @Test

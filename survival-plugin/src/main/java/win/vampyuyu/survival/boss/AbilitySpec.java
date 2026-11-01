@@ -11,7 +11,7 @@ import java.util.Map;
  * @param damage damage multiplier applied to the boss base damage
  * @param target who the ability aims at: nearest, random, top (best damager), far, all
  * @param fromTier first slayer tier that uses it (1 for everyone, ignored by regular bosses)
- * @param params remaining keys of the yaml entry (radius, count, duration...)
+ * @param params the ability-specific parameters (the {@code *_ability_param} rows: numbers as doubles, words as text) (radius, count, duration...)
  */
 public record AbilitySpec(AbilityType type, int cooldownTicks, int telegraphTicks, double damage, String target,
         int fromTier, Map<String, Object> params) {
@@ -30,7 +30,10 @@ public record AbilitySpec(AbilityType type, int cooldownTicks, int telegraphTick
 
     public boolean bool(String key, boolean fallback) {
         Object value = params.get(key);
-        return value instanceof Boolean flag ? flag : fallback;
+        if (value instanceof Boolean flag) {
+            return flag;
+        }
+        return value instanceof String text ? Boolean.parseBoolean(text.trim()) : fallback;
     }
 
     public String str(String key, String fallback) {
@@ -38,7 +41,7 @@ public record AbilitySpec(AbilityType type, int cooldownTicks, int telegraphTick
         return value == null ? fallback : String.valueOf(value);
     }
 
-    /** Seconds in the yaml, ticks in the code. */
+    /** Seconds in the data, ticks in the code. */
     public int seconds(String key, double fallbackSeconds) {
         return (int) Math.round(num(key, fallbackSeconds) * 20);
     }

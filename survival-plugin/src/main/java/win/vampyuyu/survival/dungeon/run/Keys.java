@@ -14,8 +14,10 @@ public final class Keys {
     public final NamespacedKey damage;
     public final NamespacedKey npc;
     public final NamespacedKey level;
-    /** Extra damage divisor of monsters whose wanted health is above the vanilla attribute cap. */
-    public final NamespacedKey factor;
+    /** Total health of a monster whose wanted health is above the vanilla attribute cap (its virtual pool). */
+    public final NamespacedKey hpMax;
+    /** Health left in the virtual pool. */
+    public final NamespacedKey hp;
 
     public Keys(Plugin plugin) {
         run = new NamespacedKey(plugin, "dungeon_run");
@@ -25,7 +27,8 @@ public final class Keys {
         damage = new NamespacedKey(plugin, "dungeon_damage");
         npc = new NamespacedKey(plugin, "dungeon_npc");
         level = new NamespacedKey(plugin, "dungeon_level");
-        factor = new NamespacedKey(plugin, "dungeon_hpfactor");
+        hpMax = new NamespacedKey(plugin, "dungeon_hp_max");
+        hp = new NamespacedKey(plugin, "dungeon_hp");
     }
 
     /** Run id written on the entity, or null for a foreign entity. */
@@ -45,8 +48,23 @@ public final class Keys {
         return e.getPersistentDataContainer().get(damage, PersistentDataType.DOUBLE);
     }
 
-    public Double factorOf(Entity e) {
-        return e.getPersistentDataContainer().get(factor, PersistentDataType.DOUBLE);
+    /** Total of the virtual health pool, or null for a monster with plain vanilla health. */
+    public Double hpMaxOf(Entity e) {
+        return e.getPersistentDataContainer().get(hpMax, PersistentDataType.DOUBLE);
+    }
+
+    /** Health left in the virtual pool (the total when untouched), or null for a monster with plain vanilla health. */
+    public Double hpOf(Entity e) {
+        Double max = hpMaxOf(e);
+        if (max == null) {
+            return null;
+        }
+        Double left = e.getPersistentDataContainer().get(hp, PersistentDataType.DOUBLE);
+        return left == null ? max : left;
+    }
+
+    public void setHp(Entity e, double left) {
+        e.getPersistentDataContainer().set(hp, PersistentDataType.DOUBLE, left);
     }
 
     public String npcOf(Entity e) {

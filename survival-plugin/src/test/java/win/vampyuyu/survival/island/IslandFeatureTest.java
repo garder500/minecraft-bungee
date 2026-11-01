@@ -767,6 +767,7 @@ public class IslandFeatureTest {
     private Gui openGui(PlayerMock p) {
         var holder = p.getOpenInventory().getTopInventory().getHolder();
         assertTrue("a menu is open", holder instanceof Gui);
+        win.vampyuyu.survival.core.MenuRules.check(p.getOpenInventory().getTopInventory(), "island menu");
         return (Gui) holder;
     }
 
@@ -787,7 +788,7 @@ public class IslandFeatureTest {
         island.warp.pos = Pos.of(center(island));
         island.level = 5;
         menus.main(owner);
-        assertEquals(45, openGui(owner).size());
+        assertEquals(54, openGui(owner).size());
         menus.settings(owner);
         menus.upgrades(owner);
         menus.members(owner);

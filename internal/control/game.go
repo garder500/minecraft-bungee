@@ -54,6 +54,9 @@ func (s *Server) gameProxy(w http.ResponseWriter, r *http.Request, id, method, p
 	if strings.HasPrefix(path, "/arenas") {
 		port = "8085"
 	}
+	if strings.HasPrefix(path, "/skyblock/") {
+		port = "8086" // the survival plugin's own data endpoint
+	}
 	request, e := http.NewRequestWithContext(r.Context(), method, "http://"+net.JoinHostPort(host, port)+path, body)
 	if e != nil {
 		JSON(w, 503, map[string]string{"error": "Minecraft request failed"})

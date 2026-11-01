@@ -3,24 +3,30 @@ package win.vampyuyu.survival.boss;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.io.InputStreamReader;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+import org.mockbukkit.mockbukkit.MockBukkit;
 
 /** Design principle (docs/skyblock-design.md section 13): slayers never run in the hub. */
 public class SlayerWorldsTest {
+    @Before
+    public void server() {
+        MockBukkit.mock(); // entity types need a server
+    }
+
+    @After
+    public void stop() {
+        MockBukkit.unmock();
+    }
+
     @Test
-    public void shippedSlayersStayOutOfTheHub() throws Exception {
-        try (var in = new InputStreamReader(getClass().getResourceAsStream("/boss.yml"))) {
-            YamlConfiguration yml = YamlConfiguration.loadConfiguration(in);
-            ConfigurationSection slayers = yml.getConfigurationSection("slayers");
-            assertTrue(slayers != null && !slayers.getKeys(false).isEmpty());
-            for (String id : slayers.getKeys(false)) {
-                var worlds = slayers.getStringList(id + ".worlds");
-                assertFalse(id + " must list at least one world", worlds.isEmpty());
-                assertFalse(id + " must not run in the hub", worlds.contains("sb_hub"));
-            }
+    public void shippedSlayersStayOutOfTheHub() {
+        var slayers = BossTestData.shipped().slayers();
+        assertTrue(!slayers.isEmpty());
+        for (var slayer : slayers.values()) {
+            assertFalse(slayer.id() + " must list at least one world", slayer.worlds().isEmpty());
+            assertFalse(slayer.id() + " must not run in the hub", slayer.worlds().contains("sb_hub"));
         }
     }
 }

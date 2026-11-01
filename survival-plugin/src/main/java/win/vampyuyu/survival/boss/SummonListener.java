@@ -204,7 +204,7 @@ public final class SummonListener implements Listener {
                 continue;
             }
             double mf = drop.magicFind() ? core.service(StatsApi.class)
-                .map(s -> Math.min(manager.settings().magicFindCap(), s.stat(killer, Stat.MAGIC_FIND))).orElse(0.0) : 0;
+                .map(s -> Math.min(manager.settings().magicFindCap(), s.stat(killer, Stat.FORTUNE))).orElse(0.0) : 0;
             if (LootMath.roll(LootMath.chance(drop.chance(), 0, 1.0, mf, drop.magicFind()), random)
                 && core.items().def(drop.item()).isPresent()) {
                 manager.delivery().dropReserved(dead.getLocation(), core.items().create(drop.item()), killer.getUniqueId());

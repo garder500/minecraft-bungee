@@ -63,7 +63,7 @@ The player's guide through Skyblock and the only join router. Config: `menu.yml`
   plugin), it stays out. A board of ours handed back after a run is adopted, not replaced. The action bar and the TAB
   list are never touched.
 * **Settings**: sidebar, quest tracker, sounds. First join: welcome title and sounds.
-* **Damage numbers** are the items feature's (`items/combat/DamageIndicators`, `items.yml damage-indicators`); the menu
+* **Damage numbers** are the items feature's (`items/combat/DamageIndicators`, `items.combat.damage-indicators.*` settings); the menu
   ships none and no per-player toggle for them (see NEEDS).
 
 ## Commands and permissions

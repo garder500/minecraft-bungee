@@ -51,11 +51,7 @@ public class SlayerManagerTest {
         win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         wallet = new Wallet();
         plugin.core().replace(EconomyApi.class, wallet);
-        BossConfig config;
-        try (var reader = new java.io.InputStreamReader(getClass().getResourceAsStream("/boss.yml"),
-                java.nio.charset.StandardCharsets.UTF_8)) {
-            config = BossConfig.load(org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(reader));
-        }
+        BossConfig config = win.vampyuyu.survival.boss.BossTestData.shipped();
         slayer = new SlayerManager(plugin.core(), new BossManager(plugin.core(), config));
     }
 
@@ -139,9 +135,7 @@ public class SlayerManagerTest {
         ((java.util.Map<?, ?>) services.get(plugin.core())).remove(win.vampyuyu.survival.api.EconomyApi.class);
         assertTrue(plugin.core().service(win.vampyuyu.survival.api.EconomyApi.class).isEmpty());
         PlayerMock p = server.addPlayer();
-        BossConfig config = BossConfig.load(org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(
-            new java.io.InputStreamReader(getClass().getResourceAsStream("/boss.yml"),
-                java.nio.charset.StandardCharsets.UTF_8)));
+        BossConfig config = win.vampyuyu.survival.boss.BossTestData.shipped();
         SlayerManager noEconomy = new SlayerManager(plugin.core(), new BossManager(plugin.core(), config));
         assertTrue(noEconomy.start(p, noEconomy.slayer("zombie").orElseThrow(), 1).contains("economy"));
     }

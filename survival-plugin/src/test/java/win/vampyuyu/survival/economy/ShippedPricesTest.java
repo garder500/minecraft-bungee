@@ -2,29 +2,25 @@ package win.vampyuyu.survival.economy;
 
 import static org.junit.Assert.*;
 
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.junit.Test;
 
-/** Checks the price tables shipped in economy.yml: valid items and no buy-low / sell-high loops. */
+/** Checks the price tables shipped in the economy seed: valid items and no buy-low / sell-high loops. */
 public class ShippedPricesTest {
-    private static YamlConfiguration config;
+    private static EconomyConfig config;
     private static ShopCatalog catalog;
 
     @BeforeClass
     public static void load() {
-        MockBukkit.mock(); // Material and YamlConfiguration need a server, also when this class runs alone
-        config = YamlConfiguration.loadConfiguration(new InputStreamReader(
-            ShippedPricesTest.class.getResourceAsStream("/economy.yml"), StandardCharsets.UTF_8));
-        catalog = ShopCatalog.parse(config, Logger.getAnonymousLogger());
+        MockBukkit.mock(); // Material needs a server, also when this class runs alone
+        config = EconomyFixtures.shipped();
+        catalog = ShopCatalog.of(config, Logger.getAnonymousLogger());
     }
 
     @AfterClass
@@ -143,12 +139,12 @@ public class ShippedPricesTest {
 
     @Test
     public void configDefaultsAreSane() {
-        assertTrue(config.getDouble("pressure.soft-cap") > 0);
-        assertTrue(config.getDouble("pressure.min-multiplier") > 0);
-        assertTrue(config.getInt("buyback.seconds") > 0);
+        assertTrue(config.settings().getDouble("pressure.soft-cap", 0) > 0);
+        assertTrue(config.settings().getDouble("pressure.min-multiplier", 0) > 0);
+        assertTrue(config.settings().getInt("buyback.seconds", 0) > 0);
     }
 
-    /** Compacted minion items (160 raw -> enchanted, 160 enchanted -> super in minions.yml) must never out-earn the raw goods. */
+    /** Compacted minion items (160 raw -> enchanted, 160 enchanted -> super in the minions data) must never out-earn the raw goods. */
     @Test
     public void compactedMinionItemsAreSellOnlyAndBelowTheCompactionRatio() {
         int checked = 0;

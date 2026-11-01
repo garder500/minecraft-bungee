@@ -98,7 +98,7 @@ final class MenuItemGuard implements Listener {
             if (free < 0) {
                 if (warnedFull.add(player.getUniqueId())) {
                     rt.core.msg().warn(player, "Your hotbar slot " + (slot + 1)
-                        + " is occupied and your inventory is full. Free a slot to get your Skyblock Menu.");
+                        + " is occupied and your inventory is full. Free a slot to get your Isles.");
                 }
                 return;
             }

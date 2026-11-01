@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-/** Rolls the item part of a run reward from the weighted table of {@code dungeon.yml}. */
+/** Rolls the item part of a run reward from the weighted table of the dungeon data. */
 public final class RewardTable {
     private RewardTable() {}
 

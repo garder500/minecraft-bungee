@@ -124,9 +124,7 @@ public class ReviewFixesTest extends SkillsBase {
         assertTrue(guard.isEnchanted(enchanted("enchanted_diamond", 1)));
         assertFalse(guard.isEnchanted(new ItemStack(Material.DIAMOND)));
         assertFalse(guard.isEnchanted(null));
-        var yaml = new org.bukkit.configuration.file.YamlConfiguration();
-        yaml.set("enchanted_guard.enabled", false);
-        service.config(new SkillsConfig(yaml));
+        service.config(SkillsTestData.load(db -> SkillsTestData.setting(db, "enchanted_guard.enabled", "false")));
         assertFalse(guard.isEnchanted(enchanted("enchanted_diamond", 1)));
     }
 
@@ -329,7 +327,7 @@ public class ReviewFixesTest extends SkillsBase {
         server.getPluginManager().registerEvents(new org.bukkit.event.Listener() {
             @org.bukkit.event.EventHandler
             public void onLevel(SkillLevelUpEvent event) {
-                seen.add(stats.modifier(player.getUniqueId(), "skill:mining", Stat.MINING_FORTUNE));
+                seen.add(stats.modifier(player.getUniqueId(), "skill:mining", Stat.MINING_YIELD));
             }
         }, plugin);
         service.grant(player, Skill.MINING, service.config().levels.xpFor(1) + 1, "test");

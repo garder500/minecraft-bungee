@@ -16,7 +16,7 @@ All amounts are stored as `long` cents (1 coin = 100 cents, `Money`); the public
   first version paid about 6 to 9 percent a day and would have out-earned playing. Watch `/economy audit` (bank:interest in the flow table)
   before raising it.
 * **NPC merchants**: ten shops (Farmer, Miner, Lumberjack, Fisherman, Mob Hunter, Alchemist, Adventurer, Weaponsmith, Builder, Rancher)
-  with buy and sell prices from `economy.yml` (vanilla items; custom ids are skipped until another feature registers them).
+  with buy and sell prices from the `merchant_offer` table (vanilla items; custom ids are skipped until another feature registers them).
   Each shop has a "Sell everything" button and a **buyback** list (last sold items, recoverable for `buyback.seconds` at the price paid).
   Optional **sell pressure**: every item sold to an NPC lowers that item's sell price server-wide, the effect decays (half-life).
   Compacted minion items share the pool of their raw item, weighted by the compaction ratio (`pressure.compact-prefixes`), so selling
@@ -59,7 +59,9 @@ Players reach shops through the NPCs (right-click). Usage: `/bz buy|sell <item> 
 `/bz orders|claim|cancel <id>|price <item>|sellinv`; `/ah sell <price> [bin] [hours]` (holding the item), `/ah bid <id> <amount>`,
 `/ah buy <id>`, `/ah mine|claim|cancel <id>|history|browse [category]|search <text>`.
 
-## Config (`economy.yml`, `core.featureConfig("economy")`, `/economy reload` re-reads shops, prices, bank, bazaar, auction)
+## Config (content database `skyblock.db`, seed `db/seed/economy.sql`, `EconomyConfig.load`; `/economy reload` re-reads shops, prices, bank, bazaar, auction)
+
+Tables (V003): `merchant`, `merchant_offer`, `bank_tier`, `bazaar_product`, `price_pressure_prefix`, `market_never_traded`, `auction_blocked_item`; the scalars below are `economy.<path>` rows of `setting`.
 
 `currency`, `pay`, `death`, `baltop`, `safety`, `bank` (tiers), `sell`, `buyback`, `pressure` (soft-cap, half-life-hours, min-multiplier,
 `compact-prefixes`), `shops.<id>` (name, npc-name, icon, profession,
@@ -124,7 +126,7 @@ the IO thread then waits for those writes (`awaitWrites`) and only afterwards wr
   constructed in tests), `ItemStack.serializeAsBytes` round trip (MockBukkit falls back to the YAML form, so the `b:` path is untested here),
   `player.saveData()` timing, a real crash between the market file and a profile save.
 * Custom item ids are taken from the sibling branches (read-only): `minion_enchanted_<material>` / `minion_super_<material>` (feature minions,
-  ratio 150 here vs 160 in minions.yml; if `minions.yml` lowers its ratios below 150 these prices must be lowered too, `ShippedPricesTest`
+  ratio 150 here vs 160 in the minions data (`compact_ratio`, `super_ratio`); if it lowers its ratios below 150 these prices must be lowered too, `ShippedPricesTest`
   checks the 150 rule, not the minions config), `dungeon_*` and the boss / slayer material ids (`BossItems`). Priced: sell only, no buy price, and
   only materials. NOT priced on purpose: summon items (`void_sigil`...), weapons (`void_fang`...), the Crypt Merchant consumables
   (`dungeon_spirit_leaf`, `dungeon_healing_flask`, sold by the dungeon itself) and `wing_core` (its use by the wings feature is unknown; if it is
@@ -155,9 +157,9 @@ the IO thread then waits for those writes (`awaitWrites`) and only afterwards wr
 * **Skyblock only.** `EconomyGuard` cancels every economy command (`/bal /pay /bank /bz /ah /market /shop ...`, also the
   namespaced forms) outside the Skyblock worlds. Coins never reach Survival.
 * **`/market`** (everyone) opens the merchants menu from anywhere in Skyblock: the "market admin" for everyday items
-  (prices in `economy.yml`, buy high / sell low).
+  (prices in `merchant_offer`, buy high / sell low).
 * **Ultra rare items are never bought or sold by a merchant or the Bazaar** (`MarketRules.neverTraded`: built-in list
-  of diamonds, netherite, nether stars, totems, elytra, beacons, plus `market.never-traded` in `economy.yml`;
+  of diamonds, netherite, nether stars, totems, elytra, beacons, plus the `market_never_traded` table;
   a trailing `*` matches a prefix). Those entries are dropped when the shop tables and Bazaar categories load. Custom
   items only trade when a shop table or Bazaar category lists them, so Quarry ores are Auction House only.
 * **Bound items trade nowhere.** The PDC long `vampyuyu:untradable` >= 1 (Wings, trophies, skins) makes `ItemKeys`

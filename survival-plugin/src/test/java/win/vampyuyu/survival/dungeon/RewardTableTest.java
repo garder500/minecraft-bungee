@@ -7,7 +7,7 @@ import java.util.Random;
 import org.junit.Test;
 
 public class RewardTableTest {
-    private static final DungeonConfig CFG = DungeonConfig.parse(null);
+    private static final DungeonConfig CFG = DungeonConfig.defaults();
 
     @Test
     public void eligibilityFollowsFloorAndGrade() {

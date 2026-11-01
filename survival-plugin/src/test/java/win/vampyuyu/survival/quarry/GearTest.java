@@ -97,7 +97,7 @@ public class GearTest {
                 }
             }
         }, plugin);
-        // 6% and 3% per block: a few hundred blocks make a miss astronomically unlikely
+        // 3% and 2% per block and a guarantee at 60 and 90 blocks: 600 blocks always give both
         for (int i = 0; i < 600; i++) {
             org.bukkit.block.Block frost = sky.getBlockAt(bx + i % 20, 70 + i / 20, bz);
             frost.setType(org.bukkit.Material.SNOW_BLOCK);
@@ -147,11 +147,7 @@ public class GearTest {
         var quests = plugin.core().profiles().section(player.getUniqueId(), "quests",
             win.vampyuyu.survival.menu.QuestData.class, win.vampyuyu.survival.menu.QuestData::new);
         assertTrue(quests.planMigrated);
-        var catalog = new win.vampyuyu.survival.menu.MenuConfig(
-            org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(new java.io.InputStreamReader(
-                getClass().getResourceAsStream("/menu.yml"))), null, true,
-            org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(new java.io.InputStreamReader(
-                getClass().getResourceAsStream("/quests.yml")))).catalog;
+        var catalog = win.vampyuyu.survival.menu.QuestRepo.load(plugin.core().data());
         for (var def : catalog.tutorial()) {
             if (def.type() == win.vampyuyu.survival.menu.QuestType.GENERATOR_TIER) {
                 assertEquals(def.id(), def.amount() <= 3, quests.completed.contains(def.id()));

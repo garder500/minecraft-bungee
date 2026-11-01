@@ -130,7 +130,6 @@ final class BankUi {
             core.msg().mini(player, "<green>Your bank paid <gold>" + Money.coins(paid) + "</gold> in interest.");
         }
         Gui gui = core.guis().create(4, "<gold>Bank");
-        gui.fill(Ui.glass());
         render(gui, player);
         gui.open(player);
     }
@@ -144,7 +143,7 @@ final class BankUi {
                 + win.vampyuyu.survival.core.Msg.duration(Math.max(0, d.bankInterestAt + bank.periodMs() - now));
         long projected = Math.min(Money.basisPoints(d.bankCents, tier.rateBp()), tier.maxInterestCents());
         gui.set(4, Ui.icon(Material.GOLD_BLOCK, "bank", "<gold>Bank <gray>(" + tier.name() + ")",
-            "<gray>Purse: <gold>" + Money.coins(d.cents), "<gray>Bank: <gold>" + Money.coins(d.bankCents)
+            "<gray>Coins: <gold>" + Money.coins(d.cents), "<gray>Bank: <gold>" + Money.coins(d.bankCents)
                 + " <dark_gray>/ " + Money.compact(tier.capacityCents()),
             "", "<gray>Interest: <green>" + (tier.rateBp() / 100.0) + "%</green> every <yellow>"
                 + win.vampyuyu.survival.core.Msg.duration(bank.periodMs()),
@@ -154,10 +153,10 @@ final class BankUi {
             "", "<dark_gray>Coins in the bank survive death and are safe from PvP."));
 
         gui.set(10, Ui.icon(Material.CHEST, "deposit", "<green>Deposit everything",
-            "<gray>Moves your whole purse to the bank.", "", "<yellow>Click to deposit <gold>" + Money.coins(d.cents)),
+            "<gray>Moves your whole purse to the bank.", "", "<#F6D58E>▸ Deposit <gold>" + Money.coins(d.cents)),
             c -> act(gui, c, true, null));
         gui.set(11, Ui.icon(Material.CHEST_MINECART, "deposit", "<green>Deposit half",
-            "<gray>Moves half of your purse.", "", "<yellow>Click to deposit <gold>" + Money.coins(d.cents / 2)),
+            "<gray>Moves half of your purse.", "", "<#F6D58E>▸ Deposit <gold>" + Money.coins(d.cents / 2)),
             c -> act(gui, c, true, d.cents / 2));
         gui.set(12, Ui.plain(Material.OAK_SIGN, "<green>Deposit an amount", "<gray>Click, then type it in chat.",
             "<dark_gray>Examples: 500, 1.5k, 2m, half", "<dark_gray>Or /bank deposit [amount]"),
@@ -165,10 +164,10 @@ final class BankUi {
 
         gui.set(14, Ui.icon(Material.HOPPER, "withdraw", "<red>Withdraw everything",
             "<gray>Moves your whole bank balance to the purse.", "",
-            "<yellow>Click to withdraw <gold>" + Money.coins(d.bankCents)), c -> act(gui, c, false, null));
+            "<#F6D58E>▸ Withdraw <gold>" + Money.coins(d.bankCents)), c -> act(gui, c, false, null));
         gui.set(15, Ui.icon(Material.HOPPER_MINECART, "withdraw", "<red>Withdraw half",
             "<gray>Moves half of your bank balance.", "",
-            "<yellow>Click to withdraw <gold>" + Money.coins(d.bankCents / 2)), c -> act(gui, c, false, d.bankCents / 2));
+            "<#F6D58E>▸ Withdraw <gold>" + Money.coins(d.bankCents / 2)), c -> act(gui, c, false, d.bankCents / 2));
         gui.set(16, Ui.plain(Material.OAK_SIGN, "<red>Withdraw an amount", "<gray>Click, then type it in chat.",
             "<dark_gray>Examples: 500, 1.5k, half, all", "<dark_gray>Or /bank withdraw [amount]"),
             c -> askAmount(c.player(), false));
@@ -180,7 +179,7 @@ final class BankUi {
                 "<gray>Interest: <green>" + (nextTier.rateBp() / 100.0) + "%</green>, up to <gold>"
                     + Money.compact(nextTier.maxInterestCents()), "",
                 "<gray>Cost: <gold>" + Money.coins(nextTier.costCents()) + " <gray>from your purse",
-                d.cents >= nextTier.costCents() ? "<yellow>Click to upgrade" : "<red>You cannot afford this yet"),
+                d.cents >= nextTier.costCents() ? "<#F6D58E>▸ Upgrade" : "<red>You cannot afford this yet"),
                 c -> {
                     upgrade(c.player());
                     render(gui, c.player());
@@ -190,8 +189,7 @@ final class BankUi {
                 "<gray>Your bank cannot be upgraded further."));
         }
         gui.set(31, Ui.icon(Material.BOOK, "history", "<aqua>Transaction history",
-            "<gray>Your recent bank movements.", "", "<yellow>Click to view"), c -> history(c.player()));
-        gui.set(27, Ui.plain(Material.BARRIER, "<red>Close"), Gui.Click::close);
+            "<gray>Your recent bank movements.", "", "<#F6D58E>▸ View"), c -> history(c.player()));
     }
 
     /** Parses "500", "1.5k", "all" or "half" against what the player has to move. */
@@ -237,7 +235,6 @@ final class BankUi {
         List<EconomyData.BankEntry> entries = new ArrayList<>(economy.data(player.getUniqueId()).bankHistory);
         Collections.reverse(entries);
         Gui gui = core.guis().create(6, "<aqua>Bank history");
-        gui.border(Ui.glass());
         SimpleDateFormat fmt = new SimpleDateFormat("MMM d HH:mm", Locale.ROOT);
         fmt.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
         gui.paginate(entries, gui.innerSlots(), e -> {
@@ -246,7 +243,7 @@ final class BankUi {
                 (gain ? "<green>+" : e.delta < 0 ? "<red>" : "<gray>") + Money.coins(e.delta) + " <gray>" + Ui.esc(e.kind),
                 "<gray>Balance after: <gold>" + Money.coins(e.after), "<dark_gray>" + fmt.format(new Date(e.t)) + " UTC");
         }, (c, e) -> { }, 48, 50);
-        gui.set(49, Ui.plain(Material.ARROW, "<yellow>Back to the bank"), c -> open(c.player()));
+        gui.back("To the bank", c -> open(c.player()));
         gui.open(player);
     }
 

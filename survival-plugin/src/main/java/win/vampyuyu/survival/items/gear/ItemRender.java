@@ -21,13 +21,13 @@ import win.vampyuyu.survival.items.reforge.ReforgeRegistry;
  * recombobulated rarity, so this one writes the whole lore:
  * <pre>
  * Damage: +100 ✦                 weapon damage (red)
- * Strength: +50 ❁ (+5) (+2)      stat lines in Stat order; blue = reforge/enchant, yellow = hot potato books
+ * Might: +50 ⚒ (+5) (+2)         stat lines in Stat order; blue = reforge/enchant, yellow = Tempering Runes
  *
  * Sharpness VII, Critical V       enchants (blue, ultimate in bold light purple)
  *
  * Ability: Name  RIGHT CLICK      extra lines from {@link ExtraLore} (abilities, set bonus, pet data...)
  *
- * LEGENDARY SWORD                 bold, effective rarity colour
+ * ⛰ Earth Element · Tier 1       small closing line (see ItemRenderer.lastLine); a starforged item gets a star
  * </pre>
  */
 public final class ItemRender {
@@ -38,7 +38,7 @@ public final class ItemRender {
     }
 
     /** Bump to redraw every item the next time a player holds it. */
-    public static final long RENDER_VERSION = 1L;
+    public static final long RENDER_VERSION = 2L;
 
     private static final MiniMessage MINI = MiniMessage.miniMessage();
     private static final TextColor DAMAGE_COLOR = NamedTextColor.RED;
@@ -67,7 +67,7 @@ public final class ItemRender {
         return (value >= 0 ? "+" : "") + number + (stat != null && stat.percent() ? "%" : "");
     }
 
-    /** One stat line, e.g. {@code Strength: +50 ❁ (+5) (+2)}. */
+    /** One stat line, e.g. {@code Might: +50 ⚒ (+5) (+2)}. */
     public static Component statLine(Stat stat, double base, double blue, double yellow) {
         Component text = Component.text(stat.displayName() + ": ", NamedTextColor.GRAY)
             .append(Component.text(signed(base + 0.0, stat) + " " + stat.symbol(), stat.color()));
@@ -121,9 +121,7 @@ public final class ItemRender {
         if (!out.isEmpty()) {
             out.add(Component.empty());
         }
-        String label = info.rarity().label() + (info.def().typeLabel() == null ? "" : " " + info.def().typeLabel());
-        out.add(line(Component.text((info.recombobulated() ? "a " : "") + label, info.rarity().color(),
-            TextDecoration.BOLD)));
+        out.add(win.vampyuyu.survival.core.ItemRenderer.lastLine(info.def(), info.rarity(), info.recombobulated()));
         return out;
     }
 

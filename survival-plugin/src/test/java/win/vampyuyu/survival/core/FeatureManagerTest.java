@@ -110,9 +110,4 @@ public class FeatureManagerTest {
         } catch (IllegalStateException expected) {
         }
     }
-
-    @Test
-    public void featureConfigWithoutAResourceIsEmptyNotAnError() {
-        assertTrue(core.featureConfig("nothing_here").getKeys(true).isEmpty());
-    }
 }

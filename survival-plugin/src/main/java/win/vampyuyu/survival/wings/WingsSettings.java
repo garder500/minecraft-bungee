@@ -9,12 +9,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.bukkit.Particle;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
 import win.vampyuyu.survival.api.Stat;
 import win.vampyuyu.survival.core.SkyblockWorlds;
+import win.vampyuyu.survival.data.Settings;
 
-/** Immutable view of {@code wings.yml}. Built by {@link #from}; pure formulas live here so they can be unit tested. */
+/**
+ * Immutable view of the Wings tuning ({@code wings.*} settings and the {@code wings_*} tables, see {@link WingsRepo}). Built by
+ * {@link #from}; pure formulas live here so they can be unit tested.
+ */
 public final class WingsSettings {
     /** Why the Wings stopped working mid-air. */
     public enum Reason { ENERGY, UNEQUIP, WORLD, COMBAT, ZONE, DEATH }
@@ -89,25 +91,25 @@ public final class WingsSettings {
     /** Extra stats granted by the Wings through the stat source "wings", one value per level. */
     public final Map<Stat, double[]> statBonus;
 
-    private WingsSettings(ConfigurationSection c) {
+    private WingsSettings(Settings c, WingsRepo.Rows rows) {
         allowedWorlds = Collections.unmodifiableSet(new HashSet<>(
-            c.getStringList("worlds.allowed").isEmpty() ? List.of(SkyblockWorlds.HUB, SkyblockWorlds.WORLD, SkyblockWorlds.NETHER, SkyblockWorlds.END, "world")
-                : c.getStringList("worlds.allowed")));
-        List<String> denied = c.contains("worlds.denied-prefixes") ? c.getStringList("worlds.denied-prefixes")
+            c.getList("worlds.allowed").isEmpty() ? List.of(SkyblockWorlds.HUB, SkyblockWorlds.WORLD, SkyblockWorlds.NETHER, SkyblockWorlds.END, "world")
+                : c.getList("worlds.allowed")));
+        List<String> denied = c.has("worlds.denied-prefixes") ? c.getList("worlds.denied-prefixes")
             : List.of(SkyblockWorlds.DUNGEON_PREFIX);
         deniedPrefixes = List.copyOf(denied);
         noFlyTag = c.getString("no-fly.tag", "sb_no_fly");
-        regions = parseRegions(c.getMapList("no-fly.regions"));
+        regions = List.copyOf(rows.regions());
         maxLevel = Math.max(1, Math.min(50, c.getInt("max-level", 10)));
-        capacityBonus = table(c, "levels.capacity-bonus", maxLevel, 40, 80, 120, 160, 200, 250, 300, 360, 430, 500);
-        regenMultiplier = table(c, "levels.regen-multiplier", maxLevel, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.65, 1.8, 1.95, 2.2);
-        drainMultiplier = table(c, "levels.drain-multiplier", maxLevel, 1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55);
-        double[] speeds = table(c, "levels.fly-speed", maxLevel, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.18, 0.20, 0.22);
+        capacityBonus = table(rows.column(WingsRepo.Column.CAPACITY), maxLevel, 40, 80, 120, 160, 200, 250, 300, 360, 430, 500);
+        regenMultiplier = table(rows.column(WingsRepo.Column.REGEN), maxLevel, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.65, 1.8, 1.95, 2.2);
+        drainMultiplier = table(rows.column(WingsRepo.Column.DRAIN), maxLevel, 1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55);
+        double[] speeds = table(rows.column(WingsRepo.Column.FLY_SPEED), maxLevel, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.18, 0.20, 0.22);
         flySpeed = new float[maxLevel];
         for (int i = 0; i < maxLevel; i++) {
             flySpeed[i] = (float) Math.max(0.02, Math.min(1.0, speeds[i]));
         }
-        trail = parseTrail(c.getStringList("levels.trail"), maxLevel);
+        trail = parseTrail(rows.trails(), maxLevel);
         drainFly = Math.max(0, c.getDouble("energy.drain-fly", 4.0));
         drainSprint = Math.max(0, c.getDouble("energy.drain-sprint", 10.0));
         drainHover = Math.max(0, c.getDouble("energy.drain-hover", 2.0));
@@ -126,7 +128,7 @@ public final class WingsSettings {
         bossTag = c.getString("combat.boss-tag", "sb_boss");
         bossMinHealth = c.getDouble("combat.boss-min-health", 300);
         Set<Reason> reasons = new HashSet<>();
-        List<String> raw = c.contains("emergency.reasons") ? c.getStringList("emergency.reasons")
+        List<String> raw = c.has("emergency.reasons") ? c.getList("emergency.reasons")
             : List.of("ENERGY", "UNEQUIP", "WORLD", "COMBAT", "ZONE");
         for (String name : raw) {
             try {
@@ -144,10 +146,10 @@ public final class WingsSettings {
         prefBar = c.getBoolean("preferences.bar", true);
         prefDoubleJump = c.getBoolean("preferences.double-jump", true);
         prefSounds = c.getBoolean("preferences.sounds", true);
-        upgrades = parseUpgrades(c.getConfigurationSection("upgrades"), maxLevel);
+        upgrades = parseUpgrades(rows.upgrades(), maxLevel);
         claimCoins = Math.max(0, c.getDouble("claim.coins", 25000));
         claimCooldownMillis = (long) (Math.max(0, c.getDouble("claim.cooldown-hours", 24)) * 3_600_000L);
-        List<String> names = c.getStringList("cores.names");
+        List<String> names = rows.coreNames();
         coreNames = names.size() >= 5 ? List.copyOf(names)
             : List.of("Feather Core", "Gilded Core", "Radiant Core", "Celestial Core", "Voidwyrm Core");
         noFlyBossRadius = Math.max(0, Math.min(128, c.getInt("no-fly.boss-radius", 40)));
@@ -163,12 +165,17 @@ public final class WingsSettings {
         diveLevel = Math.max(1, c.getInt("abilities.dive-recovery.level", 6));
         landingLevel = Math.max(1, c.getInt("abilities.landing-burst.level", 8));
         landingCooldownMillis = (long) (Math.max(0, c.getDouble("abilities.landing-burst.cooldown-seconds", 8.0)) * 1000L);
-        statBonus = parseStatBonus(c.getConfigurationSection("levels.stats"), maxLevel);
+        statBonus = parseStatBonus(rows.stats(), maxLevel);
     }
 
-    /** Builds the settings from any section. Missing keys use the shipped defaults. */
-    public static WingsSettings from(ConfigurationSection section) {
-        return new WingsSettings(section == null ? new YamlConfiguration() : section);
+    /** Builds the settings from the loaded rows. Missing values use the defaults of this class. */
+    public static WingsSettings from(Settings settings, WingsRepo.Rows rows) {
+        return new WingsSettings(settings, rows);
+    }
+
+    /** The defaults of this class: what an empty database gives, with the three standard stat bonuses. */
+    public static WingsSettings defaults() {
+        return new WingsSettings(Settings.empty("wings"), WingsRepo.Rows.defaults());
     }
 
     // ---------------------------------------------------------------- formulas
@@ -272,13 +279,8 @@ public final class WingsSettings {
         return Math.max(lo, Math.min(hi, v));
     }
 
-    private static double[] table(ConfigurationSection c, String path, int size, double... fallback) {
-        List<Double> values = new ArrayList<>();
-        for (Object o : c.getList(path, List.of())) {
-            if (o instanceof Number n) {
-                values.add(n.doubleValue());
-            }
-        }
+    private static double[] table(List<Double> column, int size, double... fallback) {
+        List<Double> values = new ArrayList<>(column);
         if (values.isEmpty()) {
             for (double d : fallback) {
                 values.add(d);
@@ -291,32 +293,31 @@ public final class WingsSettings {
         return out;
     }
 
-    private static final Map<String, double[]> DEFAULT_STAT_BONUS = Map.of(
-        "DEFENSE", new double[] {2, 4, 6, 8, 10, 13, 16, 20, 25, 30},
-        "HEALTH", new double[] {0, 0, 5, 10, 15, 20, 25, 30, 40, 50},
-        "SPEED", new double[] {0, 0, 0, 2, 4, 6, 8, 10, 12, 15});
+    static final Map<String, double[]> DEFAULT_STAT_BONUS = Map.of(
+        "WARD", new double[] {2, 4, 6, 8, 10, 13, 16, 20, 25, 30},
+        "VITALITY", new double[] {0, 0, 5, 10, 15, 20, 25, 30, 40, 50},
+        "SWIFTNESS", new double[] {0, 0, 0, 2, 4, 6, 8, 10, 12, 15});
 
-    private static Map<Stat, double[]> parseStatBonus(ConfigurationSection section, int maxLevel) {
+    private static Map<Stat, double[]> parseStatBonus(Map<String, List<Double>> rows, int maxLevel) {
         Map<Stat, double[]> out = new java.util.EnumMap<>(Stat.class);
-        if (section == null) {
-            DEFAULT_STAT_BONUS.forEach((name, values) -> out.put(Stat.valueOf(name), fit(values, maxLevel)));
-            return Collections.unmodifiableMap(out);
-        }
-        for (String key : section.getKeys(false)) {
-            Stat stat;
-            try {
-                stat = Stat.valueOf(key.trim().toUpperCase(Locale.ROOT));
-            } catch (IllegalArgumentException e) {
-                continue;  // unknown stat names are skipped
+        for (Map.Entry<String, List<Double>> row : rows.entrySet()) {
+            if (row.getValue().isEmpty()) {
+                continue;
             }
-            List<Double> values = new ArrayList<>();
-            for (Object o : section.getList(key, List.of())) {
-                if (o instanceof Number n) {
-                    values.add(n.doubleValue());
+            double[] values = fit(row.getValue().stream().mapToDouble(Double::doubleValue).toArray(), maxLevel);
+            // a current or an old stat name; old ones convert (Defense becomes Ward), unknown or dropped ones are skipped
+            for (Stat.Converted conv : Stat.resolve(row.getKey())) {
+                double[] scaled = new double[values.length];
+                for (int i = 0; i < values.length; i++) {
+                    scaled[i] = values[i] * conv.factor();
                 }
-            }
-            if (!values.isEmpty()) {
-                out.put(stat, fit(values.stream().mapToDouble(Double::doubleValue).toArray(), maxLevel));
+                out.merge(conv.stat(), scaled, (a, b) -> {
+                    double[] sum = new double[a.length];
+                    for (int i = 0; i < a.length; i++) {
+                        sum[i] = a[i] + b[i];
+                    }
+                    return sum;
+                });
             }
         }
         return Collections.unmodifiableMap(out);
@@ -330,91 +331,59 @@ public final class WingsSettings {
         return out;
     }
 
-    private static List<Region> parseRegions(List<Map<?, ?>> raw) {
-        List<Region> out = new ArrayList<>();
-        for (Map<?, ?> map : raw) {
-            Object world = map.get("world");
-            int[] min = triple(map.get("min"));
-            int[] max = triple(map.get("max"));
-            if (world == null || min == null || max == null) {
-                continue;
-            }
-            out.add(new Region(world.toString(), Math.min(min[0], max[0]), Math.min(min[1], max[1]),
-                Math.min(min[2], max[2]), Math.max(min[0], max[0]), Math.max(min[1], max[1]),
-                Math.max(min[2], max[2])));
-        }
-        return List.copyOf(out);
-    }
-
-    private static int[] triple(Object o) {
-        if (o instanceof List<?> list && list.size() == 3 && list.stream().allMatch(v -> v instanceof Number)) {
-            return new int[] {((Number) list.get(0)).intValue(), ((Number) list.get(1)).intValue(),
-                ((Number) list.get(2)).intValue()};
-        }
-        return null;
-    }
-
     private static final String[] DEFAULT_TRAIL = {"CLOUD:1", "CLOUD:2", "END_ROD:1", "END_ROD:2", "ELECTRIC_SPARK:2",
         "SNOWFLAKE:2", "WAX_ON:2", "SOUL_FIRE_FLAME:2", "TOTEM_OF_UNDYING:2", "FIREWORK:3"};
 
-    static Trail[] parseTrail(List<String> raw, int levels) {
-        List<String> lines = raw.isEmpty() ? List.of(DEFAULT_TRAIL) : raw;
+    /** One trail row per level (short tables repeat their last row). */
+    static Trail[] parseTrail(List<WingsRepo.TrailRow> raw, int levels) {
+        List<WingsRepo.TrailRow> rows = raw.isEmpty() ? defaultTrail() : raw;
         Trail[] out = new Trail[levels];
         for (int i = 0; i < levels; i++) {
-            out[i] = parseTrailLine(lines.get(Math.min(i, lines.size() - 1)));
+            WingsRepo.TrailRow row = rows.get(Math.min(i, rows.size() - 1));
+            out[i] = parseTrail(row.particle(), row.count(), row.spread());
         }
         return out;
     }
 
-    static Trail parseTrailLine(String line) {
-        String[] parts = line.trim().split(":");
+    private static List<WingsRepo.TrailRow> defaultTrail() {
+        List<WingsRepo.TrailRow> rows = new ArrayList<>();
+        for (String line : DEFAULT_TRAIL) {
+            String[] parts = line.split(":");
+            rows.add(new WingsRepo.TrailRow(parts[0], Integer.parseInt(parts[1]), null));
+        }
+        return rows;
+    }
+
+    /** An unknown or data-carrying particle becomes the cloud; the count is clamped to 0..20, the spread to 0..2 (null = 0.15). */
+    static Trail parseTrail(String name, int count, Double spread) {
         Particle particle = Particle.CLOUD;
         try {
-            Particle parsed = Particle.valueOf(parts[0].trim().toUpperCase(Locale.ROOT));
+            Particle parsed = Particle.valueOf(name.trim().toUpperCase(Locale.ROOT));
             if (parsed.getDataType() == Void.class) {
                 particle = parsed;
             }
         } catch (IllegalArgumentException ignored) {
             // unknown or data-carrying particle: keep the cloud
         }
-        int count = 1;
-        double spread = 0.15;
-        try {
-            if (parts.length > 1) {
-                count = Math.max(0, Math.min(20, Integer.parseInt(parts[1].trim())));
-            }
-            if (parts.length > 2) {
-                spread = Math.max(0, Math.min(2, Double.parseDouble(parts[2].trim())));
-            }
-        } catch (NumberFormatException ignored) {
-            // keep the defaults
-        }
-        return new Trail(particle, count, spread);
+        return new Trail(particle, Math.max(0, Math.min(20, count)),
+            spread == null ? 0.15 : Math.max(0, Math.min(2, spread)));
     }
 
-    /** Same as the upgrades block of wings.yml. */
+    /** Same as the shipped {@code wings_upgrade} rows. */
     private static final Upgrade[] DEFAULT_UPGRADES = {
         new Upgrade(1, 1, 0), new Upgrade(1, 3, 5000), new Upgrade(2, 1, 15000), new Upgrade(2, 3, 40000),
         new Upgrade(3, 1, 100000), new Upgrade(3, 3, 250000), new Upgrade(4, 1, 600000), new Upgrade(4, 2, 1500000),
         new Upgrade(5, 1, 4000000)};
 
-    private static Map<Integer, Upgrade> parseUpgrades(ConfigurationSection section, int maxLevel) {
+    private static Map<Integer, Upgrade> parseUpgrades(Map<Integer, Upgrade> rows, int maxLevel) {
         Map<Integer, Upgrade> out = new HashMap<>();
-        if (section != null) {
-            for (String key : section.getKeys(false)) {
-                ConfigurationSection row = section.getConfigurationSection(key);
-                int level;
-                try {
-                    level = Integer.parseInt(key);
-                } catch (NumberFormatException e) {
-                    continue;
-                }
-                if (row == null || level < 1 || level >= maxLevel) {
-                    continue;
-                }
-                out.put(level, new Upgrade(Math.max(1, Math.min(5, row.getInt("core", tierOf(level)))),
-                    Math.max(1, row.getInt("amount", 1)), Math.max(0, row.getDouble("coins", 0))));
+        for (Map.Entry<Integer, Upgrade> row : rows.entrySet()) {
+            int level = row.getKey();
+            if (level < 1 || level >= maxLevel) {
+                continue;
             }
+            Upgrade u = row.getValue();
+            out.put(level, new Upgrade(Math.max(1, Math.min(5, u.coreTier())), Math.max(1, u.amount()), Math.max(0, u.coins())));
         }
         for (int level = 1; level < maxLevel; level++) {
             out.putIfAbsent(level, level <= DEFAULT_UPGRADES.length ? DEFAULT_UPGRADES[level - 1]

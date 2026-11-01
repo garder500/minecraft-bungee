@@ -197,9 +197,14 @@ public final class RunListener implements Listener {
                 event.setDamage(event.getDamage() * mult);
             }
         } else if (ctx.keys.runOf(victim) != null && victim instanceof LivingEntity) {
-            Double factor = ctx.keys.factorOf(victim);
-            if (factor != null && factor > 1) {
-                event.setDamage(event.getDamage() / factor);
+            // a monster with a virtual health pool takes the real damage from the pool; the event carries what the
+            // entity needs to mirror it, and the damage indicator shows the real number
+            Double pool = ctx.keys.hpOf(victim);
+            if (pool != null) {
+                double dealt = event.getDamage();
+                event.setDamage(VirtualHp.hit(ctx.keys, (LivingEntity) victim, dealt));
+                victim.setMetadata("sb_shown_damage", new org.bukkit.metadata.FixedMetadataValue(ctx.core.getPlugin(), dealt));
+                ctx.scheduler().nextTick(() -> VirtualHp.sync(ctx.keys, (LivingEntity) victim));
             }
         }
     }

@@ -160,7 +160,7 @@ public class WingsIntegrationTest {
         assertTrue(all, all.contains("Bound to Alice"));
         String last = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
             .serialize(lore.get(lore.size() - 1));
-        assertTrue(last, last.startsWith("MYTHIC"));
+        assertTrue(last, last.startsWith("Mythic"));
     }
 
     // ---------------------------------------------------------------- grant once
@@ -914,9 +914,9 @@ public class WingsIntegrationTest {
         long now = System.currentTimeMillis();
         tick(alice, now);
         assertEquals(120.0, applied.get(win.vampyuyu.survival.api.Stat.FLIGHT_ENERGY), 1e-9);
-        assertEquals("level 3 defense", 6.0, applied.get(win.vampyuyu.survival.api.Stat.DEFENSE), 1e-9);
-        assertEquals("level 3 health", 5.0, applied.get(win.vampyuyu.survival.api.Stat.HEALTH), 1e-9);
-        assertNull("a zero bonus is not registered", applied.get(win.vampyuyu.survival.api.Stat.SPEED));
+        assertEquals("level 3 defense", 6.0, applied.get(win.vampyuyu.survival.api.Stat.WARD), 1e-9);
+        assertEquals("level 3 health", 5.0, applied.get(win.vampyuyu.survival.api.Stat.VITALITY), 1e-9);
+        assertNull("a zero bonus is not registered", applied.get(win.vampyuyu.survival.api.Stat.SWIFTNESS));
         assertEquals(220, flight.state(alice.getUniqueId()).energy.capacity(), 1e-9);
         alice.getInventory().setChestplate(null);
         tick(alice, now + 100);

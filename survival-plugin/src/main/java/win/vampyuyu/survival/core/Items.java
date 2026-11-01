@@ -71,6 +71,7 @@ public final class Items {
         ItemMeta meta = stack.getItemMeta();
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         pdc.set(ID, PersistentDataType.STRING, def.id());
+        pdc.set(key(STAT_SCHEMA_KEY), PersistentDataType.LONG, STAT_SCHEMA);
         def.pdcStrings().forEach((k, v) -> pdc.set(key(k), PersistentDataType.STRING, v));
         def.pdcLongs().forEach((k, v) -> pdc.set(key(k), PersistentDataType.LONG, v));
         def.pdcDoubles().forEach((k, v) -> pdc.set(key(k), PersistentDataType.DOUBLE, v));
@@ -171,7 +172,53 @@ public final class Items {
         return result;
     }
 
-    /** Per-item bonuses only (reforges, enchants...). */
+    /** Version of the stat set the per-item bonuses are written in; items carry it as {@link #STAT_SCHEMA_KEY}. */
+    public static final long STAT_SCHEMA = 2L;
+
+    /** PDC key (long) holding the stat schema an item was last written with. Missing = the pre-rework stats. */
+    public static final String STAT_SCHEMA_KEY = "stat-schema";
+
+    /** True when a custom stack was written with an older stat schema and must be rebuilt (see {@link #migrateStats}). */
+    public boolean needsStatMigration(@Nullable ItemStack stack) {
+        if (stack == null || !stack.hasItemMeta() || !isCustom(stack)) {
+            return false;
+        }
+        Long version = stack.getItemMeta().getPersistentDataContainer().get(key(STAT_SCHEMA_KEY), PersistentDataType.LONG);
+        return version == null || version < STAT_SCHEMA;
+    }
+
+    /**
+     * Rewrites the per-item bonuses of an older item in the current stats (Strength becomes Might, Defense Ward...) and
+     * stamps the schema. The caller re-renders the item afterwards. Returns true when the stack changed.
+     */
+    public boolean migrateStats(@Nullable ItemStack stack) {
+        if (!needsStatMigration(stack)) {
+            return false;
+        }
+        Map<Stat, Double> merged = bonuses(stack);
+        ItemMeta meta = stack.getItemMeta();
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        for (String legacy : Stat.legacyKeys()) {
+            pdc.remove(key(BONUS_PREFIX + legacy));
+        }
+        for (Stat stat : Stat.values()) {
+            pdc.remove(key(BONUS_PREFIX + stat.key()));
+        }
+        merged.forEach((stat, value) -> pdc.set(key(BONUS_PREFIX + stat.key()), PersistentDataType.DOUBLE, value));
+        CustomItemDef def = defs.get(idOf(stack).orElse(""));
+        if (def != null && def.pdcDoubles().containsKey("damage")) {
+            // the weapon damage is stored on the stack; the ore ladder and the reworked catalog changed it
+            pdc.set(key("damage"), PersistentDataType.DOUBLE, def.pdcDoubles().get("damage"));
+        }
+        pdc.set(key(STAT_SCHEMA_KEY), PersistentDataType.LONG, STAT_SCHEMA);
+        stack.setItemMeta(meta);
+        return true;
+    }
+
+    /**
+     * Per-item bonuses only (reforges, enchants...). Bonuses stored under an old stat name still count, converted to
+     * the current stats.
+     */
     public Map<Stat, Double> bonuses(@Nullable ItemStack stack) {
         Map<Stat, Double> result = new EnumMap<>(Stat.class);
         if (stack == null || !stack.hasItemMeta()) {
@@ -182,6 +229,14 @@ public final class Items {
             Double value = pdc.get(key(BONUS_PREFIX + stat.key()), PersistentDataType.DOUBLE);
             if (value != null && value != 0) {
                 result.put(stat, value);
+            }
+        }
+        for (String legacy : Stat.legacyKeys()) {
+            Double value = pdc.get(key(BONUS_PREFIX + legacy), PersistentDataType.DOUBLE);
+            if (value != null && value != 0) {
+                for (Stat.Converted c : Stat.resolve(legacy)) {
+                    result.merge(c.stat(), value * c.factor(), Double::sum);
+                }
             }
         }
         return result;
@@ -206,6 +261,7 @@ public final class Items {
         if (def == null) {
             return;
         }
+        migrateStats(stack);
         ItemMeta meta = stack.getItemMeta();
         meta.itemName(ItemRenderer.name(def));
         meta.lore(ItemRenderer.lore(def, bonuses(stack)));

@@ -52,12 +52,6 @@ final class MachineListener implements Listener {
             core.msg().warn(player, "Place machines on your own island.");
             return;
         }
-        int max = machines.settings().maxPerIsland;
-        if (machines.store().countOnIsland(island.id().toString()) >= max) {
-            event.setCancelled(true);
-            core.msg().warn(player, "This island already has " + max + " machines.");
-            return;
-        }
         MachineData data = new MachineData();
         data.type = type.get().name();
         data.owner = island.owner().toString();

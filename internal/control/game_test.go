@@ -150,3 +150,83 @@ func TestGameLogsAreProxiedAsPlainTextDownloads(t *testing.T) {
 		t.Fatal(seen)
 	}
 }
+
+type skyblockTransport struct {
+	t    *testing.T
+	base string
+}
+
+func (a skyblockTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if !strings.HasSuffix(r.URL.Host, ":8086") {
+		a.t.Fatal("wrong skyblock data port", r.URL.Host)
+	}
+	return (rewriteTransport{base: a.base}).RoundTrip(r)
+}
+
+func TestSkyblockDataRoutesReachThePluginPortAndNeedAnActor(t *testing.T) {
+	var seen []string
+	var bodies []string
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer "+strings.Repeat("g", 64) {
+			t.Error("wrong bridge credential")
+		}
+		b, _ := io.ReadAll(r.Body)
+		bodies = append(bodies, string(b))
+		seen = append(seen, r.Method+" "+r.URL.Path+"?"+r.URL.Query().Encode())
+		io.WriteString(w, `{"ok":true}`)
+	}))
+	defer upstream.Close()
+	docker := fakeDocker(t, func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/containers/json") {
+			io.WriteString(w, `[{"Id":"managed"}]`)
+		} else {
+			io.WriteString(w, `{"NetworkSettings":{"Networks":{"game":{"IPAddress":"127.0.0.1"}}}}`)
+		}
+	})
+	s := &Server{Docker: docker, Token: strings.Repeat("c", 64), GameToken: strings.Repeat("g", 64), GameHTTP: &http.Client{Transport: skyblockTransport{t: t, base: upstream.URL}}}
+	base := "/servers/survival/skyblock/data"
+	for _, route := range []string{base, base + "/audit?table=quest&evil=1", base + "/quests/quest", base + "/quests/quest/rows?q=a+b&limit=5", base + "/economy/market_never_traded/row?key=a%2Fb%3A*"} {
+		if w := controllerRequest(s, "GET", route, nil); w.Code != 200 {
+			t.Fatal(route, w.Code, w.Body.String())
+		}
+	}
+	want := []string{"GET /skyblock/data?", "GET /skyblock/data/audit?table=quest", "GET /skyblock/data/quests/quest?", "GET /skyblock/data/quests/quest/rows?limit=5&q=a+b", "GET /skyblock/data/economy/market_never_traded/row?key=a%2Fb%3A%2A"}
+	if strings.Join(seen, "|") != strings.Join(want, "|") {
+		t.Fatal(seen)
+	}
+	seen = nil
+	row := base + "/quests/quest/row?key=q046&actor=alice"
+	if w := controllerRequest(s, "PUT", row, []byte(`{"row":{"amount":3},"children":{}}`)); w.Code != 200 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	if w := controllerRequest(s, "DELETE", row, nil); w.Code != 200 {
+		t.Fatal(w.Code)
+	}
+	if w := controllerRequest(s, "POST", base+"/quests/quest/reset?key=q046&actor=alice", nil); w.Code != 200 {
+		t.Fatal(w.Code)
+	}
+	if len(seen) != 3 || seen[0] != "PUT /skyblock/data/quests/quest/row?actor=alice&key=q046" || bodies[len(bodies)-3] != `{"row":{"amount":3},"children":{}}` {
+		t.Fatal(seen, bodies)
+	}
+	n := len(seen)
+	for _, bad := range []struct{ method, route, body string }{
+		{"PUT", base + "/quests/quest/row?key=q046", `{}`},                   // no actor
+		{"PUT", base + "/quests/quest/row?key=q046&actor=a;b", `{}`},         // bad actor
+		{"DELETE", base + "/quests/quest/row?actor=alice", ""},               // no key
+		{"PUT", base + "/quests/quest/row?key=q046&actor=alice", `not json`}, // bad body
+		{"PUT", base + "/Quests/quest/row?key=q046&actor=alice", `{}`},       // bad domain
+		{"POST", base + "/quests/qu%2Fest/reset?key=q046&actor=alice", ""},   // bad table
+		{"PUT", base + "/quests/quest/row?key=q%00&actor=alice", `{}`},       // control char in key
+		{"GET", base + "/quests/quest/row", ""},                              // read without key
+	} {
+		if w := controllerRequest(s, bad.method, bad.route, []byte(bad.body)); w.Code < 400 || w.Code >= 500 {
+			t.Fatal(bad.method, bad.route, w.Code)
+		}
+	}
+	if len(seen) != n {
+		t.Fatal("invalid request reached the plugin", seen[n:])
+	}
+	if w := controllerRequest(s, "GET", "/servers/velocity/skyblock/data", nil); w.Code != 503 {
+		t.Fatal(w.Code)
+	}
+}

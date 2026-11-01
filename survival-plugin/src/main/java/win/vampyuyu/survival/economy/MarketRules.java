@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Predicate;
 import org.bukkit.NamespacedKey;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -17,7 +16,7 @@ final class MarketRules {
     /** PDC key (long 1) written on items that can never be sold, traded or auctioned. Same flag as the Wings. */
     static final NamespacedKey UNTRADABLE = new NamespacedKey("vampyuyu", "untradable");
 
-    /** Used when economy.yml has no {@code market.never-traded} list. A trailing {@code *} matches a prefix. */
+    /** Always applies, on top of the {@code market_never_traded} table. A trailing {@code *} matches a prefix. */
     private static final List<String> DEFAULTS = List.of("DIAMOND", "DIAMOND_*", "ANCIENT_DEBRIS", "NETHERITE_*",
         "NETHER_STAR", "TOTEM_OF_UNDYING", "ELYTRA", "BEACON", "ENCHANTED_GOLDEN_APPLE", "DRAGON_EGG", "DRAGON_HEAD",
         "minion_enchanted_diamond*", "minion_super_diamond*");
@@ -25,10 +24,10 @@ final class MarketRules {
     private MarketRules() {}
 
     /** A test for keys (vanilla UPPER_CASE or custom lower_case ids) that the merchants and the Bazaar must refuse. */
-    static Predicate<String> neverTraded(ConfigurationSection root) {
+    static Predicate<String> neverTraded(List<String> extra) {
         List<String> entries = new ArrayList<>(DEFAULTS);
-        if (root != null) {
-            entries.addAll(root.getStringList("market.never-traded"));
+        if (extra != null) {
+            entries.addAll(extra);
         }
         List<String> exact = new ArrayList<>();
         List<String> prefixes = new ArrayList<>();

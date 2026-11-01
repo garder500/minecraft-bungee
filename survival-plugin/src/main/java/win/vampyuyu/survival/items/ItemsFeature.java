@@ -2,7 +2,6 @@ package win.vampyuyu.survival.items;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -53,6 +52,7 @@ import win.vampyuyu.survival.items.stats.StatsEngine;
  * item catalog, enchants, reforges, accessories and pets. See {@code docs/skyblock-notes/items.md}.
  */
 public final class ItemsFeature implements Feature {
+    private Runnable dataHook;
     private Core core;
     private StatsEngine engine;
     private HudService hud;
@@ -76,14 +76,18 @@ public final class ItemsFeature implements Feature {
     @Override
     public void enable(Core core) {
         this.core = core;
-        YamlConfiguration config = core.featureConfig("items");
+        win.vampyuyu.survival.data.Db db = core.data();
+        org.bukkit.configuration.ConfigurationSection config = ItemsRepo.config(db);
         ItemsSettings settings = new ItemsSettings(config);
+        win.vampyuyu.survival.items.catalog.ArmorSets.install(win.vampyuyu.survival.items.catalog.ArmorSets.load(db));
 
         EnchantRegistry enchants = new EnchantRegistry(config);
         ReforgeRegistry reforges = new ReforgeRegistry(config);
         ItemRender render = new ItemRender();
         gear = new Gear(core.items(), enchants, reforges, settings, render);
-        new ItemCatalog(core.items(), settings).registerAll();
+        ItemCatalog catalog = new ItemCatalog(core.items(), db);
+        catalog.registerAll();
+        catalog.problems().forEach(row -> core.getPlugin().getLogger().warning("Item row skipped: " + row));
 
         engine = new StatsEngine(core, settings, gear);
         sets = new SetBonuses(gear, settings);
@@ -177,11 +181,18 @@ public final class ItemsFeature implements Feature {
         });
         // Last step: other features may call the API from now on.
         core.register(StatsApi.class, engine);
+        // edits made in the panel apply at once
+        dataHook = core.onDataChange(domain -> {
+            if (domain.equals("items")) {
+                reload();
+            }
+        });
     }
 
-    /** Re-reads items.yml for the numeric settings (enchant and reforge definitions need a restart). */
+    /** Re-reads the items settings of the database for the numeric settings (enchant and reforge definitions need a restart). */
     private void reload() {
-        ItemsSettings fresh = new ItemsSettings(core.featureConfig("items"));
+        ItemsSettings fresh = ItemsSettings.load(core.data());
+        win.vampyuyu.survival.items.catalog.ArmorSets.install(win.vampyuyu.survival.items.catalog.ArmorSets.load(core.data()));
         engine.settings(fresh);
         gear.settings(fresh);
         accessories.settings(fresh);
@@ -198,6 +209,10 @@ public final class ItemsFeature implements Feature {
 
     @Override
     public void disable() {
+        if (dataHook != null) {
+            dataHook.run();
+            dataHook = null;
+        }
         ItemMenuListener.closeAll();
         if (loot != null) {
             loot.stop();

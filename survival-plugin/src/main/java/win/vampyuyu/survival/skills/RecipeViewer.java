@@ -29,19 +29,13 @@ final class RecipeViewer {
         this.recipes = recipes;
     }
 
-    private static ItemStack pane() {
-        return Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " ");
-    }
-
     // ---------------------------------------------------------------- list
 
     void openList(Player player) {
         List<SkillsConfig.RecipeDef> all = new ArrayList<>(service.config().recipes.values());
         UUID id = player.getUniqueId();
         Gui gui = core.guis().create(6, "<dark_aqua>Enchanted Recipes");
-        gui.border(pane());
         gui.paginate(all, gui.innerSlots(), def -> listIcon(id, def), (click, def) -> open(click.player(), def), 48, 50);
-        gui.set(49, Guis.icon(Material.BARRIER, "<red>Close"), Gui.Click::close);
         gui.open(player);
     }
 
@@ -54,7 +48,7 @@ final class RecipeViewer {
             lore.add("<gray>" + line);
         }
         lore.add("");
-        lore.add("<yellow>Click to open");
+        lore.add("<#F6D58E>▸ Open");
         return appendLore(icon, lore);
     }
 
@@ -78,7 +72,6 @@ final class RecipeViewer {
         UUID id = player.getUniqueId();
         boolean unlocked = service.meetsRequirements(id, def);
         Gui gui = core.guis().create(5, "<dark_aqua>" + service.resultName(def));
-        gui.border(pane());
         int slot = 0;
         for (SkillsConfig.Ingredient ingredient : def.ingredients()) {
             for (int i = 0; i < ingredient.slots() && slot < GRID.length; i++) {
@@ -116,7 +109,7 @@ final class RecipeViewer {
             + "<gray> from your inventory");
         quick.add("<gray>and gives <white>" + def.amount() + " " + service.resultName(def) + "<gray>.");
         quick.add("");
-        quick.add(unlocked ? "<yellow>Click to craft" : "<red>Locked");
+        quick.add(unlocked ? "<#F6D58E>▸ Craft" : "<red>Locked");
         gui.set(33, Guis.icon(unlocked ? Material.EMERALD_BLOCK : Material.BARRIER, "<green>Quick craft",
             quick.toArray(new String[0])), click -> {
                 Player who = click.player();
@@ -132,7 +125,7 @@ final class RecipeViewer {
                 }
                 open(who, def);
             });
-        gui.set(40, Guis.icon(Material.ARROW, "<gray>Back to recipes"), click -> openList(click.player()));
+        gui.back("To recipes", click -> openList(click.player()));
         gui.open(player);
     }
 }

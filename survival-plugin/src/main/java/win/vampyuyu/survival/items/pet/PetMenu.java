@@ -31,7 +31,6 @@ public final class PetMenu extends ItemMenu {
     private static final int HELD = 49;
     private static final int DESPAWN = 51;
     private static final int NEXT = 53;
-    private static final int CLOSE = 52;
 
     private final PetService service;
     private final UUID id;
@@ -60,9 +59,6 @@ public final class PetMenu extends ItemMenu {
 
     private void render() {
         inventory.clear();
-        for (int slot = 0; slot < 54; slot++) {
-            inventory.setItem(slot, Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
-        }
         PetData data = service.data(id);
         List<PetData.Entry> pets = sorted();
         page = Math.max(0, Math.min(page, pages(pets.size()) - 1));
@@ -76,17 +72,14 @@ public final class PetMenu extends ItemMenu {
             int index = page * PET_SLOTS.length + i;
             inventory.setItem(PET_SLOTS[i], index < pets.size() ? petIcon(pets.get(index), data) : null);
         }
-        inventory.setItem(PREV, page > 0 ? Guis.icon(Material.ARROW, "<yellow>Previous page")
-            : Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
-        inventory.setItem(NEXT, page < pages(pets.size()) - 1 ? Guis.icon(Material.ARROW, "<yellow>Next page")
-            : Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
+        inventory.setItem(PREV, page > 0 ? Guis.icon(Material.ARROW, "<yellow>Previous") : null);
+        inventory.setItem(NEXT, page < pages(pets.size()) - 1 ? Guis.icon(Material.ARROW, "<yellow>Next") : null);
         inventory.setItem(AUTO, Guis.icon(data.autoPet ? Material.LIME_DYE : Material.GRAY_DYE,
             data.autoPet ? "<green>Auto-pet: ON" : "<red>Auto-pet: OFF",
-            "<gray>Summon your last pet again when you join.", "", "<yellow>Click to toggle"));
+            "<gray>Summon your last pet again when you join.", "<#F6D58E>▸ Toggle"));
         inventory.setItem(HELD, heldIcon());
         inventory.setItem(DESPAWN, Guis.icon(Material.BARRIER, "<red>Put the pet away",
             "<gray>Your active pet goes back to the collection."));
-        inventory.setItem(CLOSE, Guis.icon(Material.OAK_DOOR, "<gray>Close"));
     }
 
     private ItemStack petIcon(PetData.Entry entry, PetData data) {
@@ -97,15 +90,14 @@ public final class PetMenu extends ItemMenu {
         ItemStack icon = PetVisuals.displayItem(type.get());
         var meta = icon.getItemMeta();
         boolean active = entry.id.equals(data.active);
-        meta.displayName(Component.text("[Lvl " + service.level(entry) + "] " + type.get().name(),
+        meta.displayName(Component.text(type.get().name() + " · Lv " + service.level(entry),
             service.rarityOf(entry).color()).decoration(TextDecoration.ITALIC, false));
         List<Component> lore = new ArrayList<>(service.describe(entry));
         lore.add(Component.empty());
-        lore.add(Component.text(service.rarityOf(entry).label() + " PET", service.rarityOf(entry).color(), TextDecoration.BOLD)
+        lore.add(Component.text("✦ " + service.rarityOf(entry).label() + " companion", service.rarityOf(entry).color())
             .decoration(TextDecoration.ITALIC, false));
-        lore.add(Component.empty());
-        lore.add(Component.text(active ? "Click to put away" : "Click to summon",
-            active ? NamedTextColor.RED : NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text(active ? "▸ Put away" : "▸ Summon", net.kyori.adventure.text.format.TextColor.color(0xF6D58E))
+            .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
         meta.setEnchantmentGlintOverride(active || entry.id.equals(selected));
         icon.setItemMeta(meta);
@@ -167,8 +159,6 @@ public final class PetMenu extends ItemMenu {
             service.despawn(id);
             player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.6f, 0.8f);
             render();
-        } else if (slot == CLOSE) {
-            core.scheduler().nextTick(player::closeInventory);
         } else if (slot == HELD) {
             heldClick();
         } else {

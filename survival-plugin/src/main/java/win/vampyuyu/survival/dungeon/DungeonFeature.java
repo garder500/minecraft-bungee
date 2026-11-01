@@ -25,8 +25,8 @@ public final class DungeonFeature implements Feature {
 
     /** Test entry point: a fake world factory keeps the unit tests away from real world creation. */
     public void enable(Core core, RunManager.WorldFactory worlds) {
-        DungeonConfig cfg = DungeonConfig.parse(core.featureConfig("dungeon"));
-        cfg.problems().forEach(p -> core.getPlugin().getLogger().warning("dungeon.yml: " + p));
+        DungeonConfig cfg = DungeonConfig.load(core.data());
+        cfg.problems().forEach(p -> core.getPlugin().getLogger().warning("dungeon data: " + p));
         DungeonItems.register(core);
         core.permissions().register(RunListener.ADMIN, "Dungeon administration", org.bukkit.permissions.PermissionDefault.OP);
         service = new DungeonService(core, cfg, worlds);

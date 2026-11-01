@@ -1,6 +1,5 @@
 package win.vampyuyu.survival.economy;
 
-import org.bukkit.configuration.file.YamlConfiguration;
 import win.vampyuyu.survival.api.EconomyApi;
 import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.Feature;
@@ -11,6 +10,7 @@ import win.vampyuyu.survival.core.Scheduler;
  * See docs/skyblock-notes/economy.md.
  */
 public final class EconomyFeature implements Feature {
+    private Runnable dataHook;
     private Core core;
     private EconomyService economy;
     private Bank bank;
@@ -35,8 +35,8 @@ public final class EconomyFeature implements Feature {
     @Override
     public void enable(Core core) {
         this.core = core;
-        YamlConfiguration config = core.featureConfig("economy");
-        economy = new EconomyService(core, EconomySettings.load(config));
+        EconomyConfig config = EconomyConfig.load(core.data());
+        economy = new EconomyService(core, EconomySettings.load(config.settings()));
         bank = new Bank(core, economy, config);
         BalTop balTop = new BalTop(core, economy);
         EconomyAudit audit = new EconomyAudit(core, economy);
@@ -91,11 +91,17 @@ public final class EconomyFeature implements Feature {
             bazaar.wipe(id);
         }));
         core.register(EconomyApi.class, economy);
+        // edits made in the panel apply at once
+        dataHook = core.onDataChange(domain -> {
+            if (domain.equals("economy")) {
+                reload();
+            }
+        });
     }
 
     private void reload() {
-        YamlConfiguration config = core.featureConfig("economy");
-        economy.settings(EconomySettings.load(config));
+        EconomyConfig config = EconomyConfig.load(core.data());
+        economy.settings(EconomySettings.load(config.settings()));
         bank.reload(config);
         shops.reload(config);
         bazaar.reload(config);
@@ -138,6 +144,10 @@ public final class EconomyFeature implements Feature {
 
     @Override
     public void disable() {
+        if (dataHook != null) {
+            dataHook.run();
+            dataHook = null;
+        }
         if (bankTask != null) {
             bankTask.cancel();
         }

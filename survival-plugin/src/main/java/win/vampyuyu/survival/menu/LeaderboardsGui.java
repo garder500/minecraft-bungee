@@ -33,10 +33,9 @@ final class LeaderboardsGui {
 
     void open(Player player) {
         Gui gui = rt.core.guis().create(3, "<dark_gray>Leaderboards");
-        gui.border(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
         board(gui, player, 11, "baltop", Material.GOLD_INGOT, "Richest Players", "The players with the most coins.");
         board(gui, player, 15, "skilltop", Material.EXPERIENCE_BOTTLE, "Skill Leaders", "The highest skill levels.");
-        gui.set(22, Guis.icon(Material.ARROW, "<green>Go Back", "<gray>To Skyblock Menu"), click -> back.accept(player));
+        gui.back("To the Isles", click -> back.accept(player));
         gui.open(player);
         rt.play(player, "click");
     }
@@ -44,7 +43,7 @@ final class LeaderboardsGui {
     private void board(Gui gui, Player player, int slot, String entry, Material icon, String name, String about) {
         Optional<String> command = rt.commandFor(entry, player);
         ItemStack item = command.isPresent()
-            ? Guis.icon(icon, "<green>" + name, "<gray>" + about, "", "<yellow>Click to view!")
+            ? Guis.button(icon, "<green>" + name, about, "View")
             : Guis.icon(Material.GRAY_DYE, "<gray>" + name + " <dark_gray>(unavailable)", "<red>Not available right now.");
         gui.set(slot, item, click -> command.ifPresent(c -> {
             click.close();

@@ -46,41 +46,39 @@ final class WarpsGui {
 
     void open(Player player) {
         Gui gui = rt.core.guis().create(4, "<dark_gray>Warps");
-        gui.border(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
         Optional<String> blocked = warps.blocked(player);
-        String status = blocked.map(b -> "<red>" + b).orElse("<yellow>Click to warp!");
+        String status = blocked.map(b -> "<red>" + b).orElse(Guis.ACCENT + "▸ Warp");
         boolean hasIsland = rt.islands().flatMap(api -> api.islandOf(player.getUniqueId())).isPresent();
 
         gui.set(10, rt.islands().isPresent()
-            ? Guis.icon(Material.BELL, "<green>Hub", "<gray>The central village with shops,", "<gray>quests and fairy souls.", "", status)
+            ? Guis.icon(Material.BELL, "<green>Hub", "<gray>The central village.", status)
             : unavailable("Hub"), click -> go(click, WarpService.Target.HUB));
         gui.set(11, !rt.islands().isPresent() ? unavailable("My Island")
-            : hasIsland ? Guis.icon(Material.GRASS_BLOCK, "<green>My Island", "<gray>Your own floating island.", "", status)
-            : Guis.icon(Material.GRAY_DYE, "<gray>My Island <dark_gray>(none yet)", "<gray>Create one from the hub!"),
+            : hasIsland ? Guis.icon(Material.GRASS_BLOCK, "<green>My Island", "<gray>Your own floating island.", status)
+            : Guis.icon(Material.GRAY_DYE, "<gray>My Island <dark_gray>(none yet)", "<gray>Create one from the Isles menu."),
             click -> go(click, WarpService.Target.ISLAND));
         gui.set(12, Bukkit.getWorld(SkyblockWorlds.NETHER) != null
-            ? Guis.icon(Material.NETHERRACK, "<red>The Nether", "<gray>Dangerous mobs and rare drops.", "", status)
+            ? Guis.icon(Material.NETHERRACK, "<red>The Nether", "<gray>Dangerous mobs and rare drops.", status)
             : unavailable("The Nether"), click -> go(click, WarpService.Target.NETHER));
         gui.set(13, Bukkit.getWorld(SkyblockWorlds.END) != null
-            ? Guis.icon(Material.END_STONE, "<light_purple>The End", "<gray>Endermen and the way to the", "<gray>end bosses.", "", status)
+            ? Guis.icon(Material.END_STONE, "<light_purple>The End", "<gray>Endermen and the end bosses.", status)
             : unavailable("The End"), click -> go(click, WarpService.Target.END));
         gui.set(14, bossIcon());
         boolean islandCommands = rt.commandFor("island", player).isPresent();
         gui.set(15, islandCommands
             ? Guis.icon(Material.SPYGLASS, "<aqua>Public Islands",
-                "<gray>Visit islands that their", "<gray>owners opened to everyone.", "", "<yellow>Click to browse!")
+                "<gray>Islands opened to everyone.", Guis.ACCENT + "▸ Browse")
             : unavailable("Public Islands"), click -> islandCommand(click, "warp"));
         gui.set(16, islandCommands
             ? Guis.icon(Material.PLAYER_HEAD, "<green>Visit a Player",
-                "<gray>Visit the island of a friend", "<gray>who invited you.", "",
-                "<gray>Type <yellow>/island visit <player>", "", "<yellow>Click to get the command!")
+                "<gray>Type <yellow>/island visit <player>", Guis.ACCENT + "▸ Get the command")
             : unavailable("Visit a Player"), click -> {
                 click.close();
                 rt.core.scheduler().nextTick(() -> player.sendMessage(rt.core.msg().prefix().append(
                     Component.text("Click here to visit a player: /island visit ", NamedTextColor.YELLOW)
                         .clickEvent(ClickEvent.suggestCommand("/island visit ")))));
             });
-        gui.set(31, Guis.icon(Material.ARROW, "<green>Go Back", "<gray>To Skyblock Menu"), click -> back.accept(player));
+        gui.back("To the Isles", click -> back.accept(player));
         gui.open(player);
         rt.play(player, "click");
     }
@@ -97,12 +95,8 @@ final class WarpsGui {
 
     private ItemStack bossIcon() {
         List<String> lore = new ArrayList<>();
-        lore.add("<gray>Powerful bosses guard great loot.");
         MenuConfig cfg = rt.config();
-        if (!cfg.bossHint.isBlank()) {
-            lore.add("<gray>" + esc(cfg.bossHint));
-        }
-        lore.add("");
+        lore.add("<gray>" + (cfg.bossHint.isBlank() ? "Powerful bosses guard great loot." : esc(cfg.bossHint)));
         Optional<BossApi> bosses = rt.core.service(BossApi.class);
         if (bosses.isPresent()) {
             Collection<String> ids = bosses.get().bossIds();

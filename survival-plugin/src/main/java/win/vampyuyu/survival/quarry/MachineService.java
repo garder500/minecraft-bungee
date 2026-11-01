@@ -201,9 +201,9 @@ final class MachineService {
             }
         }
         if (result.complete() && ticks % 10 == 0) {
-            // said again every 10 s: a ring finished before its quest opened still counts
+            // the ring's own quest is said again every 10 s, so a ring finished before its quest opened still counts;
+            // the "any ring" count is only told when a ring is completed, or each ring would count again and again
             announce(data, "generator_built:" + result.kind().name().toLowerCase(java.util.Locale.ROOT));
-            announce(data, "generator_built");
         }
         data.progress += 1;
         if (data.progress < (result.complete() ? 1 : 2)) {
@@ -234,14 +234,32 @@ final class MachineService {
     }
 
     private void announce(MachineData data, String key) {
-        try {
-            Player owner = Bukkit.getPlayer(UUID.fromString(data.owner));
-            if (owner != null) {
-                Bukkit.getPluginManager().callEvent(new QuarryProgressEvent(owner, "EVENT", key, 1));
-            }
-        } catch (IllegalArgumentException ignored) {
-            // an old record without an owner
+        for (Player player : islandMembers(data.owner)) {
+            Bukkit.getPluginManager().callEvent(new QuarryProgressEvent(player, "EVENT", key, 1));
         }
+    }
+
+    /** The online players of the machine owner's island (the owner alone when there is no island service). */
+    private java.util.List<Player> islandMembers(String ownerId) {
+        UUID owner;
+        try {
+            owner = UUID.fromString(ownerId);
+        } catch (IllegalArgumentException e) {
+            return java.util.List.of(); // an old record without an owner
+        }
+        java.util.Set<UUID> ids = new java.util.LinkedHashSet<>();
+        ids.add(owner);
+        quarry.core().service(win.vampyuyu.survival.api.IslandApi.class).flatMap(api -> api.islandOf(owner))
+            .ifPresent(island -> {
+                ids.add(island.owner());
+                ids.addAll(island.members());
+            });
+        java.util.List<Player> online = new java.util.ArrayList<>();
+        for (UUID id : ids) {
+            Player p = Bukkit.getPlayer(id);
+            if (p != null) online.add(p);
+        }
+        return online;
     }
 
     private static boolean touchesUnloaded(List<Pos> group, Map<Pos, MachineData> all, Map<Pos, MachineData> live) {
@@ -309,8 +327,7 @@ final class MachineService {
             for (ItemStack left : container.getInventory().addItem(drop.stack()).values()) {
                 world.dropItemNaturally(miner.getLocation().add(0.5, 1.2, 0.5), left);
             }
-            Player online = Bukkit.getPlayer(owner);
-            if (online != null) {
+            for (Player online : islandMembers(data.owner)) {
                 Bukkit.getPluginManager().callEvent(new QuarryProgressEvent(online, "ORE_FOUND", drop.ore(), drop.stack().getAmount()));
             }
         }, (geode, pity, name) -> { });

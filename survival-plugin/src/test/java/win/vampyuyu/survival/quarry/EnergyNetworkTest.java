@@ -11,7 +11,7 @@ import org.junit.Test;
 import win.vampyuyu.survival.quarry.EnergyNetwork.Pos;
 
 public class EnergyNetworkTest {
-    private static final MachineSettings CFG = new MachineSettings(new YamlConfiguration());
+    private static final MachineSettings CFG = new MachineSettings(win.vampyuyu.survival.data.Settings.empty("quarry"));
 
     private static MachineData machine(MachineType type) {
         MachineData m = new MachineData();

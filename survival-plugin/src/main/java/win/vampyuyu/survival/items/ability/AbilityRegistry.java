@@ -32,8 +32,12 @@ public final class AbilityRegistry {
         }
     }
 
+    /** Ids that older items and data used; they resolve to the renamed ability. */
+    private static final Map<String, String> ALIASES = Map.of("instant_transmission", "void_step",
+        "wither_impact", "sunburst", "frost_nova", "rime_nova");
+
     public Optional<Ability> get(@Nullable String id) {
-        return id == null ? Optional.empty() : Optional.ofNullable(byId.get(id));
+        return id == null ? Optional.empty() : Optional.ofNullable(byId.get(ALIASES.getOrDefault(id, id)));
     }
 
     public Collection<Ability> all() {

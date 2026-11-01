@@ -51,6 +51,7 @@ public final class BossEntities {
         e.getPersistentDataContainer().set(Tags.SESSION, PersistentDataType.STRING, sessionId);
         e.customName(MINI.deserialize(def.name()));
         e.setCustomNameVisible(true);
+        win.vampyuyu.survival.items.combat.ElementTraits.write(e, def.weakness(), def.resistance());
         quiet(() -> e.setRemoveWhenFarAway(false));
         quiet(() -> e.setPersistent(false));
         quiet(() -> e.setCanPickupItems(false));

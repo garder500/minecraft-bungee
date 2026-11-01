@@ -15,7 +15,8 @@ import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.items.catalog.ItemCatalog;
 
 /**
- * Items created by {@code /sbgive}, other features' loot or an older renderer carry the core's plain lore. This
+ * Items created by {@code /sbgive}, other features' loot, an older renderer or an older stat schema (before the house
+ * stats) carry the core's plain lore or stale stat bonuses. This
  * redraws them with the full lore (abilities, set bonuses, enchants) the first time a player joins, picks them up,
  * opens an inventory or selects them. It never runs per tick.
  */
@@ -37,12 +38,15 @@ public final class RenderUpgrader implements Listener {
         if (id.isEmpty()) {
             return false;
         }
-        boolean ours = gear.items().def(id.get()).map(def -> def.itemModel() != null
-            && def.itemModel().startsWith(ItemCatalog.MODEL)).orElse(false);
+        // the catalog, and every other item with combat data (the ore ladder, the boss weapons): the full lore shows it
+        boolean ours = gear.items().def(id.get()).map(def -> (def.itemModel() != null
+            && def.itemModel().startsWith(ItemCatalog.MODEL)) || !def.stats().isEmpty() || def.element() != null
+            || def.pdcDoubles().containsKey(Keys.DAMAGE)).orElse(false);
         if (!ours) {
             return false;
         }
-        return gear.items().getLong(stack, Keys.RENDERED).orElse(0L) != ItemRender.RENDER_VERSION;
+        return gear.items().needsStatMigration(stack)
+            || gear.items().getLong(stack, Keys.RENDERED).orElse(0L) != ItemRender.RENDER_VERSION;
     }
 
     /** Upgrades every stale stack of the player's inventory. Returns how many were redrawn. */

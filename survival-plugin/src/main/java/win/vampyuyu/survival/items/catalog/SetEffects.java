@@ -142,7 +142,7 @@ public final class SetEffects implements CombatModifiers, Listener {
         int[] stacks = timber.computeIfAbsent(id, k -> new int[1]);
         stacks[0] = Math.min(5, stacks[0] + 1);
         timberUntil.put(id, System.currentTimeMillis() + (long) (sets.param("lumberjack", "seconds") * 1000));
-        engine.addModifier(id, "set:timber", Stat.STRENGTH, stacks[0] * sets.param("lumberjack", "timber"));
+        engine.addModifier(id, "set:timber", Stat.MIGHT, stacks[0] * sets.param("lumberjack", "timber"));
         engine.recompute(player);
     }
 

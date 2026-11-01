@@ -1713,6 +1713,8 @@ def start_scenario(ctx):
     time.sleep(1)
     gone = as_bot(f"execute if block {cx+4} {y} {cz+6} minecraft:air")
     dropped_item = rcon.command('execute if entity @e[type=item,nbt={Item:{components:{"minecraft:item_model":"vampyuyu:machine/spring_stone"}}}]')
+    if "passed" not in dropped_item:  # the bot stands next to it and may already have picked it up
+        dropped_item = rcon.command('execute if entity @a[name=E2EBot,nbt={Inventory:[{components:{"minecraft:item_model":"vampyuyu:machine/spring_stone"}}]}]')
     say(f"start: punched the Spring Stone: block gone {gone.strip()}, item dropped {dropped_item.strip()}")
     shot(tools, shots / "st-punch.png")
     if "passed" not in gone or "passed" not in dropped_item:
@@ -1950,6 +1952,34 @@ def bosses_scenario(ctx):
         as_bot(f"tp @s {cx+dx+0.5} {y+3} {cz+0.5-back*0.55} 0 {pitch * 0.6}")
         time.sleep(2)
         shot(tools, shots / f"boss-{boss}-{dx}-back.png")
+    # power scaling: one fully charged Bronze Cleaver hit (tier 1, damage 40) on a still dummy with a big health pool
+    # (the ore swords used to deal vanilla damage, about 6). A dummy, because a boss model moves and is hard to aim at.
+    import re as _re
+    rcon.command("boss kill all")
+    rcon.command("clear E2EBot")
+    rcon.command("sbgive bronze_cleaver 1 E2EBot")
+    rcon.command("gamemode survival E2EBot")
+    as_bot(f"tp @s {cx+0.5} {y} {cz+2.5} 180 10")
+    as_bot(f"summon zombie {cx+0.5} {y} {cz+0.5} {{NoAI:1b,Silent:1b,Tags:[\"e2e_dummy\"],"
+           "attributes:[{id:\"minecraft:max_health\",base:1000}],Health:1000f}")
+    time.sleep(2)
+
+    def dummy_health():
+        out = rcon.command("data get entity @e[tag=e2e_dummy,limit=1] Health")
+        found = _re.findall(r"([0-9.]+)f", out)
+        return float(found[0]) if found else None
+
+    before = dummy_health()
+    subprocess.run([xdo, "click", "1"], env=env)
+    time.sleep(1)
+    after = dummy_health()
+    shot(tools, shots / "dummy-hit-bronze-cleaver.png")
+    dealt = None if before is None or after is None else before - after
+    say(f"bosses: Bronze Cleaver hit on the dummy: health {before} -> {after}, dealt {dealt}")
+    if dealt is None or dealt < 30:
+        failures.append(f"a Bronze Cleaver hit dealt {dealt} (expected about 40, vanilla would be about 6)")
+    rcon.command("kill @e[tag=e2e_dummy]")
+    rcon.command("gamemode creative E2EBot")
     rcon.command("boss kill all")
 
 

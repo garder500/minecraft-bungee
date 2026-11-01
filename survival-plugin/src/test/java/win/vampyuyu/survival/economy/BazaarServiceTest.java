@@ -58,7 +58,7 @@ public class BazaarServiceTest {
 
     private BazaarService service(DurableFile.Env env) {
         BazaarService s = new BazaarService(plugin.core(), eco, keys, env);
-        s.enable(plugin.core().featureConfig("economy"));
+        s.enable(EconomyConfig.load(plugin.core().data()));
         return s;
     }
 

@@ -1,10 +1,9 @@
 package win.vampyuyu.survival.quarry;
 
-import org.bukkit.configuration.ConfigurationSection;
+import win.vampyuyu.survival.data.Settings;
 
-/** The numbers of the machines (quarry.yml {@code machines}). Flux is the energy unit; rates are per second. */
+/** The numbers of the machines (the {@code quarry.machines.*} settings). Flux is the energy unit; rates are per second. There is no machine limit per island. */
 final class MachineSettings {
-    final int maxPerIsland;
     /** Flux per second a burning coal generator makes. */
     final double generatorOutput;
     /** Seconds one coal burns. */
@@ -18,8 +17,7 @@ final class MachineSettings {
     final double miner2Consume;
     final double miner2Rate;
 
-    MachineSettings(ConfigurationSection s) {
-        maxPerIsland = Math.max(1, s == null ? 6 : s.getInt("max-per-island", 6));
+    MachineSettings(Settings s) {
         generatorOutput = positive(s, "coal-generator.output", 10);
         coalSeconds = (int) Math.max(1, positive(s, "coal-generator.coal-seconds", 40));
         solarOutput = positive(s, "solar-panel.output", 6);
@@ -30,8 +28,8 @@ final class MachineSettings {
         miner2Rate = positive(s, "miner-2.cycles-per-second", 1);
     }
 
-    private static double positive(ConfigurationSection s, String path, double fallback) {
-        double v = s == null ? fallback : s.getDouble(path, fallback);
+    private static double positive(Settings s, String path, double fallback) {
+        double v = s.getDouble("machines." + path, fallback);
         return v > 0 ? v : fallback;
     }
 

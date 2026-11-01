@@ -28,7 +28,7 @@ public class BankServiceTest {
         plugin = MockBukkit.load(SurvivalPlugin.class);
         win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
         eco = (EconomyService) plugin.core().service(EconomyApi.class).orElseThrow();
-        bank = new Bank(plugin.core(), eco, plugin.core().featureConfig("economy"));
+        bank = new Bank(plugin.core(), eco, EconomyConfig.load(plugin.core().data()));
         alice = server.addPlayer("Alice");
         id = alice.getUniqueId();
     }
@@ -130,6 +130,6 @@ public class BankServiceTest {
         assertEquals(10_000, eco.balanceCents(id));
         alice.performCommand("bank");
         assertNotNull(alice.getOpenInventory().getTopInventory());
-        assertEquals(36, alice.getOpenInventory().getTopInventory().getSize());
+        assertEquals(54, alice.getOpenInventory().getTopInventory().getSize());
     }
 }

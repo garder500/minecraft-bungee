@@ -27,9 +27,9 @@ public final class MinionsFeature implements Feature {
     public void enable(Core core) {
         this.core = core;
         var log = core.getPlugin().getLogger();
-        config = MinionConfig.load(core.featureConfig("minions"), log);
+        config = MinionRepo.load(core.data(), log);
         if (config.types.isEmpty()) {
-            throw new IllegalStateException("minions.yml defines no valid minion type");
+            throw new IllegalStateException("The minions data defines no valid minion type");
         }
         boolean registered = false;
         try {

@@ -36,6 +36,18 @@ public final class RunContext {
         this.parties = parties;
     }
 
+    private volatile win.vampyuyu.survival.items.combat.PowerCurve curve;
+
+    /** The power curve the monsters' health follows (read from the content database on first use). */
+    public win.vampyuyu.survival.items.combat.PowerCurve curve() {
+        win.vampyuyu.survival.items.combat.PowerCurve c = curve;
+        if (c == null) {
+            c = win.vampyuyu.survival.items.combat.PowerCurve.load(core.data());
+            curve = c;
+        }
+        return c;
+    }
+
     public Scheduler scheduler() { return core.scheduler(); }
 
     public Logger log() { return core.getPlugin().getLogger(); }

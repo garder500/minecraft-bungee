@@ -1,6 +1,6 @@
 # Skyblock feature: skills, collections and collection-gated recipes
 
-Package `win.vampyuyu.survival.skills`, feature id `skills`, profile section `skills`, config `skills.yml`,
+Package `win.vampyuyu.survival.skills`, feature id `skills`, profile section `skills`, content in the SQLite database (tables `skill*`, `collection*`, settings `skills.*`, seed `db/seed/skills.sql`),
 service `SkillsApi`. Everything user-facing is English.
 
 ## What players get
@@ -23,7 +23,7 @@ service `SkillsApi`. Everything user-facing is English.
 
   Level-ups use chat (rewards box), a title, a sound and particles; milestone levels (every 10th) get the louder
   version. The skills feature never writes the action bar (the `items` feature shows XP popups from `SkillXpEvent`).
-* **XP sources** (all numbers in `skills.yml`, section `xp`):
+* **XP sources** (tables `skill_block_xp`, `skill_mob_xp`, `skill_catch_xp`...):
   * Mining / Foraging / Farming: breaking blocks. Player-placed resource blocks (ores, stone, logs, pumpkins...) give
     nothing (see "Anti-exploit"). Crops give XP only when fully grown (`xp.farming.mature_only`) and are NOT
     remembered when planted, so a field you planted yourself pays when ripe. Sugar cane, cactus and bamboo
@@ -31,7 +31,7 @@ service `SkillsApi`. Everything user-facing is English.
     pays nothing.
   * Combat: player kills by entity type (other hostile mobs: max health x 0.4, capped at 250 per kill).
   * Fishing: every catch by item, plus sea creature kills. A catch can summon a sea creature (squid, drowned,
-    glow squid, guardian, elder guardian, `sea_creatures` in `skills.yml`): chance = base + Fishing level + the
+    glow squid, guardian, elder guardian, table `sea_creature`): chance = base + Fishing level + the
     `SEA_CREATURE_CHANCE` stat, level-gated table, scaled health and a custom name, at most 3 alive per fisher, they
     vanish after 2 minutes and when the fisher quits. The kill pays Fishing XP and its drops count in collections.
   * Enchanting: enchanting table, by cost level and enchantment levels, and taking an anvil result (per level of the
@@ -127,7 +127,7 @@ Pipeline of one grant: `amount x xp_multiplier x skills.<s>.multiplier x XpBoost
 * Coins are paid once (`claimed` set). With no economy service they stay pending and are paid at the next join or
   `Pending rewards` click.
 
-## Config keys (`skills.yml`)
+## Config keys (settings `skills.<path>` and tables, formerly `skills.yml`)
 
 `only_skyblock_worlds`, `blocked_worlds`, `xp_multiplier`, `boosts.max_total`, `levels.{default_max,base,growth,
 significant_digits,xp_table}`, `rewards.coins.*`, `average.skills`, `skills.<skill>.{max_level,multiplier,stats.<STAT>[],
@@ -149,7 +149,7 @@ Stat modifiers are re-applied on join (join handler at LOW priority, before the 
 
 ## Published items and ids
 
-The skills feature owns the custom item ids `enchanted_*` (53, listed in `skills.yml` `enchanted_items`, textures from
+The skills feature owns the custom item ids `enchanted_*` (53, table `enchanted_item`, textures from
 `resource-pack/art/skills_icons.py`, item model `vampyuyu:skills/<id>`). An id the `items` feature already registered is
 left alone. Recipe keys are `sbskills_<recipe id>` in the plugin namespace. Sell prices, minion use etc. belong to
 other features: they can look the ids up with `core.items()`.

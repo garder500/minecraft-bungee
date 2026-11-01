@@ -39,9 +39,9 @@ final class MenuCommands {
     }
 
     void register() {
-        rt.core.permissions().register(ADMIN, "Menu administration (reload, fairy souls)", PermissionDefault.OP);
+        rt.core.permissions().register(ADMIN, "Menu administration (reload, wisps)", PermissionDefault.OP);
         rt.core.commands().command("sbmenu").aliases("skyblockmenu")
-            .description("Open the Skyblock Menu")
+            .description("Open the Isles")
             .usage("/<command> [reload]")
             .permission(USE, PermissionDefault.TRUE)
             .executor(this::menu).tab((s, c, l, a) -> a.length == 1 && s.hasPermission(ADMIN) ? filter(List.of("reload"), a[0]) : List.of())
@@ -52,7 +52,7 @@ final class MenuCommands {
             .permission("vampyuyu.sb.menu.quests", PermissionDefault.TRUE)
             .executor(this::quests).tab(this::questsTab).register();
         rt.core.commands().command("fairy").aliases("fairysouls", "souls")
-            .description("Fairy Souls: progress and a hint to the nearest one")
+            .description("Wisps: progress and a hint to the nearest one")
             .usage("/<command> [admin add [id]|admin remove <id>|admin list]")
             .permission("vampyuyu.sb.menu.fairy", PermissionDefault.TRUE)
             .executor(this::fairy).tab(this::fairyTab).register();
@@ -171,7 +171,7 @@ final class MenuCommands {
 
     private boolean fairyAdmin(CommandSender sender, String[] args) {
         if (!sender.hasPermission(ADMIN)) {
-            rt.core.msg().error(sender, "You do not have permission for Fairy Soul administration.");
+            rt.core.msg().error(sender, "You do not have permission for Wisp administration.");
             return true;
         }
         String sub = args.length < 2 ? "" : args[1].toLowerCase(Locale.ROOT);
@@ -179,7 +179,7 @@ final class MenuCommands {
             case "add" -> player(sender).ifPresent(p -> {
                 Optional<String> id = fairy.addAdmin(p.getLocation(), args.length > 2 ? args[2] : null);
                 if (id.isPresent()) {
-                    rt.core.msg().ok(p, "Fairy Soul '" + id.get() + "' placed here.");
+                    rt.core.msg().ok(p, "Wisp '" + id.get() + "' placed here.");
                 } else {
                     rt.core.msg().error(p, "Could not place a soul: use a free id (a-z, 0-9, _) inside a Skyblock world.");
                 }
@@ -188,7 +188,7 @@ final class MenuCommands {
                 if (args.length < 3) {
                     rt.core.msg().error(sender, "Usage: /fairy admin remove <id>");
                 } else if (fairy.removeAdmin(args[2].toLowerCase(Locale.ROOT))) {
-                    rt.core.msg().ok(sender, "Fairy Soul '" + args[2] + "' removed.");
+                    rt.core.msg().ok(sender, "Wisp '" + args[2] + "' removed.");
                 } else {
                     rt.core.msg().error(sender, "No admin placed soul called '" + args[2] + "'.");
                 }

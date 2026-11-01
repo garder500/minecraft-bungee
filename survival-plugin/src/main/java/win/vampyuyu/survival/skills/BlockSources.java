@@ -369,9 +369,9 @@ final class BlockSources implements Listener {
 
     static Stat fortuneStat(Skill skill) {
         return switch (skill) {
-            case MINING -> Stat.MINING_FORTUNE;
-            case FARMING -> Stat.FARMING_FORTUNE;
-            case FORAGING -> Stat.FORAGING_FORTUNE;
+            case MINING -> Stat.MINING_YIELD;
+            case FARMING -> Stat.FARMING_YIELD;
+            case FORAGING -> Stat.FORAGING_YIELD;
             default -> null;
         };
     }

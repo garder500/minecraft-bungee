@@ -12,12 +12,12 @@ import win.vampyuyu.survival.api.Stat;
 /**
  * Stable lore layout of every custom item (pure, no Bukkit state):
  * <pre>
- * Strength: +50 (+5)        one line per stat, enum order; "(+5)" = bonus from reforges/enchants
- * Defense: +10
+ * Might: +50 (+5)           one line per stat, enum order; "(+5)" = bonus from reforges/enchants
+ * Ward: +10
  *                           blank, only when stats and description both exist
  * description lines...
  *                           blank
- * LEGENDARY CHESTPLATE      bold, rarity colour
+ * ⛰ Earth Element · Tier 1  small, element colour (items without element: "Epic Chestplate" in the rarity colour)
  * </pre>
  */
 public final class ItemRenderer {
@@ -59,9 +59,46 @@ public final class ItemRenderer {
         if (!out.isEmpty()) {
             out.add(Component.empty());
         }
-        String label = def.rarity().label() + (def.typeLabel() == null ? "" : " " + def.typeLabel());
-        out.add(line(Component.text(label, def.rarity().color(), TextDecoration.BOLD)));
+        out.add(lastLine(def, def.rarity(), false));
         return out;
+    }
+
+    /**
+     * The small closing line: {@code ⛰ Earth Element · Tier 1} in the element colour, {@code Tier 2} in the rarity
+     * colour, or the plain rarity and type ({@code Epic Chestplate}) for items with neither. Never bold.
+     */
+    public static Component lastLine(CustomItemDef def, win.vampyuyu.survival.core.Rarity rarity, boolean recombobulated) {
+        java.util.List<String> parts = new ArrayList<>();
+        net.kyori.adventure.text.format.TextColor color = rarity.color();
+        if (def.element() != null) {
+            parts.add(def.element().symbol() + " " + def.element().displayName() + " Element");
+            color = def.element().color();
+        }
+        if (def.tier() != null) {
+            parts.add("Tier " + def.tier());
+        }
+        String text;
+        if (parts.isEmpty()) {
+            String type = def.typeLabel() == null ? "" : " " + titleCase(def.typeLabel());
+            text = titleCase(rarity.label()) + type;
+        } else {
+            text = String.join(" · ", parts);
+        }
+        return line(Component.text((recombobulated ? "\u2726 " : "") + text, color));
+    }
+
+    private static String titleCase(String text) {
+        StringBuilder out = new StringBuilder();
+        for (String word : text.toLowerCase(java.util.Locale.ROOT).split(" ")) {
+            if (word.isEmpty()) {
+                continue;
+            }
+            if (out.length() > 0) {
+                out.append(' ');
+            }
+            out.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+        }
+        return out.toString();
     }
 
     private static String signed(double value, Stat stat) {

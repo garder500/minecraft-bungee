@@ -18,6 +18,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import win.vampyuyu.survival.core.Msg;
+import win.vampyuyu.survival.dungeon.DungeonConfig;
 
 /** Creates the dungeon monsters: attributes, gear, name and persistent metadata. */
 public final class MobFactory {
@@ -47,12 +48,12 @@ public final class MobFactory {
     /**
      * Spawns a monster.
      *
-     * @param hpMult floor multiplier times party scale
+     * @param hp the monster's health (see {@link DungeonHp}); above the vanilla cap it becomes a virtual pool
      * @param dmgMult floor multiplier times party scale (applied to every hit it deals, see the listener)
      * @return the entity, or null when the spawn was refused
      */
     public LivingEntity spawn(World world, Location at, MobSpec spec, String runId, int room, String kind, int floor,
-            int level, double hpMult, double dmgMult, Player target) {
+            int level, double hp, double dmgMult, Player target, DungeonConfig.Floor traits) {
         Entity raw;
         try {
             raw = world.spawnEntity(at, spec.type(), CreatureSpawnEvent.SpawnReason.CUSTOM);
@@ -64,7 +65,7 @@ public final class MobFactory {
             return null;
         }
         try {
-            configure(e, spec, runId, room, kind, floor, level, hpMult, dmgMult, target);
+            configure(e, spec, runId, room, kind, floor, level, hp, dmgMult, target, traits);
         } catch (RuntimeException ex) {
             e.remove(); // never leave a half configured monster behind
             return null;
@@ -73,14 +74,19 @@ public final class MobFactory {
     }
 
     private void configure(LivingEntity e, MobSpec spec, String runId, int room, String kind, int floor, int level,
-            double hpMult, double dmgMult, Player target) {
-        double hp = Math.max(1, spec.health() * hpMult);
+            double health, double dmgMult, Player target, DungeonConfig.Floor traits) {
+        double hp = Math.max(1, health);
         AttributeInstance maxHealth = e.getAttribute(Attribute.MAX_HEALTH);
         if (maxHealth != null) {
-            maxHealth.setBaseValue(Math.min(hp, 1024));
-            e.setHealth(Math.min(hp, 1024));
             if (hp > 1024) {
-                e.getPersistentDataContainer().set(keys.factor, PersistentDataType.DOUBLE, hp / 1024.0);
+                // more than an entity can hold: a virtual pool, the entity mirrors the percentage
+                maxHealth.setBaseValue(VirtualHp.VISUAL);
+                e.setHealth(VirtualHp.VISUAL);
+                e.getPersistentDataContainer().set(keys.hpMax, PersistentDataType.DOUBLE, hp);
+                e.getPersistentDataContainer().set(keys.hp, PersistentDataType.DOUBLE, hp);
+            } else {
+                maxHealth.setBaseValue(hp);
+                e.setHealth(hp);
             }
         }
         AttributeInstance speed = e.getAttribute(Attribute.MOVEMENT_SPEED);
@@ -107,6 +113,9 @@ public final class MobFactory {
         e.customName(Msg.component(spec.color() + "<bold>" + spec.name() + "</bold> <dark_gray>[<gray>Lv." + level
             + "<dark_gray>]"));
         e.setCustomNameVisible(true);
+        if (traits != null) {
+            win.vampyuyu.survival.items.combat.ElementTraits.write(e, traits.weakness(), traits.resistance());
+        }
         var pdc = e.getPersistentDataContainer();
         pdc.set(keys.run, PersistentDataType.STRING, runId);
         pdc.set(keys.room, PersistentDataType.INTEGER, room);

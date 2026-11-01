@@ -11,7 +11,7 @@ import win.vampyuyu.survival.core.Cooldowns;
 import win.vampyuyu.survival.core.Msg;
 
 /**
- * The entrance "pad" in the hub: standing near the configured point (dungeon.yml, section entrance) shows a clickable
+ * The entrance "pad" in the hub: standing near the configured point (setting rows dungeon.entrance.*) shows a clickable
  * hint. The hub belongs to the island feature, so this only reads a position; signposts there should point at it.
  */
 public final class EntranceHint {
@@ -37,7 +37,7 @@ public final class EntranceHint {
         for (Player p : w.getPlayers()) {
             if (p.getLocation().distanceSquared(pad) <= r2 && svc.runs.runOf(p.getUniqueId()) == null
                     && cooldowns.tryUse(p.getUniqueId(), "hint", cfg.entranceHintCooldownSeconds * 1000L)) {
-                p.sendMessage(Msg.component("<dark_red>The Catacombs <gray>lie below. ")
+                p.sendMessage(Msg.component("<dark_red>The Crypt Depths <gray>lie below. ")
                     .append(Msg.component("<yellow><bold>[Click to enter]")
                         .clickEvent(ClickEvent.runCommand("/dungeon"))
                         .hoverEvent(HoverEvent.showText(Component.text("Open the floor menu")))));

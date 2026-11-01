@@ -141,9 +141,73 @@ final class QuestListener implements Listener {
         if (amount <= 0) {
             return;
         }
-        String subject = rt.core.items().idOf(result).map(QuestMatcher::customSubject)
-            .orElse(result.getType().name());
+        String subject = subject(result);
         quests.record(player, QuestType.CRAFT_ITEM, subject, amount);
+        quests.record(player, QuestType.OBTAIN_ITEM, subject, amount);
+    }
+
+    private String subject(ItemStack item) {
+        return rt.core.items().idOf(item).map(QuestMatcher::customSubject).orElse(item.getType().name());
+    }
+
+    // ---------------------------------------------------------------- obtaining (furnace, stonecutter, pickup)
+
+    /** Marks items a player throws so picking them up again is not "obtaining" them. */
+    private static final org.bukkit.NamespacedKey DROPPED = new org.bukkit.NamespacedKey("vampyuyu", "quest_dropped");
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onFurnace(org.bukkit.event.inventory.FurnaceExtractEvent event) {
+        Player player = event.getPlayer();
+        if (counts(player) && event.getItemAmount() > 0) {
+            quests.record(player, QuestType.OBTAIN_ITEM, event.getItemType().name(), event.getItemAmount());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDrop(org.bukkit.event.player.PlayerDropItemEvent event) {
+        var pdc = event.getItemDrop().getPersistentDataContainer();
+        if (pdc != null) {
+            pdc.set(DROPPED, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPickup(org.bukkit.event.entity.EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player player) || !counts(player)) {
+            return;
+        }
+        org.bukkit.entity.Item item = event.getItem();
+        var pdc = item.getPersistentDataContainer();
+        if (pdc != null && pdc.has(DROPPED)) { // thrown by a player: not obtained again
+            return;
+        }
+        ItemStack stack = item.getItemStack();
+        if (stack == null || stack.getType().isAir()) {
+            return;
+        }
+        quests.record(player, QuestType.OBTAIN_ITEM, subject(stack), stack.getAmount() - event.getRemaining());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onStonecutter(org.bukkit.event.inventory.InventoryClickEvent event) {
+        if (event.getView().getTopInventory().getType() != org.bukkit.event.inventory.InventoryType.STONECUTTER
+                || event.getSlotType() != org.bukkit.event.inventory.InventoryType.SlotType.RESULT
+                || !(event.getWhoClicked() instanceof Player player) || !counts(player)) {
+            return;
+        }
+        ItemStack result = event.getCurrentItem();
+        if (result == null || result.getType().isAir()) {
+            return;
+        }
+        int amount = result.getAmount();
+        if (event.isShiftClick()) { // takes as many as the input allows
+            ItemStack input = event.getView().getTopInventory().getItem(0);
+            amount *= input == null ? 1 : Math.max(1, input.getAmount());
+            amount = Math.min(amount, roomFor(player.getInventory(), result));
+        }
+        if (amount > 0) {
+            quests.record(player, QuestType.OBTAIN_ITEM, result.getType().name(), amount);
+        }
     }
 
     /** How many items of this kind still fit (so a shift-click on a full inventory does not over-count). */

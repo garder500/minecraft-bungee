@@ -404,7 +404,7 @@ public final class DungeonRun {
         p.setHealth(max == null ? 20 : Math.min(max.getValue(), p.getHealth() + max.getValue()));
         if (ctx.cfg.sidebar) {
             try {
-                rp.sidebar = new Sidebar(Msg.component("<dark_red><bold>CATACOMBS</bold> <gray>F" + floor.number()));
+                rp.sidebar = new Sidebar(Msg.component("<dark_red><bold>CRYPT DEPTHS</bold> <gray>F" + floor.number()));
                 rp.sidebar.show(p);
             } catch (RuntimeException e) {
                 rp.sidebar = null;

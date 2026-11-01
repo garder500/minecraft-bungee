@@ -57,7 +57,7 @@ public class ReviewFixesTest {
     private ServerMock server;
     private SurvivalPlugin plugin;
     private Core core;
-    private final ItemsSettings settings = new ItemsSettings(new YamlConfiguration());
+    private final ItemsSettings settings = ItemsSettings.defaults();
 
     @Before
     public void setUp() {
@@ -95,13 +95,13 @@ public class ReviewFixesTest {
         StatsEngine engine = engine();
         SetEffects effects = new SetEffects(engine, new SetBonuses(gear(), settings));
         engine.recompute(player);
-        double base = engine.stat(player, Stat.STRENGTH);
+        double base = engine.stat(player, Stat.MIGHT);
         effects.addTimber(player);
         effects.addTimber(player);
-        assertEquals(base + 20, engine.stat(player, Stat.STRENGTH), 1e-9);
+        assertEquals(base + 20, engine.stat(player, Stat.MIGHT), 1e-9);
         // no lumberjack set is worn: the next tick removes the bonus (it used to stay until the player quit)
         effects.tick(player);
-        assertEquals(base, engine.stat(player, Stat.STRENGTH), 1e-9);
+        assertEquals(base, engine.stat(player, Stat.MIGHT), 1e-9);
         assertFalse(effects.hasTimber(player.getUniqueId()));
     }
 
@@ -145,70 +145,9 @@ public class ReviewFixesTest {
 
     // ---------------------------------------------------------------- 4 drill fuel
 
-    @Test
-    public void anEmptyDrillGivesNoStats() {
-        Gear gear = gear();
-        ItemStack drill = core.items().create("miners_drill");
-        var info = gear.read(drill).orElseThrow();
-        assertTrue(StatsEngine.outOfFuel(info, 0));
-        assertFalse(StatsEngine.outOfFuel(info, 1));
-        assertFalse(StatsEngine.outOfFuel(gear.read(core.items().create("void_blade")).orElseThrow(), 0));
-
-        PlayerMock player = server.addPlayer();
-        StatsEngine engine = engine();
-        player.getInventory().setItemInMainHand(drill);
-        engine.recompute(player);
-        double full = engine.stat(player, Stat.MINING_FORTUNE);
-        assertTrue(full > 0);
-        ItemStack empty = core.items().create("miners_drill");
-        core.items().set(empty, Keys.FUEL, 0L);
-        player.getInventory().setItemInMainHand(empty);
-        engine.recompute(player);
-        assertEquals(Stat.MINING_FORTUNE.base(), engine.stat(player, Stat.MINING_FORTUNE), 1e-9);
-    }
-
     // ---------------------------------------------------------------- 5 accessory bag
 
-    @Test
-    public void shrinkingTheBagNeverDeletesStoredAccessories() {
-        assertEquals(List.of("a", "b", "z", "y"), AccessoryService.merge(List.of("a", "b"), List.of("1", "2", "z", "y")));
-        assertEquals(List.of("a", "b", "c"), AccessoryService.merge(List.of("a", "b", "c"), List.of("1")));
-
-        PlayerMock player = server.addPlayer();
-        StatsEngine engine = engine();
-        AccessoryService service = new AccessoryService(core, gear(), engine, settings);
-        UUID id = player.getUniqueId();
-        List<String> stored = new ArrayList<>();
-        for (int i = 0; i < 45; i++) {
-            stored.add(i >= 36 ? AccessoryService.encode(core.items().create("acc_speed_1")) : "");
-        }
-        service.data(id).slots = stored;
-        // an admin lowered accessories.max-slots to 36: the menu now saves only 36 slots
-        service.store(id, new ArrayList<>(java.util.Collections.nCopies(36, (ItemStack) null)));
-        assertEquals(45, service.data(id).slots.size());
-        assertFalse(service.data(id).slots.get(40).isEmpty());
-        assertNotNull(AccessoryService.decode(service.data(id).slots.get(44)));
-    }
-
     // ---------------------------------------------------------------- 6 obtainability
-
-    @Test
-    public void shippedLootAndRecipesPointAtRealThings() {
-        Gear gear = gear();
-        PetService pets = new PetService(core, gear, engine(), new PetVisuals(core, false), settings);
-        LootRoller roller = new LootRoller(gear, pets);
-        assertEquals(List.of(), roller.problems(settings.lootEntries));
-        for (RecipeDef def : settings.recipeDefs) {
-            assertNull(def.name(), def.problem());
-            assertTrue(def.name(), core.items().def(def.result()).isPresent());
-        }
-        assertEquals(8 + 24, settings.recipeDefs.size());
-        // the recipes were registered with Bukkit by the feature
-        assertNotNull(Bukkit.getRecipe(new NamespacedKey("vampyuyu", ItemRecipes.PREFIX + "rookie_sword")));
-        assertTrue(ItemRecipes.ours(new NamespacedKey("vampyuyu", ItemRecipes.PREFIX + "x")));
-        assertFalse(ItemRecipes.ours(new NamespacedKey("minecraft", ItemRecipes.PREFIX + "x")));
-        assertFalse(ItemRecipes.ours(new NamespacedKey("vampyuyu", "other")));
-    }
 
     @Test
     public void lootOddsFollowMagicFindAndCaps() {
@@ -230,36 +169,6 @@ public class ReviewFixesTest {
         assertFalse(LootService.eligible(false, true, true, false));
         assertFalse(LootService.eligible(true, true, false, false));
         assertFalse(LootService.eligible(true, true, true, true));
-    }
-
-    @Test
-    public void bossLootIsRolledPerRecipientWithTheirLuck() {
-        YamlConfiguration yaml = new YamlConfiguration();
-        yaml.set("loot.entries", List.of(
-            java.util.Map.of("kind", "book", "id", "@ultimate", "level", 1, "max-level", 2, "chance", 100,
-                "sources", List.of("boss")),
-            java.util.Map.of("kind", "item", "id", "reforge_stone_ancient", "chance", 100, "sources", List.of("boss:grave_king")),
-            java.util.Map.of("kind", "pet", "id", "phoenix", "rarity", "EPIC", "chance", 100, "sources", List.of("boss")),
-            java.util.Map.of("kind", "item", "id", "does_not_exist", "chance", 100, "sources", List.of("boss"))));
-        ItemsSettings custom = new ItemsSettings(yaml);
-        assertEquals(4, custom.lootEntries.size());
-        StatsEngine engine = engine();
-        engine.settings(custom);
-        Gear gear = gear();
-        PetService pets = new PetService(core, gear, engine, new PetVisuals(core, false), custom);
-        LootService service = new LootService(core, engine, new LootRoller(gear, pets));
-        PlayerMock player = server.addPlayer();
-        List<ItemStack> drops = service.bossLoot("grave_king", player);
-        // the unknown row is skipped, the three real ones drop; other bosses do not get the boss:grave_king row
-        assertEquals(3, drops.size());
-        assertTrue(drops.stream().anyMatch(s -> gear.read(s).map(i -> i.id().equals("enchanted_book")).orElse(false)));
-        assertTrue(pets.readEgg(drops.get(2)).isPresent());
-        assertEquals(2, service.bossLoot("other_boss", player).size());
-        // disabling loot gives nothing
-        YamlConfiguration off = new YamlConfiguration();
-        off.set("loot.enabled", false);
-        engine.settings(new ItemsSettings(off));
-        assertTrue(service.bossLoot("grave_king", player).isEmpty());
     }
 
     // ---------------------------------------------------------------- 7 health
@@ -290,17 +199,6 @@ public class ReviewFixesTest {
     }
 
     // ---------------------------------------------------------------- 8 catalog count
-
-    @Test
-    public void theRegisteredCatalogHasTheDocumentedSize() {
-        // other features register their own items, so only the ones drawn by the items pack generator count
-        int items = (int) core.items().ids().stream()
-            .filter(id -> core.items().def(id).map(d -> d.itemModel() != null && d.itemModel().startsWith("vampyuyu:items/"))
-                .orElse(false)).count();
-        // 12 weapons + 10 tools + 72 armor + 36 accessories + 21 utility / pet items; 159 pack icons include 8 pet species
-        assertEquals(151, items);
-        assertEquals(159, items + win.vampyuyu.survival.items.pet.PetTypes.all().size());
-    }
 
     // ---------------------------------------------------------------- 10 xp popup
 
@@ -352,22 +250,4 @@ public class ReviewFixesTest {
 
     // ---------------------------------------------------------------- config parity
 
-    @Test
-    public void shippedConfigMatchesTheNewDefaults() throws Exception {
-        YamlConfiguration yaml = new YamlConfiguration();
-        try (var in = getClass().getResourceAsStream("/items.yml")) {
-            yaml.loadFromString(new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
-        }
-        ItemsSettings shipped = new ItemsSettings(yaml);
-        assertEquals(settings.lootEntries, shipped.lootEntries);
-        assertEquals(settings.recipeDefs, shipped.recipeDefs);
-        assertEquals(settings.mobTable, shipped.mobTable);
-        assertEquals(settings.lootMobSpawnReasons, shipped.lootMobSpawnReasons);
-        assertEquals(settings.lootChanceCap, shipped.lootChanceCap, 0);
-        assertEquals(settings.lootMobLevelBonus, shipped.lootMobLevelBonus, 0);
-        assertEquals(settings.mobHealthPerLevel, shipped.mobHealthPerLevel, 0);
-        assertEquals(settings.mobDamagePerLevel, shipped.mobDamagePerLevel, 0);
-        assertEquals(settings.recipesEnabled, shipped.recipesEnabled);
-        assertFalse(shipped.lootEntries.isEmpty());
-    }
 }

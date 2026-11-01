@@ -82,7 +82,7 @@ duplicate through the menu.
   percent longer).
 * Hats (cosmetic, 10): Pumpkin Hat, Golden Crown, Diamond Helm, Turtle Shell, Creeper / Skeleton / Zombie / Piglin /
   Wither / Dragon heads.
-* **Sources.** The `recipes:` section of `minions.yml` gives crafting recipes (shaped, exact item choices) to all 7
+* **Sources.** The `minion_recipe` tables give crafting recipes (shaped, exact item choices) to all 7
   upgrades, Enchanted Lava Bucket, Hamster Wheel, Foul Flesh and the Pumpkin Hat / Golden Crown / Diamond Helm,
   built from the Enchanted items of the menu's Compress button plus a vanilla centre (for example Compactor = 8
   Enchanted Redstone around a Piston; Super Compactor 3000 = 8 Enchanted Iron around a Compactor). The
@@ -119,7 +119,7 @@ returned to its real owner by the island check).
 
 Tab completion exists for every argument. Admin sub-commands refuse a sender without the admin permission.
 
-## Config (`plugins/VampyuyuSurvival/minions.yml`, defaults in the jar)
+## Config (SQLite content database: tables `minion_*`, settings `minions.<name>`, seed `db/seed/minions.sql`; formerly `minions.yml`)
 
 `settings.*` (tick period, visual range, scan interval, catch-up cap, island check interval, `island-missing-hours`,
 `member-collect`, `gui-click-millis`, slots, caps, body scale, compact ratios, spread every N, fuel cap, upgrade

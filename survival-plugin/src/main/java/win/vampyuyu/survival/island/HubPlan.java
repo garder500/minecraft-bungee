@@ -29,7 +29,7 @@ public final class HubPlan {
     private static List<Pad> buildPads() {
         String[][] ring = {{"merchant", "Merchant"}, {"banker", "Banker"}, {"reforger", "Reforger"},
             {"enchanter", "Enchanter"}, {"quest_master", "Quest Master"}, {"minion_vendor", "Minion Vendor"},
-            {"boss_arena", "Boss Arena"}, {"fairy_souls", "Fairy Guide"}};
+            {"boss_arena", "Boss Arena"}, {"fairy_souls", "Wisp Guide"}};
         List<Pad> pads = new ArrayList<>();
         for (int k = 0; k < ring.length; k++) {
             double angle = 22.5 + 45 * k;

@@ -41,7 +41,7 @@ public class AuctionServiceTest {
 
     private AuctionService service(DurableFile.Env env) {
         AuctionService s = new AuctionService(plugin.core(), eco, keys, env);
-        s.enable(plugin.core().featureConfig("economy"));
+        s.enable(EconomyConfig.load(plugin.core().data()));
         return s;
     }
 
@@ -294,9 +294,9 @@ public class AuctionServiceTest {
 
     @Test
     public void disabledHouseRefusesEverything() {
-        var cfg = plugin.core().featureConfig("economy");
-        cfg.set("auction.enabled", false);
-        ah.reload(cfg);
+        plugin.core().data().write(c -> win.vampyuyu.survival.data.Db.update(c,
+            "UPDATE setting SET value = 'false' WHERE id = 'economy.auction.enabled'"));
+        ah.reload(EconomyConfig.load(plugin.core().data()));
         fund(seller, 1000);
         seller.getInventory().setItemInMainHand(sword());
         assertFalse(ah.list(seller, 10_000, false, 12).ok());

@@ -25,7 +25,7 @@ public class ItemsTest {
         items = new Items();
         items.register(CustomItemDef.builder("test_blade", "Test Blade", Rarity.LEGENDARY, Material.DIAMOND_SWORD)
             .type("SWORD").lore("<gray>Cuts things.")
-            .stat(Stat.STRENGTH, 50).stat(Stat.CRIT_CHANCE, 5)
+            .stat(Stat.MIGHT, 50).stat(Stat.ATTUNEMENT, 5)
             .pdc("kind", "blade").pdc("tier", 3L).pdc("ratio", 0.5)
             .unbreakable(true).build());
     }
@@ -71,12 +71,12 @@ public class ItemsTest {
     public void statsAndBonuses() {
         ItemStack stack = items.create("test_blade");
         Map<Stat, Double> stats = items.statsOf(stack);
-        assertEquals(50, stats.get(Stat.STRENGTH), 0);
-        assertEquals(5, stats.get(Stat.CRIT_CHANCE), 0);
-        items.setBonus(stack, Stat.STRENGTH, 10);
-        assertEquals(60, items.statsOf(stack).get(Stat.STRENGTH), 0);
-        items.setBonus(stack, Stat.STRENGTH, 0);
-        assertEquals(50, items.statsOf(stack).get(Stat.STRENGTH), 0);
+        assertEquals(50, stats.get(Stat.MIGHT), 0);
+        assertEquals(5, stats.get(Stat.ATTUNEMENT), 0);
+        items.setBonus(stack, Stat.MIGHT, 10);
+        assertEquals(60, items.statsOf(stack).get(Stat.MIGHT), 0);
+        items.setBonus(stack, Stat.MIGHT, 0);
+        assertEquals(50, items.statsOf(stack).get(Stat.MIGHT), 0);
     }
 
     @Test
@@ -84,10 +84,10 @@ public class ItemsTest {
         ItemStack stack = items.create("test_blade");
         var lore = stack.getItemMeta().lore().stream().map(ItemsTest::plain).toList();
         assertEquals(java.util.List.of(
-            "Strength: +50", "Crit Chance: +5%", "", "Cuts things.", "", "LEGENDARY SWORD"), lore);
-        items.setBonus(stack, Stat.STRENGTH, 10);
+            "Might: +50", "Attunement: +5%", "", "Cuts things.", "", "Legendary Sword"), lore);
+        items.setBonus(stack, Stat.MIGHT, 10);
         items.refresh(stack);
-        assertEquals("Strength: +50 (+10)", plain(stack.getItemMeta().lore().get(0)));
+        assertEquals("Might: +50 (+10)", plain(stack.getItemMeta().lore().get(0)));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -113,5 +113,31 @@ public class ItemsTest {
         assertEquals(new NamespacedKey("vampyuyu", "wings"), stack.getItemMeta().getItemModel());
         assertEquals(EquipmentSlot.CHEST, stack.getItemMeta().getEquippable().getSlot());
         assertEquals(new NamespacedKey("vampyuyu", "wings"), stack.getItemMeta().getEquippable().getModel());
+    }
+
+    @Test
+    public void itemsWrittenWithTheOldStatsAreMigrated() {
+        ItemStack stack = items.create("test_blade");
+        org.bukkit.inventory.meta.ItemMeta meta = stack.getItemMeta();
+        var pdc = meta.getPersistentDataContainer();
+        // how an item looked before the rework: bonuses under the old names, no stat-schema
+        pdc.remove(new org.bukkit.NamespacedKey("vampyuyu", Items.STAT_SCHEMA_KEY));
+        pdc.set(new org.bukkit.NamespacedKey("vampyuyu", "bonus_strength"), org.bukkit.persistence.PersistentDataType.DOUBLE, 8.0);
+        pdc.set(new org.bukkit.NamespacedKey("vampyuyu", "bonus_crit_damage"), org.bukkit.persistence.PersistentDataType.DOUBLE, 40.0);
+        pdc.set(new org.bukkit.NamespacedKey("vampyuyu", "bonus_crit_chance"), org.bukkit.persistence.PersistentDataType.DOUBLE, 5.0);
+        stack.setItemMeta(meta);
+        assertTrue(items.needsStatMigration(stack));
+        // read as it is: old bonuses already count, converted (8 + 40 x 0.25 Might, crit chance is gone)
+        assertEquals(18.0, items.bonuses(stack).get(Stat.MIGHT), 1e-9);
+        assertFalse(items.bonuses(stack).containsKey(Stat.ATTUNEMENT));
+        assertTrue(items.migrateStats(stack));
+        assertFalse(items.needsStatMigration(stack));
+        var after = stack.getItemMeta().getPersistentDataContainer();
+        assertNull(after.get(new org.bukkit.NamespacedKey("vampyuyu", "bonus_strength"), org.bukkit.persistence.PersistentDataType.DOUBLE));
+        assertNull(after.get(new org.bukkit.NamespacedKey("vampyuyu", "bonus_crit_damage"), org.bukkit.persistence.PersistentDataType.DOUBLE));
+        assertEquals(18.0, after.get(new org.bukkit.NamespacedKey("vampyuyu", "bonus_might"), org.bukkit.persistence.PersistentDataType.DOUBLE), 1e-9);
+        assertEquals(Items.STAT_SCHEMA, after.get(new org.bukkit.NamespacedKey("vampyuyu", Items.STAT_SCHEMA_KEY), org.bukkit.persistence.PersistentDataType.LONG).longValue());
+        assertFalse("a migrated item is left alone", items.migrateStats(stack));
+        assertFalse("a new item carries the schema", items.needsStatMigration(items.create("test_blade")));
     }
 }

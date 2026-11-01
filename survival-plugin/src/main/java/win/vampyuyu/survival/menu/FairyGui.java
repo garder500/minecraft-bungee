@@ -32,45 +32,40 @@ final class FairyGui {
     void open(Player player) {
         FairyData data = rt.fairy(player.getUniqueId());
         MenuConfig cfg = rt.config();
-        Gui gui = rt.core.guis().create(5, "<dark_gray>Fairy Souls");
-        gui.border(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
+        Gui gui = rt.core.guis().create(6, "<dark_gray>Wisps");
         int found = data.found.size();
         int total = fairy.total();
-        gui.set(4, Guis.icon(Material.PINK_DYE, "<light_purple>Fairy Souls",
+        gui.set(4, Guis.icon(Material.PINK_DYE, "<light_purple>Wisps",
             lore(player, data, found, total, cfg).toArray(String[]::new)));
+        gui.model(4, "menu/wisps");
         List<SoulLogic.ZoneProgress> zones = fairy.zoneProgress(player);
         for (int i = 0; i < zones.size() && i < ZONE_SLOTS.length; i++) {
             SoulLogic.ZoneProgress zone = zones.get(i);
             boolean done = zone.found() >= zone.total();
             gui.set(ZONE_SLOTS[i], Guis.icon(icon(zone.zone()), (done ? "<green>" : "<light_purple>") + label(zone.zone()),
-                "<gray>Found: " + (done ? "<green>" : "<light_purple>") + zone.found() + "<gray>/" + zone.total(),
-                (done ? "<green>" : "<light_purple>") + SoulLogic.bar(zone.found(), zone.total(), 16),
-                "", done ? "<green>Every soul found here!" : "<gray>Souls are hidden here. Keep looking!"));
+                "<gray>Found " + Guis.progress(zone.found(), zone.total()),
+                done ? "<green>Every wisp found here" : "<gray>Wisps are hidden here. Keep looking."));
         }
-        gui.set(31, Guis.icon(Material.COMPASS, "<aqua>Find the Nearest Soul",
-            "<gray>Points you toward the closest", "<gray>soul you have not collected.", "",
-            "<yellow>Click to point the way!"), click -> {
+        gui.set(31, Guis.icon(Material.COMPASS, "<aqua>Find the Nearest Wisp",
+            "<gray>Points to the closest wisp you have not found.", Guis.ACCENT + "▸ Point the way"), click -> {
                 click.close();
                 rt.core.scheduler().nextTick(() -> fairy.hint(player));
             });
-        gui.set(40, Guis.icon(Material.ARROW, "<green>Go Back", "<gray>To Skyblock Menu"), click -> back.accept(player));
+        gui.back("To the Isles", click -> back.accept(player));
         gui.open(player);
         rt.play(player, "click");
     }
 
     private List<String> lore(Player player, FairyData data, int found, int total, MenuConfig cfg) {
         java.util.ArrayList<String> lore = new java.util.ArrayList<>();
-        lore.add("<gray>Hidden souls give you permanent stats.");
-        lore.add("");
-        lore.add("<gray>Found: <light_purple>" + found + "<gray>/" + total);
-        lore.add("<light_purple>" + SoulLogic.bar(found, total, 20));
-        lore.add("");
+        lore.add("<gray>Hidden wisps give you permanent stats.");
+        lore.add("<gray>Found " + Guis.progress(found, total));
         if (cfg.fairyEvery <= 0) {
             lore.add("<gray>Milestone rewards are switched off.");
         } else {
             int number = SoulLogic.milestones(found, cfg.fairyEvery) + 1;
             lore.add("<gray>Next reward in <light_purple>" + SoulLogic.untilNext(found, cfg.fairyEvery)
-                + "<gray> souls <dark_gray>(milestone " + number + ")");
+                + "<gray> wisps <dark_gray>(milestone " + number + ")");
             double coins = SoulLogic.milestoneCoins(number, cfg.fairyCoinsPerMilestone, cfg.fairyCoinsIncrease);
             if (coins > 0) {
                 lore.add("<dark_gray> - <gold>+" + Msg.number(coins) + " coins");

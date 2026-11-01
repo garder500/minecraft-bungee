@@ -79,9 +79,8 @@ final class ShopUi {
     void openHub(Player player) {
         var all = new ArrayList<>(shops.catalog().shops().values());
         Gui gui = core.guis().create(Math.max(3, Math.min(6, 2 + (all.size() + 6) / 7)), "<gold>Merchants");
-        gui.border(Ui.glass());
         gui.paginate(all, gui.innerSlots(), shop -> Ui.plain(shop.icon(), shop.npcName(),
-            "<gray>" + shop.description(), "", "<yellow>Click to browse"), (c, shop) -> open(c.player(), shop),
+            "<gray>" + shop.description(), "", "<#F6D58E>▸ Browse"), (c, shop) -> open(c.player(), shop),
             gui.size() - 9, gui.size() - 1);
         gui.open(player);
     }
@@ -89,7 +88,6 @@ final class ShopUi {
     void open(Player player, ShopCatalog.ShopDef shop) {
         List<ShopCatalog.ShopItem> items = shop.items().stream().filter(i -> keys.known(i.key())).toList();
         Gui gui = core.guis().create(6, shop.npcName());
-        gui.border(Ui.glass());
         Gui.Pager<ShopCatalog.ShopItem>[] holder = newHolder();
         holder[0] = gui.paginate(items, gui.innerSlots(), i -> icon(player, shop, i),
             (click, item) -> {
@@ -103,21 +101,20 @@ final class ShopUi {
     private void refreshBar(Gui gui, Player player, ShopCatalog.ShopDef shop) {
         long purse = economy.balanceCents(player.getUniqueId());
         gui.set(49, Ui.icon(Material.GOLD_INGOT, "coin", "<gold>Your purse", "<gray>" + Money.coins(purse), "",
-            "<dark_gray>Left-click an item: buy 1", "<dark_gray>Shift-left-click: buy a stack",
+            "<#F6D58E>▸ Click: buy 1", "<#F6D58E>▸ Shift: buy a stack",
             "<dark_gray>Right-click: sell 1", "<dark_gray>Shift-right-click: sell all of it"));
         boolean buys = shop.items().stream().anyMatch(i -> i.sellCents() > 0);
         if (buys) {
             gui.set(48, Ui.icon(Material.HOPPER, "sell_all", "<green>Sell everything",
                 "<gray>Sells every item in your inventory", "<gray>that " + Ui.esc(shop.name()) + " buys.", "",
-                "<yellow>Click to sell", "<dark_gray>You can buy items back for a few minutes."), c -> {
+                "<#F6D58E>▸ Sell", "<dark_gray>You can buy items back for a few minutes."), c -> {
                     sellEverything(c.player(), shop);
                     refreshBar(gui, c.player(), shop);
                 });
         }
         gui.set(50, Ui.icon(Material.ENDER_CHEST, "buyback", "<aqua>Buyback",
             "<gray>Items you sold lately.", "<gray>Buy them back for what they paid.", "",
-            "<yellow>Click to open"), c -> openBuyback(c.player(), shop));
-        gui.set(46, Ui.plain(Material.BARRIER, "<red>Close"), Gui.Click::close);
+            "<#F6D58E>▸ Open"), c -> openBuyback(c.player(), shop));
     }
 
     private ItemStack icon(Player player, ShopCatalog.ShopDef shop, ShopCatalog.ShopItem item) {
@@ -126,7 +123,7 @@ final class ShopUi {
         lore.add("");
         if (item.buyCents() > 0) {
             lore.add("<gray>Buy: <gold>" + Money.coins(item.buyCents()));
-            lore.add("<dark_gray>Left-click: 1  |  Shift-left: " + keys.maxStack(item.key()));
+            lore.add("<#F6D58E>▸ Click: 1 · Shift: " + keys.maxStack(item.key()));
         }
         if (item.sellCents() > 0) {
             long now = shops.unitSellCents(item.key(), item.sellCents());
@@ -208,12 +205,11 @@ final class ShopUi {
     void openBuyback(Player player, ShopCatalog.ShopDef back) {
         List<ShopService.BuybackEntry> entries = shops.buybackOf(player.getUniqueId());
         Gui gui = core.guis().create(5, "<aqua>Buyback");
-        gui.border(Ui.glass());
         long now = System.currentTimeMillis();
         gui.paginate(entries, gui.innerSlots(), e -> Ui.withLore(e.stack(), List.of("",
             "<gray>Cost: <gold>" + Money.coins(e.paidCents()),
             "<gray>Available for: <yellow>" + Msg.duration(Math.max(0, e.at() + shops.buybackMillis() - now)),
-            "", "<yellow>Click to buy back")),
+            "", "<#F6D58E>▸ Buy back")),
             (c, e) -> {
                 ShopService.Result r = shops.repurchase(c.player(), e);
                 if (r.ok()) {
@@ -229,7 +225,7 @@ final class ShopUi {
         if (entries.isEmpty()) {
             gui.set(22, Ui.plain(Material.PAPER, "<gray>Nothing to buy back", "<dark_gray>Items you sell show up here."));
         }
-        gui.set(40, Ui.plain(Material.ARROW, "<yellow>Back"), c -> {
+        gui.back(null, c -> {
             if (back != null) {
                 open(c.player(), back);
             } else {

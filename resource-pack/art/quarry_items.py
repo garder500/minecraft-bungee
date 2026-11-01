@@ -14,6 +14,7 @@ import sys
 import zlib
 
 import boss_items as b
+from imported import imported
 
 BRONZE = (0xC9, 0x84, 0x42)
 GOLD = (0xF2, 0xC1, 0x4E)
@@ -425,7 +426,8 @@ def main():
             continue
         tex = b.PACK / "textures" / "item" / f"{icon_id}.png"
         tex.parent.mkdir(parents=True, exist_ok=True)
-        tex.write_bytes(draw(icon_id).png())
+        if not imported(icon_id):  # an imported sprite (import_textures.py) wins over the procedural one
+            tex.write_bytes(draw(icon_id).png())
         b.write_json(b.PACK / "models" / "item" / f"{icon_id}.json",
                      {"parent": "minecraft:item/generated", "textures": {"layer0": f"vampyuyu:item/{icon_id}"}})
         b.write_json(b.PACK / "items" / f"{icon_id}.json",

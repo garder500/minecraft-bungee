@@ -28,18 +28,22 @@ public class MainMenuTest extends MenuTestBase {
     private LeaderboardsGui boards;
     private MenuCommands commands;
     private PlayerMock player;
+    private QuestsGui questsGui;
+    private SettingsGui settings;
+    private FairyGui fairyGui;
 
     @Before
     public void setUp() {
         islands = new FakeIslands();
         core.replace(IslandApi.class, islands);
         QuestService quests = new QuestService(rt);
-        QuestsGui questsGui = new QuestsGui(rt, quests);
+        questsGui = new QuestsGui(rt, quests);
         warpsGui = new WarpsGui(rt, new WarpService(rt));
-        SettingsGui settings = new SettingsGui(rt, p -> { });
+        settings = new SettingsGui(rt, p -> { });
         FairySouls fairy = new FairySouls(rt, quests, new FairySoulsTest.FakeDisplays());
         boards = new LeaderboardsGui(rt);
-        menu = new MainMenu(rt, quests, questsGui, warpsGui, settings, new FairyGui(rt, fairy), boards);
+        fairyGui = new FairyGui(rt, fairy);
+        menu = new MainMenu(rt, quests, questsGui, warpsGui, settings, fairyGui, boards);
         warpsGui.runWith(menu::run);
         boards.runWith(menu::run);
         commands = new MenuCommands(rt, menu, questsGui, quests, warpsGui, new WarpService(rt), settings, fairy,
@@ -83,40 +87,88 @@ public class MainMenuTest extends MenuTestBase {
         menu.open(player);
         List<String> names = names(player.getOpenInventory().getTopInventory());
         assertTrue(names.toString(), names.contains("Skills"));
-        assertTrue(names.contains("Pets"));
-        assertFalse(names.toString(), names.contains("Bazaar"));
+        assertFalse(names.toString(), names.contains("Sky Exchange"));
         assertFalse(names.toString(), names.stream().anyMatch(n -> n.contains("unavailable")));
-        assertFalse(names.contains("Recipe Book"));
         assertFalse(names.contains("Leaderboards"));
+        // a missing feature leaves its slot empty, it does not shift the others
+        assertNull(player.getOpenInventory().getTopInventory().getItem(MainMenu.SB_MAIN[6]));
         // menu-owned entries are always there
-        for (String own : List.of("Quests", "Fairy Souls", "Warps", "Settings", "Close")) {
+        for (String own : List.of("Quests", "Wisps", "Profile", "Warps", "Settings")) {
             assertTrue(own, names.contains(own));
         }
+        assertFalse("no Close button", names.contains("Close"));
+    }
+
+    @Test
+    public void allSeventeenButtonsSitExactlyOnTheConstellationSlots() {
+        command("skills", "skill");
+        command("collections", "collection");
+        command("forge");
+        command("island", "is");
+        command("minion", "minions");
+        command("bazaar", "bz");
+        command("auctionhouse", "ah", "auction");
+        command("bank", "sbbank");
+        command("boss");
+        command("dungeon", "dg", "catacombs");
+        command("slayer");
+        command("leaderboards", "lb");
+        menu.open(player);
+        Inventory top = player.getOpenInventory().getTopInventory();
+        assertEquals(54, top.getSize());
+        List<String> order = List.of("Quests", "Skills", "Collections", "Forge", "Create Island", "Minions", "Sky Exchange",
+            "Drift Market", "Bank", "Bosses", "Crypt Depths", "Hunts", "Wisps", "Leaderboards", "Profile", "Warps", "Settings");
+        assertEquals(17, MainMenu.SB_MAIN.length);
+        java.util.Set<Integer> expected = new java.util.HashSet<>();
+        for (int i = 0; i < order.size(); i++) {
+            expected.add(MainMenu.SB_MAIN[i]);
+            assertEquals("slot " + MainMenu.SB_MAIN[i], order.get(i), name(top.getItem(MainMenu.SB_MAIN[i])));
+        }
+        for (int slot = 0; slot < top.getSize(); slot++) {
+            if (!expected.contains(slot)) {
+                assertNull("slot " + slot + " must stay empty", top.getItem(slot));
+            }
+        }
+        // the layout mirrors resource-pack/layout.py SB_MAIN
+        assertArrayEquals(new int[] {11, 13, 15, 19, 22, 25, 29, 31, 33, 37, 40, 43, 1, 7, 45, 49, 53}, MainMenu.SB_MAIN);
     }
 
     @Test
     public void realCommandsOfTheSiblingFeaturesOpenTheirDoors() {
-        command("accessories", "acc", "bag");
-        command("pets", "pet");
         command("bank", "sbbank");
         command("minion", "minions");
         command("boss");
         command("slayer");
         command("dungeon", "dg", "catacombs");
         command("auctionhouse", "ah", "auction");
-        command("stats", "mystats");
         menu.open(player);
         List<String> names = names(player.getOpenInventory().getTopInventory());
-        for (String door : List.of("Accessories", "Pets", "Bank", "Minions", "Bosses", "Slayer", "Dungeons", "Auction House")) {
+        for (String door : List.of("Bank", "Minions", "Bosses", "Hunts", "Crypt Depths", "Drift Market")) {
             assertTrue(door + " in " + names, names.contains(door));
         }
-        // doors fill the slots in order without gaps
-        Inventory top = player.getOpenInventory().getTopInventory();
-        for (int slot : new int[] {19, 20, 21, 22, 23, 24, 25, 28}) {
-            assertNotNull("slot " + slot, top.getItem(slot));
-            assertFalse("slot " + slot, name(top.getItem(slot)).isBlank());
+    }
+
+    @Test
+    public void petsAccessoriesAndTheRecipeBookAreReachedFromTheProfile() {
+        command("accessories", "acc", "bag");
+        command("pets", "pet");
+        command("stats", "mystats");
+        menu.open(player);
+        click(45);
+        Inventory page = player.getOpenInventory().getTopInventory();
+        assertEquals(27, page.getSize());
+        List<String> names = names(page);
+        for (String entry : List.of("Stats", "Accessories", "Pets", "Back")) {
+            assertTrue(entry + " in " + names, names.contains(entry));
         }
-        assertTrue("no gap, nothing after the eighth door", name(top.getItem(29)).isBlank());
+        assertFalse(names.contains("Recipe Book"));
+        assertEquals("Back", name(page.getItem(18)));
+        click(10);
+        assertEquals(List.of("stats"), ran);
+        // the back button returns to the Isles
+        menu.openProfile(player);
+        click(18);
+        assertEquals(54, player.getOpenInventory().getTopInventory().getSize());
     }
 
     @Test
@@ -132,16 +184,8 @@ public class MainMenuTest extends MenuTestBase {
     public void clickingADoorRunsTheCommandAsThePlayer() {
         command("skills", "skill");
         menu.open(player);
-        click(19);
+        click(13);
         assertEquals(List.of("skills"), ran);
-    }
-
-    @Test
-    public void profileHeadRunsStats() {
-        command("stats", "mystats");
-        menu.open(player);
-        click(4);
-        assertEquals(List.of("stats"), ran);
     }
 
     @Test
@@ -149,18 +193,62 @@ public class MainMenuTest extends MenuTestBase {
         command("island", "is");
         menu.open(player);
         Inventory top = player.getOpenInventory().getTopInventory();
-        assertTrue(names(top).toString(), names(top).contains("Island") || names(top).contains("Create Island"));
         // "island create" resolves to the island command, which exists in this test
-        assertTrue(names(top).toString(), names(top).contains("Create Island"));
-        click(19);
+        assertEquals("Create Island", name(top.getItem(22)));
+        click(22);
         assertEquals(List.of("island create"), ran);
         // with an island the door opens the island menu
         ran.clear();
         islands.give(player.getUniqueId(), new Location(world("sb_world"), 0, 64, 0));
         menu.open(player);
-        assertTrue(names(player.getOpenInventory().getTopInventory()).contains("Island"));
-        click(19);
+        assertEquals("Island", name(player.getOpenInventory().getTopInventory().getItem(22)));
+        click(22);
         assertEquals(List.of("island"), ran);
+    }
+
+    @Test
+    public void everyMenuOfTheMenuFeatureFollowsTheHouseRules() {
+        command("skills", "skill");
+        command("island", "is");
+        command("baltop", "topcoins");
+        command("skilltop", "skillboard");
+        command("stats", "mystats");
+        command("pets", "pet");
+        for (int i = 0; i < 3; i++) {
+            player.closeInventory();
+            switch (i) {
+                case 0 -> menu.open(player);
+                case 1 -> menu.openProfile(player);
+                default -> warpsGui.open(player);
+            }
+            win.vampyuyu.survival.core.MenuRules.check(player.getOpenInventory().getTopInventory(), "menu " + i);
+        }
+        boards.open(player);
+        win.vampyuyu.survival.core.MenuRules.check(player.getOpenInventory().getTopInventory(), "boards");
+        settings.open(player);
+        win.vampyuyu.survival.core.MenuRules.check(player.getOpenInventory().getTopInventory(), "settings");
+        questsGui.open(player);
+        win.vampyuyu.survival.core.MenuRules.check(player.getOpenInventory().getTopInventory(), "quests");
+        questsGui.categories(player);
+        win.vampyuyu.survival.core.MenuRules.check(player.getOpenInventory().getTopInventory(), "quest categories");
+        questsGui.daily(player);
+        win.vampyuyu.survival.core.MenuRules.check(player.getOpenInventory().getTopInventory(), "daily");
+        questsGui.tutorial(player);
+        win.vampyuyu.survival.core.MenuRules.check(player.getOpenInventory().getTopInventory(), "tutorial");
+        fairyGui.open(player);
+        win.vampyuyu.survival.core.MenuRules.check(player.getOpenInventory().getTopInventory(), "wisps");
+    }
+
+    @Test
+    public void tooltipsFollowTheHouseStyle() {
+        command("skills", "skill");
+        menu.open(player);
+        ItemStack skills = player.getOpenInventory().getTopInventory().getItem(13);
+        List<String> lore = skills.lore().stream().map(l -> PlainTextComponentSerializer.plainText().serialize(l)).toList();
+        assertEquals(lore.toString(), 2, lore.size());
+        assertEquals("▸ Open", lore.get(1));
+        assertTrue(skills.getItemMeta().hasItemModel());
+        assertEquals("menu/skills", skills.getItemMeta().getItemModel().getKey());
     }
 
     @Test
@@ -169,7 +257,7 @@ public class MainMenuTest extends MenuTestBase {
         command("skilltop", "skillboard");
         menu.open(player);
         assertTrue(names(player.getOpenInventory().getTopInventory()).contains("Leaderboards"));
-        click(19);
+        click(7);
         server.getScheduler().performTicks(3);
         Inventory board = player.getOpenInventory().getTopInventory();
         assertTrue(names(board).toString(), names(board).contains("Richest Players"));
@@ -191,7 +279,7 @@ public class MainMenuTest extends MenuTestBase {
     public void aRealLeaderboardsCommandWinsOverTheSubmenu() {
         command("leaderboards", "lb");
         menu.open(player);
-        click(19);
+        click(7);
         assertEquals(List.of("leaderboards"), ran);
     }
 

@@ -31,7 +31,14 @@ final class Ui {
         ItemStack item = Guis.icon(material, name, lore);
         if (model != null) {
             ItemMeta meta = item.getItemMeta();
-            meta.setItemModel(new NamespacedKey("vampyuyu", "economy/" + model));
+            // the three market headers use the celestial menu icons
+            String path = switch (model) {
+                case "bank" -> "menu/bank";
+                case "bazaar" -> "menu/exchange";
+                case "auction" -> "menu/market";
+                default -> "economy/" + model;
+            };
+            meta.setItemModel(new NamespacedKey("vampyuyu", path));
             item.setItemMeta(meta);
         }
         return item;
@@ -39,10 +46,6 @@ final class Ui {
 
     static ItemStack plain(Material material, String name, String... lore) {
         return Guis.icon(material, name, lore);
-    }
-
-    static ItemStack glass() {
-        return Guis.icon(Material.BLACK_STAINED_GLASS_PANE, " ");
     }
 
     /** Copy of {@code base} (keeps its name and lore) with {@code extra} lore lines appended. */

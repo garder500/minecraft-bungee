@@ -48,9 +48,9 @@ public final class DungeonService {
         }
     }
 
-    /** Re-reads dungeon.yml. Running dungeons keep the floor they were built with; limits apply at once. */
+    /** Re-reads the dungeon data. Running dungeons keep the floor they were built with; limits apply at once. */
     public java.util.List<String> reload() {
-        DungeonConfig fresh = DungeonConfig.parse(core.featureConfig("dungeon"));
+        DungeonConfig fresh = DungeonConfig.load(core.data());
         ctx.cfg = fresh;
         parties.configure(fresh.partyMaxSize, fresh.inviteExpireSeconds, fresh.readyCheckSeconds, fresh.warpCooldownSeconds,
             fresh.membersCanInvite);

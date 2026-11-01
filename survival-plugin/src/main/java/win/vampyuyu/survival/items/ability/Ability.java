@@ -7,7 +7,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * An item ability. Numbers (mana, cooldown and every named parameter) have defaults here and can be overridden in
- * {@code items.yml} under {@code abilities.<id>.<param>}.
+ * the {@code items.abilities.<id>.<param>} settings.
  *
  * @param description MiniMessage lines; {@code {param}} is replaced by the resolved value
  * @param params default numeric parameters used by the description and the executor

@@ -132,11 +132,10 @@ public final class PetService implements StatProvider {
         }
         if (held != null) {
             switch (held) {
-                case "pet_big_teeth" -> out.merge(Stat.CRIT_CHANCE, 5.0, Double::sum);
-                case "pet_hardened_scales" -> out.merge(Stat.DEFENSE, 25.0, Double::sum);
+                case "pet_big_teeth" -> out.merge(Stat.MIGHT, 5.0, Double::sum);
+                case "pet_hardened_scales" -> out.merge(Stat.WARD, 25.0, Double::sum);
                 case "pet_lucky_clover" -> {
-                    out.merge(Stat.PET_LUCK, 5.0, Double::sum);
-                    out.merge(Stat.MAGIC_FIND, 5.0, Double::sum);
+                    out.merge(Stat.FORTUNE, 10.0, Double::sum);
                 }
                 default -> { }
             }
@@ -383,12 +382,12 @@ public final class PetService implements StatProvider {
         return Optional.of(entry);
     }
 
-    /** Name shown on an egg: {@code [Lvl 12] Wolf}. */
+    /** Name shown on an egg: {@code Wolf · Lv 12}. */
     public @Nullable String eggName(GearInfo info, ItemStack stack) {
         if (!info.id().equals("pet_egg")) {
             return null;
         }
-        return readEgg(stack).map(entry -> "[Lvl " + level(entry) + "] " + PetTypes.get(entry.type).get().name())
+        return readEgg(stack).map(entry -> PetTypes.get(entry.type).get().name() + " · Lv " + level(entry))
             .orElse(null);
     }
 

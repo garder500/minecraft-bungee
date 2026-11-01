@@ -13,6 +13,7 @@ import random
 
 import boss_items as b
 import boss_skins as bs
+from imported import imported
 
 ASSETS = bs.PACK
 TIERS = {
@@ -124,6 +125,8 @@ def main():
             path.write_bytes(bs.png(layer(tier, leggings)))
         for slot in SLOTS:
             ident = f"{tier}_{slot}"
+            if imported(f"armor/{ident}"):  # the sprite comes from a concept sheet (import_textures.py)
+                continue
             tex = ASSETS / "textures" / "item" / "armor" / f"{ident}.png"
             tex.parent.mkdir(parents=True, exist_ok=True)
             tex.write_bytes(icon(tier, slot).png())

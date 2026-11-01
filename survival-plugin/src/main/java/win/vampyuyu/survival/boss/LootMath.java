@@ -26,21 +26,36 @@ public final class LootMath {
         return Math.max(0, bonus.get(rank - 1));
     }
 
+    /** The pity can never lift a base chance above this multiple of itself (before rank bonus and Magic Find). */
+    public static final double MAX_PITY_FACTOR = 1.4;
+
     /** Pity bonus after {@code dry} kills without the drop, capped. */
     public static double pityBonus(int dry, double perKill, double cap) {
         return Math.min(Math.max(0, cap), Math.max(0, dry) * Math.max(0, perKill));
     }
 
+    /** Pity bonus capped by {@code cap} and so that {@code base + bonus} stays within {@link #MAX_PITY_FACTOR} x {@code base}. */
+    public static double pityBonus(int dry, double perKill, double cap, double base) {
+        return Math.min(pityBonus(dry, perKill, cap), maxPity(base));
+    }
+
+    /** The largest pity bonus a drop of chance {@code base} can ever get. */
+    public static double maxPity(double base) {
+        return Math.max(0, base) * (MAX_PITY_FACTOR - 1);
+    }
+
     /**
-     * Final drop chance. A guaranteed entry (base 1) stays guaranteed. Magic Find is a percentage:
-     * 50 means +50% chance.
+     * Final drop chance. A guaranteed entry (base 1) stays guaranteed. The pity is clamped so that
+     * {@code base + pity} never exceeds 1.4 x {@code base}; the rank bonus and Magic Find multiply that. Magic Find is a
+     * percentage: 50 means +50% chance.
      */
     public static double chance(double base, double pity, double rankMult, double magicFind, boolean useMagicFind) {
         if (base >= 1.0) {
             return 1.0;
         }
         double mf = useMagicFind ? 1 + Math.max(0, magicFind) / 100.0 : 1.0;
-        return clamp((base + pity) * rankMult * mf, 0, 1);
+        double bonus = Math.min(Math.max(0, pity), maxPity(base));
+        return clamp((base + bonus) * rankMult * mf, 0, 1);
     }
 
     /** Whether a participant may roll the entry at all. */

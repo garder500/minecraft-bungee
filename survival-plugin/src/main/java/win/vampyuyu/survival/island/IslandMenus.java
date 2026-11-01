@@ -22,7 +22,6 @@ import win.vampyuyu.survival.island.IslandService.Upgrade;
 /** Every island menu. Tooltips only (no pack art); a click that changes state re-opens the menu with fresh data. */
 public final class IslandMenus {
     private static final MiniMessage MINI = MiniMessage.miniMessage();
-    private static final ItemStack FILLER = Guis.icon(Material.GRAY_STAINED_GLASS_PANE, "<gray> ");
 
     private final IslandService service;
     private final IslandConfig cfg;
@@ -50,9 +49,7 @@ public final class IslandMenus {
     }
 
     private Gui gui(int rows, String title) {
-        Gui gui = service.core().guis().create(rows, title);
-        gui.border(FILLER);
-        return gui;
+        return service.core().guis().create(rows, title);
     }
 
     private ItemStack head(UUID owner, String name, String... lore) {
@@ -69,7 +66,7 @@ public final class IslandMenus {
     }
 
     private void back(Gui gui, int slot, Consumer<Player> target) {
-        gui.set(slot, Guis.icon(Material.ARROW, "<yellow>Back"), click -> target.accept(click.player()));
+        gui.back(null, click -> target.accept(click.player()));
     }
 
     private Island islandOf(Player player) {
@@ -94,7 +91,7 @@ public final class IslandMenus {
         IslandRole role = island.roleOf(id);
         Gui gui = gui(5, "<dark_aqua>Your island");
         gui.set(10, Guis.icon(Material.ENDER_PEARL, "<aqua>Island home",
-            "<gray>Left-click: teleport home", "<gray>Right-click: set home here", ""
+            "<#F6D58E>▸ Left-click: teleport home", "<#F6D58E>▸ Right-click: set home here", ""
                 + "<dark_gray>Owner and co-owners can set the home"), click -> {
                     if (click.right()) {
                         reply(click.player(), service.setHome(click.player()));
@@ -116,7 +113,7 @@ public final class IslandMenus {
             click -> members(click.player()));
         gui.set(19, Guis.icon(Material.EXPERIENCE_BOTTLE, "<light_purple>Island level",
             "<gray>Level: <white>" + island.level, "<gray>Value: <white>" + Msg.number(island.value),
-            "<gray>Rank: <white>" + rankLabel(island), "", "<yellow>Click to recalculate"), click -> {
+            "<gray>Rank: <white>" + rankLabel(island), "", "<#F6D58E>▸ Recalculate"), click -> {
                 reply(click.player(), service.recalculate(island, true, done ->
                     service.core().msg().ok(click.player(), "Island level: " + done.level)));
                 click.close();
@@ -129,19 +126,19 @@ public final class IslandMenus {
         gui.set(25, Guis.icon(island.locked ? Material.IRON_DOOR : Material.OAK_DOOR,
             "<white>Island access: " + (island.locked ? "<red>Locked" : "<green>Open"),
             island.locked ? "<gray>Only members and trusted guests can enter" : "<gray>Anyone who is not banned can visit",
-            canLock ? "<yellow>Click to toggle" : "<dark_gray>Owner and co-owners only"), click -> {
+            canLock ? "<#F6D58E>▸ Toggle" : "<dark_gray>Owner and co-owners only"), click -> {
                 reply(click.player(), service.setLocked(click.player(), !island.locked));
                 main(click.player());
             });
         boolean visible = service.data(id).borderVisible;
         gui.set(28, Guis.icon(Material.BARRIER, "<white>Island border: " + onOff(visible),
-            "<gray>Show the blue border at the island edge", "<yellow>Click to toggle"), click -> {
+            "<gray>Show the blue border at the island edge", "<#F6D58E>▸ Toggle"), click -> {
                 service.toggleBorder(click.player());
                 main(click.player());
             });
         gui.set(32, Guis.icon(Material.LECTERN, "<aqua>Public warp",
             island.warp == null ? "<gray>No warp set" : "<gray>Warp: <white>" + esc(island.warp.name),
-            "<gray>Left-click: set the warp where you stand", "<gray>Right-click: remove the warp"), click -> {
+            "<#F6D58E>▸ Left-click: set the warp here", "<#F6D58E>▸ Right-click: remove the warp"), click -> {
                 reply(click.player(), click.right() ? service.removeWarp(click.player())
                     : service.setWarp(click.player(), null));
                 click.close();
@@ -157,7 +154,6 @@ public final class IslandMenus {
                         reply(click.player(), service.leave(click.player()));
                     }));
         }
-        gui.set(40, Guis.icon(Material.BARRIER, "<red>Close"), click -> click.close());
         gui.open(player);
     }
 
@@ -181,7 +177,7 @@ public final class IslandMenus {
             click -> top(click.player()));
         if (invites > 0) {
             gui.set(22, Guis.icon(Material.WRITABLE_BOOK, "<yellow>Invitations (" + invites + ")",
-                "<gray>Click to accept the latest one"), click -> {
+                "<#F6D58E>▸ Accept the latest one"), click -> {
                     reply(click.player(), service.accept(click.player(), null));
                     click.close();
                 });
@@ -204,7 +200,7 @@ public final class IslandMenus {
                 lore.add("<gray>" + esc(line));
             }
             lore.add("");
-            lore.add("<yellow>Click to choose");
+            lore.add("<#F6D58E>▸ Choose");
             gui.set(slots[i], Guis.icon(t.icon(), "<green>" + esc(t.name()), lore.toArray(new String[0])),
                 click -> choose.accept(t.id()));
         }
@@ -251,7 +247,7 @@ public final class IslandMenus {
             IslandFlag flag = flags[i];
             boolean value = island.flag(flag);
             gui.set(slots[i], Guis.icon(flag.icon(), "<white>" + flag.label() + ": " + onOff(value),
-                "<gray>" + flag.description(), can ? "<yellow>Click to toggle" : "<dark_gray>Owner and co-owners only"),
+                "<gray>" + flag.description(), can ? "<#F6D58E>▸ Toggle" : "<dark_gray>Owner and co-owners only"),
                 click -> {
                     reply(click.player(), service.setFlag(click.player(), flag, !island.flag(flag)));
                     settings(click.player());
@@ -266,7 +262,7 @@ public final class IslandMenus {
             });
         gui.set(33, Guis.icon(island.locked ? Material.IRON_DOOR : Material.OAK_DOOR,
             "<white>Island access: " + (island.locked ? "<red>Locked" : "<green>Open"),
-            can ? "<yellow>Click to toggle" : "<dark_gray>Owner and co-owners only"), click -> {
+            can ? "<#F6D58E>▸ Toggle" : "<dark_gray>Owner and co-owners only"), click -> {
                 reply(click.player(), service.setLocked(click.player(), !island.locked));
                 settings(click.player());
             });
@@ -315,7 +311,7 @@ public final class IslandMenus {
         }
         if (current + 1 < tiers.size()) {
             lore.add("");
-            lore.add("<yellow>Click to buy the next tier");
+            lore.add("<#F6D58E>▸ Buy the next tier");
         }
         gui.set(slot, Guis.icon(icon, "<green>" + type.label(), lore.toArray(new String[0])), click -> {
             reply(click.player(), service.upgrade(click.player(), type));
@@ -352,7 +348,7 @@ public final class IslandMenus {
             return head(entry.player(), "<white>" + name, "<gray>Role: <aqua>" + entry.role().label(),
                 online != null ? "<green>Online" : "<dark_gray>Offline",
                 IslandAccess.has(mine, Cap.KICK) && IslandAccess.outranks(mine, entry.role())
-                    ? "<yellow>Click to manage" : "");
+                    ? "<#F6D58E>▸ Manage" : "");
         }, (click, entry) -> {
             if (IslandAccess.has(mine, Cap.KICK) && IslandAccess.outranks(mine, entry.role())) {
                 memberMenu(click.player(), entry.player());
@@ -430,7 +426,7 @@ public final class IslandMenus {
             };
             ItemStack stack = Guis.icon(icon, "<gold>#" + rank + " <white>" + esc(registry.nameOf(island.owner)),
                 "<gray>Level: <white>" + island.level, "<gray>Value: <white>" + Msg.number(island.value),
-                "<gray>Members: <white>" + island.size(), island.locked ? "<red>Locked" : "<yellow>Click to visit");
+                "<gray>Members: <white>" + island.size(), island.locked ? "<red>Locked" : "<#F6D58E>▸ Visit");
             stack.setAmount(Math.max(1, Math.min(64, rank)));
             return stack;
         }, (click, island) -> {
@@ -451,7 +447,7 @@ public final class IslandMenus {
         gui.paginate(list, gui.innerSlots(), island -> Guis.icon(island.warp == null ? Material.OAK_SIGN : Material.OAK_HANGING_SIGN,
             "<aqua>" + esc(island.warp.name), "<gray>By <white>" + esc(registry.nameOf(island.owner)),
             "<gray>Level: <white>" + island.level, "<gray>Visits: <white>" + island.warp.visits,
-            "<yellow>Click to visit"), (click, island) -> {
+            "<#F6D58E>▸ Visit"), (click, island) -> {
                 reply(click.player(), service.visit(click.player(), island, true));
                 click.close();
             }, 45, 53);

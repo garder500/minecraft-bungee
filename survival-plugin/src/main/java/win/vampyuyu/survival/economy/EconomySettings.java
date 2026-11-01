@@ -1,8 +1,8 @@
 package win.vampyuyu.survival.economy;
 
-import org.bukkit.configuration.ConfigurationSection;
+import win.vampyuyu.survival.data.Settings;
 
-/** Core, pay, death and baltop options of economy.yml (other subsystems parse their own sections). */
+/** Core, pay, death and baltop options of the {@code economy.*} settings (other subsystems read their own). */
 public record EconomySettings(
     long maxBalanceCents, int ledgerSize, int bankHistorySize, boolean ledgerFile,
     boolean payEnabled, long payMinCents, long payMaxCents, long payConfirmCents, long payCooldownMillis,
@@ -10,7 +10,7 @@ public record EconomySettings(
     String deathCause, int deathPercent, long deathMaxCents, long deathMinBalanceCents, boolean deathToKiller,
     long baltopCacheMillis, int baltopSize, boolean saveInventoryOnEscrow) {
 
-    public static EconomySettings load(ConfigurationSection c) {
+    public static EconomySettings load(Settings c) {
         return new EconomySettings(
             cents(c, "currency.max-balance", 1_000_000_000_000.0, Money.HARD_CAP_CENTS),
             clamp(c.getInt("currency.ledger-size", 50), 5, 500),
@@ -33,7 +33,7 @@ public record EconomySettings(
             c.getBoolean("safety.save-player-data", true));
     }
 
-    static long cents(ConfigurationSection c, String path, double fallbackCoins, long cap) {
+    static long cents(Settings c, String path, double fallbackCoins, long cap) {
         double coins = c.getDouble(path, fallbackCoins);
         long cents = Money.toCents(coins).orElse(Math.round(fallbackCoins * 100));
         return Math.min(cap, cents);

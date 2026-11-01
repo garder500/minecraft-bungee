@@ -2,7 +2,6 @@ package win.vampyuyu.survival.skills;
 
 import static org.junit.Assert.*;
 
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.Test;
 
 /** Pure helpers: boosts, anti farm, placed blocks, reward text. */
@@ -176,12 +175,15 @@ public class SupportTest {
 
     @Test
     public void configParsingSkipsBadEntries() {
-        YamlConfiguration yaml = new YamlConfiguration();
-        yaml.set("xp.mining.blocks.STONE", 2);
-        yaml.set("xp.mining.blocks.NOT_A_BLOCK", 2);
-        yaml.set("skills.combat.stats.CRIT_CHANCE", java.util.List.of(java.util.Map.of("from", 1, "to", 10, "amount", 0.5)));
-        yaml.set("skills.combat.stats.NOPE", java.util.List.of(java.util.Map.of("from", 1, "to", 10, "amount", 0.5)));
-        SkillsConfig cfg = new SkillsConfig(yaml);
+        SkillsConfig cfg = SkillsTestData.loadEmpty(db -> {
+            SkillsTestData.sql(db, "INSERT INTO skill_block_xp (material, position, skill, xp) VALUES ('STONE', 0, 'mining', 2)");
+            SkillsTestData.sql(db, "INSERT INTO skill_block_xp (material, position, skill, xp) VALUES ('NOT_A_BLOCK', 1, 'mining', 2)");
+            SkillsTestData.sql(db, "INSERT INTO skill (id, max_level) VALUES ('combat', 60)");
+            SkillsTestData.sql(db, "INSERT INTO skill_stat_range (skill_id, position, stat, from_level, to_level, amount) "
+                + "VALUES ('combat', 0, 'ATTUNEMENT', 1, 10, 0.5)");
+            SkillsTestData.sql(db, "INSERT INTO skill_stat_range (skill_id, position, stat, from_level, to_level, amount) "
+                + "VALUES ('combat', 1, 'NOPE', 1, 10, 0.5)");
+        });
         assertEquals(2.0, cfg.miningBlocks.get(org.bukkit.Material.STONE), 0);
         assertEquals(2, cfg.warnings.size());
         SkillsConfig.StatReward reward = cfg.skill(win.vampyuyu.survival.api.Skill.COMBAT).stats().get(0);

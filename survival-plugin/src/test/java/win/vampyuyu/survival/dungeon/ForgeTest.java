@@ -193,6 +193,7 @@ public class ForgeTest {
         server.dispatchCommand(alice, "dungeon forge buy nothing");
         server.dispatchCommand(alice, "dungeon forge");
         assertNotNull("the menu opened", alice.getOpenInventory());
+        win.vampyuyu.survival.core.MenuRules.check(alice.getOpenInventory().getTopInventory(), "crypt forge");
     }
 
     @Test
@@ -203,7 +204,7 @@ public class ForgeTest {
         boolean found = false;
         String m;
         while ((m = next()) != null) {
-            found |= m.contains("Catacombs level: 2");
+            found |= m.contains("Crypt Depths level: 2");
         }
         assertTrue(found);
     }
@@ -215,12 +216,10 @@ public class ForgeTest {
 
     @Test
     public void shippedForgeEqualsTheBuiltInTradesAndIsValid() throws Exception {
-        var y = new org.bukkit.configuration.file.YamlConfiguration();
-        try (var in = getClass().getResourceAsStream("/dungeon.yml");
-                var reader = new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8)) {
-            y.load(reader);
+        DungeonConfig c;
+        try (var db = DungeonTestData.seeded()) {
+            c = DungeonConfig.load(db);
         }
-        DungeonConfig c = DungeonConfig.parse(y);
         assertEquals(c.problems().toString(), 0, c.problems().size());
         assertEquals(DungeonConfig.DEFAULT_TRADES, c.forgeTrades);
         for (var t : c.forgeTrades) {
@@ -234,36 +233,42 @@ public class ForgeTest {
     }
 
     @Test
-    public void badTradesAreSkippedWithAProblemAndTheRestSurvive() {
-        var y = new org.bukkit.configuration.file.YamlConfiguration();
-        try {
-            y.loadFromString("""
-                forge:
-                  trades:
-                    - {id: ok, cost: {dungeon_crypt_shard: 2}, give: dungeon_spirit_leaf}
-                    - {id: ok, cost: {dungeon_crypt_shard: 2}, give: dungeon_spirit_leaf}
-                    - {id: two_outcomes, cost: {dungeon_crypt_shard: 2}, give: dungeon_spirit_leaf, coins: 5}
-                    - {id: free, give: dungeon_spirit_leaf}
-                    - {id: "Bad Id!", cost: {dungeon_crypt_shard: 2}, coins: 5}
-                """);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
+    public void aTradeWithoutACostIsSkippedWithAProblemAndTheRestSurvive() {
+        try (var db = DungeonTestData.empty()) {
+            DungeonTestData.exec(db, "INSERT INTO dungeon_trade (id, position, name, give, amount) VALUES ('ok', 0, 'ok', 'dungeon_spirit_leaf', 1)",
+                "INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('ok', 'dungeon_crypt_shard', 2)",
+                "INSERT INTO dungeon_trade (id, position, name, give, amount) VALUES ('free', 1, 'free', 'dungeon_spirit_leaf', 1)");
+            DungeonConfig c = DungeonConfig.load(db);
+            assertEquals(1, c.forgeTrades.size());
+            assertEquals("ok", c.forgeTrades.get(0).id());
+            assertEquals(1, c.problems().size());
         }
-        DungeonConfig c = DungeonConfig.parse(y);
-        assertEquals(1, c.forgeTrades.size());
-        assertEquals("ok", c.forgeTrades.get(0).id());
-        assertEquals(4, c.problems().size());
+    }
+
+    @Test
+    public void theSchemaRefusesTradesWithTwoOutcomesOrABadId() {
+        try (var db = DungeonTestData.empty()) {
+            for (String sql : new String[] {
+                "INSERT INTO dungeon_trade (id, position, name, give, coins) VALUES ('two', 0, 'two', 'dungeon_spirit_leaf', 5)",
+                "INSERT INTO dungeon_trade (id, position, name) VALUES ('none', 0, 'none')",
+                "INSERT INTO dungeon_trade (id, position, name, coins) VALUES ('Bad Id!', 0, 'bad', 5)"}) {
+                try {
+                    DungeonTestData.exec(db, sql);
+                    fail("the schema should refuse: " + sql);
+                } catch (win.vampyuyu.survival.data.Db.DataException expected) {
+                    // the CHECK constraint did its job
+                }
+            }
+        }
     }
 
     @Test
     public void aTradeNamingAnUnknownItemIsRefusedBeforeAnythingIsTaken() {
-        var y = new org.bukkit.configuration.file.YamlConfiguration();
-        try {
-            y.loadFromString("forge:\n  trades:\n    - {id: ghost, cost: {dungeon_crypt_shard: 1}, give: no_such_item}\n");
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
+        try (var db = DungeonTestData.empty()) {
+            DungeonTestData.exec(db, "INSERT INTO dungeon_trade (id, position, name, give, amount) VALUES ('ghost', 0, 'ghost', 'no_such_item', 1)",
+                "INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('ghost', 'dungeon_crypt_shard', 1)");
+            svc.ctx.cfg = DungeonConfig.load(db);
         }
-        svc.ctx.cfg = DungeonConfig.parse(y);
         give(DungeonItems.CRYPT_SHARD, 3);
         var r = svc.forge.buy(alice, svc.forge.trade("ghost"));
         assertFalse(r.ok());

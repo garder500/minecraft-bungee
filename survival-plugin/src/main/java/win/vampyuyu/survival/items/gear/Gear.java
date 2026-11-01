@@ -139,6 +139,7 @@ public final class Gear {
      * potato books, enchants and singularity, then redraws name and lore. The one way every code path should finish.
      */
     public void rebuild(ItemStack stack) {
+        items.migrateStats(stack); // bonuses written under the old stat names move to the house stats first
         Optional<GearInfo> read = read(stack);
         if (read.isEmpty()) {
             return;

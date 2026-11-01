@@ -10,43 +10,55 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import win.vampyuyu.survival.api.IslandInfo;
 import win.vampyuyu.survival.api.Skill;
-import win.vampyuyu.survival.api.Stat;
 import win.vampyuyu.survival.core.Gui;
 import win.vampyuyu.survival.core.Guis;
+import win.vampyuyu.survival.core.MenuArt;
 import win.vampyuyu.survival.core.Msg;
 
-/** The Skyblock Menu: profile summary and a door to every other feature. */
+/** The Isles menu (the Skyblock menu): a constellation of buttons on the painted background, one per feature. */
 final class MainMenu {
-    /** Stats listed on the profile icon, in this order, when not zero. */
-    private static final List<Stat> PROFILE_STATS = List.of(Stat.HEALTH, Stat.DEFENSE, Stat.STRENGTH,
-        Stat.CRIT_CHANCE, Stat.CRIT_DAMAGE, Stat.ATTACK_SPEED, Stat.INTELLIGENCE, Stat.SPEED, Stat.MINING_SPEED,
-        Stat.MINING_FORTUNE, Stat.FARMING_FORTUNE, Stat.FORAGING_FORTUNE, Stat.FISHING_SPEED, Stat.MAGIC_FIND,
-        Stat.PET_LUCK);
+    /** Where the 17 buttons sit on the painted constellation (mirror of {@code layout.SB_MAIN}, same order as {@link #DOORS}). */
+    static final int[] SB_MAIN = {11, 13, 15, 19, 22, 25, 29, 31, 33, 37, 40, 43, 1, 7, 45, 49, 53};
 
-    /** One door to another feature: icon, name, description and the config key of its command. */
-    private record Door(Material icon, String name, String entry, List<String> about) {}
+    /** Which menu or command a button leads to. */
+    private enum Target { QUESTS, COMMAND, WISPS, BOARDS, PROFILE, WARPS, SETTINGS }
+
+    /** One button: icon model of the pack, fallback material, name, description, action word and where it leads. */
+    private record Door(Target target, Material icon, String model, String name, String entry, String about, String action) {}
 
     /** Entries behind the Leaderboards door: the real leaderboard command, or the submenu of the two feature boards. */
     private static final List<String> BOARD_ENTRIES = List.of("leaderboards", "baltop", "skilltop");
 
+    /** The buttons in {@link #SB_MAIN} order: quests, skills, collections, forge, island, minions, exchange, market, bank,
+     * bosses, crypt, hunts, wisps, leaderboards, profile, warps, settings. */
     private static final List<Door> DOORS = List.of(
-        new Door(Material.DIAMOND_SWORD, "Skills", "skills", List.of("Level up eight skills", "and earn permanent stats.")),
-        new Door(Material.PAINTING, "Collections", "collections", List.of("Gather resources to", "unlock recipes and rewards.")),
-        new Door(Material.BONE, "Pets", "pets", List.of("Manage your companions", "and their abilities.")),
-        new Door(Material.TOTEM_OF_UNDYING, "Accessories", "accessories", List.of("Talismans and rings that", "boost your stats.")),
-        new Door(Material.EMERALD, "Bazaar", "bazaar", List.of("Trade resources instantly", "at market prices.")),
-        new Door(Material.GOLD_BLOCK, "Auction House", "auction", List.of("Sell rare items to", "other players.")),
-        new Door(Material.GOLD_INGOT, "Bank", "bank", List.of("Keep your coins safe", "and earn interest.")),
-        new Door(Material.ARMOR_STAND, "Minions", "minions", List.of("Workers that gather", "resources for you.")),
-        new Door(Material.GRASS_BLOCK, "Island", "island", List.of("Manage your island,", "co-op and visitors.")),
-        new Door(Material.WITHER_SKELETON_SKULL, "Bosses", "boss", List.of("Fight powerful bosses", "for great loot.")),
-        new Door(Material.IRON_SWORD, "Slayer", "slayer", List.of("Hunt a personal boss", "and earn perks.")),
-        new Door(Material.IRON_DOOR, "Dungeons", "dungeon", List.of("Enter the Catacombs", "with a party.")),
-        new Door(Material.GOLDEN_HELMET, "Leaderboards", "leaderboards", List.of("See who is on top.")),
-        new Door(Material.CRAFTING_TABLE, "Recipe Book", "recipes", List.of("Browse every recipe", "you have unlocked.")));
+        new Door(Target.QUESTS, Material.WRITABLE_BOOK, "quests", "Quests", null, "Tutorial and daily quests.", "Open"),
+        new Door(Target.COMMAND, Material.DIAMOND_SWORD, "skills", "Skills", "skills", "Eight skills with permanent stats.", "Open"),
+        new Door(Target.COMMAND, Material.PAINTING, "collections", "Collections", "collections", "Gather resources to unlock recipes.", "Open"),
+        new Door(Target.COMMAND, Material.BLAST_FURNACE, "forge", "Forge", "forge", "Smelt and craft the ore line.", "Open"),
+        new Door(Target.COMMAND, Material.GRASS_BLOCK, "island", "Island", "island", "Your island, co-op and visitors.", "Open"),
+        new Door(Target.COMMAND, Material.ARMOR_STAND, "minions", "Minions", "minions", "Workers that gather for you.", "Open"),
+        new Door(Target.COMMAND, Material.EMERALD, "exchange", "Sky Exchange", "bazaar", "Trade resources at market prices.", "Open"),
+        new Door(Target.COMMAND, Material.GOLD_BLOCK, "market", "Drift Market", "auction", "Sell rare items to other players.", "Open"),
+        new Door(Target.COMMAND, Material.GOLD_INGOT, "bank", "Bank", "bank", "Keep your coins safe and earn interest.", "Open"),
+        new Door(Target.COMMAND, Material.WITHER_SKELETON_SKULL, "bosses", "Bosses", "boss", "Fight powerful bosses for loot.", "Open"),
+        new Door(Target.COMMAND, Material.IRON_DOOR, "crypt", "Crypt Depths", "dungeon", "Enter the depths with a party.", "Open"),
+        new Door(Target.COMMAND, Material.IRON_SWORD, "hunts", "Hunts", "slayer", "Hunt a personal boss for perks.", "Open"),
+        new Door(Target.WISPS, Material.PINK_DYE, "wisps", "Wisps", null, null, "Open"),
+        new Door(Target.BOARDS, Material.GOLDEN_HELMET, "leaderboards", "Leaderboards", "leaderboards", "See who is on top.", "Open"),
+        new Door(Target.PROFILE, Material.PLAYER_HEAD, null, "Profile", null, null, "Open"),
+        new Door(Target.WARPS, Material.COMPASS, "warps", "Warps", null, "Travel to the hub, your island and more.", "Open"),
+        new Door(Target.SETTINGS, Material.COMPARATOR, "settings", "Settings", null, "Sidebar, quest tracker and sounds.", "Open"));
 
-    /** Slots the visible doors fill, in order (a feature that is not installed leaves no gap). */
-    private static final int[] DOOR_SLOTS = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34};
+    /** The profile page: stats, pets, accessories and the recipe book, which have no slot on the constellation. */
+    private record Extra(Material icon, String name, String entry, String about) {}
+
+    private static final List<Extra> EXTRAS = List.of(
+        new Extra(Material.NETHER_STAR, "Stats", "stats", "Your stats and where they come from."),
+        new Extra(Material.TOTEM_OF_UNDYING, "Accessories", "accessories", "Talismans and rings that boost stats."),
+        new Extra(Material.BONE, "Pets", "pets", "Your companions and their abilities."),
+        new Extra(Material.CRAFTING_TABLE, "Recipe Book", "recipes", "Every recipe you have unlocked."));
+    private static final int[] EXTRA_SLOTS = {10, 12, 14, 16};
 
     private final MenuRuntime rt;
     private final QuestService quests;
@@ -69,45 +81,47 @@ final class MainMenu {
 
     void open(Player player) {
         quests.sync(player);
-        Gui gui = rt.core.guis().create(6, "<dark_gray>Skyblock Menu");
-        gui.border(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
-        gui.set(4, profile(player), click -> rt.commandFor("stats", player).ifPresent(command -> {
-            click.close();
-            run(player, command);
-        }));
-        int next = 0;
-        for (Door door : DOORS) {
-            if (!visible(door) || next >= DOOR_SLOTS.length) {
+        Gui gui = rt.core.guis().create(MenuArt.Kind.MAIN, "<dark_gray>Isles");
+        for (int i = 0; i < DOORS.size(); i++) {
+            Door door = DOORS.get(i);
+            if (!visible(door)) {
                 continue;
             }
-            gui.set(DOOR_SLOTS[next++], doorIcon(player, door), click -> clickDoor(player, door, click));
+            gui.set(SB_MAIN[i], doorIcon(player, door), click -> clickDoor(player, door, click));
         }
-        QuestData questData = rt.quests(player.getUniqueId());
-        int doneTutorial = questData.completed.size();
-        int totalTutorial = rt.config().catalog.tutorial().size();
-        gui.set(38, Guis.icon(Material.WRITABLE_BOOK, "<yellow>Quests",
-            "<gray>Tutorial quests and daily", "<gray>quests with streak rewards.", "",
-            "<gray>Tutorial: <green>" + doneTutorial + "<gray>/" + totalTutorial,
-            "<gray>Daily streak: <yellow>" + rt.engine().liveStreak(questData, quests.today()), "",
-            "<yellow>Click to open!"), click -> questsGui.open(player));
-        FairyData fairyData = rt.fairy(player.getUniqueId());
-        gui.set(39, Guis.icon(Material.PINK_DYE, "<light_purple>Fairy Souls",
-            "<gray>Hidden souls give you", "<gray>permanent stats.", "",
-            "<gray>Found: <light_purple>" + fairyData.found.size() + "<gray>/" + fairyGui.total(), "",
-            "<yellow>Click to open!"), click -> fairyGui.open(player));
-        gui.set(41, Guis.icon(Material.COMPASS, "<aqua>Warps",
-            "<gray>Travel to the hub, your", "<gray>island and other places.", "", "<yellow>Click to open!"),
-            click -> warpsGui.open(player));
-        gui.set(42, Guis.icon(Material.COMPARATOR, "<gray>Settings",
-            "<gray>Sidebar, quest tracker", "<gray>and sounds.", "", "<yellow>Click to open!"),
-            click -> settingsGui.open(player));
-        gui.set(49, Guis.icon(Material.BARRIER, "<red>Close"), Gui.Click::close);
         gui.open(player);
         rt.play(player, "click");
     }
 
+    /** The profile page: a small menu with the entries that have no slot on the constellation. */
+    void openProfile(Player player) {
+        Gui gui = rt.core.guis().create(3, "<dark_gray>Profile");
+        int at = 0;
+        for (Extra extra : EXTRAS) {
+            if (!rt.commandExists(extra.entry())) {
+                continue;
+            }
+            boolean usable = rt.commandFor(extra.entry(), player).isPresent();
+            gui.set(EXTRA_SLOTS[at++], usable
+                ? Guis.button(extra.icon(), "<green>" + extra.name(), extra.about(), "Open")
+                : Guis.icon(Material.GRAY_DYE, "<gray>" + extra.name() + " <dark_gray>(unavailable)",
+                    "<red>You do not have permission."),
+                click -> {
+                    if (usable) {
+                        click.close();
+                        run(player, rt.commandFor(extra.entry(), player).orElseThrow());
+                    }
+                });
+        }
+        gui.back("To the Isles", click -> open(click.player()));
+        gui.open(player);
+    }
+
     /** A door is hidden when none of its commands exists at all (the feature is not installed). */
     private boolean visible(Door door) {
+        if (door.entry() == null) {
+            return true;
+        }
         if (door.entry().equals("leaderboards")) {
             return BOARD_ENTRIES.stream().anyMatch(rt::commandExists);
         }
@@ -115,6 +129,9 @@ final class MainMenu {
     }
 
     private boolean usable(Door door, Player player) {
+        if (door.entry() == null) {
+            return true;
+        }
         if (door.entry().equals("leaderboards")) {
             return BOARD_ENTRIES.stream().anyMatch(e -> rt.commandFor(e, player).isPresent());
         }
@@ -123,21 +140,30 @@ final class MainMenu {
 
     /** True for the Island door of a player who has no island: it creates one instead. */
     private boolean createsIsland(Door door, Player player) {
-        return door.entry().equals("island") && rt.islands().isPresent() && rt.createIslandCommand(player).isPresent()
+        return "island".equals(door.entry()) && rt.islands().isPresent() && rt.createIslandCommand(player).isPresent()
             && rt.islands().get().islandOf(player.getUniqueId()).isEmpty();
     }
 
     private void clickDoor(Player player, Door door, Gui.Click click) {
-        if (!usable(door, player)) {
-            return;
-        }
-        click.close();
-        if (createsIsland(door, player)) {
-            run(player, rt.createIslandCommand(player).orElseThrow());
-        } else if (door.entry().equals("leaderboards") && rt.commandFor("leaderboards", player).isEmpty()) {
-            rt.core.scheduler().nextTick(() -> boardsGui.open(player));
-        } else {
-            run(player, rt.commandFor(door.entry(), player).orElseThrow());
+        switch (door.target()) {
+            case QUESTS -> questsGui.open(player);
+            case WISPS -> fairyGui.open(player);
+            case WARPS -> warpsGui.open(player);
+            case SETTINGS -> settingsGui.open(player);
+            case PROFILE -> openProfile(player);
+            case BOARDS, COMMAND -> {
+                if (!usable(door, player)) {
+                    return;
+                }
+                click.close();
+                if (createsIsland(door, player)) {
+                    run(player, rt.createIslandCommand(player).orElseThrow());
+                } else if (door.target() == Target.BOARDS && rt.commandFor("leaderboards", player).isEmpty()) {
+                    rt.core.scheduler().nextTick(() -> boardsGui.open(player));
+                } else {
+                    run(player, rt.commandFor(door.entry(), player).orElseThrow());
+                }
+            }
         }
     }
 
@@ -153,17 +179,37 @@ final class MainMenu {
     }
 
     private ItemStack doorIcon(Player player, Door door) {
+        switch (door.target()) {
+            case QUESTS -> {
+                QuestData data = rt.quests(player.getUniqueId());
+                int done = data.completed.size();
+                int total = rt.config().catalog.tutorial().size();
+                return Guis.menuButton(door.icon(), door.model(), "<gold>Quests",
+                    "Tutorial " + Guis.progress(done, total) + " · streak "
+                        + rt.engine().liveStreak(data, quests.today()), "Open");
+            }
+            case WISPS -> {
+                FairyData data = rt.fairy(player.getUniqueId());
+                return Guis.menuButton(door.icon(), door.model(), "<light_purple>Wisps",
+                    "Found " + Guis.progress(data.found.size(), fairyGui.total()), "Open");
+            }
+            case WARPS -> {
+                return Guis.menuButton(door.icon(), door.model(), "<aqua>Warps", door.about(), door.action());
+            }
+            case SETTINGS -> {
+                return Guis.menuButton(door.icon(), door.model(), "<gray>Settings", door.about(), door.action());
+            }
+            case PROFILE -> {
+                return profile(player);
+            }
+            default -> { }
+        }
         if (usable(door, player)) {
             if (createsIsland(door, player)) {
-                return Guis.icon(Material.OAK_SAPLING, "<green>Create Island",
-                    "<gray>You do not have an island yet.", "<gray>Start yours and pick a style!", "",
-                    "<yellow>Click to create!");
+                return Guis.menuButton(Material.OAK_SAPLING, door.model(), "<green>Create Island",
+                    "Start your own island and pick a style.", "Create");
             }
-            List<String> lore = new ArrayList<>();
-            door.about().forEach(line -> lore.add("<gray>" + line));
-            lore.add("");
-            lore.add("<yellow>Click to open!");
-            return Guis.icon(door.icon(), "<green>" + door.name(), lore.toArray(String[]::new));
+            return Guis.menuButton(door.icon(), door.model(), "<green>" + door.name(), door.about(), door.action());
         }
         return Guis.icon(Material.GRAY_DYE, "<gray>" + door.name() + " <dark_gray>(unavailable)",
             "<red>You do not have permission.");
@@ -172,43 +218,17 @@ final class MainMenu {
     // ---------------------------------------------------------------- profile
 
     private ItemStack profile(Player player) {
-        List<String> lore = new ArrayList<>();
-        lore.add("<gray>View your Skyblock profile.");
-        lore.add("");
-        Optional<win.vampyuyu.survival.api.StatsApi> stats = rt.stats();
-        if (stats.isPresent()) {
-            for (Stat stat : PROFILE_STATS) {
-                double value = stats.get().stat(player, stat);
-                if (value != 0) {
-                    lore.add(statLine(stat, value));
-                }
-            }
-        } else {
-            lore.add("<dark_gray>Stats are not available right now.");
-        }
-        lore.add("");
-        Optional<win.vampyuyu.survival.api.SkillsApi> skills = rt.skills();
-        lore.add("<gray>Skill average: " + (skills.isPresent()
-            ? "<green>" + String.format(java.util.Locale.ROOT, "%.1f", skillAverage(player)) : "<dark_gray>n/a"));
-        lore.add("<gray>Coins: " + rt.economy().map(e -> "<gold>" + Msg.grouped(e.coins(player.getUniqueId())))
-            .orElse("<dark_gray>n/a"));
-        Optional<IslandInfo> island = rt.islands().flatMap(api -> api.islandOf(player.getUniqueId()));
-        lore.add(island.map(i -> "<gray>Island: <green>" + i.members().size() + (i.members().size() == 1 ? " member"
-            : " members") + "<gray>, radius <green>" + i.radius()).orElse("<gray>Island: <red>none yet"));
-        ItemStack head = Guis.icon(Material.PLAYER_HEAD, "<green>" + net.kyori.adventure.text.minimessage.MiniMessage
-            .miniMessage().escapeTags(player.getName()) + "<gray>'s Profile", lore.toArray(String[]::new));
+        String skills = rt.skills().isPresent()
+            ? "Skill average " + String.format(java.util.Locale.ROOT, "%.1f", skillAverage(player)) : "";
+        String coins = rt.economy().map(e -> Msg.grouped(e.coins(player.getUniqueId())) + " coins").orElse("");
+        String about = (skills + (skills.isEmpty() || coins.isEmpty() ? "" : " · ") + coins).trim();
+        ItemStack head = Guis.button(Material.PLAYER_HEAD, "<green>Profile", about.isEmpty() ? "Stats, pets and recipes." : about,
+            "Open");
         if (head.getItemMeta() instanceof SkullMeta meta) {
             meta.setOwningPlayer(player);
             head.setItemMeta(meta);
         }
         return head;
-    }
-
-    private static String statLine(Stat stat, double value) {
-        String number = value == Math.rint(value) ? Long.toString((long) value)
-            : String.format(java.util.Locale.ROOT, "%.1f", value);
-        String color = "<#" + String.format("%06x", stat.color().value()) + ">";
-        return "<gray>" + stat.displayName() + ": " + color + stat.symbol() + number + (stat.percent() ? "%" : "");
     }
 
     /** Mean level of the eight skills. */

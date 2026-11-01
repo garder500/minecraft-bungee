@@ -851,8 +851,10 @@ public class UtilityFeatureTest {
     // ---------------------------------------------------------------- rtp search
 
     private void smallRtp(int min, int max) throws Exception {
-        java.nio.file.Files.writeString(plugin.getDataFolder().toPath().resolve("utility.yml"),
-            "rtp:\n  min-radius: " + min + "\n  max-radius: " + max + "\n  max-attempts: 6\n");
+        var db = plugin.core().data();
+        win.vampyuyu.survival.data.TestDb.set(db, "utility.rtp.min-radius", "int", String.valueOf(min));
+        win.vampyuyu.survival.data.TestDb.set(db, "utility.rtp.max-radius", "int", String.valueOf(max));
+        win.vampyuyu.survival.data.TestDb.set(db, "utility.rtp.max-attempts", "int", "6");
     }
 
     @Test
@@ -893,9 +895,8 @@ public class UtilityFeatureTest {
     }
 
     @Test
-    public void configReloadChangesTheWarmup() throws Exception {
-        java.nio.file.Files.writeString(plugin.getDataFolder().toPath().resolve("utility.yml"),
-            "teleport:\n  warmup-seconds: 8\n");
+    public void settingsReloadChangesTheWarmup() throws Exception {
+        win.vampyuyu.survival.data.TestDb.set(plugin.core().data(), "utility.teleport.warmup-seconds", "int", "8");
         PlayerMock admin = player("Boss", Perms.ADMIN);
         admin.performCommand("utility reload");
         PlayerMock p = player("Xan");

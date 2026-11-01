@@ -24,16 +24,16 @@ import org.bukkit.util.Vector;
 import win.vampyuyu.survival.api.Stat;
 import win.vampyuyu.survival.items.ability.Ability.Trigger;
 
-/** The built-in abilities. Every number is a default that {@code items.yml} may override under {@code abilities.<id>}. */
+/** The built-in abilities. Every number is a default that the {@code items.abilities.<id>.<param>} settings may override. */
 public final class Abilities {
     private Abilities() {}
 
     /** Registers every ability into {@code registry}. */
     public static void registerAll(AbilityRegistry registry) {
-        registry.register(Ability.builder("instant_transmission", "Instant Transmission", Trigger.RIGHT_CLICK)
+        registry.register(Ability.builder("void_step", "Void Step", Trigger.RIGHT_CLICK)
             .mana(50).describe("<gray>Teleport <green>{range} blocks</green> ahead of you.")
             .param("range", 8).exec(Abilities::instantTransmission).build());
-        registry.register(Ability.builder("wither_impact", "Wither Impact", Trigger.RIGHT_CLICK)
+        registry.register(Ability.builder("sunburst", "Sunburst", Trigger.RIGHT_CLICK)
             .mana(150).cooldown(3)
             .describe("<gray>Teleport <green>{range} blocks</green> ahead and unleash a blast",
                 "<gray>dealing <red>{damage}</red> damage to enemies within <green>{radius} blocks</green>.",
@@ -58,8 +58,8 @@ public final class Abilities {
                 "<gray>It deals <red>{damage}</red> damage every half second within <green>{radius} blocks</green>.")
             .param("range", 24).param("duration", 4).param("damage", 140).param("radius", 3.5)
             .exec(Abilities::volcano).build());
-        registry.register(Ability.builder("mining_speed_boost", "Mining Speed Boost", Trigger.RIGHT_CLICK)
-            .cooldown(90).describe("<gray>Grants <gold>+{amount} Mining Speed</gold> for <green>{duration}s</green>.")
+        registry.register(Ability.builder("mining_speed_boost", "Haste Surge", Trigger.RIGHT_CLICK)
+            .cooldown(90).describe("<gray>Grants <gold>+{amount} Haste</gold> for <green>{duration}s</green>.")
             .param("amount", 250).param("duration", 12).exec(Abilities::miningBoost).build());
         registry.register(Ability.builder("heal", "Heal", Trigger.RIGHT_CLICK)
             .mana(80).cooldown(4).describe("<gray>Heal <green>{percent}%</green> of the max health of you",
@@ -68,10 +68,30 @@ public final class Abilities {
         registry.register(Ability.builder("leap", "Leap", Trigger.RIGHT_CLICK)
             .mana(30).cooldown(3).describe("<gray>Dash <green>forward</green>.")
             .param("power", 1.5).exec(Abilities::leap).build());
-        registry.register(Ability.builder("frost_nova", "Frost Nova", Trigger.RIGHT_CLICK)
+        registry.register(Ability.builder("rime_nova", "Rime Nova", Trigger.RIGHT_CLICK)
             .mana(100).cooldown(6).describe("<gray>Freeze enemies within <green>{radius} blocks</green>,",
                 "<gray>dealing <red>{damage}</red> damage and slowing them for <green>{slow}s</green>.")
             .param("radius", 6).param("damage", 220).param("slow", 5).exec(Abilities::frostNova).build());
+        registry.register(Ability.builder("magma_burst", "Magma Burst", Trigger.RIGHT_CLICK)
+            .mana(90).cooldown(6).describe("<gray>Erupt in a <gold>burst of magma</gold> within <green>{radius} blocks</green>,",
+                "<gray>dealing <red>{damage}</red> damage and setting enemies on fire.")
+            .param("radius", 5).param("damage", 260).param("seconds", 4)
+            .exec(ctx -> nova(ctx, Particle.FLAME, Sound.ENTITY_BLAZE_SHOOT, null, 0, true)).build());
+        registry.register(Ability.builder("venom_strike", "Venom Strike", Trigger.RIGHT_CLICK)
+            .mana(60).cooldown(5).describe("<gray>Spray venom within <green>{radius} blocks</green>,",
+                "<gray>dealing <red>{damage}</red> damage and poisoning enemies for <green>{seconds}s</green>.")
+            .param("radius", 4).param("damage", 220).param("seconds", 6)
+            .exec(ctx -> nova(ctx, Particle.ITEM_SLIME, Sound.ENTITY_SPIDER_AMBIENT, PotionEffectType.POISON, 1, false)).build());
+        registry.register(Ability.builder("tidal_surge", "Tidal Surge", Trigger.RIGHT_CLICK)
+            .mana(100).cooldown(7).describe("<gray>A wave of water within <green>{radius} blocks</green> deals <red>{damage}</red>",
+                "<gray>damage and slows enemies for <green>{seconds}s</green>.")
+            .param("radius", 7).param("damage", 420).param("seconds", 4)
+            .exec(ctx -> nova(ctx, Particle.SPLASH, Sound.ENTITY_PLAYER_SPLASH_HIGH_SPEED, PotionEffectType.SLOWNESS, 1, false)).build());
+        registry.register(Ability.builder("grave_call", "Grave Call", Trigger.RIGHT_CLICK)
+            .mana(70).cooldown(6).describe("<gray>The dead answer within <green>{radius} blocks</green>: <red>{damage}</red> damage",
+                "<gray>and a withering curse for <green>{seconds}s</green>.")
+            .param("radius", 6).param("damage", 140).param("seconds", 5)
+            .exec(ctx -> nova(ctx, Particle.SOUL, Sound.ENTITY_WITHER_AMBIENT, PotionEffectType.WITHER, 0, false)).build());
         registry.register(Ability.builder("fire_beam", "Fire Beam", Trigger.RIGHT_CLICK)
             .mana(60).cooldown(1).describe("<gray>Shoot a beam of fire up to <green>{range} blocks</green>",
                 "<gray>dealing <red>{damage}</red> damage and igniting the target.")
@@ -261,7 +281,7 @@ public final class Abilities {
     private static boolean miningBoost(AbilityContext ctx) {
         Player player = ctx.player();
         var engine = ctx.env().engine();
-        engine.addModifier(player.getUniqueId(), "ability:mining_speed", Stat.MINING_SPEED, ctx.param("amount"));
+        engine.addModifier(player.getUniqueId(), "ability:mining_speed", Stat.HASTE, ctx.param("amount"));
         engine.recompute(player);
         long ticks = Math.max(20, Math.round(ctx.param("duration") * 20));
         ctx.env().core().scheduler().later(ticks, () -> {
@@ -307,6 +327,32 @@ public final class Abilities {
         return true;
     }
 
+    /** A ring of particles around the player: damages everything within {@code radius}, with an optional potion effect or fire. */
+    private static boolean nova(AbilityContext ctx, Particle particle, Sound sound, PotionEffectType effect, int amplifier,
+            boolean fire) {
+        Player player = ctx.player();
+        Location center = player.getLocation();
+        double radius = ctx.param("radius");
+        double damage = ctx.env().combat().abilityDamage(player, ctx.param("damage"));
+        int ticks = (int) (ctx.param("seconds") * 20);
+        for (LivingEntity target : near(ctx, center, radius)) {
+            if (effect != null) {
+                target.addPotionEffect(new PotionEffect(effect, ticks, amplifier));
+            }
+            if (fire) {
+                target.setFireTicks(ticks);
+            }
+            ctx.env().combat().strike(player, target, damage, false, true);
+        }
+        for (int i = 0; i < 40; i++) {
+            double angle = i / 40.0 * Math.PI * 2;
+            center.getWorld().spawnParticle(particle, center.clone().add(Math.cos(angle) * radius, 0.3,
+                Math.sin(angle) * radius), 2, 0.1, 0.1, 0.1, 0.01);
+        }
+        center.getWorld().playSound(center, sound, SoundCategory.PLAYERS, 1f, 0.8f);
+        return true;
+    }
+
     private static boolean frostNova(AbilityContext ctx) {
         Player player = ctx.player();
         Location center = player.getLocation();
@@ -346,7 +392,7 @@ public final class Abilities {
 
     private static boolean overflux(AbilityContext ctx) {
         var settings = ctx.env().settings();
-        double max = ctx.state().stat(Stat.INTELLIGENCE);
+        double max = ctx.state().stat(Stat.AETHER);
         double added = ctx.state().mana.addOverflow(max * ctx.param("percent") / 100.0, max, settings.overflowMaxPercent);
         if (added <= 0) {
             ctx.env().notice(ctx.player(), "§cOverflow mana is already full", 1200);

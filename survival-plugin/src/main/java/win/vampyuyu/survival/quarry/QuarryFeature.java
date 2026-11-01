@@ -30,8 +30,8 @@ public final class QuarryFeature implements Feature {
     @Override
     public void enable(Core core) {
         this.core = core;
-        QuarryConfig config = QuarryConfig.parse(core.featureConfig("quarry"), core.getPlugin().getLogger());
-        itemIds = QuarryItems.register(core.items());
+        QuarryConfig config = QuarryRepo.load(core.data(), core.getPlugin().getLogger());
+        itemIds = QuarryItems.register(core.items(), core.data(), core.getPlugin().getLogger());
         QuarryService service = new QuarryService(core, config);
         ForgeGui gui = new ForgeGui(core, service);
         core.listen(new CobbleListener(core, service));
@@ -43,8 +43,9 @@ public final class QuarryFeature implements Feature {
             }
         }));
         core.listen(new WeaponListener(core));
+        core.listen(new LadderCombat(core)); // ladder damage when the full stat engine is not loaded
         core.listen(new PebbleListener(core, service));
-        core.listen(new OutputListener(core));
+        core.listen(new OutputListener(core, service));
         core.listen(new GearListener(core));
         SkinService skins = new SkinService(core, service);
         SkinGui skinGui = new SkinGui(core, skins);
@@ -188,7 +189,7 @@ public final class QuarryFeature implements Feature {
             }
             total += entry.getValue();
             if (total > 9) {
-                core.getPlugin().getLogger().warning("quarry.yml: forge.recipe has more than 9 ingredients; recipe not added");
+                core.getPlugin().getLogger().warning("quarry: the Forge block recipe has more than 9 ingredients; recipe not added");
                 return;
             }
             recipe.addIngredient(entry.getValue(), material);

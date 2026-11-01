@@ -3,7 +3,6 @@ package win.vampyuyu.survival.economy;
 import static org.junit.Assert.*;
 
 import org.bukkit.Material;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.junit.After;
@@ -49,12 +48,13 @@ public class MenuSmokeTest {
 
     private void assertMenu(String what) {
         assertTrue(what, alice.getOpenInventory().getTopInventory().getHolder() instanceof Gui);
+        win.vampyuyu.survival.core.MenuRules.check(alice.getOpenInventory().getTopInventory(), what);
         alice.closeInventory();
     }
 
     @Test
     public void bankMenus() {
-        YamlConfiguration cfg = plugin.core().featureConfig("economy");
+        EconomyConfig cfg = EconomyConfig.load(plugin.core().data());
         Bank bank = new Bank(plugin.core(), eco, cfg);
         BankUi ui = new BankUi(plugin.core(), eco, bank);
         ui.open(alice);
@@ -68,7 +68,7 @@ public class MenuSmokeTest {
     @Test
     public void shopMenus() {
         ShopService shops = new ShopService(plugin.core(), eco, keys, new PricePressure());
-        shops.reload(plugin.core().featureConfig("economy"));
+        shops.reload(EconomyConfig.load(plugin.core().data()));
         ShopUi ui = new ShopUi(plugin.core(), eco, keys, shops);
         ui.openHub(alice);
         assertMenu("shop hub");
@@ -86,7 +86,7 @@ public class MenuSmokeTest {
     @Test
     public void bazaarMenus() {
         BazaarService bz = new BazaarService(plugin.core(), eco, keys, new DurableFile.Inline());
-        bz.enable(plugin.core().featureConfig("economy"));
+        bz.enable(EconomyConfig.load(plugin.core().data()));
         BazaarUi ui = new BazaarUi(plugin.core(), eco, keys, bz);
         bob.getInventory().addItem(new ItemStack(Material.WHEAT, 64));
         assertTrue(bz.placeSell(bob, "WHEAT", 20, 30).ok());
@@ -110,7 +110,7 @@ public class MenuSmokeTest {
     @Test
     public void auctionMenus() {
         AuctionService ah = new AuctionService(plugin.core(), eco, keys, new DurableFile.Inline());
-        ah.enable(plugin.core().featureConfig("economy"));
+        ah.enable(EconomyConfig.load(plugin.core().data()));
         AuctionUi ui = new AuctionUi(plugin.core(), keys, ah);
         ItemStack sword = new ItemStack(Material.DIAMOND_SWORD);
         sword.addUnsafeEnchantment(Enchantment.SHARPNESS, 5);

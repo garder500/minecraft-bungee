@@ -22,6 +22,7 @@ import win.vampyuyu.survival.core.Scheduler;
  * See docs/skyblock-notes/skills.md.
  */
 public final class SkillsFeature implements Feature, Listener {
+    private Runnable dataHook;
     private Core core;
     private SkillsService service;
     private EnchantedItems enchanted;
@@ -46,11 +47,17 @@ public final class SkillsFeature implements Feature, Listener {
             disable(); // recipes, custom items and tasks are not rolled back by the core
             throw e;
         }
+        // edits made in the panel apply at once
+        dataHook = core.onDataChange(domain -> {
+            if (domain.equals("skills")) {
+                reload();
+            }
+        });
     }
 
     private void doEnable(Core core) {
         this.core = core;
-        SkillsConfig config = new SkillsConfig(core.featureConfig("skills"));
+        SkillsConfig config = SkillsRepo.load(core.data());
         reportWarnings(config);
         service = new SkillsService(core, config);
 
@@ -94,6 +101,10 @@ public final class SkillsFeature implements Feature, Listener {
 
     @Override
     public void disable() {
+        if (dataHook != null) {
+            dataHook.run();
+            dataHook = null;
+        }
         if (core == null) {
             return;
         }
@@ -124,7 +135,7 @@ public final class SkillsFeature implements Feature, Listener {
 
     private void reportWarnings(SkillsConfig config) {
         for (String warning : config.warnings) {
-            core.getPlugin().getLogger().warning("skills.yml: " + warning);
+            core.getPlugin().getLogger().warning("skills data: " + warning);
         }
     }
 
@@ -140,10 +151,10 @@ public final class SkillsFeature implements Feature, Listener {
         }));
     }
 
-    /** Re-reads skills.yml: tables, rewards, recipes, collections. Running tasks keep their period. */
+    /** Re-reads the skills data: tables, rewards, recipes, collections. Running tasks keep their period. */
     void reload() {
         core.getPlugin().reloadConfig();
-        SkillsConfig config = new SkillsConfig(reloadedFeatureConfig());
+        SkillsConfig config = SkillsRepo.load(core.data());
         reportWarnings(config);
         service.config(config);
         enchanted.unregisterAll();
@@ -154,10 +165,6 @@ public final class SkillsFeature implements Feature, Listener {
         for (Player online : Bukkit.getOnlinePlayers()) {
             service.applyAllStats(online);
         }
-    }
-
-    private org.bukkit.configuration.file.YamlConfiguration reloadedFeatureConfig() {
-        return core.featureConfig("skills");
     }
 
     // ---------------------------------------------------------------- player lifecycle

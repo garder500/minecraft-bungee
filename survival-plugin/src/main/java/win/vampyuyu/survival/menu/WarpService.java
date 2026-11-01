@@ -73,7 +73,7 @@ final class WarpService {
         }
     }
 
-    private void world(Player player, String worldName, org.bukkit.configuration.ConfigurationSection section,
+    private void world(Player player, String worldName, MenuConfig.WarpPoint section,
             String label) {
         World world = Bukkit.getWorld(worldName);
         if (world == null) {

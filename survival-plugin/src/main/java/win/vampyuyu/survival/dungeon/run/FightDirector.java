@@ -455,7 +455,9 @@ final class FightDirector {
         double party = MobRoster.partyHealth(run.partySize(), run.ctx.cfg.partyHealthScale);
         double dmgParty = MobRoster.partyDamage(run.partySize(), run.ctx.cfg.partyDamageScale);
         LivingEntity e = run.ctx.mobFactory.spawn(run.world, at, spec, run.id, rt.index(), kind, run.floorNumber(),
-            run.floor.mobLevel(), run.floor.hp() * party, run.floor.damage() * dmgParty, nearestAlive(at));
+            run.floor.mobLevel(), DungeonHp.health(run.ctx.curve(), run.floor.tier(), run.ctx.cfg.mobTargetSeconds,
+                run.ctx.cfg.mobBaseHealth, spec.health(), run.floor.hp(), party),
+            run.floor.damage() * dmgParty, nearestAlive(at), run.floor);
         if (e == null) {
             return null;
         }

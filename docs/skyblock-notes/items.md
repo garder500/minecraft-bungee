@@ -1,6 +1,6 @@
 # Items feature (`items`)
 
-Package `win.vampyuyu.survival.items`, config `items.yml`, implements `StatsApi`, profile sections `items` (reserved),
+Package `win.vampyuyu.survival.items`, content in the SQLite content database (domain `items`: `db/seed/items.sql`, `V013__items`, `V014__elements`), implements `StatsApi`, profile sections `items` (reserved),
 `pets`, `accessories`. Pack art: `resource-pack/art/items_icons.py` (159 deterministic 16x16 icons: 151 registered items plus 8 pet species models).
 
 ## What players get
@@ -16,10 +16,20 @@ Package `win.vampyuyu.survival.items`, config `items.yml`, implements `StatsApi`
   attributes are removed (logout, leaving a Skyblock world) and restored on the next first apply, so relogging never
   heals; only a respawn or a player with no record starts full. Ability cooldowns and the Phoenix revive cooldown
   survive a relog (expiry timestamps in memory). An empty drill (fuel 0) contributes no stats.
-* **Combat**: `damage = (weapon + 5) * (1 + Strength/100) * (crit: 1 + CritDamage/100) * enchant multipliers`, incoming
-  damage is scaled then divided by `1 + Defense/100`, true damage for void/starvation/kill, ferocity strikes, ability
-  damage (Intelligence, Ability Damage), floating TextDisplay damage numbers (pooled, short lived), optional mob health
-  names. Formula hits ignore the victim's vanilla armor, Resistance and protection enchants
+* **Stats** (house stats, `api/Stat`): Vitality (HP), Ward (damage taken x 100/(100+Ward)), Might (+% weapon damage),
+  Attunement (+% on a weakness hit), Aether (ability energy), Swiftness, Mining/Farming/Foraging Yield, Haste, Lure,
+  Deep Lure, Fortune, Flight Energy. `Stat.resolve(name)` maps every pre-rework name (Strength, Crit Damage, Defense,
+  Magic Find...) to the current stats, so data written before the rework keeps working (skills, wings, fairy souls, slayer
+  perks, panel rows). Item bonuses carry `stat-schema` in the PDC; an older item is rewritten by `Items.migrateStats`
+  (and redrawn by `RenderUpgrader`) when it is held, picked up or an inventory opens.
+* **Elements**: Earth (Bronzite), Frost (Frostium), Ember (Sunstone), Void (Voidglass), Astral (Starcore). A weapon has
+  one (`item_def.element`); a boss, slayer, dungeon floor or natural mob has a weakness (x1.5 + Attunement%) and a
+  resistance (x0.6) stored on the entity (`combat/ElementTraits`).
+* **Combat**: `damage = weapon * (1 + Might/100) * enchants * element`, then x2 on every 5th fully charged hit on the same
+  target (Surge, `combat/SurgeTracker`; no random crits). Incoming damage is scaled (x5) then multiplied by
+  `100/(100+Ward)`, true damage for void/starvation/kill, ability damage (Aether, Might), floating TextDisplay damage
+  numbers (pooled, short lived), optional mob health names. `combat/PowerCurve` gives the expected damage per second of
+  each tier; boss, slayer and dungeon monster health follow it (`boss.hp_auto`, `slayer.hp_auto`, `dungeon_floor.tier`). Formula hits ignore the victim's vanilla armor, Resistance and protection enchants
   (`EntityDamageEvent.DamageModifier` ARMOR / RESISTANCE / MAGIC are zeroed on non-player victims).
 * **Mobs**: natural mobs listed in `mobs.table` get a level, an absolute max health and optional damage and a
   `[Lv3] Zombie 120/150` name; unlisted natural mobs keep the `combat.mob-health-multiplier` health. Opt-in for other
@@ -27,7 +37,7 @@ Package `win.vampyuyu.survival.items`, config `items.yml`, implements `StatsApi`
   scaled once on its first damage (health x multiplier x (1 + level x `mobs.health-per-level`), damage likewise). Mobs
   without the key and with a spawn reason outside `combat.scaled-spawn-reasons` are never touched.
 * **Getting items** (no admin needed): vanilla crafting recipes for the starting gear (`recipes.*`, 32 recipes: Rookie
-  Sword, Warrior's Blade, Miner's Pickaxe, Farmer's Hoe, Digger's Shovel, Grappling Hook, Warp Pearl, Hot Potato Book and
+  Sword, Warrior's Blade, Miner's Pickaxe, Farmer's Hoe, Digger's Shovel, Grappling Hook, Warp Pearl, Tempering Rune (id `hot_potato_book`) and
   the 24 tier 1 armor pieces; only in Skyblock worlds, never with custom items as ingredients; the same guards run for Crafter blocks, and the recipes are unlocked in the recipe book of players in Skyblock worlds) and loot tables
   (`loot.*`): boss kills (a `BossApi` loot hook registered a few ticks after enable, retried for 30 s), natural mob
   kills and fishing. Rows: high level books (VI/VII), the five ultimates, reforge stones, tier 2/3 armor, Recombobulator,
@@ -61,12 +71,14 @@ Package `win.vampyuyu.survival.items`, config `items.yml`, implements `StatsApi`
 
 Tab completion on `/sbitems`. Menus and `/sbgive <id>` come from the core.
 
-## Config (`items.yml`)
+## Data (`items` domain)
 
-Every key has the same default in code (a test compares the shipped file with the code defaults). Sections: `menus`,
-`stats`, `attributes`, `combat`, `mobs`, `recipes`, `loot`, `mana`, `hud` (incl. `xp-curve`), `fortune`, `costs`, `hot-potato`, `singularity`, `enchants` (per-enchant
-overrides), `reforges`, `accessories`, `pets`, `abilities.<id>.*`, `sets.<set>.*`, `items.<id>.damage|stats.<stat>`.
-`/sbitems reload` re-reads the numeric settings; enchant/reforge definitions and the catalog need a restart.
+Scalars are `setting` rows `items.<path>` (sections: `menus`, `stats`, `attributes`, `combat`, `power`, `mobs`, `recipes`,
+`loot`, `mana`, `hud`, `fortune`, `costs`, `hot-potato` = Tempering Rune, `singularity`, `reforges`, `accessories`, `pets`,
+`abilities.<id>.*`, `sets.<set>.*`). Collections are tables: `item_def` (+ `item_stat`, `item_ability`, `item_lore`,
+`item_pdc`; owner `items` = the catalog, `quarry` = the ore ladder swords and armor, loaded by the quarry feature),
+`armor_set` (+ stat, line), `item_mob`, `item_recipe`, `item_loot`. `/sbitems reload` re-reads them; a new item definition
+needs a restart. Boss weapons stay in `boss/BossItems` (damage = their tier's sword x 1.15, one ability each).
 
 ## Data layout
 

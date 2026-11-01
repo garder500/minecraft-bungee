@@ -30,12 +30,12 @@ public final class SlayerGui {
     }
 
     public void openMain(Player player) {
-        Gui gui = core.guis().create(4, "<dark_red>Slayer");
-        gui.border(Guis.icon(Material.BLACK_STAINED_GLASS_PANE, " "));
+        Gui gui = core.guis().create(4, "<dark_red>Hunts");
         BossData data = manager.data(player);
-        gui.set(4, Guis.icon(Material.BOOK, "<gold>Slayer Quests",
+        gui.set(4, Guis.icon(Material.BOOK, "<gold>Hunts",
             "<gray>Pay coins, hunt the matching mobs,", "<gray>and a personal boss comes for you.",
-            "<gray>Beat it for Slayer XP, perks and rare drops.", "", "<dark_gray>Only you can hurt your boss."));
+            "<gray>Beat it for Hunt XP, perks and rare drops.", "", "<dark_gray>Only you can hurt your boss."));
+        gui.model(4, "menu/hunts");
         List<SlayerDefinition> slayers = new ArrayList<>(manager.slayers());
         for (int i = 0; i < slayers.size() && i < SLAYER_SLOTS.length; i++) {
             SlayerDefinition def = slayers.get(i);
@@ -43,19 +43,18 @@ public final class SlayerGui {
         }
         BossData.Quest quest = data.quest;
         if (quest == null) {
-            gui.set(31, Guis.icon(Material.GRAY_DYE, "<gray>No active quest", "<dark_gray>Pick a slayer above to start one."));
+            gui.set(31, Guis.icon(Material.GRAY_DYE, "<gray>No active quest", "<dark_gray>Pick a hunt above to start one."));
         } else {
             SlayerDefinition def = manager.slayer(quest.slayer).orElse(null);
             String name = def == null ? quest.slayer : def.name();
             List<String> lore = new ArrayList<>();
             lore.add("<gray>State: <white>" + quest.state);
-            lore.add("<gray>Progress: <white>" + Math.round(quest.progress) + "<gray>/<white>" + Math.round(quest.required));
-            lore.add("<dark_gray>" + SlayerMath.bar(quest.progress / Math.max(1, quest.required), 30));
+            lore.add("<gray>Progress: <white>" + Guis.progress(Math.round(quest.progress), Math.round(quest.required)));
             if (BossData.Quest.READY.equals(quest.state)) {
                 lore.add("");
-                lore.add("<yellow>Click to spawn your boss");
+                lore.add("<#F6D58E>▸ Spawn your boss");
             }
-            lore.add("<red>Shift-click to cancel (no refund)");
+            lore.add("<red>▸ Shift: Cancel (no refund)");
             gui.set(31, Guis.icon(Material.ENDER_EYE, "<yellow>" + name + " " + SlayerDefinition.roman(quest.tier),
                 lore.toArray(new String[0])), click -> {
                     if (click.shift()) {
@@ -80,8 +79,7 @@ public final class SlayerGui {
         lore.add("<gray>" + def.description());
         lore.add("");
         lore.add("<gray>Level: <yellow>" + level + "<gray>/" + def.levelXp().size());
-        lore.add("<dark_gray>" + SlayerMath.bar(SlayerMath.levelProgress(xp, def.levelXp()), 24)
-            + " <gray>" + Msg.number(xp) + " XP");
+        lore.add("<gray>" + Msg.number(xp) + " XP · " + Math.round(100 * SlayerMath.levelProgress(xp, def.levelXp())) + "% to the next level");
         long next = SlayerMath.toNext(xp, def.levelXp());
         if (next > 0) {
             lore.add("<gray>Next level in <white>" + Msg.number(next) + " XP");
@@ -101,13 +99,12 @@ public final class SlayerGui {
         lore.add("");
         lore.add(kills.toString());
         lore.add("");
-        lore.add("<yellow>Click to choose a tier");
+        lore.add("<#F6D58E>▸ Choose a tier");
         return Guis.icon(def.icon(), "<red>" + def.name(), lore.toArray(new String[0]));
     }
 
     public void openTiers(Player player, SlayerDefinition def) {
         Gui gui = core.guis().create(3, "<dark_red>" + def.name());
-        gui.border(Guis.icon(Material.BLACK_STAINED_GLASS_PANE, " "));
         BossData data = manager.data(player);
         int level = SlayerQuests.level(data, def);
         double coins = core.service(EconomyApi.class).map(e -> e.coins(player.getUniqueId())).orElse(0.0);
@@ -120,7 +117,7 @@ public final class SlayerGui {
             lore.add("<gray>Boss health: <red>" + Msg.number(tier.boss().health()));
             lore.add("<gray>Boss damage: <red>" + Msg.number(tier.boss().damage()));
             lore.add("<gray>Time limit: <white>" + Msg.duration(tier.timeLimitSeconds() * 1000L));
-            lore.add("<gray>Reward: <light_purple>" + Msg.number(tier.slayerXp()) + " Slayer XP");
+            lore.add("<gray>Reward: <light_purple>" + Msg.number(tier.slayerXp()) + " Hunt XP");
             List<String> drops = dropLines(tier.boss());
             if (!drops.isEmpty()) {
                 lore.add("");
@@ -133,7 +130,7 @@ public final class SlayerGui {
             } else if (poor) {
                 lore.add("<red>You cannot afford this");
             } else {
-                lore.add("<yellow>Click to start");
+                lore.add("<#F6D58E>▸ Start");
             }
             int slot = 11 + tier.tier() - 1;
             gui.set(slot, Guis.icon(locked ? Material.BARRIER : TIER_ICONS[tier.tier() - 1],
@@ -146,7 +143,7 @@ public final class SlayerGui {
                     }
                 });
         }
-        gui.set(18, Guis.icon(Material.ARROW, "<yellow>Back"), click -> openMain(click.player()));
+        gui.back(null, click -> openMain(click.player()));
         gui.open(player);
     }
 
@@ -173,9 +170,8 @@ public final class SlayerGui {
 
     private void openConfirm(Player player, SlayerDefinition def, int tier) {
         Gui gui = core.guis().create(3, "<dark_red>Confirm " + SlayerDefinition.roman(tier));
-        gui.border(Guis.icon(Material.BLACK_STAINED_GLASS_PANE, " "));
         SlayerDefinition.Tier t = def.tier(tier);
-        gui.set(11, Guis.icon(Material.LIME_STAINED_GLASS_PANE, "<green>Pay " + Msg.coins(t.cost()),
+        gui.set(11, Guis.icon(Material.LIME_DYE, "<green>Pay " + Msg.coins(t.cost()),
             "<gray>Start " + def.name() + " " + SlayerDefinition.roman(tier), "<dark_gray>Coins are not refunded."),
             click -> {
                 String refusal = manager.start(click.player(), def, tier);
@@ -184,7 +180,7 @@ public final class SlayerGui {
                 }
                 click.close();
             });
-        gui.set(15, Guis.icon(Material.RED_STAINED_GLASS_PANE, "<red>Back"), click -> openTiers(click.player(), def));
+        gui.set(15, Guis.icon(Material.RED_DYE, "<red>Back"), click -> openTiers(click.player(), def));
         gui.open(player);
     }
 }

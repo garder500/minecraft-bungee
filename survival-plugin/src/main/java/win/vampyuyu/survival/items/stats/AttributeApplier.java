@@ -65,7 +65,7 @@ public final class AttributeApplier {
         try {
             AttributeInstance health = player.getAttribute(Attribute.MAX_HEALTH);
             if (health != null) {
-                double max = maxHealth(totals.getOrDefault(Stat.HEALTH, Stat.HEALTH.base()), settings.maxHealth);
+                double max = maxHealth(totals.getOrDefault(Stat.VITALITY, Stat.VITALITY.base()), settings.maxHealth);
                 set(health, K_HEALTH, max - health.getBaseValue(), AttributeModifier.Operation.ADD_NUMBER);
                 player.setHealthScale(settings.healthScale);
                 double now = player.getHealth();
@@ -77,13 +77,12 @@ public final class AttributeApplier {
                 }
             }
             set(player.getAttribute(Attribute.MOVEMENT_SPEED), K_SPEED,
-                speedAmount(totals.getOrDefault(Stat.SPEED, 100.0), settings.maxSpeedPercent),
+                speedAmount(totals.getOrDefault(Stat.SWIFTNESS, 100.0), settings.maxSpeedPercent),
                 AttributeModifier.Operation.ADD_SCALAR);
-            double bonusAttack = Math.max(0, Math.min(settings.maxAttackSpeedPercent,
-                totals.getOrDefault(Stat.ATTACK_SPEED, 0.0))) / 100.0;
-            set(player.getAttribute(Attribute.ATTACK_SPEED), K_ATTACK, bonusAttack, AttributeModifier.Operation.ADD_SCALAR);
+            // the attack speed stat is gone: drop the modifier older versions left on the player
+            remove(player.getAttribute(Attribute.ATTACK_SPEED), K_ATTACK);
             double mining = Math.max(0, Math.min(settings.maxMiningSpeedPercent,
-                totals.getOrDefault(Stat.MINING_SPEED, 0.0))) / 100.0;
+                totals.getOrDefault(Stat.HASTE, 0.0))) / 100.0;
             set(player.getAttribute(Attribute.BLOCK_BREAK_SPEED), K_MINING, mining, AttributeModifier.Operation.ADD_SCALAR);
             if (settings.b("attributes.zero-vanilla-armor", true)) {
                 set(player.getAttribute(Attribute.ARMOR), K_ARMOR, -1, AttributeModifier.Operation.MULTIPLY_SCALAR_1);

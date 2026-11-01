@@ -38,7 +38,7 @@ public class InstantTradeDurabilityTest {
         keys = new ItemKeys(plugin.core());
         env = new BazaarServiceTest.Manual();
         bz = new BazaarService(plugin.core(), eco, keys, env);
-        bz.enable(plugin.core().featureConfig("economy"));
+        bz.enable(EconomyConfig.load(plugin.core().data()));
         alice = server.addPlayer("Alice");
         bob = server.addPlayer("Bob");
     }

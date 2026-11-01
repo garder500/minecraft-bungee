@@ -75,7 +75,7 @@ public final class LootService implements Listener {
         if (recipient == null || !recipient.isOnline() || !settings().lootEnabled) {
             return List.of();
         }
-        return roller.roll(settings(), "boss", bossId, luck(recipient, Stat.MAGIC_FIND), luck(recipient, Stat.PET_LUCK), 1);
+        return roller.roll(settings(), "boss", bossId, luck(recipient, Stat.FORTUNE), luck(recipient, Stat.FORTUNE), 1);
     }
 
     private double luck(Player player, Stat stat) {
@@ -102,7 +102,7 @@ public final class LootService implements Listener {
         }
         double multiplier = 1 + level * settings().lootMobLevelBonus;
         for (ItemStack stack : roller.roll(settings(), "mob", entity.getType().name(),
-                luck(killer, Stat.MAGIC_FIND), luck(killer, Stat.PET_LUCK), multiplier)) {
+                luck(killer, Stat.FORTUNE), luck(killer, Stat.FORTUNE), multiplier)) {
             event.getDrops().add(stack);
         }
     }
@@ -113,8 +113,8 @@ public final class LootService implements Listener {
         if (event.getState() != PlayerFishEvent.State.CAUGHT_FISH || !engine.active(player) || !settings().lootEnabled) {
             return;
         }
-        for (ItemStack stack : roller.roll(settings(), "fishing", "", luck(player, Stat.MAGIC_FIND),
-                luck(player, Stat.PET_LUCK), 1)) {
+        for (ItemStack stack : roller.roll(settings(), "fishing", "", luck(player, Stat.FORTUNE),
+                luck(player, Stat.FORTUNE), 1)) {
             Map<Integer, ItemStack> left = player.getInventory().addItem(stack);
             left.values().forEach(rest -> player.getWorld().dropItemNaturally(player.getLocation(), rest));
         }

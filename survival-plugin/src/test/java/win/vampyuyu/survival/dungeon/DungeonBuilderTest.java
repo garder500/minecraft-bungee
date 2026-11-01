@@ -22,7 +22,7 @@ import win.vampyuyu.survival.dungeon.gen.RoomPlan;
 import win.vampyuyu.survival.dungeon.gen.RoomType;
 
 public class DungeonBuilderTest {
-    private static final DungeonConfig CFG = DungeonConfig.parse(null);
+    private static final DungeonConfig CFG = DungeonConfig.defaults();
 
     @Before
     public void setUp() {

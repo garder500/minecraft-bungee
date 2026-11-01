@@ -1,10 +1,9 @@
 package win.vampyuyu.survival.boss;
 
-import org.bukkit.configuration.ConfigurationSection;
-import org.jspecify.annotations.Nullable;
+import win.vampyuyu.survival.data.Settings;
 
 /**
- * Global knobs from the {@code settings:} section of boss.yml.
+ * Global knobs of the boss feature ({@code boss.settings.*} rows of the content database).
  *
  * @param hpScale multiplies every boss health pool
  * @param damageScale multiplies every hit a boss deals to a player
@@ -29,20 +28,19 @@ public record BossSettings(double hpScale, double damageScale, double incomingSc
         int repeatWindowMinutes, double repeatDecay, double repeatFloor, boolean damageNumbers) {
 
     public static BossSettings defaults() {
-        return parse(null);
+        return parse(Settings.empty("boss"));
     }
 
-    public static BossSettings parse(@Nullable ConfigurationSection s) {
-        if (s == null) {
-            return new BossSettings(1, 1, 1, 2, 64, 300, 6, 1000, true, 0.01, 60, 0.2, 0.25, true);
-        }
-        return new BossSettings(Math.max(0.0001, s.getDouble("hp-scale", 1)),
-            Math.max(0, s.getDouble("damage-scale", 1)), Math.max(0.0001, s.getDouble("incoming-damage-scale", 1)),
-            Math.max(1, Math.min(10, s.getInt("tick-period", 2))), Math.max(8, s.getDouble("bar-range", 64)),
-            Math.max(20, Math.min(1024, s.getDouble("visual-health", 300))), Math.max(0, s.getInt("hit-iframes", 6)),
-            Math.max(0, s.getDouble("magic-find-cap", 1000)), s.getBoolean("purge-orphans", true),
-            Math.max(0, Math.min(1, s.getDouble("scale-min-share", 0.01))),
-            Math.max(0, s.getInt("repeat-window-minutes", 60)), Math.max(0, Math.min(1, s.getDouble("repeat-decay", 0.2))),
-            Math.max(0, Math.min(1, s.getDouble("repeat-floor", 0.25))), s.getBoolean("damage-numbers", true));
+    /** Reads the {@code boss.settings.*} rows of the {@code setting} table; a missing or broken value takes its default. */
+    public static BossSettings parse(Settings s) {
+        return new BossSettings(Math.max(0.0001, s.getDouble("settings.hp-scale", 1)),
+            Math.max(0, s.getDouble("settings.damage-scale", 1)), Math.max(0.0001, s.getDouble("settings.incoming-damage-scale", 1)),
+            Math.max(1, Math.min(10, s.getInt("settings.tick-period", 2))), Math.max(8, s.getDouble("settings.bar-range", 64)),
+            Math.max(20, Math.min(1024, s.getDouble("settings.visual-health", 300))), Math.max(0, s.getInt("settings.hit-iframes", 6)),
+            Math.max(0, s.getDouble("settings.magic-find-cap", 1000)), s.getBoolean("settings.purge-orphans", true),
+            Math.max(0, Math.min(1, s.getDouble("settings.scale-min-share", 0.01))),
+            Math.max(0, s.getInt("settings.repeat-window-minutes", 60)),
+            Math.max(0, Math.min(1, s.getDouble("settings.repeat-decay", 0.2))),
+            Math.max(0, Math.min(1, s.getDouble("settings.repeat-floor", 0.25))), s.getBoolean("settings.damage-numbers", true));
     }
 }

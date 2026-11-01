@@ -76,7 +76,7 @@ public final class SlayerManager implements Listener {
     /** Pays and starts a quest. Returns the English refusal or null on success. */
     public @Nullable String start(Player player, SlayerDefinition def, int tier) {
         if (!enabled()) {
-            return "Slayer quests are disabled.";
+            return "Hunts are disabled.";
         }
         Optional<EconomyApi> economy = core.service(EconomyApi.class);
         if (economy.isEmpty()) {
@@ -138,10 +138,10 @@ public final class SlayerManager implements Listener {
         BossData data = data(player);
         BossData.Quest quest = data.quest;
         if (quest == null) {
-            return "You have no slayer quest.";
+            return "You have no hunt.";
         }
         if (BossData.Quest.FIGHTING.equals(quest.state)) {
-            return "Your slayer boss is already out there.";
+            return "Your hunt boss is already out there.";
         }
         if (!BossData.Quest.READY.equals(quest.state)) {
             return "Keep hunting: " + Math.round(quest.progress) + "/" + Math.round(quest.required) + ".";
@@ -149,7 +149,7 @@ public final class SlayerManager implements Listener {
         SlayerDefinition def = config().slayers().get(quest.slayer);
         if (def == null) {
             SlayerQuests.fail(data);
-            return "That slayer no longer exists; the quest was cleared.";
+            return "That hunt no longer exists; the quest was cleared.";
         }
         if (!def.worlds().isEmpty() && !def.worlds().contains(player.getWorld().getName())) {
             return "Go to one of these worlds to face it: " + String.join(", ", def.worlds()) + ".";
@@ -163,7 +163,7 @@ public final class SlayerManager implements Listener {
         }
         SlayerDefinition.Tier tier = def.tier(quest.tier);
         int countdown = config().slayerSettings().spawnCountdownSeconds();
-        player.showTitle(Title.title(MINI.deserialize("<red><bold>SLAYER BOSS"),
+        player.showTitle(Title.title(MINI.deserialize("<red><bold>HUNT BOSS"),
             MINI.deserialize("<gray>" + def.name() + " " + SlayerDefinition.roman(quest.tier) + " is coming..."),
             Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(Math.max(1, countdown)), Duration.ofMillis(300))));
         player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SPAWN, 1f, 0.6f);
@@ -187,7 +187,7 @@ public final class SlayerManager implements Listener {
             return;
         }
         hideBar(id);
-        core.msg().mini(player, "<red>Slayer fight started! <gray>You have <white>"
+        core.msg().mini(player, "<red>Hunt fight started! <gray>You have <white>"
             + Msg.duration(tier.timeLimitSeconds() * 1000L) + "<gray>. Only you can hurt it.");
     }
 
@@ -232,7 +232,7 @@ public final class SlayerManager implements Listener {
                 SlayerQuests.Win win = SlayerQuests.win(data, def, tier.tier());
                 core.profiles().markDirty(id);
                 if (player != null) {
-                    core.msg().mini(player, "<green><bold>SLAYER QUEST COMPLETE! <gray>+<light_purple>" + tier.slayerXp()
+                    core.msg().mini(player, "<green><bold>HUNT COMPLETE! <gray>+<light_purple>" + tier.slayerXp()
                         + " <gray>" + def.name() + " XP");
                     player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
                     if (win.leveledUp()) {
@@ -248,14 +248,14 @@ public final class SlayerManager implements Listener {
                     SlayerQuests.fail(data);
                     core.profiles().markDirty(id);
                     if (player != null) {
-                        core.msg().mini(player, "<red><bold>SLAYER QUEST FAILED! <gray>" + failReason(info.reason())
+                        core.msg().mini(player, "<red><bold>HUNT FAILED! <gray>" + failReason(info.reason())
                             + " The coins are lost.");
                     }
                 } else {
                     SlayerQuests.interrupted(data);
                     core.profiles().markDirty(id);
                     if (player != null) {
-                        core.msg().info(player, "The slayer boss vanished. Your quest is ready: /slayer spawn");
+                        core.msg().info(player, "The hunt boss vanished. Your hunt is ready: /slayer spawn");
                     }
                 }
             }
@@ -284,7 +284,7 @@ public final class SlayerManager implements Listener {
             }
         }
         core.msg().mini(player, text.toString());
-        player.showTitle(Title.title(MINI.deserialize("<gold>Slayer Level " + win.levelAfter()),
+        player.showTitle(Title.title(MINI.deserialize("<gold>Hunt Level " + win.levelAfter()),
             MINI.deserialize("<gray>" + def.name())));
     }
 

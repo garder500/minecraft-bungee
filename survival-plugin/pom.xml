@@ -7,6 +7,8 @@
       <exclusion><groupId>com.google.code.gson</groupId><artifactId>gson</artifactId></exclusion>
       <exclusion><groupId>org.slf4j</groupId><artifactId>slf4j-api</artifactId></exclusion>
     </exclusions></dependency>
+    <!-- Skyblock content (quests, items, bosses...) lives in an embedded SQLite database (win.vampyuyu.survival.data). -->
+    <dependency><groupId>org.xerial</groupId><artifactId>sqlite-jdbc</artifactId><version>3.49.1.0</version></dependency>
     <dependency><groupId>junit</groupId><artifactId>junit</artifactId><version>4.13.2</version><scope>test</scope></dependency>
     <dependency><groupId>org.mockbukkit.mockbukkit</groupId><artifactId>mockbukkit-v26.3</artifactId><version>4.118.0</version><scope>test</scope></dependency></dependencies>
  <build><finalName>survival-plugin</finalName><plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.14.0</version></plugin>

@@ -42,9 +42,9 @@ public final class BonusCalc {
     public static @Nullable Stat statOf(Enchant enchant, ItemKind kind) {
         if (enchant.id().equals("fortune")) {
             return switch (kind) {
-                case PICKAXE, DRILL, SHOVEL -> Stat.MINING_FORTUNE;
-                case AXE -> Stat.FORAGING_FORTUNE;
-                case HOE -> Stat.FARMING_FORTUNE;
+                case PICKAXE, DRILL, SHOVEL -> Stat.MINING_YIELD;
+                case AXE -> Stat.FORAGING_YIELD;
+                case HOE -> Stat.FARMING_YIELD;
                 default -> null;
             };
         }
@@ -60,10 +60,10 @@ public final class BonusCalc {
         Map<Stat, Double> potato = new EnumMap<>(Stat.class);
         if (potatoBooks > 0) {
             if (kind.weapon()) {
-                potato.put(Stat.STRENGTH, potatoBooks * settings.d("hot-potato.weapon.strength", 2));
+                potato.put(Stat.MIGHT, potatoBooks * settings.d("hot-potato.weapon.might", 2));
             } else if (kind.armor()) {
-                potato.put(Stat.HEALTH, potatoBooks * settings.d("hot-potato.armor.health", 4));
-                potato.put(Stat.DEFENSE, potatoBooks * settings.d("hot-potato.armor.defense", 2));
+                potato.put(Stat.VITALITY, potatoBooks * settings.d("hot-potato.armor.vitality", 4));
+                potato.put(Stat.WARD, potatoBooks * settings.d("hot-potato.armor.ward", 2));
             }
         }
 
@@ -85,9 +85,9 @@ public final class BonusCalc {
         if (singularity > 0) {
             double amount = settings.d("singularity.fortune", 25);
             switch (kind) {
-                case PICKAXE, DRILL, SHOVEL -> sing.put(Stat.MINING_FORTUNE, amount);
-                case AXE -> sing.put(Stat.FORAGING_FORTUNE, amount);
-                case HOE -> sing.put(Stat.FARMING_FORTUNE, amount);
+                case PICKAXE, DRILL, SHOVEL -> sing.put(Stat.MINING_YIELD, amount);
+                case AXE -> sing.put(Stat.FORAGING_YIELD, amount);
+                case HOE -> sing.put(Stat.FARMING_YIELD, amount);
                 default -> { }
             }
         }

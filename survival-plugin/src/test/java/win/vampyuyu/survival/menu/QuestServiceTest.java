@@ -300,12 +300,14 @@ public class QuestServiceTest extends MenuTestBase {
 
     @Test
     public void aBadRegexTargetIsReportedAtLoadAndTheQuestSkipped() {
-        var yaml = shippedYaml();
-        yaml.set("quests.tutorial.craft_minion.target", "custom:re:minion_(");
-        MenuConfig config = new MenuConfig(yaml);
-        assertTrue(config.problems().toString(), config.problems().stream().anyMatch(p -> p.contains("craft_minion")
-            && p.contains("regex")));
-        assertTrue(config.catalog.tutorialQuest("craft_minion").isEmpty());
+        try (win.vampyuyu.survival.data.Db db = win.vampyuyu.survival.data.TestDb.seeded()) {
+            win.vampyuyu.survival.data.TestDb.exec(db, "INSERT INTO quest (id, pool, position, name, type, target, amount) "
+                + "VALUES ('bad_regex', 'plan', 9999, 'Automation', 'CRAFT_ITEM', 'custom:re:minion_(', 1)");
+            MenuConfig config = MenuRepo.load(db);
+            assertTrue(config.problems().toString(), config.problems().stream().anyMatch(p -> p.contains("bad_regex")
+                && p.contains("regex")));
+            assertTrue(config.catalog.tutorialQuest("bad_regex").isEmpty());
+        }
         assertFalse(QuestMatcher.matches("custom:re:minion_(", "CUSTOM:minion_x_1"));
     }
 }

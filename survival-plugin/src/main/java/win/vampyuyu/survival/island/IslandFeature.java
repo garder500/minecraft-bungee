@@ -26,7 +26,7 @@ public final class IslandFeature implements Feature {
 
     @Override
     public void enable(Core core) throws Exception {
-        IslandConfig cfg = new IslandConfig(core.featureConfig("island"), core.getPlugin().getLogger());
+        IslandConfig cfg = IslandRepo.load(core.data(), core.getPlugin().getLogger());
         setupWorlds(core, cfg);
 
         service = new IslandService(core, cfg);

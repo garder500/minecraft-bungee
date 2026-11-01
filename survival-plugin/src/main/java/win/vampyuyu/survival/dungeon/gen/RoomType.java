@@ -9,7 +9,7 @@ public enum RoomType {
     SECRET("Secret room"),
     MINIBOSS("Mini-boss room"),
     BLOOD("Blood room"),
-    FAIRY("Fairy grotto"),
+    FAIRY("Wisp grotto"),
     SHOP("Merchant"),
     BOSS("Boss room");
 

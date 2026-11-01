@@ -52,6 +52,19 @@ public class LootMathTest {
     }
 
     @Test
+    public void pityNeverLiftsABaseChanceAboveOnePointFourTimesItself() {
+        // 0.1 pt per dry kill, capped at 1.5 pt: the cap binds on a 4% drop, 1.4 x binds on a 3% one
+        assertEquals(0.015, LootMath.pityBonus(1000, 0.001, 0.015, 0.04), 1e-12);
+        assertEquals(0.012, LootMath.pityBonus(1000, 0.001, 0.015, 0.03), 1e-12);
+        assertEquals(0.056, LootMath.chance(0.04, 0.5, 1, 0, true), 1e-12);
+        assertEquals(0.042, LootMath.chance(0.03, 0.5, 1, 0, true), 1e-12);
+        // the rank bonus and Magic Find come after the clamp
+        assertEquals(0.056 * 1.5 * 1.5, LootMath.chance(0.04, 0.5, 1.5, 50, true), 1e-12);
+        assertEquals(0.012, LootMath.maxPity(0.03), 1e-12);
+        assertEquals(0, LootMath.maxPity(0), 0);
+    }
+
+    @Test
     public void magicFindIsAPercentage() {
         assertEquals(0.05, LootMath.chance(0.05, 0, 1, 0, true), 1e-9);
         assertEquals(0.075, LootMath.chance(0.05, 0, 1, 50, true), 1e-9);

@@ -19,7 +19,7 @@ final class SettingsGui {
             boolean get(MenuData d) { return d.questTracker; }
             void set(MenuData d, boolean v) { d.questTracker = v; }
         },
-        SOUNDS("Menu Sounds", Material.NOTE_BLOCK, "Play sounds for menus, quests and", "fairy souls.") {
+        SOUNDS("Menu Sounds", Material.NOTE_BLOCK, "Play sounds for menus, quests and", "wisps.") {
             boolean get(MenuData d) { return d.sounds; }
             void set(MenuData d, boolean v) { d.sounds = v; }
         };
@@ -70,9 +70,8 @@ final class SettingsGui {
 
     void open(Player player) {
         Gui gui = rt.core.guis().create(3, "<dark_gray>Settings");
-        gui.border(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
         render(gui, player);
-        gui.set(22, Guis.icon(Material.ARROW, "<green>Go Back", "<gray>To Skyblock Menu"), click -> back.accept(player));
+        gui.back("To the Isles", click -> back.accept(player));
         gui.open(player);
         rt.play(player, "click");
     }
@@ -84,9 +83,9 @@ final class SettingsGui {
             boolean on = setting.get(data);
             ItemStack icon = Guis.icon(on ? setting.icon : Material.GRAY_DYE,
                 (on ? "<green>" : "<gray>") + setting.title,
-                "<gray>" + setting.about[0], setting.about.length > 1 && !setting.about[1].isEmpty()
-                    ? "<gray>" + setting.about[1] : " ",
-                "", "<gray>Status: " + (on ? "<green>ON" : "<red>OFF"), "", "<yellow>Click to toggle!");
+                "<gray>" + setting.about[0] + (setting.about.length > 1 && !setting.about[1].isEmpty()
+                    ? " " + setting.about[1] : ""),
+                "<gray>Status: " + (on ? "<green>ON" : "<red>OFF"), Guis.ACCENT + "▸ Toggle");
             gui.set(slot, icon, click -> {
                 toggle(player, setting);
                 rt.play(player, "click");

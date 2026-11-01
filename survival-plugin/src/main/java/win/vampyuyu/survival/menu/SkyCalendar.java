@@ -1,54 +1,42 @@
 package win.vampyuyu.survival.menu;
 
 /**
- * The Skyblock date shown in the sidebar, derived from the world's time: one Minecraft day is one Skyblock day,
- * 31 days make a month, 12 months make a year (372 days). Pure.
+ * The isles' own calendar, derived from the world's time: one Minecraft day is one day, 24 days make a moon, the eight
+ * moons of the sky make a year (192 days). The time of day is told as a part of the day, not a clock. Pure.
  */
 public final class SkyCalendar {
     private SkyCalendar() {}
 
-    private static final String[] MONTHS = {
-        "Early Spring", "Spring", "Late Spring", "Early Summer", "Summer", "Late Summer",
-        "Early Autumn", "Autumn", "Late Autumn", "Early Winter", "Winter", "Late Winter"};
+    static final int DAYS_PER_MOON = 24;
+    private static final String[] MOONS = {"Dawn", "Gale", "Bloom", "Blaze", "Ember", "Mist", "Frost", "Star"};
 
-    /** "Late Summer 15th" for a world's full time (ticks). */
+    /** "Gale Moon · Day 5" for a world's full time (ticks). */
     public static String date(long fullTime) {
         long day = Math.max(0, fullTime) / 24000;
-        int month = (int) (day / 31 % 12);
-        int dayOfMonth = (int) (day % 31) + 1;
-        return MONTHS[month] + " " + dayOfMonth + ordinal(dayOfMonth);
+        int moon = (int) (day / DAYS_PER_MOON % MOONS.length);
+        int dayOfMoon = (int) (day % DAYS_PER_MOON) + 1;
+        return MOONS[moon] + " Moon · Day " + dayOfMoon;
     }
 
     /** Year number, starting at 1. */
     public static long year(long fullTime) {
-        return Math.max(0, fullTime) / 24000 / 372 + 1;
+        return Math.max(0, fullTime) / 24000 / (DAYS_PER_MOON * MOONS.length) + 1;
     }
 
-    /** "7:10pm" rounded down to 10 minutes. World tick 0 is 6:00am. */
+    /** The part of the day: Dawn, Morning, Noon, Afternoon, Dusk or Night. World tick 0 is sunrise. */
     public static String clock(long worldTime) {
         long tick = Math.floorMod(worldTime, 24000L);
-        int hour24 = (int) ((tick / 1000 + 6) % 24);
-        int minute = (int) (tick % 1000 * 60 / 1000);
-        minute -= minute % 10;
-        int hour12 = hour24 % 12 == 0 ? 12 : hour24 % 12;
-        return hour12 + ":" + (minute < 10 ? "0" : "") + minute + (hour24 < 12 ? "am" : "pm");
+        if (tick >= 23000 || tick < 1000) return "Dawn";
+        if (tick < 5000) return "Morning";
+        if (tick < 7000) return "Noon";
+        if (tick < 11000) return "Afternoon";
+        if (tick < 13000) return "Dusk";
+        return "Night";
     }
 
     /** True from sunrise (tick 23000) to sunset (tick 12999). */
     public static boolean isDay(long worldTime) {
         long tick = Math.floorMod(worldTime, 24000L);
         return tick < 13000 || tick >= 23000;
-    }
-
-    static String ordinal(int n) {
-        if (n % 100 >= 11 && n % 100 <= 13) {
-            return "th";
-        }
-        return switch (n % 10) {
-            case 1 -> "st";
-            case 2 -> "nd";
-            case 3 -> "rd";
-            default -> "th";
-        };
     }
 }

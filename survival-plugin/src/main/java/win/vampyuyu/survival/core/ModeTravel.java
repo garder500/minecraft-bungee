@@ -119,7 +119,7 @@ public final class ModeTravel implements Listener {
     }
 
     public Location survivalSpawn() {
-        String configured = core.featureConfig("utility").getString("spawn.world", "");
+        String configured = win.vampyuyu.survival.data.Settings.load(core.data(), "utility").getString("spawn.world", "");
         World world = configured.isBlank() ? null : Bukkit.getWorld(configured);
         if (world != null && !sky(world) && world.getEnvironment() == World.Environment.NORMAL)
             return safeLanding(world.getSpawnLocation());

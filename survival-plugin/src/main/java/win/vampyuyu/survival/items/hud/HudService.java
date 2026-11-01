@@ -81,8 +81,8 @@ public final class HudService implements Listener {
         } else if (st.xpPopupUntil > now && !st.xpPopup.isEmpty()) {
             centre = Component.text(st.xpPopup, NamedTextColor.DARK_AQUA);
         }
-        return HudFormat.line(player.getHealth(), max, player.getAbsorptionAmount(), st.stat(Stat.DEFENSE), centre,
-            st.mana.mana(), st.stat(Stat.INTELLIGENCE), st.mana.overflow());
+        return HudFormat.line(player.getHealth(), max, player.getAbsorptionAmount(), st.stat(Stat.WARD), centre,
+            st.mana.mana(), st.stat(Stat.AETHER), st.mana.overflow());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

@@ -3,7 +3,7 @@ package win.vampyuyu.survival.boss;
 import java.util.Locale;
 import java.util.Optional;
 
-/** Every ability the library knows. The id is what {@code boss.yml} writes under {@code type:}. */
+/** Every ability the library knows. The id is what the {@code type} column of an ability row holds. */
 public enum AbilityType {
     FIREBALL_BARRAGE("fireball_barrage", "Barrage of homing fireballs"),
     GROUND_SLAM("ground_slam", "Expanding shockwave ring: jump it"),

@@ -128,6 +128,24 @@ public final class QuarryService implements win.vampyuyu.survival.api.EndAccessA
         }
     }
 
+    /**
+     * One broken block of a ring generator ({@code source} "frost" or "ember"). The pity counters are the island
+     * owner's, like the cobble draw. Returns the ore it gave, if any (no luck applies to these blocks).
+     */
+    public Optional<Drop> drawOutput(UUID owner, String source, Material block, Random random) {
+        QuarryData data = data(owner);
+        OreRoller.Roll roll = config.outputs.rollOutput(source, block.name(), tier(owner), data.counters, random);
+        dirty(owner);
+        for (OreRoller.Drop drop : roll.drops()) {
+            Optional<OreRoller.Ore> ore = config.outputs.ores().stream().filter(o -> o.id().equals(drop.ore())).findFirst();
+            Optional<ItemStack> stack = ore.flatMap(o -> stack(o.item(), drop.amount()));
+            if (stack.isPresent()) {
+                return Optional.of(new Drop(ore.get().id(), stack.get()));
+            }
+        }
+        return Optional.empty();
+    }
+
     /** A stack for a config key; empty when a custom id is not registered. */
     Optional<ItemStack> stack(String key, int amount) {
         if (key.startsWith("custom:")) {

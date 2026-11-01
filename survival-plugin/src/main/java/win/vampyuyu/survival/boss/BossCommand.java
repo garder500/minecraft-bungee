@@ -23,7 +23,7 @@ public final class BossCommand implements CommandExecutor, TabCompleter {
     private final BossManager manager;
     private final Supplier<String> reload;
 
-    /** @param reload re-reads boss.yml, returns a one line report */
+    /** @param reload re-reads the boss tables, returns a one line report */
     public BossCommand(Core core, BossManager manager, Supplier<String> reload) {
         this.core = core;
         this.manager = manager;
@@ -79,7 +79,7 @@ public final class BossCommand implements CommandExecutor, TabCompleter {
             core.msg().info(sender, "/boss spawn <id> [x y z [world]] - spawn at you or at coordinates");
             core.msg().info(sender, "/boss kill [id|all] - remove bosses, no rewards");
             core.msg().info(sender, "/boss active - running fights");
-            core.msg().info(sender, "/boss reload - re-read boss.yml");
+            core.msg().info(sender, "/boss reload - re-read the boss data");
         }
     }
 
@@ -111,7 +111,7 @@ public final class BossCommand implements CommandExecutor, TabCompleter {
                 + " <gray>" + def.name() + " <red>" + Msg.number(def.health() * manager.settings().hpScale()) + " HP"
                 + (manager.activeCount(def.id()) > 0 ? " <green>(" + manager.activeCount(def.id()) + " active)" : ""));
         }
-        core.msg().info(sender, "Slayer bosses are started with /slayer.");
+        core.msg().info(sender, "Hunt bosses are started with /slayer.");
     }
 
     private void info(CommandSender sender, String[] args) {

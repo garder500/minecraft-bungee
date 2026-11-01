@@ -8,9 +8,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Logger;
 import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
+import win.vampyuyu.survival.data.Settings;
 
-/** Typed view of {@code island.yml}. Built once at enable (and by tests from a YAML string). */
+/** Typed view of the island tuning ({@code island.*} settings and the {@code island_*} tables, see {@link IslandRepo}). Built once at enable. */
 public final class IslandConfig {
     /** One upgrade step: the resulting value and the price of reaching it. */
     public record Tier(int value, double cost) {}
@@ -79,22 +79,15 @@ public final class IslandConfig {
     public final int warpCooldownSeconds;
     public final int visitCooldownSeconds;
 
-    public IslandConfig(ConfigurationSection c, Logger log) {
+    public IslandConfig(Settings c, IslandRepo.Rows rows, Logger log) {
         int cell = Math.max(64, c.getInt("grid.cell-size", 400));
         this.cellSize = cell;
         this.islandY = c.getInt("grid.island-y", 64);
         this.edgeMargin = Math.max(2, c.getInt("grid.edge-margin", 16));
         for (String key : List.of("hub", "world", "nether", "end")) {
-            String base = "worlds." + key + ".";
-            Map<String, Object> rules = new LinkedHashMap<>();
-            ConfigurationSection gr = c.getConfigurationSection("worlds." + key + ".gamerules");
-            if (gr != null) {
-                for (String rule : gr.getKeys(false)) {
-                    rules.put(rule, gr.get(rule));
-                }
-            }
-            worlds.put(key, new WorldCfg(c.getString(base + "time", "CYCLE"), c.getDouble(base + "border", 60000000),
-                c.getBoolean(base + "weather-clear", false), rules));
+            IslandRepo.WorldRow row = rows.worlds().get(key);
+            worlds.put(key, row == null ? new WorldCfg("CYCLE", 60000000, false, new LinkedHashMap<>())
+                : new WorldCfg(row.time(), row.border(), row.weatherClear(), new LinkedHashMap<>(row.gamerules())));
         }
         this.hubEnabled = c.getBoolean("hub.enabled", true);
         this.hubY = c.getInt("hub.y", 100);
@@ -105,32 +98,25 @@ public final class IslandConfig {
         this.chunkTimeoutTicks = Math.max(40, c.getInt("generation.chunk-timeout-ticks", 600));
 
         int maxRadius = cell / 2 - edgeMargin;
-        this.radiusTiers = tiers(c, "upgrades.radius", "radius", List.of(new Tier(30, 0)), maxRadius, log);
-        this.memberTiers = tiers(c, "upgrades.members", "slots", List.of(new Tier(3, 0)), 1000, log);
-        this.minionTiers = tiers(c, "upgrades.minions", "slots", List.of(new Tier(0, 0)), 1000, log);
+        this.radiusTiers = tiers(rows.tiers("radius"), "upgrades.radius", List.of(new Tier(30, 0)), maxRadius, log);
+        this.memberTiers = tiers(rows.tiers("members"), "upgrades.members", List.of(new Tier(3, 0)), 1000, log);
+        this.minionTiers = tiers(rows.tiers("minions"), "upgrades.minions", List.of(new Tier(0, 0)), 1000, log);
 
-        ConfigurationSection templateSection = c.getConfigurationSection("templates");
-        if (templateSection != null) {
-            for (String id : templateSection.getKeys(false)) {
-                ConfigurationSection t = templateSection.getConfigurationSection(id);
-                if (t == null) {
-                    continue;
-                }
-                Material icon = Material.matchMaterial(t.getString("icon", "GRASS_BLOCK"));
-                templates.put(id.toLowerCase(Locale.ROOT), new TemplateCfg(id.toLowerCase(Locale.ROOT),
-                    t.getBoolean("enabled", true), t.getString("name", id), icon == null ? Material.GRASS_BLOCK : icon,
-                    t.getString("biome", ""), t.getStringList("description"), items(t.getStringList("chest"), log)));
-            }
+        for (IslandRepo.TemplateRow t : rows.templates()) {
+            Material icon = Material.matchMaterial(t.icon());
+            String id = t.id().toLowerCase(Locale.ROOT);
+            templates.put(id, new TemplateCfg(id, t.enabled(), t.name(), icon == null ? Material.GRASS_BLOCK : icon,
+                t.biome(), t.description(), items(t.items(), log)));
         }
         this.starterOnce = c.getBoolean("starter-chest.once-per-player", true);
-        this.starterRepeat = items(c.getStringList("starter-chest.repeat-items"), log);
-        this.netherChest = items(c.getStringList("platforms.nether-chest"), log);
-        this.endChest = items(c.getStringList("platforms.end-chest"), log);
+        this.starterRepeat = items(rows.chest("starter-repeat"), log);
+        this.netherChest = items(rows.chest("nether"), log);
+        this.endChest = items(rows.chest("end"), log);
         this.endGateLit = c.getBoolean("platforms.end-gate-lit", true);
         this.trustedContainers = c.getBoolean("protection.trusted-containers", false);
         this.messageCooldownMs = Math.max(0, c.getLong("protection.message-cooldown-ms", 1500));
         for (IslandFlag flag : IslandFlag.values()) {
-            flagDefaults.put(flag, c.getBoolean("flags.defaults." + flag.id(), flag.defaultValue()));
+            flagDefaults.put(flag, rows.flags().getOrDefault(flag.id(), flag.defaultValue()));
         }
         this.borderVisual = c.getBoolean("border.visual", true);
         this.borderEnforce = c.getBoolean("border.enforce", true);
@@ -158,15 +144,12 @@ public final class IslandConfig {
         this.levelManualCooldownSeconds = Math.max(0, c.getInt("level.manual-cooldown-seconds", 300));
         this.levelChunksPerTick = Math.max(1, c.getInt("level.chunks-per-tick", 2));
         this.levelDefaultWeight = Math.max(0, c.getDouble("level.default-weight", 0.0));
-        ConfigurationSection weights = c.getConfigurationSection("level.weights");
-        if (weights != null) {
-            for (String key : weights.getKeys(false)) {
-                Material material = Material.matchMaterial(key);
-                if (material == null) {
-                    log.warning("island.yml: unknown material in level.weights: " + key);
-                } else {
-                    levelWeights.put(material, Math.max(0, weights.getDouble(key)));
-                }
+        for (Map.Entry<String, Double> weight : rows.weights().entrySet()) {
+            Material material = Material.matchMaterial(weight.getKey());
+            if (material == null) {
+                log.warning("island level weights: unknown material " + weight.getKey());
+            } else {
+                levelWeights.put(material, Math.max(0, weight.getValue()));
             }
         }
         this.warpNameMax = Math.max(4, c.getInt("warps.max-name-length", 24));
@@ -205,25 +188,18 @@ public final class IslandConfig {
         return list;
     }
 
-    private static List<Tier> tiers(ConfigurationSection c, String path, String valueKey, List<Tier> fallback,
-            int cap, Logger log) {
+    private static List<Tier> tiers(List<IslandRepo.TierRow> raw, String path, List<Tier> fallback, int cap, Logger log) {
         List<Tier> out = new ArrayList<>();
-        for (Map<?, ?> map : c.getMapList(path)) {
-            Object value = map.get(valueKey);
-            Object cost = map.get("cost");
-            if (!(value instanceof Number v)) {
-                log.warning("island.yml: bad tier in " + path);
-                continue;
-            }
-            int clamped = Math.min(v.intValue(), cap);
-            if (clamped != v.intValue()) {
-                log.warning("island.yml: " + path + " value " + v.intValue() + " clamped to " + cap
+        for (IslandRepo.TierRow row : raw) {
+            int clamped = Math.min(row.value(), cap);
+            if (clamped != row.value()) {
+                log.warning("island " + path + " value " + row.value() + " clamped to " + cap
                     + " (cell size minus margin)");
             }
             if (!out.isEmpty() && clamped <= out.get(out.size() - 1).value()) {
                 continue;
             }
-            out.add(new Tier(clamped, cost instanceof Number n ? Math.max(0, n.doubleValue()) : 0));
+            out.add(new Tier(clamped, Math.max(0, row.cost())));
         }
         if (out.isEmpty()) {
             out.addAll(fallback);
@@ -236,26 +212,16 @@ public final class IslandConfig {
         return List.copyOf(out);
     }
 
-    /** Parses {@code MATERIAL} or {@code MATERIAL:amount} entries; bad ones are logged and skipped. */
-    public static List<ItemSpec> items(List<String> raw, Logger log) {
+    /** Checks the materials of a chest list; bad ones are logged and skipped, the amount is capped to one stack. */
+    public static List<ItemSpec> items(List<IslandRepo.ItemRow> raw, Logger log) {
         List<ItemSpec> out = new ArrayList<>();
-        for (String entry : raw) {
-            String[] parts = entry.trim().split(":");
-            Material material = Material.matchMaterial(parts[0].trim());
-            int amount = 1;
-            if (parts.length > 1) {
-                try {
-                    amount = Integer.parseInt(parts[1].trim());
-                } catch (NumberFormatException e) {
-                    log.warning("island.yml: bad amount in '" + entry + "'");
-                    continue;
-                }
-            }
-            if (material == null || material.isAir() || !material.isItem() || amount < 1) {
-                log.warning("island.yml: skipping item '" + entry + "'");
+        for (IslandRepo.ItemRow entry : raw) {
+            Material material = Material.matchMaterial(entry.material().trim());
+            if (material == null || material.isAir() || !material.isItem() || entry.amount() < 1) {
+                log.warning("island chest: skipping item '" + entry.material() + ":" + entry.amount() + "'");
                 continue;
             }
-            out.add(new ItemSpec(material, Math.min(amount, material.getMaxStackSize())));
+            out.add(new ItemSpec(material, Math.min(entry.amount(), material.getMaxStackSize())));
         }
         return List.copyOf(out);
     }

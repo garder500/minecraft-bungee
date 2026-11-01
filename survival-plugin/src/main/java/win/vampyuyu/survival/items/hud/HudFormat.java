@@ -39,9 +39,9 @@ public final class HudFormat {
     }
 
     /**
-     * Builds the bar: health on the left, the centre message (notice, XP popup or Defense) and the mana on the right.
+     * Builds the bar: health on the left, the centre message (notice, XP popup or Ward) and the mana on the right.
      *
-     * @param centre a plain centre text already coloured by the caller, or null to show Defense
+     * @param centre a plain centre text already coloured by the caller, or null to show Ward
      */
     public static Component line(double health, double maxHealth, double absorption, double defense,
             @Nullable Component centre, double mana, double maxMana, double overflow) {
@@ -51,7 +51,7 @@ public final class HudFormat {
             left = left.append(Component.text(" +" + Msg.grouped(Math.ceil(absorption)), NamedTextColor.GOLD));
         }
         Component middle = centre != null ? centre
-            : Component.text(Msg.grouped(Math.floor(defense)) + "❈ Defense", NamedTextColor.GREEN);
+            : Component.text(Msg.grouped(Math.floor(defense)) + "⛨ Ward", NamedTextColor.GREEN);
         Component right = Component.text(Msg.grouped(Math.floor(mana)) + "/" + Msg.grouped(Math.floor(maxMana)) + "✎ Mana",
             NamedTextColor.AQUA);
         if (overflow >= 1) {

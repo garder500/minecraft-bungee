@@ -11,7 +11,6 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Container;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -114,20 +113,21 @@ final class AuctionService implements EconomyAudit.Contributor {
         this.env = env;
     }
 
-    void enable(ConfigurationSection config) {
+    void enable(EconomyConfig config) {
         AuctionBook.State state = core.store().read(FILE, AuctionBook.State.class, AuctionBook.State::new);
-        book = new AuctionBook(state, rules(config));
+        book = new AuctionBook(state, rules(config.settings()));
         file = new DurableFile(core.store(), FILE, book::state, env,
             () -> core.profiles().saveDirty(), () -> core.profiles().awaitWrites(), core.getPlugin().getLogger(),
-            config.getLong("auction.persist-delay-ticks", 10));
+            config.settings().getLong("auction.persist-delay-ticks", 10));
         reload(config);
     }
 
-    void reload(ConfigurationSection c) {
+    void reload(EconomyConfig config) {
+        var c = config.settings();
         saveData = c.getBoolean("safety.save-player-data", true);
         book.rules(rules(c));
         List<Integer> hours = new ArrayList<>();
-        for (int h : c.getIntegerList("auction.durations-hours")) {
+        for (int h : c.getList("auction.durations-hours").stream().map(AuctionService::asInt).toList()) {
             if (h >= 1 && h <= 24 * 14 && !hours.contains(h)) {
                 hours.add(h);
             }
@@ -141,13 +141,13 @@ final class AuctionService implements EconomyAudit.Contributor {
             def = hours.get(0);
         }
         Set<Material> blocked = new HashSet<>();
-        for (String name : c.getStringList("auction.blocked-materials")) {
+        for (String name : config.blockedMaterials()) {
             Material m = Material.matchMaterial(name);
             if (m != null) {
                 blocked.add(m);
             }
         }
-        Set<String> ids = new HashSet<>(c.getStringList("auction.blocked-items"));
+        Set<String> ids = new HashSet<>(config.blockedItems());
         long minFee = Math.max(0, Math.round(c.getDouble("auction.listing-fee.min", 25) * 100));
         long maxFee = Math.max(minFee, Math.round(c.getDouble("auction.listing-fee.max", 5_000_000) * 100));
         settings = new Settings(c.getBoolean("auction.enabled", true), List.copyOf(hours), def,
@@ -158,7 +158,16 @@ final class AuctionService implements EconomyAudit.Contributor {
         file.delay(settings.persistDelay());
     }
 
-    private static AuctionBook.Rules rules(ConfigurationSection c) {
+    /** A list entry as a whole number (0 when it is not one, which the duration bounds then drop). */
+    private static int asInt(String text) {
+        try {
+            return Integer.parseInt(text.trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private static AuctionBook.Rules rules(win.vampyuyu.survival.data.Settings c) {
         return new AuctionBook.Rules(
             EconomySettings.clamp(c.getInt("auction.max-listings", 7), 1, 100),
             Math.max(1, Math.round(c.getDouble("auction.min-price", 10) * 100)),
@@ -397,7 +406,7 @@ final class AuctionService implements EconomyAudit.Contributor {
     // ---------------------------------------------------------------- actions
 
     private BazaarService.Outcome gate() {
-        return enabled() ? null : BazaarService.Outcome.fail("The Auction House is closed right now.");
+        return enabled() ? null : BazaarService.Outcome.fail("The Drift Market is closed right now.");
     }
 
     BazaarService.Outcome list(Player player, long priceCents, boolean bin, int hours) {
@@ -494,7 +503,7 @@ final class AuctionService implements EconomyAudit.Contributor {
 
     BazaarService.Outcome cancel(Player player, long auctionId) {
         if (!enabled()) {
-            return BazaarService.Outcome.fail("The Auction House is closed right now.");
+            return BazaarService.Outcome.fail("The Drift Market is closed right now.");
         }
         var check = book.cancel(book.byId(auctionId), id(player), System.currentTimeMillis());
         if (!check.ok()) {
@@ -562,7 +571,7 @@ final class AuctionService implements EconomyAudit.Contributor {
     /** Collects everything that fits. {@code done} receives the message once delivered (or refused). */
     void claim(Player player, Consumer<BazaarService.Outcome> done) {
         if (!enabled()) {
-            done.accept(BazaarService.Outcome.fail("The Auction House is closed right now."));
+            done.accept(BazaarService.Outcome.fail("The Drift Market is closed right now."));
             return;
         }
         UUID uid = player.getUniqueId();
@@ -619,7 +628,7 @@ final class AuctionService implements EconomyAudit.Contributor {
                 book.restore(taken);
                 persist();
                 if (Bukkit.getPlayer(uid) != null) {
-                    done.accept(BazaarService.Outcome.fail("The Auction House could not save, your claim was kept. Try again."));
+                    done.accept(BazaarService.Outcome.fail("The Drift Market could not save, your claim was kept. Try again."));
                 }
                 return;
             }

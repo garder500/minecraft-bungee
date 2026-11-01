@@ -38,6 +38,9 @@ public class CommandsAndMenusTest extends SkillsBase {
 
     private Gui openGui(PlayerMock p) {
         Inventory top = p.getOpenInventory().getTopInventory();
+        if (top.getHolder() instanceof Gui) {
+            win.vampyuyu.survival.core.MenuRules.check(top, "skills menu");
+        }
         return top.getHolder() instanceof Gui g ? g : null;
     }
 
@@ -147,7 +150,7 @@ public class CommandsAndMenusTest extends SkillsBase {
         assertTrue(lore, lore.contains("Level: 1/60"));
         String all = mining.lore().stream().map(CommandsAndMenusTest::plain).reduce("", (a, b) -> a + "\n" + b);
         assertTrue(all, all.contains("Level 2 rewards"));
-        assertTrue(all, all.contains("Mining Fortune"));
+        assertTrue(all, all.contains("Mining Yield"));
         // eight skills, each its own icon
         int skillIcons = 0;
         for (int slot : new int[] {10, 12, 14, 16, 28, 30, 32, 34}) {
@@ -167,7 +170,7 @@ public class CommandsAndMenusTest extends SkillsBase {
         assertEquals(28, gui.innerSlots().length);
         ItemStack first = gui.getInventory().getItem(gui.innerSlots()[0]);
         assertTrue(plain(first.getItemMeta().displayName()).startsWith("Level 1"));
-        assertNotNull(gui.getInventory().getItem(50)); // next page arrow
+        assertNotNull(gui.getInventory().getItem(53)); // next page arrow
         player.performCommand("skills cooking");
         assertTrue(drain(player).contains("Unknown skill"));
     }
@@ -178,11 +181,11 @@ public class CommandsAndMenusTest extends SkillsBase {
         ItemStack done = menus.levelIcon(Skill.MINING, 3, 5);
         ItemStack next = menus.levelIcon(Skill.MINING, 6, 5);
         ItemStack later = menus.levelIcon(Skill.MINING, 7, 5);
-        assertEquals(Material.LIME_STAINED_GLASS_PANE, done.getType());
-        assertEquals(Material.YELLOW_STAINED_GLASS_PANE, next.getType());
-        assertEquals(Material.RED_STAINED_GLASS_PANE, later.getType());
+        assertEquals(Material.LIME_DYE, done.getType());
+        assertEquals(Material.YELLOW_DYE, next.getType());
+        assertEquals(Material.RED_DYE, later.getType());
         String lore = next.lore().stream().map(CommandsAndMenusTest::plain).reduce("", (a, b) -> a + "\n" + b);
-        assertTrue(lore, lore.contains("+2 Mining Fortune"));
+        assertTrue(lore, lore.contains("+2 Mining Yield"));
         assertTrue(lore, lore.contains("coins"));
         assertTrue(lore, lore.contains("Next level"));
     }

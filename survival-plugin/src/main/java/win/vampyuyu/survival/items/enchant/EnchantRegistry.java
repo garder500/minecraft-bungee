@@ -15,7 +15,7 @@ import org.jspecify.annotations.Nullable;
 import win.vampyuyu.survival.api.Stat;
 import win.vampyuyu.survival.items.gear.ItemKind;
 
-/** All enchants: built-in definitions whose numbers can be overridden in {@code items.yml} under {@code enchants.<id>}. */
+/** All enchants: built-in definitions whose numbers can be overridden by the {@code items.enchants.<id>} settings. */
 public final class EnchantRegistry {
     private static final Set<ItemKind> SWORDS = EnumSet.of(ItemKind.SWORD, ItemKind.AXE, ItemKind.STAFF, ItemKind.WAND,
         ItemKind.TRIDENT);
@@ -31,13 +31,13 @@ public final class EnchantRegistry {
     public EnchantRegistry(@Nullable ConfigurationSection config) {
         // melee
         add("sharpness", "Sharpness", 7, false, SWORDS, null, 5, "Increases melee damage by <green>{v}%</green>.", 5);
-        add("critical", "Critical", 7, false, merge(SWORDS, BOWS), Stat.CRIT_DAMAGE, 10,
-            "Grants <green>+{v}%</green> Crit Damage.", 5);
+        add("critical", "Keen Edge", 7, false, merge(SWORDS, BOWS), Stat.MIGHT, 2.5,
+            "Grants <green>+{v}</green> Might.", 5);
         add("execute", "Execute", 5, false, SWORDS, null, 0.2,
             "Deals <green>{v}%</green> more damage for every 1% of health the enemy is missing.", 5);
         add("life_steal", "Life Steal", 5, false, SWORDS, null, 0.5,
             "Heals you for <green>{v}%</green> of your max health on hit.", 5);
-        add("giant_killer", "Giant Killer", 7, false, SWORDS, null, 5,
+        add("giant_killer", "Colossus Bane", 7, false, SWORDS, null, 5,
             "Deals up to <green>{v}%</green> more damage to enemies with more health than you.", 5);
         add("first_strike", "First Strike", 5, false, SWORDS, null, 25,
             "The first hit on an enemy deals <green>{v}%</green> more damage.", 4);
@@ -49,7 +49,7 @@ public final class EnchantRegistry {
             "Increases damage dealt to undead mobs by <green>{v}%</green>.", 5);
         add("bane_of_arthropods", "Bane of Arthropods", 7, false, SWORDS, null, 8,
             "Increases damage dealt to spiders and silverfish by <green>{v}%</green>.", 5);
-        add("ender_slayer", "Ender Slayer", 7, false, SWORDS, null, 12,
+        add("ender_slayer", "Voidbane", 7, false, SWORDS, null, 12,
             "Increases damage dealt to Endermen, Endermites and the Dragon by <green>{v}%</green>.", 5);
         add("cleave", "Cleave", 5, false, SWORDS, null, 20,
             "Deals <green>{v}%</green> of your damage to enemies near your target.", 5);
@@ -60,8 +60,8 @@ public final class EnchantRegistry {
         add("infinite_quiver", "Infinite Quiver", 10, false, BOWS, null, 4,
             "Gives a <green>{v}%</green> chance not to consume an arrow.", 5);
         // armor
-        add("protection", "Protection", 7, false, ARMOR, Stat.DEFENSE, 3, "Grants <green>+{v}</green> Defense.", 5);
-        add("growth", "Growth", 7, false, ARMOR, Stat.HEALTH, 15, "Grants <green>+{v}</green> Health.", 5);
+        add("protection", "Protection", 7, false, ARMOR, Stat.WARD, 3, "Grants <green>+{v}</green> Ward.", 5);
+        add("growth", "Growth", 7, false, ARMOR, Stat.VITALITY, 15, "Grants <green>+{v}</green> Vitality.", 5);
         add("rejuvenate", "Rejuvenate", 5, false, ARMOR, null, 0.5,
             "Regenerates an extra <green>{v}%</green> of your max health every second.", 5);
         add("thorns", "Thorns", 5, false, ARMOR, null, 3,
@@ -71,28 +71,28 @@ public final class EnchantRegistry {
         add("respiration", "Respiration", 5, false, EnumSet.of(ItemKind.HELMET), null, 20,
             "Reduces drowning damage by <green>{v}%</green>.", 4);
         // tools
-        add("efficiency", "Efficiency", 10, false, TOOLS, Stat.MINING_SPEED, 20,
-            "Grants <green>+{v}</green> Mining Speed.", 5);
+        add("efficiency", "Efficiency", 10, false, TOOLS, Stat.HASTE, 20,
+            "Grants <green>+{v}</green> Haste.", 5);
         add("fortune", "Fortune", 4, false, merge(TOOLS, HOES), null, 10,
-            "Grants <green>+{v}</green> Fortune for the tool's kind of work.", 4);
+            "Grants <green>+{v}</green> Yield for the tool's kind of work.", 4);
         add("smelting_touch", "Smelting Touch", 1, false, merge(MINING, EnumSet.of(ItemKind.SHOVEL)), null, 1,
             "Automatically smelts ores and sand you mine.", 1);
         add("telekinesis", "Telekinesis", 1, false, merge(TOOLS, merge(HOES, SWORDS)), null, 1,
             "Block and mob drops go straight into your inventory.", 1);
         add("replenish", "Replenish", 1, false, HOES, null, 1,
             "Replants crops you harvest, using one seed from the drops.", 1);
-        add("harvesting", "Harvesting", 6, false, HOES, Stat.FARMING_FORTUNE, 12.5,
-            "Grants <green>+{v}</green> Farming Fortune.", 5);
+        add("harvesting", "Harvesting", 6, false, HOES, Stat.FARMING_YIELD, 12.5,
+            "Grants <green>+{v}</green> Farming Yield.", 5);
         // ultimates
         add("soul_eater", "Soul Eater", 5, true, SWORDS, null, 40,
             "Your next hit after a kill deals <green>{v}%</green> more damage.", 0);
-        add("one_for_all", "One For All", 1, true, SWORDS, null, 200,
+        add("one_for_all", "Lone Edge", 1, true, SWORDS, null, 200,
             "Your hits deal <green>{v}%</green> more damage but every other enchant on the item stops working.", 0);
         add("rend", "Rend", 5, true, BOWS, null, 10,
             "Arrows deal <green>{v}%</green> more damage and make the target bleed for 3 seconds.", 0);
         add("wise", "Wise", 5, true, ARMOR, null, 10, "Reduces the mana cost of abilities by <green>{v}%</green>.", 0);
         add("last_stand", "Last Stand", 5, true, ARMOR, null, 15,
-            "Below 40% health your Defense is increased by <green>{v}%</green>.", 0);
+            "Below 40% health your Ward is increased by <green>{v}%</green>.", 0);
         if (config != null) {
             applyOverrides(config);
         }

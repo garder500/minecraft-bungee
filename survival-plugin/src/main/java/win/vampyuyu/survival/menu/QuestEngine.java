@@ -102,6 +102,53 @@ public final class QuestEngine {
 
     // ---------------------------------------------------------------- progress
 
+    /**
+     * Proof events: a state the world re-announces (a built ring) proves the steps before it. When such an event
+     * matches a locked quest, the quest and the unfinished quests it waits for in the same category are completed, in
+     * chain order. This lets a player who built the ring before a broken earlier step was fixed move on. Only
+     * {@code generator_built:<kind>} events are proofs; ordinary progress never skips a quest.
+     */
+    public List<Completion> catchUp(QuestData data, Event event) {
+        if (event.type() != QuestType.EVENT || !event.subject().startsWith("generator_built:")) {
+            return List.of();
+        }
+        List<Completion> done = new ArrayList<>();
+        for (QuestDef def : catalog.tutorial()) {
+            if (def.type() != QuestType.EVENT || data.completed.contains(def.id()) || isActive(data, def)
+                    || !QuestMatcher.matches(def.target(), event.subject())) {
+                continue;
+            }
+            List<QuestDef> chain = new ArrayList<>();
+            if (!pending(data, def, def.category(), chain, new java.util.HashSet<>())) {
+                continue; // something outside the category is missing: the quest stays locked
+            }
+            for (QuestDef step : chain) {
+                data.progress.remove(step.id());
+                data.completed.add(step.id());
+                done.add(new Completion(step, false));
+            }
+        }
+        return done;
+    }
+
+    /** Collects def and its unfinished requirements (first ones first); false when one is outside the category. */
+    private boolean pending(QuestData data, QuestDef def, String category, List<QuestDef> into, java.util.Set<String> seen) {
+        if (data.completed.contains(def.id()) || !seen.add(def.id())) {
+            return true;
+        }
+        if (!def.category().equals(category)) {
+            return false;
+        }
+        for (String req : def.requires()) {
+            Optional<QuestDef> before = catalog.tutorialQuest(req);
+            if (before.isEmpty() || !pending(data, before.get(), category, into, seen)) {
+                return false;
+            }
+        }
+        into.add(def);
+        return true;
+    }
+
     /** Applies an event to every active quest it matches. Returns the quests that completed because of it. */
     public List<Completion> apply(QuestData data, Event event) {
         List<Completion> done = new ArrayList<>();

@@ -32,38 +32,35 @@ public final class ReforgeRegistry {
         Set<Group> tool = EnumSet.of(Group.TOOL);
         Set<Group> acc = EnumSet.of(Group.ACCESSORY);
         // weapons
-        add("sharp", "Sharp", melee, false, null, Stat.CRIT_CHANCE, 2, Stat.CRIT_DAMAGE, 6);
-        add("heroic", "Heroic", melee, false, null, Stat.STRENGTH, 5, Stat.INTELLIGENCE, 15);
-        add("spicy", "Spicy", melee, false, null, Stat.STRENGTH, 3, Stat.CRIT_DAMAGE, 8, Stat.ATTACK_SPEED, 1);
-        add("legendary", "Legendary", melee, false, null, Stat.STRENGTH, 4, Stat.CRIT_CHANCE, 1, Stat.INTELLIGENCE, 8);
-        add("fabled", "Fabled", melee, true, "reforge_stone_fabled", Stat.STRENGTH, 6, Stat.CRIT_DAMAGE, 12);
-        add("withered", "Withered", melee, true, "reforge_stone_withered", Stat.STRENGTH, 10, Stat.CRIT_CHANCE, 1);
-        add("gentle", "Gentle", melee, false, null, Stat.STRENGTH, 3, Stat.ATTACK_SPEED, 4);
+        add("sharp", "Sharp", melee, false, null, Stat.MIGHT, 3, Stat.ATTUNEMENT, 1);
+        add("heroic", "Heroic", melee, false, null, Stat.MIGHT, 5, Stat.AETHER, 15);
+        add("spicy", "Spicy", melee, false, null, Stat.MIGHT, 4, Stat.SWIFTNESS, 1);
+        add("legendary", "Legendary", melee, false, null, Stat.MIGHT, 4, Stat.ATTUNEMENT, 1, Stat.AETHER, 8);
+        add("fabled", "Fabled", melee, true, "reforge_stone_fabled", Stat.MIGHT, 7, Stat.ATTUNEMENT, 2);
+        add("withered", "Withered", melee, true, "reforge_stone_withered", Stat.MIGHT, 10, Stat.ATTUNEMENT, 1);
+        add("gentle", "Gentle", melee, false, null, Stat.MIGHT, 3, Stat.SWIFTNESS, 2);
         // bows
-        add("deadly", "Deadly", bow, false, null, Stat.CRIT_CHANCE, 3, Stat.CRIT_DAMAGE, 8);
-        add("fine", "Fine", bow, false, null, Stat.CRIT_CHANCE, 2, Stat.STRENGTH, 3, Stat.CRIT_DAMAGE, 5);
-        add("grand", "Grand", bow, false, null, Stat.STRENGTH, 8);
-        add("headstrong", "Headstrong", bow, false, null, Stat.STRENGTH, 4, Stat.CRIT_CHANCE, 1);
+        add("deadly", "Deadly", bow, false, null, Stat.MIGHT, 4, Stat.ATTUNEMENT, 1);
+        add("fine", "Fine", bow, false, null, Stat.MIGHT, 4);
+        add("grand", "Grand", bow, false, null, Stat.MIGHT, 8);
+        add("headstrong", "Headstrong", bow, false, null, Stat.MIGHT, 4, Stat.ATTUNEMENT, 1);
         // armor
-        add("jaded", "Jaded", armor, false, null, Stat.HEALTH, 5, Stat.DEFENSE, 4, Stat.INTELLIGENCE, 2);
-        add("pure", "Pure", armor, false, null, Stat.STRENGTH, 2, Stat.CRIT_DAMAGE, 3, Stat.INTELLIGENCE, 3);
-        add("giant", "Giant", armor, false, null, Stat.HEALTH, 12);
-        add("fierce", "Fierce", armor, false, null, Stat.STRENGTH, 3, Stat.CRIT_CHANCE, 1);
-        add("ancient", "Ancient", armor, true, "reforge_stone_ancient", Stat.STRENGTH, 4, Stat.CRIT_DAMAGE, 6,
-            Stat.HEALTH, 8);
-        add("clean", "Clean", armor, false, null, Stat.DEFENSE, 6, Stat.TRUE_DEFENSE, 1);
+        add("jaded", "Jaded", armor, false, null, Stat.VITALITY, 5, Stat.WARD, 4, Stat.AETHER, 2);
+        add("pure", "Pure", armor, false, null, Stat.MIGHT, 2, Stat.AETHER, 3);
+        add("giant", "Giant", armor, false, null, Stat.VITALITY, 12);
+        add("fierce", "Fierce", armor, false, null, Stat.MIGHT, 3, Stat.WARD, 1);
+        add("ancient", "Ancient", armor, true, "reforge_stone_ancient", Stat.MIGHT, 4, Stat.VITALITY, 8, Stat.WARD, 2);
+        add("clean", "Clean", armor, false, null, Stat.WARD, 7);
         // tools
-        add("fruitful", "Fruitful", tool, false, null, Stat.MINING_FORTUNE, 6, Stat.FARMING_FORTUNE, 6,
-            Stat.FORAGING_FORTUNE, 6);
-        add("swift", "Swift", tool, false, null, Stat.MINING_SPEED, 20, Stat.FISHING_SPEED, 5);
-        add("refined", "Refined", tool, true, "reforge_stone_refined", Stat.MINING_SPEED, 35, Stat.MINING_FORTUNE, 10);
-        add("blessed", "Blessed", tool, false, null, Stat.MINING_FORTUNE, 3, Stat.FARMING_FORTUNE, 3,
-            Stat.FORAGING_FORTUNE, 3, Stat.MINING_SPEED, 10);
+        add("fruitful", "Fruitful", tool, false, null, Stat.MINING_YIELD, 6, Stat.FARMING_YIELD, 6, Stat.FORAGING_YIELD, 6);
+        add("swift", "Swift", tool, false, null, Stat.HASTE, 20, Stat.LURE, 5);
+        add("refined", "Refined", tool, true, "reforge_stone_refined", Stat.HASTE, 35, Stat.MINING_YIELD, 10);
+        add("blessed", "Blessed", tool, false, null, Stat.MINING_YIELD, 3, Stat.FARMING_YIELD, 3, Stat.FORAGING_YIELD, 3,
+            Stat.HASTE, 10);
         // accessories
-        add("simple", "Simple", acc, false, null, Stat.STRENGTH, 1, Stat.CRIT_CHANCE, 1, Stat.CRIT_DAMAGE, 2,
-            Stat.INTELLIGENCE, 1);
-        add("bizarre", "Bizarre", acc, false, null, Stat.INTELLIGENCE, 6, Stat.STRENGTH, -2);
-        add("ridiculous", "Ridiculous", acc, false, null, Stat.CRIT_CHANCE, 1, Stat.CRIT_DAMAGE, 3, Stat.MAGIC_FIND, 1);
+        add("simple", "Simple", acc, false, null, Stat.MIGHT, 1, Stat.AETHER, 1);
+        add("bizarre", "Bizarre", acc, false, null, Stat.AETHER, 6, Stat.MIGHT, -2);
+        add("ridiculous", "Ridiculous", acc, false, null, Stat.FORTUNE, 2, Stat.ATTUNEMENT, 1);
         if (config != null) {
             List<Double> table = config.getDoubleList("reforges.rarity-multiplier");
             for (int i = 0; i < scale.length && i < table.size(); i++) {

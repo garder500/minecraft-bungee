@@ -76,7 +76,7 @@ public final class SlayerCommand implements CommandExecutor, TabCompleter {
     }
 
     private void help(CommandSender to) {
-        core.msg().info(to, "Slayer commands:");
+        core.msg().info(to, "Hunt commands:");
         core.msg().info(to, "/slayer - open the menu");
         core.msg().info(to, "/slayer start <slayer> <tier> - pay and start a quest");
         core.msg().info(to, "/slayer status - show your quest and levels");

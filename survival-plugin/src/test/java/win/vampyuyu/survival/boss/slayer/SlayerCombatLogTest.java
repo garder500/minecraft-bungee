@@ -2,9 +2,6 @@ package win.vampyuyu.survival.boss.slayer;
 
 import static org.junit.Assert.*;
 
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,10 +29,7 @@ public class SlayerCombatLogTest {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
         win.vampyuyu.survival.LegacyFeatureFixture.enable(plugin);
-        BossConfig config;
-        try (var reader = new InputStreamReader(getClass().getResourceAsStream("/boss.yml"), StandardCharsets.UTF_8)) {
-            config = BossConfig.load(YamlConfiguration.loadConfiguration(reader));
-        }
+        BossConfig config = win.vampyuyu.survival.boss.BossTestData.shipped();
         bosses = new BossManager(plugin.core(), config);
         slayer = new SlayerManager(plugin.core(), bosses);
         world = server.addSimpleWorld("sb_world");

@@ -38,11 +38,7 @@ public final class ReforgeMenu extends ItemMenu {
         this.gear = gear;
         this.costs = costs;
         this.settings = settings;
-        for (int slot = 0; slot < 45; slot++) {
-            inventory.setItem(slot, Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
-        }
         inventory.setItem(ITEM, null);
-        inventory.setItem(40, Guis.icon(Material.BARRIER, "<red>Close"));
         drawButton();
     }
 
@@ -87,7 +83,7 @@ public final class ReforgeMenu extends ItemMenu {
         lore.add("<gray>Reforge stones apply special reforges:");
         lore.add("<gray>click the stone onto the item in your inventory.");
         lore.add("");
-        lore.add("<yellow>Click to reforge");
+        lore.add("<#F6D58E>▸ Reforge");
         inventory.setItem(BUTTON, Guis.icon(Material.ANVIL, "<green>Reforge Item", lore.toArray(new String[0])));
     }
 
@@ -109,8 +105,6 @@ public final class ReforgeMenu extends ItemMenu {
             }
         } else if (event.getSlot() == BUTTON) {
             reforge();
-        } else if (event.getSlot() == 40) {
-            core.scheduler().nextTick(player::closeInventory);
         }
     }
 

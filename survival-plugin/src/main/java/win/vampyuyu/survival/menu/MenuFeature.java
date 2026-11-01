@@ -17,13 +17,13 @@ public final class MenuFeature implements Feature {
     private QuestService quests;
     private SidebarService sidebar;
     private Scheduler.Handle maintenance;
+    private Runnable unsubscribe;
 
     @Override public String id() { return "menu"; }
 
     @Override public void enable(Core core) {
         this.core = core;
-        MenuConfig cfg = new MenuConfig(core.featureConfig("menu"),
-            core.featureConfig("quarry").getConfigurationSection("quests.tutorial"), true, core.featureConfig("quests"));
+        MenuConfig cfg = MenuRepo.load(core.data());
         MenuRuntime rt = new MenuRuntime(core, cfg);
         source = cfg.redisEnabled ? RedisHandoffSource.fromEnvironment(core.getPlugin().getLogger(),
             cfg.redisHost, cfg.redisPort, cfg.redisPasswordFile, cfg.redisConnectTimeoutMs,
@@ -48,6 +48,18 @@ public final class MenuFeature implements Feature {
             core.scheduler().nextTick(() -> arrive(player));
         }
         core.listen(join);
+        // quests edited in the panel apply at once (players keep their progress, ids that vanished are skipped)
+        unsubscribe = core.onDataChange(domain -> {
+            if (domain.startsWith("quests") || domain.equals("menu")) {
+                rt.reload(MenuRepo.load(core.data()));
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    if (MenuRuntime.inSkyblock(player.getWorld())) {
+                        quests.sync(player);
+                        sidebar.refresh(player);
+                    }
+                }
+            }
+        });
         core.getPlugin().getServer().getMessenger().registerIncomingPluginChannel(core.getPlugin(), CHANNEL,
             (channel, player, bytes) -> {
                 try {
@@ -75,6 +87,7 @@ public final class MenuFeature implements Feature {
     }
 
     @Override public void disable() {
+        if (unsubscribe != null) unsubscribe.run();
         if (maintenance != null) maintenance.cancel();
         if (sidebar != null) sidebar.stop();
         if (source != null) source.close();

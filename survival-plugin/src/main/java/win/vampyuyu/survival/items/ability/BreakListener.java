@@ -165,11 +165,11 @@ public final class BreakListener implements Listener {
         // Fortune
         Stat fortuneStat = null;
         if (s.fortuneOres.contains(type.name())) {
-            fortuneStat = Stat.MINING_FORTUNE;
+            fortuneStat = Stat.MINING_YIELD;
         } else if (s.fortuneCrops.contains(type.name()) && mature(state.getBlockData())) {
-            fortuneStat = Stat.FARMING_FORTUNE;
+            fortuneStat = Stat.FARMING_YIELD;
         } else if (Tag.LOGS.isTagged(type) || s.fortuneLogs.contains(type.name())) {
-            fortuneStat = Stat.FORAGING_FORTUNE;
+            fortuneStat = Stat.FORAGING_YIELD;
         }
         if (fortuneStat != null && !wasPlaced) {
             int copies = fortuneCopies(st.stat(fortuneStat), ThreadLocalRandom.current().nextDouble());

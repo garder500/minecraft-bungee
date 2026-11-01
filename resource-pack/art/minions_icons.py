@@ -8,7 +8,7 @@ Writes, for every name below, three files that all contain "minions" in their pa
   assets/vampyuyu/models/item/minions/<name>.json
   assets/vampyuyu/items/minions/<name>.json       (item model "vampyuyu:minions/<name>")
 Names: one per minion type (the tier is shown by the item name and rarity colour), fuel_<id> for the custom fuels and
-upgrade_<id> for the upgrade items. Keep the lists in step with survival-plugin/src/main/resources/minions.yml
+upgrade_<id> for the upgrade items. Keep the lists in step with survival-plugin/src/main/resources/db/seed/minions.sql (tables minion_*)
 (survival-plugin tests read the same lists).
 """
 import json, pathlib, struct, sys, zlib

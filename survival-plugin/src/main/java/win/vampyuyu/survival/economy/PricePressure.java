@@ -5,7 +5,6 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
 
 /**
  * Server-wide sell pressure. Every item sold to an NPC adds to the key's pressure; pressure decays with a half life.
@@ -13,7 +12,7 @@ import org.bukkit.configuration.ConfigurationSection;
  * that dumps endlessly sees the price fall while a normal player barely notices. Thread confined to the main thread.
  *
  * <p>Compacted items share the pool of the raw item they are made of: {@code minion_enchanted_wheat} records into
- * {@code WHEAT} weighted by the compaction ratio ({@code pressure.compact-prefixes}), so one enchanted item moves the
+ * {@code WHEAT} weighted by the compaction ratio ({@code price_pressure_prefix}), so one enchanted item moves the
  * price as much as the raw items it stands for and selling compacted goods cannot dodge (or exploit) the raw price.
  */
 final class PricePressure {
@@ -58,14 +57,15 @@ final class PricePressure {
         return new Pool(key, 1.0);
     }
 
-    void reload(ConfigurationSection c) {
-        ConfigurationSection compact = c.getConfigurationSection("pressure.compact-prefixes");
-        if (compact == null) {
+    void reload(EconomyConfig config) {
+        var c = config.settings();
+        Map<String, Double> compact = config.pressurePrefixes();
+        if (compact.isEmpty()) {
             prefixes = defaultPrefixes();
         } else {
             Map<String, Double> m = new LinkedHashMap<>();
-            for (String prefix : compact.getKeys(false)) {
-                m.put(prefix, Math.max(1.0, compact.getDouble(prefix, 1.0)));
+            for (var e : compact.entrySet()) {
+                m.put(e.getKey(), Math.max(1.0, e.getValue()));
             }
             // longest prefix first so "minion_super_" is not shadowed by a shorter one
             Map<String, Double> sorted = new LinkedHashMap<>();

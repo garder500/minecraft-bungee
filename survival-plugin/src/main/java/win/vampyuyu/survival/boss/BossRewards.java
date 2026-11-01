@@ -112,7 +112,7 @@ public final class BossRewards {
             core.service(SkillsApi.class).ifPresent(s -> s.addXp(player, Skill.COMBAT, xp, xpSource));
         }
         double mf = player == null ? 0 : core.service(StatsApi.class)
-            .map(s -> Math.min(settings.magicFindCap(), s.stat(player, Stat.MAGIC_FIND))).orElse(0.0);
+            .map(s -> Math.min(settings.magicFindCap(), s.stat(player, Stat.FORTUNE))).orElse(0.0);
         List<ItemStack> items = new ArrayList<>();
         LootRoller.Result result = LootRoller.roll(def.id(), loot, share, rank, mf,
             data == null ? java.util.Map.of() : data.dry, random);

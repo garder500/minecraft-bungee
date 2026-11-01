@@ -7,6 +7,7 @@ import { Players } from "./Players";
 import { ServerTools } from "./ServerTools";
 import { Console } from "./Console";
 import { Backups } from "./Backups";
+import { SkyblockData } from "./SkyblockData";
 import { WerewolfSessions } from "./WerewolfSessions";
 import { Zones } from "./Zones";
 import { Operations, Activity } from "./Operations";
@@ -38,6 +39,7 @@ function App() {
     | "players"
     | "plugins"
     | "backups"
+    | "skyblock"
     | "settings"
     | "activity"
     | "zones"
@@ -50,6 +52,7 @@ function App() {
       "players",
       "plugins",
       "backups",
+      "skyblock",
       "settings",
       "activity",
       "zones",
@@ -237,6 +240,7 @@ function App() {
               ["werewolf", "☾", "Werewolf"],
               ["plugins", "♧", "Plugins"],
               ["backups", "▣", "Backups"],
+              ["skyblock", "❖", "Game data"],
               ["settings", "⚙", "Server settings"],
               ["activity", "≡", "Activity"],
             ] as const
@@ -302,6 +306,7 @@ function App() {
                 players: "Players & roles",
                 plugins: "Plugins",
                 backups: "Backups",
+                skyblock: "Game data",
                 settings: "Server settings",
                 activity: "Activity",
               }[view]
@@ -325,6 +330,7 @@ function App() {
                   players: "Players & roles",
                   plugins: "Server plugins",
                   backups: "Backups",
+                  skyblock: "Skyblock game data",
                   settings: "Server settings",
                   activity: "Administration activity",
                 }[view]
@@ -344,6 +350,8 @@ function App() {
                     plugins: "Install and manage the plugins for each world.",
                     backups:
                       "Save, download, upload and restore a world with its data.",
+                    skyblock:
+                      "Quests, shops, recipes and tuning numbers, edited without a rebuild.",
                     settings:
                       "World rules, access and everyday server controls.",
                     activity: "Follow the changes made across your network.",
@@ -373,6 +381,8 @@ function App() {
           <Activity onError={report} />
         ) : view === "backups" ? (
           <Backups csrf={session.csrf} onError={report} />
+        ) : view === "skyblock" ? (
+          <SkyblockData csrf={session.csrf} onError={report} />
         ) : view === "plugins" || view === "settings" ? (
           <>
             <div className="page-server-selector">

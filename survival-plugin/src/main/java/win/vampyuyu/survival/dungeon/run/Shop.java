@@ -21,12 +21,10 @@ final class Shop {
 
     static void open(DungeonRun run, Player p) {
         var gui = run.ctx.core.guis().create(3, "<gold><bold>Crypt Merchant");
-        gui.fill(Guis.icon(Material.BLACK_STAINED_GLASS_PANE, " "));
         boolean eco = run.ctx.economy().isPresent();
         good(run, gui, 11, DungeonItems.SPIRIT_LEAF, "<green>Spirit Leaf", "<gray>Revives a ghost of your party instantly.");
         good(run, gui, 15, DungeonItems.HEALING_FLASK, "<aqua>Healing Flask",
             "<gray>Restores " + run.ctx.cfg.flaskHealPercent + "% of your health.");
-        gui.set(22, Guis.icon(Material.BARRIER, "<red>Close"), c -> c.close());
         if (!eco) {
             gui.set(4, Guis.icon(Material.BARRIER, "<red>The merchant has no coins to count", "<gray>The economy is not available."));
         }
@@ -37,7 +35,7 @@ final class Shop {
             String description) {
         double price = price(run, item);
         gui.set(slot, Guis.icon(item.equals(DungeonItems.SPIRIT_LEAF) ? Material.FERN : Material.GLASS_BOTTLE, name,
-            description, "", "<gray>Price: <gold>" + Msg.coins(price), "<yellow>Click to buy"),
+            description, "", "<gray>Price: <gold>" + Msg.coins(price), "<#F6D58E>▸ Buy"),
             click -> buy(run, click.player(), item, price));
     }
 

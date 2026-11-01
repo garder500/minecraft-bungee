@@ -4,7 +4,6 @@ import static org.junit.Assert.*;
 
 import java.util.List;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.junit.After;
 import org.junit.Before;
@@ -37,16 +36,11 @@ public class ShopServiceTest {
         keys = new ItemKeys(plugin.core());
         pressure = new PricePressure();
         shops = new ShopService(plugin.core(), eco, keys, pressure);
-        YamlConfiguration cfg = new YamlConfiguration();
-        cfg.set("shops.test.name", "Tester");
-        cfg.set("shops.test.items.WHEAT.buy", 8);
-        cfg.set("shops.test.items.WHEAT.sell", 2);
-        cfg.set("shops.test.items.test_gem.buy", 100);
-        cfg.set("shops.test.items.test_gem.sell", 20);
-        cfg.set("shops.test.items.not_registered.sell", 5);
-        cfg.set("pressure.soft-cap", 100);
-        cfg.set("pressure.min-multiplier", 0.25);
-        shops.reload(cfg);
+        try (var rows = new EconomyFixtures.Custom()) {
+            shops.reload(rows.merchant("test", "Tester")
+                .offer("test", "WHEAT", 8, 2).offer("test", "test_gem", 100, 20).offer("test", "not_registered", 0, 5)
+                .setting("pressure.soft-cap", "int", "100").setting("pressure.min-multiplier", "real", "0.25").build());
+        }
         keys.allowCustom(shops.catalog().keys());
         alice = server.addPlayer("Alice");
     }
@@ -68,7 +62,9 @@ public class ShopServiceTest {
     @Test
     public void sellsCleanItemsAndPaysWithAnExactLedger() {
         alice.getInventory().addItem(new ItemStack(Material.WHEAT, 10));
-        pressure.reload(new YamlConfiguration() {{ set("pressure.enabled", false); }});
+        try (var rows = new EconomyFixtures.Custom()) {
+            pressure.reload(rows.setting("pressure.enabled", "bool", "false").build());
+        }
         var r = sellAll();
         assertTrue(r.error(), r.ok());
         assertEquals(2000, r.cents());
@@ -97,7 +93,7 @@ public class ShopServiceTest {
         ItemStack plain = plugin.core().items().create("test_gem", 4);
         alice.getInventory().addItem(plain);
         ItemStack boosted = plugin.core().items().create("test_gem", 1);
-        plugin.core().items().setBonus(boosted, Stat.STRENGTH, 5);
+        plugin.core().items().setBonus(boosted, Stat.MIGHT, 5);
         alice.getInventory().addItem(boosted);
         var r = sellAll();
         assertTrue(r.ok());

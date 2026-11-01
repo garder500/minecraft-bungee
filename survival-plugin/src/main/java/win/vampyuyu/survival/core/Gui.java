@@ -21,8 +21,7 @@ import org.bukkit.inventory.ItemStack;
  * All clicks and drags are cancelled by the global {@link Guis} listener; only the handler you attach to a slot runs.
  * <pre>{@code
  * Gui gui = core.guis().create(3, Component.text("My menu"));
- * gui.border(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
- * gui.set(13, Guis.icon(Material.DIAMOND, "<aqua>Click me", "<gray>Does a thing"), click -> {
+ * gui.set(13, Guis.button(Material.DIAMOND, "<aqua>Click me", "Does a thing", "Open"), click -> {
  *     if (click.shift()) { ... }
  *     click.close();
  * });
@@ -107,26 +106,46 @@ public final class Gui implements InventoryHolder {
         return this;
     }
 
-    /** Fills every EMPTY slot with {@code item}. */
+    /** No-op: the menus have a painted background and no filler. Kept so older callers still compile. */
+    @Deprecated
     public Gui fill(ItemStack item) {
-        for (int slot = 0; slot < size(); slot++) {
-            if (inventory.getItem(slot) == null) {
-                inventory.setItem(slot, item);
-            }
+        return this;
+    }
+
+    /** No-op: the menus have a painted background and no glass border. Kept so older callers still compile. */
+    @Deprecated
+    public Gui border(ItemStack item) {
+        return this;
+    }
+
+    /** Gives the item already in {@code slot} the pack item model {@code vampyuyu:<path>} (a menu header icon). */
+    public Gui model(int slot, String path) {
+        checkSlot(slot);
+        ItemStack item = inventory.getItem(slot);
+        if (item != null) {
+            Guis.model(item, path);
         }
         return this;
     }
 
-    /** Puts {@code item} on the outer ring of the menu (empty slots only). */
-    public Gui border(ItemStack item) {
-        for (int slot = 0; slot < size(); slot++) {
-            int row = slot / 9;
-            int col = slot % 9;
-            if ((row == 0 || row == rows - 1 || col == 0 || col == 8) && inventory.getItem(slot) == null) {
-                inventory.setItem(slot, item);
-            }
-        }
-        return this;
+    /** Slot of the Back button: bottom-left corner (45 in a 6-row menu, 18 in a 3-row one). */
+    public int backSlot() {
+        return (rows - 1) * 9;
+    }
+
+    /** Slot of the Previous page arrow: bottom row, second to last. */
+    public int prevSlot() {
+        return size() - 2;
+    }
+
+    /** Slot of the Next page arrow: bottom-right corner. */
+    public int nextSlot() {
+        return size() - 1;
+    }
+
+    /** Puts a Back button in the bottom-left corner. */
+    public Gui back(String label, ClickHandler handler) {
+        return set(backSlot(), Guis.backIcon(label), handler);
     }
 
     /** Runs when the menu is closed, by the player or because another inventory replaced it (not on a plugin disable that never closes it). */
@@ -139,7 +158,7 @@ public final class Gui implements InventoryHolder {
         player.openInventory(inventory);
     }
 
-    /** Slots inside the border (rows 2..n-1, columns 2..8), handy for content. */
+    /** Content slots: rows 2..n-1, columns 2..8 (the bottom row is for Back and the page arrows). */
     public int[] innerSlots() {
         List<Integer> slots = new ArrayList<>();
         for (int row = 1; row < rows - 1; row++) {
@@ -160,15 +179,22 @@ public final class Gui implements InventoryHolder {
 
     /**
      * Shows a list over several pages. Fills {@code slots} with {@code icon(item)}, clicking one calls
-     * {@code onItem}. Previous/next arrows go in {@code prevSlot}/{@code nextSlot} and re-render the menu in
-     * place. Returns a handle to jump to a page.
+     * {@code onItem}. Small Previous/Next arrows go on the bottom row corners ({@link #prevSlot}, {@link #nextSlot})
+     * and re-render the menu in place. Returns a handle to jump to a page.
      */
+    public <T> Pager<T> paginate(List<T> items, int[] slots, Function<T, ItemStack> icon,
+            BiConsumer<Click, T> onItem) {
+        return paginate(items, slots, icon, onItem, prevSlot(), nextSlot());
+    }
+
+    /** Older form: the slots given are ignored, the arrows always go on the bottom corners. */
+    @Deprecated
     public <T> Pager<T> paginate(List<T> items, int[] slots, Function<T, ItemStack> icon,
             BiConsumer<Click, T> onItem, int prevSlot, int nextSlot) {
         if (slots.length == 0) {
             throw new IllegalArgumentException("paginate needs at least one content slot");
         }
-        Pager<T> pager = new Pager<>(this, List.copyOf(items), slots, icon, onItem, prevSlot, nextSlot);
+        Pager<T> pager = new Pager<>(this, List.copyOf(items), slots, icon, onItem, prevSlot(), nextSlot());
         pager.render();
         return pager;
     }
@@ -219,12 +245,12 @@ public final class Gui implements InventoryHolder {
             gui.clear(prevSlot);
             gui.clear(nextSlot);
             if (page > 0) {
-                gui.set(prevSlot, Guis.icon(Material.ARROW, "<yellow>Previous page",
-                    "<gray>Page " + page + "/" + pages()), click -> page(page - 1));
+                gui.set(prevSlot, Guis.arrow("Previous", "Page " + page + "/" + pages(), "back"),
+                    click -> page(page - 1));
             }
             if (page < pages() - 1) {
-                gui.set(nextSlot, Guis.icon(Material.ARROW, "<yellow>Next page",
-                    "<gray>Page " + (page + 2) + "/" + pages()), click -> page(page + 1));
+                gui.set(nextSlot, Guis.arrow("Next", "Page " + (page + 2) + "/" + pages(), "next"),
+                    click -> page(page + 1));
             }
         }
     }

@@ -48,12 +48,8 @@ public final class AnvilMenu extends ItemMenu {
         this.gear = gear;
         this.costs = costs;
         this.settings = settings;
-        for (int slot = 0; slot < 27; slot++) {
-            inventory.setItem(slot, Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
-        }
         inventory.setItem(LEFT, null);
         inventory.setItem(RIGHT, null);
-        inventory.setItem(22, Guis.icon(Material.BARRIER, "<red>Close"));
         refreshResult();
     }
 
@@ -152,7 +148,7 @@ public final class AnvilMenu extends ItemMenu {
     private void refreshResult() {
         Preview preview = preview(inventory.getItem(LEFT), inventory.getItem(RIGHT));
         if (!preview.ok()) {
-            inventory.setItem(RESULT, Guis.icon(Material.RED_STAINED_GLASS_PANE, "<red>No result", "<gray>" + preview.message()));
+            inventory.setItem(RESULT, Guis.icon(Material.GRAY_DYE, "<red>No result", "<gray>" + preview.message()));
             return;
         }
         ItemStack show = preview.result().clone();
@@ -162,7 +158,7 @@ public final class AnvilMenu extends ItemMenu {
         String price = levelMode() ? levelPrice(preview.price()) + " experience levels" : Costs.price(preview.price());
         lore.add(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize("<gray>Cost: <gold>" + price)
             .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
-        lore.add(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize("<yellow>Click to combine")
+        lore.add(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize("<#F6D58E>▸ Combine")
             .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
         meta.lore(lore);
         show.setItemMeta(meta);

@@ -493,7 +493,14 @@ def skip_icon():
             image.putpixel((x, y), palette[ch])
     return image.resize((32, 32), Image.NEAREST)
 
-ART = {"menu_lobby": lobby, "menu_setup": setup, "menu_list": listing, "menu_detail": detail, "menu_confirm": confirm, "menu_compass": compass, "menu_profile": profile, "menu_alembic": alembic,
+import sky_menus  # noqa: E402  (Skyblock backgrounds; same frame and tiling)
+
+def sb_title():
+    return ""
+
+ART = {"sb_main": lambda: sky_menus.main_menu(frame, sb_title), "sb_panel": lambda: sky_menus.panel54(frame, sb_title),
+       "sb_small": lambda: sky_menus.panel27(frame, sb_title), "sb_forge": lambda: sky_menus.forge(frame, sb_title),
+       "menu_lobby": lobby, "menu_setup": setup, "menu_list": listing, "menu_detail": detail, "menu_confirm": confirm, "menu_compass": compass, "menu_profile": profile, "menu_alembic": alembic,
        **{name: (lambda n=name: role_menu(n)) for name in ROLE_MENUS}}
 
 def _shot(html, w, h, out):

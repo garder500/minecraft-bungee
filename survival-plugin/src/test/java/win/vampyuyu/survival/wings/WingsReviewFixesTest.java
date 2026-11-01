@@ -498,22 +498,24 @@ public class WingsReviewFixesTest {
     @Test
     public void statBonusesFollowTheLevelTables() {
         WingsSettings s = service.settings();
-        assertEquals(2.0, s.statBonuses(1).get(Stat.DEFENSE), 1e-9);
-        assertNull(s.statBonuses(1).get(Stat.HEALTH));
-        assertEquals(30.0, s.statBonuses(10).get(Stat.DEFENSE), 1e-9);
-        assertEquals(15.0, s.statBonuses(10).get(Stat.SPEED), 1e-9);
-        var yaml = new org.bukkit.configuration.file.YamlConfiguration();
-        yaml.set("levels.stats.STRENGTH", List.of(1, 2));
-        yaml.set("levels.stats.NOT_A_STAT", List.of(9));
-        WingsSettings custom = WingsSettings.from(yaml);
-        assertEquals(1.0, custom.statBonuses(1).get(Stat.STRENGTH), 1e-9);
-        assertEquals("short lists repeat their last value", 2.0, custom.statBonuses(9).get(Stat.STRENGTH), 1e-9);
+        assertEquals(2.0, s.statBonuses(1).get(Stat.WARD), 1e-9);
+        assertNull(s.statBonuses(1).get(Stat.VITALITY));
+        assertEquals(30.0, s.statBonuses(10).get(Stat.WARD), 1e-9);
+        assertEquals(15.0, s.statBonuses(10).get(Stat.SWIFTNESS), 1e-9);
+        WingsSettings custom = WingsSettingsTest.custom(db -> {
+            win.vampyuyu.survival.data.TestDb.exec(db, "DELETE FROM wings_level_stat");
+            win.vampyuyu.survival.data.TestDb.exec(db, "INSERT INTO wings_level_stat (level, stat, value) VALUES (1, 'STRENGTH', 1)");
+            win.vampyuyu.survival.data.TestDb.exec(db, "INSERT INTO wings_level_stat (level, stat, value) VALUES (2, 'STRENGTH', 2)");
+            win.vampyuyu.survival.data.TestDb.exec(db, "INSERT INTO wings_level_stat (level, stat, value) VALUES (1, 'NOT_A_STAT', 9)");
+        });
+        assertEquals(1.0, custom.statBonuses(1).get(Stat.MIGHT), 1e-9);
+        assertEquals("short lists repeat their last value", 2.0, custom.statBonuses(9).get(Stat.MIGHT), 1e-9);
         assertEquals(1, custom.statBonuses(9).size());
     }
 
     @Test
     public void newSettingsHaveSaneDefaults() {
-        WingsSettings s = WingsSettings.from(null);
+        WingsSettings s = WingsSettings.defaults();
         assertEquals(40, s.noFlyBossRadius);
         assertEquals(1.0, s.drainGlide, 1e-9);
         assertEquals(4, s.dashLevel);

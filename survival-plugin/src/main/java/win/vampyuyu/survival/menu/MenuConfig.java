@@ -9,12 +9,15 @@ import java.util.Locale;
 import java.util.Map;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.configuration.ConfigurationSection;
+import win.vampyuyu.survival.data.Settings;
 import win.vampyuyu.survival.core.SkyblockWorlds;
 import win.vampyuyu.survival.menu.SoulLogic.SoulDef;
 import win.vampyuyu.survival.menu.SoulLogic.StatStep;
 
-/** Typed, immutable snapshot of {@code menu.yml}. Bad values fall back to defaults and are listed in {@link #problems}. */
+/**
+ * Typed, immutable snapshot of the menu tuning ({@code menu.*} settings and the {@code menu_*} tables, see {@link MenuRepo}).
+ * Bad values fall back to defaults and are listed in {@link #problems}.
+ */
 public final class MenuConfig {
     public final JoinRouter.NoKey noKey;
     public final long joinMaxAgeMs;
@@ -35,8 +38,9 @@ public final class MenuConfig {
 
     public final int warpWarmupSeconds;
     public final int warpCooldownSeconds;
-    public final ConfigurationSection netherWarp;
-    public final ConfigurationSection endWarp;
+    /** Where the Warps menu sends a player, null = the world's spawn. */
+    public final WarpPoint netherWarp;
+    public final WarpPoint endWarp;
     public final String bossHint;
 
     public final boolean sidebarEnabled;
@@ -73,34 +77,11 @@ public final class MenuConfig {
 
     private final List<String> problems = new ArrayList<>();
 
-    /**
-     * False for a tutorial quest that nobody can complete in the Skyblock as it is now: skills, fairy souls,
-     * enchanting, minions and the retired hub are not loaded.
-     */
-    static boolean completable(QuestDef def) {
-        return switch (def.type()) {
-            case SKILL_LEVEL, COLLECT_SOUL, ENCHANT_ITEM -> false;
-            case VISIT_WORLD -> !def.target().equalsIgnoreCase("hub");
-            default -> !def.target().toLowerCase(java.util.Locale.ROOT).startsWith("custom:minion");
-        };
-    }
+    /** A configured warp destination. */
+    public record WarpPoint(double x, double y, double z, float yaw, float pitch) {}
 
-    public MenuConfig(ConfigurationSection c) {
-        this(c, null, false);
-    }
-
-    /** {@code extraTutorial}: tutorial quests contributed by another feature (the Quarry), appended to the line. */
-    public MenuConfig(ConfigurationSection c, ConfigurationSection extraTutorial) {
-        this(c, extraTutorial, false);
-    }
-
-    /** {@code filterDead}: drop the tutorial quests no loaded system can complete (see {@link #completable}). */
-    public MenuConfig(ConfigurationSection c, ConfigurationSection extraTutorial, boolean filterDead) {
-        this(c, extraTutorial, filterDead, null);
-    }
-
-    /** {@code plan}: the quest plan ({@code quests.yml}); when it says {@code plan: true} it replaces the whole tutorial. */
-    public MenuConfig(ConfigurationSection c, ConfigurationSection extraTutorial, boolean filterDead, ConfigurationSection plan) {
+    /** The quests come from the content database ({@link QuestRepo}): plan, categories and daily pool. */
+    public MenuConfig(Settings c, MenuRepo.Rows rows, QuestCatalog stored) {
         String noKeyText = c.getString("join.no-key", "hub").toLowerCase(Locale.ROOT);
         noKey = noKeyText.equals("stay") ? JoinRouter.NoKey.STAY : JoinRouter.NoKey.HUB;
         if (!noKeyText.equals("hub") && !noKeyText.equals("stay")) {
@@ -122,18 +103,14 @@ public final class MenuConfig {
         menuItemSlot = clamp(c.getInt("menu-item.slot", 8), 0, 8);
         menuClickCooldownMs = Math.max(0, c.getLong("menu-item.click-cooldown-ms", 250));
         Map<String, List<String>> cmds = new LinkedHashMap<>();
-        ConfigurationSection cs = c.getConfigurationSection("commands");
-        if (cs != null) {
-            for (String key : cs.getKeys(false)) {
-                cmds.put(key.toLowerCase(Locale.ROOT), cs.getStringList(key).stream().map(MenuConfig::clean).toList());
-            }
-        }
+        rows.commands().forEach((key, aliases) ->
+            cmds.put(key.toLowerCase(Locale.ROOT), aliases.stream().map(MenuConfig::clean).toList()));
         commands = Map.copyOf(cmds);
 
         warpWarmupSeconds = clamp(c.getInt("warps.warmup-seconds", 3), 0, 30);
         warpCooldownSeconds = clamp(c.getInt("warps.cooldown-seconds", 5), 0, 600);
-        netherWarp = c.getConfigurationSection("warps.nether");
-        endWarp = c.getConfigurationSection("warps.end");
+        netherWarp = rows.warps().get("nether");
+        endWarp = rows.warps().get("end");
         bossHint = c.getString("warps.boss-hint", "");
 
         sidebarEnabled = c.getBoolean("sidebar.enabled", true);
@@ -142,23 +119,11 @@ public final class MenuConfig {
         sidebarFooter = c.getString("sidebar.footer", "");
         sidebarUpdateTicks = clamp(c.getInt("sidebar.update-ticks", 20), 5, 200);
         Map<String, String> dz = new LinkedHashMap<>();
-        ConfigurationSection dzs = c.getConfigurationSection("sidebar.default-zones");
-        if (dzs != null) {
-            for (String key : dzs.getKeys(false)) {
-                dz.put(key.toLowerCase(Locale.ROOT), dzs.getString(key, key));
-            }
-        }
+        rows.defaultZones().forEach((key, name) -> dz.put(key.toLowerCase(Locale.ROOT), name));
         defaultZones = Map.copyOf(dz);
-        zones = Zones.parse(c.getMapList("sidebar.zones"), MenuConfig::worldName, problems);
+        zones = new Zones(rows.zones());
 
-        Map<String, String> snd = new LinkedHashMap<>();
-        ConfigurationSection ss = c.getConfigurationSection("sounds");
-        if (ss != null) {
-            for (String key : ss.getKeys(false)) {
-                snd.put(key, ss.getString(key, ""));
-            }
-        }
-        sounds = Map.copyOf(snd);
+        sounds = Map.copyOf(rows.sounds());
 
         fairyEnabled = c.getBoolean("fairy-souls.enabled", true);
         fairyViewDistance = Math.max(8, c.getDouble("fairy-souls.view-distance", 40));
@@ -166,16 +131,14 @@ public final class MenuConfig {
         fairyEvery = Math.max(0, c.getInt("fairy-souls.every", 5));
         fairyCoinsPerMilestone = Math.max(0, c.getDouble("fairy-souls.coins-per-milestone", 250));
         fairyCoinsIncrease = Math.max(0, c.getDouble("fairy-souls.coins-increase-per-milestone", 0));
-        fairyCycle = List.copyOf(SoulLogic.parseCycle(c.getMapList("fairy-souls.stat-cycle"), problems));
+        fairyCycle = rows.fairyCycle();
         fairyGlow = c.getString("fairy-souls.glow-color", "#ff7ad9");
-        fairyFixed = List.copyOf(SoulLogic.parse(c.getMapList("fairy-souls.fixed"), false, problems));
-        fairyIsland = List.copyOf(SoulLogic.parse(c.getMapList("fairy-souls.island"), true, problems));
+        fairyFixed = rows.fairyFixed();
+        fairyIsland = rows.fairyIsland();
 
         questsEnabled = c.getBoolean("quests.enabled", true);
-        ConfigurationSection quests = c.getConfigurationSection("quests");
-        catalog = !questsEnabled ? QuestCatalog.empty()
-            : plan != null && plan.getBoolean("plan", false) ? QuestCatalog.parsePlan(quests, plan)
-            : QuestCatalog.parse(quests, extraTutorial, filterDead ? MenuConfig::completable : def -> true);
+        catalog = !questsEnabled ? QuestCatalog.empty() : stored;
+        problems.addAll(rows.problems());
         problems.addAll(catalog.problems());
         DailyClock clock;
         try {
@@ -191,9 +154,10 @@ public final class MenuConfig {
         dailyStreakCoins = Math.max(0, c.getDouble("quests.daily.streak-bonus-coins", 50));
         dailyStreakCap = Math.max(0, c.getInt("quests.daily.streak-cap", 10));
         dailyBonusXp = Math.max(0, c.getDouble("quests.daily.bonus-skill-xp", 40));
-        ignoreCoinReasons = c.getStringList("quests.daily.ignore-coin-reasons").stream()
+        ignoreCoinReasons = c.getList("quests.daily.ignore-coin-reasons").stream()
             .map(s -> s.toLowerCase(Locale.ROOT)).toList();
         placedMemory = clamp(c.getInt("quests.daily.placed-memory", 2048), 64, 65536);
+        problems.addAll(c.problems());
     }
 
     private static String clean(String command) {
@@ -227,11 +191,10 @@ public final class MenuConfig {
         };
     }
 
-    /** The configured warp location for a world, or its spawn when x/y/z are not set. */
-    public static Location warpLocation(ConfigurationSection section, World world) {
-        if (section != null && section.contains("x") && section.contains("y") && section.contains("z")) {
-            return new Location(world, section.getDouble("x"), section.getDouble("y"), section.getDouble("z"),
-                (float) section.getDouble("yaw", 0), (float) section.getDouble("pitch", 0));
+    /** The configured warp location for a world, or its spawn when there is none. */
+    public static Location warpLocation(WarpPoint point, World world) {
+        if (point != null) {
+            return new Location(world, point.x(), point.y(), point.z(), point.yaw(), point.pitch());
         }
         return world.getSpawnLocation();
     }

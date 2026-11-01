@@ -43,8 +43,6 @@ public final class WingsGui {
     private void render(Gui gui, Player player) {
         WingsSettings s = service.settings();
         WingsData d = service.data(player.getUniqueId());
-        gui.fill(Guis.icon(Material.BLACK_STAINED_GLASS_PANE, " "));
-        gui.border(Guis.icon(Material.YELLOW_STAINED_GLASS_PANE, " "));
         int level = s.clampLevel(d.level);
         int slot = d.received && !d.activeId.isEmpty() ? service.findValidSlot(player) : -1;
 
@@ -96,7 +94,7 @@ public final class WingsGui {
             lore.add("<gray>Speed: <aqua>" + Math.round(s.flySpeed(level) / 0.1f * 100) + "% <dark_gray>-> <aqua>"
                 + Math.round(s.flySpeed(level + 1) / 0.1f * 100) + "%");
             lore.add("");
-            lore.add(enough && rich ? "<yellow>Click to upgrade" : "<red>You cannot afford this yet");
+            lore.add(enough && rich ? "<#F6D58E>▸ Upgrade" : "<red>You cannot afford this yet");
             gui.set(SLOT_UPGRADE, Guis.icon(enough && rich ? Material.ANVIL : Material.GRAY_DYE,
                 "<gold>Upgrade the Wings", lore.toArray(String[]::new)), click -> {
                     WingsService.UpgradeOutcome out = service.upgrade(click.player());
@@ -179,7 +177,7 @@ public final class WingsGui {
     private void toggle(Gui gui, Player player, int slot, Material icon, String name, boolean on, String what,
                         java.util.function.Consumer<Boolean> setter) {
         gui.set(slot, Guis.icon(on ? icon : Material.GRAY_DYE, (on ? "<green>" : "<red>") + name + ": " + (on ? "ON" : "OFF"),
-            "<gray>" + what, "", "<yellow>Click to toggle"), click -> {
+            "<gray>" + what, "", "<#F6D58E>▸ Toggle"), click -> {
                 setter.accept(!on);
                 core.profiles().markDirty(click.player().getUniqueId());
                 render(gui, click.player());

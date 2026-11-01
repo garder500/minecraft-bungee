@@ -2,8 +2,6 @@ package win.vampyuyu.survival.menu;
 
 import static org.junit.Assert.*;
 
-import java.io.InputStreamReader;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,31 +35,25 @@ public class GuideTest {
 
     @Test
     public void deadQuestsAreDroppedWithoutWarnings() {
-        var menu = YamlConfiguration.loadConfiguration(new InputStreamReader(getClass().getResourceAsStream("/menu.yml")));
-        var quarry = YamlConfiguration.loadConfiguration(new InputStreamReader(getClass().getResourceAsStream("/quarry.yml")));
-        var config = new MenuConfig(menu, quarry.getConfigurationSection("quests.tutorial"), true);
-        var catalog = config.catalog;
+        var catalog = QuestRepo.load(plugin.core().data());
         assertTrue(catalog.problems().toString(), catalog.problems().isEmpty());
-        assertTrue(catalog.tutorialQuest("create_island").isPresent());
-        assertTrue(catalog.tutorialQuest("find_bronzite").isPresent());
+        assertFalse(catalog.tutorial().isEmpty());
         for (String dead : new String[] {"mining_3", "combat_3", "first_soul", "visit_hub", "craft_minion", "first_boss"}) {
             assertTrue(dead + " cannot be completed", catalog.tutorialQuest(dead).isEmpty());
         }
     }
 
     @Test
-    public void everyQuarryQuestSaysWhatToDoAndWhichCommand() {
-        var menu = YamlConfiguration.loadConfiguration(new InputStreamReader(getClass().getResourceAsStream("/menu.yml")));
-        var quarry = YamlConfiguration.loadConfiguration(new InputStreamReader(getClass().getResourceAsStream("/quarry.yml")));
-        var catalog = new MenuConfig(menu, quarry.getConfigurationSection("quests.tutorial"), true).catalog;
-        for (String id : new String[] {"lucky_cobble", "nugget_stash", "build_forge", "find_bronzite", "forge_cleaver",
-                "forge_core", "upgrade_vein", "find_frostium", "forge_rimeblade", "forge_ember"}) {
-            var def = catalog.tutorialQuest(id).orElseThrow();
-            assertNotNull(id + " has a hint", GuideCommands.hint(def));
+    public void everyForgeQuestSaysWhichCommand() {
+        var catalog = QuestRepo.load(plugin.core().data());
+        int forge = 0;
+        for (QuestDef def : catalog.tutorial()) {
+            if (def.type() == QuestType.FORGE_ITEM) {
+                forge++;
+                assertTrue(def.id() + " names /forge", GuideCommands.hint(def).contains("/forge"));
+            }
         }
-        assertTrue(GuideCommands.hint(catalog.tutorialQuest("forge_cleaver").get()).contains("/forge"));
-        assertTrue(catalog.tutorialQuest("build_forge").get().description().contains("/forge"));
-        assertTrue(catalog.tutorialQuest("forge_core").get().description().contains("/forge"));
+        assertTrue(forge > 10);
     }
 
     @Test
@@ -70,7 +62,7 @@ public class GuideTest {
         player.performCommand("guide");
         player.performCommand("hud off");
         player.performCommand("hud on");
-        player.performCommand("track find_bronzite"); // not unlocked yet: refused, never an exception
+        player.performCommand("track q031"); // not unlocked yet: refused, never an exception
         assertNotNull(server.getCommandMap().getCommand("guide"));
     }
 }

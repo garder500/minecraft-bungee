@@ -2,10 +2,10 @@ package win.vampyuyu.survival.wings;
 
 import static org.junit.Assert.*;
 
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.util.List;
 import org.bukkit.Particle;
-import org.bukkit.configuration.file.YamlConfiguration;
+import win.vampyuyu.survival.data.Db;
+import win.vampyuyu.survival.data.TestDb;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,9 +17,24 @@ public class WingsSettingsTest {
     @Before
     public void setUp() {
         MockBukkit.mock();
-        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(
-            getClass().getResourceAsStream("/wings.yml"), StandardCharsets.UTF_8));
-        shipped = WingsSettings.from(yaml);
+        shipped = custom(db -> { });
+    }
+
+    /** The seeded Wings tuning after {@code edits} were applied to the database. */
+    static WingsSettings custom(java.util.function.Consumer<Db> edits) {
+        try (Db db = TestDb.seeded()) {
+            edits.accept(db);
+            return WingsRepo.load(db);
+        }
+    }
+
+    /** Replaces the level table by rows of capacity bonus only (the other columns copy the first seeded level). */
+    static void capacityRows(Db db, double... values) {
+        TestDb.exec(db, "DELETE FROM wings_level_stat");
+        TestDb.exec(db, "DELETE FROM wings_level WHERE level > ?", values.length);
+        for (int i = 0; i < values.length; i++) {
+            TestDb.exec(db, "UPDATE wings_level SET capacity_bonus = ? WHERE level = ?", values[i], i + 1);
+        }
     }
 
     @After
@@ -29,7 +44,7 @@ public class WingsSettingsTest {
 
     @Test
     public void shippedConfigMatchesTheCodeDefaults() {
-        WingsSettings fallback = WingsSettings.from(new YamlConfiguration());
+        WingsSettings fallback = WingsSettings.defaults();
         assertEquals(fallback.maxLevel, shipped.maxLevel);
         assertArrayEquals(fallback.capacityBonus, shipped.capacityBonus, 1e-9);
         assertArrayEquals(fallback.flySpeed, shipped.flySpeed, 1e-6f);
@@ -106,20 +121,15 @@ public class WingsSettingsTest {
 
     @Test
     public void deniedPrefixBeatsTheAllowList() {
-        YamlConfiguration y = new YamlConfiguration();
-        y.set("worlds.allowed", java.util.List.of("sb_dungeon_x", "a"));
-        WingsSettings s = WingsSettings.from(y);
+        WingsSettings s = custom(db -> TestDb.setList(db, "wings.worlds.allowed", "sb_dungeon_x", "a"));
         assertFalse(s.worldAllowed("sb_dungeon_x"));
         assertTrue(s.worldAllowed("a"));
     }
 
     @Test
     public void regionsParseAndContain() {
-        YamlConfiguration y = new YamlConfiguration();
-        y.set("no-fly.regions", java.util.List.of(
-            java.util.Map.of("world", "sb_world", "min", java.util.List.of(10, 0, 10), "max", java.util.List.of(0, 100, 0)),
-            java.util.Map.of("world", "broken")));
-        WingsSettings s = WingsSettings.from(y);
+        WingsSettings s = custom(db -> TestDb.exec(db, "INSERT INTO wings_region (id, world, min_x, min_y, min_z, max_x, max_y, max_z) "
+            + "VALUES ('r1', 'sb_world', 10, 0, 10, 0, 100, 0)"));
         assertEquals(1, s.regions.size());
         assertTrue(s.inRegion("sb_world", 5, 50, 5));
         assertTrue("max corner is inclusive", s.inRegion("sb_world", 10.9, 100.5, 10.9));
@@ -129,13 +139,13 @@ public class WingsSettingsTest {
 
     @Test
     public void trailLinesFallBackToTheCloudOnGarbage() {
-        assertEquals(Particle.END_ROD, WingsSettings.parseTrailLine("end_rod:3:0.4").particle());
-        assertEquals(3, WingsSettings.parseTrailLine("end_rod:3:0.4").count());
-        assertEquals(0.4, WingsSettings.parseTrailLine("end_rod:3:0.4").spread(), 1e-9);
-        assertEquals(Particle.CLOUD, WingsSettings.parseTrailLine("not_a_particle:2").particle());
-        assertEquals(Particle.CLOUD, WingsSettings.parseTrailLine("DUST:2").particle());  // needs data
-        assertEquals(1, WingsSettings.parseTrailLine("CLOUD:abc").count());
-        assertEquals(20, WingsSettings.parseTrailLine("CLOUD:500").count());
+        assertEquals(Particle.END_ROD, WingsSettings.parseTrail("end_rod", 3, 0.4).particle());
+        assertEquals(3, WingsSettings.parseTrail("end_rod", 3, 0.4).count());
+        assertEquals(0.4, WingsSettings.parseTrail("end_rod", 3, 0.4).spread(), 1e-9);
+        assertEquals(0.15, WingsSettings.parseTrail("end_rod", 3, null).spread(), 1e-9);
+        assertEquals(Particle.CLOUD, WingsSettings.parseTrail("not_a_particle", 2, null).particle());
+        assertEquals(Particle.CLOUD, WingsSettings.parseTrail("DUST", 2, null).particle());  // needs data
+        assertEquals(20, WingsSettings.parseTrail("CLOUD", 500, null).count());
     }
 
     @Test
@@ -161,12 +171,12 @@ public class WingsSettingsTest {
 
     @Test
     public void missingUpgradeRowsGetADefault() {
-        YamlConfiguration y = new YamlConfiguration();
-        y.set("max-level", 4);
-        y.set("upgrades.1.core", 2);
-        y.set("upgrades.1.amount", 7);
-        y.set("upgrades.9.core", 1);  // beyond max-level: ignored
-        WingsSettings s = WingsSettings.from(y);
+        WingsSettings s = custom(db -> {
+            TestDb.set(db, "wings.max-level", "int", "4");
+            TestDb.exec(db, "DELETE FROM wings_upgrade");
+            TestDb.exec(db, "INSERT INTO wings_upgrade (level, core, amount, coins) VALUES (1, 2, 7, 0)");
+            TestDb.exec(db, "INSERT INTO wings_upgrade (level, core, amount, coins) VALUES (9, 1, 1, 0)");  // beyond max-level: ignored
+        });
         assertEquals(new WingsSettings.Upgrade(2, 7, 0), s.upgradeFrom(1));
         assertNotNull(s.upgradeFrom(3));
         assertNull(s.upgradeFrom(4));
@@ -174,9 +184,7 @@ public class WingsSettingsTest {
 
     @Test
     public void shortTablesRepeatTheirLastValue() {
-        YamlConfiguration y = new YamlConfiguration();
-        y.set("levels.capacity-bonus", java.util.List.of(10, 20));
-        WingsSettings s = WingsSettings.from(y);
+        WingsSettings s = custom(db -> capacityRows(db, 10, 20));
         assertEquals(10, s.capacityBonus(1), 1e-9);
         assertEquals(20, s.capacityBonus(2), 1e-9);
         assertEquals(20, s.capacityBonus(10), 1e-9);
@@ -184,16 +192,26 @@ public class WingsSettingsTest {
 
     @Test
     public void absurdValuesAreClamped() {
-        YamlConfiguration y = new YamlConfiguration();
-        y.set("levels.fly-speed", java.util.List.of(5.0));
-        y.set("energy.island-drain-factor", 9);
-        y.set("max-level", 1000);
-        y.set("combat.seconds", -3);
-        WingsSettings s = WingsSettings.from(y);
+        WingsSettings s = custom(db -> {
+            TestDb.exec(db, "DELETE FROM wings_level_stat");
+            TestDb.exec(db, "DELETE FROM wings_level WHERE level > 1");
+            TestDb.exec(db, "UPDATE wings_level SET fly_speed = 5.0");
+            TestDb.set(db, "wings.energy.island-drain-factor", "int", "9");
+            TestDb.set(db, "wings.max-level", "int", "1000");
+            TestDb.set(db, "wings.combat.seconds", "int", "-3");
+        });
         assertEquals(1.0f, s.flySpeed(1), 1e-6f);
         assertEquals(1.0, s.islandDrainFactor, 1e-9);
         assertEquals(50, s.maxLevel);
         assertEquals(0, s.combatSeconds);
+    }
+
+    @Test
+    public void shippedRowsLoadWithoutProblems() {
+        try (Db db = TestDb.seeded()) {
+            assertTrue(win.vampyuyu.survival.data.Settings.load(db, "wings").problems().isEmpty());
+            assertEquals(10, TestDb.count(db, "SELECT COUNT(*) FROM wings_level"));
+        }
     }
 
     @Test

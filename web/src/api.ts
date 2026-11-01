@@ -2,6 +2,7 @@ export class APIError extends Error {
   constructor(
     message: string,
     public status: number,
+    public body?: Record<string, unknown>,
   ) {
     super(message);
   }
@@ -32,6 +33,6 @@ export async function api<T>(
       res.status,
     );
   }
-  if (!res.ok) throw new APIError(value.error || "Request failed", res.status);
+  if (!res.ok) throw new APIError(value.error || "Request failed", res.status, value);
   return value;
 }

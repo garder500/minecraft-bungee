@@ -248,7 +248,7 @@ final class SkillsCommands {
             "/" + label + " info <player>  - show levels and collections",
             "/" + label + " boost <multiplier> <minutes|0> [skill|all] [name]  - timed XP boost for everybody",
             "/" + label + " boosts | unboost <name|all>  - list or remove boosts",
-            "/" + label + " reload  - reload skills.yml")) {
+            "/" + label + " reload  - reload the skills data")) {
             sender.sendMessage(Component.text("  " + line, NamedTextColor.GRAY));
         }
     }

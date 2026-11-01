@@ -37,9 +37,25 @@ public final class Guis implements Listener {
         this.log = log;
     }
 
-    /** Creates a menu of 1-6 rows. */
+    /**
+     * Creates a menu of 1-6 rows with a painted background: 3 rows or fewer get the small window, bigger menus the
+     * 6-row panel (the slot numbers of a 4 or 5 row layout stay valid, the bottom rows are just empty).
+     */
     public Gui create(int rows, Component title) {
-        return new Gui(this, rows, title);
+        if (rows < 1 || rows > 6) {
+            throw new IllegalArgumentException("rows must be 1-6, got " + rows);
+        }
+        return create(MenuArt.forRows(rows), title);
+    }
+
+    /** Creates a menu on a given painted background (its chest size follows the picture). */
+    public Gui create(MenuArt.Kind kind, Component title) {
+        return new Gui(this, kind.chestRows(), MenuArt.title(kind, title));
+    }
+
+    /** Same with MiniMessage markup for the title text. */
+    public Gui create(MenuArt.Kind kind, String miniTitle) {
+        return create(kind, MINI.deserialize(miniTitle).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
     }
 
     /** Creates a menu whose title is MiniMessage markup. */
@@ -57,6 +73,64 @@ public final class Guis implements Listener {
             lore.add(MINI.deserialize(line).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
         }
         return icon(material, MINI.deserialize(miniName).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE), lore);
+    }
+
+    /** Accent colour of the action line of a tooltip. */
+    public static final String ACCENT = "<#F6D58E>";
+
+    /**
+     * A menu button: name (coloured by meaning, MiniMessage), ONE short grey description line, then
+     * {@code ▸ action} in the accent colour (skipped when {@code action} is null). Extra lines go through
+     * {@link #icon} directly.
+     */
+    public static ItemStack button(Material material, String miniName, String description, String action) {
+        List<String> lore = new ArrayList<>();
+        if (description != null && !description.isEmpty()) {
+            lore.add("<gray>" + description);
+        }
+        if (action != null) {
+            lore.add(ACCENT + "▸ " + action);
+        }
+        return icon(material, miniName, lore.toArray(String[]::new));
+    }
+
+    /** Compact progress text, {@code 12/30 · 40%}. */
+    public static String progress(long done, long total) {
+        long pct = total <= 0 ? 0 : Math.min(100, done * 100 / total);
+        return done + "/" + total + " · " + pct + "%";
+    }
+
+    /** The pack's item model {@code vampyuyu:<path>} on an item (a vanilla look without the pack). */
+    public static ItemStack model(ItemStack item, String path) {
+        ItemMeta meta = item.getItemMeta();
+        meta.setItemModel(new org.bukkit.NamespacedKey("vampyuyu", path));
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    /** A button with a menu icon model {@code vampyuyu:menu/<name>} (textures in the pack's item/menu folder). */
+    public static ItemStack menuButton(Material fallback, String menuModel, String miniName, String description,
+            String action, String... extra) {
+        List<String> lore = new ArrayList<>();
+        if (description != null && !description.isEmpty()) {
+            lore.add("<gray>" + description);
+        }
+        lore.addAll(List.of(extra));
+        if (action != null) {
+            lore.add(ACCENT + "▸ " + action);
+        }
+        return model(icon(fallback, miniName, lore.toArray(String[]::new)), "menu/" + menuModel);
+    }
+
+    /** The Back button: a small arrow (item model {@code vampyuyu:icon/back}). */
+    public static ItemStack backIcon(String label) {
+        return model(icon(Material.ARROW, "<white>Back", label == null || label.isEmpty() ? new String[0]
+            : new String[] {"<gray>" + label}), "icon/back");
+    }
+
+    /** A small Previous/Next arrow ({@code icon/back} or {@code icon/next}). */
+    public static ItemStack arrow(String name, String page, String model) {
+        return model(icon(Material.ARROW, "<white>" + name, "<gray>" + page), "icon/" + model);
     }
 
     /** Same with components. */

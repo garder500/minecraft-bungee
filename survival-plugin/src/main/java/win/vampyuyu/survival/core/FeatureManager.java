@@ -28,7 +28,7 @@ public final class FeatureManager {
         for (Feature feature : features) {
             String id = feature.id();
             if (!enabledCheck.test(id)) {
-                log.info("Feature '" + id + "' is disabled in config.yml");
+                log.info("Feature '" + id + "' is disabled (setting core.features." + id + ".enabled)");
                 continue;
             }
             Core.Mark mark = core.mark();

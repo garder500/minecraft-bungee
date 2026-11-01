@@ -35,7 +35,7 @@ public final class BossFeature implements Feature {
     @Override
     public void enable(Core core) {
         this.core = core;
-        BossConfig config = BossConfig.load(core.featureConfig("boss"));
+        BossConfig config = BossConfig.load(core.data());
         report(config);
         try {
             items = new BossItems(core);
@@ -67,10 +67,10 @@ public final class BossFeature implements Feature {
 
     private void report(BossConfig config) {
         for (String error : config.errors()) {
-            core.getPlugin().getLogger().warning("boss.yml: " + error);
+            core.getPlugin().getLogger().warning("boss data: " + error);
         }
         if (config.bosses().isEmpty()) {
-            core.getPlugin().getLogger().warning("boss.yml defines no valid boss");
+            core.getPlugin().getLogger().warning("The boss tables define no valid boss");
         }
     }
 
@@ -86,21 +86,21 @@ public final class BossFeature implements Feature {
             .permission("vampyuyu.sb.boss.info", PermissionDefault.TRUE)
             .executor(bossCommand).tab(bossCommand).register();
         SlayerCommand slayerCommand = new SlayerCommand(core, slayer, gui);
-        core.commands().command("slayer").description("Slayer quests: hunt, fight a personal boss, earn perks")
+        core.commands().command("slayer").description("Hunts: hunt, fight a personal boss, earn perks")
             .usage("/slayer [start <slayer> <tier>|status|spawn|cancel]")
             .permission("vampyuyu.sb.boss.slayer", PermissionDefault.TRUE)
             .executor(slayerCommand).tab(slayerCommand).register();
-        // /worldboss is parked: the world boss events do not work yet (boss.yml world-bosses.enabled is false)
+        // /worldboss is parked: the world boss events do not work yet (setting boss.world.enabled is false)
     }
 
-    /** Re-reads boss.yml. Running fights keep their definition; summon item names need a restart. */
+    /** Re-reads the boss tables. Running fights keep their definition; summon item names need a restart. */
     String reload() {
-        BossConfig fresh = BossConfig.load(core.featureConfig("boss"));
+        BossConfig fresh = BossConfig.load(core.data());
         report(fresh);
         manager.reload(fresh);
         summon.refresh();
         worldBoss.reload();
-        return "Reloaded boss.yml: " + fresh.bosses().size() + " bosses, " + fresh.slayers().size() + " slayers, "
+        return "Reloaded the boss data: " + fresh.bosses().size() + " bosses, " + fresh.slayers().size() + " slayers, "
             + fresh.errors().size() + " problems (see the console).";
     }
 

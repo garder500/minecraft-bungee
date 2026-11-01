@@ -150,22 +150,15 @@ public class BlockSourcesTest extends SkillsBase {
         assertEquals(0, service.data(player.getUniqueId()).collected("WHEAT"));
     }
 
-    /** Rebuilds the config from the shipped skills.yml after an edit. */
-    private void configure(java.util.function.Consumer<org.bukkit.configuration.file.YamlConfiguration> edit) {
-        try (var in = getClass().getClassLoader().getResourceAsStream("skills.yml")) {
-            var yaml = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(
-                new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8));
-            edit.accept(yaml);
-            service.config(new SkillsConfig(yaml));
-        } catch (java.io.IOException e) {
-            throw new AssertionError(e);
-        }
+    /** Rebuilds the config from the shipped skills seed after an edit. */
+    private void configure(java.util.function.Consumer<win.vampyuyu.survival.data.Db> edit) {
+        service.config(SkillsTestData.load(edit));
     }
 
     @Test
     public void fortuneIsOffByDefaultBecauseTheItemsFeatureOwnsIt() {
         assertFalse(service.config().fortuneEnabled);
-        stats.flat.put(Stat.MINING_FORTUNE, 100.0);
+        stats.flat.put(Stat.MINING_YIELD, 100.0);
         Block stone = block(15, 64, 9, Material.STONE);
         BlockDropItemEvent event = drops(stone, Material.COBBLESTONE, 4);
         breakIt(stone);
@@ -177,8 +170,8 @@ public class BlockSourcesTest extends SkillsBase {
 
     @Test
     public void fortuneAlsoAppliesToBlocksThatDropTheirOwnMaterial() {
-        configure(y -> y.set("fortune.enabled", true));
-        stats.flat.put(Stat.FORAGING_FORTUNE, 100.0);
+        configure(db -> SkillsTestData.setting(db, "fortune.enabled", "true"));
+        stats.flat.put(Stat.FORAGING_YIELD, 100.0);
         Block log = block(16, 64, 9, Material.OAK_LOG);
         BlockDropItemEvent event = drops(log, Material.OAK_LOG, 1);
         breakIt(log);
@@ -188,8 +181,8 @@ public class BlockSourcesTest extends SkillsBase {
 
     @Test
     public void silkTouchToolsGetNoFortune() {
-        configure(y -> y.set("fortune.enabled", true));
-        stats.flat.put(Stat.MINING_FORTUNE, 100.0);
+        configure(db -> SkillsTestData.setting(db, "fortune.enabled", "true"));
+        stats.flat.put(Stat.MINING_YIELD, 100.0);
         ItemStack pick = new ItemStack(Material.DIAMOND_PICKAXE);
         pick.addUnsafeEnchantment(org.bukkit.enchantments.Enchantment.SILK_TOUCH, 1);
         player.getInventory().setItemInMainHand(pick);
@@ -203,8 +196,8 @@ public class BlockSourcesTest extends SkillsBase {
 
     @Test
     public void miningFortuneAddsDropsAndCollections() {
-        configure(y -> y.set("fortune.enabled", true));
-        stats.flat.put(Stat.MINING_FORTUNE, 100.0);
+        configure(db -> SkillsTestData.setting(db, "fortune.enabled", "true"));
+        stats.flat.put(Stat.MINING_YIELD, 100.0);
         Block stone = block(13, 64, 9, Material.STONE);
         BlockDropItemEvent event = drops(stone, Material.COBBLESTONE, 4);
         breakIt(stone);

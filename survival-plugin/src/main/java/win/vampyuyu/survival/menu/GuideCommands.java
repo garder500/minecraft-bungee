@@ -123,14 +123,28 @@ final class GuideCommands {
             case CRAFT_ITEM -> target.contains("forge")
                 ? "craft it in a crafting table, place it on your island, then open it with /forge."
                 : "craft it in a crafting table.";
+            case OBTAIN_ITEM -> obtainHint(target);
             case BOSS_KILL -> "forge the summon item with /forge and use it on your island.";
             case COMMAND -> "type the command named in the quest.";
             case ISLAND_CREATE -> "use /island to create your island.";
             case VISIT_WORLD -> "use /island nether or /island end, or take the portal.";
-            case COINS_EARN -> "sell your items at the market with /market, or to other players with /ah.";
+            case COINS_EARN -> "sell your items at the market with /market (auction sales do not count).";
+            case PLACE_BLOCK -> "place the blocks on your island.";
+            case BREAK_BLOCK -> "break the blocks on your island; blocks you placed yourself do not count.";
             case EVENT -> eventHint(target);
             default -> null;
         };
+    }
+
+    /** Smelted things come out of a furnace; the rest from a crafting table or a stonecutter. */
+    private static String obtainHint(String target) {
+        if (target.contains("glass") || target.endsWith("_ingot")) {
+            return "smelt it: put the raw material in a furnace and take the result out yourself (hopper output does not count).";
+        }
+        if (target.equals("stone_bricks")) {
+            return "craft it from stone in a crafting table, or use a stonecutter.";
+        }
+        return "craft it, smelt it or pick it up; items you dropped yourself do not count again.";
     }
 
     private static String eventHint(String key) {

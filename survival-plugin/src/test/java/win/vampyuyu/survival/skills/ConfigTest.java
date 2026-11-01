@@ -2,26 +2,20 @@ package win.vampyuyu.survival.skills;
 
 import static org.junit.Assert.*;
 
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import win.vampyuyu.survival.api.Skill;
 import win.vampyuyu.survival.api.Stat;
 
-/** The shipped skills.yml must parse cleanly and be internally consistent. */
+/** The shipped skills seed must parse cleanly and be internally consistent. */
 public class ConfigTest {
     private SkillsConfig load() {
         MockBukkit.mock();
-        try (var in = getClass().getClassLoader().getResourceAsStream("skills.yml")) {
-            assertNotNull("skills.yml must ship in the jar", in);
-            return new SkillsConfig(YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8)));
-        } catch (java.io.IOException e) {
-            throw new AssertionError(e);
+        try {
+            return SkillsTestData.load();
         } finally {
             MockBukkit.unmock();
         }
@@ -42,13 +36,13 @@ public class ConfigTest {
             assertFalse(skill + " needs stat rewards", def.stats().isEmpty());
             assertEquals(skill == Skill.CARPENTRY ? 50 : 60, def.maxLevel());
         }
-        assertTrue(cfg.skill(Skill.COMBAT).stats().stream().anyMatch(r -> r.stat() == Stat.CRIT_CHANCE));
-        assertTrue(cfg.skill(Skill.MINING).stats().stream().anyMatch(r -> r.stat() == Stat.MINING_FORTUNE));
-        assertTrue(cfg.skill(Skill.FORAGING).stats().stream().anyMatch(r -> r.stat() == Stat.FORAGING_FORTUNE));
-        assertTrue(cfg.skill(Skill.FARMING).stats().stream().anyMatch(r -> r.stat() == Stat.FARMING_FORTUNE));
-        assertTrue(cfg.skill(Skill.FISHING).stats().stream().anyMatch(r -> r.stat() == Stat.HEALTH));
-        assertTrue(cfg.skill(Skill.ENCHANTING).stats().stream().anyMatch(r -> r.stat() == Stat.INTELLIGENCE));
-        assertTrue(cfg.skill(Skill.ALCHEMY).stats().stream().anyMatch(r -> r.stat() == Stat.INTELLIGENCE));
+        assertTrue(cfg.skill(Skill.COMBAT).stats().stream().anyMatch(r -> r.stat() == Stat.ATTUNEMENT));
+        assertTrue(cfg.skill(Skill.MINING).stats().stream().anyMatch(r -> r.stat() == Stat.MINING_YIELD));
+        assertTrue(cfg.skill(Skill.FORAGING).stats().stream().anyMatch(r -> r.stat() == Stat.FORAGING_YIELD));
+        assertTrue(cfg.skill(Skill.FARMING).stats().stream().anyMatch(r -> r.stat() == Stat.FARMING_YIELD));
+        assertTrue(cfg.skill(Skill.FISHING).stats().stream().anyMatch(r -> r.stat() == Stat.VITALITY));
+        assertTrue(cfg.skill(Skill.ENCHANTING).stats().stream().anyMatch(r -> r.stat() == Stat.AETHER));
+        assertTrue(cfg.skill(Skill.ALCHEMY).stats().stream().anyMatch(r -> r.stat() == Stat.AETHER));
     }
 
     @Test

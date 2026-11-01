@@ -265,7 +265,7 @@ final class CoinCommands {
             core.msg().mini(sender, "<yellow>#" + (i + 1) + "</yellow> <white>" + esc(r.name())
                 + "</white> <dark_gray>-</dark_gray> <gold>" + Money.coins(r.total()) + "</gold>");
         }
-        core.msg().info(sender, "Purse plus bank. Updated every few minutes.");
+        core.msg().info(sender, "Coins plus bank. Updated every few minutes.");
     }
 
     /** Pending confirmations are in memory only; forget a player's on quit. */

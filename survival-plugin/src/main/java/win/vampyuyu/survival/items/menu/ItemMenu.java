@@ -28,7 +28,10 @@ public abstract class ItemMenu implements InventoryHolder {
     protected ItemMenu(Core core, Player player, int rows, Component title) {
         this.core = core;
         this.player = player;
-        this.inventory = Bukkit.createInventory(this, rows * 9, title);
+        // the celestial window art covers a 3-row or a 6-row chest, so a 4 or 5 row menu opens as 6 rows
+        int size = rows <= 3 ? 3 : 6;
+        this.inventory = Bukkit.createInventory(this, size * 9,
+            win.vampyuyu.survival.core.MenuArt.title(win.vampyuyu.survival.core.MenuArt.forRows(size), title));
     }
 
     @Override

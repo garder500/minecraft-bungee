@@ -31,7 +31,7 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
 
     public void register() {
         svc.core.permissions().register(RunListener.ADMIN, "Dungeon administration", PermissionDefault.OP);
-        svc.core.commands().command("dungeon").aliases("dg", "catacombs").description("Enter the Catacombs")
+        svc.core.commands().command("dungeon").aliases("dg", "catacombs").description("Enter the Crypt Depths")
             .usage("/dungeon [start <floor>|leave|floors|stats|top [floor]|claim|forge|help]")
             .permission(ENTER, PermissionDefault.TRUE).executor(this).tab(this).register();
     }
@@ -109,7 +109,7 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
 
     private void help(CommandSender to) {
         Msg msg = svc.core.msg();
-        msg.mini(to, "<dark_red><bold>Catacombs");
+        msg.mini(to, "<dark_red><bold>Crypt Depths");
         for (String line : List.of(
             "/dungeon <dark_gray>- floor menu",
             "/dungeon start <floor> <dark_gray>- start a run with your party (or alone)",
@@ -199,12 +199,12 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
     private void stats(Player p) {
         DungeonData d = svc.core.profiles().section(p.getUniqueId(), "dungeon", DungeonData.class, DungeonData::new);
         Msg msg = svc.core.msg();
-        msg.mini(p, "<dark_red><bold>Your Catacombs record");
+        msg.mini(p, "<dark_red><bold>Your Crypt Depths record");
         DungeonConfig cfg = svc.cfg();
         int level = Catacombs.level(cfg, d.catacombsXp);
         String next = level >= cfg.catacombsMaxLevel ? "max level"
             : (Catacombs.xpForLevel(cfg, level + 1) - d.catacombsXp) + " XP to level " + (level + 1);
-        msg.mini(p, "<gray>Catacombs level: <white>" + level + " <dark_gray>(" + next + ")<gray>, reward bonus <white>+"
+        msg.mini(p, "<gray>Crypt Depths level: <white>" + level + " <dark_gray>(" + next + ")<gray>, reward bonus <white>+"
             + String.format("%.0f", Catacombs.bonusPercent(cfg, level)) + "%");
         msg.mini(p, "<gray>Runs: <white>" + d.totalRuns + "<gray>  Clears: <white>" + d.totalClears
             + "<gray>  Highest floor: <white>" + d.highestFloorCleared);
@@ -294,8 +294,8 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
             }
             case "reload" -> {
                 List<String> problems = svc.reload();
-                msg.ok(sender, "dungeon.yml reloaded." + (problems.isEmpty() ? "" : " " + problems.size() + " value(s) were corrected, see the log."));
-                problems.forEach(pr -> svc.core.getPlugin().getLogger().warning("dungeon.yml: " + pr));
+                msg.ok(sender, "Dungeon data reloaded." + (problems.isEmpty() ? "" : " " + problems.size() + " value(s) were corrected, see the log."));
+                problems.forEach(pr -> svc.core.getPlugin().getLogger().warning("dungeon data: " + pr));
             }
             default -> msg.error(sender, "Unknown admin command. Try list, abort, start, cleanup, reload.");
         }

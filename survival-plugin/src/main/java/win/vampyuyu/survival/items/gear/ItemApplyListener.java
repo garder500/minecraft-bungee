@@ -85,27 +85,27 @@ public final class ItemApplyListener implements Listener {
         String name = ItemRender.displayName(targetInfo, gear.reforges());
         if (action.equals("recombobulate")) {
             if (kind == ItemKind.OTHER || kind == ItemKind.BOOK || kind == ItemKind.PET) {
-                return Outcome.fail("This item cannot be recombobulated.");
+                return Outcome.fail("This item cannot be starforged.");
             }
             if (targetInfo.recombobulated()) {
-                return Outcome.fail("This item is already recombobulated.");
+                return Outcome.fail("This item is already starforged.");
             }
             if (!Gear.canRecombobulate(targetInfo.def().rarity())) {
                 return Outcome.fail("This item is already at the highest rarity that can be reached.");
             }
             gear.setLong(target, Keys.RECOMB, 1);
-            return Outcome.ok("Recombobulated " + name + ".");
+            return Outcome.ok("Starforged " + name + ".");
         }
         if (action.equals("hot_potato")) {
             if (!kind.weapon() && !kind.armor()) {
-                return Outcome.fail("Hot Potato Books work on weapons and armor only.");
+                return Outcome.fail("Tempering Runes work on weapons and armor only.");
             }
             int max = settings.i("hot-potato.max", 10);
             if (targetInfo.potatoBooks() >= max) {
-                return Outcome.fail("This item already has " + max + " Hot Potato Books.");
+                return Outcome.fail("This item already has " + max + " Tempering Runes.");
             }
             gear.setLong(target, Keys.HOT_POTATO, targetInfo.potatoBooks() + 1L);
-            return Outcome.ok("Applied a Hot Potato Book (" + (targetInfo.potatoBooks() + 1) + "/" + max + ").");
+            return Outcome.ok("Applied a Tempering Rune (" + (targetInfo.potatoBooks() + 1) + "/" + max + ").");
         }
         if (action.equals("singularity")) {
             boolean fits = switch (source.id()) {

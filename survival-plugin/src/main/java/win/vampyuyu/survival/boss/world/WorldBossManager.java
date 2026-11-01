@@ -48,7 +48,7 @@ public final class WorldBossManager {
 
     /**
      * Parked: the world boss events do not work yet (no spot world exists), so the loop is never started, whatever an
-     * older boss.yml on a server says. Its "spot world is not loaded" warning filled the console every five minutes.
+     * older boss data on a server says. Its "spot world is not loaded" warning filled the console every five minutes.
      */
     public void start() {
         core.getPlugin().getLogger().fine("World boss events are parked.");
@@ -175,7 +175,7 @@ public final class WorldBossManager {
     /** Clearance (free blocks above the ground) a boss needs to spawn. */
     static final int CLEARANCE = 10;
 
-    /** Spots from boss.yml followed by the ones added in game. */
+    /** Configured spots followed by the ones added in game. */
     List<WorldBossConfig.Spot> allSpots() {
         List<WorldBossConfig.Spot> all = new ArrayList<>(config.locations());
         for (WorldBossState.SpotRecord r : state.spots) {

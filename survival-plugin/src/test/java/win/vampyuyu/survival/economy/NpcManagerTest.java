@@ -3,7 +3,6 @@ package win.vampyuyu.survival.economy;
 import static org.junit.Assert.*;
 
 import org.bukkit.Location;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -34,8 +33,7 @@ public class NpcManagerTest {
         EconomyService eco = (EconomyService) plugin.core().service(EconomyApi.class).orElseThrow();
         ItemKeys keys = new ItemKeys(plugin.core());
         ShopService shops = new ShopService(plugin.core(), eco, keys, new PricePressure());
-        shops.reload(YamlConfiguration.loadConfiguration(new java.io.InputStreamReader(
-            getClass().getResourceAsStream("/economy.yml"), java.nio.charset.StandardCharsets.UTF_8)));
+        shops.reload(EconomyFixtures.shipped());
         npcs = new NpcManager(plugin.core(), shops, new ShopUi(plugin.core(), eco, keys, shops));
         npcs.enable();
         world = new WorldMock();

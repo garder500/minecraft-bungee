@@ -140,6 +140,7 @@ public final class MobScaling implements Listener {
         }
         if (row != null) {
             scale(entity, row.level(), row.health(), row.damage());
+            ElementTraits.write(entity, row.weakness(), row.resistance());
             return;
         }
         AttributeInstance max = entity.getAttribute(Attribute.MAX_HEALTH);

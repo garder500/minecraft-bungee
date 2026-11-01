@@ -105,7 +105,7 @@ public final class ItemsCommands {
         core.msg().info(player, "Your stats" + (engine.active(player) ? "" : " (not applied outside Skyblock worlds)") + ":");
         for (Stat stat : Stat.values()) {
             double value = st.stat(stat);
-            if (Math.abs(value - stat.base()) < 1e-9 && stat != Stat.HEALTH && stat != Stat.DEFENSE) {
+            if (Math.abs(value - stat.base()) < 1e-9 && stat != Stat.VITALITY && stat != Stat.WARD) {
                 continue;
             }
             player.sendMessage(net.kyori.adventure.text.Component.text(stat.symbol() + " " + stat.displayName() + " ", stat.color())
@@ -113,7 +113,7 @@ public final class ItemsCommands {
                     net.kyori.adventure.text.format.NamedTextColor.WHITE)));
         }
         player.sendMessage(net.kyori.adventure.text.Component.text("Mana ", net.kyori.adventure.text.format.NamedTextColor.AQUA)
-            .append(net.kyori.adventure.text.Component.text(format(st.mana.mana()) + "/" + format(st.stat(Stat.INTELLIGENCE)),
+            .append(net.kyori.adventure.text.Component.text(format(st.mana.mana()) + "/" + format(st.stat(Stat.AETHER)),
                 net.kyori.adventure.text.format.NamedTextColor.WHITE)));
         return true;
     }
@@ -140,7 +140,7 @@ public final class ItemsCommands {
                 case "list" -> list(sender, args);
                 case "reload" -> {
                     reload.run();
-                    core.msg().ok(sender, "items.yml reloaded (enchant and reforge definitions need a restart).");
+                    core.msg().ok(sender, "items data reloaded (enchant and reforge definitions need a restart).");
                 }
                 default -> help(sender);
             }
@@ -328,7 +328,7 @@ public final class ItemsCommands {
             return;
         }
         PlayerState st = engine.state(player);
-        st.mana.fill(Math.max(0, Math.min(amount, st.stat(Stat.INTELLIGENCE))));
+        st.mana.fill(Math.max(0, Math.min(amount, st.stat(Stat.AETHER))));
         core.msg().ok(sender, "Mana set.");
     }
 

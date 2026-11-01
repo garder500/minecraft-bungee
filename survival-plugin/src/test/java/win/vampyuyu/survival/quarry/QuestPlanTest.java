@@ -14,13 +14,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import win.vampyuyu.survival.SurvivalPlugin;
-import win.vampyuyu.survival.menu.MenuConfig;
+import win.vampyuyu.survival.menu.QuestMatcher;
+import win.vampyuyu.survival.menu.QuestRepo;
 import win.vampyuyu.survival.menu.QuestCatalog;
 import win.vampyuyu.survival.menu.QuestDef;
 import win.vampyuyu.survival.menu.QuestType;
 
 /**
- * The gate of the quest plan: the shipped quests.yml must load completely (no quest silently dropped) and every quest
+ * The gate of the quest plan: the shipped quest seed must load completely (no quest silently dropped) and every quest
  * must be completable by something that exists. A quest nobody can finish would block the rest of its category.
  */
 public class QuestPlanTest {
@@ -36,6 +37,19 @@ public class QuestPlanTest {
     private static final Set<String> COMMANDS = Set.of("guide", "market", "ah", "forge", "dungeon", "balance", "pay", "bank",
         "baltop");
 
+    /** Things a crafting table never makes (furnace or stonecutter output): a CRAFT_ITEM quest on them never ends. */
+    private static final Set<String> NOT_CRAFTED = Set.of("GLASS", "STONE", "SMOOTH_STONE", "BRICK", "NETHER_BRICK",
+        "CHARCOAL", "COOKED_BEEF", "COOKED_PORKCHOP", "COOKED_CHICKEN", "BAKED_POTATO", "DRIED_KELP", "GREEN_DYE",
+        "NETHERITE_SCRAP", "COPPER_INGOT", "GOLD_INGOT", "TERRACOTTA", "SMOOTH_SANDSTONE", "CRACKED_STONE_BRICKS",
+        "SPONGE", "POPPED_CHORUS_FRUIT");
+
+    private static boolean isGroup(String target) {
+        for (org.bukkit.Material m : org.bukkit.Material.values()) {
+            if (!m.isLegacy() && QuestMatcher.inGroup(target, m)) return true;
+        }
+        return false;
+    }
+
     private SurvivalPlugin plugin;
     private QuestCatalog catalog;
 
@@ -43,9 +57,7 @@ public class QuestPlanTest {
     public void setUp() {
         MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
-        var menu = YamlConfiguration.loadConfiguration(new InputStreamReader(getClass().getResourceAsStream("/menu.yml")));
-        var plan = YamlConfiguration.loadConfiguration(new InputStreamReader(getClass().getResourceAsStream("/quests.yml")));
-        catalog = new MenuConfig(menu, null, true, plan).catalog;
+        catalog = QuestRepo.load(plugin.core().data());
     }
 
     @After
@@ -78,12 +90,12 @@ public class QuestPlanTest {
 
     @Test
     public void everyQuestHasSomethingThatCompletesIt() {
-        var quarry = YamlConfiguration.loadConfiguration(new InputStreamReader(getClass().getResourceAsStream("/quarry.yml")));
-        var boss = YamlConfiguration.loadConfiguration(new InputStreamReader(getClass().getResourceAsStream("/boss.yml")));
-        Set<String> forgeIds = quarry.getConfigurationSection("forge.recipes").getKeys(false);
-        Set<String> oreIds = new HashSet<>(quarry.getConfigurationSection("ores").getKeys(false));
-        oreIds.addAll(QuarryConfig.GENERATOR_ONLY); // dropped by the ring generators, not by the ore table
-        Set<String> bosses = boss.getConfigurationSection("bosses").getKeys(false);
+        var quarry = plugin.core().require(QuarryService.class).config();
+        Set<String> forgeIds = quarry.recipes.keySet();
+        Set<String> oreIds = new HashSet<>();
+        quarry.roller.ores().forEach(o -> oreIds.add(o.id()));
+        quarry.outputs.ores().forEach(o -> oreIds.add(o.id())); // dropped by the ring generators
+        Set<String> bosses = win.vampyuyu.survival.boss.BossTestData.shipped().bosses().keySet();
         Set<String> bad = new HashSet<>();
         for (QuestDef def : catalog.tutorial()) {
             String t = def.target();
@@ -107,6 +119,13 @@ public class QuestPlanTest {
                     if (t.startsWith("custom:") && plugin.core().items().def(t.substring(7)).isEmpty()) {
                         bad.add(def.id() + " custom " + t);
                     }
+                    if (NOT_CRAFTED.contains(t)) bad.add(def.id() + " asks to craft " + t + ", which is smelted: use OBTAIN_ITEM");
+                }
+                case OBTAIN_ITEM, PLACE_BLOCK, BREAK_BLOCK -> {
+                    if (!t.isEmpty() && !t.startsWith("custom:") && org.bukkit.Material.matchMaterial(t) == null
+                            && !isGroup(t)) {
+                        bad.add(def.id() + " target " + t + " is neither a material nor a group");
+                    }
                 }
                 case GENERATOR_TIER -> {
                     if (def.amount() < 2 || def.amount() > 4) bad.add(def.id() + " tier " + def.amount());
@@ -117,6 +136,23 @@ public class QuestPlanTest {
             }
         }
         assertTrue(bad.toString(), bad.isEmpty());
+    }
+
+    /** Progress is stored by quest id: a shipped id must keep meaning the same quest (quest_ids.txt). */
+    @Test
+    public void shippedQuestIdsNeverChangeMeaning() throws java.io.IOException {
+        List<String> lines;
+        try (var in = getClass().getResourceAsStream("/quest_ids.txt")) {
+            lines = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).lines()
+                .filter(l -> !l.isBlank() && !l.startsWith("#")).toList();
+        }
+        for (String line : lines) {
+            String[] f = line.split(" ", 4);
+            QuestDef def = catalog.tutorialQuest(f[0]).orElseThrow(() -> new AssertionError(f[0] + " disappeared"));
+            assertEquals(f[0] + " category", f[1], def.category());
+            assertEquals(f[0] + " type", f[2], def.type().name());
+            assertEquals(f[0] + " target", f.length > 3 ? f[3] : "", def.target());
+        }
     }
 
     @Test

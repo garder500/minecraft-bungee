@@ -13,6 +13,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.Gui;
 import win.vampyuyu.survival.core.Guis;
+import win.vampyuyu.survival.core.MenuArt;
 import win.vampyuyu.survival.core.Msg;
 
 /** The Forge menu: recipes on the first row, the player's jobs on the last one. */
@@ -27,7 +28,7 @@ final class ForgeGui {
     }
 
     void open(Player player) {
-        Gui gui = core.guis().create(6, "<dark_gray>Forge");
+        Gui gui = core.guis().create(MenuArt.Kind.FORGE, "<dark_gray>Forge");
         render(gui, player, 0);
         gui.open(player);
     }
@@ -37,7 +38,11 @@ final class ForgeGui {
     private void render(Gui gui, Player player, int page) {
         long now = System.currentTimeMillis();
         QuarryConfig cfg = service.config();
-        gui.fill(Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
+        for (int clear = 9; clear < 36; clear++) {
+            gui.clear(clear);
+        }
+        gui.clear(45);
+        gui.clear(53);
         int slot = 9;
         int index = 0;
         int pages = Math.max(1, (cfg.recipes.size() + PER_PAGE - 1) / PER_PAGE);
@@ -60,7 +65,7 @@ final class ForgeGui {
                 lore.add("<gray>- " + need.getValue() + " x " + label(need.getKey()));
             }
             lore.add("");
-            lore.add(ok ? "<green>Click to start" : "<red>Missing materials");
+            lore.add(ok ? Guis.ACCENT + "▸ Forge" : "<red>Missing materials");
             ItemStack icon = icon(def.get().id(), lore);
             gui.set(slot++, icon, click -> {
                 String problem = service.start(player, recipe.id(), System.currentTimeMillis());
@@ -73,19 +78,18 @@ final class ForgeGui {
             });
         }
         if (page > 0) {
-            gui.set(45, Guis.icon(Material.ARROW, "<green>Previous page", "<gray>Page " + page + " of " + pages), click -> render(gui, player, page - 1));
+            gui.set(45, Guis.arrow("Previous", "Page " + page + "/" + pages, "back"), click -> render(gui, player, page - 1));
         }
         if (page + 1 < pages) {
-            gui.set(53, Guis.icon(Material.ARROW, "<green>Next page", "<gray>Page " + (page + 2) + " of " + pages), click -> render(gui, player, page + 1));
+            gui.set(53, Guis.arrow("Next", "Page " + (page + 2) + "/" + pages, "next"), click -> render(gui, player, page + 1));
         }
-        gui.set(4, Guis.icon(Material.BOOK, "<gold>How the Forge works",
-            "<gray>1. Click a recipe above to start it.", "<gray>2. It keeps running while you are away.",
-            "<gray>3. The finished item appears in the", "<gray>   bottom row: click it to take it."));
+        gui.set(4, Guis.menuButton(Material.BLAST_FURNACE, "forge", "<#F6D58E>Forge", "Pick a recipe; it keeps running while you are away.",
+            null, "<gray>Finished items wait in the bottom row: click one to take it."));
         var jobs = service.data(player.getUniqueId()).jobs;
         for (int i = 0; i < cfg.forgeSlots && i < 7; i++) {
             int at = 46 + i;
             if (i >= jobs.size()) {
-                gui.set(at, Guis.icon(Material.LIGHT_GRAY_STAINED_GLASS_PANE, "<gray>Free slot"));
+                gui.clear(at);
                 continue;
             }
             QuarryData.Job job = jobs.get(i);
@@ -96,8 +100,8 @@ final class ForgeGui {
             String itemId = recipe == null ? null : recipe.result();
             ItemStack shown = itemId != null && core.items().def(itemId).isPresent()
                 ? icon(itemId, done
-                    ? List.of("<green><bold>READY</bold> <gray>- click to take it", "<gray>It goes to your inventory.")
-                    : List.of("<yellow>Forging...", "<gray>Ready in " + Msg.duration(job.finishAt - now)))
+                    ? List.of("<green>Ready", Guis.ACCENT + "▸ Claim")
+                    : List.of("<yellow>Forging", "<gray>Ready in " + Msg.duration(job.finishAt - now)))
                 : Guis.icon(Material.BARRIER, "<white>" + name, "<gray>Unknown recipe");
             if (done) {
                 shown.editMeta(meta -> meta.setEnchantmentGlintOverride(true));

@@ -15,7 +15,7 @@ import win.vampyuyu.survival.core.Guis;
 import win.vampyuyu.survival.core.Msg;
 
 /**
- * The Crypt Forge: the sink for dungeon materials. Trades are defined in {@code dungeon.yml}. A purchase is always
+ * The Crypt Forge: the sink for dungeon materials. Trades are defined in the dungeon_trade table. A purchase is always
  * validate, roll, verify the count, remove the payment, deliver: everything runs on the main thread and nothing is
  * given before the exact payment has been taken, so a trade can neither duplicate nor lose items. Items that do not
  * fit go to the pending list ({@code /dungeon claim}).
@@ -165,7 +165,6 @@ public final class Forge {
 
     public void open(Player p) {
         Gui gui = svc.core.guis().create(4, "<dark_red><bold>Crypt Forge");
-        gui.border(Guis.icon(Material.BLACK_STAINED_GLASS_PANE, " "));
         gui.paginate(new ArrayList<>(svc.cfg().forgeTrades), gui.innerSlots(), t -> tradeIcon(p, t), (click, t) -> {
             Result r = buy(click.player(), t);
             if (r.ok()) {
@@ -179,7 +178,6 @@ public final class Forge {
                 }
             });
         }, 30, 32);
-        gui.set(31, Guis.icon(Material.BARRIER, "<red>Close"), c -> c.close());
         gui.open(p);
     }
 
@@ -202,7 +200,7 @@ public final class Forge {
             lore.add("<gray>You get: <gold>" + Msg.coins(t.coins()));
         }
         lore.add("");
-        lore.add(affordable ? "<yellow>Click to trade" : "<red>Not enough materials");
+        lore.add(affordable ? "<#F6D58E>▸ Trade" : "<red>Not enough materials");
         return Guis.icon(icon(t), (affordable ? "<gold><bold>" : "<gray><bold>") + t.name(), lore.toArray(new String[0]));
     }
 

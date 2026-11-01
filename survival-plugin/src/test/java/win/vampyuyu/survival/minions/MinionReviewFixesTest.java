@@ -530,7 +530,8 @@ public class MinionReviewFixesTest {
         MinionGui gui = new MinionGui(core, manager);
         gui.open(player, d);
         var inv = player.getOpenInventory().getTopInventory();
-        assertEquals(Material.BLACK_STAINED_GLASS_PANE, inv.getItem(10).getType());
+        win.vampyuyu.survival.core.MenuRules.check(inv, "minion menu");
+        assertNull(inv.getItem(10));
         d.storage.put("m:COBBLESTONE", 5L);
         gui.refreshAll();
         assertSame("same inventory, redrawn", inv, player.getOpenInventory().getTopInventory());
@@ -538,7 +539,7 @@ public class MinionReviewFixesTest {
         assertEquals(5, inv.getItem(10).getAmount());
         d.storage.clear();
         gui.refreshAll();
-        assertEquals(Material.BLACK_STAINED_GLASS_PANE, inv.getItem(10).getType());
+        assertNull(inv.getItem(10));
         gui.shutdown();
     }
 

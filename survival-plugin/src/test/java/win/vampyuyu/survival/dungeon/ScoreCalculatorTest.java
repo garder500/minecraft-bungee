@@ -6,7 +6,7 @@ import org.junit.Test;
 import win.vampyuyu.survival.dungeon.ScoreCalculator.Inputs;
 
 public class ScoreCalculatorTest {
-    private static final DungeonConfig CFG = DungeonConfig.parse(null);
+    private static final DungeonConfig CFG = DungeonConfig.defaults();
 
     private static Inputs perfect() {
         return new Inputs(3, true, 300, 720, 11, 11, 5, 5, 2, 2, 60, 60, 8, 8, 50, 0, 1);

@@ -10,15 +10,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import win.vampyuyu.survival.api.Skill;
 import win.vampyuyu.survival.api.Stat;
 import win.vampyuyu.survival.core.Rarity;
+import win.vampyuyu.survival.data.Settings;
 
 /**
- * Parsed, immutable view of {@code skills.yml}. Parsing never throws for a bad entry: it skips it and records a
+ * Immutable view of the skills tuning read from the content database by {@link SkillsRepo}. Parsing never throws for a bad entry: it skips it and records a
  * warning (see {@link #warnings}) so a typo in one material does not disable the whole feature.
  */
 public final class SkillsConfig {
@@ -162,28 +162,31 @@ public final class SkillsConfig {
     public final int craftXpMaxBatch;
     public final List<String> warnings;
 
-    public SkillsConfig(ConfigurationSection root) {
+    SkillsConfig(Settings s, SkillsRepo.Tables t) {
         List<String> warn = new ArrayList<>();
-        onlySkyblockWorlds = root.getBoolean("only_skyblock_worlds", true);
-        blockedWorlds = Set.copyOf(root.getStringList("blocked_worlds"));
-        globalMultiplier = Math.max(0, root.getDouble("xp_multiplier", 1.0));
-        boostCap = Math.max(1, root.getDouble("boosts.max_total", 10.0));
-        defaultMaxLevel = Math.max(1, root.getInt("levels.default_max", 60));
+        onlySkyblockWorlds = s.getBoolean("only_skyblock_worlds", true);
+        blockedWorlds = Set.copyOf(s.getList("blocked_worlds"));
+        globalMultiplier = Math.max(0, s.getDouble("xp_multiplier", 1.0));
+        boostCap = Math.max(1, s.getDouble("boosts.max_total", 10.0));
+        defaultMaxLevel = Math.max(1, s.getInt("levels.default_max", 60));
 
         int tableSize = Math.max(defaultMaxLevel, 1);
         List<Double> explicit = new ArrayList<>();
-        for (Object o : root.getList("levels.xp_table", List.of())) {
-            if (o instanceof Number n) {
-                explicit.add(n.doubleValue());
+        for (String v : s.getList("levels.xp_table")) {
+            try {
+                explicit.add(Double.parseDouble(v.trim()));
+            } catch (NumberFormatException e) {
+                // an entry that is not a number is dropped
             }
         }
         for (Skill skill : Skill.values()) {
-            tableSize = Math.max(tableSize, root.getInt("skills." + skill.key() + ".max_level", defaultMaxLevel));
+            SkillsRepo.SkillRow row = t.skills().get(skill.key());
+            tableSize = Math.max(tableSize, row == null ? defaultMaxLevel : row.maxLevel());
         }
         LevelTable table;
         try {
-            table = LevelTable.build(explicit, tableSize, root.getDouble("levels.base", 50),
-                root.getDouble("levels.growth", 1.2), root.getInt("levels.significant_digits", 2));
+            table = LevelTable.build(explicit, tableSize, s.getDouble("levels.base", 50),
+                s.getDouble("levels.growth", 1.2), s.getInt("levels.significant_digits", 2));
         } catch (IllegalArgumentException e) {
             warn.add("levels: " + e.getMessage() + "; using the default curve");
             table = LevelTable.build(null, tableSize, 50, 1.2, 2);
@@ -192,37 +195,54 @@ public final class SkillsConfig {
 
         Map<Skill, SkillDef> defs = new EnumMap<>(Skill.class);
         for (Skill skill : Skill.values()) {
-            defs.put(skill, parseSkill(root, skill, warn));
+            defs.put(skill, parseSkill(t, skill, warn));
         }
         skills = Collections.unmodifiableMap(defs);
 
-        levelCoins = new LevelCoins(root.getDouble("rewards.coins.base", 200),
-            root.getDouble("rewards.coins.step", 40), root.getInt("rewards.coins.milestone_every", 10),
-            root.getDouble("rewards.coins.milestone_multiplier", 5));
+        levelCoins = new LevelCoins(s.getDouble("rewards.coins.base", 200),
+            s.getDouble("rewards.coins.step", 40), s.getInt("rewards.coins.milestone_every", 10),
+            s.getDouble("rewards.coins.milestone_multiplier", 5));
         Set<Skill> avg = EnumSet.noneOf(Skill.class);
-        List<String> avgNames = root.getStringList("average.skills");
+        List<String> avgNames = s.getList("average.skills");
         if (avgNames.isEmpty()) {
             avg.addAll(EnumSet.allOf(Skill.class));
             avg.remove(Skill.CARPENTRY);
         } else {
             for (String name : avgNames) {
-                Skill s = skillByName(name);
-                if (s == null) {
+                Skill sk = skillByName(name);
+                if (sk == null) {
                     warn.add("average.skills: unknown skill " + name);
                 } else {
-                    avg.add(s);
+                    avg.add(sk);
                 }
             }
         }
         averageSkills = Collections.unmodifiableSet(avg);
 
-        miningBlocks = materials(root.getConfigurationSection("xp.mining.blocks"), "xp.mining.blocks", warn);
-        foragingBlocks = materials(root.getConfigurationSection("xp.foraging.blocks"), "xp.foraging.blocks", warn);
-        farmingBlocks = materials(root.getConfigurationSection("xp.farming.blocks"), "xp.farming.blocks", warn);
-        matureOnly = materialSet(root.getStringList("xp.farming.mature_only"), "xp.farming.mature_only", warn);
-        columnPlants = Collections.unmodifiableSet(materialSet(
-            root.contains("xp.farming.column_plants") ? root.getStringList("xp.farming.column_plants")
-                : List.of("SUGAR_CANE", "CACTUS", "BAMBOO"), "xp.farming.column_plants", warn));
+        Map<String, Double> mining = new LinkedHashMap<>();
+        Map<String, Double> foraging = new LinkedHashMap<>();
+        Map<String, Double> farming = new LinkedHashMap<>();
+        List<String> mature = new ArrayList<>();
+        List<String> columns = new ArrayList<>();
+        for (SkillsRepo.BlockRow row : t.blocks()) {
+            switch (row.skill()) {
+                case "mining" -> mining.put(row.material(), row.xp());
+                case "foraging" -> foraging.put(row.material(), row.xp());
+                case "farming" -> farming.put(row.material(), row.xp());
+                default -> warn.add("xp blocks: " + row.material() + " has an unknown skill " + row.skill());
+            }
+            if (row.matureOnly()) {
+                mature.add(row.material());
+            }
+            if (row.columnPlant()) {
+                columns.add(row.material());
+            }
+        }
+        miningBlocks = materials(mining, "xp.mining.blocks", warn);
+        foragingBlocks = materials(foraging, "xp.foraging.blocks", warn);
+        farmingBlocks = materials(farming, "xp.farming.blocks", warn);
+        matureOnly = materialSet(mature, "xp.farming.mature_only", warn);
+        columnPlants = Collections.unmodifiableSet(materialSet(columns, "xp.farming.column_plants", warn));
         Map<Material, Double> allBlocks = new LinkedHashMap<>();
         Map<Material, Skill> skillOf = new LinkedHashMap<>();
         for (var e : miningBlocks.entrySet()) {
@@ -240,13 +260,13 @@ public final class SkillsConfig {
         blockXp = Collections.unmodifiableMap(allBlocks);
         blockSkill = Collections.unmodifiableMap(skillOf);
 
-        mobXp = entities(root.getConfigurationSection("xp.combat.mobs"), "xp.combat.mobs", warn);
-        healthFactor = Math.max(0, root.getDouble("xp.combat.health_factor", 0.4));
-        maxPerKill = Math.max(0, root.getDouble("xp.combat.max_per_kill", 250));
-        blockedEntities = Set.copyOf(entitySet(root.getStringList("xp.combat.blocked_entities"),
+        mobXp = entities(t.mobXp(), "xp.combat.mobs", warn);
+        healthFactor = Math.max(0, s.getDouble("xp.combat.health_factor", 0.4));
+        maxPerKill = Math.max(0, s.getDouble("xp.combat.max_per_kill", 250));
+        blockedEntities = Set.copyOf(entitySet(s.getList("xp.combat.blocked_entities"),
             "xp.combat.blocked_entities", warn));
         Set<SpawnReason> reasons = EnumSet.noneOf(SpawnReason.class);
-        for (String name : root.getStringList("xp.combat.blocked_spawn_reasons")) {
+        for (String name : s.getList("xp.combat.blocked_spawn_reasons")) {
             try {
                 reasons.add(SpawnReason.valueOf(name.toUpperCase(Locale.ROOT)));
             } catch (IllegalArgumentException e) {
@@ -255,43 +275,40 @@ public final class SkillsConfig {
         }
         blockedSpawnReasons = Collections.unmodifiableSet(reasons);
 
-        catchXp = materials(root.getConfigurationSection("xp.fishing.catches"), "xp.fishing.catches", warn);
-        defaultCatchXp = Math.max(0, root.getDouble("xp.fishing.default_catch", 10));
-        seaCreatureXp = entities(root.getConfigurationSection("xp.fishing.sea_creatures"), "xp.fishing.sea_creatures", warn);
-        defaultSeaCreatureXp = Math.max(0, root.getDouble("xp.fishing.default_sea_creature", 60));
-        enchantPerCostLevel = Math.max(0, root.getDouble("xp.enchanting.per_cost_level", 3));
-        enchantPerLevel = Math.max(0, root.getDouble("xp.enchanting.per_enchant_level", 4));
-        brewIngredientXp = materials(root.getConfigurationSection("xp.alchemy.ingredients"), "xp.alchemy.ingredients", warn);
-        defaultBrewXp = Math.max(0, root.getDouble("xp.alchemy.default", 6));
-        craftXp = materials(root.getConfigurationSection("xp.carpentry.crafts"), "xp.carpentry.crafts", warn);
-        defaultCraftXp = Math.max(0, root.getDouble("xp.carpentry.default", 0));
-        craftXpMaxBatch = Math.max(1, root.getInt("xp.carpentry.max_batch", 64));
+        catchXp = materials(t.catchXp(), "xp.fishing.catches", warn);
+        defaultCatchXp = Math.max(0, s.getDouble("xp.fishing.default_catch", 10));
+        seaCreatureXp = entities(t.seaXp(), "xp.fishing.sea_creatures", warn);
+        defaultSeaCreatureXp = Math.max(0, s.getDouble("xp.fishing.default_sea_creature", 60));
+        enchantPerCostLevel = Math.max(0, s.getDouble("xp.enchanting.per_cost_level", 3));
+        enchantPerLevel = Math.max(0, s.getDouble("xp.enchanting.per_enchant_level", 4));
+        brewIngredientXp = materials(t.brewXp(), "xp.alchemy.ingredients", warn);
+        defaultBrewXp = Math.max(0, s.getDouble("xp.alchemy.default", 6));
+        craftXp = materials(t.craftXp(), "xp.carpentry.crafts", warn);
+        defaultCraftXp = Math.max(0, s.getDouble("xp.carpentry.default", 0));
+        craftXpMaxBatch = Math.max(1, s.getInt("xp.carpentry.max_batch", 64));
 
-        mobAntiFarm = antiFarm(root.getConfigurationSection("anti_farm.mobs"), new AntiFarmCfg(4, 120_000, 25, 0.04, 0.1));
-        blockAntiFarm = antiFarm(root.getConfigurationSection("anti_farm.blocks"), new AntiFarmCfg(1, 30_000, 4, 0.2, 0.1));
+        mobAntiFarm = antiFarm(s, "anti_farm.mobs", new AntiFarmCfg(4, 120_000, 25, 0.04, 0.1));
+        blockAntiFarm = antiFarm(s, "anti_farm.blocks", new AntiFarmCfg(1, 30_000, 4, 0.2, 0.1));
         // Off by default: the items feature owns the Mining/Farming/Foraging Fortune drops (see the notes).
-        fortuneEnabled = root.getBoolean("fortune.enabled", false);
-        enchantAnvilPerLevel = Math.max(0, root.getDouble("xp.enchanting.anvil_per_level", 2));
-        brewOwnerRadius = Math.max(0, root.getDouble("xp.alchemy.owner_radius", 24));
-        guardEnchantedItems = root.getBoolean("enchanted_guard.enabled", true);
-        seaCreatures = parseSeaCreatures(root.getConfigurationSection("sea_creatures"), warn);
-        fortuneMaxMultiplier = Math.max(1, root.getDouble("fortune.max_multiplier", 10));
+        fortuneEnabled = s.getBoolean("fortune.enabled", false);
+        enchantAnvilPerLevel = Math.max(0, s.getDouble("xp.enchanting.anvil_per_level", 2));
+        brewOwnerRadius = Math.max(0, s.getDouble("xp.alchemy.owner_radius", 24));
+        guardEnchantedItems = s.getBoolean("enchanted_guard.enabled", true);
+        seaCreatures = parseSeaCreatures(s, t.seaCreatures(), warn);
+        fortuneMaxMultiplier = Math.max(1, s.getDouble("fortune.max_multiplier", 10));
 
         // collections
         Map<String, CollectionDef> cols = new LinkedHashMap<>();
         Map<Material, CollectionDef> byMat = new LinkedHashMap<>();
-        ConfigurationSection items = root.getConfigurationSection("collections.items");
-        if (items != null) {
-            for (String id : items.getKeys(false)) {
-                CollectionDef def = parseCollection(root, items.getConfigurationSection(id), id, warn);
-                if (def == null) {
-                    continue;
-                }
-                cols.put(def.id(), def);
-                for (Material m : def.materials()) {
-                    if (byMat.putIfAbsent(m, def) != null) {
-                        warn.add("collections: " + m + " is in two collections; " + byMat.get(m).id() + " wins");
-                    }
+        for (SkillsRepo.CollectionRow row : t.collections()) {
+            CollectionDef def = parseCollection(t, row, warn);
+            if (def == null) {
+                continue;
+            }
+            cols.put(def.id(), def);
+            for (Material m : def.materials()) {
+                if (byMat.putIfAbsent(m, def) != null) {
+                    warn.add("collections: " + m + " is in two collections; " + byMat.get(m).id() + " wins");
                 }
             }
         }
@@ -310,47 +327,45 @@ public final class SkillsConfig {
         // A crop is planted as a seedling and only pays when it is fully grown, so planting it must not mark it:
         // the maturity check already stops plant-and-break, and a mark would block the harvest forever.
         tracked.removeAll(matureOnly);
-        tracked.addAll(materialSet(root.getStringList("placed_tracking.extra"), "placed_tracking.extra", warn));
+        tracked.addAll(materialSet(s.getList("placed_tracking.extra"), "placed_tracking.extra", warn));
         trackedPlaced = Collections.unmodifiableSet(tracked);
 
         Map<String, EnchantedDef> ench = new LinkedHashMap<>();
-        ConfigurationSection enchSec = root.getConfigurationSection("enchanted_items");
-        if (enchSec != null) {
-            for (String id : enchSec.getKeys(false)) {
-                ConfigurationSection s = enchSec.getConfigurationSection(id);
-                Material mat = s == null ? null : Material.matchMaterial(s.getString("material", ""));
-                if (!id.matches("[a-z0-9_]+") || mat == null) {
-                    warn.add("enchanted_items." + id + ": bad id or material");
-                    continue;
-                }
-                Rarity rarity = Rarity.UNCOMMON;
-                try {
-                    rarity = Rarity.valueOf(s.getString("rarity", "UNCOMMON").toUpperCase(Locale.ROOT));
-                } catch (IllegalArgumentException e) {
-                    warn.add("enchanted_items." + id + ": unknown rarity");
-                }
-                ench.put(id, new EnchantedDef(id, s.getString("name", id), mat, rarity,
-                    s.getString("model", "vampyuyu:skills/" + id), s.getInt("tier", 1), s.getStringList("lore")));
+        for (SkillsRepo.EnchantedRow row : t.enchanted()) {
+            Material mat = Material.matchMaterial(row.material());
+            if (!row.id().matches("[a-z0-9_]+") || mat == null) {
+                warn.add("enchanted_items." + row.id() + ": bad id or material");
+                continue;
             }
+            Rarity rarity = Rarity.UNCOMMON;
+            try {
+                rarity = Rarity.valueOf(row.rarity().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                warn.add("enchanted_items." + row.id() + ": unknown rarity");
+            }
+            ench.put(row.id(), new EnchantedDef(row.id(), row.name(), mat, rarity, row.model(), row.tier(), row.lore()));
         }
         enchantedItems = Collections.unmodifiableMap(ench);
 
         Map<String, RecipeDef> recs = new LinkedHashMap<>();
-        ConfigurationSection recSec = root.getConfigurationSection("recipes");
-        if (recSec != null) {
-            for (String id : recSec.getKeys(false)) {
-                RecipeDef def = parseRecipe(recSec.getConfigurationSection(id), id, warn);
-                if (def != null) {
-                    recs.put(id, def);
-                }
+        for (SkillsRepo.RecipeRow row : t.recipes()) {
+            RecipeDef def = parseRecipe(row, warn);
+            if (def != null) {
+                recs.put(row.id(), def);
             }
         }
         recipes = Collections.unmodifiableMap(recs);
 
-        leaderboardRefreshSeconds = Math.max(10, root.getLong("leaderboard.refresh_seconds", 300));
-        leaderboardSize = Math.max(3, root.getInt("leaderboard.size", 100));
-        leaderboardMaxFiles = Math.max(100, root.getInt("leaderboard.max_files", 20000));
+        leaderboardRefreshSeconds = Math.max(10, s.getLong("leaderboard.refresh_seconds", 300));
+        leaderboardSize = Math.max(3, s.getInt("leaderboard.size", 100));
+        leaderboardMaxFiles = Math.max(100, s.getInt("leaderboard.max_files", 20000));
+        s.problems().forEach(p -> warn.add("setting " + p));
         warnings = List.copyOf(warn);
+    }
+
+    /** A configuration with no row at all: every value is its default (tests). */
+    static SkillsConfig defaults() {
+        return new SkillsConfig(Settings.empty("skills"), SkillsRepo.Tables.empty());
     }
 
     // ---------------------------------------------------------------- lookups
@@ -386,154 +401,141 @@ public final class SkillsConfig {
 
     // ---------------------------------------------------------------- parsing helpers
 
-    private SkillDef parseSkill(ConfigurationSection root, Skill skill, List<String> warn) {
+    private SkillDef parseSkill(SkillsRepo.Tables t, Skill skill, List<String> warn) {
         String path = "skills." + skill.key();
-        int max = Math.max(1, Math.min(root.getInt(path + ".max_level", defaultMaxLevel), levels.maxLevel()));
-        double mult = Math.max(0, root.getDouble(path + ".multiplier", 1.0));
-        List<StatReward> stats = new ArrayList<>();
-        ConfigurationSection statSec = root.getConfigurationSection(path + ".stats");
-        if (statSec != null) {
-            for (String name : statSec.getKeys(false)) {
-                Stat stat;
-                try {
-                    stat = Stat.valueOf(name.toUpperCase(Locale.ROOT));
-                } catch (IllegalArgumentException e) {
-                    warn.add(path + ".stats: unknown stat " + name);
-                    continue;
-                }
-                List<StatRange> ranges = new ArrayList<>();
-                for (Map<?, ?> m : statSec.getMapList(name)) {
-                    int from = intOf(m.get("from"), 1);
-                    int to = intOf(m.get("to"), max);
-                    double amount = m.get("amount") instanceof Number n ? n.doubleValue() : 0;
-                    if (to >= from && amount != 0) {
-                        ranges.add(new StatRange(from, to, amount));
-                    }
-                }
-                if (!ranges.isEmpty()) {
-                    stats.add(new StatReward(stat, List.copyOf(ranges)));
+        SkillsRepo.SkillRow row = t.skills().get(skill.key());
+        int max = Math.max(1, Math.min(row == null ? defaultMaxLevel : row.maxLevel(), levels.maxLevel()));
+        double mult = Math.max(0, row == null ? 1.0 : row.multiplier());
+        // ranges grouped by stat, stats in the order they first appear
+        Map<String, List<StatRange>> byStat = new LinkedHashMap<>();
+        for (SkillsRepo.StatRangeRow r : t.statRanges()) {
+            if (r.skillId().equals(skill.key())) {
+                List<StatRange> list = byStat.computeIfAbsent(r.stat(), k -> new ArrayList<>());
+                if (r.to() >= r.from() && r.amount() != 0) {
+                    list.add(new StatRange(r.from(), r.to(), r.amount()));
                 }
             }
         }
-        Map<Integer, String> unlocks = new LinkedHashMap<>();
-        ConfigurationSection unlockSec = root.getConfigurationSection(path + ".unlocks");
-        if (unlockSec != null) {
-            for (String key : unlockSec.getKeys(false)) {
-                try {
-                    unlocks.put(Integer.parseInt(key), unlockSec.getString(key, ""));
-                } catch (NumberFormatException e) {
-                    warn.add(path + ".unlocks: level " + key + " is not a number");
+        // a current or an old stat name; old ones convert (Strength becomes Might), dropped ones give nothing
+        Map<Stat, List<StatRange>> merged = new java.util.EnumMap<>(Stat.class);
+        for (var e : byStat.entrySet()) {
+            if (!Stat.known(e.getKey())) {
+                warn.add(path + ".stats: unknown stat " + e.getKey());
+                continue;
+            }
+            for (Stat.Converted conv : Stat.resolve(e.getKey())) {
+                for (StatRange range : e.getValue()) {
+                    merged.computeIfAbsent(conv.stat(), k -> new ArrayList<>())
+                        .add(new StatRange(range.from(), range.to(), range.amount() * conv.factor()));
                 }
+            }
+        }
+        List<StatReward> stats = new ArrayList<>();
+        for (var e : merged.entrySet()) {
+            if (!e.getValue().isEmpty()) {
+                stats.add(new StatReward(e.getKey(), List.copyOf(e.getValue())));
+            }
+        }
+        Map<Integer, String> unlocks = new LinkedHashMap<>();
+        for (SkillsRepo.UnlockRow u : t.unlocks()) {
+            if (u.skillId().equals(skill.key())) {
+                unlocks.put(u.level(), u.text());
             }
         }
         return new SkillDef(skill, max, mult, List.copyOf(stats), Collections.unmodifiableMap(unlocks));
     }
 
-    private static SeaCreatureCfg parseSeaCreatures(ConfigurationSection s, List<String> warn) {
-        if (s == null) {
-            return new SeaCreatureCfg(false, 0, 0, 0, 0, 0, 0, List.of());
-        }
+    private static SeaCreatureCfg parseSeaCreatures(Settings s, List<SkillsRepo.SeaCreatureRow> rows, List<String> warn) {
         List<SeaCreatureDef> list = new ArrayList<>();
-        ConfigurationSection table = s.getConfigurationSection("creatures");
-        if (table != null) {
-            for (String id : table.getKeys(false)) {
-                ConfigurationSection c = table.getConfigurationSection(id);
-                EntityType type = c == null ? null : entityType(c.getString("entity", ""));
-                if (type == null || !id.matches("[a-z0-9_]+") || type.getEntityClass() == null
-                        || !org.bukkit.entity.LivingEntity.class.isAssignableFrom(type.getEntityClass())) {
-                    warn.add("sea_creatures.creatures." + id + ": bad id or entity");
-                    continue;
-                }
-                list.add(new SeaCreatureDef(id, type, c.getString("name", prettify(id)), Math.max(0, c.getInt("min_level", 0)),
-                    Math.max(0, c.getDouble("weight", 1)), Math.max(1, c.getDouble("health", 20))));
+        for (SkillsRepo.SeaCreatureRow c : rows) {
+            EntityType type = entityType(c.entity());
+            if (type == null || !c.id().matches("[a-z0-9_]+") || type.getEntityClass() == null
+                    || !org.bukkit.entity.LivingEntity.class.isAssignableFrom(type.getEntityClass())) {
+                warn.add("sea_creatures.creatures." + c.id() + ": bad id or entity");
+                continue;
             }
+            list.add(new SeaCreatureDef(c.id(), type, c.name(), Math.max(0, c.minLevel()), Math.max(0, c.weight()),
+                Math.max(1, c.health())));
         }
-        return new SeaCreatureCfg(s.getBoolean("enabled", true), clamp01(s.getDouble("base_chance", 0.04)),
-            Math.max(0, s.getDouble("per_fishing_level", 0.0008)), Math.max(0, s.getDouble("per_chance_stat", 0.01)),
-            clamp01(s.getDouble("max_chance", 0.35)), Math.max(1, s.getInt("max_alive_per_player", 3)),
-            Math.max(10, s.getLong("despawn_seconds", 120)), List.copyOf(list));
+        return new SeaCreatureCfg(s.getBoolean("sea_creatures.enabled", true), clamp01(s.getDouble("sea_creatures.base_chance", 0.04)),
+            Math.max(0, s.getDouble("sea_creatures.per_fishing_level", 0.0008)),
+            Math.max(0, s.getDouble("sea_creatures.per_chance_stat", 0.01)),
+            clamp01(s.getDouble("sea_creatures.max_chance", 0.35)), Math.max(1, s.getInt("sea_creatures.max_alive_per_player", 3)),
+            Math.max(10, s.getLong("sea_creatures.despawn_seconds", 120)), List.copyOf(list));
     }
 
     private static double clamp01(double v) {
         return Math.max(0, Math.min(1, v));
     }
 
-    private static int intOf(Object o, int fallback) {
-        return o instanceof Number n ? n.intValue() : fallback;
-    }
-
-    private CollectionDef parseCollection(ConfigurationSection root, ConfigurationSection s, String id, List<String> warn) {
-        if (s == null) {
-            return null;
-        }
-        Skill category = skillByName(s.getString("category", ""));
+    private CollectionDef parseCollection(SkillsRepo.Tables t, SkillsRepo.CollectionRow row, List<String> warn) {
+        String id = row.id();
+        Skill category = skillByName(row.category());
         if (category == null) {
             warn.add("collections." + id + ": unknown category");
             return null;
         }
         Set<Material> mats = new java.util.LinkedHashSet<>();
-        List<String> names = s.getStringList("materials");
-        if (names.isEmpty()) {
-            names = List.of(id);
-        }
+        List<String> names = row.materials().isEmpty() ? List.of(id) : row.materials();
         mats.addAll(materialSet(names, "collections." + id + ".materials", warn));
         if (mats.isEmpty()) {
             warn.add("collections." + id + ": no valid material");
             return null;
         }
-        Material icon = Material.matchMaterial(s.getString("icon", ""));
+        Material icon = row.icon() == null ? null : Material.matchMaterial(row.icon());
         if (icon == null) {
             icon = mats.iterator().next();
         }
-        String preset = s.getString("preset", "common");
+        SkillsRepo.PresetRow preset = t.presets().get(row.preset());
         List<Long> tiers = new ArrayList<>();
-        for (Object o : root.getList("collections.presets." + preset + ".tiers", List.of())) {
-            if (o instanceof Number n && n.longValue() > 0) {
-                tiers.add(n.longValue());
+        if (preset != null) {
+            for (long n : preset.tiers()) {
+                if (n > 0) {
+                    tiers.add(n);
+                }
             }
         }
         if (tiers.isEmpty()) {
-            warn.add("collections." + id + ": preset " + preset + " has no tiers");
+            warn.add("collections." + id + ": preset " + row.preset() + " has no tiers");
             return null;
         }
         List<Double> coins = new ArrayList<>();
-        for (Object o : root.getList("collections.presets." + preset + ".coins", List.of())) {
-            coins.add(o instanceof Number n ? Math.max(0, n.doubleValue()) : 0.0);
+        for (double coin : preset.coins()) {
+            coins.add(Math.max(0, coin));
         }
-        return new CollectionDef(id.toUpperCase(Locale.ROOT), s.getString("name", prettify(id)), category, icon,
+        return new CollectionDef(id.toUpperCase(Locale.ROOT), row.name() == null ? prettify(id) : row.name(), category, icon,
             Collections.unmodifiableSet(mats), List.copyOf(tiers), List.copyOf(coins));
     }
 
-    private RecipeDef parseRecipe(ConfigurationSection s, String id, List<String> warn) {
+    private RecipeDef parseRecipe(SkillsRepo.RecipeRow row, List<String> warn) {
+        String id = row.id();
         String path = "recipes." + id;
-        if (s == null || !id.matches("[a-z0-9_]+")) {
+        if (!id.matches("[a-z0-9_]+")) {
             warn.add(path + ": bad id");
             return null;
         }
-        String resultCustom = s.getString("result_custom");
-        Material resultMat = s.contains("result_item") ? Material.matchMaterial(s.getString("result_item", "")) : null;
+        String resultCustom = row.resultCustom();
+        Material resultMat = row.resultItem() == null ? null : Material.matchMaterial(row.resultItem());
         if (resultCustom == null && resultMat == null) {
             warn.add(path + ": needs result_custom or a valid result_item");
             return null;
         }
         List<Ingredient> ingredients = new ArrayList<>();
         int total = 0;
-        for (Map<?, ?> m : s.getMapList("ingredients")) {
-            int slots = Math.max(1, intOf(m.get("slots"), 1));
-            int perSlot = Math.max(1, intOf(m.get("per_slot"), 1));
-            Object custom = m.get("custom");
-            Object item = m.get("item");
+        for (SkillsRepo.IngredientRow m : row.ingredients()) {
+            int slots = Math.max(1, m.slots());
+            int perSlot = Math.max(1, m.perSlot());
             Ingredient ingredient = null;
-            if (custom instanceof String c) {
-                ingredient = new Ingredient(null, c, slots, perSlot);
-            } else if (item instanceof String name) {
-                Material mat = Material.matchMaterial(name);
+            if (m.custom() != null) {
+                ingredient = new Ingredient(null, m.custom(), slots, perSlot);
+            } else if (m.item() != null) {
+                Material mat = Material.matchMaterial(m.item());
                 if (mat != null && !mat.isAir() && mat.isItem()) {
                     ingredient = new Ingredient(mat, null, slots, perSlot);
                 }
             }
             if (ingredient == null) {
-                warn.add(path + ": bad ingredient " + m);
+                warn.add(path + ": bad ingredient " + (m.custom() != null ? m.custom() : m.item()));
                 return null;
             }
             total += slots;
@@ -544,45 +546,36 @@ public final class SkillsConfig {
             return null;
         }
         Map<String, Integer> requires = new LinkedHashMap<>();
-        ConfigurationSection req = s.getConfigurationSection("requires");
-        if (req != null) {
-            for (String key : req.getKeys(false)) {
-                requires.put(key.toUpperCase(Locale.ROOT), Math.max(1, req.getInt(key)));
-            }
+        for (var e : row.requires().entrySet()) {
+            requires.put(e.getKey().toUpperCase(Locale.ROOT), Math.max(1, e.getValue()));
         }
-        Skill xpSkill = skillByName(s.getString("xp.skill"));
-        return new RecipeDef(id, resultCustom, resultMat, Math.max(1, Math.min(64, s.getInt("amount", 1))),
-            List.copyOf(ingredients), Collections.unmodifiableMap(requires), xpSkill,
-            Math.max(0, s.getDouble("xp.amount", 0)));
+        Skill xpSkill = skillByName(row.xpSkill());
+        return new RecipeDef(id, resultCustom, resultMat, Math.max(1, Math.min(64, row.amount())),
+            List.copyOf(ingredients), Collections.unmodifiableMap(requires), xpSkill, Math.max(0, row.xpAmount()));
     }
 
-    private static AntiFarmCfg antiFarm(ConfigurationSection s, AntiFarmCfg defaults) {
-        if (s == null) {
-            return defaults;
-        }
-        return new AntiFarmCfg(Math.max(1, s.getInt("cell", defaults.cell())),
-            Math.max(1, s.getLong("window_seconds", defaults.windowMillis() / 1000)) * 1000,
-            Math.max(0, s.getInt("free", defaults.free())), Math.max(0, s.getDouble("step", defaults.step())),
-            Math.max(0, Math.min(1, s.getDouble("min", defaults.min()))));
+    private static AntiFarmCfg antiFarm(Settings s, String path, AntiFarmCfg defaults) {
+        return new AntiFarmCfg(Math.max(1, s.getInt(path + ".cell", defaults.cell())),
+            Math.max(1, s.getLong(path + ".window_seconds", defaults.windowMillis() / 1000)) * 1000,
+            Math.max(0, s.getInt(path + ".free", defaults.free())), Math.max(0, s.getDouble(path + ".step", defaults.step())),
+            Math.max(0, Math.min(1, s.getDouble(path + ".min", defaults.min()))));
     }
 
-    private static Map<Material, Double> materials(ConfigurationSection s, String path, List<String> warn) {
+    private static Map<Material, Double> materials(Map<String, Double> raw, String path, List<String> warn) {
         Map<Material, Double> out = new LinkedHashMap<>();
-        if (s != null) {
-            for (String key : s.getKeys(false)) {
-                Material m = Material.matchMaterial(key);
-                if (m == null) {
-                    warn.add(path + ": unknown material " + key);
-                } else {
-                    out.put(m, Math.max(0, s.getDouble(key)));
-                }
+        for (var e : raw.entrySet()) {
+            Material m = Material.matchMaterial(e.getKey());
+            if (m == null) {
+                warn.add(path + ": unknown material " + e.getKey());
+            } else {
+                out.put(m, Math.max(0, e.getValue()));
             }
         }
         return Collections.unmodifiableMap(out);
     }
 
     private static Set<Material> materialSet(List<String> names, String path, List<String> warn) {
-        Set<Material> out = new java.util.LinkedHashSet<>(); // keeps the config order (the first one is the icon)
+        Set<Material> out = new java.util.LinkedHashSet<>(); // keeps the data order (the first one is the icon)
         for (String name : names) {
             Material m = Material.matchMaterial(name);
             if (m == null) {
@@ -594,16 +587,14 @@ public final class SkillsConfig {
         return out;
     }
 
-    private static Map<EntityType, Double> entities(ConfigurationSection s, String path, List<String> warn) {
+    private static Map<EntityType, Double> entities(Map<String, Double> raw, String path, List<String> warn) {
         Map<EntityType, Double> out = new LinkedHashMap<>();
-        if (s != null) {
-            for (String key : s.getKeys(false)) {
-                EntityType type = entityType(key);
-                if (type == null) {
-                    warn.add(path + ": unknown entity " + key);
-                } else {
-                    out.put(type, Math.max(0, s.getDouble(key)));
-                }
+        for (var e : raw.entrySet()) {
+            EntityType type = entityType(e.getKey());
+            if (type == null) {
+                warn.add(path + ": unknown entity " + e.getKey());
+            } else {
+                out.put(type, Math.max(0, e.getValue()));
             }
         }
         return Collections.unmodifiableMap(out);

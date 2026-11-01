@@ -87,7 +87,7 @@ public class FairySoulsTest extends MenuTestBase {
         assertTrue(stats.modifiers.isEmpty());
         fairy.collect(player, spot("s5"));
         assertEquals(250, economy.coins(player.getUniqueId()), 0);
-        assertEquals(2.0, stats.modifiers.get(Stat.HEALTH), 0);
+        assertEquals(2.0, stats.modifiers.get(Stat.VITALITY), 0);
         assertEquals(1, rt.fairy(player.getUniqueId()).paidMilestones);
         // re-finding and re-checking never pays again
         fairy.collect(player, spot("s5"));
@@ -98,8 +98,8 @@ public class FairySoulsTest extends MenuTestBase {
             fairy.collect(player, spot("s" + i));
         }
         assertEquals("250 for the first milestone, 300 for the second", 550, economy.coins(player.getUniqueId()), 0);
-        assertEquals(2.0, stats.modifiers.get(Stat.HEALTH), 0);
-        assertEquals(1.0, stats.modifiers.get(Stat.DEFENSE), 0);
+        assertEquals(2.0, stats.modifiers.get(Stat.VITALITY), 0);
+        assertEquals(1.0, stats.modifiers.get(Stat.WARD), 0);
     }
 
     @Test
@@ -110,7 +110,7 @@ public class FairySoulsTest extends MenuTestBase {
         stats.modifiers.clear(); // a restart
         double coins = economy.coins(player.getUniqueId());
         fairy.onArrive(player);
-        assertEquals(2.0, stats.modifiers.get(Stat.HEALTH), 0);
+        assertEquals(2.0, stats.modifiers.get(Stat.VITALITY), 0);
         assertEquals("arriving must not pay the milestone again", coins, economy.coins(player.getUniqueId()), 0);
     }
 
@@ -252,7 +252,7 @@ public class FairySoulsTest extends MenuTestBase {
         while ((message = player.nextComponentMessage()) != null) {
             text.append(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(message)).append('\n');
         }
-        assertTrue(text.toString(), text.toString().contains("Fairy Souls: 0/43"));
+        assertTrue(text.toString(), text.toString().contains("Wisps: 0/43"));
         assertTrue(text.toString(), text.toString().contains("Nearest soul:"));
     }
 

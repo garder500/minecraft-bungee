@@ -28,20 +28,52 @@ import win.vampyuyu.survival.items.stats.ManaPool;
 public class PureLogicTest {
     @Test
     public void damageFormulaFollowsTheSpec() {
-        // (100 + 5) * (1 + 50/100) = 157.5, crit with 100 crit damage doubles it
+        // (100 + 5) * (1 + 50/100) = 157.5; Might is a plain percentage, there is no dice
         assertEquals(157.5, DamageFormula.base(100, 5, 50), 1e-9);
-        assertEquals(315.0, DamageFormula.hit(100, 5, 50, 0, true, 100), 1e-9);
-        assertEquals(157.5, DamageFormula.hit(100, 5, 50, 0, false, 100), 1e-9);
-        assertEquals(189.0, DamageFormula.hit(100, 5, 50, 0.2, false, 100), 1e-9);
+        assertEquals(157.5, DamageFormula.hit(100, 5, 50, 0), 1e-9);
+        assertEquals(189.0, DamageFormula.hit(100, 5, 50, 0.2), 1e-9);
+        // Ward: damage x 100 / (100 + ward)
         assertEquals(50.0, DamageFormula.mitigate(100, 100), 1e-9);
         assertEquals(100.0, DamageFormula.mitigate(100, -50), 1e-9);
+        assertEquals(25.0, DamageFormula.mitigate(100, 300), 1e-9);
     }
 
     @Test
-    public void critRollUsesTheChance() {
-        assertTrue(DamageFormula.rollCrit(30, () -> 0.29));
-        assertFalse(DamageFormula.rollCrit(30, () -> 0.31));
-        assertFalse(DamageFormula.rollCrit(0, () -> 0.0));
+    public void elementsMultiplyTheHit() {
+        var frost = win.vampyuyu.survival.api.Element.FROST;
+        var ember = win.vampyuyu.survival.api.Element.EMBER;
+        var astral = win.vampyuyu.survival.api.Element.ASTRAL;
+        // weak x1.5 (+ Attunement percent), resisted x0.6, anything else x1, no element x1
+        assertEquals(1.5, DamageFormula.elementMultiplier(frost, frost, ember, 0, 1.5, 0.6), 1e-9);
+        assertEquals(1.7, DamageFormula.elementMultiplier(frost, frost, ember, 20, 1.5, 0.6), 1e-9);
+        assertEquals(0.6, DamageFormula.elementMultiplier(ember, frost, ember, 20, 1.5, 0.6), 1e-9);
+        assertEquals(1.0, DamageFormula.elementMultiplier(astral, frost, ember, 20, 1.5, 0.6), 1e-9);
+        assertEquals(1.0, DamageFormula.elementMultiplier(null, frost, ember, 20, 1.5, 0.6), 1e-9);
+    }
+
+    @Test
+    public void surgeComesOnEveryFifthChargedHitOnTheSameTarget() {
+        var tracker = new win.vampyuyu.survival.items.combat.SurgeTracker();
+        java.util.UUID a = java.util.UUID.randomUUID(), t1 = java.util.UUID.randomUUID(), t2 = java.util.UUID.randomUUID();
+        for (int i = 1; i <= 4; i++) {
+            assertFalse("hit " + i, tracker.hit(a, t1, true, 5));
+        }
+        assertTrue("the fifth is the Surge", tracker.hit(a, t1, true, 5));
+        assertFalse("then it starts over", tracker.hit(a, t1, true, 5));
+        // a swing that was not charged changes nothing
+        for (int i = 0; i < 3; i++) {
+            tracker.hit(a, t1, true, 5);
+        }
+        assertFalse(tracker.hit(a, t1, false, 5));
+        assertEquals(4, tracker.progress(a, t1));
+        assertTrue(tracker.hit(a, t1, true, 5));
+        // switching target restarts the count
+        for (int i = 0; i < 3; i++) {
+            tracker.hit(a, t1, true, 5);
+        }
+        assertFalse(tracker.hit(a, t2, true, 5));
+        assertEquals(1, tracker.progress(a, t2));
+        assertEquals(0, tracker.progress(a, t1));
     }
 
     @Test
@@ -53,8 +85,6 @@ public class PureLogicTest {
         assertEquals(0.15, DamageFormula.giantKiller(3, 5, 400, 100), 1e-9);
         assertEquals(0, DamageFormula.snipe(2, 1.5, 4), 1e-9);
         assertEquals(0.6, DamageFormula.snipe(4, 1.5, 100), 1e-9);
-        assertEquals(1, DamageFormula.ferocityStrikes(100, () -> 0.99));
-        assertEquals(2, DamageFormula.ferocityStrikes(150, () -> 0.1));
     }
 
     @Test
@@ -104,16 +134,16 @@ public class PureLogicTest {
     @Test
     public void accessoriesCountOncePerFamily() {
         Map<String, Integer> mp = Map.of("COMMON", 3, "RARE", 8, "EPIC", 12);
-        var low = new AccessoryMath.Entry("acc_speed_1", "speed", Rarity.COMMON, Map.of(Stat.SPEED, 2.0), 0);
-        var high = new AccessoryMath.Entry("acc_speed_3", "speed", Rarity.RARE, Map.of(Stat.SPEED, 7.0), 1);
-        var other = new AccessoryMath.Entry("acc_crit_4", "crit", Rarity.EPIC, Map.of(Stat.CRIT_CHANCE, 4.0), 2);
-        var result = AccessoryMath.compute(List.of(low, high, other), mp, Map.of(Stat.STRENGTH, 0.5));
+        var low = new AccessoryMath.Entry("acc_speed_1", "speed", Rarity.COMMON, Map.of(Stat.SWIFTNESS, 2.0), 0);
+        var high = new AccessoryMath.Entry("acc_speed_3", "speed", Rarity.RARE, Map.of(Stat.SWIFTNESS, 7.0), 1);
+        var other = new AccessoryMath.Entry("acc_crit_4", "crit", Rarity.EPIC, Map.of(Stat.ATTUNEMENT, 4.0), 2);
+        var result = AccessoryMath.compute(List.of(low, high, other), mp, Map.of(Stat.MIGHT, 0.5));
         assertEquals(2, result.counted().size());
         assertEquals(1, result.ignored().size());
         assertEquals("acc_speed_1", result.ignored().get(0).itemId());
         assertEquals(20, result.magicalPower());
-        assertEquals(7.0, result.stats().get(Stat.SPEED), 1e-9);
-        assertEquals(10.0, result.stats().get(Stat.STRENGTH), 1e-9);
+        assertEquals(7.0, result.stats().get(Stat.SWIFTNESS), 1e-9);
+        assertEquals(10.0, result.stats().get(Stat.MIGHT), 1e-9);
         // order in the bag does not matter
         var reversed = AccessoryMath.compute(List.of(other, high, low), mp, Map.of());
         assertEquals(20, reversed.magicalPower());
@@ -159,8 +189,8 @@ public class PureLogicTest {
         assertTrue(reforges.byStone("reforge_stone_fabled").isPresent());
         assertTrue(ReforgeMenu.price(Rarity.LEGENDARY, 400) > ReforgeMenu.price(Rarity.COMMON, 400));
         var sharp = reforges.get("sharp").orElseThrow();
-        assertTrue(sharp.at(Rarity.EPIC, reforges.scale(Rarity.EPIC)).get(Stat.CRIT_CHANCE)
-            > sharp.at(Rarity.COMMON, reforges.scale(Rarity.COMMON)).get(Stat.CRIT_CHANCE));
+        assertTrue(sharp.at(Rarity.EPIC, reforges.scale(Rarity.EPIC)).get(Stat.MIGHT)
+            > sharp.at(Rarity.COMMON, reforges.scale(Rarity.COMMON)).get(Stat.MIGHT));
         assertTrue(sharp.appliesTo(ItemKind.SWORD));
         assertFalse(sharp.appliesTo(ItemKind.HELMET));
     }
@@ -189,12 +219,7 @@ public class PureLogicTest {
 
     @Test
     public void shippedConfigMatchesTheCodeDefaults() throws Exception {
-        YamlConfiguration yaml = new YamlConfiguration();
-        try (var in = getClass().getResourceAsStream("/items.yml")) {
-            assertNotNull(in);
-            yaml.loadFromString(new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
-        }
-        ItemsSettings shipped = new ItemsSettings(yaml);
+        ItemsSettings shipped = ItemsSettings.defaults();
         ItemsSettings code = new ItemsSettings(new YamlConfiguration());
         assertEquals(code.maxHealth, shipped.maxHealth, 0);
         assertEquals(code.damageBonus, shipped.damageBonus, 0);

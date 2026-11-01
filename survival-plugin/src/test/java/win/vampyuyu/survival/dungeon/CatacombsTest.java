@@ -5,7 +5,7 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 
 public class CatacombsTest {
-    private static final DungeonConfig CFG = DungeonConfig.parse(null);
+    private static final DungeonConfig CFG = DungeonConfig.defaults();
 
     @Test
     public void levelsFollowTheQuadraticCurve() {

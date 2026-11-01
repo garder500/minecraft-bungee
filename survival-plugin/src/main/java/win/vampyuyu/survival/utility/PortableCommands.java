@@ -18,13 +18,13 @@ final class PortableCommands {
     private final Core core;
     private final Msg msg;
     private final TeleportService teleports;
-    private final org.bukkit.configuration.file.YamlConfiguration raw;
+    private final java.util.Map<String, Boolean> publicFlags;
 
-    PortableCommands(Core core, TeleportService teleports, org.bukkit.configuration.file.YamlConfiguration raw) {
+    PortableCommands(Core core, TeleportService teleports, java.util.Map<String, Boolean> publicFlags) {
         this.core = core;
         this.msg = core.msg();
         this.teleports = teleports;
-        this.raw = raw;
+        this.publicFlags = publicFlags;
     }
 
     void register() {
@@ -40,7 +40,7 @@ final class PortableCommands {
             new Portable("stonecutter", new String[0], "Open a stonecutter", p -> p.openStonecutter(null, true)),
             new Portable("loom", new String[0], "Open a loom", p -> p.openLoom(null, true)));
         for (Portable portable : all) {
-            boolean open = raw.getBoolean("portable." + portable.name() + ".public",
+            boolean open = publicFlags.getOrDefault(portable.name(),
                 portable.name().equals("ec") || portable.name().equals("workbench"));
             core.commands().command(portable.name()).aliases(portable.aliases()).description(portable.description())
                 .usage("/" + portable.name() + ("ec".equals(portable.name()) ? " [player]" : ""))

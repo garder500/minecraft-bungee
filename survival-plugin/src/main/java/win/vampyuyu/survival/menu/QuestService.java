@@ -54,7 +54,9 @@ final class QuestService {
         QuestData data = rt.quests(player.getUniqueId());
         QuestEngine engine = rt.engine();
         engine.ensureDay(data, today(), rt.config().dailyCount);
-        List<Completion> done = new ArrayList<>(engine.apply(data, new QuestEngine.Event(type, subject, value)));
+        QuestEngine.Event event = new QuestEngine.Event(type, subject, value);
+        List<Completion> done = new ArrayList<>(engine.catchUp(data, event));
+        done.addAll(engine.apply(data, event));
         finish(player, data, done, true);
     }
 

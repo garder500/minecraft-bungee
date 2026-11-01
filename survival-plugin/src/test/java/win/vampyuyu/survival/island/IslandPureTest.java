@@ -2,8 +2,6 @@ package win.vampyuyu.survival.island;
 
 import static org.junit.Assert.*;
 
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +10,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.junit.After;
 import org.junit.Before;
@@ -36,20 +33,10 @@ public class IslandPureTest {
         MockBukkit.unmock();
     }
 
-    static YamlConfiguration yaml(String text) {
-        YamlConfiguration yaml = new YamlConfiguration();
-        try {
-            yaml.loadFromString(text);
-        } catch (Exception e) {
-            throw new AssertionError(e);
-        }
-        return yaml;
-    }
-
     static IslandConfig defaults() {
-        var in = IslandPureTest.class.getResourceAsStream("/island.yml");
-        assertNotNull("island.yml must ship in the jar", in);
-        return new IslandConfig(YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8)), LOG);
+        try (win.vampyuyu.survival.data.Db db = win.vampyuyu.survival.data.TestDb.seeded()) {
+            return IslandRepo.load(db, LOG);
+        }
     }
 
     // ---------------------------------------------------------------- grid
@@ -231,20 +218,20 @@ public class IslandPureTest {
 
     @Test
     public void tiersAreClampedSortedAndFirstIsFree() {
-        IslandConfig cfg = new IslandConfig(yaml("""
-            grid:
-              cell-size: 200
-              edge-margin: 10
-            upgrades:
-              radius:
-                - {radius: 20, cost: 50}
-                - {radius: 40, cost: 100}
-                - {radius: 30, cost: 100}
-                - {radius: 5000, cost: 900}
-                - {radius: 6000, cost: 900}
-              members:
-                - {slots: 2, cost: 10}
-            """), LOG);
+        IslandConfig cfg;
+        try (win.vampyuyu.survival.data.Db db = win.vampyuyu.survival.data.TestDb.seeded()) {
+            win.vampyuyu.survival.data.TestDb.set(db, "island.grid.cell-size", "int", "200");
+            win.vampyuyu.survival.data.TestDb.set(db, "island.grid.edge-margin", "int", "10");
+            win.vampyuyu.survival.data.TestDb.exec(db, "DELETE FROM island_upgrade WHERE kind IN ('radius', 'members')");
+            int[][] radius = {{20, 50}, {40, 100}, {30, 100}, {5000, 900}, {6000, 900}};
+            for (int i = 0; i < radius.length; i++) {
+                win.vampyuyu.survival.data.TestDb.exec(db, "INSERT INTO island_upgrade (id, kind, position, value, cost) "
+                    + "VALUES (?, 'radius', ?, ?, ?)", "radius." + i, i, radius[i][0], radius[i][1]);
+            }
+            win.vampyuyu.survival.data.TestDb.exec(db, "INSERT INTO island_upgrade (id, kind, position, value, cost) "
+                + "VALUES ('members.0', 'members', 0, 2, 10)");
+            cfg = IslandRepo.load(db, LOG);
+        }
         assertEquals(90, cfg.maxRadius());
         List<IslandConfig.Tier> tiers = cfg.radiusTiers;
         assertEquals(List.of(20, 40, 90), tiers.stream().map(IslandConfig.Tier::value).toList());
@@ -259,8 +246,9 @@ public class IslandPureTest {
 
     @Test
     public void itemSpecsSkipGarbage() {
-        List<IslandConfig.ItemSpec> items = IslandConfig.items(
-            List.of("ICE:2", "lava_bucket", "NOT_A_THING", "DIRT:x", "STONE:0", "OAK_SAPLING:500", "AIR"), LOG);
+        List<IslandConfig.ItemSpec> items = IslandConfig.items(List.of(new IslandRepo.ItemRow("ICE", 2),
+            new IslandRepo.ItemRow("lava_bucket", 1), new IslandRepo.ItemRow("NOT_A_THING", 1), new IslandRepo.ItemRow("STONE", 0),
+            new IslandRepo.ItemRow("OAK_SAPLING", 500), new IslandRepo.ItemRow("AIR", 1)), LOG);
         assertEquals(3, items.size());
         assertEquals(Material.ICE, items.get(0).material());
         assertEquals(2, items.get(0).amount());

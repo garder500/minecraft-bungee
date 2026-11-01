@@ -10,7 +10,7 @@ public final class WorldBossState {
     public long lastSpawnAt;
     public String lastBoss = "";
     public List<Entry> history = new ArrayList<>();
-    /** Spots added in game with {@code /worldboss addspot} (absolute coordinates), used next to the ones in boss.yml. */
+    /** Spots added in game with {@code /worldboss addspot} (absolute coordinates), used next to the configured ones. */
     public List<SpotRecord> spots = new ArrayList<>();
 
     /** An admin-added event spot. */

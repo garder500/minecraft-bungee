@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 import org.bukkit.Material;
 import org.bukkit.inventory.EquipmentSlot;
 import org.jspecify.annotations.Nullable;
+import win.vampyuyu.survival.api.Element;
 import win.vampyuyu.survival.api.Stat;
 
 /**
@@ -31,11 +32,14 @@ import win.vampyuyu.survival.api.Stat;
  * @param glint true forces the enchant glint
  * @param maxStackSize optional max stack size override (1-99)
  * @param equippable optional equippable component data, makes the item wearable like armor
+ * @param element element of a weapon or armor, shown as "Earth Element" on the last lore line
+ * @param tier power tier 1-5 (shown as "Tier N"), null for items outside the ladder
  */
 public record CustomItemDef(String id, String name, Rarity rarity, Material material, @Nullable String itemModel,
         @Nullable String typeLabel, List<String> lore, Map<Stat, Double> stats, Map<String, String> pdcStrings,
         Map<String, Long> pdcLongs, Map<String, Double> pdcDoubles, boolean unbreakable, boolean hideFlags,
-        boolean glint, @Nullable Integer maxStackSize, @Nullable Equip equippable) {
+        boolean glint, @Nullable Integer maxStackSize, @Nullable Equip equippable, @Nullable Element element,
+        @Nullable Integer tier) {
     private static final Pattern ID = Pattern.compile("[a-z0-9_]+");
     private static final Pattern KEY = Pattern.compile("[a-z0-9_./-]+");
 
@@ -71,6 +75,9 @@ public record CustomItemDef(String id, String name, Rarity rarity, Material mate
         for (String key : pdcDoubles.keySet()) {
             checkKey(key);
         }
+        if (tier != null && (tier < 1 || tier > 5)) {
+            throw new IllegalArgumentException("tier must be 1-5");
+        }
         if (maxStackSize != null && (maxStackSize < 1 || maxStackSize > 99)) {
             throw new IllegalArgumentException("maxStackSize must be 1-99");
         }
@@ -104,6 +111,8 @@ public record CustomItemDef(String id, String name, Rarity rarity, Material mate
         private boolean glint;
         private Integer maxStack;
         private Equip equip;
+        private Element element;
+        private Integer tier;
 
         private Builder(String id, String name, Rarity rarity, Material material) {
             this.id = id;
@@ -144,9 +153,15 @@ public record CustomItemDef(String id, String name, Rarity rarity, Material mate
             return this;
         }
 
+        /** Element of the item (null = none). */
+        public Builder element(@Nullable Element element) { this.element = element; return this; }
+
+        /** Power tier 1-5 (null = none). */
+        public Builder tier(@Nullable Integer tier) { this.tier = tier; return this; }
+
         public CustomItemDef build() {
             return new CustomItemDef(id, name, rarity, material, itemModel, typeLabel, lore, stats, strings, longs,
-                doubles, unbreakable, hideFlags, glint, maxStack, equip);
+                doubles, unbreakable, hideFlags, glint, maxStack, equip, element, tier);
         }
     }
 }

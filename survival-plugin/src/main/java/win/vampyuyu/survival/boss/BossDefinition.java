@@ -7,7 +7,7 @@ import org.bukkit.entity.EntityType;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Immutable description of a boss, loaded from {@code boss.yml} by {@link DefinitionParser}.
+ * Immutable description of a boss, loaded from the boss tables by {@link BossRepo}.
  *
  * @param id contract id ({@code voidwyrm}, {@code crypt_lord}...), {@code [a-z0-9_]+}
  * @param name MiniMessage display name
@@ -28,11 +28,15 @@ import org.jspecify.annotations.Nullable;
  * @param loot rewards
  * @param summon how it is summoned, null when it is spawned by code only
  * @param kind regular boss, slayer tier or world boss
+ * @param tier power tier 1-5 the health follows (0 = not rated)
+ * @param weakness element this boss takes extra damage from (null = none)
+ * @param resistance element this boss resists (null = none)
  */
 public record BossDefinition(String id, String name, String description, EntityType entity, double health,
         double damage, double armor, double scale, double speed, double knockbackResistance, String barColor,
         String barOverlay, Arena arena, List<Phase> phases, Map<String, EquipSpec> equipment,
-        Map<String, Object> options, Loot loot, @Nullable Summon summon, Kind kind) {
+        Map<String, Object> options, Loot loot, @Nullable Summon summon, Kind kind, int tier, @Nullable String weakness,
+        @Nullable String resistance) {
 
     /** What a definition is used for. */
     public enum Kind { BOSS, SLAYER, WORLD }

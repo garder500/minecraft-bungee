@@ -8,7 +8,7 @@ import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 
 /**
- * A crafting recipe of a catalog item ({@code recipes.list.<name>} in items.yml).
+ * A crafting recipe of a catalog item ({@code item_recipe} rows).
  *
  * @param name recipe name (part of the recipe key)
  * @param result catalog item id
@@ -76,7 +76,7 @@ public record RecipeDef(String name, String result, int amount, List<String> sha
         return List.copyOf(out);
     }
 
-    /** The shipped recipes (a test compares them with items.yml). */
+    /** The shipped recipes (a test compares them with the shipped seed). */
     public static final List<RecipeDef> DEFAULTS = List.of(
             new RecipeDef("rookie_sword", "rookie_sword", 1, List.of("C", "I", "S"), Map.of('C', "COPPER_INGOT", 'I', "IRON_INGOT", 'S', "STICK")),
             new RecipeDef("warriors_blade", "warriors_blade", 1, List.of("I", "I", "B"), Map.of('I', "IRON_INGOT", 'B', "BLAZE_ROD")),

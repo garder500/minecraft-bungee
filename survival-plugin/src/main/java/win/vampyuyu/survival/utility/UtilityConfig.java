@@ -2,10 +2,10 @@ package win.vampyuyu.survival.utility;
 
 import java.util.List;
 import java.util.Locale;
-import org.bukkit.configuration.ConfigurationSection;
+import win.vampyuyu.survival.data.Settings;
 import win.vampyuyu.survival.core.Rarity;
 
-/** Immutable snapshot of {@code utility.yml}. Every value has a default here so a partial file still works. */
+/** Immutable snapshot of the {@code utility.*} settings. Every value has a default here so a partial table still works. */
 public record UtilityConfig(
         int warmupSeconds, double moveTolerance, boolean cancelOnDamage, boolean showTitle,
         boolean combatEnabled, int combatSeconds, boolean combatIncludeMobs, boolean combatNotify,
@@ -19,7 +19,7 @@ public record UtilityConfig(
         int nearDefault, int nearMax) {
 
     /** Reads the configuration; out-of-range values are clamped to something that works. */
-    public static UtilityConfig from(ConfigurationSection c) {
+    public static UtilityConfig from(Settings c) {
         int rtpMin = Math.max(0, c.getInt("rtp.min-radius", 200));
         int rtpMax = Math.max(rtpMin + 16, c.getInt("rtp.max-radius", 5000));
         int nearMax = Math.max(1, c.getInt("near.max-radius", 250));
@@ -52,8 +52,8 @@ public record UtilityConfig(
             Math.max(3, c.getInt("rtp.search-timeout-seconds", 20)),
             Math.max(0.0, c.getDouble("sit.seat-height", 0.6)),
             c.getDouble("sit.seat-offset", -0.2),
-            c.getStringList("trash.keep-ids").isEmpty() && !c.isSet("trash.keep-ids")
-                ? List.of("wings") : List.copyOf(c.getStringList("trash.keep-ids")),
+            c.getList("trash.keep-ids").isEmpty() && !c.has("trash.keep-ids")
+                ? List.of("wings") : c.getList("trash.keep-ids"),
             rarity(c.getString("trash.keep-rarity", "LEGENDARY")),
             Math.max(1, Math.min(nearMax, c.getInt("near.default-radius", 100))),
             nearMax);
@@ -75,8 +75,8 @@ public record UtilityConfig(
         }
     }
 
-    /** Defaults only (tests, missing file). */
+    /** Defaults only (tests, missing settings). */
     public static UtilityConfig defaults() {
-        return from(new org.bukkit.configuration.file.YamlConfiguration());
+        return from(Settings.empty("utility"));
     }
 }

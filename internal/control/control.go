@@ -211,6 +211,7 @@ func (s *Server) Handler() http.Handler {
 	s.chatRoutes(mux)
 	s.pluginRoutes(mux)
 	s.gameRoutes(mux)
+	s.skyblockRoutes(mux)
 	s.backupRoutes(mux)
 	s.planRoutes(mux)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })

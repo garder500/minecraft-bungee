@@ -7,7 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.Test;
 import win.vampyuyu.survival.api.Skill;
 
@@ -62,9 +61,7 @@ public class LeaderboardTest extends SkillsBase {
 
     @Test
     public void sizeIsLimitedAndMissingFolderIsFine() throws Exception {
-        YamlConfiguration yaml = new YamlConfiguration();
-        yaml.set("leaderboard.size", 3);
-        SkillsConfig cfg = new SkillsConfig(yaml);
+        SkillsConfig cfg = SkillsTestData.load(db -> SkillsTestData.setting(db, "leaderboard.size", "3"));
         Path dir = Files.createTempDirectory("sbplayers3");
         for (int i = 0; i < 6; i++) {
             profile(dir, UUID.randomUUID(), "P" + i, "{\"xp\":{\"mining\":" + (100 + i) + ".0}}");

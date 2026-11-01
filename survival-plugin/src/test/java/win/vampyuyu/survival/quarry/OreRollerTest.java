@@ -95,4 +95,18 @@ public class OreRollerTest {
         assertEquals("bronzite", roll.drops().get(0).ore());
         assertTrue(roll.drops().get(0).amount() >= 3 && roll.drops().get(0).amount() <= 6);
     }
+
+    @Test
+    public void ringOresNeverRollOnTheCobbleDraw() {
+        var ores = new java.util.ArrayList<>(roller().ores());
+        ores.add(new OreRoller.Ore("frostium", "custom:frostium", new double[] {100, 100, 100, 100}, 60, false, "frost", java.util.Set.of()));
+        OreRoller r = new OreRoller(ores, 0, 3, 6, 300);
+        Map<String, Integer> counters = new HashMap<>();
+        for (int i = 0; i < 1000; i++) {
+            for (OreRoller.Drop drop : r.roll(1, 0, counters, new Random(i)).drops()) {
+                assertNotEquals("frostium", drop.ore());
+            }
+        }
+        assertFalse(counters.containsKey("frostium"));
+    }
 }

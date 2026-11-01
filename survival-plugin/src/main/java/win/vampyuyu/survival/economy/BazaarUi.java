@@ -91,7 +91,7 @@ final class BazaarUi implements Listener {
 
     private boolean command(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            core.msg().error(sender, "Only players can use the Bazaar.");
+            core.msg().error(sender, "Only players can use the Sky Exchange.");
             return true;
         }
         if (args.length == 0) {
@@ -106,7 +106,7 @@ final class BazaarUi implements Listener {
                 String text = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
                 List<String> found = bz.search(text);
                 if (found.isEmpty()) {
-                    core.msg().error(player, "Nothing in the Bazaar matches '" + text + "'.");
+                    core.msg().error(player, "Nothing in the Sky Exchange matches '" + text + "'.");
                 } else {
                     openList(player, "<gold>Search: " + Ui.esc(text), found, null);
                 }
@@ -200,10 +200,9 @@ final class BazaarUi implements Listener {
     // ---------------------------------------------------------------- menus
 
     void openMain(Player player) {
-        Gui gui = core.guis().create(6, "<gold>Bazaar");
-        gui.fill(Ui.glass());
+        Gui gui = core.guis().create(6, "<gold>Sky Exchange");
         BazaarMarket.Claim claim = bz.claimable(player);
-        gui.set(4, Ui.icon(Material.EMERALD, "bazaar", "<gold>Bazaar",
+        gui.set(4, Ui.icon(Material.EMERALD, "bazaar", "<gold>Sky Exchange",
             "<gray>Trade raw goods with every player.", "<gray>Instant trades, buy orders, sell orders.", "",
             "<gray>Tax on sales: <yellow>" + (bz.market().rules().taxBp() / 100.0) + "%"));
         BazaarService.Category[] cats = BazaarService.Category.values();
@@ -212,7 +211,7 @@ final class BazaarUi implements Listener {
             BazaarService.Category cat = cats[i];
             List<String> items = bz.products(cat);
             gui.set(slots[i], Ui.plain(cat.icon, "<yellow>" + cat.label, "<gray>" + items.size() + " products", "",
-                "<yellow>Click to browse"), c -> openList(c.player(), "<gold>Bazaar: " + cat.label, bz.products(cat), cat));
+                "<#F6D58E>▸ Browse"), c -> openList(c.player(), "<gold>Sky Exchange: " + cat.label, bz.products(cat), cat));
         }
         gui.set(40, Ui.plain(Material.OAK_SIGN, "<aqua>Search", "<gray>Find a product by name.", "",
             "<yellow>Click, then type the name in chat", "<dark_gray>Or use /bz search [text]"), c -> {
@@ -224,7 +223,7 @@ final class BazaarUi implements Listener {
                 prompts.ask(c.player(), "What are you looking for?", text -> {
                     List<String> found = bz.search(text);
                     if (found.isEmpty()) {
-                        core.msg().error(c.player(), "Nothing in the Bazaar matches '" + text + "'.");
+                        core.msg().error(c.player(), "Nothing in the Sky Exchange matches '" + text + "'.");
                         Sfx.error(c.player());
                         openMain(c.player());
                     } else {
@@ -234,7 +233,7 @@ final class BazaarUi implements Listener {
             });
         gui.set(42, Ui.plain(Material.HOPPER, "<red>Sell inventory",
             "<gray>Sells everything you carry that has a", "<gray>buy order, to the best bidders.", "",
-            "<dark_gray>Orders you placed are never used.", "<yellow>Click to sell"), c -> {
+            "<dark_gray>Orders you placed are never used.", "<#F6D58E>▸ Sell"), c -> {
                 Player p = c.player();
                 bz.sellInventory(p, o -> {
                     say(p, o);
@@ -245,12 +244,11 @@ final class BazaarUi implements Listener {
             });
         gui.set(48, Ui.icon(Material.WRITABLE_BOOK, "orders", "<green>My orders",
             "<gray>" + bz.market().ordersOf(player.getUniqueId().toString()).size() + " orders and claims", "",
-            "<yellow>Click to open"), c -> openOrders(c.player()));
+            "<#F6D58E>▸ Open"), c -> openOrders(c.player()));
         gui.set(50, Ui.plain(Material.CHEST, claim.empty() ? "<gray>Nothing to claim" : "<green>Claim everything",
             claim.empty() ? "<dark_gray>Filled orders show up here." : "<gray>Coins: <gold>" + Money.coins(claim.cents()),
             claim.empty() ? "" : "<gray>Items: <white>" + claim.items().values().stream().mapToInt(Integer::intValue).sum(),
-            "", claim.empty() ? "" : "<yellow>Click to collect"), c -> claimAndRefresh(c, () -> openMain(c.player())));
-        gui.set(49, Ui.plain(Material.BARRIER, "<red>Close"), Gui.Click::close);
+            "", claim.empty() ? "" : "<#F6D58E>▸ Collect"), c -> claimAndRefresh(c, () -> openMain(c.player())));
         gui.open(player);
     }
 
@@ -264,7 +262,6 @@ final class BazaarUi implements Listener {
 
     void openList(Player player, String title, List<String> products, BazaarService.Category back) {
         Gui gui = core.guis().create(6, title);
-        gui.border(Ui.glass());
         long now = System.currentTimeMillis();
         gui.paginate(products, gui.innerSlots(), key -> {
             ItemStack base = keys.create(key, 1).orElseGet(() -> new ItemStack(Material.BARRIER));
@@ -273,9 +270,9 @@ final class BazaarUi implements Listener {
             return Ui.withLore(base, List.of("",
                 "<gray>Buy instantly: <gold>" + (ask > 0 ? BazaarService.price(ask) : "<red>no offers"),
                 "<gray>Sell instantly: <gold>" + (bid > 0 ? BazaarService.price(bid) : "<red>no orders"),
-                "<gray>24h volume: <white>" + bz.market().volume24h(key, now), "", "<yellow>Click to trade"));
+                "<gray>24h volume: <white>" + bz.market().volume24h(key, now), "", "<#F6D58E>▸ Trade"));
         }, (c, key) -> openProduct(c.player(), key, 1, back), 45, 53);
-        gui.set(49, Ui.plain(Material.ARROW, "<yellow>Back to the Bazaar"), c -> openMain(c.player()));
+        gui.back("To the Sky Exchange", c -> openMain(c.player()));
         gui.open(player);
     }
 
@@ -287,7 +284,6 @@ final class BazaarUi implements Listener {
     }
 
     private void renderProduct(Gui gui, Player player, String product, int[] amount, BazaarService.Category back) {
-        gui.fill(Ui.glass());
         BazaarMarket m = bz.market();
         long now = System.currentTimeMillis();
         String me = player.getUniqueId().toString();
@@ -331,7 +327,7 @@ final class BazaarUi implements Listener {
         gui.set(19, Ui.icon(Material.GOLD_INGOT, "buy_now", "<green>Buy instantly",
             "<gray>Amount: <white>" + n,
             buyQuote.check().ok() ? "<gray>Cost: <gold>" + Money.coins(buyQuote.cents()) : "<red>" + buyQuote.check().error(),
-            "", "<yellow>Click to buy"), c -> {
+            "", "<#F6D58E>▸ Buy"), c -> {
                 Player p = c.player();
                 bz.instantBuy(p, product, n, o -> {
                     say(p, o);
@@ -344,7 +340,7 @@ final class BazaarUi implements Listener {
         gui.set(25, Ui.icon(Material.HOPPER, "sell_now", "<red>Sell instantly",
             "<gray>Amount: <white>" + n + " <dark_gray>(you carry " + carry + ")",
             sellQuote.check().ok() ? "<gray>You get: <gold>" + Money.coins(sellQuote.cents()) + " <dark_gray>after tax"
-                : "<red>" + sellQuote.check().error(), "", "<yellow>Click to sell"), c -> {
+                : "<red>" + sellQuote.check().error(), "", "<#F6D58E>▸ Sell"), c -> {
                     Player p = c.player();
                     bz.instantSell(p, product, n, o -> {
                         say(p, o);
@@ -356,7 +352,7 @@ final class BazaarUi implements Listener {
         int depth = m.sellableDepth(me, product);
         gui.set(34, Ui.plain(Material.HOPPER_MINECART, "<red>Sell all you carry",
             "<gray>You carry: <white>" + carry, "<gray>Buy orders can take: <white>" + depth, "",
-            carry > 0 && depth > 0 ? "<yellow>Click to sell " + Math.min(carry, depth) : "<dark_gray>Nothing to sell here"),
+            carry > 0 && depth > 0 ? "<#F6D58E>▸ Sell " + Math.min(carry, depth) : "<dark_gray>Nothing to sell here"),
             c -> {
                 Player p = c.player();
                 bz.instantSellAll(p, product, o -> {
@@ -372,7 +368,7 @@ final class BazaarUi implements Listener {
         gui.set(20, Ui.icon(Material.WRITABLE_BOOK, "buy_order", "<green>Buy order: " + BazaarService.price(buyPrice),
             "<gray>Amount: <white>" + n, "<gray>Held now: <gold>" + Money.coins(buyPrice * 10 * n),
             "<gray>One tick above the best buy order,", "<gray>so you are first in line.", "",
-            "<yellow>Click to place"), c -> {
+            "<#F6D58E>▸ Place"), c -> {
                 say(c.player(), bz.placeBuy(c.player(), product, buyPrice, n));
                 renderProduct(gui, c.player(), product, amount, back);
             });
@@ -383,7 +379,7 @@ final class BazaarUi implements Listener {
         gui.set(24, Ui.icon(Material.WRITABLE_BOOK, "sell_order", "<red>Sell order: " + BazaarService.price(sellPrice),
             "<gray>Amount: <white>" + n + " <dark_gray>(you carry " + carry + ")",
             "<gray>One tick below the cheapest offer,", "<gray>so you are first in line.", "",
-            "<yellow>Click to place"), c -> {
+            "<#F6D58E>▸ Place"), c -> {
                 say(c.player(), bz.placeSell(c.player(), product, sellPrice, n));
                 renderProduct(gui, c.player(), product, amount, back);
             });
@@ -395,14 +391,14 @@ final class BazaarUi implements Listener {
         int[] slots = {37, 38, 39, 41, 42, 43};
         for (int i = 0; i < deltas.length; i++) {
             int d = deltas[i];
-            gui.set(slots[i], Ui.plain(d < 0 ? Material.RED_STAINED_GLASS_PANE : Material.LIME_STAINED_GLASS_PANE,
+            gui.set(slots[i], Ui.plain(d < 0 ? Material.RED_DYE : Material.LIME_DYE,
                 (d < 0 ? "<red>" : "<green>+") + d, "<gray>Changes the amount to trade."), c -> {
                     amount[0] = Math.max(1, Math.min(bz.market().rules().maxAmount(), amount[0] + d));
                     renderProduct(gui, c.player(), product, amount, back);
                 });
         }
         gui.set(40, Ui.plain(Material.PAPER, "<white>Amount: " + n, "<gray>Use the buttons around me.", "",
-            "<yellow>Left-click: everything you carry", "<yellow>Right-click: type an amount"), c -> {
+            "<#F6D58E>▸ Left-click: everything you carry", "<#F6D58E>▸ Right-click: type an amount"), c -> {
                 if (c.right() && prompts != null) {
                     askAmount(c.player(), product, amount, back);
                     return;
@@ -410,9 +406,9 @@ final class BazaarUi implements Listener {
                 amount[0] = Math.max(1, Inv.count(c.player(), keys, product));
                 renderProduct(gui, c.player(), product, amount, back);
             });
-        gui.set(36, Ui.plain(Material.ARROW, "<yellow>Back"), c -> {
+        gui.back(null, c -> {
             if (back != null) {
-                openList(c.player(), "<gold>Bazaar: " + back.label, bz.products(back), back);
+                openList(c.player(), "<gold>Sky Exchange: " + back.label, bz.products(back), back);
             } else {
                 openMain(c.player());
             }
@@ -499,8 +495,7 @@ final class BazaarUi implements Listener {
 
     void openOrders(Player player) {
         List<BazaarMarket.Order> orders = bz.market().ordersOf(player.getUniqueId().toString());
-        Gui gui = core.guis().create(6, "<green>My Bazaar orders");
-        gui.border(Ui.glass());
+        Gui gui = core.guis().create(6, "<green>My Sky Exchange orders");
         gui.paginate(orders, gui.innerSlots(), o -> {
             ItemStack base = keys.create(o.product, 1).orElseGet(() -> new ItemStack(Material.PAPER));
             List<String> lore = new ArrayList<>();
@@ -512,10 +507,10 @@ final class BazaarUi implements Listener {
             if (o.hasClaim()) {
                 lore.add("<green>Ready: " + (o.claimItems > 0 ? o.claimItems + " items " : "")
                     + (o.claimCents > 0 ? Money.coins(o.claimCents) : ""));
-                lore.add("<yellow>Click to claim");
+                lore.add("<#F6D58E>▸ Claim");
             }
             if (o.live()) {
-                lore.add("<red>Right-click to cancel");
+                lore.add("<red>▸ Right-click: Cancel");
             }
             return Ui.withLore(base, lore);
         }, (c, o) -> {
@@ -526,7 +521,7 @@ final class BazaarUi implements Listener {
                 claimAndRefresh(c, () -> openOrders(c.player()));
             }
         }, 45, 53);
-        gui.set(49, Ui.plain(Material.ARROW, "<yellow>Back to the Bazaar"), c -> openMain(c.player()));
+        gui.back("To the Sky Exchange", c -> openMain(c.player()));
         gui.set(50, Ui.plain(Material.CHEST, "<green>Claim everything"),
             c -> claimAndRefresh(c, () -> openOrders(c.player())));
         gui.open(player);

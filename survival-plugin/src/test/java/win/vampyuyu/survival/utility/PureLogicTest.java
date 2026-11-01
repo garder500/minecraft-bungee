@@ -291,23 +291,31 @@ public class PureLogicTest {
 
     @Test
     public void configClampsNonsense() {
-        YamlConfiguration y = new YamlConfiguration();
-        y.set("teleport.warmup-seconds", -4);
-        y.set("rtp.min-radius", 5000);
-        y.set("rtp.max-radius", 10);
-        y.set("near.default-radius", 9999);
-        y.set("near.max-radius", 50);
-        y.set("trash.keep-rarity", "nonsense");
-        y.set("trash.keep-ids", List.of());
-        y.set("homes.default-name", "BAD NAME!");
-        UtilityConfig c = UtilityConfig.from(y);
-        assertEquals(0, c.warmupSeconds());
-        assertTrue(c.rtpMaxRadius() > c.rtpMinRadius());
-        assertEquals(50, c.nearDefault());
-        assertEquals(Rarity.LEGENDARY, c.trashKeepRarity());
-        assertTrue(c.trashKeepIds().isEmpty());
-        y.set("trash.keep-rarity", "");
-        assertNull(UtilityConfig.from(y).trashKeepRarity());
-        assertEquals("home", c.defaultHomeName());
+        try (win.vampyuyu.survival.data.Db db = win.vampyuyu.survival.data.TestDb.seeded()) {
+            win.vampyuyu.survival.data.TestDb.set(db, "utility.teleport.warmup-seconds", "int", "-4");
+            win.vampyuyu.survival.data.TestDb.set(db, "utility.rtp.min-radius", "int", "5000");
+            win.vampyuyu.survival.data.TestDb.set(db, "utility.rtp.max-radius", "int", "10");
+            win.vampyuyu.survival.data.TestDb.set(db, "utility.near.default-radius", "int", "9999");
+            win.vampyuyu.survival.data.TestDb.set(db, "utility.near.max-radius", "int", "50");
+            win.vampyuyu.survival.data.TestDb.set(db, "utility.trash.keep-rarity", "text", "nonsense");
+            win.vampyuyu.survival.data.TestDb.setList(db, "utility.trash.keep-ids");
+            win.vampyuyu.survival.data.TestDb.set(db, "utility.homes.default-name", "text", "BAD NAME!");
+            UtilityConfig c = UtilityRepo.load(db);
+            assertEquals(0, c.warmupSeconds());
+            assertTrue(c.rtpMaxRadius() > c.rtpMinRadius());
+            assertEquals(50, c.nearDefault());
+            assertEquals(Rarity.LEGENDARY, c.trashKeepRarity());
+            assertTrue(c.trashKeepIds().isEmpty());
+            win.vampyuyu.survival.data.TestDb.set(db, "utility.trash.keep-rarity", "text", "");
+            assertNull(UtilityRepo.load(db).trashKeepRarity());
+            assertEquals("home", c.defaultHomeName());
+        }
+    }
+
+    @Test
+    public void theSeededSettingsEqualTheCodeDefaults() {
+        try (win.vampyuyu.survival.data.Db db = win.vampyuyu.survival.data.TestDb.seeded()) {
+            assertEquals(UtilityConfig.defaults(), UtilityRepo.load(db));
+        }
     }
 }

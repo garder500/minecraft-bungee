@@ -9,11 +9,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.bukkit.configuration.ConfigurationSection;
+import win.vampyuyu.survival.data.ContentDomains;
+import win.vampyuyu.survival.data.Db;
+import win.vampyuyu.survival.data.Seeds;
 import win.vampyuyu.survival.api.Stat;
 
 /**
- * Typed, immutable view of {@code items.yml}. Every getter has the same default as the shipped file, so an empty
- * configuration (tests, a user file missing keys) behaves like the defaults.
+ * Typed, immutable view of the items settings of the content database ({@code items.*}, see {@link ItemsRepo}). Every
+ * getter has the same default as the shipped seed, so an empty configuration behaves like the defaults.
  */
 public final class ItemsSettings {
     private final ConfigurationSection root;
@@ -26,7 +29,6 @@ public final class ItemsSettings {
     public final double maxHealth;
     public final float healthScale;
     public final double maxSpeedPercent;
-    public final double maxAttackSpeedPercent;
     public final double maxMiningSpeedPercent;
     public final double regenPercentPerSecond;
     public final boolean cancelVanillaRegen;
@@ -40,18 +42,26 @@ public final class ItemsSettings {
     public final double incomingScale;
     public final Map<String, Double> incomingScaleByCause;
     public final Map<String, Double> trueCausePercent;
-    public final double critCap;
     public final boolean useAttackCooldown;
-    public final double ferocityDelayTicks;
+    public final double surgeEvery;
+    public final double surgeMultiplier;
+    public final double surgeMinCharge;
+    public final double elementWeakness;
+    public final double elementResistance;
+    public final double weaponCooldownTicks;
     public final boolean indicators;
     public final int indicatorTicks;
     public final int indicatorPool;
     public final boolean healthBars;
-    public final double abilityIntelligenceDivisor;
+    public final double abilityAetherDivisor;
 
     // mobs
     /** A row of {@code mobs.table}: level shown, absolute max health (0 = vanilla x multiplier) and damage (0 = vanilla). */
-    public record MobEntry(int level, double health, double damage) {}
+    public record MobEntry(int level, double health, double damage, String weakness, String resistance) {
+        public MobEntry(int level, double health, double damage) {
+            this(level, health, damage, null, null);
+        }
+    }
 
     public final boolean mobShowLevel;
     public final double mobHealthPerLevel;
@@ -110,6 +120,25 @@ public final class ItemsSettings {
     public final Map<String, Double> petRarityXp;
     public final int petUpdateTicks;
 
+    private static volatile ItemsSettings shipped;
+
+    /** The settings of the content database. */
+    public static ItemsSettings load(Db db) {
+        return new ItemsSettings(ItemsRepo.config(db));
+    }
+
+    /** The jar's default settings (the shipped seed), for tests and for code that runs before the database is open. */
+    public static ItemsSettings defaults() {
+        ItemsSettings settings = shipped;
+        if (settings == null) {
+            try (Db db = Seeds.defaults(ContentDomains.ITEMS)) {
+                settings = load(db);
+            }
+            shipped = settings;
+        }
+        return settings;
+    }
+
     public ItemsSettings(ConfigurationSection root) {
         this.root = root;
         heldTypes = upperSet("stats.held-types", List.of("SWORD", "BOW", "AXE", "PICKAXE", "SHOVEL", "HOE", "DRILL",
@@ -120,13 +149,12 @@ public final class ItemsSettings {
         maxHealth = clamp(d("attributes.max-health", 1024), 20, 1024);
         healthScale = (float) clamp(d("attributes.health-scale", 40), 2, 40);
         maxSpeedPercent = d("attributes.max-speed-percent", 400);
-        maxAttackSpeedPercent = d("attributes.max-attack-speed-percent", 300);
         maxMiningSpeedPercent = d("attributes.max-mining-speed-percent", 2000);
         regenPercentPerSecond = d("stats.regen-percent-per-second", 1.5);
         cancelVanillaRegen = b("stats.cancel-vanilla-regen", true);
         skyblockOnly = b("stats.skyblock-worlds-only", true);
 
-        damageBonus = d("combat.damage-bonus", 5);
+        damageBonus = d("combat.damage-bonus", 0);
         vanillaDamageMultiplier = d("combat.vanilla-damage-multiplier", 3);
         mobHealthMultiplier = d("combat.mob-health-multiplier", 5);
         scaledSpawnReasons = upperSet("combat.scaled-spawn-reasons", List.of("NATURAL", "SPAWNER", "CHUNK_GEN", "JOCKEY",
@@ -137,14 +165,18 @@ public final class ItemsSettings {
             "FREEZE", 2.0, "LIGHTNING", 10.0));
         trueCausePercent = doubles("combat.true-damage-percent-of-max-health", Map.of("VOID", 100.0, "STARVATION", 2.0,
             "SUICIDE", 100.0, "KILL", 100.0, "WORLD_BORDER", 100.0));
-        critCap = d("combat.crit-chance-cap", 100);
         useAttackCooldown = b("combat.use-attack-cooldown", true);
-        ferocityDelayTicks = d("combat.ferocity-delay-ticks", 3);
+        surgeEvery = Math.max(2, i("combat.surge-every", 5));
+        surgeMultiplier = Math.max(1, d("combat.surge-multiplier", 2.0));
+        surgeMinCharge = clamp(d("combat.surge-min-charge", 0.9), 0, 1);
+        elementWeakness = Math.max(1, d("combat.element-weakness", 1.5));
+        elementResistance = clamp(d("combat.element-resistance", 0.6), 0, 1);
+        weaponCooldownTicks = Math.max(1, d("power.weapon-cooldown-ticks", 12.5));
         indicators = b("combat.damage-indicators.enabled", true);
         indicatorTicks = Math.max(5, i("combat.damage-indicators.lifetime-ticks", 24));
         indicatorPool = Math.max(0, i("combat.damage-indicators.pool-size", 32));
         healthBars = b("combat.mob-health-bars", true);
-        abilityIntelligenceDivisor = d("combat.ability-intelligence-divisor", 100);
+        abilityAetherDivisor = d("combat.ability-aether-divisor", 100);
 
         mobShowLevel = b("mobs.show-level", true);
         mobHealthPerLevel = Math.max(0, d("mobs.health-per-level", 0.15));
@@ -197,19 +229,16 @@ public final class ItemsSettings {
         ConfigurationSection per = root.getConfigurationSection("accessories.per-magical-power");
         if (per != null) {
             for (String key : per.getKeys(false)) {
-                try {
-                    mp.put(Stat.valueOf(key.toUpperCase(Locale.ROOT)), per.getDouble(key));
-                } catch (IllegalArgumentException ignored) {
-                    // unknown stat name in the config: skipped
+                for (Stat.Converted c : Stat.resolve(key)) {
+                    mp.merge(c.stat(), per.getDouble(key) * c.factor(), Double::sum);
                 }
             }
         } else {
-            mp.put(Stat.HEALTH, 0.6);
-            mp.put(Stat.DEFENSE, 0.25);
-            mp.put(Stat.STRENGTH, 0.3);
-            mp.put(Stat.INTELLIGENCE, 0.35);
-            mp.put(Stat.CRIT_DAMAGE, 0.1);
-            mp.put(Stat.SPEED, 0.03);
+            mp.put(Stat.VITALITY, 0.6);
+            mp.put(Stat.WARD, 0.25);
+            mp.put(Stat.MIGHT, 0.3);
+            mp.put(Stat.AETHER, 0.35);
+            mp.put(Stat.SWIFTNESS, 0.03);
         }
         perMagicalPower = mp;
 
@@ -254,7 +283,8 @@ public final class ItemsSettings {
             ConfigurationSection row = section.getConfigurationSection(key);
             if (row != null) {
                 out.put(key.toUpperCase(Locale.ROOT), new MobEntry(Math.max(0, row.getInt("level", 1)),
-                    Math.max(0, row.getDouble("health", 0)), Math.max(0, row.getDouble("damage", 0))));
+                    Math.max(0, row.getDouble("health", 0)), Math.max(0, row.getDouble("damage", 0)),
+                    row.getString("weakness"), row.getString("resistance")));
             }
         }
         return Map.copyOf(out);

@@ -2,7 +2,7 @@ package win.vampyuyu.survival.dungeon;
 
 /**
  * Score of a finished run, 0 to 325: speed (100) + exploration (100) + skill (100) + bonus (25).
- * Pure maths so it can be tested and tuned from {@code dungeon.yml}.
+ * Pure maths so it can be tested and tuned from the dungeon data.
  */
 public final class ScoreCalculator {
     private ScoreCalculator() {}

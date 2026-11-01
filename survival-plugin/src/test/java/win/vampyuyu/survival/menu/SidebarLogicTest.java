@@ -10,27 +10,26 @@ import org.junit.Test;
 public class SidebarLogicTest {
     @Test
     public void calendarDate() {
-        assertEquals("Early Spring 1st", SkyCalendar.date(0));
-        assertEquals("Early Spring 2nd", SkyCalendar.date(24000));
-        assertEquals("Early Spring 3rd", SkyCalendar.date(2 * 24000L));
-        assertEquals("Early Spring 4th", SkyCalendar.date(3 * 24000L));
-        assertEquals("Early Spring 11th", SkyCalendar.date(10 * 24000L));
-        assertEquals("Spring 1st", SkyCalendar.date(31 * 24000L));
-        assertEquals("Early Spring 1st", SkyCalendar.date(372 * 24000L));
-        assertEquals("Late Winter 31st", SkyCalendar.date((372 * 24000L) - 1));
-        assertEquals(2, SkyCalendar.year(372 * 24000L));
-        assertEquals("Early Spring 1st", SkyCalendar.date(-5));
+        assertEquals("Dawn Moon · Day 1", SkyCalendar.date(0));
+        assertEquals("Dawn Moon · Day 2", SkyCalendar.date(24000));
+        assertEquals("Dawn Moon · Day 24", SkyCalendar.date(23 * 24000L));
+        assertEquals("Gale Moon · Day 1", SkyCalendar.date(24 * 24000L));
+        assertEquals("Star Moon · Day 24", SkyCalendar.date(192 * 24000L - 1));
+        assertEquals("Dawn Moon · Day 1", SkyCalendar.date(192 * 24000L));
+        assertEquals(2, SkyCalendar.year(192 * 24000L));
+        assertEquals("Dawn Moon · Day 1", SkyCalendar.date(-5));
     }
 
     @Test
-    public void calendarClock() {
-        assertEquals("6:00am", SkyCalendar.clock(0));
-        assertEquals("12:00pm", SkyCalendar.clock(6000));
-        assertEquals("7:00pm", SkyCalendar.clock(13000));
-        assertEquals("12:00am", SkyCalendar.clock(18000));
-        assertEquals("6:10am", SkyCalendar.clock(190));   // 11 min rounds down to 10
-        assertEquals("5:50am", SkyCalendar.clock(23999));
-        assertEquals("7:00pm", SkyCalendar.clock(13000 + 24000 * 5));
+    public void partOfTheDay() {
+        assertEquals("Dawn", SkyCalendar.clock(0));
+        assertEquals("Morning", SkyCalendar.clock(1000));
+        assertEquals("Noon", SkyCalendar.clock(6000));
+        assertEquals("Afternoon", SkyCalendar.clock(9000));
+        assertEquals("Dusk", SkyCalendar.clock(12000));
+        assertEquals("Night", SkyCalendar.clock(18000));
+        assertEquals("Dawn", SkyCalendar.clock(23500));
+        assertEquals("Dusk", SkyCalendar.clock(12000 + 24000 * 5));
         assertTrue(SkyCalendar.isDay(0));
         assertFalse(SkyCalendar.isDay(14000));
         assertTrue(SkyCalendar.isDay(23500));
@@ -38,13 +37,8 @@ public class SidebarLogicTest {
 
     @Test
     public void zonesMatchByWorldAndBoxFirstWins() {
-        List<String> problems = new ArrayList<>();
-        Zones zones = Zones.parse(List.of(
-            Map.of("name", "Market", "world", "hub", "min", List.of(0, 0, 0), "max", List.of(10, 100, 10)),
-            Map.of("name", "Village", "world", "hub", "min", List.of(-50, 0, -50), "max", List.of(50, 100, 50)),
-            Map.of("name", "Bad", "world", "hub", "min", List.of(0, 0), "max", List.of(1, 1, 1))),
-            token -> token.equals("hub") ? "sb_hub" : token, problems);
-        assertEquals(1, problems.size());
+        Zones zones = new Zones(List.of(new Zones.Zone("Market", "sb_hub", 0, 0, 0, 10, 100, 10),
+            new Zones.Zone("Village", "sb_hub", -50, 0, -50, 50, 100, 50)));
         assertEquals(2, zones.size());
         assertEquals("Market", zones.find("sb_hub", 5, 64, 5).orElseThrow());
         assertEquals("Village", zones.find("sb_hub", 20, 64, 20).orElseThrow());
@@ -56,8 +50,8 @@ public class SidebarLogicTest {
     public void layoutWithEverything() {
         List<String> lines = SidebarLines.build(new SidebarLines.View("Late Summer 15th", "7:10pm", false, "Your Island",
             "1,234", "2/4", "Break wood", "(2/5)", "Skyblock", "<yellow>play.example"));
-        assertEquals(List.of("<gray>Late Summer 15th", "<gray>7:10pm <blue>☽", "", "<gray>⏣ <aqua>Your Island", "",
-            "<white>Purse: <gold>1,234", "<white>Members: <green>2/4", "", "<aqua>Objective",
+        assertEquals(List.of("<#8FD3FF>Late Summer 15th", "<gray>7:10pm <blue>☽", "", "<#F6D58E>✧ <aqua>Your Island", "",
+            "<white>Coins: <gold>1,234", "<white>Crew: <green>2/4", "", "<aqua>Next step",
             "<yellow>Break wood <gray>(2/5)", "<gray>Type <green>/guide <gray>for help", "", "<white>Server: <green>Skyblock",
             "<yellow>play.example"), lines);
     }
@@ -65,7 +59,7 @@ public class SidebarLogicTest {
     @Test
     public void layoutDropsMissingBlocksAndTrailingBlank() {
         List<String> lines = SidebarLines.build(new SidebarLines.View("d", "t", true, "z", null, null, null, null, "", ""));
-        assertEquals(List.of("<gray>d", "<gray>t <yellow>☀", "", "<gray>⏣ <aqua>z"), lines);
+        assertEquals(List.of("<#8FD3FF>d", "<gray>t <yellow>☀", "", "<#F6D58E>✧ <aqua>z"), lines);
     }
 
     @Test

@@ -123,15 +123,15 @@ public class SkillsServiceTest extends SkillsBase {
         UUID id = player.getUniqueId();
         service.grant(player, Skill.MINING, xpForLevel(Skill.MINING, 10), "t");
         // mining: 2 fortune per level up to 20, defense 1 per level up to 14
-        assertEquals(20, stats.modifier(id, "skill:mining", Stat.MINING_FORTUNE), 1e-9);
-        assertEquals(10, stats.modifier(id, "skill:mining", Stat.DEFENSE), 1e-9);
+        assertEquals(20, stats.modifier(id, "skill:mining", Stat.MINING_YIELD), 1e-9);
+        assertEquals(10, stats.modifier(id, "skill:mining", Stat.WARD), 1e-9);
         assertTrue(stats.recomputes > 0);
         service.grant(player, Skill.MINING, xpForLevel(Skill.MINING, 30) - xpForLevel(Skill.MINING, 10), "t");
         // 20 levels at 2 + 10 at 3 = 70 fortune; defense 14 + 16 * 2 = 46
-        assertEquals(70, stats.modifier(id, "skill:mining", Stat.MINING_FORTUNE), 1e-9);
-        assertEquals(46, stats.modifier(id, "skill:mining", Stat.DEFENSE), 1e-9);
+        assertEquals(70, stats.modifier(id, "skill:mining", Stat.MINING_YIELD), 1e-9);
+        assertEquals(46, stats.modifier(id, "skill:mining", Stat.WARD), 1e-9);
         // other skills are untouched
-        assertEquals(0, stats.modifier(id, "skill:combat", Stat.STRENGTH), 0);
+        assertEquals(0, stats.modifier(id, "skill:combat", Stat.MIGHT), 0);
     }
 
     @Test
@@ -141,18 +141,18 @@ public class SkillsServiceTest extends SkillsBase {
             service.adminSetXp(id, skill, service.config().levels.xpFor(10));
         }
         service.applyAllStats(player);
-        assertTrue(stats.modifier(id, "skill:combat", Stat.CRIT_CHANCE) > 0);
-        assertTrue(stats.modifier(id, "skill:combat", Stat.STRENGTH) > 0);
-        assertTrue(stats.modifier(id, "skill:mining", Stat.MINING_FORTUNE) > 0);
-        assertTrue(stats.modifier(id, "skill:mining", Stat.DEFENSE) > 0);
-        assertTrue(stats.modifier(id, "skill:farming", Stat.FARMING_FORTUNE) > 0);
-        assertTrue(stats.modifier(id, "skill:farming", Stat.HEALTH) > 0);
-        assertTrue(stats.modifier(id, "skill:foraging", Stat.FORAGING_FORTUNE) > 0);
-        assertTrue(stats.modifier(id, "skill:foraging", Stat.STRENGTH) > 0);
-        assertTrue(stats.modifier(id, "skill:fishing", Stat.HEALTH) > 0);
-        assertTrue(stats.modifier(id, "skill:enchanting", Stat.INTELLIGENCE) > 0);
-        assertTrue(stats.modifier(id, "skill:alchemy", Stat.INTELLIGENCE) > 0);
-        assertTrue(stats.modifier(id, "skill:carpentry", Stat.HEALTH) > 0);
+        assertTrue(stats.modifier(id, "skill:combat", Stat.ATTUNEMENT) > 0);
+        assertTrue(stats.modifier(id, "skill:combat", Stat.MIGHT) > 0);
+        assertTrue(stats.modifier(id, "skill:mining", Stat.MINING_YIELD) > 0);
+        assertTrue(stats.modifier(id, "skill:mining", Stat.WARD) > 0);
+        assertTrue(stats.modifier(id, "skill:farming", Stat.FARMING_YIELD) > 0);
+        assertTrue(stats.modifier(id, "skill:farming", Stat.VITALITY) > 0);
+        assertTrue(stats.modifier(id, "skill:foraging", Stat.FORAGING_YIELD) > 0);
+        assertTrue(stats.modifier(id, "skill:foraging", Stat.MIGHT) > 0);
+        assertTrue(stats.modifier(id, "skill:fishing", Stat.VITALITY) > 0);
+        assertTrue(stats.modifier(id, "skill:enchanting", Stat.AETHER) > 0);
+        assertTrue(stats.modifier(id, "skill:alchemy", Stat.AETHER) > 0);
+        assertTrue(stats.modifier(id, "skill:carpentry", Stat.VITALITY) > 0);
     }
 
     @Test
@@ -290,11 +290,11 @@ public class SkillsServiceTest extends SkillsBase {
         var joined = server.getPlayer("Fighter");
         assertNotNull(joined);
         // the existing player is not re-applied, the new one has no skills: nothing registered for him
-        assertTrue(stats.modifier(joined.getUniqueId(), "skill:combat", Stat.STRENGTH) == 0);
+        assertTrue(stats.modifier(joined.getUniqueId(), "skill:combat", Stat.MIGHT) == 0);
         service.applyAllStats(player);
-        assertTrue(stats.modifier(id, "skill:combat", Stat.STRENGTH) > 0);
+        assertTrue(stats.modifier(id, "skill:combat", Stat.MIGHT) > 0);
         player.disconnect();
-        assertEquals(0, stats.modifier(id, "skill:combat", Stat.STRENGTH), 0);
+        assertEquals(0, stats.modifier(id, "skill:combat", Stat.MIGHT), 0);
     }
 
     @Test

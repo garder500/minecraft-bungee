@@ -112,7 +112,7 @@ final class SeaCreatures implements Listener {
     LivingEntity trySpawn(Player player, Location at, DoubleSupplier chanceRoll, DoubleSupplier pickRoll) {
         SkillsConfig.SeaCreatureCfg cfg = service.config().seaCreatures;
         int level = service.level(player.getUniqueId(), Skill.FISHING);
-        double stat = core.service(StatsApi.class).map(api -> api.stat(player, Stat.SEA_CREATURE_CHANCE)).orElse(0.0);
+        double stat = core.service(StatsApi.class).map(api -> api.stat(player, Stat.DEEP_LURE)).orElse(0.0);
         if (chanceRoll.getAsDouble() >= chance(cfg, level, stat)) {
             return null;
         }

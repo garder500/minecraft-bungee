@@ -12,6 +12,11 @@ public enum QuestType {
     PLACE_BLOCK(false, "Place blocks"),
     /** Craft items. Target: material, group, or {@code custom:<id prefix>} for a custom item. */
     CRAFT_ITEM(false, "Craft items"),
+    /**
+     * Get items, whatever the way: crafting, a furnace, a stonecutter, picking them up (auto-smelt drops). Items a
+     * player dropped do not count again when picked up. Target: material, group (GLASSES, LOGS...) or custom prefix.
+     */
+    OBTAIN_ITEM(false, "Obtain items"),
     /** Kill mobs. Target: entity type or empty for any. */
     KILL_MOB(false, "Defeat mobs"),
     /** Catch fish (target ignored). */
@@ -27,7 +32,7 @@ public enum QuestType {
     /** Enter a Skyblock world. Target: hub, world, nether or end. */
     VISIT_WORLD(false, "Visit an area"),
     /** Collect fairy souls (target ignored). */
-    COLLECT_SOUL(false, "Collect Fairy Souls"),
+    COLLECT_SOUL(false, "Collect Wisps"),
     /** Enchant an item (target ignored). */
     ENCHANT_ITEM(false, "Enchant an item"),
     /** Find an ore in a cobble generator. Target: ore id (bronzite, diamond...) or ANY. */

@@ -1,7 +1,5 @@
 package win.vampyuyu.survival.menu;
 
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -14,7 +12,6 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.After;
@@ -31,7 +28,7 @@ import win.vampyuyu.survival.api.Stat;
 import win.vampyuyu.survival.api.StatsApi;
 import win.vampyuyu.survival.core.Core;
 
-/** Boots a Core with the shipped menu.yml on MockBukkit, plus fake services of the other features. */
+/** Boots a Core with the shipped menu data (seeded database) on MockBukkit, plus fake services of the other features. */
 abstract class MenuTestBase {
     ServerMock server;
     JavaPlugin plugin;
@@ -55,13 +52,22 @@ abstract class MenuTestBase {
         MockBukkit.unmock();
     }
 
+    /**
+     * The shipped menu data with the small {@link LegacyTutorial} quest line (and the shipped daily pool), which the quest
+     * service tests are written against.
+     */
     static MenuConfig shipped() {
-        return new MenuConfig(shippedYaml());
+        try (win.vampyuyu.survival.data.Db db = win.vampyuyu.survival.data.TestDb.seeded()) {
+            QuestCatalog catalog = QuestCatalog.of(Map.of(), LegacyTutorial.plan(), QuestRepo.load(db).dailyPool(), List.of());
+            return new MenuConfig(win.vampyuyu.survival.data.Settings.load(db, "menu"), MenuRepo.rows(db), catalog);
+        }
     }
 
-    static YamlConfiguration shippedYaml() {
-        return YamlConfiguration.loadConfiguration(new InputStreamReader(
-            MenuTestBase.class.getResourceAsStream("/menu.yml"), StandardCharsets.UTF_8));
+    /** Everything as shipped, quest plan included. */
+    static MenuConfig shippedFromDatabase() {
+        try (win.vampyuyu.survival.data.Db db = win.vampyuyu.survival.data.TestDb.seeded()) {
+            return MenuRepo.load(db);
+        }
     }
 
     World world(String name) {

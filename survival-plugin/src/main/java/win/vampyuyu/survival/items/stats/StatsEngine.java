@@ -260,7 +260,7 @@ public final class StatsEngine implements StatsApi, Listener {
             Saved back = first && !player.isDead() ? saved.remove(player.getUniqueId()) : null;
             attributes.apply(player, finalTotals, settings, first, back == null ? -1 : back.health());
             if (back != null) {
-                double max = finalTotals.getOrDefault(Stat.INTELLIGENCE, Stat.INTELLIGENCE.base());
+                double max = finalTotals.getOrDefault(Stat.AETHER, Stat.AETHER.base());
                 st.mana.load(Math.min(max, back.mana() * max), back.overflow());
             }
             st.everApplied = true;
@@ -280,7 +280,7 @@ public final class StatsEngine implements StatsApi, Listener {
         }
         var maxHealth = player.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
         double cap = maxHealth == null ? 20 : maxHealth.getValue();
-        double intelligence = st.stat(Stat.INTELLIGENCE);
+        double intelligence = st.stat(Stat.AETHER);
         double mana = st.mana.pristine() || intelligence <= 0 ? 1 : Math.min(1, st.mana.mana() / intelligence);
         if (saved.size() > 10000) {
             saved.clear();
@@ -297,9 +297,8 @@ public final class StatsEngine implements StatsApi, Listener {
 
     private double clampStat(Stat stat, double value) {
         return switch (stat) {
-            case CRIT_CHANCE -> Math.max(0, Math.min(settings.critCap, value));
-            case HEALTH -> Math.max(1, value);
-            case SPEED -> Math.max(10, value);
+            case VITALITY -> Math.max(1, value);
+            case SWIFTNESS -> Math.max(10, value);
             default -> stat.base() > 0 ? Math.max(0, value) : Math.max(-1000, value);
         };
     }
@@ -352,7 +351,7 @@ public final class StatsEngine implements StatsApi, Listener {
     /** Advances the mana pool of a player by {@code seconds} (called by the HUD several times a second). */
     public void tickMana(Player player, double seconds) {
         PlayerState st = state(player);
-        st.mana.tick(st.stat(Stat.INTELLIGENCE), seconds, settings.manaRegenPercent, settings.overflowMaxPercent,
+        st.mana.tick(st.stat(Stat.AETHER), seconds, settings.manaRegenPercent, settings.overflowMaxPercent,
             settings.overflowDecayPercent);
     }
 
@@ -417,7 +416,7 @@ public final class StatsEngine implements StatsApi, Listener {
         PlayerState st = state(player);
         saved.remove(player.getUniqueId());
         st.everApplied = false;
-        st.mana.fill(st.stat(Stat.INTELLIGENCE));
+        st.mana.fill(st.stat(Stat.AETHER));
         markDirty(player.getUniqueId(), true);
         core.scheduler().later(2, () -> markDirty(player.getUniqueId(), true));
     }

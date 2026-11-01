@@ -16,6 +16,8 @@ import struct
 import sys
 import zlib
 
+from imported import imported
+
 ART = pathlib.Path(__file__).resolve().parent
 PACK = ART.parent / "pack" / "assets" / "vampyuyu"
 W = 16
@@ -1048,6 +1050,8 @@ def write(icons):
     for folder in (tex, mdl, itm):
         folder.mkdir(parents=True, exist_ok=True)
     for name, img in sorted(icons.items()):
+        if imported(f"items/{name}"):  # the sprite comes from a concept sheet (import_textures.py)
+            continue
         (tex / f"{name}.png").write_bytes(img.png())
         (mdl / f"{name}.json").write_text(json.dumps(
             {"parent": "minecraft:item/generated", "textures": {"layer0": f"vampyuyu:item/items/{name}"}}, indent=2) + "\n")

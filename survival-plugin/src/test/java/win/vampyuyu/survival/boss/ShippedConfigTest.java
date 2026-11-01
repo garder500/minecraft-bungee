@@ -2,20 +2,16 @@ package win.vampyuyu.survival.boss;
 
 import static org.junit.Assert.*;
 
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import win.vampyuyu.survival.boss.slayer.SlayerDefinition;
 
-/** The boss.yml shipped in the jar must validate: a wrong key silently drops a boss. */
+/** The boss data shipped in the jar (the seeded database) must validate: a wrong key silently drops a boss. */
 public class ShippedConfigTest {
     @Before
     public void server() {
@@ -27,11 +23,8 @@ public class ShippedConfigTest {
         MockBukkit.unmock();
     }
 
-    static BossConfig shipped() throws Exception {
-        try (Reader reader = new InputStreamReader(ShippedConfigTest.class.getResourceAsStream("/boss.yml"),
-                StandardCharsets.UTF_8)) {
-            return BossConfig.load(YamlConfiguration.loadConfiguration(reader));
-        }
+    static BossConfig shipped() {
+        return BossTestData.shipped();
     }
 
     @Test
@@ -179,5 +172,37 @@ public class ShippedConfigTest {
         assertEquals(0.01, settings.scaleMinShare(), 0);
         assertTrue(settings.repeatDecay() > 0 && settings.repeatFloor() > 0);
         assertTrue(settings.damageNumbers());
+    }
+
+    @Test
+    public void everyPityIsGentle() throws Exception {
+        BossConfig config = shipped();
+        List<BossDefinition> all = new ArrayList<>(config.bosses().values());
+        config.slayers().values().forEach(s -> s.tiers().forEach(t -> all.add(t.boss())));
+        int withPity = 0;
+        for (BossDefinition def : all) {
+            for (BossDefinition.LootEntry e : def.loot().entries()) {
+                assertEquals(def.id() + " " + e.item() + " pity cap", 0.015, e.pityCap(), 1e-12);
+                if (e.pity() > 0) {
+                    withPity++;
+                    assertEquals(def.id() + " " + e.item() + " pity per dry kill", 0.001, e.pity(), 1e-12);
+                    // base + pity never passes 1.4 x base, whatever the streak
+                    double top = e.chance() + LootMath.pityBonus(100_000, e.pity(), e.pityCap(), e.chance());
+                    assertTrue(def.id() + " " + e.item(), top <= e.chance() * 1.4 + 1e-12);
+                }
+            }
+        }
+        // 6 boss drops with pity, and 5 slayer drops that exist in tiers 3, 4 and 5
+        assertEquals(6 + 5 * 3, withPity);
+    }
+
+    @Test
+    public void bossesAreRatedByTier() throws Exception {
+        try (var db = BossTestData.seeded()) {
+            var tiers = new java.util.HashMap<String, Integer>();
+            db.read(c -> win.vampyuyu.survival.data.Db.query(c, "SELECT id, tier FROM boss", rs -> tiers.put(rs.getString(1), rs.getInt(2))));
+            assertEquals(java.util.Map.of("crypt_lord", 1, "magma_warden", 2, "frost_revenant", 3, "sylvan_matriarch", 3,
+                "abyssal_leviathan", 4, "voidwyrm", 5), tiers);
+        }
     }
 }

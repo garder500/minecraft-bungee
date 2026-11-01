@@ -94,7 +94,7 @@ public final class ItemLoreExtras implements ItemRender.ExtraLore {
         // upgrades
         if (info.potatoBooks() > 0) {
             out.add(line(Component.text(info.potatoBooks() + "/" + settings.i("hot-potato.max", 10)
-                + " Hot Potato Books", NamedTextColor.YELLOW)));
+                + " Tempering Runes", NamedTextColor.YELLOW)));
         }
         if (info.singularity() > 0) {
             out.add(line(Component.text("Singularity applied", NamedTextColor.GOLD)));

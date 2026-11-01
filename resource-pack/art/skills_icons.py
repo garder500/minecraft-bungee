@@ -8,7 +8,7 @@ Stdlib only and fully deterministic. Every item is a shape (gem, ingot, lump...)
 outlined automatically, with a sparkle overlay that marks the tier (green for enchanted, blue for compacted).
 Output, all under assets/vampyuyu/ and all containing "skills" in the path:
     textures/item/skills/<id>.png, models/item/skills/<id>.json, items/skills/<id>.json
-The same ITEMS table is the reference for the enchanted_items section of survival-plugin skills.yml.
+The same ITEMS table is the reference for the enchanted_items section of survival-plugin db/seed/skills.sql.
 """
 import json
 import pathlib

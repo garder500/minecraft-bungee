@@ -31,7 +31,7 @@ import win.vampyuyu.survival.core.Items;
 import win.vampyuyu.survival.core.Msg;
 
 /**
- * Collection-gated crafting. Each recipe of {@code skills.yml} is registered as a Bukkit shapeless recipe whose slots
+ * Collection-gated crafting. Each row of the {@code skill_recipe} table is registered as a Bukkit shapeless recipe whose slots
  * use {@link RecipeChoice.ExactChoice} (so a plain Cobblestone and an Enchanted Cobblestone never share a recipe
  * shell). Vanilla only consumes one item per slot, so the real cost (for example 5 slots of 32) is enforced here:
  * the prepare handler hides the result when a stack is too small or a collection tier is missing, and the craft

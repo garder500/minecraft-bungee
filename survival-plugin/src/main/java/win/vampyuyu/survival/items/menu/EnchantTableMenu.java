@@ -68,26 +68,22 @@ public final class EnchantTableMenu extends ItemMenu {
 
     private void render() {
         inventory.clear();
-        for (int slot = 0; slot < 54; slot++) {
-            inventory.setItem(slot, Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
-        }
         inventory.setItem(4, Guis.icon(Material.ENCHANTING_TABLE, "<light_purple>Enchanting",
             "<gray>Put an item in the middle slot, then click an", "<gray>enchant to raise it by one level.",
             "", "<gray>Higher levels need a higher <green>Enchanting</green> level.",
             "<gray>Shift + right click removes an enchant.", "<gray>Ultimate enchants come from books (see the anvil)."));
         inventory.setItem(ITEM, null);
-        inventory.setItem(49, Guis.icon(Material.BARRIER, "<red>Close"));
         drawOptions();
     }
 
     private void drawOptions() {
         for (int slot : OPTIONS) {
-            inventory.setItem(slot, Guis.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
+            inventory.setItem(slot, null);
         }
         ItemStack stack = inventory.getItem(ITEM);
         Optional<GearInfo> info = gear.read(stack);
         if (info.isEmpty() || !accepts(stack)) {
-            inventory.setItem(31, Guis.icon(Material.RED_STAINED_GLASS_PANE, "<red>No item",
+            inventory.setItem(31, Guis.icon(Material.GRAY_DYE, "<red>No item",
                 "<gray>Place a weapon, tool or armor piece above."));
             return;
         }
@@ -126,7 +122,7 @@ public final class EnchantTableMenu extends ItemMenu {
             boolean ok = skillLevel() >= need;
             out.add((ok ? "<green>" : "<red>") + "Enchanting level " + need + " needed");
             out.add("");
-            out.add(ok ? "<yellow>Click to enchant" : "<red>You are not skilled enough yet");
+            out.add(ok ? "<#F6D58E>▸ Enchant" : "<red>You are not skilled enough yet");
         }
         return Guis.icon(have > 0 ? Material.ENCHANTED_BOOK : Material.BOOK, "<aqua>" + enchant.name(), out.toArray(new String[0]));
     }
@@ -145,10 +141,6 @@ public final class EnchantTableMenu extends ItemMenu {
                 page = 0;
                 drawOptions();
             }
-            return;
-        }
-        if (slot == 49) {
-            core.scheduler().nextTick(player::closeInventory);
             return;
         }
         if (slot == 45 || slot == 53) {

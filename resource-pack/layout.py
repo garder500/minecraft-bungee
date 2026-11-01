@@ -29,7 +29,18 @@ BACKGROUNDS = {
     "menu_lovers":  (0xEE00, 222, 6),
     "menu_shot":    (0xEF00, 222, 6),
     "menu_village": (0xF000, 222, 6),   # overview when no role menu applies: WerewolfMenus.VILLAGE
+    # Skyblock (survival-plugin core/MenuArt.Kind): sky and island art instead of glass panes
+    "sb_main":      (0xF100, 222, 6),   # the Skyblock menu: buttons on SB_MAIN
+    "sb_panel":     (0xF200, 222, 6),   # any 6-row Skyblock menu
+    "sb_small":     (0xF300, 168, 4),   # any 3-row Skyblock menu
+    "sb_forge":     (0xF400, 222, 6),   # the Forge
 }
+
+# The Skyblock menu's button slots (chest indexes) and the player's island in their middle. MainMenu.java places its
+# buttons on exactly these slots, in this order: quests, skills, collections, forge, island, minions, exchange,
+# market, bank, bosses, crypt, hunts, wisps, leaderboards, profile, warps, settings.
+SB_MAIN = [11, 13, 15, 19, 22, 25, 29, 31, 33, 37, 40, 43, 1, 7, 45, 49, 53]
+SB_MAIN_CENTRE = 22
 
 # Role cards drawn as glyphs of the vampyuyu:hud font (plugin: WerewolfHud.glyph): the back and
 # the seven roles from 0xE000, their grey "dead" versions 0x10 further.

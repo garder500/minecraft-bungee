@@ -2,11 +2,9 @@ package win.vampyuyu.survival.economy;
 
 import static org.junit.Assert.*;
 
-import java.io.InputStreamReader;
 import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -35,16 +33,16 @@ public class MarketRulesTest {
         MockBukkit.unmock();
     }
 
-    private YamlConfiguration shippedConfig() {
-        return YamlConfiguration.loadConfiguration(new InputStreamReader(getClass().getResourceAsStream("/economy.yml")));
+    private EconomyConfig shippedConfig() {
+        return EconomyFixtures.shipped();
     }
 
     @Test
     public void merchantsNeverTradeUltraRareItems() {
-        YamlConfiguration config = shippedConfig();
-        ShopCatalog catalog = ShopCatalog.parse(config, plugin.getLogger());
+        EconomyConfig config = shippedConfig();
+        ShopCatalog catalog = ShopCatalog.of(config, plugin.getLogger());
         assertFalse("there are merchants", catalog.shops().isEmpty());
-        var never = MarketRules.neverTraded(config);
+        var never = MarketRules.neverTraded(config.neverTraded());
         for (String forbidden : List.of("DIAMOND", "DIAMOND_BLOCK", "DIAMOND_SWORD", "ANCIENT_DEBRIS", "NETHERITE_INGOT",
                 "NETHER_STAR", "TOTEM_OF_UNDYING", "ELYTRA", "BEACON", "sunstone")) {
             assertTrue(forbidden, never.test(forbidden));
@@ -59,15 +57,12 @@ public class MarketRulesTest {
 
     @Test
     public void theBazaarNeverListsUltraRareItems() {
-        YamlConfiguration config = shippedConfig();
-        var never = MarketRules.neverTraded(config);
-        var categories = config.getConfigurationSection("bazaar.categories");
-        for (String category : categories.getKeys(false)) {
-            for (String key : categories.getStringList(category)) {
-                if (never.test(key)) {
-                    // present in the file, but BazaarService.reload skips it: check the rule, not the file
-                    assertTrue(key, never.test(key));
-                }
+        EconomyConfig config = shippedConfig();
+        var never = MarketRules.neverTraded(config.neverTraded());
+        for (EconomyConfig.Product product : config.products()) {
+            if (never.test(product.key())) {
+                // present in the table, but BazaarService.reload skips it: check the rule, not the table
+                assertTrue(product.key(), never.test(product.key()));
             }
         }
         assertTrue("the rule is not empty", never.test("NETHER_STAR"));

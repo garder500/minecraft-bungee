@@ -115,7 +115,7 @@ final class SpawnCommands {
         World spawnWorld = spawnWorld();
         if (spawnWorld != null && !spawnWorld.equals(world)) {
             msg.error(player, "/spawn uses the world '" + spawnWorld.getName() + "'. Run /setspawn there, "
-                + "or change spawn.world in utility.yml.");
+                + "or change the utility.spawn.world setting.");
             return true;
         }
         Location here = player.getLocation();

@@ -73,7 +73,7 @@ public final class WorldBossCommand implements CommandExecutor, TabCompleter {
                 if (refusal != null) {
                     core.msg().error(sender, refusal);
                 } else {
-                    core.msg().ok(sender, "Event spot '" + args[1] + "' saved. It is used next to the ones in boss.yml.");
+                    core.msg().ok(sender, "Event spot '" + args[1] + "' saved. It is used next to the configured ones.");
                 }
             }
             case "removespot" -> {
@@ -81,7 +81,7 @@ public final class WorldBossCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 if (args.length < 2 || !manager.removeSpot(args[1])) {
-                    core.msg().error(sender, "No saved spot with that name. Spots from boss.yml are edited in the file.");
+                    core.msg().error(sender, "No saved spot with that name. Configured spots are edited in the panel.");
                 } else {
                     core.msg().ok(sender, "Event spot removed.");
                 }

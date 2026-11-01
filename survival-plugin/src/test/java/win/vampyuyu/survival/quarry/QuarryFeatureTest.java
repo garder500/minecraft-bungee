@@ -77,7 +77,7 @@ public class QuarryFeatureTest {
     public void generatedCobbleRollsThePityOreAndPlacedCobbleDoesNot() {
         PlayerMock owner = server.addPlayer("Miner");
         Island island = island(owner);
-        quarry.data(owner.getUniqueId()).counters.put("bronzite", 119);
+        quarry.data(owner.getUniqueId()).counters.put("bronzite", 299);
         Block placed = blockOn(island);
         placed.setType(Material.COBBLESTONE);
         server.getPluginManager().callEvent(new BlockBreakEvent(placed, owner));
@@ -99,7 +99,7 @@ public class QuarryFeatureTest {
     public void generatedStoneFromFallingLavaRollsTheTableToo() {
         PlayerMock owner = server.addPlayer("StoneGen");
         Island island = island(owner);
-        quarry.data(owner.getUniqueId()).counters.put("bronzite", 119);
+        quarry.data(owner.getUniqueId()).counters.put("bronzite", 299);
         Block block = blockOn(island);
         block.setType(Material.STONE);
         server.getPluginManager().callEvent(new BlockFormEvent(block, block.getState()));
@@ -227,7 +227,7 @@ public class QuarryFeatureTest {
                 events.add(e.getKind() + ":" + e.getSubject() + ":" + e.getAmount());
             }
         }, plugin);
-        quarry.data(owner.getUniqueId()).counters.put("bronzite", 119);
+        quarry.data(owner.getUniqueId()).counters.put("bronzite", 299);
         Block generated = blockOn(island);
         formCobble(generated);
         server.getPluginManager().callEvent(new BlockBreakEvent(generated, owner));
@@ -240,18 +240,24 @@ public class QuarryFeatureTest {
     }
 
     @Test
-    public void theQuarryQuestsAreAppendedToTheTutorialLine() {
-        var menu = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(
-            new java.io.InputStreamReader(getClass().getResourceAsStream("/menu.yml")));
-        var quarryYml = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(
-            new java.io.InputStreamReader(getClass().getResourceAsStream("/quarry.yml")));
-        var config = new win.vampyuyu.survival.menu.MenuConfig(menu, quarryYml.getConfigurationSection("quests.tutorial"));
-        var catalog = config.catalog;
-        for (String id : List.of("lucky_cobble", "build_forge", "find_bronzite", "forge_core", "upgrade_vein", "forge_ember")) {
-            assertTrue(id, catalog.tutorialQuest(id).isPresent());
-        }
+    public void theQuarryQuestsAreInThePlan() {
+        var catalog = win.vampyuyu.survival.menu.QuestRepo.load(plugin.core().data());
         assertTrue(catalog.problems().toString(), catalog.problems().isEmpty());
-        assertEquals(win.vampyuyu.survival.menu.QuestType.ORE_FOUND, catalog.tutorialQuest("find_bronzite").get().type());
+        long forge = catalog.tutorial().stream().filter(q -> q.type() == win.vampyuyu.survival.menu.QuestType.FORGE_ITEM).count();
+        assertTrue("forge quests in the plan: " + forge, forge > 10);
+        assertTrue(catalog.tutorial().stream().anyMatch(q -> q.type() == win.vampyuyu.survival.menu.QuestType.ORE_FOUND));
+    }
+
+    @Test
+    public void thePityNumbersComeFromTheDatabase() {
+        var ores = quarry.config().roller.ores().stream().collect(java.util.stream.Collectors.toMap(OreRoller.Ore::id, o -> o));
+        assertEquals(300, ores.get("bronzite").pity());
+        assertEquals(1500, ores.get("diamond").pity());
+        assertEquals(5000, ores.get("ancient_debris").pity());
+        assertEquals(15000, ores.get("voidglass").pity());
+        var rings = quarry.config().outputs.ores().stream().collect(java.util.stream.Collectors.toMap(OreRoller.Ore::id, o -> o));
+        assertEquals(60, rings.get("frostium").pity());
+        assertEquals(90, rings.get("sunstone").pity());
     }
 
     @Test

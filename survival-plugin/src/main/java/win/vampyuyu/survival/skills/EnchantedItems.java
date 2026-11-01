@@ -6,7 +6,7 @@ import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.CustomItemDef;
 
 /**
- * Registers the compacted resources of {@code enchanted_items} in {@code skills.yml} as custom items. An id the
+ * Registers the compacted resources of the {@code enchanted_item} table as custom items. An id the
  * items feature already registered is left alone (its definition wins); every other id is owned by the skills
  * feature (ids start with {@code enchanted_}) and is unregistered again on disable.
  */
