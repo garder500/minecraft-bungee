@@ -117,7 +117,7 @@ final class MenuCommands {
             case "list" -> {
                 QuestData data = rt.quests(player.getUniqueId());
                 QuestEngine engine = rt.engine();
-                rt.core.msg().info(player, "Tutorial: " + data.completed.size() + "/" + engine.catalog().tutorial().size()
+                rt.core.msg().info(player, "Tutorial: " + engine.completedCount(data) + "/" + engine.catalog().tutorial().size()
                     + " done. Streak: " + engine.liveStreak(data, this.quests.today()) + ".");
                 for (QuestDef def : engine.activeTutorial(data)) {
                     rt.core.msg().info(player, "  " + def.name() + " (" + engine.progress(data, def, false) + "/" + def.amount()

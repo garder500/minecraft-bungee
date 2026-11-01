@@ -49,6 +49,30 @@ public class QuestFlowTest {
     }
 
     @Test
+    public void aLensForgedBeforeItsQuestUnlockedIsNotAskedForAgain() {
+        QuestData data = new QuestData();
+        engine.apply(data, new QuestEngine.Event(QuestType.FORGE_ITEM, "void_lens", 1));
+        QuestDef lens = engine.catalog().tutorial().stream()
+            .filter(d -> d.type() == QuestType.FORGE_ITEM && d.target().equals("void_lens") && d.amount() == 1)
+            .findFirst().orElseThrow();
+        assertTrue("still locked", engine.sync(data, d -> java.util.OptionalInt.empty()).isEmpty());
+        assertFalse(data.completed.contains(lens.id()));
+
+        data.completed.addAll(lens.requires());
+        assertTrue("active now", engine.isActive(data, lens));
+        engine.sync(data, d -> java.util.OptionalInt.empty());
+        assertTrue(data.completed.contains(lens.id()));
+    }
+
+    @Test
+    public void aRetiredQuestStillInARecordDoesNotCountAsDone() {
+        QuestData data = new QuestData();
+        data.completed.add("q001");
+        data.completed.add("q134");
+        assertEquals(1, engine.completedCount(data));
+    }
+
+    @Test
     public void smeltedGlassAndColouredGlassFinishTheGlassQuests() {
         QuestData data = upTo("q045");
         assertEquals(List.of(), apply(data, QuestType.CRAFT_ITEM, "WHITE_STAINED_GLASS", 8));

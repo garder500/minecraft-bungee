@@ -160,6 +160,24 @@ public class GearTest {
     }
 
     @Test
+    public void aForgeQuestAcceptsTheUpgradeAlreadyUsedOrTheItemCarried() {
+        PlayerMock player = server.addPlayer("Early");
+        player.teleport(Bukkit.getWorld(win.vampyuyu.survival.core.SkyblockWorlds.WORLD).getSpawnLocation());
+        plugin.core().require(QuarryService.class).data(player.getUniqueId()).generatorTier = 4;
+        var quests = plugin.core().profiles().section(player.getUniqueId(), "quests",
+            win.vampyuyu.survival.menu.QuestData.class, win.vampyuyu.survival.menu.QuestData::new);
+        var catalog = win.vampyuyu.survival.menu.QuestRepo.load(plugin.core().data());
+        var lens = catalog.tutorial().stream().filter(d -> d.target().equals("void_lens") && d.amount() == 1).findFirst().orElseThrow();
+        var miners = catalog.tutorial().stream().filter(d -> d.id().equals("forge_deep_miners")).findFirst().orElseThrow();
+        quests.completed.addAll(lens.requires());
+        quests.completed.addAll(miners.requires());
+        player.getInventory().addItem(plugin.core().items().create("miner_2"));
+        player.performCommand("quests categories");
+        assertTrue("tier IV proves the lens", quests.completed.contains(lens.id()));
+        assertEquals("one carried of three", Integer.valueOf(1), quests.progress.get(miners.id()));
+    }
+
+    @Test
     public void thePebbleRecipeIsTheOnlyOneThatMayTakeAQuarryItem() {
         var pebbles = new org.bukkit.inventory.ShapelessRecipe(new org.bukkit.NamespacedKey(plugin, QuarryFeature.PEBBLE_RECIPE),
             new ItemStack(org.bukkit.Material.COBBLESTONE));

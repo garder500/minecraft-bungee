@@ -127,8 +127,29 @@ final class QuestService {
                     return OptionalInt.empty();
                 }
             }).orElse(OptionalInt.empty());
+            case FORGE_ITEM -> OptionalInt.of(forgedProof(player, def.target()));
             default -> OptionalInt.empty();
         };
+    }
+
+    /** What a player's state proves was forged before the Forge tally existed: an upgrade already used, items carried. */
+    private int forgedProof(Player player, String item) {
+        UUID id = player.getUniqueId();
+        int tier = rt.core.service(win.vampyuyu.survival.api.GeneratorApi.class).map(api -> api.tier(id)).orElse(1);
+        boolean used = switch (item) {
+            case "bronze_core" -> tier >= 2;
+            case "ember_core" -> tier >= 3;
+            case "void_lens" -> tier >= 4 || rt.core.service(win.vampyuyu.survival.api.EndAccessApi.class)
+                .map(api -> api.canEnterEnd(id)).orElse(false);
+            default -> false;
+        };
+        int count = used ? 1 : 0;
+        for (org.bukkit.inventory.ItemStack stack : player.getInventory().getContents()) {
+            if (item.equals(rt.core.items().idOf(stack).orElse(null))) {
+                count += stack.getAmount();
+            }
+        }
+        return count;
     }
 
     private void finish(Player player, QuestData data, List<Completion> done, boolean dirty) {

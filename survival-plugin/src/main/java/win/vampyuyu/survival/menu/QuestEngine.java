@@ -47,6 +47,11 @@ public final class QuestEngine {
         return !data.completed.contains(def.id()) && data.completed.containsAll(def.requires());
     }
 
+    /** Completed quests still in the plan: a player's record keeps the ids of retired quests. */
+    public int completedCount(QuestData data) {
+        return (int) catalog.tutorial().stream().filter(def -> data.completed.contains(def.id())).count();
+    }
+
     public List<QuestDef> activeTutorial(QuestData data) {
         List<QuestDef> out = new ArrayList<>();
         for (QuestDef def : catalog.tutorial()) {
@@ -152,6 +157,9 @@ public final class QuestEngine {
     /** Applies an event to every active quest it matches. Returns the quests that completed because of it. */
     public List<Completion> apply(QuestData data, Event event) {
         List<Completion> done = new ArrayList<>();
+        if (event.type() == QuestType.FORGE_ITEM) {
+            data.forged.merge(event.subject(), Math.max(0, event.value()), Integer::sum);
+        }
         for (QuestDef def : catalog.tutorial()) {
             if (def.type() == event.type() && isActive(data, def) && QuestMatcher.matches(def.target(), event.subject())) {
                 if (bump(data.progress, def, event)) {
@@ -188,12 +196,13 @@ public final class QuestEngine {
     /**
      * Re-reads the current value of every active absolute quest (levels, island ownership) and completes the ones
      * that are already satisfied, repeating while completions unlock further quests. {@code probe} returns the
-     * current value for a definition, empty when unknown (a feature is off).
+     * current value for a definition, empty when unknown (a feature is off). Forge quests also take what was forged
+     * before they unlocked: a forged item costs hours and rare materials, so it is not asked for a second time.
      */
     public List<Completion> sync(QuestData data, Function<QuestDef, OptionalInt> probe) {
         List<Completion> all = new ArrayList<>();
         for (int round = 0; round < 64; round++) { // a chain can unlock a chain; bounded against cycles
-            List<Completion> found = new ArrayList<>();
+            List<Completion> found = creditForged(data, probe);
             List<QuestDef> candidates = new ArrayList<>(activeTutorial(data));
             candidates.addAll(dailyQuests(data).stream().filter(d -> !data.dailyDone.contains(d.id())).toList());
             for (QuestDef def : candidates) {
@@ -212,6 +221,29 @@ public final class QuestEngine {
             all.addAll(found);
         }
         return all;
+    }
+
+    private List<Completion> creditForged(QuestData data, Function<QuestDef, OptionalInt> probe) {
+        List<Completion> done = new ArrayList<>();
+        for (QuestDef def : activeTutorial(data)) {
+            if (def.type() != QuestType.FORGE_ITEM) {
+                continue;
+            }
+            int made = probe.apply(def).orElse(0);
+            for (java.util.Map.Entry<String, Integer> entry : data.forged.entrySet()) {
+                if (QuestMatcher.matches(def.target(), entry.getKey())) {
+                    made = Math.max(made, entry.getValue());
+                }
+            }
+            if (made >= def.amount()) {
+                data.progress.remove(def.id());
+                data.completed.add(def.id());
+                done.add(new Completion(def, false));
+            } else if (made > data.progress.getOrDefault(def.id(), 0)) {
+                data.progress.put(def.id(), made);
+            }
+        }
+        return done;
     }
 
     // ---------------------------------------------------------------- daily rotation and streak

@@ -297,3 +297,9 @@ q288 challenges KILL_MOB SPIDER
 q289 challenges KILL_MOB CREEPER
 q290 challenges KILL_MOB ENDERMITE
 q291 challenges KILL_MOB ZOMBIE
+forge_cable_drum forging FORGE_ITEM cable
+forge_power_plant forging FORGE_ITEM coal_generator
+forge_deep_miners forging FORGE_ITEM miner_2
+retired q134
+retired q135
+retired q136

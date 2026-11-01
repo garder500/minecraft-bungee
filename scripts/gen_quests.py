@@ -27,6 +27,11 @@ def q(c, name, desc, typ, target, amount, icon, coins, items=None, label=None, q
                             items=items or {}, label=label, qid=qid))
 
 
+def retired(c):
+    """A numbered quest taken out of the plan: its number stays used, so the later ids do not shift and it is never reused."""
+    c["quests"].append(dict(retired=True, qid=None, label=None))
+
+
 def craft(c, name, what, mat, amount, icon, coins, **kw):
     q(c, name, f"Craft {what}.", "CRAFT_ITEM", mat, amount, icon, coins, **kw)
 
@@ -100,7 +105,7 @@ ev(c, "Bottomless Water", "Fill your bucket from the Spring Stone.", "spring_fil
 ore(c, "Copper", "16 raw copper", "copper", 16, "RAW_COPPER", 50)
 ore(c, "Coal", "16 coal", "coal", 16, "COAL", 50)
 ore(c, "Gold", "a gold nugget", "gold_nugget", 1, "GOLD_NUGGET", 60)
-ore(c, "Bronze Age", "your first Bronzite", "bronzite", 1, "RAW_COPPER", 100, items={"bronze_core": 1}, label="bronzite_1")
+ore(c, "Bronze Age", "your first Bronzite", "bronzite", 1, "RAW_COPPER", 200, label="bronzite_1")
 brk(c, "Mine 250", "250 cobblestone", "COBBLESTONE", 250, "COBBLESTONE", 100)
 brk(c, "Mine 500", "500 cobblestone", "COBBLESTONE", 500, "COBBLESTONE", 150)
 craft(c, "Smelter", "a furnace", "FURNACE", 1, "FURNACE", 40)
@@ -125,7 +130,7 @@ ev(c, "Frost Generator", "Complete the glass ring: a Frost generator makes snow 
 brk(c, "Snow", "32 snow blocks", "SNOW_BLOCK", 32, "SNOW_BLOCK", 60)
 brk(c, "Ice", "16 packed ice", "PACKED_ICE", 16, "PACKED_ICE", 80)
 ore(c, "Frostium", "your first Frostium", "frostium", 1, "PRISMARINE_CRYSTALS", 100)
-ore(c, "Frostium Haul", "8 Frostium", "frostium", 8, "PRISMARINE_CRYSTALS", 200, items={"rime_pick": 1})
+ore(c, "Frostium Haul", "8 Frostium", "frostium", 8, "PRISMARINE_CRYSTALS", 400)
 ev(c, "Second Spring", "Place 2 more Spring Stones.", "machine_placed:spring_stone", 2, "PRISMARINE_BRICKS", 100)
 ev(c, "More Fountains", "Place 3 more Fountains.", "machine_placed:fountain", 3, "SMOOTH_STONE", 300)
 
@@ -175,7 +180,7 @@ craft(c, "End Bricks", "16 end stone bricks", "END_STONE_BRICKS", 16, "END_STONE
 forge(c, "Void Sigil", "void_sigil", 1, "NETHER_STAR", 400, label="sigil")
 q(c, "Face the Voidwyrm", "Defeat the Voidwyrm.", "BOSS_KILL", "voidwyrm", 1, "DRAGON_HEAD", 1500, label="voidwyrm_1")
 q(c, "Voidwyrm Again", "Defeat the Voidwyrm 3 times.", "BOSS_KILL", "voidwyrm", 3, "DRAGON_HEAD", 2000)
-q(c, "Voidwyrm Master", "Defeat the Voidwyrm 10 times.", "BOSS_KILL", "voidwyrm", 10, "DRAGON_HEAD", 4000, items={"skin_wyrmfang": 1})
+q(c, "Voidwyrm Master", "Defeat the Voidwyrm 10 times.", "BOSS_KILL", "voidwyrm", 10, "DRAGON_HEAD", 6000)
 
 # --------------------------------------------------------------------------------------------- parallel
 c = cat("farm", "Farming and Food", "A calm category. Play it alongside the generators.", False, "fountain_craft", "WHEAT")
@@ -216,9 +221,12 @@ forge(c, "Frost Heart", "frost_heart", 1, "BLUE_ICE", 250)
 forge(c, "Matriarch Egg", "matriarch_egg", 1, "SPIDER_EYE", 250)
 forge(c, "Leviathan Scale", "leviathan_scale", 1, "PRISMARINE_SHARD", 300)
 forge(c, "Crystal Saber Skin", "skin_crystal_saber", 1, "PAPER", 300)
-forge(c, "Forge 5", "bronze_core", 5, "AMETHYST_SHARD", 200)
-forge(c, "Forge 10 Cores", "bronze_core", 10, "AMETHYST_SHARD", 400)
-forge(c, "Ember Cores", "ember_core", 3, "FIRE_CHARGE", 500)
+retired(c)  # q134 Forge 5 bronze cores: a generator only ever uses one
+retired(c)  # q135 Forge 10 bronze cores
+retired(c)  # q136 Forge 3 ember cores
+forge(c, "Cable Drum", "cable", 32, "LIGHTNING_ROD", 200, qid="forge_cable_drum")
+forge(c, "Power Plant", "coal_generator", 3, "STONECUTTER", 400, qid="forge_power_plant")
+forge(c, "Deep Miners", "miner_2", 3, "LODESTONE", 500, qid="forge_deep_miners")
 forge(c, "Void Lenses", "void_lens", 2, "ENDER_EYE", 800)
 forge(c, "Solar Farm", "solar_panel", 5, "DAYLIGHT_DETECTOR", 400)
 forge(c, "Miners at Work", "miner_1", 3, "LODESTONE", 500)
@@ -226,8 +234,7 @@ forge(c, "Battery Bank", "battery", 5, "WAXED_COPPER_BLOCK", 400)
 for tier, coins, icon in (("bronze", 80, "CHAINMAIL"), ("rime", 150, "IRON"), ("ember", 300, "DIAMOND"), ("void", 600, "NETHERITE"), ("starcore", 1000, "NETHERITE")):
     for slot in ("helmet", "chestplate", "leggings", "boots"):
         forge(c, f"{tier.title()} {slot.title()}", f"{tier}_{slot}", 1, f"{icon}_{slot.upper()}", coins)
-    ev(c, f"{tier.title()} Armor", f"Wear a full set of {tier} armor: helmet, chestplate, leggings and boots.", f"armor_set:{tier}", 1, f"{icon}_CHESTPLATE", coins * 2,
-       items=({"skin_titan_edge": 1} if tier == "starcore" else {}))
+    ev(c, f"{tier.title()} Armor", f"Wear a full set of {tier} armor: helmet, chestplate, leggings and boots.", f"armor_set:{tier}", 1, f"{icon}_CHESTPLATE", coins * (3 if tier == "starcore" else 2))
 for tier, coins in (("ember", 400), ("void", 800), ("starcore", 1500)):
     forge(c, f"{tier.title()} Sword", f"{tier}_sword", 1, "NETHERITE_SWORD" if tier != "ember" else "DIAMOND_SWORD", coins)
     forge(c, f"{tier.title()} Pick", f"{tier}_pick", 1, "NETHERITE_PICKAXE" if tier != "ember" else "DIAMOND_PICKAXE", coins)
@@ -385,6 +392,7 @@ def main():
                 item["id"] = f"q{n:03d}"
             if item["label"]:
                 ids[item["label"]] = item["id"]
+        category["quests"] = [item for item in category["quests"] if not item.get("retired")]
     rows = []
     for pos, category in enumerate(CATEGORIES):
         unlock = ids.get(category["unlock"]) if category["unlock"] else ""

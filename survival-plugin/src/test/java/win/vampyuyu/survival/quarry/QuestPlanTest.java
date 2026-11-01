@@ -146,12 +146,37 @@ public class QuestPlanTest {
             lines = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).lines()
                 .filter(l -> !l.isBlank() && !l.startsWith("#")).toList();
         }
+        java.util.Set<String> retired = new java.util.HashSet<>();
+        for (String line : lines) {
+            if (line.startsWith("retired ")) {
+                retired.add(line.substring(8));
+            }
+        }
         for (String line : lines) {
             String[] f = line.split(" ", 4);
+            if (f[0].equals("retired") || retired.contains(f[0])) {
+                assertTrue(line + " was retired: its id must stay unused",
+                    catalog.tutorialQuest(f[f[0].equals("retired") ? 1 : 0]).isEmpty());
+                continue;
+            }
             QuestDef def = catalog.tutorialQuest(f[0]).orElseThrow(() -> new AssertionError(f[0] + " disappeared"));
             assertEquals(f[0] + " category", f[1], def.category());
             assertEquals(f[0] + " type", f[2], def.type().name());
             assertEquals(f[0] + " target", f.length > 3 ? f[3] : "", def.target());
+        }
+    }
+
+    @Test
+    public void aRewardIsNeverAnItemTheNextQuestsMakeYouGetAnyway() {
+        java.util.Set<String> skinsGiven = new java.util.HashSet<>();
+        for (QuestDef def : catalog.tutorial()) {
+            for (String item : def.rewards().items().keySet()) {
+                assertTrue(def.id() + " gives " + item + ", which a Forge quest asks for", catalog.tutorial().stream()
+                    .noneMatch(other -> other.type() == QuestType.FORGE_ITEM && other.target().equals(item)));
+                if (item.startsWith("skin_")) {
+                    assertTrue("two quests give " + item + ", a skin unlocks once", skinsGiven.add(item));
+                }
+            }
         }
     }
 

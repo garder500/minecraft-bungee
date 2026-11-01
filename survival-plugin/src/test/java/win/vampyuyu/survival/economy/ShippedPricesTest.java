@@ -55,6 +55,13 @@ public class ShippedPricesTest {
     }
 
     @Test
+    public void theMobHunterSellsGhastTears() {
+        var tear = catalog.shops().get("mob_hunter").items().stream().filter(i -> i.key().equals("GHAST_TEAR")).findFirst().orElseThrow();
+        assertEquals(16000, tear.buyCents());
+        assertEquals(4000, tear.sellCents());
+    }
+
+    @Test
     public void everyVanillaKeyIsARealItem() {
         for (var shop : catalog.shops().values()) {
             for (var i : shop.items()) {

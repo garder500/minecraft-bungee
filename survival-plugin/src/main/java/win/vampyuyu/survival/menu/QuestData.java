@@ -13,6 +13,8 @@ public final class QuestData {
     public Map<String, Integer> progress = new HashMap<>();
     /** Completed (and paid) tutorial quest ids, in completion order. */
     public Set<String> completed = new LinkedHashSet<>();
+    /** Items collected from the Forge by id, counted even before a quest asks for them (see QuestEngine#sync). */
+    public Map<String, Integer> forged = new HashMap<>();
     /** True once the player's older progress was carried over into the quest plan (see QuestService#migrate). */
     public boolean planMigrated;
     /** Quest the sidebar tracks: a tutorial id, {@code daily:<id>}, or empty for "first active". */

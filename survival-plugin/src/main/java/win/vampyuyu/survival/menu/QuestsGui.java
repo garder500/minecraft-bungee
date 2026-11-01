@@ -50,7 +50,7 @@ final class QuestsGui {
         QuestData data = rt.quests(player.getUniqueId());
         QuestEngine engine = rt.engine();
         Gui gui = rt.core.guis().create(3, "<dark_gray>Quests");
-        int done = data.completed.size();
+        int done = engine.completedCount(data);
         int total = engine.catalog().tutorial().size();
         boolean planned = !engine.catalog().categories().isEmpty();
         String tracking = engine.tracked(data).map(t -> " · tracking " + esc(t.def().name())).orElse("");

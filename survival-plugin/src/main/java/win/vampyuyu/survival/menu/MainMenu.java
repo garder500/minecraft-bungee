@@ -182,7 +182,7 @@ final class MainMenu {
         switch (door.target()) {
             case QUESTS -> {
                 QuestData data = rt.quests(player.getUniqueId());
-                int done = data.completed.size();
+                int done = rt.engine().completedCount(data);
                 int total = rt.config().catalog.tutorial().size();
                 return Guis.menuButton(door.icon(), door.model(), "<gold>Quests",
                     "Tutorial " + Guis.progress(done, total) + " · streak "

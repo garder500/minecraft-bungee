@@ -275,7 +275,7 @@ INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES 
 INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('mob_hunter:ENDER_PEARL', 'mob_hunter', 4, 'ENDER_PEARL', 60.0, 15.0);
 INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('mob_hunter:BLAZE_ROD', 'mob_hunter', 5, 'BLAZE_ROD', 48.0, 12.0);
 INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('mob_hunter:BLAZE_POWDER', 'mob_hunter', 6, 'BLAZE_POWDER', 0.0, 5.5);
-INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('mob_hunter:GHAST_TEAR', 'mob_hunter', 7, 'GHAST_TEAR', 0.0, 40.0);
+INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('mob_hunter:GHAST_TEAR', 'mob_hunter', 7, 'GHAST_TEAR', 160.0, 40.0);
 INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('mob_hunter:SLIME_BALL', 'mob_hunter', 8, 'SLIME_BALL', 16.0, 4.0);
 INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('mob_hunter:SLIME_BLOCK', 'mob_hunter', 9, 'SLIME_BLOCK', 0.0, 34.0);
 INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('mob_hunter:MAGMA_CREAM', 'mob_hunter', 10, 'MAGMA_CREAM', 0.0, 6.0);
