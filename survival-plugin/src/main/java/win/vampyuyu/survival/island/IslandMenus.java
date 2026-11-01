@@ -177,10 +177,10 @@ public final class IslandMenus {
         Gui gui = gui(3, "<dark_aqua>Skyblock islands");
         int invites = service.invites().pending(player.getUniqueId()).size();
         gui.set(11, Guis.icon(Material.GRASS_BLOCK, "<green>Create your island",
-            "<gray>Pick a starting island type"), click -> templates(click.player(), choice -> {
-                reply(click.player(), service.create(click.player(), choice));
+            "<gray>Your own island, ready in a moment"), click -> {
+                reply(click.player(), service.create(click.player(), null));
                 click.player().closeInventory();
-            }, "<green>Pick your island"));
+            });
         gui.set(13, Guis.icon(Material.OAK_SIGN, "<aqua>Public warps", "<gray>Visit other islands"),
             click -> warps(click.player()));
         gui.set(15, Guis.icon(Material.GOLDEN_HELMET, "<gold>Top islands", "<gray>The island leaderboard"),
@@ -224,9 +224,9 @@ public final class IslandMenus {
             reply(player, check);
             return;
         }
-        templates(player, choice -> confirm(player, "<red>Reset your island?",
-            List.of("<gray>Everything on the island is destroyed", "<gray>and rebuilt as <white>" + esc(choice)),
-            () -> reply(player, service.reset(player, choice))), "<red>Reset: pick the new island");
+        confirm(player, "<red>Reset your island?",
+            List.of("<gray>Everything on the island is destroyed", "<gray>and rebuilt, quests included"),
+            () -> reply(player, service.reset(player, null)));
     }
 
     // ---------------------------------------------------------------- confirm

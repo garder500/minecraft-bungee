@@ -24,7 +24,7 @@ public final class IslandCommands {
 
     /** Player subcommands in help order: name, usage, description. */
     static final String[][] HELP = {
-        {"create", "create [type]", "Create your island (opens the type picker)"},
+        {"create", "create", "Create your island"},
         {"home", "home", "Teleport to your island (alias: go)"},
         {"sethome", "sethome", "Set the island home where you stand"},
         {"visit", "visit <player>", "Visit a player's island"},
@@ -45,7 +45,7 @@ public final class IslandCommands {
         {"time", "time <time>", "Lock the time of day on the island"},
         {"upgrades", "upgrades", "Open the upgrades menu"},
         {"upgrade", "upgrade <type>", "Buy the next tier (radius, members)"},
-        {"reset", "reset [type]", "Wipe and rebuild the island (owner)"},
+        {"reset", "reset", "Wipe and rebuild the island (owner)"},
         {"delete", "delete", "Delete your island when it has no members (confirm)"},
         {"info", "info [player]", "Show an island"},
         {"level", "level", "Recalculate the island level"},
@@ -228,14 +228,7 @@ public final class IslandCommands {
             err(player, "You already belong to an island. Use /island home.");
             return;
         }
-        if (args.length > 1) {
-            reply(player, service.create(player, args[1]));
-            return;
-        }
-        menus.templates(player, choice -> {
-            player.closeInventory();
-            reply(player, service.create(player, choice));
-        }, "<green>Pick your island");
+        reply(player, service.create(player, null));
     }
 
     private void visit(Player player, String[] args) {
@@ -339,14 +332,14 @@ public final class IslandCommands {
             reply(player, check);
             return;
         }
-        String type = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : "";
+        String type = "";
         if (!service.confirms().consume(player.getUniqueId(), "reset", type)) {
             service.confirms().arm(player.getUniqueId(), "reset", type, cfg.confirmSeconds * 1000L);
-            core.msg().warn(player, "This destroys EVERYTHING on your island. Type /island reset"
-                + (type.isEmpty() ? "" : " " + type) + " again within " + cfg.confirmSeconds + " seconds to confirm.");
+            core.msg().warn(player, "This destroys EVERYTHING on your island, quests included. Type /island reset"
+                + " again within " + cfg.confirmSeconds + " seconds to confirm.");
             return;
         }
-        reply(player, service.reset(player, type.isEmpty() ? null : type));
+        reply(player, service.reset(player, null));
     }
 
     private void info(Player player, String[] args) {
@@ -434,9 +427,6 @@ public final class IslandCommands {
         String sub = args[0].toLowerCase(Locale.ROOT);
         if (args.length == 2) {
             switch (sub) {
-                case "create", "reset" -> {
-                    return filter(service.templates().stream().map(IslandConfig.TemplateCfg::id).toList(), args[1]);
-                }
                 case "flag" -> {
                     return filter(Arrays.stream(IslandFlag.values()).map(IslandFlag::id).toList(), args[1]);
                 }
