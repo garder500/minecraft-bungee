@@ -33,6 +33,16 @@ final class MachineListener implements Listener {
         return core.items().idOf(stack).flatMap(MachineType::ofItem);
     }
 
+    /** A cable's block is replaceable: a sneaking click on it would put the new block in its place and lose the cable. */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    public void onReplace(BlockPlaceEvent event) {
+        Block block = event.getBlockPlaced();
+        MachineData data = machines.store().get(block.getWorld().getName(), MachineStore.pos(block));
+        if (data != null && data.kind() != null && event.getBlockReplacedState().getType() == data.kind().block) {
+            event.setCancelled(true);
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPlace(BlockPlaceEvent event) {
         Optional<MachineType> type = typeOf(event.getItemInHand());

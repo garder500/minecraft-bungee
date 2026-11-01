@@ -1645,9 +1645,12 @@ def start_scenario(ctx):
     if "passed" not in above:
         failures.append("the generator made no cobblestone above the Fountain")
     # 4. cables: placed while facing different ways, they must join each other and the machine next to them
-    #    an L: (cx+4,cz+2) and (cx+5,cz+2) placed facing east, (cx+5,cz+3) facing north, a Fountain's side at (cx+6,cz+2)
-    for x, z, yaw, dx_, dz_ in ((4, 2, -90, -2.0, 0), (5, 2, -90, -2.0, 0), (5, 3, 180, 0, 2.0)):
+    #    an L: (cx+5,cz+2) and (cx+4,cz+2) placed facing east, (cx+5,cz+3) facing north. The far one goes first: a click
+    #    whose ray crosses a cable's hit cube targets that cable (status message, nothing placed)
+    for x, z, yaw, dx_, dz_ in ((5, 2, -90, -2.0, 0), (4, 2, -90, -2.0, 0), (5, 3, 180, 0, 2.0)):
         use(3, cx + x + 0.5 + dx_, y, cz + z + 0.5 + dz_, yaw, 39)
+    if "Found no elements" not in rcon.command("data get entity E2EBot Inventory[{Slot:2b}]"):
+        failures.append("a cable click placed nothing: cables are left in the hotbar")
     time.sleep(2)
     stand(cx + 5.0, y + 7, cz + 3.0, 180, 85)
     shot(tools, shots / "st-6-cables-above.png")
@@ -1661,6 +1664,14 @@ def start_scenario(ctx):
     say("start: cable models: " + str(masks))
     if masks != ['"vampyuyu:machine/cable_2"', '"vampyuyu:machine/cable_12"', '"vampyuyu:machine/cable_1"']:
         failures.append(f"the cables do not join: {masks}")
+    # sneaking skips the status message: the click must still not replace the cable it aims at (slot 1 is free again)
+    rcon.command("sbgive cable 1 E2EBot")
+    subprocess.run([xdo, "keydown", "shift"], env=env)
+    time.sleep(.5)
+    use(1, cx + 3.5, y, cz + 2.5, -90, 38)
+    subprocess.run([xdo, "keyup", "shift"], env=env)
+    if "Found no elements" in rcon.command("data get entity E2EBot Inventory[{Slot:0b}]"):
+        failures.append("a sneaking click ate a cable")
     # 4b. the other generators and a bucket from the Spring Stone, each in its own corner of a bigger floor
     as_bot(f"fill {cx-14} {y-1} {cz-14} {cx+16} {y-1} {cz+16} grass_block")
     as_bot(f"fill {cx-14} {y} {cz-14} {cx+16} {y+4} {cz+16} air")
