@@ -11,7 +11,7 @@ import org.bukkit.Material;
  */
 public final class HubPlan {
     /** Bump when the layout changes so existing hubs are rebuilt (the marker file stores it). */
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
     public static final int PLAZA_RADIUS = 26;
     public static final int RING_INNER = 37;
     public static final int RING_OUTER = 43;
@@ -27,8 +27,8 @@ public final class HubPlan {
     private HubPlan() {}
 
     private static List<Pad> buildPads() {
-        String[][] ring = {{"merchant", "Merchant"}, {"banker", "Banker"}, {"reforger", "Reforger"},
-            {"enchanter", "Enchanter"}, {"quest_master", "Quest Master"}, {"minion_vendor", "Minion Vendor"},
+        String[][] ring = {{"merchant", "Merchant"}, {"archivist", "Archivist"}, {"guard", "Guard"},
+            {"contract_hunter", "Contract Hunter"}, {"quest_master", "Quest Master"}, {"banker", "Banker"},
             {"boss_arena", "Boss Arena"}, {"fairy_souls", "Wisp Guide"}};
         List<Pad> pads = new ArrayList<>();
         for (int k = 0; k < ring.length; k++) {
@@ -37,6 +37,9 @@ public final class HubPlan {
         }
         pads.add(new Pad("island_gate", "Island Gate", 0, -19));
         pads.add(new Pad("dungeon_gate", "Dungeon Gate", 33, 0));
+        pads.add(new Pad("rift_gate", "The Rift", -33, 0));
+        // Reserved site of the Eight Docks (built by its own feature): a pad and a sign, nothing else yet.
+        pads.add(new Pad("eight_docks", "Eight Docks", 0, 33));
         return List.copyOf(pads);
     }
 
@@ -76,6 +79,7 @@ public final class HubPlan {
             }
         }
         islandGateArch(plan);
+        riftGateArch(plan);
         signposts(plan);
         plazaUnderside(plan);
         plan.anchor("spawn", SPAWN_X, 1, SPAWN_Z);
@@ -309,9 +313,27 @@ public final class HubPlan {
         plan.set(0, 9, z, Material.QUARTZ_STAIRS, "facing=south");
     }
 
+    /** The gate to the Rift: dark pillars around a weeping core, west of the plaza (pad "rift_gate"). */
+    private static void riftGateArch(BlockPlan plan) {
+        int x = -37;
+        for (int sz : new int[] {-3, 3}) {
+            ShapeKit.column(plan, x, 1, 7, sz, Material.OBSIDIAN);
+            plan.set(x, 8, sz, Material.CRYING_OBSIDIAN);
+        }
+        for (int z = -3; z <= 3; z++) {
+            plan.set(x, 8, z, z == 0 ? Material.CRYING_OBSIDIAN : Material.OBSIDIAN);
+        }
+        for (int y = 1; y <= 7; y++) {
+            for (int z = -2; z <= 2; z++) {
+                plan.set(x, y, z, Material.PURPLE_STAINED_GLASS_PANE);
+            }
+        }
+        plan.set(x, 9, 0, Material.AMETHYST_CLUSTER, "facing=up");
+    }
+
     private static void signposts(BlockPlan plan) {
         String[][] posts = {{"0", "-30", "North", "Island Gate", "Plaza"}, {"30", "0", "East", "Dungeon Gate", "Ring road"},
-            {"0", "30", "South", "Spawn", "Plaza"}, {"-30", "0", "West", "Boss Arena", "Ring road"}};
+            {"0", "30", "South", "Spawn", "Plaza"}, {"-30", "0", "West", "The Rift", "Gate"}};
         for (String[] post : posts) {
             int x = Integer.parseInt(post[0]) + (post[0].equals("0") ? 3 : 0);
             int z = Integer.parseInt(post[1]) + (post[1].equals("0") ? 3 : 0);

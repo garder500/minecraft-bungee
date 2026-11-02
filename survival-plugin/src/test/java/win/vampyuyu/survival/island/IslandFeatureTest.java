@@ -738,7 +738,7 @@ public class IslandFeatureTest {
     // ---------------------------------------------------------------- hub
 
     @Test
-    public void legacyHubCommandUsesPersonalIsland() {
+    public void hubCommandFallsBackToIslandWhileHubIsNotBuilt() {
         PlayerMock p = player("Visitor");
         Island island = readyIsland(p);
         assertTrue(service.teleportHub(p));
