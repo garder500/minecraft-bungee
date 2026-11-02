@@ -120,6 +120,11 @@ public final class BossSession {
     boolean ended;
     End endReason;
     boolean shielded;
+    /** The Chained Leviathan's pull is on: anchors alive, everybody dragged toward the boss ({@link #startAnchors}). */
+    boolean anchored;
+    long anchorDeadline;
+    double anchorPull;
+    double anchorNovaMult;
     long shieldDeadline;
     double shieldHealPerTick;
     int shieldNovaTicks;
@@ -515,6 +520,7 @@ public final class BossSession {
         targetOwner();
         updateEnrage();
         updateShield();
+        updateAnchors();
         contactDamage(inArena);
         if (!shielded && ticks >= gcdUntil && ticks >= casting && !inArena.isEmpty()) {
             castNext();
@@ -651,16 +657,8 @@ public final class BossSession {
 
     // ---------------------------------------------------------------- shield
 
-    /** Starts the crystal shield: the boss cannot be hurt until every crystal is destroyed. */
-    void startShield(int count, double radius, double height, int hitsPerCrystal, int seconds, double healPerSecond,
-            double novaDamage) {
-        if (shielded || ended) {
-            return;
-        }
-        shielded = true;
-        shieldDeadline = ticks + seconds * 20L;
-        shieldHealPerTick = healPerSecond / 20.0;
-        shieldNovaDamage = novaDamage;
+    /** Spawns the crystals of a shield or of the anchors, evenly around the arena centre; they are tracked in {@link #crystals}. */
+    private void spawnCrystals(int count, double radius, double height, int hitsPerCrystal) {
         crystals.clear();
         for (int i = 0; i < count; i++) {
             double angle = 2 * Math.PI * i / count + random.nextDouble() * 0.3;
@@ -680,6 +678,19 @@ public final class BossSession {
                 core.debug("crystal spawn failed: " + e.getMessage());
             }
         }
+    }
+
+    /** Starts the crystal shield: the boss cannot be hurt until every crystal is destroyed. */
+    void startShield(int count, double radius, double height, int hitsPerCrystal, int seconds, double healPerSecond,
+            double novaDamage) {
+        if (shielded || anchored || ended) {
+            return;
+        }
+        shielded = true;
+        shieldDeadline = ticks + seconds * 20L;
+        shieldHealPerTick = healPerSecond / 20.0;
+        shieldNovaDamage = novaDamage;
+        spawnCrystals(count, radius, height, hitsPerCrystal);
         if (crystals.isEmpty()) {
             shielded = false;
             return;
@@ -687,6 +698,89 @@ public final class BossSession {
         broadcastNearby(MINI.deserialize("<light_purple><bold>" + plain(def.name())
             + " is shielded! <gray>Destroy the " + crystals.size() + " crystals!"));
         Fx.sound(world, location(), Sound.BLOCK_BEACON_ACTIVATE, 3f, 0.6f);
+    }
+
+    /**
+     * Starts the Chained Leviathan's pull (GDD 12.5, attraction toward a point): anchors appear and everybody is dragged
+     * toward the boss until they are all destroyed. The boss stays vulnerable; breaking them dazes it, and when the time
+     * runs out the anchors overload.
+     */
+    void startAnchors(int count, double radius, double height, int hitsPerAnchor, int seconds, double pull, double novaMult) {
+        if (shielded || anchored || ended) {
+            return;
+        }
+        spawnCrystals(count, radius, height, hitsPerAnchor);
+        if (crystals.isEmpty()) {
+            return;
+        }
+        anchored = true;
+        anchorDeadline = ticks + seconds * 20L;
+        anchorPull = pull;
+        anchorNovaMult = novaMult;
+        broadcastNearby(MINI.deserialize("<dark_aqua><bold>" + plain(def.name())
+            + " drags you in! <gray>Destroy the " + crystals.size() + " anchors!"));
+        Fx.sound(world, location(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, 3f, 0.5f);
+    }
+
+    private void updateAnchors() {
+        if (!anchored) {
+            return;
+        }
+        Location boss = location().add(0, entity.getHeight() / 2, 0);
+        List<UUID> dead = new ArrayList<>();
+        for (UUID id : crystals.keySet()) {
+            org.bukkit.entity.Entity anchor = Bukkit.getEntity(id);
+            if (anchor == null || !anchor.isValid()) {
+                dead.add(id);
+                continue;
+            }
+            Fx.line(world, anchor.getLocation(), boss, Particle.BUBBLE, 1.2);
+        }
+        dead.forEach(crystals::remove);
+        if (crystals.isEmpty()) {
+            endAnchors(true);
+            return;
+        }
+        if (ticks >= anchorDeadline) {
+            endAnchors(false);
+            return;
+        }
+        // a steady, capped pull toward the boss: it can be resisted by moving away, and it never lifts anyone
+        double step = anchorPull * settings.tickPeriod() / 2.0;
+        for (Player p : players()) {
+            Vector to = boss.toVector().subtract(p.getLocation().toVector()).setY(0);
+            double dist = to.length();
+            if (dist < 3.5 || !Double.isFinite(dist)) {
+                continue;
+            }
+            Fx.push(p, p.getVelocity().multiply(0.7).add(to.normalize().multiply(step)), 0.6, 0.2);
+        }
+    }
+
+    private void endAnchors(boolean broken) {
+        anchored = false;
+        for (UUID id : new ArrayList<>(crystals.keySet())) {
+            org.bukkit.entity.Entity anchor = Bukkit.getEntity(id);
+            manager.unregisterAux(id);
+            if (anchor != null) {
+                anchor.remove();
+            }
+        }
+        crystals.clear();
+        if (broken) {
+            vulnerableUntil = ticks + 160;
+            broadcastNearby(MINI.deserialize("<green><bold>The chains snap! <gray>" + plain(def.name())
+                + " is dazed and takes " + Math.round((vulnerableMult - 1) * 100) + "% more damage."));
+            Fx.sound(world, location(), Sound.ENTITY_ELDER_GUARDIAN_HURT, 3f, 0.6f);
+        } else {
+            broadcastNearby(MINI.deserialize("<red><bold>The anchors overload!"));
+            Location at = location();
+            Fx.particle(world, Particle.EXPLOSION_EMITTER, at, 3, 3, 1, 3, 0);
+            Fx.sound(world, at, Sound.ENTITY_GENERIC_EXPLODE, 3f, 0.6f);
+            for (Player p : players()) {
+                hit(p, anchorNovaMult);
+            }
+        }
     }
 
     private void updateShield() {

@@ -51,6 +51,7 @@ final class Abilities {
             case BONE_CAGE -> boneCage(s, spec);
             case SOUL_DRAIN -> soulDrain(s, spec);
             case BLIZZARD -> blizzard(s, spec);
+            case CHAIN_ANCHORS -> anchors(s, spec);
         };
     }
 
@@ -511,6 +512,19 @@ final class Abilities {
         s.startShield(Math.min(8, Math.max(1, spec.integer("count", 4))), spec.num("radius", 14),
             spec.num("height", 5), Math.max(1, spec.integer("hits", 1)), spec.integer("seconds", 40),
             spec.num("heal", 0.004), spec.num("nova", 6.0));
+        return 40;
+    }
+
+    // ---------------------------------------------------------------- chained pull (GDD 12.5)
+
+    /**
+     * The Chained Leviathan's pull: crystal anchors appear around the arena and chain everybody toward the boss with a
+     * steady, capped pull until they are all destroyed. Destroying them dazes the boss; leaving them overloads them.
+     */
+    private static int anchors(BossSession s, AbilitySpec spec) {
+        s.startAnchors(Math.min(6, Math.max(1, spec.integer("count", 3))), spec.num("radius", 16), spec.num("height", 2),
+            Math.max(1, spec.integer("hits", 3)), spec.integer("seconds", 25), spec.num("strength", 0.12),
+            spec.num("nova", 2.0) * spec.damage());
         return 40;
     }
 

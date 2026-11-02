@@ -24,7 +24,8 @@ public final class ContentDomains {
 
     public static final Domain REALM = new Domain("realm", List.of(
         new Root("realm_world", "world", null, List.of()),
-        new Root("realm_resource", "id", null, List.of(new Child("realm_resource_source", "resource_id")))));
+        new Root("realm_resource", "id", null, List.of(new Child("realm_resource_source", "resource_id"))),
+        settings("realm")));
 
     public static final Domain GADGETS = new Domain("gadgets", List.of(settings("gadgets")));
 

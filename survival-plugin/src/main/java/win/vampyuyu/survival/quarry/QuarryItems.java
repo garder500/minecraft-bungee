@@ -165,6 +165,10 @@ final class QuarryItems {
                 .itemModel("vampyuyu:ore/sandglass").type("CONSUMABLE").glint(true)
                 .lore("<gray>Right-click to turn it over: your longest", "<gray>Forge job loses <white>half<gray> of its remaining time.",
                     "<dark_gray>Consumed on use. Citadel of Golden Sands.").build(),
+            CustomItemDef.builder("tide_module", "Tide Module", Rarity.EPIC, Material.HEART_OF_THE_SEA)
+                .itemModel("vampyuyu:ore/pressure_pearl").type("MODULE").glint(true)
+                .lore("<gray>Right-click a Miner to slot it in.", "<gray>Speed <white>x0.9<gray>, Flux use <white>x0.6<gray>.",
+                    "<gray>A fifth of cycles also pump up a prismarine shard.", "<dark_gray>Realm module: Abyssal Depths (pumps).").build(),
             CustomItemDef.builder("bronzite_bar", "Bronzite Bar", Rarity.UNCOMMON, Material.COPPER_INGOT)
                 .itemModel("vampyuyu:ore/bronzite_bar").type("ORE")
                 .lore("<gray>Nine Bronzite pressed together.", "<gray>Craft it back to get the nine.").build(),

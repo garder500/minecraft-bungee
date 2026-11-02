@@ -7,7 +7,7 @@ import win.vampyuyu.survival.core.Rarity;
 
 /** The local Realm resources. Pack models: {@code vampyuyu:ore/cinderheart}, {@code vampyuyu:ore/heartwood},
  * {@code vampyuyu:ore/soul_ash}, {@code vampyuyu:ore/stasis_crystal}, {@code vampyuyu:ore/rot_resin},
- * {@code vampyuyu:ore/chrono_sand}. */
+ * {@code vampyuyu:ore/chrono_sand}, {@code vampyuyu:ore/pressure_pearl}. */
 final class RealmItems {
     static final String CINDERHEART = "cinderheart";
     static final String HEARTWOOD = "heartwood";
@@ -15,6 +15,7 @@ final class RealmItems {
     static final String ROT_RESIN = "rot_resin";
     static final String STASIS_CRYSTAL = "stasis_crystal";
     static final String CHRONO_SAND = "chrono_sand";
+    static final String PRESSURE_PEARL = "pressure_pearl";
 
     private RealmItems() {}
 
@@ -43,5 +44,9 @@ final class RealmItems {
             .itemModel("vampyuyu:ore/chrono_sand").type("GEM").glint(true).pdc("realm_resource", 1L)
             .lore("<gray>Dust that falls upward and remembers the hour.", "<gray>Found only in the <yellow>Citadel of Golden Sands<gray>.",
                 "<dark_gray>Forges the Chrono Module and the Sandglass.").build());
+        items.register(CustomItemDef.builder(PRESSURE_PEARL, "Pressure Pearl", Rarity.EPIC, Material.HEART_OF_THE_SEA)
+            .itemModel("vampyuyu:ore/pressure_pearl").type("GEM").glint(true).pdc("realm_resource", 1L)
+            .lore("<gray>A pearl that holds the weight of an ocean.", "<gray>Found only in the <dark_aqua>Abyssal Depths<gray>, by fishing.",
+                "<dark_gray>Restarts the pumps. Forges the Tide Module.").build());
     }
 }

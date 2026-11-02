@@ -1,0 +1,165 @@
+package win.vampyuyu.survival.depths;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+/**
+ * What each player did in the Abyssal Depths (GDD 13.3: exploration, progression, world and narrative quests). Pure
+ * data saved in {@code realms/depths.json}; every reward is paid once and the methods return the coins to pay (0 when
+ * nothing new happened). Not thread safe: main thread only.
+ */
+public final class DepthsProgress {
+    public static final String FILE = "realms/depths.json";
+    /** Progression quest: catches to make in the Depths. */
+    public static final int FISH_GOAL = 15;
+    /** World quest: Pressure Pearls a pump takes to run again. */
+    public static final int PUMP_COST = 3;
+    public static final int DISCOVER_COINS = 60;
+    public static final int EXPLORE_BONUS = 400;
+    public static final int FISH_COINS = 300;
+    public static final int PUMP_COINS = 150;
+    public static final int FINISH_COINS = 600;
+
+    /** One player. */
+    public static final class Entry {
+        public Set<String> discovered = new LinkedHashSet<>();
+        public int caught;
+        public Set<String> pumps = new LinkedHashSet<>();
+        public Set<String> claimed = new LinkedHashSet<>();
+    }
+
+    /** The saved shape. */
+    public static final class Doc {
+        public int version = 1;
+        public Map<String, Entry> players = new LinkedHashMap<>();
+    }
+
+    private final Map<UUID, Entry> players = new LinkedHashMap<>();
+
+    public Entry of(UUID player) {
+        return players.computeIfAbsent(player, k -> new Entry());
+    }
+
+    private Entry peek(UUID player) {
+        return players.getOrDefault(player, new Entry());
+    }
+
+    /** Coins for discovering a landmark (including the bonus for the last one); -1 when it was already found. */
+    public int discover(UUID player, String landmark) {
+        Entry entry = of(player);
+        if (!entry.discovered.add(landmark)) {
+            return -1;
+        }
+        int coins = DISCOVER_COINS;
+        if (entry.discovered.size() >= DepthsLayout.LANDMARKS.size() && entry.claimed.add("explore")) {
+            coins += EXPLORE_BONUS;
+        }
+        return coins;
+    }
+
+    public boolean discovered(UUID player, String landmark) {
+        return peek(player).discovered.contains(landmark);
+    }
+
+    /** Counts a catch; returns the coins of the progression quest when this one completes it. */
+    public int fish(UUID player) {
+        Entry entry = of(player);
+        entry.caught++;
+        if (entry.caught >= FISH_GOAL && entry.claimed.add("fish")) {
+            return FISH_COINS;
+        }
+        return 0;
+    }
+
+    public int caught(UUID player) {
+        return peek(player).caught;
+    }
+
+    /** Marks a pump running; returns the coins, or -1 when it already was. */
+    public int startPump(UUID player, String pump) {
+        Entry entry = of(player);
+        if (!entry.pumps.add(pump)) {
+            return -1;
+        }
+        int coins = PUMP_COINS;
+        if (entry.pumps.size() >= DepthsLayout.PUMPS.size() && entry.claimed.add("pumps")) {
+            coins += FINISH_COINS;
+        }
+        return coins;
+    }
+
+    public boolean pumping(UUID player, String pump) {
+        return peek(player).pumps.contains(pump);
+    }
+
+    /** True when the pump of this dome runs for the player. */
+    public boolean pumpedDome(UUID player, String dome) {
+        for (DepthsLayout.Pump pump : DepthsLayout.PUMPS) {
+            if (pump.dome().equals(dome) && pumping(player, pump.id())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Pressure Attunement: every pump running. Adds {@link DepthsMath#ATTUNEMENT} resistance. */
+    public boolean attuned(UUID player) {
+        return peek(player).pumps.size() >= DepthsLayout.PUMPS.size();
+    }
+
+    public boolean exploreDone(UUID player) {
+        return peek(player).discovered.size() >= DepthsLayout.LANDMARKS.size();
+    }
+
+    /** Lore fragments (narrative quest) the player unlocked, in landmark order. */
+    public List<DepthsLayout.Landmark> fragments(UUID player) {
+        List<DepthsLayout.Landmark> list = new ArrayList<>();
+        for (DepthsLayout.Landmark mark : DepthsLayout.LANDMARKS) {
+            if (discovered(player, mark.id())) {
+                list.add(mark);
+            }
+        }
+        return list;
+    }
+
+    public void reset(UUID player) {
+        players.remove(player);
+    }
+
+    public Doc toDoc() {
+        Doc doc = new Doc();
+        players.forEach((id, entry) -> doc.players.put(id.toString(), entry));
+        return doc;
+    }
+
+    public static DepthsProgress fromDoc(Doc doc) {
+        DepthsProgress progress = new DepthsProgress();
+        if (doc == null || doc.players == null) {
+            return progress;
+        }
+        doc.players.forEach((key, entry) -> {
+            try {
+                if (entry != null) {
+                    if (entry.discovered == null) {
+                        entry.discovered = new LinkedHashSet<>();
+                    }
+                    if (entry.pumps == null) {
+                        entry.pumps = new LinkedHashSet<>();
+                    }
+                    if (entry.claimed == null) {
+                        entry.claimed = new LinkedHashSet<>();
+                    }
+                    progress.players.put(UUID.fromString(key), entry);
+                }
+            } catch (IllegalArgumentException ignored) {
+                // a key that is not a uuid: skip
+            }
+        });
+        return progress;
+    }
+}

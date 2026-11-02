@@ -68,6 +68,7 @@ public final class BossItems {
     public static final String JUDGE_CORE = "judge_core";
     public static final String FROST_CORE = "frost_core";
     public static final String MIRE_CORE = "mire_core";
+    public static final String LEVIATHAN_CORE = "leviathan_core";
 
     /** Damage of the ore ladder swords, tier 1 to 5 (the same numbers as the {@code item_def} rows of the quarry). */
     static final double[] TIER_DAMAGE = {40, 70, 120, 200, 320};
@@ -95,9 +96,9 @@ public final class BossItems {
         t.add(spec("judge_seal", "Necropolis Bastion Key", Rarity.EPIC, Material.ECHO_SHARD, "SUMMON ITEM", true, none,
             "<gray>A seal that remembers every verdict.", "",
             "<yellow>Opens the <dark_purple>Necropolis Bastion<yellow> (/bastion) and its", "<dark_purple>Judge of Lost Souls<yellow>. Spent by the party leader."));
-        t.add(spec("leviathan_scale", "Leviathan Scale", Rarity.EPIC, Material.NAUTILUS_SHELL, "SUMMON ITEM", true, none,
+        t.add(spec("leviathan_scale", "Abyss Bastion Key", Rarity.EPIC, Material.NAUTILUS_SHELL, "SUMMON ITEM", true, none,
             "<gray>A scale the size of a shield, cold and wet.", "",
-            "<yellow>Right-click while standing in water to", "<dark_aqua>rouse the Abyssal Leviathan<yellow>. Consumed on use."));
+            "<yellow>Opens the <dark_aqua>Abyss Bastion<yellow> (/bastion) and its", "<dark_aqua>Chained Leviathan<yellow>. Spent by the party leader."));
         // voidwyrm
         t.add(spec(WING_CORE, "Wing Core", Rarity.MYTHIC, Material.HEART_OF_THE_SEA, "MATERIAL", true, none,
             "<gray>The beating heart of a dragon's wings.", "<gray>Proof that you stood against the Echo of the Rift."));
@@ -152,6 +153,10 @@ public final class BossItems {
         t.add(spec("pharaoh_linen", "Pharaoh's Linen", Rarity.EPIC, Material.PAPER, "MATERIAL", false, none,
             "<gray>Bandages that have outlived their wearer."));
         // abyssal leviathan
+        // abyssal leviathan = Chained Leviathan, Guardian of the Abyssal Depths
+        t.add(spec(LEVIATHAN_CORE, "Leviathan Core", Rarity.EPIC, Material.HEART_OF_THE_SEA, "BOSS COMPONENT", true, none,
+            "<gray>The gravitational regulator of a Sarcophagus,", "<gray>still pulling at everything near it.",
+            "", "<gray>Guardian component of the <dark_aqua>Abyssal Depths<gray>."));
         t.add(spec("leviathan_tooth", "Abyss Key", Rarity.EPIC, Material.PRISMARINE_SHARD, "BOSS KEY", false, none,
             "<gray>From the deepest jaws of the sea.", "<gray>One of the three keys of the Void Sigil."));
         t.add(weapon("tidal_trident", "Tidal Trident", Rarity.LEGENDARY, Material.TRIDENT, "TRIDENT", true, 4, Element.FROST,
