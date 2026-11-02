@@ -12,5 +12,7 @@
   one more stage, any world). Void rescue back to the landing below y-70.
 - Quests: category `grove` (main chain, ids `grove_01`..`grove_09`, unlocked by the Echo of the Rift kill), events
   `grove_enter`, `grove_affinity:1`, `grove_affinity:2`.
-- Not done: the Heartwood item and its uses (needs the items catalogue), the Sylvan Matriarch arena (boss still
+- Heartwood (#31) already drops from MANGROVE_LOG, MOSS_BLOCK, DARK_OAK_LOG in `sb_grove` (seed `realm.sql`): the
+  Grove's heartwood tree and moss carry it, the quests "Mossy Footing" and "Heartwood" feed it.
+- Not done: the uses of Heartwood (phase 3), the Sylvan Matriarch arena (boss still
   summoned with its item), textures/sounds. Not compiled or run when this was written (no Paper repo access).
