@@ -12,6 +12,13 @@ INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('hub', 
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('hub', 8, 'mob_griefing', 'false');
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('hub', 9, 'fire_damage', 'false');
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('hub', 10, 'pvp', 'false');
+INSERT INTO island_world (key, time, border, weather_clear) VALUES ('grove', 'MIDNIGHT', 140.0, 1);
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('grove', 0, 'spawn_monsters', 'false');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('grove', 1, 'spawn_phantoms', 'false');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('grove', 2, 'spawn_patrols', 'false');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('grove', 3, 'raids', 'false');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('grove', 4, 'keep_inventory', 'true');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('grove', 5, 'mob_griefing', 'false');
 INSERT INTO island_world (key, time, border, weather_clear) VALUES ('world', 'CYCLE', 60000000.0, 0);
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('world', 0, 'spawn_phantoms', 'false');
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('world', 1, 'spawn_patrols', 'false');
@@ -177,3 +184,4 @@ INSERT INTO setting (id, type, value, note) VALUES ('island.level.default-weight
 INSERT INTO setting (id, type, value, note) VALUES ('island.warps.max-name-length', 'int', '24', '');
 INSERT INTO setting (id, type, value, note) VALUES ('island.warps.cooldown-seconds', 'int', '5', 'Warps shown per page in the browser come from the menu size; this is the cooldown between warp teleports (seconds).');
 INSERT INTO setting (id, type, value, note) VALUES ('island.commands.visit-cooldown-seconds', 'int', '3', 'Seconds between two /is visit or /is warp teleports of the same player.');
+INSERT INTO setting (id, type, value, note) VALUES ('island.grove.gate-boss', 'text', 'magma_warden', 'Boss id whose defeat lights the Sky Gate of the Whispering Grove for the players who fought it.');

@@ -401,6 +401,17 @@ kill(c, "Creeper Wave", "40 creepers", "CREEPER", 40, "GUNPOWDER", 300)
 kill(c, "Endermite Wave", "40 endermites", "ENDERMITE", 40, "ENDER_PEARL", 400)
 kill(c, "Zombie Siege", "200 zombies", "ZOMBIE", 200, "ROTTEN_FLESH", 400)
 
+c = cat("grove", "The Whispering Grove", "Realm 2. Roots as wide as towers, spores that glow, islands that live. The Mycelial Queen keeps the biological codes of the old world.", True, "voidwyrm_1", "MOSS_BLOCK")
+ev(c, "Through the Green Gate", "Light the Sky Gate of the Whispering Grove (defeat the Magma Warden) and step through it at the Quai des Huit (/quai).", "grove_enter", 1, "LIME_STAINED_GLASS", 300, label="grove_1", lore="Beyond the second Gate the air is thick with light. The Grove remembers how to grow.", qid="grove_01")
+brk(c, "Mossy Footing", "32 moss blocks", "MOSS_BLOCK", 32, "MOSS_BLOCK", 100, qid="grove_02")
+brk(c, "First Grove Harvest", "16 fully grown crops", "CROPS", 16, "WHEAT", 150, qid="grove_03")
+ev(c, "Breathe the Spores", "Harvest grown crops in the Grove until you earn the Respiration affinity (40 harvests): the spore haze no longer touches you.", "grove_affinity:1", 1, "SPORE_BLOSSOM", 400, label="grove_resp", qid="grove_04")
+q(c, "Planting the Roots", "Plant 32 saplings.", "PLACE_BLOCK", "SAPLINGS", 32, "MANGROVE_PROPAGULE", 200, qid="grove_05")
+brk(c, "Heartwood", "64 mangrove logs, the living wood of the Grove", "MANGROVE_LOG", 64, "MANGROVE_LOG", 300, qid="grove_06")
+craft(c, "Tame the Green", "a composter", "COMPOSTER", 1, "COMPOSTER", 150, qid="grove_07")
+ev(c, "Let It Grow", "Keep harvesting in the Grove until you earn the Growth affinity (200 harvests): bone meal grows a crop one more stage, anywhere.", "grove_affinity:2", 1, "BONE_MEAL", 1200, label="grove_growth", qid="grove_08")
+q(c, "Wake the Mycelial Queen", "Defeat the Sylvan Matriarch, the Queen's guardian form.", "BOSS_KILL", "sylvan_matriarch", 1, "SPIDER_EYE", 2500, label="grove_queen", qid="grove_09")
+
 
 def main():
     ids = {}
