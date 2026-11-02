@@ -5,6 +5,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.Feature;
 import win.vampyuyu.survival.core.FeatureManager;
+import win.vampyuyu.survival.astral.AstralFeature;
 import win.vampyuyu.survival.bastion.BastionFeature;
 import win.vampyuyu.survival.breath.BreathFeature;
 import win.vampyuyu.survival.boss.BossFeature;
@@ -42,7 +43,7 @@ public class SurvivalPlugin extends JavaPlugin {
     static List<Feature> featureList() {
         // The simple Skyblock does not load the former progression systems, except the Wings.
         return List.of(new UtilityFeature(), new IslandFeature(), new WingsFeature(), new EconomyFeature(), new QuarryFeature(), new ClassesFeature(), new TradesFeature(), new GadgetsFeature(),
-            new BossFeature(), new ResonanceFeature(), new DungeonFeature(), new BastionFeature(), new RealmFeature(), new AshesFeature(), new StormFeature(), new MarshFeature(), new DepthsFeature(), new PromotionFeature(), new NpcMemoryFeature(), new RuneFeature(), new StationFeature(), new ParagonFeature(), new BreathFeature(), new MenuFeature(), new win.vampyuyu.survival.movement.MovementFeature());
+            new BossFeature(), new ResonanceFeature(), new DungeonFeature(), new BastionFeature(), new RealmFeature(), new AshesFeature(), new StormFeature(), new MarshFeature(), new DepthsFeature(), new PromotionFeature(), new NpcMemoryFeature(), new RuneFeature(), new StationFeature(), new AstralFeature(), new ParagonFeature(), new BreathFeature(), new MenuFeature(), new win.vampyuyu.survival.movement.MovementFeature());
     }
 
     @Override
