@@ -27,6 +27,31 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
     private final BlockMarks cobble = new BlockMarks("cobble");
     private final Random random = new Random();
     private int ticks;
+    /** The crack each working Miner currently shows on its target (visible break, GDD 7.2). Main thread only. */
+    private final Map<Pos, Crack> cracks = new java.util.HashMap<>();
+
+    /** What a Miner is breaking: the block, the progress at the last tick, how fast it grows, and the stage shown. */
+    private static final class Crack {
+        final World world;
+        final Block target;
+        private long ticked = System.currentTimeMillis();
+        double base;
+        double rate;
+        int stage;
+
+        Crack(World world, Block target) {
+            this.world = world;
+            this.target = target;
+        }
+
+        void resetClock() {
+            ticked = System.currentTimeMillis();
+        }
+
+        long tickedAt() {
+            return ticked;
+        }
+    }
 
     MachineService(QuarryService quarry, MachineStore store) {
         this.quarry = quarry;
@@ -185,7 +210,26 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
                         unmodelled.put(world.getBlockAt(at.x(), at.y(), at.z()), data);
                     }
                 }
-                for (EnergyNetwork.Fire fire : EnergyNetwork.tick(network, cfg, p -> ready(world, p), p -> sunny(world, p), mods, sky)) {
+                Map<Pos, Double> before = new LinkedHashMap<>();
+                network.forEach((pos, data) -> {
+                    if (data.kind() != null && data.kind().miner()) {
+                        before.put(pos, data.progress);
+                    }
+                });
+                List<EnergyNetwork.Fire> fires = EnergyNetwork.tick(network, cfg, p -> ready(world, p), p -> sunny(world, p), mods, sky);
+                Map<Pos, Integer> fired = new LinkedHashMap<>();
+                fires.forEach(f -> fired.put(f.pos(), f.cycles()));
+                for (Map.Entry<Pos, Double> b : before.entrySet()) {
+                    MachineData data = network.get(b.getKey());
+                    // cycles per second this tick (0 when the Miner did not work: no Flux, nowhere to put the ore)
+                    double rate = data.progress - b.getValue() + fired.getOrDefault(b.getKey(), 0);
+                    if (fired.containsKey(b.getKey())) {
+                        endCrack(b.getKey()); // the block is broken just below; the next cycle starts a new crack
+                        continue;
+                    }
+                    startCrack(world, b.getKey(), data, rate);
+                }
+                for (EnergyNetwork.Fire fire : fires) {
                     creditArtisan(network.get(fire.pos()));
                     for (int i = 0; i < fire.cycles(); i++) {
                         if (!mine(world, fire.pos(), network.get(fire.pos()))) {
@@ -429,6 +473,7 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
             return true;
         }
         cobble.remove(target);
+        shatter(target);
         target.setType(Material.AIR); // the water and lava next to it form the next block
         MachineModule module = MachineModule.of(data.module);
         ItemStack[] last = new ItemStack[1];
@@ -495,6 +540,7 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
     private void mineOutput(World world, Block miner, Block target, Container container, UUID owner, MachineData data) {
         Material type = target.getType();
         outputs.remove(target);
+        shatter(target);
         target.setType(Material.AIR); // the generator makes the next one above its Fountain
         java.util.List<ItemStack> got = new java.util.ArrayList<>();
         MachineModule module = MachineModule.of(data.module);
@@ -515,5 +561,72 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
         memory(module, data);
         recycle(world, miner, container, module, got.get(0));
         announce(data, "machine_mined");
+    }
+
+    private static final double CRACK_RANGE = 40;
+
+    /** The block breaks for real: the vanilla break sound and particles (setType alone is silent). */
+    private void shatter(Block target) {
+        target.getWorld().playEffect(target.getLocation().add(0.5, 0.5, 0.5), org.bukkit.Effect.STEP_SOUND, target.getBlockData());
+    }
+
+    private static int crackId(Block target) {
+        return 0x40000000 | (target.getX() * 31 + target.getY() * 17 + target.getZ()) & 0x3fffffff;
+    }
+
+    private void sendCrack(World world, Block target, int stage) {
+        float damage = MiningCrack.damage(stage);
+        for (Player player : world.getNearbyPlayers(target.getLocation().add(0.5, 0.5, 0.5), CRACK_RANGE)) {
+            player.sendBlockDamage(target.getLocation(), damage, crackId(target));
+        }
+    }
+
+    /** Clears the crack of a Miner (the break effect itself plays in {@link #shatter}). */
+    private void endCrack(Pos miner) {
+        Crack crack = cracks.remove(miner);
+        if (crack != null && crack.stage > 0) {
+            sendCrack(crack.world, crack.target, 0);
+        }
+    }
+
+    /** Called once per tick for each Miner: remembers how fast its cycle grows so the crack can follow it. */
+    private void startCrack(World world, Pos miner, MachineData data, double rate) {
+        Block target = ready(world, miner) ? cobbleNextTo(at(world, miner)) : null;
+        Crack crack = cracks.get(miner);
+        if (crack != null && (target == null || !crack.target.equals(target))) {
+            endCrack(miner);
+            crack = null;
+        }
+        if (target == null) {
+            return;
+        }
+        if (crack == null) {
+            crack = new Crack(world, target);
+            cracks.put(miner, crack);
+        }
+        crack.base = data.progress;
+        crack.rate = Math.max(0, rate);
+        crack.resetClock();
+    }
+
+    /** Every 4 ticks: moves each working Miner's crack to the stage its progress has reached, sending only changes. */
+    void animateCracks() {
+        long now = System.currentTimeMillis();
+        cracks.values().removeIf(c -> c.target.getType().isAir()); // broken or gone by other means
+        for (Crack crack : cracks.values()) {
+            if (crack.rate <= 0 && crack.stage > 0) {
+                continue; // stalled: the crack stays where it is
+            }
+            int stage = MiningCrack.stage(MiningCrack.extrapolate(crack.base, crack.rate, now - crack.tickedAt()));
+            if (stage != crack.stage) {
+                crack.stage = stage;
+                sendCrack(crack.world, crack.target, stage);
+                if (stage > 0) {
+                    org.bukkit.SoundGroup sound = crack.target.getBlockData().getSoundGroup();
+                    crack.world.playSound(crack.target.getLocation().add(0.5, 0.5, 0.5), sound.getHitSound(),
+                        org.bukkit.SoundCategory.BLOCKS, 0.6f, sound.getPitch() * 0.5f);
+                }
+            }
+        }
     }
 }
