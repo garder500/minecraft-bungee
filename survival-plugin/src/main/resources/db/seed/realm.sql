@@ -22,3 +22,10 @@ INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('soul_ash', '
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('soul_ash', 'mob', 'SKELETON');
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('soul_ash', 'mob', 'WITHER_SKELETON');
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('soul_ash', 'mob', 'ZOMBIE');
+INSERT INTO realm_world (world, realm) VALUES ('sb_heights', 'heights');
+INSERT INTO realm_resource (id, realm, item, p0, soft, dur, amount_min, amount_max) VALUES ('stasis_crystal', 'heights', 'stasis_crystal', 0.06, 12, 36, 1, 1);
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('stasis_crystal', 'block', 'BLUE_ICE');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('stasis_crystal', 'block', 'PACKED_ICE');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('stasis_crystal', 'block', 'AMETHYST_CLUSTER');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('stasis_crystal', 'mob', 'STRAY');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('stasis_crystal', 'mob', 'POLAR_BEAR');

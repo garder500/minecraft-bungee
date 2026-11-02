@@ -88,6 +88,7 @@ ore/frostium_bar
 ore/heartwood
 ore/starcore
 ore/starcore_bar
+ore/stasis_crystal
 ore/sunstone
 ore/sunstone_bar
 ore/voidglass

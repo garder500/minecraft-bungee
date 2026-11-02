@@ -18,7 +18,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import win.vampyuyu.survival.core.Core;
 
-/** The affinities of the Starcore sidegrades: Ashen Mantle (Cinder), the Grove helmet's breathing and Verdant Mending. */
+/** The affinities of the Starcore sidegrades: Ashen Mantle (Cinder), the Grove helmet's breathing and Verdant Mending, Glacial Poise (Frost). */
 final class SidegradeListener implements Listener {
     /** Heart (2 health points) mended every this many seconds by Verdant Mending. */
     static final int MEND_PERIOD_SECONDS = 5;
@@ -44,7 +44,8 @@ final class SidegradeListener implements Listener {
         if (!(event.getEntity() instanceof Player player)) {
             return;
         }
-        double factor = Sidegrades.fireFactor(Sidegrades.fullSet(wornIds(player)), event.getCause());
+        String set = Sidegrades.fullSet(wornIds(player));
+        double factor = Sidegrades.fireFactor(set, event.getCause()) * Sidegrades.poiseFactor(set, event.getCause());
         if (factor != 1.0) {
             event.setDamage(event.getDamage() * factor);
         }

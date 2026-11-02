@@ -143,6 +143,7 @@ public final class RuneService implements RuneApi {
         return switch (rune.id()) {
             case "scorch" -> "your Surge sets the target ablaze";
             case "verdant" -> "taking a hit grants Regeneration";
+            case "stasis" -> "your Surge slows and freezes the target";
             default -> "a Realm effect";
         };
     }
@@ -249,11 +250,16 @@ public final class RuneService implements RuneApi {
 
     @Override
     public void onSurge(Player attacker, LivingEntity target, ItemStack weapon) {
-        if (!runesOf(weapon).containsKey("scorch")) {
-            return;
+        var runes = runesOf(weapon);
+        if (runes.containsKey("scorch")) {
+            target.setFireTicks(Math.max(target.getFireTicks(), config.burnTicks()));
+            target.getWorld().spawnParticle(Particle.FLAME, target.getLocation().add(0, target.getHeight() * 0.5, 0), 14, 0.25, 0.3, 0.25, 0.02);
         }
-        target.setFireTicks(Math.max(target.getFireTicks(), config.burnTicks()));
-        target.getWorld().spawnParticle(Particle.FLAME, target.getLocation().add(0, target.getHeight() * 0.5, 0), 14, 0.25, 0.3, 0.25, 0.02);
+        if (runes.containsKey("stasis")) {
+            target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, config.stasisTicks(), 2, true, true));
+            target.setFreezeTicks(Math.max(target.getFreezeTicks(), Math.min(target.getMaxFreezeTicks(), config.stasisTicks() * 2)));
+            target.getWorld().spawnParticle(Particle.SNOWFLAKE, target.getLocation().add(0, target.getHeight() * 0.5, 0), 18, 0.3, 0.4, 0.3, 0.02);
+        }
     }
 
     /** Verdant: a hit taken grants Regeneration I, at most once per cooldown. */

@@ -46,7 +46,7 @@ public class RuneServiceTest {
     @Test
     public void theFeatureIsWiredAndTheItemsExist() {
         assertTrue(core.service(RuneApi.class).isPresent());
-        for (String id : new String[] {"rune_powder", "rune_vitality_1", "rune_vitality_3", "rune_scorch", "rune_verdant"}) {
+        for (String id : new String[] {"rune_powder", "rune_vitality_1", "rune_vitality_3", "rune_scorch", "rune_verdant", "rune_stasis"}) {
             assertTrue(id, core.items().def(id).isPresent());
         }
         assertFalse(core.items().def("rune_scorch_1").isPresent());

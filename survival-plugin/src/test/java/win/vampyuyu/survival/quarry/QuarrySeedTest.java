@@ -70,7 +70,7 @@ public class QuarrySeedTest {
         try (Db db = seeded()) {
             QuarryConfig config = QuarryRepo.load(db, Logger.getAnonymousLogger());
             assertEquals(4, config.tiers);
-            assertEquals(77, config.recipes.size());
+            assertEquals(84, config.recipes.size());
             assertEquals(3, config.forgeSlots);
             assertEquals(3, config.forgeBlockRecipe.size());
             assertEquals(2, config.recipes.get("bronze_core").cost().size());

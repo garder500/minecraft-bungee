@@ -33,7 +33,8 @@ public class QuestPlanTest {
         "generator_built:frost", "generator_built:ember", "dungeon_clear", "dungeon_clear_nodeath", "dungeon_clear_party",
         "dungeon_floor:1", "dungeon_floor:2", "dungeon_floor:3", "dungeon_floor:4", "dungeon_floor:5", "dungeon_floor:6",
         "dungeon_floor:7", "quest_done", "armor_set:bronze", "armor_set:rime", "armor_set:ember", "armor_set:void",
-        "armor_set:starcore", "grove_enter", "grove_affinity:1", "grove_affinity:2");
+        "armor_set:starcore", "grove_enter", "grove_affinity:1", "grove_affinity:2",
+        "heights_enter", "heights_affinity:1", "heights_affinity:2");
     private static final Set<String> COMMANDS = Set.of("guide", "market", "ah", "forge", "dungeon", "balance", "pay", "bank",
         "baltop");
 
@@ -69,9 +70,9 @@ public class QuestPlanTest {
     public void thePlanLoadsWithoutLosingAQuest() {
         assertTrue(catalog.problems().toString(), catalog.problems().isEmpty());
         assertTrue("at least 250 quests, got " + catalog.tutorial().size(), catalog.tutorial().size() >= 250);
-        assertEquals(14, catalog.categories().size());
+        assertEquals(17, catalog.categories().size());
         long main = catalog.categories().stream().filter(QuestCatalog.Category::main).count();
-        assertEquals(6, main);
+        assertEquals(9, main);
         for (QuestCatalog.Category category : catalog.categories()) {
             assertFalse(category.id() + " is empty", catalog.questsOf(category.id()).isEmpty());
         }

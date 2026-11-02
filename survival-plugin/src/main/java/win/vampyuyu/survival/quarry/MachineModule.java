@@ -16,7 +16,9 @@ enum MachineModule {
     /** Whispering Grove, biological: slower and thrifty, and the Miner sometimes gathers bone meal. */
     BLOOM("bloom_module", "Bloom Module", "bloom"),
     /** Ethereal Necropolis, spiritual: slower and hungrier, and the Miner sometimes distils a Memory Shard. */
-    MEMORY("memory_module", "Memory Module", "memory");
+    MEMORY("memory_module", "Memory Module", "memory"),
+    /** Frozen Heights, advanced cooling: a cooled Miner runs faster for the same Flux per block, and gathers packed ice. */
+    CRYO("cryo_module", "Cryo Module", "cryo");
 
     final String itemId;
     final String title;
@@ -62,6 +64,11 @@ enum MachineModule {
             return stack;
         }
         return stack.getAmount() == 1 ? new ItemStack(out) : new ItemStack(out, stack.getAmount());
+    }
+
+    /** Packed ice a Cryo module gathers with one cycle (0 most of the time). */
+    static int cryoBonus(double chance, Random random) {
+        return random.nextDouble() < chance ? 1 : 0;
     }
 
     /** Memory Shards a Memory module distils with one cycle (0 most of the time). */
