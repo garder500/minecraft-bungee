@@ -172,15 +172,15 @@ brk(c, "Netherrack Digger", "256 netherrack", "NETHERRACK", 256, "NETHERRACK", 2
 brk(c, "Soul Digger", "128 soul sand", "SOUL_SAND", 128, "SOUL_SAND", 300)
 brk(c, "Mine 1,000 Netherrack", "1,000 netherrack", "NETHERRACK", 1000, "NETHERRACK", 300)
 
-c = cat("end", "The End and the Void", "The Void Lens opens /island end. The Voidwyrm guards the Void.", True, "tier3", "END_STONE")
+c = cat("end", "The End and the Void", "The Void Lens opens /island end. The Echo of the Rift haunts the Void.", True, "tier3", "END_STONE")
 q(c, "Enter the End", "Enter your End with /island end (needs the Void Lens).", "VISIT_WORLD", "end", 1, "END_STONE", 500)
 brk(c, "End Stone", "64 end stone", "END_STONE", 64, "END_STONE", 200)
-kill(c, "Void Mites", "15 endermites (the Void Mites of the Voidwyrm)", "ENDERMITE", 15, "ENDER_PEARL", 250)
+kill(c, "Void Mites", "15 endermites (the Void Mites of the Echo of the Rift)", "ENDERMITE", 15, "ENDER_PEARL", 250)
 craft(c, "End Bricks", "16 end stone bricks", "END_STONE_BRICKS", 16, "END_STONE_BRICKS", 200)
 forge(c, "Void Sigil", "void_sigil", 1, "NETHER_STAR", 400, label="sigil")
-q(c, "Face the Voidwyrm", "Defeat the Voidwyrm.", "BOSS_KILL", "voidwyrm", 1, "DRAGON_HEAD", 1500, label="voidwyrm_1")
-q(c, "Voidwyrm Again", "Defeat the Voidwyrm 3 times.", "BOSS_KILL", "voidwyrm", 3, "DRAGON_HEAD", 2000)
-q(c, "Voidwyrm Master", "Defeat the Voidwyrm 10 times.", "BOSS_KILL", "voidwyrm", 10, "DRAGON_HEAD", 6000)
+q(c, "Face the Echo of the Rift", "Defeat the Echo of the Rift.", "BOSS_KILL", "voidwyrm", 1, "DRAGON_HEAD", 1500, label="voidwyrm_1")
+q(c, "Echo of the Rift Again", "Defeat the Echo of the Rift 3 times.", "BOSS_KILL", "voidwyrm", 3, "DRAGON_HEAD", 2000)
+q(c, "Echo of the Rift Master", "Defeat the Echo of the Rift 10 times.", "BOSS_KILL", "voidwyrm", 10, "DRAGON_HEAD", 6000)
 
 # --------------------------------------------------------------------------------------------- parallel
 c = cat("farm", "Farming and Food", "A calm category. Play it alongside the generators.", False, "fountain_craft", "WHEAT")

@@ -53,7 +53,7 @@ INSERT INTO wings_core (tier, name) VALUES (1, 'Feather Core');
 INSERT INTO wings_core (tier, name) VALUES (2, 'Gilded Core');
 INSERT INTO wings_core (tier, name) VALUES (3, 'Radiant Core');
 INSERT INTO wings_core (tier, name) VALUES (4, 'Celestial Core');
-INSERT INTO wings_core (tier, name) VALUES (5, 'Voidwyrm Core');
+INSERT INTO wings_core (tier, name) VALUES (5, 'Rift Echo Core');
 INSERT INTO setting (id, type, value, note) VALUES ('wings.worlds.allowed', 'list', '', '');
 INSERT INTO setting_item (setting_id, position, value) VALUES ('wings.worlds.allowed', 0, 'sb_hub');
 INSERT INTO setting_item (setting_id, position, value) VALUES ('wings.worlds.allowed', 1, 'sb_world');

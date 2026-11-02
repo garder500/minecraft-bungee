@@ -55,7 +55,7 @@ public final class WingsGui {
                 "<gray>They are not in your inventory.", "<gray>Check your ender chest, or use <white>Recover</white>."));
         } else {
             gui.set(SLOT_WINGS, Guis.icon(Material.ELYTRA, "<gray>No Wings yet",
-                "<dark_gray>Defeat the Voidwyrm to earn The Wings.", "<dark_gray>Each player can earn them once."));
+                "<dark_gray>Defeat the Echo of the Rift to earn The Wings.", "<dark_gray>Each player can earn them once."));
         }
 
         // ---- stats of the current level

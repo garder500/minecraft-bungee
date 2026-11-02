@@ -11,7 +11,7 @@ enum Skin {
     CRYSTAL_SABER("crystal_saber", "Crystal Saber", "Rare", NamedTextColor.BLUE, "Forge: 12 Sunstone and 6 diamonds"),
     FLAME_BRAND("flame_brand", "Flame Brand", "Epic", NamedTextColor.DARK_PURPLE, "Rare drop of the Magma Warden"),
     FROST_FANG("frost_fang", "Frost Fang", "Epic", NamedTextColor.DARK_PURPLE, "Rare drop of the Frost Revenant"),
-    WYRMFANG("wyrmfang", "Wyrmfang", "Mythic", NamedTextColor.LIGHT_PURPLE, "First victory over the Voidwyrm");
+    WYRMFANG("wyrmfang", "Wyrmfang", "Mythic", NamedTextColor.LIGHT_PURPLE, "First victory over the Echo of the Rift");
 
     final String id;
     final String title;
