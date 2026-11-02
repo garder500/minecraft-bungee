@@ -30,21 +30,35 @@ public final class BastionArena {
     static Material[] floor(String palette) {
         return switch (palette) {
             case "grove" -> new Material[] {Material.MOSS_BLOCK, Material.GRASS_BLOCK, Material.PODZOL, Material.MUD_BRICKS};
+            case "necro" -> new Material[] {Material.POLISHED_DEEPSLATE, Material.DEEPSLATE_TILES, Material.SOUL_SOIL,
+                Material.CRACKED_DEEPSLATE_BRICKS};
             default -> new Material[] {Material.POLISHED_BLACKSTONE_BRICKS, Material.BLACKSTONE, Material.BASALT,
                 Material.CRACKED_POLISHED_BLACKSTONE_BRICKS};
         };
     }
 
     static Material pillar(String palette) {
-        return palette.equals("grove") ? Material.STRIPPED_DARK_OAK_LOG : Material.POLISHED_BASALT;
+        return switch (palette) {
+            case "grove" -> Material.STRIPPED_DARK_OAK_LOG;
+            case "necro" -> Material.BONE_BLOCK;
+            default -> Material.POLISHED_BASALT;
+        };
     }
 
     static Material cap(String palette) {
-        return palette.equals("grove") ? Material.SHROOMLIGHT : Material.GLOWSTONE;
+        return switch (palette) {
+            case "grove" -> Material.SHROOMLIGHT;
+            case "necro" -> Material.SOUL_LANTERN;
+            default -> Material.GLOWSTONE;
+        };
     }
 
     static Material rim(String palette) {
-        return palette.equals("grove") ? Material.MOSSY_STONE_BRICK_WALL : Material.BLACKSTONE_WALL;
+        return switch (palette) {
+            case "grove" -> Material.MOSSY_STONE_BRICK_WALL;
+            case "necro" -> Material.DEEPSLATE_BRICK_WALL;
+            default -> Material.BLACKSTONE_WALL;
+        };
     }
 
     /** Places the whole arena. Main thread. */

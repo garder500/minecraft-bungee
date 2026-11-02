@@ -16,9 +16,9 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import win.vampyuyu.survival.api.Realm;
 import win.vampyuyu.survival.items.combat.PowerCurve;
 
-/** The two Guardians of phase 2 (Lava Colossus, Mycelial Queen): data, hard pity (GDD 15.2), readability (GDD 8.7). */
+/** The Guardians (Lava Colossus, Mycelial Queen, Judge of Lost Souls): data, hard pity (GDD 15.2), readability (GDD 8.7). */
 public class GuardianTest {
-    private static final List<String> IDS = List.of("magma_warden", "sylvan_matriarch");
+    private static final List<String> IDS = List.of("magma_warden", "sylvan_matriarch", "crypt_lord");
 
     @Before
     public void server() {
@@ -35,13 +35,15 @@ public class GuardianTest {
     }
 
     @Test
-    public void bothGuardiansAreDeclaredWithARealmAResourceAndLines() {
+    public void theGuardiansAreDeclaredWithARealmAResourceAndLines() {
         Guardians guardians = BossTestData.shipped().guardians();
         assertEquals(IDS, List.copyOf(guardians.byBoss().keySet()));
         assertEquals(Realm.ASHES, Realm.byId(guardians.get("magma_warden").realm()));
         assertEquals(Realm.GROVE, Realm.byId(guardians.get("sylvan_matriarch").realm()));
         assertEquals("cinderheart", guardians.get("magma_warden").resource());
         assertEquals("heartwood", guardians.get("sylvan_matriarch").resource());
+        assertEquals(Realm.NECROPOLIS, Realm.byId(guardians.get("crypt_lord").realm()));
+        assertEquals("soul_ash", guardians.get("crypt_lord").resource());
         for (Guardians.Guardian g : guardians.byBoss().values()) {
             for (String event : List.of(Guardians.INTRO, Guardians.phaseEvent(1), Guardians.phaseEvent(2), Guardians.DEATH,
                     Guardians.FIRST_CLEAR)) {
@@ -58,6 +60,7 @@ public class GuardianTest {
         BossConfig config = BossTestData.shipped();
         assertTrue(config.bosses().get("magma_warden").name().contains("Lava Colossus"));
         assertTrue(config.bosses().get("sylvan_matriarch").name().contains("Mycelial Queen"));
+        assertTrue(config.bosses().get("crypt_lord").name().contains("Judge of Lost Souls"));
         for (String id : IDS) {
             BossDefinition def = config.bosses().get(id);
             assertFalse(id, def.name().contains("Warden") || def.name().contains("Matriarch"));

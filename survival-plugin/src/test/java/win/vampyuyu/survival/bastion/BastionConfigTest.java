@@ -20,14 +20,17 @@ class BastionConfigTest {
     }
 
     @Test
-    void theShippedSeedHasTheTwoPhaseTwoBastions() {
+    void theShippedSeedHasTheBastions() {
         BastionConfig cfg = BastionConfig.load(seeded());
         assertEquals(List.of(), cfg.problems());
-        assertEquals(List.of("ashes_bastion", "grove_bastion"), List.copyOf(cfg.bastions().keySet()));
+        assertEquals(List.of("ashes_bastion", "grove_bastion", "necropolis_bastion"), List.copyOf(cfg.bastions().keySet()));
         assertEquals("magma_warden", cfg.get("ashes_bastion").orElseThrow().guardian());
         assertEquals("sylvan_matriarch", cfg.get("grove_bastion").orElseThrow().guardian());
         assertEquals("ashes_bastion", cfg.ofKey("magma_core").orElseThrow().id());
         assertEquals("grove_bastion", cfg.ofKey("matriarch_egg").orElseThrow().id());
+        assertEquals("crypt_lord", cfg.get("necropolis_bastion").orElseThrow().guardian());
+        assertEquals("necro", cfg.get("necropolis_bastion").orElseThrow().palette());
+        assertEquals("necropolis_bastion", cfg.ofKey("judge_seal").orElseThrow().id());
         assertTrue(cfg.get("nope").isEmpty());
         assertEquals(4, cfg.maxConcurrent);
     }

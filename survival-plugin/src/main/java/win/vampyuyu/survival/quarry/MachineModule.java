@@ -14,7 +14,9 @@ enum MachineModule {
     /** Cracked Ashes, thermal: faster and hungrier, and the Miner smelts what it breaks. */
     EMBER("ember_module", "Ember Module", "ember"),
     /** Whispering Grove, biological: slower and thrifty, and the Miner sometimes gathers bone meal. */
-    BLOOM("bloom_module", "Bloom Module", "bloom");
+    BLOOM("bloom_module", "Bloom Module", "bloom"),
+    /** Ethereal Necropolis, spiritual: slower and hungrier, and the Miner sometimes distils a Memory Shard. */
+    MEMORY("memory_module", "Memory Module", "memory");
 
     final String itemId;
     final String title;
@@ -60,6 +62,11 @@ enum MachineModule {
             return stack;
         }
         return stack.getAmount() == 1 ? new ItemStack(out) : new ItemStack(out, stack.getAmount());
+    }
+
+    /** Memory Shards a Memory module distils with one cycle (0 most of the time). */
+    static int memoryShards(double chance, Random random) {
+        return random.nextDouble() < chance ? 1 : 0;
     }
 
     /** Bone meal a Bloom module gathers with one cycle (0 most of the time). */

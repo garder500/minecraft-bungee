@@ -27,7 +27,8 @@ public final class Migrations {
         "V016__realm_resources",
         "V017__bastion",
         "V018__promotion",
-        "V019__stations");
+        "V019__stations",
+        "V020__necropolis");
 
     private Migrations() {}
 

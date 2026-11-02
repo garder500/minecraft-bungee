@@ -19,6 +19,12 @@ INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('grove'
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('grove', 3, 'raids', 'false');
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('grove', 4, 'keep_inventory', 'true');
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('grove', 5, 'mob_griefing', 'false');
+INSERT INTO island_world (key, time, border, weather_clear) VALUES ('necropolis', 'MIDNIGHT', 140.0, 1);
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('necropolis', 0, 'spawn_phantoms', 'false');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('necropolis', 1, 'spawn_patrols', 'false');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('necropolis', 2, 'raids', 'false');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('necropolis', 3, 'keep_inventory', 'true');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('necropolis', 4, 'mob_griefing', 'false');
 INSERT INTO island_world (key, time, border, weather_clear) VALUES ('world', 'CYCLE', 60000000.0, 0);
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('world', 0, 'spawn_phantoms', 'false');
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('world', 1, 'spawn_patrols', 'false');
@@ -185,3 +191,5 @@ INSERT INTO setting (id, type, value, note) VALUES ('island.warps.max-name-lengt
 INSERT INTO setting (id, type, value, note) VALUES ('island.warps.cooldown-seconds', 'int', '5', 'Warps shown per page in the browser come from the menu size; this is the cooldown between warp teleports (seconds).');
 INSERT INTO setting (id, type, value, note) VALUES ('island.commands.visit-cooldown-seconds', 'int', '3', 'Seconds between two /is visit or /is warp teleports of the same player.');
 INSERT INTO setting (id, type, value, note) VALUES ('island.grove.gate-boss', 'text', 'magma_warden', 'Boss id whose defeat lights the Sky Gate of the Whispering Grove for the players who fought it.');
+INSERT INTO setting (id, type, value, note) VALUES ('island.necropolis.gate-boss', 'text', 'abyssal_leviathan', 'Boss id whose defeat lights the Sky Gate of the Ethereal Necropolis for the players who fought it (the Guardian of the Realm before it in the Quai).');
+INSERT INTO setting (id, type, value, note) VALUES ('island.necropolis.recall-kills', 'int', '10', 'Undead killed in the Necropolis for one Memory Shard once Recall (affinity tier 2) is earned.');
