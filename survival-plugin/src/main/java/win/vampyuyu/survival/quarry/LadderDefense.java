@@ -84,12 +84,11 @@ final class LadderDefense implements Listener {
         }
     }
 
-    /** A stat of the custom armor worn (definition stats). */
+    /** A stat of the custom armor worn (definition stats and per-item bonuses such as runes). */
     private double worn(Player player, Stat stat) {
         double total = 0;
         for (ItemStack piece : player.getInventory().getArmorContents()) {
-            total += core.items().idOf(piece).flatMap(core.items()::def)
-                .map(d -> d.stats().getOrDefault(stat, 0.0)).orElse(0.0);
+            total += core.items().statsOf(piece).getOrDefault(stat, 0.0); // definition stats + engraved runes
         }
         return total;
     }

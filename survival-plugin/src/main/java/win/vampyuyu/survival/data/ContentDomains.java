@@ -85,6 +85,8 @@ public final class ContentDomains {
         new Root("dungeon_boss", "id", null, List.of(new Child("dungeon_boss_attack", "boss_id"))),
         settings("dungeon")));
 
+    public static final Domain RUNES = new Domain("runes", List.of(settings("runes")));
+
     public static final Domain BASTION = new Domain("bastion", List.of(
         new Root("bastion", "id", null, List.of()),
         settings("bastion")));
@@ -146,7 +148,7 @@ public final class ContentDomains {
 
     /** In the order they are synced. */
     public static final List<Domain> ALL = List.of(QUESTS, QUESTS_DAILY, CORE, ISLAND, UTILITY, WINGS, MENU, ECONOMY, SKILLS, QUARRY, GADGETS, BOSS,
-        RESONANCE, TRADES, DUNGEON, BASTION, ITEMS, REALM, PROMOTION);
+        RESONANCE, TRADES, DUNGEON, BASTION, ITEMS, REALM, PROMOTION, RUNES);
 
     private ContentDomains() {}
 

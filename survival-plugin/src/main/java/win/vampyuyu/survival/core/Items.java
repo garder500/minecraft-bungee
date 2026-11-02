@@ -270,8 +270,34 @@ public final class Items {
         migrateStats(stack);
         ItemMeta meta = stack.getItemMeta();
         meta.itemName(ItemRenderer.name(def));
-        meta.lore(ItemRenderer.lore(def, bonuses(stack)));
+        meta.lore(withExtras(stack, ItemRenderer.lore(def, bonuses(stack))));
         stack.setItemMeta(meta);
+    }
+
+    private final java.util.List<java.util.function.Function<ItemStack, java.util.List<net.kyori.adventure.text.Component>>> loreExtras =
+        new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    /**
+     * Adds lines to the lore of every item drawn by {@link #refresh} (engraved runes...). The function returns the lines
+     * for a stack, or an empty list; they go between the item text and the closing rarity line.
+     */
+    public void loreExtra(java.util.function.Function<ItemStack, java.util.List<net.kyori.adventure.text.Component>> extra) {
+        loreExtras.add(extra);
+    }
+
+    private java.util.List<net.kyori.adventure.text.Component> withExtras(ItemStack stack,
+            java.util.List<net.kyori.adventure.text.Component> lore) {
+        java.util.List<net.kyori.adventure.text.Component> out = new java.util.ArrayList<>(lore);
+        java.util.List<net.kyori.adventure.text.Component> more = new java.util.ArrayList<>();
+        for (java.util.function.Function<ItemStack, java.util.List<net.kyori.adventure.text.Component>> extra : loreExtras) {
+            more.addAll(extra.apply(stack));
+        }
+        if (more.isEmpty()) {
+            return out;
+        }
+        more.add(0, net.kyori.adventure.text.Component.empty());
+        out.addAll(Math.max(0, out.size() - 2), more);
+        return out;
     }
 
     // ---------------------------------------------------------------- extra PDC values
