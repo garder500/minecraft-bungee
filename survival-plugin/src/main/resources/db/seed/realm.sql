@@ -62,3 +62,7 @@ INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('thunder_quar
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('thunder_quartz', 'block', 'LIGHTNING_ROD');
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('thunder_quartz', 'mob', 'BREEZE');
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('thunder_quartz', 'mob', 'PHANTOM');
+-- Astral Interiority (issue 49, Act III). Access needs the Guardian of every Realm defeated; the pull is a proposal to tune in the panel
+-- (an impulse in blocks per tick at the edge of the horizon, never above 0.35, times 2.5 during a telegraphed surge, halved when crouching).
+INSERT INTO setting (id, type, value, note) VALUES ('realm.astral.require-guardians', 'bool', 'true', 'The Astral Interiority opens only for players who defeated the Guardian of every Realm (false = open to everyone, tests).');
+INSERT INTO setting (id, type, value, note) VALUES ('realm.astral.pull-max', 'real', '0.22', 'Pull of the singularity of the Gravitational Throne, blocks per tick toward the centre (hard ceiling 0.35). Not playtested.');
