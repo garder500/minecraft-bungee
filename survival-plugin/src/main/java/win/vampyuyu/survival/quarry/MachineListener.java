@@ -121,6 +121,8 @@ final class MachineListener implements Listener {
                 cfg.cryoRate, cfg.cryoConsume, cfg.cryoIceChance * 100);
             case RECYCLER -> String.format(Locale.ROOT, "Speed x%.1f, Flux use x%.1f, %.0f%% of cycles recycle a second copy.",
                 cfg.recyclerRate, cfg.recyclerConsume, cfg.recyclerSalvageChance * 100);
+            case CHRONO -> String.format(Locale.ROOT, "Follows the Time Tide (x%.1f in a surge, x%.1f in a stall), banks up to %.0f idle cycles.",
+                cfg.chronoSurge, cfg.chronoStall, cfg.chronoBufferCap);
         };
     }
 

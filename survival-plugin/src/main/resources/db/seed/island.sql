@@ -25,6 +25,13 @@ INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('necrop
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('necropolis', 2, 'raids', 'false');
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('necropolis', 3, 'keep_inventory', 'true');
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('necropolis', 4, 'mob_griefing', 'false');
+INSERT INTO island_world (key, time, border, weather_clear) VALUES ('citadel', 'NOON', 140.0, 1);
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('citadel', 0, 'spawn_monsters', 'false');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('citadel', 1, 'spawn_phantoms', 'false');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('citadel', 2, 'spawn_patrols', 'false');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('citadel', 3, 'raids', 'false');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('citadel', 4, 'keep_inventory', 'true');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('citadel', 5, 'mob_griefing', 'false');
 INSERT INTO island_world (key, time, border, weather_clear) VALUES ('world', 'CYCLE', 60000000.0, 0);
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('world', 0, 'spawn_phantoms', 'false');
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('world', 1, 'spawn_patrols', 'false');
@@ -203,3 +210,7 @@ INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('frost'
 INSERT INTO setting (id, type, value, note) VALUES ('island.frost.gate-boss', 'text', 'sylvan_matriarch', 'Boss id whose defeat lights the Sky Gate of the Frozen Heights for the players who fought it.');
 
 INSERT INTO setting (id, type, value, note) VALUES ('island.marsh.gate-boss', 'text', 'sylvan_matriarch', 'Boss id whose defeat lights the Sky Gate of the Putrid Marshes for the players who fought it.');
+INSERT INTO setting (id, type, value, note) VALUES ('island.citadel.gate-boss', 'text', 'sylvan_matriarch', 'Boss id whose defeat lights the Sky Gate of the Citadel of Golden Sands for the players who fought it.');
+INSERT INTO setting (id, type, value, note) VALUES ('island.citadel.tide.calm-seconds', 'int', '720', 'Time Tide of the Citadel: length of the calm stretch of one cycle. The tide depends on the clock only.');
+INSERT INTO setting (id, type, value, note) VALUES ('island.citadel.tide.surge-seconds', 'int', '240', 'Time Tide: length of the surge (time runs fast: Speed and Haste in the Citadel, Chrono Modules run faster).');
+INSERT INTO setting (id, type, value, note) VALUES ('island.citadel.tide.stall-seconds', 'int', '240', 'Time Tide: length of the stall (time crawls: Slowness in the Citadel, Chrono Modules run slower and bank the lost cycles).');

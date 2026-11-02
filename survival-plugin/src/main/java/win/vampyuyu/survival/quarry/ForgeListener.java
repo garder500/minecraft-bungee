@@ -116,6 +116,16 @@ final class ForgeListener implements Listener {
             event.setCancelled(true);
             useLens(player, event.getItem());
         } else if ((event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK)
+                && id(event.getItem(), QuarryItems.SANDGLASS)) {
+            event.setCancelled(true);
+            long saved = service.accelerate(player, 0.5, System.currentTimeMillis());
+            if (saved <= 0) {
+                core.msg().warn(player, "No Forge job is running: the Sandglass has nothing to speed up.");
+                return;
+            }
+            event.getItem().setAmount(event.getItem().getAmount() - 1);
+            core.msg().ok(player, "The sand falls upward. Your longest Forge job is " + win.vampyuyu.survival.core.Msg.duration(saved) + " closer to done.");
+        } else if ((event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK)
                 && id(event.getItem(), QuarryItems.EMBER_CORE)) {
             event.setCancelled(true);
             useCore(player, event.getItem(), 3, "Ember Core", false);

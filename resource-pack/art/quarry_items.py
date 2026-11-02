@@ -346,7 +346,37 @@ def solar_panel(c):
 
 
 
+SAND = (0xE8, 0xC8, 0x6A)
+
+
+def chrono_sand(c):
+    """A vial of golden dust that rises: a glass bulb, sand drifting upward from a heap."""
+    c.fill_shape(b.circle(8, 9, 4.8), (0xC8, 0xE8, 0xF0))
+    c.fill_shape(b.circle(8, 10, 3.4), SAND)
+    c.rect(7, 2, 8, 5, b.shade((0xC8, 0xE8, 0xF0), 1.0))
+    c.rect(6, 1, 9, 2, b.shade(GOLD, 0.9))
+    for x, y in ((7, 8), (9, 7), (8, 6), (6, 9)):
+        c.set(x, y, b.shade(GOLD, 1.25))
+    b.sparkle(c, 11, 4, GOLD)
+    c.outline()
+
+
+def sandglass(c):
+    """A small hourglass: gold frame, two glass bulbs, sand in the lower one."""
+    c.rect(3, 1, 12, 2, b.shade(GOLD, 1.0))
+    c.rect(3, 13, 12, 14, b.shade(GOLD, 1.0))
+    c.fill_shape(b.poly([(4, 3), (11, 3), (8, 8)]), (0xC8, 0xE8, 0xF0))
+    c.fill_shape(b.poly([(8, 8), (4, 12), (11, 12)]), (0xC8, 0xE8, 0xF0))
+    c.fill_shape(b.poly([(8, 9), (5, 12), (10, 12)]), SAND)
+    c.set(8, 7, b.shade(SAND, 1.0))
+    c.rect(3, 3, 3, 12, b.shade(GOLD, 0.8))
+    c.rect(12, 3, 12, 12, b.shade(GOLD, 0.8))
+    c.outline()
+
+
 ICONS = {
+    "ore/chrono_sand": chrono_sand,
+    "ore/sandglass": sandglass,
     "ore/pebble": pebble,
     "ore/bronzite_bar": bronzite_bar,
     "ore/frostium_bar": frostium_bar,

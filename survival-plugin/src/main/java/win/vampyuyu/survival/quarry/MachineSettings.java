@@ -32,8 +32,30 @@ final class MachineSettings {
     final double recyclerConsume;
     final double recyclerRate;
     final double recyclerSalvageChance;
+    /** Chrono Module: factors on Flux use and speed, the tide's effect on speed, the buffer cap, what it banks and gives back. */
+    final double chronoConsume;
+    final double chronoRate;
+    final double chronoSurge;
+    final double chronoStall;
+    final double chronoBufferCap;
+    final double chronoBankFraction;
+    final double chronoRelease;
+    /** The Time Tide of the Citadel (the {@code island.citadel.tide.*} settings). */
+    final win.vampyuyu.survival.api.TimeTide tide;
 
     MachineSettings(Settings s) {
+        this(s, win.vampyuyu.survival.api.TimeTide.defaults());
+    }
+
+    MachineSettings(Settings s, win.vampyuyu.survival.api.TimeTide tide) {
+        this.tide = tide;
+        chronoConsume = positive(s, "module.chrono.consume-factor", 1.0);
+        chronoRate = positive(s, "module.chrono.rate-factor", 1.0);
+        chronoSurge = positive(s, "module.chrono.surge-factor", 1.5);
+        chronoStall = positive(s, "module.chrono.stall-factor", 0.6);
+        chronoBufferCap = positive(s, "module.chrono.buffer-cap", 120);
+        chronoBankFraction = positive(s, "module.chrono.bank-fraction", 0.5);
+        chronoRelease = positive(s, "module.chrono.release-per-second", 1);
         emberConsume = positive(s, "module.ember.consume-factor", 1.8);
         emberRate = positive(s, "module.ember.rate-factor", 1.5);
         bloomConsume = positive(s, "module.bloom.consume-factor", 0.5);
@@ -88,9 +110,14 @@ final class MachineSettings {
 
     /** Mining cycles per second of this machine, with its module. */
     double rate(MachineData data) {
+        return rate(data, tideFactor(System.currentTimeMillis()));
+    }
+
+    /** Same, with the factor of the Time Tide that a Chrono Module follows (others ignore it). */
+    double rate(MachineData data, double tide) {
         double base = rate(data.kind());
         MachineModule module = MachineModule.of(data.module);
-        return module == null ? base : base * rateFactor(module);
+        return module == null ? base : base * rateFactor(module, tide);
     }
 
     /** Factor a module puts on the Miner's Flux use. */
@@ -101,17 +128,28 @@ final class MachineSettings {
             case MEMORY -> memoryConsume;
             case CRYO -> cryoConsume;
             case RECYCLER -> recyclerConsume;
+            case CHRONO -> chronoConsume;
         };
     }
 
-    /** Factor a module puts on the Miner's cycles per second. */
-    double rateFactor(MachineModule module) {
+    /** Factor a module puts on the Miner's cycles per second ({@code tide}: the factor the Chrono Module follows). */
+    double rateFactor(MachineModule module, double tide) {
         return switch (module) {
             case EMBER -> emberRate;
             case BLOOM -> bloomRate;
             case MEMORY -> memoryRate;
             case CRYO -> cryoRate;
             case RECYCLER -> recyclerRate;
+            case CHRONO -> chronoRate * tide;
+        };
+    }
+
+    /** Speed factor of the Time Tide on a Chrono Module at an instant: faster in a surge, slower in a stall. */
+    double tideFactor(long epochMillis) {
+        return switch (tide.at(epochMillis).phase()) {
+            case SURGE -> chronoSurge;
+            case STALL -> chronoStall;
+            case CALM -> 1.0;
         };
     }
 }

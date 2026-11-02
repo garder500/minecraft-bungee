@@ -6,13 +6,15 @@ import win.vampyuyu.survival.core.Items;
 import win.vampyuyu.survival.core.Rarity;
 
 /** The local Realm resources. Pack models: {@code vampyuyu:ore/cinderheart}, {@code vampyuyu:ore/heartwood},
- * {@code vampyuyu:ore/soul_ash}, {@code vampyuyu:ore/stasis_crystal}, {@code vampyuyu:ore/rot_resin}. */
+ * {@code vampyuyu:ore/soul_ash}, {@code vampyuyu:ore/stasis_crystal}, {@code vampyuyu:ore/rot_resin},
+ * {@code vampyuyu:ore/chrono_sand}. */
 final class RealmItems {
     static final String CINDERHEART = "cinderheart";
     static final String HEARTWOOD = "heartwood";
     static final String SOUL_ASH = "soul_ash";
     static final String ROT_RESIN = "rot_resin";
     static final String STASIS_CRYSTAL = "stasis_crystal";
+    static final String CHRONO_SAND = "chrono_sand";
 
     private RealmItems() {}
 
@@ -37,5 +39,9 @@ final class RealmItems {
             .itemModel("vampyuyu:ore/rot_resin").type("GEM").glint(true).pdc("realm_resource", 1L)
             .lore("<gray>Sap of a tree the Devourer left to rot.", "<gray>Found only in the <dark_green>Putrid Marshes<gray>.",
                 "<dark_gray>Forge: Recycler Module.").build());
+        items.register(CustomItemDef.builder(CHRONO_SAND, "Chrono Sand", Rarity.EPIC, Material.GLOWSTONE_DUST)
+            .itemModel("vampyuyu:ore/chrono_sand").type("GEM").glint(true).pdc("realm_resource", 1L)
+            .lore("<gray>Dust that falls upward and remembers the hour.", "<gray>Found only in the <yellow>Citadel of Golden Sands<gray>.",
+                "<dark_gray>Forges the Chrono Module and the Sandglass.").build());
     }
 }

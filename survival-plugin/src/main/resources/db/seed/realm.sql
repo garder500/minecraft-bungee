@@ -1,5 +1,5 @@
--- Realm resources: Cinderheart (Cracked Ashes) and Heartwood (Whispering Grove). The pity numbers follow the shape of
--- GDD 15.1 (Sunstone is 8 % / 12 / 36): the GDD gives no row for these two, so they are proposals to tune in the panel.
+-- Realm resources: Cinderheart (Cracked Ashes), Heartwood (Whispering Grove) and Chrono Sand (Citadel of Golden Sands). The pity numbers follow the shape of
+-- GDD 15.1 (Sunstone is 8 % / 12 / 36): the GDD gives no row for these, so they are proposals to tune in the panel.
 INSERT INTO realm_world (world, realm) VALUES ('sb_ashes', 'ashes');
 INSERT INTO realm_world (world, realm) VALUES ('sb_grove', 'grove');
 INSERT INTO realm_world (world, realm) VALUES ('sb_necropolis', 'necropolis');
@@ -39,3 +39,10 @@ INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('rot_resin', 
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('rot_resin', 'mob', 'SLIME');
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('rot_resin', 'mob', 'WITCH');
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('rot_resin', 'mob', 'DROWNED');
+INSERT INTO realm_world (world, realm) VALUES ('sb_citadel', 'citadel');
+INSERT INTO realm_resource (id, realm, item, p0, soft, dur, amount_min, amount_max) VALUES ('chrono_sand', 'citadel', 'chrono_sand', 0.06, 12, 36, 1, 1);
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('chrono_sand', 'block', 'SUSPICIOUS_SAND');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('chrono_sand', 'block', 'SAND');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('chrono_sand', 'block', 'GOLD_BLOCK');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('chrono_sand', 'mob', 'HUSK');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('chrono_sand', 'mob', 'SILVERFISH');

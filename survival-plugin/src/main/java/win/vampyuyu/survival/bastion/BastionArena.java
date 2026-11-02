@@ -34,6 +34,7 @@ public final class BastionArena {
             case "necro" -> new Material[] {Material.POLISHED_DEEPSLATE, Material.DEEPSLATE_TILES, Material.SOUL_SOIL,
                 Material.CRACKED_DEEPSLATE_BRICKS};
             case "frost" -> new Material[] {Material.BLUE_ICE, Material.PACKED_ICE, Material.SNOW_BLOCK, Material.STONE_BRICKS};
+            case "citadel" -> new Material[] {Material.SMOOTH_SANDSTONE, Material.CUT_SANDSTONE, Material.SAND, Material.CHISELED_SANDSTONE};
             default -> new Material[] {Material.POLISHED_BLACKSTONE_BRICKS, Material.BLACKSTONE, Material.BASALT,
                 Material.CRACKED_POLISHED_BLACKSTONE_BRICKS};
         };
@@ -45,6 +46,7 @@ public final class BastionArena {
             case "marsh" -> Material.MANGROVE_LOG;
             case "necro" -> Material.BONE_BLOCK;
             case "frost" -> Material.PACKED_ICE;
+            case "citadel" -> Material.CHISELED_SANDSTONE;
             default -> Material.POLISHED_BASALT;
         };
     }
@@ -55,6 +57,7 @@ public final class BastionArena {
             case "marsh" -> Material.SOUL_LANTERN;
             case "necro" -> Material.SOUL_LANTERN;
             case "frost" -> Material.SEA_LANTERN;
+            case "citadel" -> Material.GOLD_BLOCK;
             default -> Material.GLOWSTONE;
         };
     }
@@ -65,6 +68,7 @@ public final class BastionArena {
             case "marsh" -> Material.MUD_BRICK_WALL;
             case "necro" -> Material.DEEPSLATE_BRICK_WALL;
             case "frost" -> Material.STONE_BRICK_WALL;
+            case "citadel" -> Material.SANDSTONE_WALL;
             default -> Material.BLACKSTONE_WALL;
         };
     }

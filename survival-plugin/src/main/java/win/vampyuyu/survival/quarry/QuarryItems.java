@@ -16,6 +16,7 @@ final class QuarryItems {
     static final String FROSTIUM = "frostium";
     static final String SUNSTONE = "sunstone";
     static final String EMBER_CORE = "ember_core";
+    static final String SANDGLASS = "sandglass";
     static final String RIMEBLADE = "rimeblade";
     static final String RIME_PICK = "rime_pick";
     static final String VOID_LENS = "void_lens";
@@ -156,6 +157,14 @@ final class QuarryItems {
                 .itemModel("vampyuyu:ore/recycler_module").type("MODULE").glint(true)
                 .lore("<gray>Right-click a Miner to slot it in.", "<gray>Speed <white>x0.9<gray>, Flux use <white>x0.7<gray>.",
                     "<gray>15% of cycles recycle a second copy.", "<dark_gray>Realm module: Putrid Marshes.").build(),
+            CustomItemDef.builder("chrono_module", "Chrono Module", Rarity.EPIC, Material.CLOCK)
+                .itemModel("vampyuyu:ore/chrono_sand").type("MODULE").glint(true)
+                .lore("<gray>Right-click a Miner to slot it in.", "<gray>Follows the <yellow>Time Tide<gray>: faster in a surge, slower in a stall.",
+                    "<gray>Banks the cycles it cannot run and pays them back.", "<dark_gray>Realm module: Citadel of Golden Sands.").build(),
+            CustomItemDef.builder(SANDGLASS, "Sandglass", Rarity.EPIC, Material.CLOCK)
+                .itemModel("vampyuyu:ore/sandglass").type("CONSUMABLE").glint(true)
+                .lore("<gray>Right-click to turn it over: your longest", "<gray>Forge job loses <white>half<gray> of its remaining time.",
+                    "<dark_gray>Consumed on use. Citadel of Golden Sands.").build(),
             CustomItemDef.builder("bronzite_bar", "Bronzite Bar", Rarity.UNCOMMON, Material.COPPER_INGOT)
                 .itemModel("vampyuyu:ore/bronzite_bar").type("ORE")
                 .lore("<gray>Nine Bronzite pressed together.", "<gray>Craft it back to get the nine.").build(),

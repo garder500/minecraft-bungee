@@ -19,12 +19,13 @@ public final class QuarryRepo {
 
     public static QuarryConfig load(Db db, Logger log) {
         Settings settings = Settings.load(db, "quarry");
-        QuarryConfig config = db.read(c -> load(c, settings, log));
+        win.vampyuyu.survival.api.TimeTide tide = win.vampyuyu.survival.island.CitadelRealm.tide(Settings.load(db, "island"));
+        QuarryConfig config = db.read(c -> load(c, settings, tide, log));
         settings.problems().forEach(p -> log.warning("quarry: " + p));
         return config;
     }
 
-    private static QuarryConfig load(Connection c, Settings s, Logger log) throws SQLException {
+    private static QuarryConfig load(Connection c, Settings s, win.vampyuyu.survival.api.TimeTide tide, Logger log) throws SQLException {
         Map<String, double[]> chances = new HashMap<>();
         for (Object[] r : Db.query(c, "SELECT ore_roll_id, tier, chance FROM ore_roll_chance ORDER BY ore_roll_id, tier",
                 rs -> new Object[] {rs.getString(1), rs.getInt(2), rs.getDouble(3)})) {
@@ -99,6 +100,6 @@ public final class QuarryRepo {
             : new OreRoller(cobble, geode, min, max, cap);
         OreRoller outputs = new OreRoller(rings, 0, 1, 1, 0);
         return new QuarryConfig(roller, outputs, tiers, recipes, block, Math.max(1, s.getInt("forge.slots", 2)),
-            new MachineSettings(s));
+            new MachineSettings(s, tide));
     }
 }
