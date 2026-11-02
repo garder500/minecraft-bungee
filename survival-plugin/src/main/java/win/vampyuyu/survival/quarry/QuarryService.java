@@ -234,11 +234,29 @@ public final class QuarryService implements win.vampyuyu.survival.api.EndAccessA
         return taken;
     }
 
+    /**
+     * Why a recipe is closed to this player: a Starcore sidegrade needs the Sky Gate of its Realm lit (GDD 9.2).
+     * Empty when the recipe is open.
+     */
+    public Optional<String> realmLock(Player player, ForgeRecipe recipe) {
+        win.vampyuyu.survival.api.Realm realm = Sidegrades.realmOf(recipe.result());
+        if (realm == null) {
+            return Optional.empty();
+        }
+        boolean lit = core.service(win.vampyuyu.survival.api.SkyGateApi.class)
+            .map(gates -> gates.isLit(player.getUniqueId(), realm)).orElse(false);
+        return lit ? Optional.empty() : Optional.of("Open the " + realm.title() + " first: its Sky Gate is not lit.");
+    }
+
     /** Result of {@link #start}: null on success, otherwise the reason. */
     public String start(Player player, String recipeId, long now) {
         ForgeRecipe recipe = config.recipes.get(recipeId);
         if (recipe == null || items.def(recipe.result()).isEmpty()) {
             return "That recipe is not available.";
+        }
+        Optional<String> closed = realmLock(player, recipe);
+        if (closed.isPresent()) {
+            return closed.get();
         }
         QuarryData data = data(player.getUniqueId());
         if (data.jobs.size() >= config.forgeSlots) {
