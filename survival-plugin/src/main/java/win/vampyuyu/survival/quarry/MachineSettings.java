@@ -10,6 +10,12 @@ final class MachineSettings {
     final int coalSeconds;
     /** Flux per second a solar panel makes in daylight under the open sky. */
     final double solarOutput;
+    /** Base Flux per second of a Lightning Rod (the surge factor of {@link win.vampyuyu.survival.realm.StormMath} multiplies it). */
+    final double rodOutput;
+    /** Seconds one Thunder Quartz keeps a Lightning Rod burning when there is no thunderstorm. */
+    final int rodQuartzSeconds;
+    /** Custom item that fuels a Lightning Rod. */
+    static final String ROD_FUEL_ITEM = "thunder_quartz";
     final long batteryCapacity;
     /** Flux per second and mining cycles per second of the miners. */
     final double miner1Consume;
@@ -79,6 +85,8 @@ final class MachineSettings {
         generatorOutput = positive(s, "coal-generator.output", 10);
         coalSeconds = (int) Math.max(1, positive(s, "coal-generator.coal-seconds", 40));
         solarOutput = positive(s, "solar-panel.output", 6);
+        rodOutput = positive(s, "lightning-rod.output", 30);
+        rodQuartzSeconds = (int) Math.max(1, positive(s, "lightning-rod.quartz-seconds", 180));
         batteryCapacity = (long) positive(s, "battery.capacity", 10_000);
         miner1Consume = positive(s, "miner-1.consume", 8);
         miner1Rate = positive(s, "miner-1.cycles-per-second", 0.5);

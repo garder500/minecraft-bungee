@@ -69,6 +69,7 @@ public final class BossItems {
     public static final String FROST_CORE = "frost_core";
     public static final String MIRE_CORE = "mire_core";
     public static final String LEVIATHAN_CORE = "leviathan_core";
+    public static final String THUNDER_CORE = "thunder_core";
 
     /** Damage of the ore ladder swords, tier 1 to 5 (the same numbers as the {@code item_def} rows of the quarry). */
     static final double[] TIER_DAMAGE = {40, 70, 120, 200, 320};
@@ -152,6 +153,13 @@ public final class BossItems {
             "", "<gray>Guardian component of the <gold>Citadel of Golden Sands<gray>."));
         t.add(spec("pharaoh_linen", "Pharaoh's Linen", Rarity.EPIC, Material.PAPER, "MATERIAL", false, none,
             "<gray>Bandages that have outlived their wearer."));
+        // thunder dragon = Primordial Thunder Dragon, Guardian of the Tempestuous Archipelago
+        t.add(spec("tempest_key", "Tempest Bastion Key", Rarity.EPIC, Material.BREEZE_ROD, "SUMMON ITEM", true, none,
+            "<gray>A rod of wind that hums before the thunder.", "",
+            "<yellow>Opens the <aqua>Tempest Bastion<yellow> (/bastion) and its", "<aqua>Primordial Thunder Dragon<yellow>. Spent by the party leader."));
+        t.add(spec(THUNDER_CORE, "Dragon Core", Rarity.EPIC, Material.WAXED_COPPER_BLOCK, "BOSS COMPONENT", true, none,
+            "<gray>The kinetic regulator of a Sarcophagus,", "<gray>still turning the winds of a lost sky.",
+            "", "<gray>Guardian component of the <aqua>Tempestuous Archipelago<gray>."));
         // abyssal leviathan
         // abyssal leviathan = Chained Leviathan, Guardian of the Abyssal Depths
         t.add(spec(LEVIATHAN_CORE, "Leviathan Core", Rarity.EPIC, Material.HEART_OF_THE_SEA, "BOSS COMPONENT", true, none,

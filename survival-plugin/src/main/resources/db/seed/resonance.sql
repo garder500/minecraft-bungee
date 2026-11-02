@@ -8,6 +8,7 @@ INSERT INTO setting_item (setting_id, position, value) VALUES ('resonance.bastio
 INSERT INTO setting_item (setting_id, position, value) VALUES ('resonance.bastions', 4, 'abyssal_leviathan|depths|leviathan_tooth|35');
 INSERT INTO setting_item (setting_id, position, value) VALUES ('resonance.bastions', 5, 'crypt_lord|necropolis|lord_bone|25');
 INSERT INTO setting_item (setting_id, position, value) VALUES ('resonance.bastions', 6, 'temporal_pharaoh|citadel|pharaoh_linen|28');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('resonance.bastions', 7, 'thunder_dragon|archipelago|thunder_core|40');
 INSERT INTO setting (id, type, value, note) VALUES ('resonance.shards.rank-bonus', 'real', '0.25', 'Extra Shards per rank above I, as a fraction of the base (rank V pays x2).');
 INSERT INTO setting (id, type, value, note) VALUES ('resonance.shards.first-clear-multiplier', 'real', '2.0', 'First clear of the day pays this multiple of Shards (GDD 15.5). No permanent streak bonus.');
 INSERT INTO setting (id, type, value, note) VALUES ('resonance.shards.defeat-fraction', 'real', '0.2', 'A late defeat pays this fraction of a clear, scaled by the progress made (GDD 15.4).');

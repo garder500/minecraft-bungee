@@ -37,6 +37,8 @@ public final class BastionArena {
             case "citadel" -> new Material[] {Material.SMOOTH_SANDSTONE, Material.CUT_SANDSTONE, Material.SAND, Material.CHISELED_SANDSTONE};
             case "abyss" -> new Material[] {Material.PRISMARINE_BRICKS, Material.PRISMARINE, Material.DARK_PRISMARINE,
                 Material.DARK_PRISMARINE};
+            case "storm" -> new Material[] {Material.WAXED_OXIDIZED_CUT_COPPER, Material.LIGHT_GRAY_CONCRETE, Material.ANDESITE,
+                Material.WAXED_WEATHERED_CUT_COPPER};
             default -> new Material[] {Material.POLISHED_BLACKSTONE_BRICKS, Material.BLACKSTONE, Material.BASALT,
                 Material.CRACKED_POLISHED_BLACKSTONE_BRICKS};
         };
@@ -50,6 +52,7 @@ public final class BastionArena {
             case "frost" -> Material.PACKED_ICE;
             case "citadel" -> Material.CHISELED_SANDSTONE;
             case "abyss" -> Material.DARK_PRISMARINE;
+            case "storm" -> Material.WAXED_COPPER_BLOCK;
             default -> Material.POLISHED_BASALT;
         };
     }
@@ -62,6 +65,7 @@ public final class BastionArena {
             case "frost" -> Material.SEA_LANTERN;
             case "citadel" -> Material.GOLD_BLOCK;
             case "abyss" -> Material.SEA_LANTERN;
+            case "storm" -> Material.LIGHTNING_ROD;
             default -> Material.GLOWSTONE;
         };
     }
@@ -74,6 +78,7 @@ public final class BastionArena {
             case "frost" -> Material.STONE_BRICK_WALL;
             case "citadel" -> Material.SANDSTONE_WALL;
             case "abyss" -> Material.PRISMARINE_WALL;
+            case "storm" -> Material.IRON_BARS;
             default -> Material.BLACKSTONE_WALL;
         };
     }

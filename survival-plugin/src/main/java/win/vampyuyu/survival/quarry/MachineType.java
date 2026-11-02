@@ -10,6 +10,8 @@ enum MachineType {
     // an invisible, walk-through block under the copper model (it used to be redstone wire, whose red dust showed)
     CABLE("cable", Material.STRUCTURE_VOID, Material.REDSTONE_WIRE, "Copper Cable"),
     SOLAR_PANEL("solar_panel", Material.BARRIER, Material.DAYLIGHT_DETECTOR, "Solar Panel"),
+    /** Very strong but unstable Flux in a thunderstorm, or from Thunder Quartz (Tempestuous Archipelago, GDD 3.1). */
+    LIGHTNING_ROD("lightning_rod", Material.BARRIER, Material.LIGHTNING_ROD, "Lightning Rod"),
     MINER_1("miner_1", Material.BARRIER, Material.LODESTONE, "Miner I"),
     MINER_2("miner_2", Material.BARRIER, Material.LODESTONE, "Miner II"),
     /** Makes cobblestone above itself; the centre of every multi-block generator. No energy. */

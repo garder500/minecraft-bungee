@@ -154,13 +154,24 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
                 }
                 live.put(p, entry.getValue());
             }
+            EnergyNetwork.Sky sky = new EnergyNetwork.Sky() {
+                @Override
+                public boolean stormy(Pos p) {
+                    return world.isThundering() && at(world, p).getLightFromSky() >= 15;
+                }
+
+                @Override
+                public long second() {
+                    return world.getFullTime() / 20;
+                }
+            };
             for (List<Pos> group : EnergyNetwork.components(live.keySet())) {
                 if (touchesUnloaded(group, all, live)) {
                     continue; // a part of this network is in an unloaded chunk: do not run half of it
                 }
                 Map<Pos, MachineData> network = new LinkedHashMap<>();
                 group.forEach(p -> network.put(p, live.get(p)));
-                boolean powered = EnergyNetwork.hasFlux(network, p -> sunny(world, p));
+                boolean powered = EnergyNetwork.hasFlux(network, p -> sunny(world, p), sky);
                 for (Map.Entry<Pos, MachineData> cable : network.entrySet()) {
                     MachineData data = cable.getValue();
                     if (data.kind() != MachineType.CABLE) {
@@ -174,7 +185,7 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
                         unmodelled.put(world.getBlockAt(at.x(), at.y(), at.z()), data);
                     }
                 }
-                for (EnergyNetwork.Fire fire : EnergyNetwork.tick(network, cfg, p -> ready(world, p), p -> sunny(world, p), mods)) {
+                for (EnergyNetwork.Fire fire : EnergyNetwork.tick(network, cfg, p -> ready(world, p), p -> sunny(world, p), mods, sky)) {
                     creditArtisan(network.get(fire.pos()));
                     for (int i = 0; i < fire.cycles(); i++) {
                         if (!mine(world, fire.pos(), network.get(fire.pos()))) {

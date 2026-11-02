@@ -23,6 +23,8 @@ public final class SkyblockWorlds {
     public static final String CITADEL = "sb_citadel";
     /** The Abyssal Depths, seventh Realm (GDD 3.1), reached by its Sky Gate. */
     public static final String DEPTHS = "sb_depths";
+    /** The Tempestuous Archipelago, sixth Realm (GDD 3.1), reached by its Sky Gate. */
+    public static final String STORM = "sb_storm";
     /** Dungeon runs use {@code sb_dungeon_<runId>}. */
     public static final String DUNGEON_PREFIX = "sb_dungeon_";
 
@@ -42,7 +44,7 @@ public final class SkyblockWorlds {
     /** True for every world that belongs to the Skyblock. */
     public static boolean isSkyblock(String worldName) {
         return HUB.equals(worldName) || WORLD.equals(worldName) || NETHER.equals(worldName)
-            || END.equals(worldName) || GROVE.equals(worldName) || HEIGHTS.equals(worldName) || ASHES.equals(worldName)
+            || END.equals(worldName) || GROVE.equals(worldName) || HEIGHTS.equals(worldName) || ASHES.equals(worldName) || STORM.equals(worldName)
             || NECROPOLIS.equals(worldName) || MARSH.equals(worldName) || CITADEL.equals(worldName) || DEPTHS.equals(worldName) || isDungeon(worldName)
             || isBastion(worldName);
     }

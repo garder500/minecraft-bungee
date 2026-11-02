@@ -14,6 +14,8 @@ INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.coal-genera
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.coal-generator.coal-seconds', 'int', '40', 'Seconds one coal burns.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.battery.capacity', 'int', '10000', 'Flux a battery stores.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.solar-panel.output', 'int', '6', 'Flux per second of a solar panel in daylight under the open sky.');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.lightning-rod.output', 'int', '30', 'Base Flux per second of a Lightning Rod; each second it is multiplied by a surge factor from 0 to x4 (mean 1.275).');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.lightning-rod.quartz-seconds', 'int', '180', 'Seconds one Thunder Quartz keeps a Lightning Rod burning outside a thunderstorm.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.ember.consume-factor', 'real', '1.8', 'Ember Module (Cracked Ashes): factor on the Miner''s Flux use.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.ember.rate-factor', 'real', '1.5', 'Ember Module: factor on the Miner''s cycles per second.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.bloom.consume-factor', 'real', '0.5', 'Bloom Module (Whispering Grove): factor on the Miner''s Flux use.');
@@ -506,3 +508,12 @@ INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VA
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('tide_module', 1, 'custom:miner_1', 1);
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('tide_module', 2, 'PRISMARINE_CRYSTALS', 8);
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('tide_module', 3, 'REDSTONE', 8);
+INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('tempest_key', 150, 'tempest_key', 1, 3600);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('tempest_key', 0, 'custom:thunder_quartz', 4);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('tempest_key', 1, 'custom:voidglass', 8);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('tempest_key', 2, 'BREEZE_ROD', 4);
+INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('lightning_rod', 151, 'lightning_rod', 1, 1200);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('lightning_rod', 0, 'custom:thunder_quartz', 2);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('lightning_rod', 1, 'LIGHTNING_ROD', 1);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('lightning_rod', 2, 'COPPER_INGOT', 6);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('lightning_rod', 3, 'REDSTONE', 4);
