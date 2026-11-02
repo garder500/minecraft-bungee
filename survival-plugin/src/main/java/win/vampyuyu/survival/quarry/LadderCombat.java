@@ -31,12 +31,13 @@ import win.vampyuyu.survival.items.gear.Keys;
  * way. A ladder bow works the same when the arrow lands, its damage scaled by the draw. When the items feature is
  * loaded its combat listener does this and this one stays out of the way.
  */
-final class LadderCombat implements Listener {
+final class LadderCombat implements Listener, win.vampyuyu.survival.api.LadderApi {
     private final Core core;
     private final ItemsSettings settings;
     private final SurgeTracker surges = new SurgeTracker();
     private static final org.bukkit.NamespacedKey ARROW_DAMAGE = new org.bukkit.NamespacedKey("vampyuyu", "ladder_arrow_damage");
     private static final org.bukkit.NamespacedKey ARROW_ELEMENT = new org.bukkit.NamespacedKey("vampyuyu", "ladder_arrow_element");
+    private static final org.bukkit.NamespacedKey ARROW_SHARE = new org.bukkit.NamespacedKey("vampyuyu", "ladder_arrow_share");
     private static final org.bukkit.NamespacedKey ARROW_FULL = new org.bukkit.NamespacedKey("vampyuyu", "ladder_arrow_full");
 
     LadderCombat(Core core) {
@@ -58,12 +59,12 @@ final class LadderCombat implements Listener {
             return;
         }
         double charge = attackStrength(player);
-        double hit = DamageFormula.base(damage, settings.damageBonus, worn(player, Stat.MIGHT));
+        double hit = DamageFormula.base(damage, settings.damageBonus, might(player));
         ElementTraits.Traits traits = ElementTraits.read(target);
-        hit *= DamageFormula.elementMultiplier(def.get().element(), traits.weakTo(), traits.resists(), worn(player, Stat.ATTUNEMENT),
+        hit *= DamageFormula.elementMultiplier(def.get().element(), traits.weakTo(), traits.resists(), attunement(player),
             settings.elementWeakness, settings.elementResistance);
-        if (surges.hit(player.getUniqueId(), target.getUniqueId(), charge >= settings.surgeMinCharge, (int) settings.surgeEvery)) {
-            hit *= settings.surgeMultiplier;
+        if (surge(player, target, charge >= settings.surgeMinCharge)) {
+            hit *= surgeMultiplier(player);
             target.getWorld().spawnParticle(Particle.END_ROD, target.getLocation().add(0, target.getHeight() * 0.6, 0), 12,
                 0.3, 0.4, 0.3, 0.05);
             player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.8f, 1.6f);
@@ -87,7 +88,7 @@ final class LadderCombat implements Listener {
             return;
         }
         var pdc = arrow.getPersistentDataContainer();
-        pdc.set(ARROW_DAMAGE, PersistentDataType.DOUBLE, DamageFormula.base(damage, settings.damageBonus, worn(player, Stat.MIGHT))
+        pdc.set(ARROW_DAMAGE, PersistentDataType.DOUBLE, DamageFormula.base(damage, settings.damageBonus, might(player))
             * DamageFormula.drawFactor(event.getForce()));
         pdc.set(ARROW_FULL, PersistentDataType.BOOLEAN, event.getForce() >= settings.surgeMinCharge);
         if (def.get().element() != null) {
@@ -109,12 +110,85 @@ final class LadderCombat implements Listener {
         String element = pdc.get(ARROW_ELEMENT, PersistentDataType.STRING);
         ElementTraits.Traits traits = ElementTraits.read(target);
         double hit = damage * DamageFormula.elementMultiplier(element == null ? null : win.vampyuyu.survival.api.Element.valueOf(element),
-            traits.weakTo(), traits.resists(), worn(player, Stat.ATTUNEMENT), settings.elementWeakness, settings.elementResistance);
-        if (surges.hit(player.getUniqueId(), target.getUniqueId(), Boolean.TRUE.equals(pdc.get(ARROW_FULL, PersistentDataType.BOOLEAN)),
-                (int) settings.surgeEvery)) {
-            hit *= settings.surgeMultiplier;
+            traits.weakTo(), traits.resists(), attunement(player), settings.elementWeakness, settings.elementResistance);
+        if (surge(player, target, Boolean.TRUE.equals(pdc.get(ARROW_FULL, PersistentDataType.BOOLEAN)))) {
+            hit *= surgeMultiplier(player);
+        }
+        Double share = pdc.get(ARROW_SHARE, PersistentDataType.DOUBLE);
+        if (share != null) {
+            hit *= share;
         }
         event.setDamage(hit);
+    }
+
+    private java.util.Optional<win.vampyuyu.survival.api.ClassApi> classes() {
+        return core.service(win.vampyuyu.survival.api.ClassApi.class);
+    }
+
+    /** Might of the worn gear and the class (the class bonus is already inside the meta cap). */
+    private double might(Player player) {
+        return worn(player, Stat.MIGHT) + classes().map(c -> c.mightBonus(player.getUniqueId())).orElse(0.0);
+    }
+
+    private double attunement(Player player) {
+        return worn(player, Stat.ATTUNEMENT) + classes().map(c -> c.attunementBonus(player.getUniqueId())).orElse(0.0);
+    }
+
+    /** A Rift Step makes the next hit a Surge; the Duelist gets one every 4th hit. */
+    private boolean surge(Player player, LivingEntity target, boolean counted) {
+        int every = classes().map(c -> c.surgeEvery(player.getUniqueId(), (int) settings.surgeEvery)).orElse((int) settings.surgeEvery);
+        boolean natural = surges.hit(player.getUniqueId(), target.getUniqueId(), counted, every);
+        return counted && classes().map(c -> c.consumeGuaranteedSurge(player.getUniqueId())).orElse(false) || natural;
+    }
+
+    /** Surge power: the base multiplier plus Dexterity / 200 (GDD 8.2: 1.5 + Dex / 200). */
+    private double surgeMultiplier(Player player) {
+        return settings.surgeMultiplier + classes().map(c -> c.dexterityBonus(player.getUniqueId())).orElse(0.0) / 200.0;
+    }
+
+    @Override
+    public boolean isWeapon(ItemStack stack) {
+        return weaponDamage(stack, core.items().idOf(stack).flatMap(core.items()::def).orElse(null)) != null;
+    }
+
+    @Override
+    public int burst(Player player, ItemStack weapon, java.util.Collection<? extends LivingEntity> targets, double share) {
+        Optional<CustomItemDef> def = core.items().idOf(weapon).flatMap(core.items()::def);
+        Double damage = weaponDamage(weapon, def.orElse(null));
+        if (damage == null) {
+            return 0;
+        }
+        double base = DamageFormula.base(damage, settings.damageBonus, might(player)) * share;
+        int hit = 0;
+        for (LivingEntity target : targets) {
+            if (!target.isValid() || target.isDead()) {
+                continue;
+            }
+            ElementTraits.Traits traits = ElementTraits.read(target);
+            double amount = base * DamageFormula.elementMultiplier(def.get().element(), traits.weakTo(), traits.resists(),
+                attunement(player), settings.elementWeakness, settings.elementResistance);
+            target.damage(amount, org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.MAGIC)
+                .withCausingEntity(player).withDirectEntity(player).build());
+            hit++;
+        }
+        return hit;
+    }
+
+    @Override
+    public boolean tagArrow(Player player, ItemStack bow, AbstractArrow arrow, double share) {
+        Optional<CustomItemDef> def = core.items().idOf(bow).flatMap(core.items()::def);
+        Double damage = weaponDamage(bow, def.orElse(null));
+        if (damage == null) {
+            return false;
+        }
+        var pdc = arrow.getPersistentDataContainer();
+        pdc.set(ARROW_DAMAGE, PersistentDataType.DOUBLE, DamageFormula.base(damage, settings.damageBonus, might(player)));
+        pdc.set(ARROW_SHARE, PersistentDataType.DOUBLE, share);
+        pdc.set(ARROW_FULL, PersistentDataType.BOOLEAN, false); // the volley's arrows never count towards a Surge
+        if (def.get().element() != null) {
+            pdc.set(ARROW_ELEMENT, PersistentDataType.STRING, def.get().element().name());
+        }
+        return true;
     }
 
     /** Swing charge, 0.2 to 1 ({@link win.vampyuyu.survival.core.SwingCharge}, same as the items feature). */

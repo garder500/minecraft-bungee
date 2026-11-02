@@ -43,7 +43,9 @@ public final class QuarryFeature implements Feature {
             }
         }));
         core.listen(new WeaponListener(core));
-        core.listen(new LadderCombat(core)); // ladder damage when the full stat engine is not loaded
+        LadderCombat ladder = new LadderCombat(core);
+        core.listen(ladder); // ladder damage when the full stat engine is not loaded
+        core.register(win.vampyuyu.survival.api.LadderApi.class, ladder);
         core.listen(new LadderDefense(core)); // ladder Ward and Vitality, same condition
         core.listen(new PebbleListener(core, service));
         core.listen(new OutputListener(core, service));
