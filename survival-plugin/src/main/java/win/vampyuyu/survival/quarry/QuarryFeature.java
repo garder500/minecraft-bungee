@@ -114,6 +114,7 @@ public final class QuarryFeature implements Feature {
         core.register(win.vampyuyu.survival.api.EndAccessApi.class, service);
         core.register(win.vampyuyu.survival.api.GeneratorApi.class, service);
         core.register(MachineService.class, machines);
+        core.register(win.vampyuyu.survival.api.MinerBoostApi.class, machines);
     }
 
     /** Key of the recipe that turns nine pebbles into a cobblestone (QuarryGuard lets it through). */

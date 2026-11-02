@@ -81,6 +81,34 @@ final class EnergyNetwork {
 
     /** Same, with {@code sunny}: whether a solar panel at that position is in daylight under the open sky. */
     static List<Fire> tick(Map<Pos, MachineData> network, MachineSettings cfg, Predicate<Pos> ready, Predicate<Pos> sunny) {
+        return tick(network, cfg, ready, sunny, Modifiers.NONE);
+    }
+
+    /**
+     * What the trades change for one miner (GDD 11.3): {@code energy} multiplies the Flux it draws per cycle (Artisan),
+     * {@code speed} its cycles per second (Overclock). A faster miner draws proportionally more Flux per second.
+     */
+    interface Modifiers {
+        Modifiers NONE = new Modifiers() {
+            @Override
+            public double energy(MachineData miner) {
+                return 1;
+            }
+
+            @Override
+            public double speed(MachineData miner) {
+                return 1;
+            }
+        };
+
+        double energy(MachineData miner);
+
+        double speed(MachineData miner);
+    }
+
+    /** The full tick, with the trade modifiers of each miner. */
+    static List<Fire> tick(Map<Pos, MachineData> network, MachineSettings cfg, Predicate<Pos> ready, Predicate<Pos> sunny,
+            Modifiers mods) {
         double pool = 0;
         long capacity = 0;
         List<MachineData> batteries = new ArrayList<>();
@@ -106,12 +134,13 @@ final class EnergyNetwork {
             if (type == null || !type.miner() || !ready.test(entry.getKey())) {
                 continue;
             }
-            double need = cfg.consume(m);
+            double speed = Math.max(0, mods.speed(m));
+            double need = cfg.consume(m) * mods.energy(m) * speed;
             if (pool < need) {
                 continue;
             }
             pool -= need;
-            m.progress += cfg.rate(m);
+            m.progress += cfg.rate(m) * speed;
             int cycles = Math.min(MAX_CYCLES_PER_SECOND, (int) Math.floor(m.progress));
             m.progress -= cycles;
             if (cycles > 0) {

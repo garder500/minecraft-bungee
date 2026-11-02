@@ -13,6 +13,10 @@ public final class MachineData {
     public int fuel;
     /** Miners: cycles accumulated (a cycle runs when it reaches 1). */
     public double progress;
+    /** Miners: epoch millis until which an Artisan's Overclock runs this miner faster (0 when not overclocked). */
+    public long overclockUntil;
+    /** Miners: the speed multiplier of that Overclock. */
+    public double overclockSpeed = 1;
     /** The generator this Fountain last was (a {@link GeneratorStructure.Kind} name), empty when it is only a Fountain. */
     public String built = "";
     /** Miners: the Realm module slotted in ({@link MachineModule} name), empty when none. */

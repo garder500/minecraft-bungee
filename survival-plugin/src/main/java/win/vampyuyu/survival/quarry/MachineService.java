@@ -17,7 +17,7 @@ import win.vampyuyu.survival.api.event.QuarryProgressEvent;
 import win.vampyuyu.survival.quarry.EnergyNetwork.Pos;
 
 /** Runs the machines once per second: networks, fuel, batteries, and the miners breaking generator blocks. */
-final class MachineService {
+final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
     private static final BlockFace[] SIDES = {BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH,
         BlockFace.EAST, BlockFace.WEST};
     private static final int SAVE_EVERY = 30;
@@ -39,6 +39,71 @@ final class MachineService {
 
     MachineSettings settings() {
         return quarry.config().machines;
+    }
+
+    /** Trade effects on a miner: the Artisan's lower Flux draw (its owner's) and a running Overclock. */
+    private final EnergyNetwork.Modifiers mods = new EnergyNetwork.Modifiers() {
+        @Override
+        public double energy(MachineData miner) {
+            UUID owner = ownerOf(miner);
+            return owner == null ? 1 : quarry.core().service(win.vampyuyu.survival.api.TradeApi.class)
+                .map(t -> t.minerEnergyFactor(owner)).orElse(1.0);
+        }
+
+        @Override
+        public double speed(MachineData miner) {
+            return miner.overclockUntil > System.currentTimeMillis() ? Math.max(1, miner.overclockSpeed) : 1;
+        }
+    };
+
+    private static UUID ownerOf(MachineData data) {
+        try {
+            return data == null || data.owner == null ? null : UUID.fromString(data.owner);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    /** Artisan experience: a miner that ran counts for its owner (a no-op for a player without the trade). */
+    private void creditArtisan(MachineData miner) {
+        UUID owner = ownerOf(miner);
+        if (owner != null) {
+            quarry.core().service(win.vampyuyu.survival.api.TradeApi.class)
+                .ifPresent(t -> t.addXp(owner, win.vampyuyu.survival.api.Trade.ARTISAN, 1));
+        }
+    }
+
+    /**
+     * The Artisan's Overclock: the miner of {@code player} nearest to {@code at} within {@code range} blocks runs
+     * {@code speed} times faster for {@code millis}. False when none is in range.
+     */
+    @Override
+    public boolean overclockNearest(UUID player, org.bukkit.Location at, double range, long millis, double speed) {
+        if (at.getWorld() == null) {
+            return false;
+        }
+        MachineData best = null;
+        double bestDistance = range * range;
+        for (Map.Entry<Pos, MachineData> entry : store.all(at.getWorld().getName()).entrySet()) {
+            MachineData data = entry.getValue();
+            MachineType type = data.kind();
+            if (type == null || !type.miner() || !player.equals(ownerOf(data))) {
+                continue;
+            }
+            Pos p = entry.getKey();
+            double d = at.distanceSquared(new org.bukkit.Location(at.getWorld(), p.x() + 0.5, p.y() + 0.5, p.z() + 0.5));
+            if (d <= bestDistance) {
+                bestDistance = d;
+                best = data;
+            }
+        }
+        if (best == null) {
+            return false;
+        }
+        best.overclockUntil = System.currentTimeMillis() + millis;
+        best.overclockSpeed = speed;
+        store.markDirty();
+        return true;
     }
 
     void tick() {
@@ -109,7 +174,8 @@ final class MachineService {
                         unmodelled.put(world.getBlockAt(at.x(), at.y(), at.z()), data);
                     }
                 }
-                for (EnergyNetwork.Fire fire : EnergyNetwork.tick(network, cfg, p -> ready(world, p), p -> sunny(world, p))) {
+                for (EnergyNetwork.Fire fire : EnergyNetwork.tick(network, cfg, p -> ready(world, p), p -> sunny(world, p), mods)) {
+                    creditArtisan(network.get(fire.pos()));
                     for (int i = 0; i < fire.cycles(); i++) {
                         if (!mine(world, fire.pos(), network.get(fire.pos()))) {
                             break;
