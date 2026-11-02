@@ -41,7 +41,7 @@ public class BossFeatureBootTest {
 
     @Test
     public void summonItemsAreRegistered() {
-        for (String id : List.of("void_sigil", "magma_core", "frost_heart", "matriarch_egg", "leviathan_scale",
+        for (String id : List.of("void_sigil", "echo_key", "magma_core", "frost_heart", "matriarch_egg", "leviathan_scale",
                 "wing_core")) {
             assertTrue(id, plugin.core().items().def(id).isPresent());
         }

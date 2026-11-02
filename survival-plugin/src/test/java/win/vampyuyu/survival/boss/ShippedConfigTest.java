@@ -46,7 +46,7 @@ public class ShippedConfigTest {
         BossDefinition def = shipped().bosses().get("voidwyrm");
         assertEquals(org.bukkit.entity.EntityType.ENDER_DRAGON, def.entity());
         assertEquals(0.05, def.loot().wingsMinShare(), 1e-9);
-        assertEquals("void_sigil", def.summon().item());
+        assertEquals("echo_key", def.summon().item());
         assertTrue(def.loot().entries().stream().anyMatch(e -> e.item().equals("custom:wing_core")));
     }
 
@@ -136,7 +136,7 @@ public class ShippedConfigTest {
     @Test
     public void everySummonItemHasABossAndADrop() throws Exception {
         BossConfig config = shipped();
-        for (String item : List.of("void_sigil", "magma_core", "frost_heart", "matriarch_egg", "leviathan_scale")) {
+        for (String item : List.of("echo_key", "magma_core", "frost_heart", "matriarch_egg", "leviathan_scale")) {
             assertTrue(item, config.bosses().values().stream()
                 .anyMatch(d -> d.summon() != null && d.summon().item().equals(item)));
         }

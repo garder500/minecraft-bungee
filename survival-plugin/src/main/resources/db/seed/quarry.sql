@@ -378,3 +378,6 @@ INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VA
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('starcore_shovel', 2, 'custom:sunstone', 12);
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('starcore_shovel', 3, 'custom:void_shovel', 1);
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('starcore_shovel', 4, 'DIAMOND', 2);
+INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('echo_key', 66, 'echo_key', 1, 300);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('echo_key', 0, 'custom:bronzite', 16);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('echo_key', 1, 'IRON_INGOT', 4);

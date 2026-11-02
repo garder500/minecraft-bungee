@@ -155,6 +155,18 @@ ore(c, "Voidglass", "a Voidglass", "voidglass", 1, "ECHO_SHARD", 500)
 ore(c, "Starcore", "a Starcore Shard", "starcore", 1, "NETHER_STAR", 800)
 brk(c, "Mine 5,000", "5,000 cobblestone", "COBBLESTONE", 5000, "COBBLESTONE", 500)
 
+c = cat("rift", "The Hub and the Rift", "With the Bronze armor on your back the Call shows you the way out of the islet: the Hub, its people, and the Rift where the first Echo waits (GDD 13.2, A9-A13).", True, "bronze_armor", "CRYING_OBSIDIAN")
+ev(c, "The Island Gate", "Travel to the Hub with /hub (and use /island to come back).", "hub_arrive", 1, "ENDER_PEARL", 150, qid="hub_gate",
+   lore="Bronze on your back, you feel the fragment loosen. Beyond the gate there are other survivors.")
+ev(c, "The Guard", "Click the Guard on the Hub plaza and listen.", "hub_npc:guard", 1, "IRON_SWORD", 80, qid="hub_guard")
+ev(c, "The Archivist", "Click the Archivist on the Hub plaza: she keeps the key to the Rift.", "hub_npc:archivist", 1, "WRITTEN_BOOK", 150,
+   items={"echo_key": 1}, qid="hub_archivist", lore="The Archivist has kept a key cut from a shard that still remembers the sky.")
+ev(c, "The Merchant", "Click the Merchant on the Hub plaza to learn how the market works.", "hub_npc:merchant", 1, "EMERALD", 80, qid="hub_merchant")
+earn(c, "Market Lesson", 300, "GOLD_NUGGET", 150, qid="hub_market_lesson")
+ev(c, "Enter the Rift", "Carry your Echo Key to the Rift arch, west of the Hub plaza, and click the Rift Gatekeeper.", "rift_enter", 1, "CRYING_OBSIDIAN", 250, qid="rift_enter")
+q(c, "Defeat the Echo of the Rift", "Right-click the Echo Key on the Rift altar, then defeat the Echo of the Rift. It drops the Wing Core that grants your Wings and lights the road to the Quai des Huit.", "BOSS_KILL", "voidwyrm", 1, "DRAGON_HEAD", 1500, qid="echo_defeat",
+  lore="The first Echo of the Devourer screams in the sky. End it, and the Eight Realms can be reached.")
+
 c = cat("nether", "The Nether and the Ember", "A portal, the Ember generator, quartz and soul sand.", True, "tier2", "NETHERRACK")
 cmd(c, "Nether Plan", "Read the Nether plan with /guide.", "guide", "WRITABLE_BOOK", 50, label="nether_plan")
 craft(c, "Flint and Steel", "flint and steel", "FLINT_AND_STEEL", 1, "FLINT_AND_STEEL", 80)
@@ -181,7 +193,7 @@ brk(c, "End Stone", "64 end stone", "END_STONE", 64, "END_STONE", 200)
 kill(c, "Void Mites", "15 endermites (the Void Mites of the Echo of the Rift)", "ENDERMITE", 15, "ENDER_PEARL", 250)
 craft(c, "End Bricks", "16 end stone bricks", "END_STONE_BRICKS", 16, "END_STONE_BRICKS", 200)
 forge(c, "Void Sigil", "void_sigil", 1, "NETHER_STAR", 400, label="sigil")
-q(c, "Face the Echo of the Rift", "Defeat the Echo of the Rift.", "BOSS_KILL", "voidwyrm", 1, "DRAGON_HEAD", 1500, label="voidwyrm_1")
+retired(c)  # Face the Echo of the Rift: moved to the "rift" chain right after the Bronze armor (echo_defeat)
 q(c, "Echo of the Rift Again", "Defeat the Echo of the Rift 3 times.", "BOSS_KILL", "voidwyrm", 3, "DRAGON_HEAD", 2000)
 q(c, "Echo of the Rift Master", "Defeat the Echo of the Rift 10 times.", "BOSS_KILL", "voidwyrm", 10, "DRAGON_HEAD", 6000)
 
@@ -237,7 +249,8 @@ forge(c, "Battery Bank", "battery", 5, "WAXED_COPPER_BLOCK", 400)
 for tier, coins, icon in (("bronze", 80, "CHAINMAIL"), ("rime", 150, "IRON"), ("ember", 300, "DIAMOND"), ("void", 600, "NETHERITE"), ("starcore", 1000, "NETHERITE")):
     for slot in ("helmet", "chestplate", "leggings", "boots"):
         forge(c, f"{tier.title()} {slot.title()}", f"{tier}_{slot}", 1, f"{icon}_{slot.upper()}", coins)
-    ev(c, f"{tier.title()} Armor", f"Wear a full set of {tier} armor: helmet, chestplate, leggings and boots.", f"armor_set:{tier}", 1, f"{icon}_CHESTPLATE", coins * (3 if tier == "starcore" else 2))
+    ev(c, f"{tier.title()} Armor", f"Wear a full set of {tier} armor: helmet, chestplate, leggings and boots.", f"armor_set:{tier}", 1, f"{icon}_CHESTPLATE", coins * (3 if tier == "starcore" else 2),
+       label=f"{tier}_armor")
 for tier, coins in (("ember", 400), ("void", 800), ("starcore", 1500)):
     forge(c, f"{tier.title()} Sword", f"{tier}_sword", 1, "NETHERITE_SWORD" if tier != "ember" else "DIAMOND_SWORD", coins)
     forge(c, f"{tier.title()} Pick", f"{tier}_pick", 1, "NETHERITE_PICKAXE" if tier != "ember" else "DIAMOND_PICKAXE", coins)

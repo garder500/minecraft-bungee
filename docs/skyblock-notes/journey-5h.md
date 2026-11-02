@@ -25,3 +25,12 @@ recipes is needed from this simulation.
 ## Not verified
 Nothing was compiled or run in game (no Docker, Paper repository unreachable from this sandbox). Speed of the player,
 tutorial and build time are guesses to be replaced by a timed playtest with `e2e_client.py --scenario start`.
+
+## Update (#60): A9-A13 and the Echo moved up
+The `rift` main category ("The Hub and the Rift") opens right after the Bronze armor quest (`bronze_armor`):
+`hub_gate` (event `hub_arrive`, fired by `/hub`), `hub_guard`, `hub_archivist` (reward: the **Echo Key**), `hub_merchant`
+(events `hub_npc:<pad>`, fired by `HubNpcs.click`), `hub_market_lesson` (earn 300), `rift_enter` (click the Rift
+Gatekeeper while carrying the key) and `echo_defeat` (`BOSS_KILL voidwyrm`). The Echo is summoned by the `echo_key` at an
+altar at the Rift arch of `sb_hub` (-34.5, 101, 0.5, assumes `hub.y` 100); `echo_key` is also forgeable (16 Bronzite, 4 iron,
+5 min) for repeat fights. The old "Face the Echo" quest of the `end` category is retired (its id slot kept). The Void Sigil
+no longer summons anything. Not compiled or played: no Maven repository or Docker in the sandbox.

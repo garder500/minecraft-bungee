@@ -71,7 +71,10 @@ public final class BossItems {
         // summon items
         t.add(spec("void_sigil", "Void Sigil", Rarity.EPIC, Material.ECHO_SHARD, "SUMMON ITEM", true, none,
             "<gray>A sigil humming with the cold of the End.", "",
-            "<yellow>Right-click at the End altar to awaken", "<yellow>the <light_purple>Echo of the Rift<yellow>. Consumed on use."));
+            "<yellow>Trophy of the three boss keys. The Rift now", "<yellow>answers the <light_purple>Echo Key<yellow> instead."));
+        t.add(spec("echo_key", "Echo Key", Rarity.RARE, Material.TRIAL_KEY, "SUMMON ITEM", true, none,
+            "<gray>The Archivist's key to the Rift, cut from a", "<gray>shard that still remembers the sky.", "",
+            "<yellow>Right-click at the Rift altar in the Hub to", "<yellow>awaken the <light_purple>Echo of the Rift<yellow>. Consumed on use."));
         t.add(spec("magma_core", "Magma Core", Rarity.EPIC, Material.MAGMA_CREAM, "SUMMON ITEM", true, none,
             "<gray>A heart of molten rock that never cools.", "",
             "<yellow>Right-click in the Nether to wake the", "<red>Magma Warden<yellow>. Consumed on use."));
