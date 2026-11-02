@@ -60,7 +60,8 @@ final class QuestListener implements Listener {
         } catch (IllegalArgumentException e) {
             return;
         }
-        quests.record(event.getPlayer(), type, event.getSubject(), event.getAmount());
+        quests.record(event.getPlayer(), type, event.getSubject(), event.getAmount(), event.getShareKey(),
+            event.getSharedWith());
         if (type == QuestType.GENERATOR_UPGRADE) {
             try {
                 quests.record(event.getPlayer(), QuestType.GENERATOR_TIER, "", Integer.parseInt(event.getSubject()));

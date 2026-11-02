@@ -42,8 +42,10 @@ public final class MenuFeature implements Feature {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 if (MenuRuntime.inSkyblock(player.getWorld())) {
                     quests.sync(player);
+                    quests.presence(player, 30); // this task runs every 600 ticks
                 }
             }
+            quests.flush();
         });
         for (Player player : Bukkit.getOnlinePlayers()) {
             core.scheduler().nextTick(() -> arrive(player));
@@ -90,6 +92,7 @@ public final class MenuFeature implements Feature {
     @Override public void disable() {
         if (unsubscribe != null) unsubscribe.run();
         if (maintenance != null) maintenance.cancel();
+        if (quests != null) quests.flush();
         if (sidebar != null) sidebar.stop();
         if (source != null) source.close();
         if (core != null) core.getPlugin().getServer().getMessenger().unregisterIncomingPluginChannel(core.getPlugin(), CHANNEL);

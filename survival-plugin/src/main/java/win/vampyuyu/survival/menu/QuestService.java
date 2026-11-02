@@ -15,6 +15,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import win.vampyuyu.survival.api.IslandInfo;
 import win.vampyuyu.survival.api.Skill;
 import win.vampyuyu.survival.core.Msg;
 import win.vampyuyu.survival.menu.QuestEngine.Completion;
@@ -25,9 +26,18 @@ import win.vampyuyu.survival.menu.QuestEngine.Completion;
  */
 final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
     private final MenuRuntime rt;
+    private final IslandQuestStore islandStore;
+    /** Island id -> key of the last fan-out event it counted (the events of one fan-out arrive one after another). */
+    private final Map<UUID, Long> lastShare = new HashMap<>();
 
     QuestService(MenuRuntime rt) {
         this.rt = rt;
+        this.islandStore = new IslandQuestStore(rt.core.store(), rt.core.getPlugin().getLogger());
+    }
+
+    /** Writes the islands' shared quest records that changed. */
+    void flush() {
+        islandStore.flush();
     }
 
     @Override
@@ -74,6 +84,14 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
 
     /** Records something the player did. Ignored outside Skyblock worlds, in creative/spectator and for offline players. */
     void record(Player player, QuestType type, String subject, int value) {
+        record(player, type, subject, value, 0, java.util.Set.of());
+    }
+
+    /**
+     * Same; {@code shareKey} and {@code sharedWith} come from an event fanned out to the island's members: the island's
+     * shared quests count it once and credit every player it reached.
+     */
+    void record(Player player, QuestType type, String subject, int value, long shareKey, java.util.Set<UUID> sharedWith) {
         if (!active() || value <= 0 || !player.isOnline() || !MenuRuntime.inSkyblock(player.getWorld())) {
             return;
         }
@@ -87,9 +105,12 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
         QuestEngine engine = rt.engine();
         engine.ensureDay(data, today(), rt.config().dailyCount);
         QuestEngine.Event event = new QuestEngine.Event(type, subject, value);
-        List<Completion> done = new ArrayList<>(engine.catchUp(data, event));
-        done.addAll(engine.apply(data, event));
-        finish(player, data, done, true);
+        Optional<IslandInfo> island = sharedIsland(player);
+        QuestEngine.Scope scope = island.isPresent() ? QuestEngine.Scope.PERSONAL : QuestEngine.Scope.ALL;
+        List<Completion> done = new ArrayList<>(engine.catchUp(data, event, scope));
+        done.addAll(engine.apply(data, event, scope));
+        finish(player, data, done, true, scope);
+        island.ifPresent(info -> recordIsland(player, info, event, shareKey, sharedWith));
     }
 
     /** Re-checks absolute quests (island ownership, skill levels), rolls the day over and pays what is pending. */
@@ -101,8 +122,23 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
         QuestEngine engine = rt.engine();
         migrate(player, data);
         boolean changed = engine.ensureDay(data, today(), rt.config().dailyCount);
-        List<Completion> done = new ArrayList<>(engine.sync(data, def -> probe(player, def)));
-        finish(player, data, done, changed || !done.isEmpty());
+        Optional<IslandInfo> island = sharedIsland(player);
+        QuestEngine.Scope scope = QuestEngine.Scope.ALL;
+        if (island.isPresent()) {
+            scope = QuestEngine.Scope.PERSONAL;
+            IslandInfo info = island.get();
+            IslandQuests shared = islandRecord(info);
+            changed |= mirror(player, data, shared);
+            welcome(player, info, shared);
+            List<Completion> islandDone = engine.sync(shared.quests, def -> probeShared(player, shared, def),
+                QuestEngine.Scope.ISLAND);
+            if (!islandDone.isEmpty()) {
+                completeIsland(info, shared, islandDone);
+            }
+            settleOwed(player, info, shared);
+        }
+        List<Completion> done = new ArrayList<>(engine.sync(data, def -> probe(player, def), scope));
+        finish(player, data, done, changed || !done.isEmpty(), scope);
         flushPending(player);
     }
 
@@ -195,12 +231,12 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
             .service(win.vampyuyu.survival.api.MachineApi.class).map(api -> api.placed(island.owner(), item))).orElse(0);
     }
 
-    private void finish(Player player, QuestData data, List<Completion> done, boolean dirty) {
+    private void finish(Player player, QuestData data, List<Completion> done, boolean dirty, QuestEngine.Scope scope) {
         QuestEngine engine = rt.engine();
         List<Completion> all = new ArrayList<>(done);
         // completions can unlock absolute quests that are already satisfied
         if (!done.isEmpty()) {
-            all.addAll(engine.sync(data, def -> probe(player, def)));
+            all.addAll(engine.sync(data, def -> probe(player, def), scope));
         }
         for (Completion completion : all) {
             pay(player, data, completion);
@@ -219,13 +255,18 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
     // ---------------------------------------------------------------- rewards
 
     private void pay(Player player, QuestData data, Completion completion) {
+        pay(player, data, completion, completion.def().rewards().coins());
+    }
+
+    /** Pays a quest; {@code coins} replaces the quest's coins (an island's daily cap can lower them). */
+    private void pay(Player player, QuestData data, Completion completion, double coins) {
         QuestDef def = completion.def();
         QuestDef.Rewards rewards = def.rewards();
         String reason = (completion.daily() ? "daily:" : "quest:") + def.id();
         List<String> parts = new ArrayList<>();
-        if (rewards.coins() > 0) {
-            parts.add("<gold>+" + Msg.number(rewards.coins()) + " coins");
-            giveCoins(player, data, rewards.coins(), reason);
+        if (coins > 0) {
+            parts.add("<gold>+" + Msg.number(coins) + " coins");
+            giveCoins(player, data, coins, reason);
         }
         rewards.skillXp().forEach((skillName, xp) -> {
             Optional<Skill> skill = skill(skillName);
@@ -341,6 +382,288 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
 
     private static String escape(String text) {
         return net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().escapeTags(text);
+    }
+
+    // ---------------------------------------------------------------- the island's shared quests
+
+    /**
+     * The island whose shared record the player's main-chain quests live in; empty (everything stays personal, as it was)
+     * when the player has no island or the plan has no main-chain quest.
+     */
+    private Optional<IslandInfo> sharedIsland(Player player) {
+        boolean any = rt.engine().catalog().tutorial().stream().anyMatch(rt.engine()::islandScope);
+        return any ? rt.islands().flatMap(api -> api.islandOf(player.getUniqueId())) : Optional.empty();
+    }
+
+    /**
+     * The island's record. Created on first use from the personal progress the owner (even offline) and the members online
+     * already have, without paying anything, so nobody loses what they did before quests were shared.
+     */
+    IslandQuests islandRecord(IslandInfo info) {
+        boolean fresh = !islandStore.exists(info.id());
+        IslandQuests shared = islandStore.get(info.id());
+        if (!fresh) {
+            return shared;
+        }
+        QuestEngine engine = rt.engine();
+        List<UUID> sources = new ArrayList<>();
+        sources.add(info.owner());
+        info.members().stream().filter(id -> !id.equals(info.owner()) && org.bukkit.Bukkit.getPlayer(id) != null)
+            .forEach(sources::add);
+        for (UUID id : sources) {
+            QuestData own = rt.quests(id);
+            for (QuestDef def : engine.catalog().tutorial()) {
+                if (!engine.islandScope(def)) {
+                    continue;
+                }
+                if (own.completed.contains(def.id())) {
+                    shared.quests.completed.add(def.id());
+                } else if (own.progress.getOrDefault(def.id(), 0) > 0) {
+                    shared.quests.progress.merge(def.id(), own.progress.get(def.id()), Math::max);
+                }
+            }
+            own.forged.forEach((item, count) -> shared.quests.forged.merge(item, count, Math::max));
+        }
+        shared.quests.completed.forEach(shared.quests.progress::remove);
+        info.members().forEach(id -> shared.known.add(id.toString()));
+        islandStore.markDirty(info.id());
+        return shared;
+    }
+
+    /** Copies the island's state of the main chain into a member's own data. True when something changed. */
+    private boolean mirror(Player player, QuestData data, IslandQuests shared) {
+        boolean changed = false;
+        for (QuestDef def : rt.engine().catalog().tutorial()) {
+            if (rt.engine().islandScope(def)) {
+                changed |= mirrorQuest(data, shared, def);
+            }
+        }
+        if (changed) {
+            rt.dirty(player.getUniqueId());
+        }
+        return changed;
+    }
+
+    private boolean mirrorQuest(QuestData data, IslandQuests shared, QuestDef def) {
+        boolean changed = false;
+        if (shared.quests.completed.contains(def.id())) {
+            changed |= data.completed.add(def.id());
+            changed |= data.progress.remove(def.id()) != null;
+        } else {
+            changed |= data.completed.remove(def.id());
+            int progress = shared.quests.progress.getOrDefault(def.id(), 0);
+            if (progress > 0) {
+                changed |= !Integer.valueOf(progress).equals(data.progress.put(def.id(), progress));
+            } else {
+                changed |= data.progress.remove(def.id()) != null;
+            }
+        }
+        return changed;
+    }
+
+    private void mirrorOnline(IslandInfo info, IslandQuests shared, List<QuestDef> defs) {
+        for (UUID id : info.members()) {
+            Player member = org.bukkit.Bukkit.getPlayer(id);
+            if (member == null) {
+                continue;
+            }
+            QuestData data = rt.quests(id);
+            boolean changed = false;
+            for (QuestDef def : defs) {
+                changed |= mirrorQuest(data, shared, def);
+            }
+            if (changed) {
+                rt.dirty(id);
+            }
+        }
+    }
+
+    /** What the player's state says about an island quest's value; remembers it as the player's contribution. */
+    private OptionalInt probeShared(Player player, IslandQuests shared, QuestDef def) {
+        OptionalInt value = probe(player, def);
+        if (value.isPresent() && value.getAsInt() > 0) {
+            credit(shared, def, player.getUniqueId(), value.getAsInt());
+        }
+        return value;
+    }
+
+    private void credit(IslandQuests shared, QuestDef def, UUID player, int value) {
+        Map<String, Integer> byPlayer = shared.contributions.computeIfAbsent(def.id(), k -> new HashMap<>());
+        if (def.type().absolute()) {
+            byPlayer.merge(player.toString(), Math.min(value, def.amount()), Math::max);
+        } else {
+            byPlayer.merge(player.toString(), value, (a, b) -> (int) Math.min(Integer.MAX_VALUE, (long) a + b));
+        }
+    }
+
+    private void recordIsland(Player player, IslandInfo info, QuestEngine.Event event, long shareKey,
+            java.util.Set<UUID> sharedWith) {
+        if (shareKey != 0) {
+            if (Long.valueOf(shareKey).equals(lastShare.get(info.id()))) {
+                return; // another player's copy of an event the island already counted
+            }
+            lastShare.put(info.id(), shareKey);
+        }
+        QuestEngine engine = rt.engine();
+        IslandQuests shared = islandRecord(info);
+        List<QuestDef> matching = engine.matching(shared.quests, event, QuestEngine.Scope.ISLAND);
+        if (matching.isEmpty()) {
+            return;
+        }
+        java.util.Set<UUID> doers = shareKey != 0 && !sharedWith.isEmpty() ? sharedWith : java.util.Set.of(player.getUniqueId());
+        for (QuestDef def : matching) {
+            doers.forEach(id -> credit(shared, def, id, event.value()));
+        }
+        List<Completion> done = new ArrayList<>(engine.catchUp(shared.quests, event, QuestEngine.Scope.ISLAND));
+        done.addAll(engine.apply(shared.quests, event, QuestEngine.Scope.ISLAND));
+        if (!done.isEmpty()) {
+            done.addAll(engine.sync(shared.quests, def -> probeShared(player, shared, def), QuestEngine.Scope.ISLAND));
+        }
+        islandStore.markDirty(info.id());
+        mirrorOnline(info, shared, matching);
+        if (!done.isEmpty()) {
+            completeIsland(info, shared, done);
+        }
+    }
+
+    /** True when the member earns the reward of an island quest: enough of it was theirs, and time was spent on the island. */
+    private boolean eligible(IslandInfo info, IslandQuests shared, QuestDef def, UUID member) {
+        int added = shared.contributions.getOrDefault(def.id(), Map.of()).getOrDefault(member.toString(), 0);
+        MenuConfig cfg = rt.config();
+        int need = def.type().absolute() ? def.amount() : def.amount() <= 10 ? 1 : (int) Math.ceil(cfg.coopMinShare * def.amount());
+        if (added < need) {
+            return false;
+        }
+        return member.equals(info.owner()) || shared.seconds.getOrDefault(member.toString(), 0) >= cfg.coopMinMinutes * 60;
+    }
+
+    /**
+     * The island finished quests: members who contributed are paid in full (now when online, else at their next visit), the
+     * others only see the quest ticked. The unlocks are the quests' completion itself, so they are the island's, once.
+     */
+    private void completeIsland(IslandInfo info, IslandQuests shared, List<Completion> done) {
+        QuestEngine engine = rt.engine();
+        for (Completion completion : done) {
+            QuestDef def = completion.def();
+            if (def.type().absolute()) {
+                // members online who reached the level too count, even if the island completed on someone else's check
+                for (UUID id : info.members()) {
+                    Player member = org.bukkit.Bukkit.getPlayer(id);
+                    OptionalInt value = member == null ? OptionalInt.empty() : probe(member, def);
+                    if (value.isPresent() && value.getAsInt() > 0) {
+                        credit(shared, def, id, value.getAsInt());
+                    }
+                }
+            }
+            for (UUID id : info.members()) {
+                Player member = org.bukkit.Bukkit.getPlayer(id);
+                boolean paid = eligible(info, shared, def, id);
+                if (paid) {
+                    if (!shared.settled.computeIfAbsent(def.id(), k -> new java.util.HashSet<>()).add(id.toString())) {
+                        continue;
+                    }
+                    if (member != null) {
+                        payShared(member, shared, completion);
+                    } else {
+                        shared.owed.computeIfAbsent(id.toString(), k -> new java.util.LinkedHashSet<>()).add(def.id());
+                    }
+                } else if (member != null) {
+                    rt.core.msg().mini(member, "<green><bold>ISLAND QUEST DONE</bold> <yellow>" + escape(def.name()));
+                }
+            }
+        }
+        islandStore.markDirty(info.id());
+        mirrorOnline(info, shared, done.stream().map(Completion::def).toList());
+        for (UUID id : info.members()) {
+            Player member = org.bukkit.Bukkit.getPlayer(id);
+            if (member != null) {
+                int counted = (int) done.stream().filter(c -> eligible(info, shared, c.def(), id)).count();
+                if (counted > 0) {
+                    record(member, QuestType.EVENT, "quest_done", counted);
+                }
+                rt.dirty(id);
+                sync(member); // the personal quests waiting on these ones may open now
+            }
+        }
+    }
+
+    /** Pays an island quest to one member, within the island's daily coin cap. */
+    private void payShared(Player member, IslandQuests shared, Completion completion) {
+        QuestData data = rt.quests(member.getUniqueId());
+        double coins = completion.def().rewards().coins();
+        String day = today().toString();
+        if (!day.equals(shared.coinDay)) {
+            shared.coinDay = day;
+            shared.coinsToday = 0;
+        }
+        double cap = rt.config().coopDailyCoinCap;
+        if (cap > 0) {
+            coins = Math.max(0, Math.min(coins, cap - shared.coinsToday));
+        }
+        shared.coinsToday += coins;
+        rt.core.msg().mini(member, "<green><bold>ISLAND QUEST DONE</bold> <gray>You helped with it.");
+        pay(member, data, completion, coins);
+        rt.dirty(member.getUniqueId());
+    }
+
+    /** Pays the rewards that waited for this member to come online. */
+    private void settleOwed(Player player, IslandInfo info, IslandQuests shared) {
+        java.util.Set<String> owed = shared.owed.remove(player.getUniqueId().toString());
+        if (owed == null) {
+            return;
+        }
+        islandStore.markDirty(info.id());
+        for (String id : owed) {
+            rt.engine().catalog().tutorialQuest(id)
+                .ifPresent(def -> payShared(player, shared, new Completion(def, false)));
+        }
+    }
+
+    /** Arrival of a new member: the kit of the island's current generator tier, once. */
+    private void welcome(Player player, IslandInfo info, IslandQuests shared) {
+        if (!shared.known.add(player.getUniqueId().toString())) {
+            return;
+        }
+        islandStore.markDirty(info.id());
+        if (player.getUniqueId().equals(info.owner())) {
+            return;
+        }
+        int tier = rt.core.service(win.vampyuyu.survival.api.GeneratorApi.class).map(api -> api.tier(info.owner())).orElse(1);
+        List<List<String>> kit = rt.config().coopKit;
+        List<String> ids = kit.isEmpty() ? List.of() : kit.get(Math.max(0, Math.min(tier, kit.size()) - 1));
+        List<String> names = new ArrayList<>();
+        for (String id : ids) {
+            ItemStack stack = rt.core.items().def(id).isPresent() ? rt.core.items().create(id) : materialStack(id);
+            if (stack != null) {
+                give(player, stack);
+                names.add(id);
+            }
+        }
+        rt.core.msg().mini(player, "<green>Welcome to the island! <gray>Its finished quests are ticked for you, and you earn the next "
+            + "ones by helping." + (names.isEmpty() ? "" : " Here is a starter kit."));
+    }
+
+    private static ItemStack materialStack(String name) {
+        org.bukkit.Material material = org.bukkit.Material.matchMaterial(name);
+        return material == null || material.isAir() ? null : new ItemStack(material);
+    }
+
+    /** Counts the time a player spends on their own island (called by a repeating task, {@code seconds} apart). */
+    void presence(Player player, int seconds) {
+        if (!active() || !player.isOnline()) {
+            return;
+        }
+        Optional<IslandInfo> own = sharedIsland(player);
+        if (own.isEmpty()) {
+            return;
+        }
+        boolean there = rt.islands().flatMap(api -> api.islandAt(player.getLocation()))
+            .map(at -> at.id().equals(own.get().id())).orElse(false);
+        if (there) {
+            IslandQuests shared = islandRecord(own.get());
+            shared.seconds.merge(player.getUniqueId().toString(), seconds, Integer::sum);
+            islandStore.markDirty(own.get().id());
+        }
     }
 
     // ---------------------------------------------------------------- queries used by the sidebar and GUI

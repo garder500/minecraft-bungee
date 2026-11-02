@@ -74,6 +74,14 @@ public final class MenuConfig {
     public final double dailyBonusXp;
     public final List<String> ignoreCoinReasons;
     public final int placedMemory;
+    /** Co-op: share of a quest's amount a member must add to be paid (1 action when the amount is 10 or less). */
+    public final double coopMinShare;
+    /** Co-op: minutes a member (not the owner) must have spent on the island to be paid. */
+    public final int coopMinMinutes;
+    /** Co-op: coins the quests of one island may pay per day, all members together (0 = no cap). */
+    public final double coopDailyCoinCap;
+    /** Co-op: items given to a member who joins an island, by generator tier (index 0 = tier 1). */
+    public final List<List<String>> coopKit;
 
     private final List<String> problems = new ArrayList<>();
 
@@ -157,6 +165,14 @@ public final class MenuConfig {
         ignoreCoinReasons = c.getList("quests.daily.ignore-coin-reasons").stream()
             .map(s -> s.toLowerCase(Locale.ROOT)).toList();
         placedMemory = clamp(c.getInt("quests.daily.placed-memory", 2048), 64, 65536);
+        coopMinShare = Math.min(1, Math.max(0, c.getDouble("quests.coop.min-share", 0.10)));
+        coopMinMinutes = Math.max(0, c.getInt("quests.coop.min-minutes", 30));
+        coopDailyCoinCap = Math.max(0, c.getDouble("quests.coop.island-daily-coin-cap", 600));
+        List<List<String>> kit = new ArrayList<>();
+        for (int tier = 1; tier <= 4; tier++) {
+            kit.add(c.getList("quests.coop.kit.tier" + tier));
+        }
+        coopKit = List.copyOf(kit);
         problems.addAll(c.problems());
     }
 
