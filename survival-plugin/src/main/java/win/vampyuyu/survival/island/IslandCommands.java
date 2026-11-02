@@ -367,7 +367,7 @@ public final class IslandCommands {
         line(to, "Type", island.template);
         line(to, "State", island.state().name().toLowerCase(Locale.ROOT));
         line(to, "Level", island.level + " (value " + Msg.number(island.value) + ")");
-        line(to, "Members", island.size() + "/" + cfg.memberSlotsFor(island));
+        line(to, "Members", island.size() + "/" + service.memberSlots(island));
         line(to, "Radius", String.valueOf(cfg.radiusFor(island)));
         line(to, "Access", island.locked ? "locked" : "open");
         line(to, "Cell", island.cellX + ", " + island.cellZ);

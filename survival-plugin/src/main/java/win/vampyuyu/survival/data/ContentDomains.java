@@ -98,6 +98,11 @@ public final class ContentDomains {
         new Root("promotion_chain", "id", null, List.of(new Child("promotion_step", "chain_id"))),
         settings("promotion")));
 
+    public static final Domain PARAGON = new Domain("paragon", List.of(
+        new Root("paragon_rank", "rank", null, List.of()),
+        new Root("paragon_ultimate", "class", null, List.of()),
+        settings("paragon")));
+
     public static final Domain STATIONS = new Domain("stations", List.of(
         new Root("alembic_recipe", "id", null, List.of(new Child("alembic_ingredient", "recipe_id"))),
         new Root("ranch_product", "id", null, List.of()),
@@ -159,7 +164,7 @@ public final class ContentDomains {
 
     /** In the order they are synced. */
     public static final List<Domain> ALL = List.of(QUESTS, QUESTS_DAILY, CORE, ISLAND, UTILITY, WINGS, MENU, ECONOMY, SKILLS, QUARRY, GADGETS, BOSS,
-        RESONANCE, TRADES, DUNGEON, BASTION, ITEMS, REALM, PROMOTION, RUNES, STATIONS, NPC);
+        RESONANCE, TRADES, DUNGEON, BASTION, ITEMS, REALM, PROMOTION, RUNES, STATIONS, NPC, PARAGON);
 
     private ContentDomains() {}
 

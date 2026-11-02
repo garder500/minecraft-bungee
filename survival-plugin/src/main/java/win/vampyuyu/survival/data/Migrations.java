@@ -30,7 +30,8 @@ public final class Migrations {
         "V019__stations",
         "V020__necropolis",
         "V021__realm_checks",
-        "V022__npc_memory");
+        "V022__npc_memory",
+        "V023__paragon");
 
     private Migrations() {}
 
