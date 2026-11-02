@@ -517,3 +517,13 @@ INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VA
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('lightning_rod', 1, 'LIGHTNING_ROD', 1);
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('lightning_rod', 2, 'COPPER_INGOT', 6);
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('lightning_rod', 3, 'REDSTONE', 4);
+-- Event Horizon Key (Raid of the Devourer, GDD 4.6): one core of each of the eight Guardians. A guess to measure: the Memory Shards forge makes a core in a week.
+INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('devourer_sigil', 170, 'devourer_sigil', 1, 7200);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('devourer_sigil', 0, 'custom:lava_core', 1);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('devourer_sigil', 1, 'custom:mycelial_core', 1);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('devourer_sigil', 2, 'custom:frost_core', 1);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('devourer_sigil', 3, 'custom:judge_core', 1);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('devourer_sigil', 4, 'custom:temporal_core', 1);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('devourer_sigil', 5, 'custom:mire_core', 1);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('devourer_sigil', 6, 'custom:leviathan_core', 1);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('devourer_sigil', 7, 'custom:thunder_core', 1);

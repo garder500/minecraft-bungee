@@ -39,6 +39,8 @@ public final class BastionArena {
                 Material.DARK_PRISMARINE};
             case "storm" -> new Material[] {Material.WAXED_OXIDIZED_CUT_COPPER, Material.LIGHT_GRAY_CONCRETE, Material.ANDESITE,
                 Material.WAXED_WEATHERED_CUT_COPPER};
+            case "singularity" -> new Material[] {Material.CRYING_OBSIDIAN, Material.OBSIDIAN, Material.DEEPSLATE_TILES,
+                Material.PURPUR_BLOCK};
             default -> new Material[] {Material.POLISHED_BLACKSTONE_BRICKS, Material.BLACKSTONE, Material.BASALT,
                 Material.CRACKED_POLISHED_BLACKSTONE_BRICKS};
         };
@@ -53,6 +55,7 @@ public final class BastionArena {
             case "citadel" -> Material.CHISELED_SANDSTONE;
             case "abyss" -> Material.DARK_PRISMARINE;
             case "storm" -> Material.WAXED_COPPER_BLOCK;
+            case "singularity" -> Material.PURPUR_PILLAR;
             default -> Material.POLISHED_BASALT;
         };
     }
@@ -66,6 +69,7 @@ public final class BastionArena {
             case "citadel" -> Material.GOLD_BLOCK;
             case "abyss" -> Material.SEA_LANTERN;
             case "storm" -> Material.LIGHTNING_ROD;
+            case "singularity" -> Material.CRYING_OBSIDIAN;
             default -> Material.GLOWSTONE;
         };
     }
@@ -79,6 +83,7 @@ public final class BastionArena {
             case "citadel" -> Material.SANDSTONE_WALL;
             case "abyss" -> Material.PRISMARINE_WALL;
             case "storm" -> Material.IRON_BARS;
+            case "singularity" -> Material.END_STONE_BRICK_WALL;
             default -> Material.BLACKSTONE_WALL;
         };
     }
@@ -113,6 +118,34 @@ public final class BastionArena {
             }
             set(w, px, FLOOR_Y + 7, pz, cap(palette));
         }
+    }
+
+    /** True when the column (x, z) belongs to the ring of the floor that falls when the arena shrinks to {@code radius}. */
+    static boolean inRing(int x, int z, int radius) {
+        return Math.round(Math.sqrt((double) x * x + (double) z * z)) == radius;
+    }
+
+    /**
+     * Phase III of the Raid (GDD 4.6): the outermost ring of the platform falls away, with whatever stood on it (rim and
+     * pillars included). Returns how many blocks were removed. Main thread.
+     */
+    public static int collapseRing(World w, int radius) {
+        int removed = 0;
+        for (int x = -radius; x <= radius; x++) {
+            for (int z = -radius; z <= radius; z++) {
+                if (!inRing(x, z, radius)) {
+                    continue;
+                }
+                for (int y = FLOOR_Y - 2; y <= FLOOR_Y + 7; y++) {
+                    Block b = w.getBlockAt(x, y, z);
+                    if (!b.getType().isAir()) {
+                        b.setType(Material.AIR, false);
+                        removed++;
+                    }
+                }
+            }
+        }
+        return removed;
     }
 
     private static void set(World w, int x, int y, int z, Material material) {

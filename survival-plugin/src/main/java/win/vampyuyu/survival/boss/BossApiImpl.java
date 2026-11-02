@@ -85,6 +85,11 @@ public final class BossApiImpl implements BossApi {
             public void abort() {
                 s.end(BossSession.End.ADMIN, null);
             }
+
+            @Override
+            public int phase() {
+                return s.currentPhase();
+            }
         });
     }
 }

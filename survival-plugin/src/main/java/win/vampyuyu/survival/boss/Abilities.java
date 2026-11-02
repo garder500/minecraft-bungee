@@ -52,10 +52,12 @@ final class Abilities {
             case SOUL_DRAIN -> soulDrain(s, spec);
             case BLIZZARD -> blizzard(s, spec);
             case CHAIN_ANCHORS -> anchors(s, spec);
+            case TIME_ECHO -> Gravity.timeEcho(s, spec);
+            case WEIGHTLESS -> Gravity.weightless(s, spec);
         };
     }
 
-    private static int tele(AbilitySpec spec, int fallback) {
+    static int tele(AbilitySpec spec, int fallback) {
         return spec.telegraphTicks() > 0 ? spec.telegraphTicks() : fallback;
     }
 

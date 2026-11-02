@@ -18,6 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import win.vampyuyu.survival.api.BossApi;
+import win.vampyuyu.survival.api.EconomyApi;
 import win.vampyuyu.survival.api.IslandApi;
 import win.vampyuyu.survival.api.ResonanceApi;
 import win.vampyuyu.survival.core.Core;
@@ -147,6 +148,16 @@ public final class BastionService {
             }
             if (RunManager.inDungeonWorld(p) || SkyblockWorlds.isBastion(p.getWorld().getName())) {
                 return name + " is inside a dungeon.";
+            }
+        }
+        if (cfg.isRaid(b.id())) {
+            for (UUID id : members) {
+                List<String> missing = RaidRules.missing(cfg, core.profiles().section(id, "bastion", BastionData.class, BastionData::new));
+                if (!missing.isEmpty()) {
+                    String name = party == null ? leader.getName() : party.nameOf(id);
+                    return name + " has not cleared " + RaidRules.names(cfg, missing)
+                        + ". The Devourer only wakes for those who beat the Guardians.";
+                }
             }
         }
         if (keysOf(leader, b.keyItem()) < 1) {
@@ -295,10 +306,20 @@ public final class BastionService {
             case CLEARED -> {
                 String time = Msg.duration(result.elapsedMillis());
                 for (UUID id : present) {
+                    double coins = 0;
                     if (result.damage().getOrDefault(id, 0.0) > 0) {
-                        core.profiles().section(id, "bastion", BastionData.class, BastionData::new).recordClear(b.id(), result.elapsedMillis());
+                        BastionData data = core.profiles().section(id, "bastion", BastionData.class, BastionData::new);
+                        coins = cfg.isRaid(b.id()) ? RaidRules.firstClearCoins(cfg, data.cleared(b.id())) : 0;
+                        data.recordClear(b.id(), result.elapsedMillis());
+                    }
+                    if (coins > 0) {
+                        double paid = coins;
+                        core.service(EconomyApi.class).ifPresent(e -> e.add(id, paid, "raid:first-clear"));
                     }
                     Player p = Bukkit.getPlayer(id);
+                    if (p != null && coins > 0) {
+                        core.msg().ok(p, "First clear of the Raid: +" + Math.round(coins) + " coins.");
+                    }
                     if (p != null) {
                         p.showTitle(Title.title(Msg.component("<green><bold>BASTION CLEARED"), Msg.component("<gray>" + time),
                             Title.Times.times(Duration.ofMillis(300), Duration.ofSeconds(4), Duration.ofSeconds(1))));
@@ -521,13 +542,21 @@ public final class BastionService {
         return n;
     }
 
-    /** Keeps players on the platform: a fall into the void brings them back. Called twice a second. */
+    /** Period of {@link #tick} in game ticks. */
+    private static final int TICK_PERIOD = 10;
+
+    /**
+     * Keeps players on the platform: a fall into the void brings them back. In the Raid it also drops the outer rings of the
+     * arena one after the other once the Devourer reaches its last phase (GDD 4.6). Called twice a second.
+     */
     void tick() {
         for (BastionRun r : runs.values()) {
             if (r.world == null) {
                 continue;
             }
-            Location arrival = BastionArena.arrival(r.world, r.bastion.radius());
+            r.tickCount += TICK_PERIOD;
+            advanceCollapse(r);
+            Location arrival = RaidRules.safeSpot(r.world, r.bastion.radius(), r.collapseRadius);
             for (Player p : r.world.getPlayers()) {
                 if (p.getLocation().getY() < BastionArena.VOID_Y) {
                     p.setFallDistance(0);
@@ -535,6 +564,27 @@ public final class BastionService {
                 }
             }
         }
+    }
+
+    private void advanceCollapse(BastionRun r) {
+        if (!r.opened || r.finished || r.fight == null || !RaidRules.collapsing(cfg, r.bastion.id(), r.fight.phase())) {
+            return;
+        }
+        if (r.collapseRadius < 0) {
+            r.collapseRadius = r.bastion.radius();
+            r.nextCollapse = r.tickCount;
+            tell(r, "The Devourer's grip loosens: the arena is falling apart. Hold the core!");
+        }
+        if (r.tickCount < r.nextCollapse || r.collapseRadius <= RaidRules.CORE_RADIUS) {
+            return;
+        }
+        try {
+            BastionArena.collapseRing(r.world, r.collapseRadius);
+        } catch (RuntimeException e) {
+            core.getPlugin().getLogger().warning("Raid collapse " + r.worldName + ": " + e);
+        }
+        r.collapseRadius = RaidRules.nextRadius(r.collapseRadius);
+        r.nextCollapse = r.tickCount + RaidRules.ringTicks(cfg);
     }
 
     /** Disable: everybody out at once, worlds removed. The boss feature refunds a fight that was still going. */
