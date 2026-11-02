@@ -20,9 +20,12 @@ def cat(cid, name, blurb, main, unlock, icon):
     return c
 
 
-def q(c, name, desc, typ, target, amount, icon, coins, items=None, label=None, qid=None):
+def q(c, name, desc, typ, target, amount, icon, coins, items=None, label=None, qid=None, lore=None):
     """qid: a fixed id for a quest added after the plan shipped (players' progress is stored by id, so the numbered
-    ids q001... of the original plan must never shift: new quests get a named id instead of a number)."""
+    ids q001... of the original plan must never shift: new quests get a named id instead of a number).
+    lore: one line of Aethelgard story (GDD v3.1, chapters 2, 4.1 and 13) shown before the instruction."""
+    if lore:
+        desc = f"{lore} {desc}"
     c["quests"].append(dict(name=name, desc=desc, type=typ, target=target, amount=amount, icon=icon, coins=coins,
                             items=items or {}, label=label, qid=qid))
 
@@ -72,30 +75,30 @@ def cmd(c, name, desc, command, icon, coins, **kw):
 
 
 # --------------------------------------------------------------------------------------------- main path
-c = cat("start", "The Beginning", "Slow and safe. You learn the basics, pick up pebbles and finish with your Fountain.", True, None, "OAK_SAPLING")
-brk(c, "First Tree", "8 logs", "LOGS", 8, "OAK_LOG", 20)
+c = cat("start", "The Awakening", "You wake on a drifting fragment of Aethelgard, cut from the world by the World Devourer. Learn to survive, gather pebbles and build your Fountain.", True, None, "OAK_SAPLING")
+brk(c, "First Tree", "8 logs", "LOGS", 8, "OAK_LOG", 20, lore="Your fragment is quiet, but a lone tree still stands. Its wood is the first thing the world gives back.")
 craft(c, "Planks", "4 planks", "PLANKS", 4, "OAK_PLANKS", 20)
-craft(c, "Workbench", "a crafting table", "CRAFTING_TABLE", 1, "CRAFTING_TABLE", 20)
+craft(c, "Workbench", "a crafting table", "CRAFTING_TABLE", 1, "CRAFTING_TABLE", 20, lore="Survivors have always built before they understood.")
 craft(c, "Sticks", "4 sticks", "STICK", 4, "STICK", 20)
 craft(c, "Wooden Pickaxe", "a wooden pickaxe", "WOODEN_PICKAXE", 1, "WOODEN_PICKAXE", 20)
-ev(c, "Pebbles", "Right-click the ground of your island with an empty hand to pick up 9 Stone Pebbles.", "pebble", 9, "FLINT", 30)
+ev(c, "Pebbles", "Right-click the ground of your island with an empty hand to pick up 9 Stone Pebbles.", "pebble", 9, "FLINT", 30, lore="The stone of Aethelgard is scarce here: the Devourer left only dust and pebbles.")
 craft(c, "First Cobblestone", "a cobblestone from 9 pebbles", "COBBLESTONE", 1, "COBBLESTONE", 20)
 craft(c, "Stone Pickaxe", "a stone pickaxe", "STONE_PICKAXE", 1, "STONE_PICKAXE", 30)
 craft(c, "Wooden Sword", "a wooden sword", "WOODEN_SWORD", 1, "WOODEN_SWORD", 20)
 q(c, "Plant a Sapling", "Plant a sapling.", "PLACE_BLOCK", "SAPLINGS", 1, "OAK_SAPLING", 20)
 brk(c, "First Harvest", "8 fully grown crops", "CROPS", 8, "WHEAT", 30)
 craft(c, "Bread", "bread", "BREAD", 1, "BREAD", 20)
-craft(c, "The Fountain", "a Fountain from 4 cobblestone and 4 logs", "custom:fountain", 1, "SMOOTH_STONE", 100, label="fountain_craft")
+craft(c, "The Fountain", "a Fountain from 4 cobblestone and 4 logs", "custom:fountain", 1, "SMOOTH_STONE", 100, label="fountain_craft", lore="An old memory stirs in the rock: the Call. You remember how to shape a Fountain.")
 ev(c, "Place the Fountain", "Place your Fountain on your island. It makes a cobblestone above itself every 2 seconds.", "machine_placed:fountain", 1, "SMOOTH_STONE", 50)
 brk(c, "Fountain Cobble", "64 cobblestone", "COBBLESTONE", 64, "COBBLESTONE", 50)
 brk(c, "Fountain Cobble II", "128 more cobblestone", "COBBLESTONE", 128, "COBBLESTONE", 80)
 
-c = cat("generator", "The First Real Generator", "The Spring Stone and the stone generator: a ring around your Fountain. A wrong ring never costs you anything.", True, "fountain_craft", "STONE_BRICKS")
+c = cat("generator", "The First Real Generator", "The Devourer's stasis fields still hold your fragment. The Spring Stone and a ring of stone bricks turn your Fountain into a generator. A wrong ring never costs you anything.", True, "fountain_craft", "STONE_BRICKS")
 cmd(c, "Read the Plan", "Read the generator plan with /guide.", "guide", "WRITABLE_BOOK", 20, items={"spring_stone": 1}, label="read_plan")
 ev(c, "Spring Stone", "Place the Spring Stone on the south side of your Fountain's ring.", "machine_placed:spring_stone", 1, "PRISMARINE_BRICKS", 40)
 obtain(c, "Stone Bricks", "Get 16 stone bricks: craft them from stone, or use a stonecutter.", "STONE_BRICKS", 16, "STONE_BRICKS", 30)
 q(c, "The Ring", "Place 7 stone bricks around your Fountain (the Spring Stone takes the south side).", "PLACE_BLOCK", "STONE_BRICKS", 7, "STONE_BRICKS", 60)
-ev(c, "Stone Generator", "Complete the ring: your Fountain becomes a Stone generator (right-click it to check what is missing).", "generator_built:stone", 1, "FURNACE", 120, label="stone_gen")
+ev(c, "Stone Generator", "Complete the ring: your Fountain becomes a Stone generator (right-click it to check what is missing).", "generator_built:stone", 1, "FURNACE", 120, label="stone_gen", lore="The ring closes and the fragment breathes again.")
 brk(c, "Mine the Generator", "64 cobblestone from it", "COBBLESTONE", 64, "IRON_PICKAXE", 50)
 ore(c, "Iron Nugget", "your first iron nugget", "iron_nugget", 1, "IRON_NUGGET", 30)
 ore(c, "Nugget Stash", "9 iron nuggets", "iron_nugget", 9, "IRON_NUGGET", 50)
@@ -105,14 +108,14 @@ ev(c, "Bottomless Water", "Fill your bucket from the Spring Stone.", "spring_fil
 ore(c, "Copper", "16 raw copper", "copper", 16, "RAW_COPPER", 50)
 ore(c, "Coal", "16 coal", "coal", 16, "COAL", 50)
 ore(c, "Gold", "a gold nugget", "gold_nugget", 1, "GOLD_NUGGET", 60)
-ore(c, "Bronze Age", "your first Bronzite", "bronzite", 1, "RAW_COPPER", 200, label="bronzite_1")
+ore(c, "Bronze Age", "your first Bronzite", "bronzite", 1, "RAW_COPPER", 200, label="bronzite_1", lore="Bronzite, the first metal the Call taught the survivors. Your journey beyond the islet begins.")
 brk(c, "Mine 250", "250 cobblestone", "COBBLESTONE", 250, "COBBLESTONE", 100)
 brk(c, "Mine 500", "500 cobblestone", "COBBLESTONE", 500, "COBBLESTONE", 150)
 craft(c, "Smelter", "a furnace", "FURNACE", 1, "FURNACE", 40)
 craft(c, "Storage", "two chests", "CHEST", 2, "CHEST", 40)
 craft(c, "Iron Pickaxe", "an iron pickaxe", "IRON_PICKAXE", 1, "IRON_PICKAXE", 100, label="iron_pick")
 
-c = cat("variety", "Different Generators", "Dunes for sand and gravel, frost for ice and Frostium. The market opens.", True, "stone_gen", "SAND")
+c = cat("variety", "Different Generators", "Dunes for sand and gravel, frost for ice and Frostium. Other survivors answer the Call: the market opens.", True, "stone_gen", "SAND")
 cmd(c, "Visit the Market", "Open the market with /market.", "market", "EMERALD", 20, items={"generator_plan": 1})
 earn(c, "First Sales", 200, "GOLD_NUGGET", 60)
 cmd(c, "Dune Plan", "Read the plans of the other generators with /guide.", "guide", "WRITABLE_BOOK", 30, label="dune_plan")
@@ -134,8 +137,8 @@ ore(c, "Frostium Haul", "8 Frostium", "frostium", 8, "PRISMARINE_CRYSTALS", 400)
 ev(c, "Second Spring", "Place 2 more Spring Stones.", "machine_placed:spring_stone", 2, "PRISMARINE_BRICKS", 100)
 ev(c, "More Fountains", "Place 3 more Fountains.", "machine_placed:fountain", 3, "SMOOTH_STONE", 300)
 
-c = cat("tiers", "Raise the Generators", "The Forge, the cores, tiers I to IV. This is where progress speeds up.", True, "bronzite_1", "AMETHYST_SHARD")
-ev(c, "The Forge", "Craft a Forge with a blast furnace, 4 iron ingots and 4 coal, then place it.", "forge_placed", 1, "BLAST_FURNACE", 100, label="forge_placed")
+c = cat("tiers", "Raise the Generators", "The Forge, the cores, tiers I to IV. The crystallised memories of Aethelgard answer your hammer, and progress speeds up.", True, "bronzite_1", "AMETHYST_SHARD")
+ev(c, "The Forge", "Craft a Forge with a blast furnace, 4 iron ingots and 4 coal, then place it.", "forge_placed", 1, "BLAST_FURNACE", 100, label="forge_placed", lore="The Forge is the heart of every survivor camp: it turns raw memory into tools.")
 cmd(c, "Open the Forge", "Open the Forge menu with /forge.", "forge", "BLAST_FURNACE", 30)
 forge(c, "First Forging", "bronze_core", 1, "AMETHYST_SHARD", 80)
 q(c, "Raise the Generator", "Reach generator tier II: forge a Bronze Core and right-click it on your island.", "GENERATOR_TIER", "", 2, "AMETHYST_SHARD", 150, label="tier2")
@@ -147,7 +150,7 @@ q(c, "Tier III", "Reach generator tier III: forge an Ember Core and right-click 
 ore(c, "Ancient Debris", "ancient debris", "ancient_debris", 1, "ANCIENT_DEBRIS", 400)
 brk(c, "Mine 2,000", "2,000 cobblestone", "COBBLESTONE", 2000, "COBBLESTONE", 300)
 forge(c, "Void Lens", "void_lens", 1, "ENDER_EYE", 500)
-q(c, "The Void Lens", "Reach generator tier IV: right-click the Void Lens on your island. It also opens your End (/island end).", "GENERATOR_TIER", "", 4, "ENDER_EYE", 800, label="tier4")
+q(c, "The Void Lens", "Reach generator tier IV: right-click the Void Lens on your island. It also opens your End (/island end).", "GENERATOR_TIER", "", 4, "ENDER_EYE", 800, label="tier4", lore="Through the lens you glimpse the gap the Devourer tore in the sky: the Rift.")
 ore(c, "Voidglass", "a Voidglass", "voidglass", 1, "ECHO_SHARD", 500)
 ore(c, "Starcore", "a Starcore Shard", "starcore", 1, "NETHER_STAR", 800)
 brk(c, "Mine 5,000", "5,000 cobblestone", "COBBLESTONE", 5000, "COBBLESTONE", 500)
