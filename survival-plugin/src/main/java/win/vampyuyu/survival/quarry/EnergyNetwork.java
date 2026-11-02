@@ -76,6 +76,9 @@ final class EnergyNetwork {
         for (Map.Entry<Pos, MachineData> entry : network.entrySet()) {
             MachineData m = entry.getValue();
             MachineType type = m.kind();
+            if (type != null && type.generator() != null && m.blocks > 0 && sky.fed(entry.getKey(), type.generator())) {
+                return true;
+            }
             if ((type == MachineType.LIGHTNING_ROD && (m.fuel > 0 || sky.stormy(entry.getKey())))
                     || (type == MachineType.SOLAR_PANEL && sunny.test(entry.getKey()))
                     || (type == MachineType.COAL_GENERATOR && m.fuel > 0) || (type == MachineType.BATTERY && m.charge > 0)) {
@@ -131,6 +134,11 @@ final class EnergyNetwork {
 
         /** Any count that grows by one each second. */
         long second();
+
+        /** True when the cells (and, for the Astral Lattice, the open sky) a passive generator needs are in place around it. */
+        default boolean fed(Pos pos, PassiveGenerator generator) {
+            return false;
+        }
     }
 
     /** The full tick, with the trade modifiers of each miner. */
@@ -160,7 +168,11 @@ final class EnergyNetwork {
         for (Map.Entry<Pos, MachineData> entry : network.entrySet()) {
             MachineData m = entry.getValue();
             MachineType type = m.kind();
-            if (type == MachineType.LIGHTNING_ROD) {
+            if (type != null && type.generator() != null) {
+                if (m.blocks > 0 && sky.fed(entry.getKey(), type.generator())) { // the first Block activates it, the others overload it
+                    pool += cfg.passiveOutput(type.generator(), m.blocks);
+                }
+            } else if (type == MachineType.LIGHTNING_ROD) {
                 boolean burning = m.fuel > 0;
                 if (burning) {
                     m.fuel--;

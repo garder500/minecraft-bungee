@@ -165,7 +165,7 @@ public final class QuarryFeature implements Feature {
         startKeys.add(magma);
         // compact bars: nine of an ore make one bar, one bar gives the nine back (the bars are not blocks, so they never
         // become a vanilla block when placed)
-        for (String ore : new String[] {QuarryItems.BRONZITE, QuarryItems.FROSTIUM, QuarryItems.SUNSTONE}) {
+        for (String ore : QuarryItems.ORES) {
             String bar = ore + "_bar";
             NamespacedKey pack = new NamespacedKey(core.getPlugin(), "pack_" + ore);
             ShapelessRecipe packRecipe = new ShapelessRecipe(pack, core.items().create(bar));
@@ -181,7 +181,30 @@ public final class QuarryFeature implements Feature {
             unpackRecipe.addIngredient(new org.bukkit.inventory.RecipeChoice.ExactChoice(core.items().create(bar)));
             Bukkit.addRecipe(unpackRecipe);
             startKeys.add(unpack);
+            // nine bars make a Block (81 ores) that a passive generator takes (GDD 7.4); it gives the nine bars back
+            String block = ore + "_block";
+            NamespacedKey press = new NamespacedKey(core.getPlugin(), "press_" + ore);
+            ShapelessRecipe pressRecipe = new ShapelessRecipe(press, core.items().create(block));
+            for (int i = 0; i < 9; i++) {
+                pressRecipe.addIngredient(new org.bukkit.inventory.RecipeChoice.ExactChoice(core.items().create(bar)));
+            }
+            Bukkit.addRecipe(pressRecipe);
+            startKeys.add(press);
+            NamespacedKey unpress = new NamespacedKey(core.getPlugin(), "unpress_" + ore);
+            org.bukkit.inventory.ItemStack nineBars = core.items().create(bar);
+            nineBars.setAmount(9);
+            ShapelessRecipe unpressRecipe = new ShapelessRecipe(unpress, nineBars);
+            unpressRecipe.addIngredient(new org.bukkit.inventory.RecipeChoice.ExactChoice(core.items().create(block)));
+            Bukkit.addRecipe(unpressRecipe);
+            startKeys.add(unpress);
         }
+        // the Void Cell of the Void Reactor and the Astral Lattice: crying obsidian made from obsidian and a Voidglass
+        NamespacedKey voidCell = new NamespacedKey(core.getPlugin(), "void_cell");
+        ShapelessRecipe voidCellRecipe = new ShapelessRecipe(voidCell, new org.bukkit.inventory.ItemStack(Material.CRYING_OBSIDIAN));
+        voidCellRecipe.addIngredient(Material.OBSIDIAN);
+        voidCellRecipe.addIngredient(new org.bukkit.inventory.RecipeChoice.ExactChoice(core.items().create(QuarryItems.VOIDGLASS)));
+        Bukkit.addRecipe(voidCellRecipe);
+        startKeys.add(voidCell);
         startKeys.forEach(key -> RECIPE_KEYS.add(key.getKey()));
     }
 

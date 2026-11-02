@@ -12,6 +12,11 @@ enum MachineType {
     SOLAR_PANEL("solar_panel", Material.BARRIER, Material.DAYLIGHT_DETECTOR, "Solar Panel"),
     /** Very strong but unstable Flux in a thunderstorm, or from Thunder Quartz (Tempestuous Archipelago, GDD 3.1). */
     LIGHTNING_ROD("lightning_rod", Material.BARRIER, Material.LIGHTNING_ROD, "Lightning Rod"),
+    /** Passive generators (GDD 7.3): Flux from the cells around them and a compression Block inside, no fuel. */
+    SPRING_WHEEL("spring_wheel", Material.BARRIER, Material.GRINDSTONE, "Spring Wheel"),
+    HEAT_TAP("heat_tap", Material.BARRIER, Material.SMOKER, "Heat Tap"),
+    VOID_REACTOR("void_reactor", Material.BARRIER, Material.RESPAWN_ANCHOR, "Void Reactor"),
+    ASTRAL_LATTICE("astral_lattice", Material.BARRIER, Material.ENCHANTING_TABLE, "Astral Lattice"),
     MINER_1("miner_1", Material.BARRIER, Material.LODESTONE, "Miner I"),
     MINER_2("miner_2", Material.BARRIER, Material.LODESTONE, "Miner II"),
     /** Makes cobblestone above itself; the centre of every multi-block generator. No energy. */
@@ -36,6 +41,11 @@ enum MachineType {
     /** Fountains and Spring Stones are not part of the Flux networks. */
     boolean passive() {
         return this == FOUNTAIN || this == SPRING_STONE;
+    }
+
+    /** The passive generator this machine is, or null. */
+    PassiveGenerator generator() {
+        return PassiveGenerator.ofItem(itemId).orElse(null);
     }
 
     boolean miner() {

@@ -146,7 +146,52 @@ final class MachineListener implements Listener {
         event.setDropItems(false);
         if (type != null) {
             block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0.5, 0.5), core.items().create(type.itemId));
+            if (type.generator() != null && data.blocks > 0) { // the Blocks are never consumed: they come back when it is taken down
+                ItemStack blocks = core.items().create(type.generator().blockItem);
+                blocks.setAmount(data.blocks);
+                block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0.5, 0.5), blocks);
+            }
         }
+    }
+
+    /** Puts a compression Block into a passive generator: the first activates it, up to three more overload it. */
+    private void insertBlock(Player player, Block block, MachineData data, PassiveGenerator gen) {
+        MachineSettings cfg = machines.settings();
+        if (data.blocks >= 1 + cfg.overloadBlocks) {
+            core.msg().warn(player, gen.title + " is full: " + data.blocks + " Blocks, the most it takes (x"
+                + String.format(Locale.ROOT, "%.2f", PassiveGenerator.overload(data.blocks, cfg.overloadBlocks, cfg.overloadBonus)) + ").");
+            return;
+        }
+        ItemStack held = player.getInventory().getItemInMainHand();
+        held.setAmount(held.getAmount() - 1);
+        data.blocks++;
+        machines.store().markDirty();
+        core.msg().ok(player, data.blocks == 1 ? gen.title + " activated. " + status(block, data, gen)
+            : "Overload " + (data.blocks - 1) + "/" + cfg.overloadBlocks + ". " + status(block, data, gen));
+    }
+
+    /** Takes one Block back out of a passive generator (the last one switches it off). */
+    private void removeBlock(Player player, Block block, MachineData data, PassiveGenerator gen) {
+        data.blocks--;
+        machines.store().markDirty();
+        for (ItemStack left : player.getInventory().addItem(core.items().create(gen.blockItem)).values()) {
+            block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 1.2, 0.5), left);
+        }
+        core.msg().ok(player, data.blocks == 0 ? gen.title + " switched off: Block taken out."
+            : "Block taken out. " + status(block, data, gen));
+    }
+
+    /** What a passive generator makes right now, or what stops it. */
+    private String status(Block block, MachineData data, PassiveGenerator gen) {
+        MachineSettings cfg = machines.settings();
+        if (data.blocks == 0) {
+            return gen.title + " is off: right-click it with a " + gen.blockTitle()
+                + " to activate it.";
+        }
+        String missing = gen.missing(machines.cellsAround(block), machines.openSky(block));
+        String output = String.format(Locale.ROOT, "%.0f Flux/s", cfg.passiveOutput(gen, data.blocks));
+        return missing.isEmpty() ? gen.title + ": " + output + " (" + data.blocks + " of " + (1 + cfg.overloadBlocks) + " Blocks)."
+            : gen.title + " would make " + output + " but it needs " + missing + ".";
     }
 
     /** A barrier cannot be broken in survival: a machine or Forge barrier breaks at the first punch instead. */
@@ -195,6 +240,9 @@ final class MachineListener implements Listener {
             if (type.miner() && held.getType().isAir() && MachineModule.of(data.module) != null) {
                 event.setCancelled(true);
                 removeModule(player, block, data);
+            } else if (type.generator() != null && held.getType().isAir() && data.blocks > 0) {
+                event.setCancelled(true);
+                removeBlock(player, block, data, type.generator());
             }
             return;
         }
@@ -209,6 +257,18 @@ final class MachineListener implements Listener {
             return;
         }
         MachineSettings cfg = machines.settings();
+        PassiveGenerator passive = type.generator();
+        if (passive != null) {
+            if (core.items().is(held, passive.blockItem)) {
+                insertBlock(player, block, data, passive);
+            } else if (PassiveGenerator.isBlock(core.items().idOf(held).orElse(""))) {
+                core.msg().warn(player, passive.title + " takes a " + passive.blockTitle() + ".");
+            } else {
+                core.msg().info(player, status(block, data, passive)
+                    + (data.blocks == 0 ? "" : " Sneak with an empty hand to take a Block out."));
+            }
+            return;
+        }
         if (type == MachineType.COAL_GENERATOR && held.getType() == Material.COAL && core.items().idOf(held).isEmpty()) {
             int amount = held.getAmount();
             data.fuel += amount * cfg.coalSeconds;

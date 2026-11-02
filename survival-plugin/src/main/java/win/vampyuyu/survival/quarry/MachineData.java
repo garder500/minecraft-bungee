@@ -11,6 +11,8 @@ public final class MachineData {
     public long charge;
     /** Generators: seconds of burning coal left. */
     public int fuel;
+    /** Passive generators: compression Blocks inside (the first activates it, up to three more overload it). */
+    public int blocks;
     /** Miners: cycles accumulated (a cycle runs when it reaches 1). */
     public double progress;
     /** Miners: epoch millis until which an Artisan's Overclock runs this miner faster (0 when not overclocked). */

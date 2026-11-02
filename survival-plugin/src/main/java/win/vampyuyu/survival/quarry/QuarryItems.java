@@ -31,9 +31,10 @@ final class QuarryItems {
     /** PDC key (long) read from the held pickaxe: mining luck. */
     static final String MINING_LUCK = "mining_luck";
 
-    private QuarryItems() {}
+    /** The five tiered ores, in order: each has a bar (9 ores) and a Block (9 bars = 81 ores), GDD 7.4. */
+    static final String[] ORES = {BRONZITE, FROSTIUM, SUNSTONE, VOIDGLASS, STARCORE};
 
-    private static final String[] TIERS = {"bronze", "rime", "ember", "void", "starcore"};
+    private QuarryItems() {}
 
     /** The tiered pickaxes above the first two (swords and armor are {@code item_def} rows of the quarry owner). */
     private static List<CustomItemDef> gear() {
@@ -50,6 +51,16 @@ final class QuarryItems {
                 .lore("<gray>Mining Luck: <green>+" + luck[t], "<gray>Better odds in your generator.").build());
         }
         return out;
+    }
+
+    /** A compression Block (nine bars, 81 ores): not a placeable block, it is slotted into a passive generator. */
+    private static CustomItemDef block(String ore, String title, Rarity rarity, Material base, String generator) {
+        CustomItemDef.Builder builder = CustomItemDef.builder(ore + "_block", title + " Block", rarity, base)
+            .itemModel("vampyuyu:ore/" + ore + "_block").type("BLOCK").glint(rarity.ordinal() >= Rarity.LEGENDARY.ordinal())
+            .lore("<gray>Nine " + title + " Bars (81 ores) pressed together.", "<gray>Craft it back to get the nine bars.",
+                generator == null ? "<dark_gray>No generator takes this one yet." : "<gray>Right-click a <white>" + generator + "<gray> to activate it.",
+                "<dark_gray>Never used up: taking the generator down gives it back.");
+        return builder.build();
     }
 
     private static CustomItemDef skinToken(Skin skin) {
@@ -122,7 +133,7 @@ final class QuarryItems {
                 .lore("<gray>Touching machines share Flux.", "<gray>Place it between them.").build(),
             CustomItemDef.builder("solar_panel", "Solar Panel", Rarity.RARE, Material.DAYLIGHT_DETECTOR)
                 .itemModel("vampyuyu:machine/solar_panel").type("MACHINE")
-                .lore("<gray>Makes <white>6 Flux/s <gray>in daylight,", "<gray>with the sky open above it.").build(),
+                .lore("<gray>Makes <white>2 Flux/s <gray>in daylight,", "<gray>with the sky open above it.").build(),
             CustomItemDef.builder("lightning_rod", "Lightning Rod", Rarity.EPIC, Material.LIGHTNING_ROD)
                 .itemModel("vampyuyu:machine/lightning_rod").type("MACHINE")
                 .lore("<gray>Very strong, very unstable Flux:", "<gray>about <white>38 Flux/s <gray>on average, from 0 to x4.",
@@ -133,15 +144,15 @@ final class QuarryItems {
                 .lore("<gray>Stores Flux. Capacity: <white>10,000").build(),
             CustomItemDef.builder("coal_generator", "Coal Generator", Rarity.UNCOMMON, Material.STONECUTTER)
                 .itemModel("vampyuyu:machine/coal_generator").type("MACHINE")
-                .lore("<gray>Right-click it holding coal.", "<gray>Makes <white>10 Flux/s <gray>while it burns.").build(),
+                .lore("<gray>Right-click it holding coal.", "<gray>Makes <white>5 Flux/s <gray>while it burns.").build(),
             CustomItemDef.builder("miner_1", "Miner I", Rarity.UNCOMMON, Material.LODESTONE)
                 .itemModel("vampyuyu:machine/miner_1").type("MACHINE")
                 .lore("<gray>Breaks the generator block next to it", "<gray>(cobble, sand, snow, ice, netherrack...)", "<gray>and fills the chest next to it.",
-                    "<gray>Uses <white>8 Flux/s<gray>, <white>1 block per 2 s<gray>.").build(),
+                    "<gray>Uses <white>2 Flux/s<gray>, <white>1 block per 2 s<gray>.").build(),
             CustomItemDef.builder("miner_2", "Miner II", Rarity.RARE, Material.LODESTONE)
                 .itemModel("vampyuyu:machine/miner_2").type("MACHINE").glint(true)
                 .lore("<gray>Breaks the generator block next to it", "<gray>(cobble, sand, snow, ice, netherrack...)", "<gray>and fills the chest next to it.",
-                    "<gray>Uses <white>20 Flux/s<gray>, <white>1 block per second<gray>.").build(),
+                    "<gray>Uses <white>6 Flux/s<gray>, <white>1 block per second<gray>.").build(),
             CustomItemDef.builder("ember_module", "Ember Module", Rarity.EPIC, Material.MAGMA_CREAM)
                 .itemModel("vampyuyu:ore/cinderheart").type("MODULE").glint(true)
                 .lore("<gray>Right-click a Miner to slot it in.", "<gray>Speed <white>x1.5<gray>, Flux use <white>x1.8<gray>.",
@@ -183,6 +194,34 @@ final class QuarryItems {
             CustomItemDef.builder("sunstone_bar", "Sunstone Bar", Rarity.EPIC, Material.GOLD_INGOT)
                 .itemModel("vampyuyu:ore/sunstone_bar").type("GEM")
                 .lore("<gray>Nine Sunstone pressed together.", "<gray>Craft it back to get the nine.").build(),
+            CustomItemDef.builder("voidglass_bar", "Voidglass Bar", Rarity.LEGENDARY, Material.AMETHYST_SHARD)
+                .itemModel("vampyuyu:ore/voidglass_bar").type("GEM")
+                .lore("<gray>Nine Voidglass pressed together.", "<gray>Craft it back to get the nine.").build(),
+            CustomItemDef.builder("starcore_bar", "Starcore Bar", Rarity.MYTHIC, Material.NETHERITE_INGOT)
+                .itemModel("vampyuyu:ore/starcore_bar").type("GEM").glint(true)
+                .lore("<gray>Nine Starcore Shards pressed together.", "<gray>Craft it back to get the nine.").build(),
+            block(BRONZITE, "Bronzite", Rarity.UNCOMMON, Material.RAW_COPPER, "Spring Wheel"),
+            block(FROSTIUM, "Frostium", Rarity.RARE, Material.PRISMARINE_CRYSTALS, null),
+            block(SUNSTONE, "Sunstone", Rarity.EPIC, Material.GLOWSTONE_DUST, "Heat Tap"),
+            block(VOIDGLASS, "Voidglass", Rarity.LEGENDARY, Material.ECHO_SHARD, "Void Reactor"),
+            block(STARCORE, "Starcore", Rarity.MYTHIC, Material.NETHER_STAR, "Astral Lattice"),
+            CustomItemDef.builder("spring_wheel", "Spring Wheel", Rarity.RARE, Material.GRINDSTONE)
+                .itemModel("vampyuyu:machine/spring_wheel").type("MACHINE")
+                .lore("<gray>Passive generator: <white>10 Flux/s<gray>, no fuel.", "<gray>Needs a <white>Spring Stone<gray> touching it", "<gray>and a <white>Bronzite Block<gray> inside (right-click).",
+                    "<dark_gray>Up to 3 more Blocks overload it: +25% each.").build(),
+            CustomItemDef.builder("heat_tap", "Heat Tap", Rarity.EPIC, Material.SMOKER)
+                .itemModel("vampyuyu:machine/heat_tap").type("MACHINE")
+                .lore("<gray>Passive generator: <white>30 Flux/s<gray>, no fuel.", "<gray>Needs a <white>magma block<gray> touching it", "<gray>and a <white>Sunstone Block<gray> inside (right-click).",
+                    "<dark_gray>Up to 3 more Blocks overload it: +25% each.").build(),
+            CustomItemDef.builder("void_reactor", "Void Reactor", Rarity.LEGENDARY, Material.RESPAWN_ANCHOR)
+                .itemModel("vampyuyu:machine/void_reactor").type("MACHINE").glint(true)
+                .lore("<gray>Passive generator: <white>80 Flux/s<gray>, no fuel.", "<gray>Needs a <white>Void Cell<gray> touching it", "<gray>and a <white>Voidglass Block<gray> inside (right-click).",
+                    "<dark_gray>Up to 3 more Blocks overload it: +25% each.").build(),
+            CustomItemDef.builder("astral_lattice", "Astral Lattice", Rarity.MYTHIC, Material.ENCHANTING_TABLE)
+                .itemModel("vampyuyu:machine/astral_lattice").type("MACHINE").glint(true)
+                .lore("<gray>Passive generator: <white>200 Flux/s<gray>, no fuel.", "<gray>Needs a <white>Void Cell<gray> and a <white>block of amethyst<gray> touching it,",
+                    "<gray>the open sky above, and a <white>Starcore Block<gray> inside (right-click).",
+                    "<dark_gray>Up to 3 more Blocks overload it: +25% each.").build(),
             CustomItemDef.builder(ENDLESS_BUCKET, "Endless Bucket", Rarity.EPIC, Material.WATER_BUCKET)
                 .type("TOOL").glint(true).pdc("untradable", 1L)
                 .lore("<gray>Pours water anywhere and is never", "<gray>emptied. Bound to you.").build(),

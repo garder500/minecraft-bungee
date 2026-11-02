@@ -93,29 +93,33 @@ public class LightningRodTest {
     }
 
     @Test
-    public void aBatteryKeepsAMinerWorkingThroughTheDeadSeconds() {
-        // the same rod feeds a Miner II (20 Flux/s) with and without a battery, for ten minutes
-        int withBattery = minerSeconds(true);
-        int without = minerSeconds(false);
+    public void aBatteryKeepsMinersWorkingThroughTheDeadSeconds() {
+        // the same rod feeds five Miner IIs (30 Flux/s, below its 38 average) with and without a battery, for ten minutes
+        int withBattery = minerCycles(true);
+        int without = minerCycles(false);
         assertTrue("with " + withBattery + " without " + without, withBattery > without);
-        assertTrue("the battery smooths the dead seconds: " + withBattery, withBattery > 560);
-        assertTrue("alone the rod starves the miner often: " + without, without < 520);
+        assertTrue("the battery smooths the dead seconds: " + withBattery, withBattery > 2900);
+        assertTrue("alone the rod starves the miners often: " + without, without < 2600);
     }
 
-    private static int minerSeconds(boolean battery) {
+    private static int minerCycles(boolean battery) {
         MachineData rod = machine(MachineType.LIGHTNING_ROD);
-        MachineData miner = machine(MachineType.MINER_2);
-        MachineData bank = machine(MachineType.BATTERY);
-        Map<Pos, MachineData> net = battery ? network(rod, miner, bank) : network(rod, miner);
+        MachineData[] miners = new MachineData[5];
+        Map<Pos, MachineData> net = network(rod);
+        for (int i = 0; i < miners.length; i++) {
+            miners[i] = machine(MachineType.MINER_2);
+            net.put(new Pos(net.size(), 0, 0), miners[i]);
+        }
+        if (battery) {
+            net.put(new Pos(net.size(), 0, 0), machine(MachineType.BATTERY));
+        }
         long[] second = {0};
-        int worked = 0;
+        int cycles = 0;
         for (int i = 0; i < 600; i++) {
             second[0] = i;
-            if (!EnergyNetwork.tick(net, CFG, p -> true, p -> false, EnergyNetwork.Modifiers.NONE, sky(true, second)).isEmpty()) {
-                worked++;
-            }
+            cycles += EnergyNetwork.tick(net, CFG, p -> true, p -> false, EnergyNetwork.Modifiers.NONE, sky(true, second)).size();
         }
-        return worked;
+        return cycles;
     }
 
     @Test

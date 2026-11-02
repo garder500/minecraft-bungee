@@ -10,10 +10,10 @@ INSERT INTO setting (id, type, value, note) VALUES ('quarry.generator.geode-bonu
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.generator.geode-bonus.percent', 'int', '5', 'Percent of such geodes that add the bonus ore.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.generator.geode-bonus.from-tier', 'int', '4', 'First generator tier where the bonus can happen.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.forge.slots', 'int', '3', 'Forge jobs that run at the same time.');
-INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.coal-generator.output', 'int', '10', 'Flux per second a burning coal generator makes.');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.coal-generator.output', 'int', '5', 'Flux per second a burning coal generator makes (GDD 7.3).');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.coal-generator.coal-seconds', 'int', '40', 'Seconds one coal burns.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.battery.capacity', 'int', '10000', 'Flux a battery stores.');
-INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.solar-panel.output', 'int', '6', 'Flux per second of a solar panel in daylight under the open sky.');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.solar-panel.output', 'int', '2', 'Flux per second of a solar panel in daylight under the open sky (GDD 7.3; about 1 on average over a day).');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.lightning-rod.output', 'int', '30', 'Base Flux per second of a Lightning Rod; each second it is multiplied by a surge factor from 0 to x4 (mean 1.275).');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.lightning-rod.quartz-seconds', 'int', '180', 'Seconds one Thunder Quartz keeps a Lightning Rod burning outside a thunderstorm.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.ember.consume-factor', 'real', '1.8', 'Ember Module (Cracked Ashes): factor on the Miner''s Flux use.');
@@ -28,9 +28,9 @@ INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.chro
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.chrono.buffer-cap', 'real', '120', 'Chrono Module: most cycles the buffer holds.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.chrono.bank-fraction', 'real', '0.5', 'Chrono Module: share of the cycles a Miner could not run (no Flux, full chest) that is banked.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.chrono.release-per-second', 'real', '1.0', 'Chrono Module: extra cycles taken out of the buffer per second while the Miner runs (no extra Flux).');
-INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.miner-1.consume', 'int', '8', 'Flux per second the Miner I uses.');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.miner-1.consume', 'int', '2', 'Flux per second the Miner I uses (GDD 7.1).');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.miner-1.cycles-per-second', 'real', '0.5', 'Mining cycles per second of the Miner I.');
-INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.miner-2.consume', 'int', '20', 'Flux per second the Miner II uses.');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.miner-2.consume', 'int', '6', 'Flux per second the Miner II uses (GDD 7.1).');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.miner-2.cycles-per-second', 'int', '1', 'Mining cycles per second of the Miner II.');
 INSERT INTO ore_roll (id, position, item, source, pity, geode) VALUES ('starcore', 0, 'custom:starcore', 'cobble', 0, 0);
 INSERT INTO ore_roll_chance (ore_roll_id, tier, chance) VALUES ('starcore', 1, 0.0);
@@ -527,3 +527,25 @@ INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VA
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('devourer_sigil', 5, 'custom:mire_core', 1);
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('devourer_sigil', 6, 'custom:leviathan_core', 1);
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('devourer_sigil', 7, 'custom:thunder_core', 1);
+
+-- Passive generators (GDD 7.3) and compression overload (GDD 7.4).
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.spring-wheel.output', 'int', '10', 'Spring Wheel: Flux per second with its first Block (a Spring Stone touching it, Bronzite Block inside).');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.heat-tap.output', 'int', '30', 'Heat Tap: Flux per second with its first Block (a magma block touching it, Sunstone Block inside).');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.void-reactor.output', 'int', '80', 'Void Reactor: Flux per second with its first Block (a Void Cell (crying obsidian) touching it, Voidglass Block inside).');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.astral-lattice.output', 'int', '200', 'Astral Lattice: Flux per second with its first Block (a Void Cell and a block of amethyst touching it, the open sky above, Starcore Block inside).');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.overload.blocks', 'int', '3', 'Extra compression Blocks a passive generator takes on top of the one that activates it.');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.overload.bonus', 'real', '0.25', 'Share of its output each overload Block adds (3 Blocks: x1.75).');
+INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('spring_wheel', 180, 'spring_wheel', 1, 600);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('spring_wheel', 0, 'custom:bronzite', 80);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('spring_wheel', 1, 'custom:frostium', 30);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('spring_wheel', 2, 'custom:spring_stone', 8);
+INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('heat_tap', 181, 'heat_tap', 1, 900);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('heat_tap', 0, 'custom:frostium', 60);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('heat_tap', 1, 'custom:sunstone', 40);
+INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('void_reactor', 182, 'void_reactor', 1, 1500);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('void_reactor', 0, 'custom:voidglass', 50);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('void_reactor', 1, 'custom:sunstone', 40);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('void_reactor', 2, 'DIAMOND', 8);
+INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('astral_lattice', 183, 'astral_lattice', 1, 2400);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('astral_lattice', 0, 'custom:starcore', 40);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('astral_lattice', 1, 'custom:voidglass', 40);
