@@ -26,6 +26,7 @@ COLORS = 24
 SHEETS = {
     "ores.png": (5, 2, ["ore/bronzite", "ore/frostium", "ore/sunstone", "ore/voidglass", "ore/starcore",
                         "ore/bronzite_bar", "ore/frostium_bar", "ore/sunstone_bar", "ore/voidglass_bar", "ore/starcore_bar"]),
+    "realm.png": (2, 1, ["ore/cinderheart", "ore/heartwood"]),
     "weapons.png": (5, 2, ["weapon/bronze_cleaver", "weapon/rimeblade", "weapon/ember_sword", "weapon/void_sword",
                            "weapon/starcore_sword", "tool/bronze_pick", "tool/rime_pick", "tool/ember_pick",
                            "tool/void_pick", "tool/starcore_pick"]),

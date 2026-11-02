@@ -13,6 +13,7 @@ import win.vampyuyu.survival.gadgets.GadgetsFeature;
 import win.vampyuyu.survival.island.IslandFeature;
 import win.vampyuyu.survival.menu.MenuFeature;
 import win.vampyuyu.survival.quarry.QuarryFeature;
+import win.vampyuyu.survival.realm.RealmFeature;
 import win.vampyuyu.survival.utility.UtilityFeature;
 import win.vampyuyu.survival.wings.WingsFeature;
 
@@ -28,7 +29,7 @@ public class SurvivalPlugin extends JavaPlugin {
     static List<Feature> featureList() {
         // The simple Skyblock does not load the former progression systems, except the Wings.
         return List.of(new UtilityFeature(), new IslandFeature(), new WingsFeature(), new EconomyFeature(), new QuarryFeature(), new ClassesFeature(), new GadgetsFeature(),
-            new BossFeature(), new DungeonFeature(), new MenuFeature());
+            new BossFeature(), new DungeonFeature(), new RealmFeature(), new MenuFeature());
     }
 
     @Override
