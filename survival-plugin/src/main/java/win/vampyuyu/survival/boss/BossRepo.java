@@ -74,7 +74,7 @@ public final class BossRepo {
         BossSettings knobs = BossSettings.parse(settings);
         errors.addAll(settings.problems());
         return new BossConfig(knobs, bosses, slayers, world, slayerSettings, readMobDrops(c, errors),
-            readRecipes(c, errors), readItemText(c), errors);
+            readRecipes(c, errors), readItemText(c), Guardians.parse(settings), errors);
     }
 
     // ---------------------------------------------------------------- bosses

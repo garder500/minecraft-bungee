@@ -28,6 +28,17 @@ public final class LootRoller {
      */
     public static Result roll(String bossId, BossDefinition.Loot loot, double share, int rank, double magicFind,
             Map<String, Integer> dry, Random random) {
+        return roll(bossId, loot, share, rank, magicFind, dry, Map.of(), random);
+    }
+
+    /**
+     * Same, with a hard pity (GDD 15.2): an entry whose item spec is in {@code hardPity} is guaranteed on the run
+     * after {@code runs - 1} runs without it. It still has to be eligible (damage share, rank).
+     *
+     * @param hardPity item spec ({@code custom:<id>}) to the number of the run on which the drop is certain
+     */
+    public static Result roll(String bossId, BossDefinition.Loot loot, double share, int rank, double magicFind,
+            Map<String, Integer> dry, Map<String, Integer> hardPity, Random random) {
         List<Drop> drops = new ArrayList<>();
         Map<String, Integer> updated = new HashMap<>(dry);
         double rankMult = LootMath.rankMultiplier(loot.rankBonus(), rank);
@@ -38,11 +49,15 @@ public final class LootRoller {
             String key = dryKey(bossId, entry);
             int streak = dry.getOrDefault(key, 0);
             double pity = LootMath.pityBonus(streak, entry.pity(), entry.pityCap(), entry.chance());
+            int hard = hardPity.getOrDefault(entry.item(), 0);
             double chance = LootMath.chance(entry.chance(), pity, rankMult, magicFind, entry.magicFind());
+            if (LootMath.hardPityReached(streak, hard)) {
+                chance = 1.0;
+            }
             if (LootMath.roll(chance, random)) {
                 drops.add(new Drop(entry, LootMath.amount(entry, random), chance));
                 updated.remove(key);
-            } else if (entry.pity() > 0) {
+            } else if (entry.pity() > 0 || hard > 0) {
                 updated.put(key, streak + 1);
             }
         }

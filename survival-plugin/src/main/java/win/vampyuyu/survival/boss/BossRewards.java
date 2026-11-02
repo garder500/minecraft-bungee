@@ -36,6 +36,8 @@ public final class BossRewards {
     private final List<BossLootHook> hooks = new CopyOnWriteArrayList<>();
     private final Random random = new Random();
     private volatile java.util.function.Function<String, String> names = id -> id;
+    private volatile java.util.function.Supplier<Guardians> guardians = Guardians::none;
+    private volatile java.util.function.ToIntBiFunction<Player, String> resonance = (player, bossId) -> 0;
 
     public BossRewards(Core core, BossSettings settings, LootDelivery delivery) {
         this.core = core;
@@ -46,6 +48,19 @@ public final class BossRewards {
     /** Boss id to display name (MiniMessage), for announcements made after the fight. */
     public void setNameLookup(java.util.function.Function<String, String> lookup) {
         this.names = lookup;
+    }
+
+    /** Where the current Guardians come from (they change with a config reload). */
+    public void setGuardians(java.util.function.Supplier<Guardians> source) {
+        this.guardians = source;
+    }
+
+    /**
+     * The Resonance rank (0 = none) a player fights a boss at; it shortens the Guardian hard pity (GDD 15.2). Nothing
+     * sets a rank yet: the Resonance system plugs in here.
+     */
+    public void setResonance(java.util.function.ToIntBiFunction<Player, String> lookup) {
+        this.resonance = lookup;
     }
 
     public void addHook(BossLootHook hook) {
@@ -60,6 +75,13 @@ public final class BossRewards {
             session.options().resonance());
         Bukkit.getPluginManager().callEvent(event);
         BossDefinition.Loot loot = def.loot();
+        Guardians.Guardian guardian = guardians.get().get(def.id());
+        if (guardian != null) {
+            Component line = Guardians.say(guardian, Guardians.DEATH, random);
+            if (line != null) {
+                session.broadcastNearby(line);
+            }
+        }
         int eligible = 0;
         for (Damager damager : ranking) {
             if (session.ledger.share(damager.player()) >= loot.minShare()) {
@@ -115,8 +137,12 @@ public final class BossRewards {
         double mf = player == null ? 0 : core.service(StatsApi.class)
             .map(s -> Math.min(settings.magicFindCap(), s.stat(player, Stat.FORTUNE))).orElse(0.0);
         List<ItemStack> items = new ArrayList<>();
+        Guardians.Guardian guardian = guardians.get().get(def.id());
+        boolean firstClear = data != null && data.kills.getOrDefault(def.id(), 0) == 0;
         LootRoller.Result result = LootRoller.roll(def.id(), loot, share, rank, mf,
-            data == null ? java.util.Map.of() : data.dry, random);
+            data == null ? java.util.Map.of() : data.dry,
+            guardian == null ? java.util.Map.of() : guardians.get().hardPityMap(def.id(),
+                player == null ? 0 : resonance.applyAsInt(player, def.id())), random);
         for (LootRoller.Drop drop : result.drops()) {
             ItemStack stack = resolve(drop.entry().item(), drop.amount());
             if (stack == null) {
@@ -125,6 +151,12 @@ public final class BossRewards {
             items.add(stack);
             if (drop.chance() <= loot.announceBelow() || (drop.entry().chance() <= loot.announceBelow())) {
                 announceRare(player, id, stack, def, drop.chance());
+            }
+        }
+        if (guardian != null) {
+            ItemStack resource = guardianResource(guardian, firstClear);
+            if (resource != null) {
+                items.add(resource);
             }
         }
         for (BossLootHook hook : hooks) {
@@ -159,11 +191,29 @@ public final class BossRewards {
         }
         if (player != null) {
             summary(player, def, damager.damage(), share, rank, coins, xp, items);
+            if (guardian != null && firstClear) {
+                Component line = Guardians.say(guardian, Guardians.FIRST_CLEAR, random);
+                if (line != null) {
+                    player.sendMessage(line);
+                }
+            }
             if (repeat < 0.999) {
                 core.msg().info(player, "Repeated kills of the same boss pay " + Math.round(repeat * 100)
                     + "% coins and combat XP for a while.");
             }
         }
+    }
+
+    /**
+     * The local resource of a Realm (GDD 3.2): every eligible participant gets it, more on a first clear. Null while the
+     * item is not registered (the resource items come with their own feature) so a missing item never blocks a kill.
+     */
+    private @Nullable ItemStack guardianResource(Guardians.Guardian guardian, boolean firstClear) {
+        if (guardian.resource().isEmpty() || core.items().def(guardian.resource()).isEmpty()) {
+            return null;
+        }
+        int amount = Guardians.resourceAmount(guardian, firstClear, random);
+        return amount <= 0 ? null : core.items().create(guardian.resource(), amount);
     }
 
     /** Wings and the announcement; the grant itself is once per player. */

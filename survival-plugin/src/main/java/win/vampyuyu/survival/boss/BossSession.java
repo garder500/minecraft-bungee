@@ -189,6 +189,7 @@ public final class BossSession {
         Fx.particle(world, Particle.EXPLOSION_EMITTER, anchor, 1, 0, 0, 0, 0);
         BossDefinition.Phase first = def.phases().get(0);
         announcePhase(first, true);
+        speak(Guardians.INTRO);
         castEnter(first);
         return true;
     }
@@ -916,11 +917,24 @@ public final class BossSession {
     private void enterPhase(int index) {
         BossDefinition.Phase phase = def.phases().get(index);
         announcePhase(phase, false);
+        speak(Guardians.phaseEvent(index));
         retune();
         Fx.sound(world, location(), Sound.ENTITY_ENDER_DRAGON_GROWL, 3f, 0.8f);
         Fx.particle(world, Particle.EXPLOSION_EMITTER, location(), 1, 0, 0, 0, 0);
         gcdUntil = ticks + 30;
         castEnter(phase);
+    }
+
+    /** A Guardian's spoken line to everybody around the fight; nothing for a boss that is not a Guardian. */
+    private void speak(String event) {
+        Guardians.Guardian guardian = manager.config().guardians().get(def.id());
+        if (guardian == null) {
+            return;
+        }
+        Component line = Guardians.say(guardian, event, java.util.concurrent.ThreadLocalRandom.current());
+        if (line != null) {
+            broadcastNearby(line);
+        }
     }
 
     private void announcePhase(BossDefinition.Phase phase, boolean spawn) {

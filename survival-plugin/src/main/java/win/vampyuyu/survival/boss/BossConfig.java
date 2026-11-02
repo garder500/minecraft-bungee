@@ -18,7 +18,7 @@ import win.vampyuyu.survival.data.Db;
 public record BossConfig(BossSettings settings, Map<String, BossDefinition> bosses,
         Map<String, SlayerDefinition> slayers, WorldBossConfig worldBoss, SlayerSettings slayerSettings,
         List<MobDrop> mobDrops, Map<String, RecipeSpec> recipes, Map<String, ItemText> itemOverrides,
-        List<String> errors) {
+        Guardians guardians, List<String> errors) {
 
     /**
      * Slayer behaviour.

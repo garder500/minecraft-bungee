@@ -61,6 +61,10 @@ public final class BossItems {
             Math.round(TIER_DAMAGE[tier - 1] * 1.15 * 10) / 10.0, element, tier, List.of(ability));
     }
 
+    /** Guardian components (GDD 15.2): the hard pity of {@link Guardians} guarantees them. */
+    public static final String LAVA_CORE = "lava_core";
+    public static final String MYCELIAL_CORE = "mycelial_core";
+
     /** Damage of the ore ladder swords, tier 1 to 5 (the same numbers as the {@code item_def} rows of the quarry). */
     static final double[] TIER_DAMAGE = {40, 70, 120, 200, 320};
 
@@ -77,13 +81,13 @@ public final class BossItems {
             "<yellow>Right-click at the Rift altar in the Hub to", "<yellow>awaken the <light_purple>Echo of the Rift<yellow>. Consumed on use."));
         t.add(spec("magma_core", "Magma Core", Rarity.EPIC, Material.MAGMA_CREAM, "SUMMON ITEM", true, none,
             "<gray>A heart of molten rock that never cools.", "",
-            "<yellow>Right-click in the Nether to wake the", "<red>Magma Warden<yellow>. Consumed on use."));
+            "<yellow>Right-click in the Nether to wake the", "<red>Lava Colossus<yellow>. Consumed on use."));
         t.add(spec("frost_heart", "Frost Heart", Rarity.EPIC, Material.PRISMARINE_CRYSTALS, "SUMMON ITEM", true, none,
             "<gray>A frozen heart that still beats, slowly.", "",
             "<yellow>Right-click outdoors to call the", "<aqua>Frost Revenant<yellow>. Consumed on use."));
-        t.add(spec("matriarch_egg", "Matriarch Egg", Rarity.EPIC, Material.FERMENTED_SPIDER_EYE, "SUMMON ITEM", true, none,
+        t.add(spec("matriarch_egg", "Spore Egg", Rarity.EPIC, Material.FERMENTED_SPIDER_EYE, "SUMMON ITEM", true, none,
             "<gray>Something moves inside the sac.", "",
-            "<yellow>Right-click outdoors to hatch the", "<dark_green>Sylvan Matriarch<yellow>. Consumed on use."));
+            "<yellow>Right-click outdoors to hatch the", "<dark_green>Mycelial Queen<yellow>. Consumed on use."));
         t.add(spec("leviathan_scale", "Leviathan Scale", Rarity.EPIC, Material.NAUTILUS_SHELL, "SUMMON ITEM", true, none,
             "<gray>A scale the size of a shield, cold and wet.", "",
             "<yellow>Right-click while standing in water to", "<dark_aqua>rouse the Abyssal Leviathan<yellow>. Consumed on use."));
@@ -95,24 +99,30 @@ public final class BossItems {
         t.add(weapon("void_fang", "Void Fang", Rarity.LEGENDARY, Material.DIAMOND_SWORD, "SWORD", true, 5, Element.VOID,
             "void_step", stats(Stat.MIGHT, 20, Stat.SWIFTNESS, 10),
             "<gray>A tooth of the Echo of the Rift, sharp enough to", "<gray>cut the dark between stars."));
-        // magma warden
+        // magma warden = Lava Colossus, Guardian of the Cracked Ashes
+        t.add(spec(LAVA_CORE, "Colossus Core", Rarity.EPIC, Material.MAGMA_BLOCK, "BOSS COMPONENT", true, none,
+            "<gray>The thermal regulator of a Sarcophagus,", "<gray>still pulsing with the Devourer's heat.",
+            "", "<gray>Guardian component of the <red>Cracked Ashes<gray>."));
         t.add(spec("warden_heart", "Nether Key", Rarity.EPIC, Material.FIRE_CHARGE, "BOSS KEY", false, none,
-            "<gray>Torn from the Magma Warden. Still warm.", "<gray>One of the three keys of the Void Sigil."));
+            "<gray>Torn from the Lava Colossus. Still warm.", "<gray>One of the three keys of the Void Sigil."));
         t.add(weapon("ember_blade", "Ember Blade", Rarity.EPIC, Material.GOLDEN_SWORD, "SWORD", false, 2, Element.EMBER,
             "magma_burst", stats(Stat.MIGHT, 10, Stat.ATTUNEMENT, 3),
-            "<gray>Forged in the pools of the Magma Warden."));
+            "<gray>Forged in the pools of the Lava Colossus."));
         // frost revenant
         t.add(spec("frost_shard", "Frost Key", Rarity.EPIC, Material.AMETHYST_SHARD, "BOSS KEY", false, none,
             "<gray>A sliver of the Frost Revenant's armor.", "<gray>One of the three keys of the Void Sigil."));
         t.add(weapon("glacial_edge", "Glacial Edge", Rarity.EPIC, Material.IRON_SWORD, "SWORD", false, 3, Element.FROST,
             "rime_nova", stats(Stat.MIGHT, 12, Stat.SWIFTNESS, 10),
             "<gray>A blade of ice that never melts."));
-        // sylvan matriarch
-        t.add(spec("matriarch_silk", "Matriarch Silk", Rarity.EPIC, Material.STRING, "MATERIAL", false, none,
+        // sylvan matriarch = Mycelial Queen, Guardian of the Whispering Grove
+        t.add(spec(MYCELIAL_CORE, "Queen Core", Rarity.EPIC, Material.MOSS_BLOCK, "BOSS COMPONENT", true, none,
+            "<gray>The living archive of a Sarcophagus,", "<gray>every code of the old world in one spore.",
+            "", "<gray>Guardian component of the <green>Whispering Grove<gray>."));
+        t.add(spec("matriarch_silk", "Mycelial Silk", Rarity.EPIC, Material.STRING, "MATERIAL", false, none,
             "<gray>Strong enough to bind a dragon."));
         t.add(weapon("venom_dagger", "Venom Dagger", Rarity.EPIC, Material.IRON_SWORD, "SWORD", false, 3, Element.EARTH,
             "venom_strike", stats(Stat.MIGHT, 10, Stat.SWIFTNESS, 5),
-            "<gray>A fang taken from the Matriarch,", "<gray>still dripping."));
+            "<gray>A fang taken from the Mycelial Queen,", "<gray>still dripping."));
         // abyssal leviathan
         t.add(spec("leviathan_tooth", "Abyss Key", Rarity.EPIC, Material.PRISMARINE_SHARD, "BOSS KEY", false, none,
             "<gray>From the deepest jaws of the sea.", "<gray>One of the three keys of the Void Sigil."));
