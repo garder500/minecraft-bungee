@@ -75,6 +75,8 @@ public final class ContentDomains {
 
     public static final Domain RESONANCE = new Domain("resonance", List.of(settings("resonance")));
 
+    public static final Domain TRADES = new Domain("trades", List.of(settings("trades")));
+
     public static final Domain DUNGEON = new Domain("dungeon", List.of(
         new Root("dungeon_grade", "id", null, List.of()),
         new Root("dungeon_reward", "id", null, List.of()),
@@ -138,7 +140,7 @@ public final class ContentDomains {
 
     /** In the order they are synced. */
     public static final List<Domain> ALL = List.of(QUESTS, QUESTS_DAILY, CORE, ISLAND, UTILITY, WINGS, MENU, ECONOMY, SKILLS, QUARRY, GADGETS, BOSS,
-        RESONANCE, DUNGEON, BASTION, ITEMS, REALM);
+        RESONANCE, TRADES, DUNGEON, BASTION, ITEMS, REALM);
 
     private ContentDomains() {}
 

@@ -248,7 +248,9 @@ public final class QuarryService implements win.vampyuyu.survival.api.EndAccessA
             return "You do not have the materials.";
         }
         take(player, recipe);
-        data.jobs.add(new QuarryData.Job(recipeId, now + recipe.seconds() * 1000L));
+        double factor = core.service(win.vampyuyu.survival.api.TradeApi.class)
+            .map(t -> t.forgeDurationFactor(player.getUniqueId())).orElse(1.0); // Artisan: shorter jobs (GDD 11.3)
+        data.jobs.add(new QuarryData.Job(recipeId, now + Math.round(recipe.seconds() * 1000L * factor)));
         dirty(player.getUniqueId());
         return null;
     }
@@ -278,6 +280,8 @@ public final class QuarryService implements win.vampyuyu.survival.api.EndAccessA
             left.values().forEach(rest -> at.getWorld().dropItem(at, rest));
             names.add(items.def(recipe.result()).get().name());
             forged.accept(recipe.result());
+            core.service(win.vampyuyu.survival.api.TradeApi.class)
+                .ifPresent(t -> t.addXp(player.getUniqueId(), win.vampyuyu.survival.api.Trade.ARTISAN, 5));
         }
         if (keep.size() != data.jobs.size()) {
             data.jobs = keep;
