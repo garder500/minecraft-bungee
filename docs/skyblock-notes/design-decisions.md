@@ -22,11 +22,11 @@ Answers to the open questions of GDD v3.1 section 24. Items 1-4 are decided and 
 Chrono Sand, Rot Resin, Thunder Quartz, Pressure Pearl and Soul Ash are the names already in code (`realm/RealmItems`) and in
 the pack (`vampyuyu:ore/*`). No rename.
 
-## 4. Second trade: at the Master rank
-* A player starts with one trade (Artisan or Warden). A **second slot unlocks at the class Master rank** (`promotion.md`),
-  matching the GDD proposal. Trades stay independent of the class and never mandatory (GDD 11.4).
-* The trade feature is not built yet (`classes.md`); when it is, add the check `promotion rank == MASTER` before picking the
-  second trade, and keep the two levels separate (1-5 each).
+## 4. Second trade: at the Master rank of the first trade
+* Already built (PR #72, issue #39, `/trade`). A player starts with one trade (Artisan or Warden); the **second slot unlocks
+  when the first trade reaches level 5, its Master rank** (setting `trades.second-trade-at-level`, default 5). It is the
+  trade's own Master rank, not the class promotion. Trades stay independent of the class and never mandatory (GDD 11.4).
+* No code change: the decision confirms the shipped default.
 
 ## 5. Hell Gao: draft for the owner (not canon)
 * **Look**: a shape that is never the same twice, a rift in the sky that borrows parts of the Guardians and of the
