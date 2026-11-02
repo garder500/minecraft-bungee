@@ -18,7 +18,7 @@ import win.vampyuyu.survival.items.combat.PowerCurve;
 
 /** The Guardians (Lava Colossus, Mycelial Queen, Judge of Lost Souls): data, hard pity (GDD 15.2), readability (GDD 8.7). */
 public class GuardianTest {
-    private static final List<String> IDS = List.of("magma_warden", "sylvan_matriarch", "crypt_lord");
+    private static final List<String> IDS = List.of("magma_warden", "sylvan_matriarch", "frost_revenant", "crypt_lord");
 
     @Before
     public void server() {
@@ -44,6 +44,8 @@ public class GuardianTest {
         assertEquals("heartwood", guardians.get("sylvan_matriarch").resource());
         assertEquals(Realm.NECROPOLIS, Realm.byId(guardians.get("crypt_lord").realm()));
         assertEquals("soul_ash", guardians.get("crypt_lord").resource());
+        assertEquals(Realm.HEIGHTS, Realm.byId(guardians.get("frost_revenant").realm()));
+        assertEquals("stasis_crystal", guardians.get("frost_revenant").resource());
         for (Guardians.Guardian g : guardians.byBoss().values()) {
             for (String event : List.of(Guardians.INTRO, Guardians.phaseEvent(1), Guardians.phaseEvent(2), Guardians.DEATH,
                     Guardians.FIRST_CLEAR)) {
@@ -61,6 +63,7 @@ public class GuardianTest {
         assertTrue(config.bosses().get("magma_warden").name().contains("Lava Colossus"));
         assertTrue(config.bosses().get("sylvan_matriarch").name().contains("Mycelial Queen"));
         assertTrue(config.bosses().get("crypt_lord").name().contains("Judge of Lost Souls"));
+        assertTrue(config.bosses().get("frost_revenant").name().contains("Boreal Watcher"));
         for (String id : IDS) {
             BossDefinition def = config.bosses().get(id);
             assertFalse(id, def.name().contains("Warden") || def.name().contains("Matriarch"));
@@ -89,6 +92,7 @@ public class GuardianTest {
         assertEquals(3, guardians.hardPityFor(5));
         assertEquals(Map.of("custom:lava_core", 4), guardians.hardPityMap("magma_warden", 0));
         assertEquals(Map.of("custom:mycelial_core", 3), guardians.hardPityMap("sylvan_matriarch", 3));
+        assertEquals(Map.of("custom:frost_core", 4), guardians.hardPityMap("frost_revenant", 0));
         assertEquals(Map.of(), guardians.hardPityMap("voidwyrm", 3));
     }
 

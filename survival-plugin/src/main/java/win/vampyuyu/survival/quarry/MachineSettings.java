@@ -26,6 +26,9 @@ final class MachineSettings {
     final double memoryConsume;
     final double memoryRate;
     final double memoryShardChance;
+    final double cryoConsume;
+    final double cryoRate;
+    final double cryoIceChance;
 
     MachineSettings(Settings s) {
         emberConsume = positive(s, "module.ember.consume-factor", 1.8);
@@ -36,6 +39,9 @@ final class MachineSettings {
         memoryConsume = positive(s, "module.memory.consume-factor", 1.3);
         memoryRate = positive(s, "module.memory.rate-factor", 0.7);
         memoryShardChance = positive(s, "module.memory.shard-chance", 0.03);
+        cryoConsume = positive(s, "module.cryo.consume-factor", 1.3);
+        cryoRate = positive(s, "module.cryo.rate-factor", 1.3);
+        cryoIceChance = positive(s, "module.cryo.ice-chance", 0.3);
         generatorOutput = positive(s, "coal-generator.output", 10);
         coalSeconds = (int) Math.max(1, positive(s, "coal-generator.coal-seconds", 40));
         solarOutput = positive(s, "solar-panel.output", 6);
@@ -87,6 +93,7 @@ final class MachineSettings {
             case EMBER -> emberConsume;
             case BLOOM -> bloomConsume;
             case MEMORY -> memoryConsume;
+            case CRYO -> cryoConsume;
         };
     }
 
@@ -96,6 +103,7 @@ final class MachineSettings {
             case EMBER -> emberRate;
             case BLOOM -> bloomRate;
             case MEMORY -> memoryRate;
+            case CRYO -> cryoRate;
         };
     }
 }

@@ -117,6 +117,8 @@ final class MachineListener implements Listener {
                 cfg.bloomRate, cfg.bloomConsume, cfg.bloomBoneMealChance * 100);
             case MEMORY -> String.format(Locale.ROOT, "Speed x%.1f, Flux use x%.1f, %.0f%% of cycles distil a Memory Shard for the owner.",
                 cfg.memoryRate, cfg.memoryConsume, cfg.memoryShardChance * 100);
+            case CRYO -> String.format(Locale.ROOT, "Speed x%.1f, Flux use x%.1f, %.0f%% of cycles also give a packed ice.",
+                cfg.cryoRate, cfg.cryoConsume, cfg.cryoIceChance * 100);
         };
     }
 

@@ -17,8 +17,8 @@ import win.vampyuyu.survival.data.Settings;
  */
 public record RuneConfig(List<Rune> runes, List<Integer> values, List<Integer> slots, int powder, int fuse, int grindOutput,
         int realmPowder, int realmResource, int realmDiamonds, int burnTicks, int regenTicks, int regenCooldownSeconds,
-        String stationBlock, List<String> problems) {
-    /** Rows of the Runecraft menu: no more runes fit. */
+        int stasisTicks, String stationBlock, List<String> problems) {
+    /** Rows of the Runecraft menu: no more runes of a kind fit (stat runes on the left, Realm runes on the right). */
     public static final int MAX_RUNES = 6;
 
     public static RuneConfig load(Db db) {
@@ -53,8 +53,9 @@ public record RuneConfig(List<Rune> runes, List<Integer> values, List<Integer> s
                 problems.add("runes.list: bad target or id in '" + row + "'");
                 continue;
             }
-            if (runes.size() >= MAX_RUNES) {
-                problems.add("runes.list: only the first " + MAX_RUNES + " runes fit the menu, '" + id + "' is ignored");
+            if (runes.stream().filter(r -> r.realm() == (stat == null)).count() >= MAX_RUNES) {
+                problems.add("runes.list: only the first " + MAX_RUNES + " " + (stat == null ? "Realm" : "stat")
+                    + " runes fit the menu, '" + id + "' is ignored");
                 continue;
             }
             runes.add(new Rune(id, p[1].trim(), stat, target, p[4].trim()));
@@ -71,6 +72,7 @@ public record RuneConfig(List<Rune> runes, List<Integer> values, List<Integer> s
             Math.max(0, s.getInt("realm.powder", 8)), Math.max(1, s.getInt("realm.resource", 4)),
             Math.max(0, s.getInt("realm.diamonds", 1)), Math.max(1, s.getInt("scorch.burn-ticks", 80)),
             Math.max(1, s.getInt("verdant.regen-ticks", 100)), Math.max(0, s.getInt("verdant.cooldown-seconds", 12)),
+            Math.max(1, s.getInt("stasis.slow-ticks", 60)),
             s.getString("station-block", "GRINDSTONE"), List.copyOf(problems));
     }
 

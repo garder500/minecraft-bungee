@@ -12,6 +12,8 @@ public final class SkyblockWorlds {
     public static final String GROVE = "sb_grove";
     /** The Ethereal Necropolis, eighth Realm (GDD 3.1), reached by its Sky Gate. */
     public static final String NECROPOLIS = "sb_necropolis";
+    /** The Frozen Heights, third Realm (GDD 3.1), reached by its Sky Gate. */
+    public static final String HEIGHTS = "sb_heights";
     /** The Cracked Ashes, first Realm (GDD 3.1), reached by its Sky Gate. */
     public static final String ASHES = "sb_ashes";
     /** Dungeon runs use {@code sb_dungeon_<runId>}. */
@@ -33,7 +35,8 @@ public final class SkyblockWorlds {
     /** True for every world that belongs to the Skyblock. */
     public static boolean isSkyblock(String worldName) {
         return HUB.equals(worldName) || WORLD.equals(worldName) || NETHER.equals(worldName)
-            || END.equals(worldName) || GROVE.equals(worldName) || ASHES.equals(worldName) || NECROPOLIS.equals(worldName) || isDungeon(worldName)
+            || END.equals(worldName) || GROVE.equals(worldName) || HEIGHTS.equals(worldName) || ASHES.equals(worldName)
+            || NECROPOLIS.equals(worldName) || isDungeon(worldName)
             || isBastion(worldName);
     }
 

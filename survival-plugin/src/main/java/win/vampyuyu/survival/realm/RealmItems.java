@@ -6,11 +6,12 @@ import win.vampyuyu.survival.core.Items;
 import win.vampyuyu.survival.core.Rarity;
 
 /** The local Realm resources. Pack models: {@code vampyuyu:ore/cinderheart}, {@code vampyuyu:ore/heartwood},
- * {@code vampyuyu:ore/soul_ash}. */
+ * {@code vampyuyu:ore/soul_ash}, {@code vampyuyu:ore/stasis_crystal}. */
 final class RealmItems {
     static final String CINDERHEART = "cinderheart";
     static final String HEARTWOOD = "heartwood";
     static final String SOUL_ASH = "soul_ash";
+    static final String STASIS_CRYSTAL = "stasis_crystal";
 
     private RealmItems() {}
 
@@ -27,5 +28,9 @@ final class RealmItems {
             .itemModel("vampyuyu:ore/soul_ash").type("GEM").glint(true).pdc("realm_resource", 1L)
             .lore("<gray>What is left of a memory once it is let go.", "<gray>Found only in the <dark_purple>Ethereal Necropolis<gray>.",
                 "<dark_gray>Forge: makes the Memory Module.").build());
+        items.register(CustomItemDef.builder(STASIS_CRYSTAL, "Stasis Crystal", Rarity.EPIC, Material.AMETHYST_SHARD)
+            .itemModel("vampyuyu:ore/stasis_crystal").type("GEM").glint(true).pdc("realm_resource", 1L)
+            .lore("<gray>A crystal that holds a moment still.", "<gray>Found only in the <aqua>Frozen Heights<gray>.",
+                "<dark_gray>Runecraft: makes the Stasis rune.").build());
     }
 }

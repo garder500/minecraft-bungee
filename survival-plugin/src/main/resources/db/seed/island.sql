@@ -193,3 +193,11 @@ INSERT INTO setting (id, type, value, note) VALUES ('island.commands.visit-coold
 INSERT INTO setting (id, type, value, note) VALUES ('island.grove.gate-boss', 'text', 'magma_warden', 'Boss id whose defeat lights the Sky Gate of the Whispering Grove for the players who fought it.');
 INSERT INTO setting (id, type, value, note) VALUES ('island.necropolis.gate-boss', 'text', 'abyssal_leviathan', 'Boss id whose defeat lights the Sky Gate of the Ethereal Necropolis for the players who fought it (the Guardian of the Realm before it in the Quai).');
 INSERT INTO setting (id, type, value, note) VALUES ('island.necropolis.recall-kills', 'int', '10', 'Undead killed in the Necropolis for one Memory Shard once Recall (affinity tier 2) is earned.');
+INSERT INTO island_world (key, time, border, weather_clear) VALUES ('frost', 'NOON', 140.0, 1);
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('frost', 0, 'spawn_monsters', 'false');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('frost', 1, 'spawn_phantoms', 'false');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('frost', 2, 'spawn_patrols', 'false');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('frost', 3, 'raids', 'false');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('frost', 4, 'keep_inventory', 'true');
+INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('frost', 5, 'mob_griefing', 'false');
+INSERT INTO setting (id, type, value, note) VALUES ('island.frost.gate-boss', 'text', 'sylvan_matriarch', 'Boss id whose defeat lights the Sky Gate of the Frozen Heights for the players who fought it.');

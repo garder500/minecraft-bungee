@@ -101,6 +101,11 @@ public class SidegradeBudgetTest {
         }
         // the Ashes ask 75 for the caldera and a netherite set gives 48: the set closes the gap, it does not make it moot
         assertEquals(30.0, heat, 0);
+        double cold = 0;
+        for (String slot : Sidegrades.SLOTS) {
+            cold += def("frost_starcore_" + slot).pdcDoubles().getOrDefault("cold_resist", 0.0);
+        }
+        assertEquals(30.0, cold, 0);
         assertTrue(def("grove_starcore_helmet").pdcDoubles().containsKey("respiration"));
         assertFalse(def("grove_starcore_boots").pdcDoubles().containsKey("respiration"));
     }
@@ -108,7 +113,8 @@ public class SidegradeBudgetTest {
     @Test
     public void everyPieceNeedsItsStarcorePieceAndTheLocalResourceOfItsRealm() {
         for (String set : Sidegrades.SETS) {
-            String resource = set.equals(Sidegrades.CINDER) ? "custom:cinderheart" : "custom:heartwood";
+            String resource = set.equals(Sidegrades.CINDER) ? "custom:cinderheart"
+                : set.equals(Sidegrades.GROVE) ? "custom:heartwood" : "custom:stasis_crystal";
             for (String slot : Sidegrades.SLOTS) {
                 String id = set + "_" + slot;
                 assertEquals(id + " needs its Starcore piece", 1, TestDb.count(db,
@@ -131,6 +137,11 @@ public class SidegradeBudgetTest {
         assertNull(Sidegrades.fullSet(Arrays.asList("starcore_boots", "starcore_leggings", "starcore_chestplate", "starcore_helmet")));
         assertEquals(Realm.ASHES, Sidegrades.realmOf("cinder_starcore_helmet"));
         assertEquals(Realm.GROVE, Sidegrades.realmOf("grove_starcore_boots"));
+        assertEquals(Realm.HEIGHTS, Sidegrades.realmOf("frost_starcore_chestplate"));
+        assertEquals(0.0, Sidegrades.poiseFactor(Sidegrades.FROST, DamageCause.FREEZE), 0);
+        assertEquals(0.5, Sidegrades.poiseFactor(Sidegrades.FROST, DamageCause.FALL), 0);
+        assertEquals(1.0, Sidegrades.poiseFactor(Sidegrades.FROST, DamageCause.ENTITY_ATTACK), 0);
+        assertEquals(1.0, Sidegrades.poiseFactor(Sidegrades.GROVE, DamageCause.FALL), 0);
         assertNull(Sidegrades.realmOf("starcore_helmet"));
     }
 

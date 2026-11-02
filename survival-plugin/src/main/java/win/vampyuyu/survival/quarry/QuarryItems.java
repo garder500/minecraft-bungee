@@ -148,6 +148,10 @@ final class QuarryItems {
                 .itemModel("vampyuyu:ore/soul_ash").type("MODULE").glint(true)
                 .lore("<gray>Right-click a Miner to slot it in.", "<gray>Speed <white>x0.7<gray>, Flux use <white>x1.3<gray>.",
                     "<gray>A few cycles distil a Memory Shard.", "<dark_gray>Realm module: Ethereal Necropolis.").build(),
+            CustomItemDef.builder("cryo_module", "Cryo Module", Rarity.EPIC, Material.BLUE_ICE)
+                .itemModel("vampyuyu:ore/stasis_crystal").type("MODULE").glint(true)
+                .lore("<gray>Right-click a Miner to slot it in.", "<gray>Speed <white>x1.3<gray>, Flux use <white>x1.3<gray>.",
+                    "<gray>A third of cycles also give packed ice.", "<dark_gray>Realm module: Frozen Heights.").build(),
             CustomItemDef.builder("bronzite_bar", "Bronzite Bar", Rarity.UNCOMMON, Material.COPPER_INGOT)
                 .itemModel("vampyuyu:ore/bronzite_bar").type("ORE")
                 .lore("<gray>Nine Bronzite pressed together.", "<gray>Craft it back to get the nine.").build(),

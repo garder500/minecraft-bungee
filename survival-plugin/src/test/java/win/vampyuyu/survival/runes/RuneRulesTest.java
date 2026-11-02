@@ -37,7 +37,7 @@ public class RuneRulesTest {
         assertEquals(List.of(1, 2, 3, 4, 4), config.slots());
         assertEquals(8, config.powder());
         assertEquals(3, config.fuse());
-        assertEquals(6, config.runes().size());
+        assertEquals(7, config.runes().size());
         assertEquals(2, config.runes().stream().filter(Rune::realm).count());
     }
 
@@ -107,6 +107,7 @@ public class RuneRulesTest {
     public void realmRunesAreMadeFromTheRealmResources() {
         assertEquals("cinderheart", rune("scorch").component());
         assertEquals("heartwood", rune("verdant").component());
+        assertEquals("stasis_crystal", rune("stasis").component());
         assertEquals("rune_scorch", rune("scorch").itemId(0));
         assertEquals("rune_vitality_2", rune("vitality").itemId(2));
     }

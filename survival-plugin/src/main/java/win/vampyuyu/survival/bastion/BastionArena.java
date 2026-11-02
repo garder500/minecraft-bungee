@@ -32,6 +32,7 @@ public final class BastionArena {
             case "grove" -> new Material[] {Material.MOSS_BLOCK, Material.GRASS_BLOCK, Material.PODZOL, Material.MUD_BRICKS};
             case "necro" -> new Material[] {Material.POLISHED_DEEPSLATE, Material.DEEPSLATE_TILES, Material.SOUL_SOIL,
                 Material.CRACKED_DEEPSLATE_BRICKS};
+            case "frost" -> new Material[] {Material.BLUE_ICE, Material.PACKED_ICE, Material.SNOW_BLOCK, Material.STONE_BRICKS};
             default -> new Material[] {Material.POLISHED_BLACKSTONE_BRICKS, Material.BLACKSTONE, Material.BASALT,
                 Material.CRACKED_POLISHED_BLACKSTONE_BRICKS};
         };
@@ -41,6 +42,7 @@ public final class BastionArena {
         return switch (palette) {
             case "grove" -> Material.STRIPPED_DARK_OAK_LOG;
             case "necro" -> Material.BONE_BLOCK;
+            case "frost" -> Material.PACKED_ICE;
             default -> Material.POLISHED_BASALT;
         };
     }
@@ -49,6 +51,7 @@ public final class BastionArena {
         return switch (palette) {
             case "grove" -> Material.SHROOMLIGHT;
             case "necro" -> Material.SOUL_LANTERN;
+            case "frost" -> Material.SEA_LANTERN;
             default -> Material.GLOWSTONE;
         };
     }
@@ -57,6 +60,7 @@ public final class BastionArena {
         return switch (palette) {
             case "grove" -> Material.MOSSY_STONE_BRICK_WALL;
             case "necro" -> Material.DEEPSLATE_BRICK_WALL;
+            case "frost" -> Material.STONE_BRICK_WALL;
             default -> Material.BLACKSTONE_WALL;
         };
     }

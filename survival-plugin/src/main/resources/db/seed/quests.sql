@@ -16,7 +16,8 @@ INSERT INTO quest_category (id, position, name, description, main, icon, unlock)
 INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('bosses', 12, 'The Bosses', 'Eight bosses of the world, each with its own silhouette and its glowing weak spot.', 0, 'DRAGON_HEAD', 'q212');
 INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('mastery', 13, 'Mastery', 'Long goals for players who have done it all.', 0, 'NETHER_STAR', 'q065');
 INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('challenges', 14, 'Challenges', 'Repeatable-feeling goals: bigger numbers, once each.', 0, 'TARGET', 'q021');
-INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('grove', 15, 'The Whispering Grove', 'Realm 2. Roots as wide as towers, spores that glow, islands that live. The Mycelial Queen keeps the biological codes of the old world.', 1, 'MOSS_BLOCK', NULL);
+INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('grove', 15, 'The Whispering Grove', 'Realm 2. Roots as wide as towers, spores that glow, islands that live. The Mycelial Queen keeps the biological codes of the old world.', 1, 'MOSS_BLOCK', 'echo_defeat');
+INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('heights', 16, 'The Frozen Heights', 'Realm 3. Cities stopped in the ice, a cold that is the absence of motion, a sky that is almost within reach. The Boreal Watcher holds the world still.', 1, 'BLUE_ICE', 'grove_09');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q001', 'plan', 0, 'start', 'First Tree', 'Your fragment is quiet, but a lone tree still stands. Its wood is the first thing the world gives back. Break 8 logs.', 'BREAK_BLOCK', 'LOGS', 8, 'OAK_LOG', 20.0);
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q002', 'plan', 1, 'start', 'Planks', 'Craft 4 planks.', 'CRAFT_ITEM', 'PLANKS', 4, 'OAK_PLANKS', 20.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q002', 0, 'q001');
@@ -292,7 +293,7 @@ INSERT INTO quest (id, pool, position, category, name, description, type, target
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q129', 0, 'q057');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q130', 'plan', 135, 'forging', 'Frost Heart', 'Collect a frost heart from the Forge (/forge).', 'FORGE_ITEM', 'frost_heart', 1, 'BLUE_ICE', 250.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q130', 0, 'q057');
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q131', 'plan', 136, 'forging', 'Spore Egg', 'Collect a spore egg from the Forge (/forge).', 'FORGE_ITEM', 'matriarch_egg', 1, 'SPIDER_EYE', 250.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q131', 'plan', 136, 'forging', 'Spore Egg', 'Collect a matriarch egg from the Forge (/forge).', 'FORGE_ITEM', 'matriarch_egg', 1, 'SPIDER_EYE', 250.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q131', 0, 'q057');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q132', 'plan', 137, 'forging', 'Leviathan Scale', 'Collect a leviathan scale from the Forge (/forge).', 'FORGE_ITEM', 'leviathan_scale', 1, 'PRISMARINE_SHARD', 300.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q132', 0, 'q057');
@@ -537,7 +538,7 @@ INSERT INTO quest (id, pool, position, category, name, description, type, target
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q230', 0, 'q036');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q231', 'plan', 257, 'bosses', 'Lava Colossus', 'Defeat the Lava Colossus.', 'BOSS_KILL', 'magma_warden', 1, 'MAGMA_BLOCK', 500.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q231', 0, 'q212');
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q232', 'plan', 258, 'bosses', 'Frost Revenant', 'Defeat the Frost Revenant.', 'BOSS_KILL', 'frost_revenant', 1, 'BLUE_ICE', 500.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q232', 'plan', 258, 'bosses', 'Boreal Watcher', 'Defeat the Boreal Watcher.', 'BOSS_KILL', 'frost_revenant', 1, 'BLUE_ICE', 500.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q232', 0, 'q212');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q233', 'plan', 259, 'bosses', 'Mycelial Queen', 'Defeat the Mycelial Queen.', 'BOSS_KILL', 'sylvan_matriarch', 1, 'SPIDER_EYE', 600.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q233', 0, 'q212');
@@ -552,7 +553,7 @@ INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q237', 0, 
 INSERT INTO quest_reward_item (quest_id, item, amount) VALUES ('q237', 'skin_flame_brand', 1);
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q238', 'plan', 264, 'bosses', 'Lava Colossus x3', 'Defeat the Lava Colossus 3 times.', 'BOSS_KILL', 'magma_warden', 3, 'MAGMA_BLOCK', 800.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q238', 0, 'q212');
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q239', 'plan', 265, 'bosses', 'Frost Revenant x3', 'Defeat the Frost Revenant 3 times.', 'BOSS_KILL', 'frost_revenant', 3, 'BLUE_ICE', 800.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q239', 'plan', 265, 'bosses', 'Boreal Watcher x3', 'Defeat the Boreal Watcher 3 times.', 'BOSS_KILL', 'frost_revenant', 3, 'BLUE_ICE', 800.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q239', 0, 'q212');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q240', 'plan', 266, 'bosses', 'Mycelial Queen x3', 'Defeat the Mycelial Queen 3 times.', 'BOSS_KILL', 'sylvan_matriarch', 3, 'SPIDER_EYE', 900.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q240', 0, 'q212');
@@ -660,6 +661,7 @@ INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q290', 0, 
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q291', 'plan', 317, 'challenges', 'Zombie Siege', 'Defeat 200 zombies.', 'KILL_MOB', 'ZOMBIE', 200, 'ROTTEN_FLESH', 400.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q291', 0, 'q021');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_01', 'plan', 318, 'grove', 'Through the Green Gate', 'Beyond the second Gate the air is thick with light. The Grove remembers how to grow. Light the Sky Gate of the Whispering Grove (defeat the Lava Colossus) and step through it at the Quai des Huit (/quai).', 'EVENT', 'grove_enter', 1, 'LIME_STAINED_GLASS', 300.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_01', 0, 'echo_defeat');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_02', 'plan', 319, 'grove', 'Mossy Footing', 'Break 32 moss blocks.', 'BREAK_BLOCK', 'MOSS_BLOCK', 32, 'MOSS_BLOCK', 100.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_02', 0, 'grove_01');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_03', 'plan', 320, 'grove', 'First Grove Harvest', 'Break 16 fully grown crops.', 'BREAK_BLOCK', 'CROPS', 16, 'WHEAT', 150.0);
@@ -676,3 +678,21 @@ INSERT INTO quest (id, pool, position, category, name, description, type, target
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_08', 0, 'grove_07');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_09', 'plan', 326, 'grove', 'Wake the Mycelial Queen', 'Defeat the Mycelial Queen, Guardian of the Grove.', 'BOSS_KILL', 'sylvan_matriarch', 1, 'SPIDER_EYE', 2500.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_09', 0, 'grove_08');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('heights_01', 'plan', 327, 'heights', 'Through the Frozen Gate', 'Beyond the third Gate nothing moves unless you make it. The Heights keep time in their ice. Light the Sky Gate of the Frozen Heights (defeat the Mycelial Queen) and step through it at the Quai des Huit (/quai).', 'EVENT', 'heights_enter', 1, 'LIGHT_BLUE_STAINED_GLASS', 300.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('heights_01', 0, 'grove_09');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('heights_02', 'plan', 328, 'heights', 'Cutting Ice', 'Break 32 packed ice.', 'BREAK_BLOCK', 'PACKED_ICE', 32, 'PACKED_ICE', 100.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('heights_02', 0, 'heights_01');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('heights_03', 'plan', 329, 'heights', 'Blue Cut', 'Break 16 blue ice.', 'BREAK_BLOCK', 'BLUE_ICE', 16, 'BLUE_ICE', 150.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('heights_03', 0, 'heights_02');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('heights_04', 'plan', 330, 'heights', 'Warmth', 'Cut ice in the Heights until you earn the Warmth affinity (40 blocks): the cold no longer bites you.', 'EVENT', 'heights_affinity:1', 1, 'CAMPFIRE', 400.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('heights_04', 0, 'heights_03');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('heights_05', 'plan', 331, 'heights', 'Crystal Spires', 'Break 8 amethyst clusters, the crystals of the Heights.', 'BREAK_BLOCK', 'AMETHYST_CLUSTER', 8, 'AMETHYST_CLUSTER', 300.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('heights_05', 0, 'heights_04');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('heights_06', 'plan', 332, 'heights', 'Cold Storage', 'Craft a blast furnace.', 'CRAFT_ITEM', 'BLAST_FURNACE', 1, 'BLAST_FURNACE', 200.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('heights_06', 0, 'heights_05');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('heights_07', 'plan', 333, 'heights', 'Stray Hunt', 'Defeat 20 strays.', 'KILL_MOB', 'STRAY', 20, 'ARROW', 250.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('heights_07', 0, 'heights_06');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('heights_08', 'plan', 334, 'heights', 'Stasis', 'Keep cutting ice in the Heights until you earn the Stasis affinity (200 blocks): sneak in the air to slow your fall, anywhere in the Heights.', 'EVENT', 'heights_affinity:2', 1, 'FEATHER', 1200.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('heights_08', 0, 'heights_07');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('heights_09', 'plan', 335, 'heights', 'Wake the Boreal Watcher', 'Defeat the Boreal Watcher, Guardian of the Heights.', 'BOSS_KILL', 'frost_revenant', 1, 'BLUE_ICE', 2500.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('heights_09', 0, 'heights_08');

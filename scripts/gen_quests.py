@@ -164,7 +164,7 @@ ev(c, "The Archivist", "Click the Archivist on the Hub plaza: she keeps the key 
 ev(c, "The Merchant", "Click the Merchant on the Hub plaza to learn how the market works.", "hub_npc:merchant", 1, "EMERALD", 80, qid="hub_merchant")
 earn(c, "Market Lesson", 300, "GOLD_NUGGET", 150, qid="hub_market_lesson")
 ev(c, "Enter the Rift", "Carry your Echo Key to the Rift arch, west of the Hub plaza, and click the Rift Gatekeeper.", "rift_enter", 1, "CRYING_OBSIDIAN", 250, qid="rift_enter")
-q(c, "Defeat the Echo of the Rift", "Right-click the Echo Key on the Rift altar, then defeat the Echo of the Rift. It drops the Wing Core that grants your Wings and lights the road to the Quai des Huit.", "BOSS_KILL", "voidwyrm", 1, "DRAGON_HEAD", 1500, qid="echo_defeat",
+q(c, "Defeat the Echo of the Rift", "Right-click the Echo Key on the Rift altar, then defeat the Echo of the Rift. It drops the Wing Core that grants your Wings and lights the road to the Quai des Huit.", "BOSS_KILL", "voidwyrm", 1, "DRAGON_HEAD", 1500, qid="echo_defeat", label="voidwyrm_1",
   lore="The first Echo of the Devourer screams in the sky. End it, and the Eight Realms can be reached.")
 
 c = cat("nether", "The Nether and the Ember", "A portal, the Ember generator, quartz and soul sand.", True, "tier2", "NETHERRACK")
@@ -335,14 +335,14 @@ kill(c, "Creepers", "20 creepers", "CREEPER", 20, "GUNPOWDER", 150)
 
 c = cat("bosses", "The Bosses", "Eight bosses of the world, each with its own silhouette and its glowing weak spot.", False, "first_clear", "DRAGON_HEAD")
 q(c, "Lava Colossus", "Defeat the Lava Colossus.", "BOSS_KILL", "magma_warden", 1, "MAGMA_BLOCK", 500)
-q(c, "Frost Revenant", "Defeat the Frost Revenant.", "BOSS_KILL", "frost_revenant", 1, "BLUE_ICE", 500)
+q(c, "Boreal Watcher", "Defeat the Boreal Watcher.", "BOSS_KILL", "frost_revenant", 1, "BLUE_ICE", 500)
 q(c, "Mycelial Queen", "Defeat the Mycelial Queen.", "BOSS_KILL", "sylvan_matriarch", 1, "SPIDER_EYE", 600)
 q(c, "Abyssal Leviathan", "Defeat the Abyssal Leviathan.", "BOSS_KILL", "abyssal_leviathan", 1, "PRISMARINE_SHARD", 700)
 q(c, "Any Boss x3", "Defeat 3 bosses.", "BOSS_KILL", "", 3, "DRAGON_HEAD", 400)
 q(c, "Any Boss x10", "Defeat 10 bosses.", "BOSS_KILL", "", 10, "DRAGON_HEAD", 1000)
 q(c, "Any Boss x25", "Defeat 25 bosses.", "BOSS_KILL", "", 25, "DRAGON_HEAD", 2500, items={"skin_flame_brand": 1})
 q(c, "Lava Colossus x3", "Defeat the Lava Colossus 3 times.", "BOSS_KILL", "magma_warden", 3, "MAGMA_BLOCK", 800)
-q(c, "Frost Revenant x3", "Defeat the Frost Revenant 3 times.", "BOSS_KILL", "frost_revenant", 3, "BLUE_ICE", 800)
+q(c, "Boreal Watcher x3", "Defeat the Boreal Watcher 3 times.", "BOSS_KILL", "frost_revenant", 3, "BLUE_ICE", 800)
 q(c, "Mycelial Queen x3", "Defeat the Mycelial Queen 3 times.", "BOSS_KILL", "sylvan_matriarch", 3, "SPIDER_EYE", 900)
 q(c, "Leviathan x3", "Defeat the Abyssal Leviathan 3 times.", "BOSS_KILL", "abyssal_leviathan", 3, "PRISMARINE_SHARD", 1000)
 q(c, "Crypt Lord", "Defeat the Crypt Lord, the boss of the dungeon floors (/dungeon).", "BOSS_KILL", "crypt_lord", 1, "SKELETON_SKULL", 800)
@@ -411,6 +411,17 @@ brk(c, "Heartwood", "64 mangrove logs, the living wood of the Grove", "MANGROVE_
 craft(c, "Tame the Green", "a composter", "COMPOSTER", 1, "COMPOSTER", 150, qid="grove_07")
 ev(c, "Let It Grow", "Keep harvesting in the Grove until you earn the Growth affinity (200 harvests): bone meal grows a crop one more stage, anywhere.", "grove_affinity:2", 1, "BONE_MEAL", 1200, label="grove_growth", qid="grove_08")
 q(c, "Wake the Mycelial Queen", "Defeat the Mycelial Queen, Guardian of the Grove.", "BOSS_KILL", "sylvan_matriarch", 1, "SPIDER_EYE", 2500, label="grove_queen", qid="grove_09")
+
+c = cat("heights", "The Frozen Heights", "Realm 3. Cities stopped in the ice, a cold that is the absence of motion, a sky that is almost within reach. The Boreal Watcher holds the world still.", True, "grove_queen", "BLUE_ICE")
+ev(c, "Through the Frozen Gate", "Light the Sky Gate of the Frozen Heights (defeat the Mycelial Queen) and step through it at the Quai des Huit (/quai).", "heights_enter", 1, "LIGHT_BLUE_STAINED_GLASS", 300, label="heights_1", lore="Beyond the third Gate nothing moves unless you make it. The Heights keep time in their ice.", qid="heights_01")
+brk(c, "Cutting Ice", "32 packed ice", "PACKED_ICE", 32, "PACKED_ICE", 100, qid="heights_02")
+brk(c, "Blue Cut", "16 blue ice", "BLUE_ICE", 16, "BLUE_ICE", 150, qid="heights_03")
+ev(c, "Warmth", "Cut ice in the Heights until you earn the Warmth affinity (40 blocks): the cold no longer bites you.", "heights_affinity:1", 1, "CAMPFIRE", 400, label="heights_warmth", qid="heights_04")
+brk(c, "Crystal Spires", "8 amethyst clusters, the crystals of the Heights", "AMETHYST_CLUSTER", 8, "AMETHYST_CLUSTER", 300, qid="heights_05")
+craft(c, "Cold Storage", "a blast furnace", "BLAST_FURNACE", 1, "BLAST_FURNACE", 200, qid="heights_06")
+q(c, "Stray Hunt", "Defeat 20 strays.", "KILL_MOB", "STRAY", 20, "ARROW", 250, qid="heights_07")
+ev(c, "Stasis", "Keep cutting ice in the Heights until you earn the Stasis affinity (200 blocks): sneak in the air to slow your fall, anywhere in the Heights.", "heights_affinity:2", 1, "FEATHER", 1200, label="heights_stasis", qid="heights_08")
+q(c, "Wake the Boreal Watcher", "Defeat the Boreal Watcher, Guardian of the Heights.", "BOSS_KILL", "frost_revenant", 1, "BLUE_ICE", 2500, label="heights_watcher", qid="heights_09")
 
 
 def main():

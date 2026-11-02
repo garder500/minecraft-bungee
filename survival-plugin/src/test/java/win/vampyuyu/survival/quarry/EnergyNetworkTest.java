@@ -178,5 +178,7 @@ public class EnergyNetworkTest {
         assertEquals(MachineModule.MEMORY, MachineModule.ofItem("memory_module").orElseThrow());
         assertEquals(0, MachineModule.memoryShards(0.0, new java.util.Random(1)));
         assertEquals(1, MachineModule.memoryShards(1.0, new java.util.Random(1)));
+        assertEquals(MachineModule.CRYO, MachineModule.ofItem("cryo_module").orElseThrow());
+        assertEquals(MachineModule.CRYO, MachineModule.of("cryo"));
     }
 }

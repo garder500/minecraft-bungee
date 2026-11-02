@@ -44,20 +44,23 @@ final class RunecraftMenu {
         for (int slot = 0; slot < gui.size(); slot++) {
             gui.clear(slot);
         }
-        int row = 0;
+        int statRow = 0;
+        int realmRow = 0;
         for (Rune rune : config.runes()) {
-            int base = row * 9;
-            gui.set(base, Guis.icon(rune.realm() ? Material.ECHO_SHARD : Material.AMETHYST_CLUSTER,
-                "<light_purple>" + rune.name() + " Rune", describe(rune, config)));
+            int base = (rune.realm() ? realmRow : statRow) * 9;
             if (rune.realm()) {
-                gui.set(base + 2, button(rune, 0), click -> craft(rune, 0));
+                // Realm runes fill the right half (columns 5 and 6): the stat runes keep the left
+                gui.set(base + 5, Guis.icon(Material.ECHO_SHARD, "<light_purple>" + rune.name() + " Rune", describe(rune, config)));
+                gui.set(base + 6, button(rune, 0), click -> craft(rune, 0));
+                realmRow++;
             } else {
+                gui.set(base, Guis.icon(Material.AMETHYST_CLUSTER, "<light_purple>" + rune.name() + " Rune", describe(rune, config)));
+                statRow++;
                 for (int rank = 1; rank <= 3; rank++) {
                     int r = rank;
                     gui.set(base + 1 + rank, button(rune, rank), click -> craft(rune, r));
                 }
             }
-            row++;
         }
         gui.set(GRIND, Guis.icon(Material.GRINDSTONE, "<yellow>Grind Rune Powder",
             "<gray>Turns one <white>Amethyst Shard</white> into <white>" + config.grindOutput() + " Rune Powder</white>.",

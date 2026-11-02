@@ -15,7 +15,10 @@ public final class Sidegrades {
     /** Whispering Grove variant: the helmet breathes under water, four pieces mend out of combat. */
     public static final String GROVE = "grove_starcore";
 
-    public static final List<String> SETS = List.of(CINDER, GROVE);
+    /** Frozen Heights variant: cold resistance on every piece, four pieces make frost harmless and falls hurt half as much. */
+    public static final String FROST = "frost_starcore";
+
+    public static final List<String> SETS = List.of(CINDER, GROVE, FROST);
     /** Armor slots as they appear at the end of an item id. */
     public static final List<String> SLOTS = List.of("helmet", "chestplate", "leggings", "boots");
 
@@ -27,7 +30,7 @@ public final class Sidegrades {
         if (set == null) {
             return null;
         }
-        return set.equals(CINDER) ? Realm.ASHES : Realm.GROVE;
+        return set.equals(CINDER) ? Realm.ASHES : set.equals(GROVE) ? Realm.GROVE : Realm.HEIGHTS;
     }
 
     /** The sidegrade set an item id belongs to ({@code cinder_starcore_helmet} gives {@code cinder_starcore}), or null. */
@@ -77,6 +80,21 @@ public final class Sidegrades {
         }
         return switch (cause) {
             case FIRE, FIRE_TICK, LAVA, HOT_FLOOR -> 0.5;
+            default -> 1.0;
+        };
+    }
+
+    /**
+     * Glacial Poise: damage multiplier of the Frost set for a hit (0 for freezing, 0.5 for a fall, 1 when the set is not
+     * worn or the hit is another kind).
+     */
+    public static double poiseFactor(String wornSet, org.bukkit.event.entity.EntityDamageEvent.DamageCause cause) {
+        if (!FROST.equals(wornSet)) {
+            return 1.0;
+        }
+        return switch (cause) {
+            case FREEZE -> 0.0;
+            case FALL -> 0.5;
             default -> 1.0;
         };
     }

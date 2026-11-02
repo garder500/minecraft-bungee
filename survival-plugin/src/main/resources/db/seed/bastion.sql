@@ -7,3 +7,4 @@ INSERT INTO setting (id, type, value, note) VALUES ('bastion.enabled', 'bool', '
 INSERT INTO setting (id, type, value, note) VALUES ('bastion.max-concurrent', 'int', '4', 'Bastion instances alive at once on this server');
 INSERT INTO setting (id, type, value, note) VALUES ('bastion.countdown-seconds', 'int', '8', 'Time between the arrival of the party and the Guardian waking');
 INSERT INTO setting (id, type, value, note) VALUES ('bastion.exit-delay-seconds', 'int', '15', 'Time the party can stay after the end of the fight');
+INSERT INTO bastion (id, position, realm, name, tagline, guardian, key_item, palette, radius, min_players, max_players, time_limit_seconds, deaths_allowed) VALUES ('heights_bastion', 2, 'Frozen Heights', 'Heights Bastion', 'The Boreal Watcher holds the world still so that nothing can eat it.', 'frost_revenant', 'frost_heart', 'frost', 30, 1, 5, 1200, 3);
