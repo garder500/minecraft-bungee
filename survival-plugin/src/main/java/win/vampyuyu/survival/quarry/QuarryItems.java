@@ -144,6 +144,10 @@ final class QuarryItems {
                 .itemModel("vampyuyu:ore/heartwood").type("MODULE").glint(true)
                 .lore("<gray>Right-click a Miner to slot it in.", "<gray>Speed <white>x0.8<gray>, Flux use <white>x0.5<gray>.",
                     "<gray>A quarter of cycles also give bone meal.", "<dark_gray>Realm module: Whispering Grove.").build(),
+            CustomItemDef.builder("memory_module", "Memory Module", Rarity.EPIC, Material.SOUL_SAND)
+                .itemModel("vampyuyu:ore/soul_ash").type("MODULE").glint(true)
+                .lore("<gray>Right-click a Miner to slot it in.", "<gray>Speed <white>x0.7<gray>, Flux use <white>x1.3<gray>.",
+                    "<gray>A few cycles distil a Memory Shard.", "<dark_gray>Realm module: Ethereal Necropolis.").build(),
             CustomItemDef.builder("bronzite_bar", "Bronzite Bar", Rarity.UNCOMMON, Material.COPPER_INGOT)
                 .itemModel("vampyuyu:ore/bronzite_bar").type("ORE")
                 .lore("<gray>Nine Bronzite pressed together.", "<gray>Craft it back to get the nine.").build(),

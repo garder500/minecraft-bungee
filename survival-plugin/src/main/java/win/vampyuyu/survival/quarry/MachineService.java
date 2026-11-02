@@ -428,8 +428,23 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
             fanOut(data.owner, "ORE_FOUND", drop.ore(), drop.stack().getAmount());
         }, (geode, pity, name) -> { });
         bloom(world, miner, container, module, data);
+        memory(module, data);
         announce(data, "machine_mined");
         return true;
+    }
+
+    /** A Memory module sometimes distils a Memory Shard for the Miner's owner (GDD 15.3). */
+    private void memory(MachineModule module, MachineData data) {
+        if (module != MachineModule.MEMORY || data.owner == null
+                || MachineModule.memoryShards(settings().memoryShardChance, random) == 0) {
+            return;
+        }
+        try {
+            UUID owner = UUID.fromString(data.owner);
+            quarry.core().service(win.vampyuyu.survival.api.ResonanceApi.class).ifPresent(r -> r.grantShards(owner, 1));
+        } catch (IllegalArgumentException e) {
+            // an owner id that is not a player: nobody to pay
+        }
     }
 
     /** A Bloom module sometimes gathers a bone meal with the cycle. */
@@ -467,6 +482,7 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
             fanOut(data.owner, "ORE_FOUND", ore.get().ore(), 1);
         }
         bloom(world, miner, container, module, data);
+        memory(module, data);
         announce(data, "machine_mined");
     }
 }

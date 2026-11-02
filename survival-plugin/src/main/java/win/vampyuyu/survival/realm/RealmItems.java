@@ -5,10 +5,12 @@ import win.vampyuyu.survival.core.CustomItemDef;
 import win.vampyuyu.survival.core.Items;
 import win.vampyuyu.survival.core.Rarity;
 
-/** The local Realm resources. Pack models: {@code vampyuyu:ore/cinderheart}, {@code vampyuyu:ore/heartwood}. */
+/** The local Realm resources. Pack models: {@code vampyuyu:ore/cinderheart}, {@code vampyuyu:ore/heartwood},
+ * {@code vampyuyu:ore/soul_ash}. */
 final class RealmItems {
     static final String CINDERHEART = "cinderheart";
     static final String HEARTWOOD = "heartwood";
+    static final String SOUL_ASH = "soul_ash";
 
     private RealmItems() {}
 
@@ -21,5 +23,9 @@ final class RealmItems {
             .itemModel("vampyuyu:ore/heartwood").type("GEM").glint(true).pdc("realm_resource", 1L)
             .lore("<gray>Living wood that murmurs when held.", "<gray>Found only in the <green>Whispering Grove<gray>.",
                 "<dark_gray>Runecraft: makes the Verdant rune.").build());
+        items.register(CustomItemDef.builder(SOUL_ASH, "Soul Ash", Rarity.EPIC, Material.SOUL_SAND)
+            .itemModel("vampyuyu:ore/soul_ash").type("GEM").glint(true).pdc("realm_resource", 1L)
+            .lore("<gray>What is left of a memory once it is let go.", "<gray>Found only in the <dark_purple>Ethereal Necropolis<gray>.",
+                "<dark_gray>Forge: makes the Memory Module.").build());
     }
 }

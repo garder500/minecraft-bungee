@@ -64,6 +64,7 @@ public final class BossItems {
     /** Guardian components (GDD 15.2): the hard pity of {@link Guardians} guarantees them. */
     public static final String LAVA_CORE = "lava_core";
     public static final String MYCELIAL_CORE = "mycelial_core";
+    public static final String JUDGE_CORE = "judge_core";
 
     /** Damage of the ore ladder swords, tier 1 to 5 (the same numbers as the {@code item_def} rows of the quarry). */
     static final double[] TIER_DAMAGE = {40, 70, 120, 200, 320};
@@ -88,6 +89,9 @@ public final class BossItems {
         t.add(spec("matriarch_egg", "Grove Bastion Key", Rarity.EPIC, Material.FERMENTED_SPIDER_EYE, "SUMMON ITEM", true, none,
             "<gray>Something moves inside the sac.", "",
             "<yellow>Opens the <dark_green>Grove Bastion<yellow> (/bastion) and its", "<dark_green>Mycelial Queen<yellow>. Spent by the party leader."));
+        t.add(spec("judge_seal", "Necropolis Bastion Key", Rarity.EPIC, Material.ECHO_SHARD, "SUMMON ITEM", true, none,
+            "<gray>A seal that remembers every verdict.", "",
+            "<yellow>Opens the <dark_purple>Necropolis Bastion<yellow> (/bastion) and its", "<dark_purple>Judge of Lost Souls<yellow>. Spent by the party leader."));
         t.add(spec("leviathan_scale", "Leviathan Scale", Rarity.EPIC, Material.NAUTILUS_SHELL, "SUMMON ITEM", true, none,
             "<gray>A scale the size of a shield, cold and wet.", "",
             "<yellow>Right-click while standing in water to", "<dark_aqua>rouse the Abyssal Leviathan<yellow>. Consumed on use."));
@@ -130,6 +134,9 @@ public final class BossItems {
             "tidal_surge", stats(Stat.MIGHT, 18, Stat.DEEP_LURE, 4, Stat.LURE, 20),
             "<gray>The tide answers to whoever holds it."));
         // crypt lord
+        t.add(spec(JUDGE_CORE, "Judge Core", Rarity.EPIC, Material.CRYING_OBSIDIAN, "BOSS COMPONENT", true, none,
+            "<gray>The memory vault of a Sarcophagus,", "<gray>every verdict of the old world sealed inside.",
+            "", "<gray>Guardian component of the <dark_purple>Ethereal Necropolis<gray>."));
         t.add(spec("lord_bone", "Crypt Lord's Bone", Rarity.EPIC, Material.BONE, "MATERIAL", false, none,
             "<gray>A bone from the lord of the crypt."));
         t.add(weapon("necro_scepter", "Necro Scepter", Rarity.LEGENDARY, Material.BLAZE_ROD, "WAND", true, 1, Element.EARTH,

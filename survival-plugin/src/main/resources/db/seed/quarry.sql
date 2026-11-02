@@ -428,3 +428,15 @@ INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('grove_
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('grove_starcore_boots', 0, 'custom:starcore_boots', 1);
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('grove_starcore_boots', 1, 'custom:heartwood', 6);
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('grove_starcore_boots', 2, 'custom:starcore', 1);
+INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('judge_seal', 69, 'judge_seal', 1, 3600);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('judge_seal', 0, 'custom:soul_ash', 4);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('judge_seal', 1, 'custom:starcore', 8);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('judge_seal', 2, 'BONE_BLOCK', 8);
+INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('memory_module', 70, 'memory_module', 1, 1800);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('memory_module', 0, 'custom:soul_ash', 3);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('memory_module', 1, 'custom:miner_1', 1);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('memory_module', 2, 'SOUL_SAND', 8);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('memory_module', 3, 'REDSTONE', 8);
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.memory.consume-factor', 'real', '1.3', 'Memory Module (Ethereal Necropolis): factor on the Miner''s Flux use.');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.memory.rate-factor', 'real', '0.7', 'Memory Module: factor on the Miner''s cycles per second.');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.memory.shard-chance', 'real', '0.03', 'Memory Module: chance a mining cycle distils one Memory Shard for the Miner''s owner (GDD 15.3).');

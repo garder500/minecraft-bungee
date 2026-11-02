@@ -147,6 +147,10 @@ public class EnergyNetworkTest {
         assertTrue("and hungrier per cycle", CFG.consume(ember) / CFG.rate(ember) > CFG.consume(plain) / CFG.rate(plain));
         assertTrue("Bloom is slower", CFG.rate(bloom) < CFG.rate(plain));
         assertTrue("and cheaper per cycle", CFG.consume(bloom) / CFG.rate(bloom) < CFG.consume(plain) / CFG.rate(plain));
+        var memory = machine(MachineType.MINER_1);
+        memory.module = "MEMORY";
+        assertTrue("Memory is slower", CFG.rate(memory) < CFG.rate(plain));
+        assertTrue("and dearer per cycle", CFG.consume(memory) / CFG.rate(memory) > CFG.consume(plain) / CFG.rate(plain));
         ember.module = "NOPE";
         assertEquals("an unknown module is ignored", CFG.rate(plain), CFG.rate(ember), 0);
     }
@@ -171,5 +175,8 @@ public class EnergyNetworkTest {
         assertEquals(org.bukkit.Material.GLASS, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.SAND)).getType());
         assertEquals(org.bukkit.Material.PACKED_ICE, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.PACKED_ICE)).getType());
         assertEquals(MachineModule.BLOOM, MachineModule.ofItem("bloom_module").orElseThrow());
+        assertEquals(MachineModule.MEMORY, MachineModule.ofItem("memory_module").orElseThrow());
+        assertEquals(0, MachineModule.memoryShards(0.0, new java.util.Random(1)));
+        assertEquals(1, MachineModule.memoryShards(1.0, new java.util.Random(1)));
     }
 }

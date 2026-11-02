@@ -2,6 +2,7 @@
 -- GDD 15.1 (Sunstone is 8 % / 12 / 36): the GDD gives no row for these two, so they are proposals to tune in the panel.
 INSERT INTO realm_world (world, realm) VALUES ('sb_ashes', 'ashes');
 INSERT INTO realm_world (world, realm) VALUES ('sb_grove', 'grove');
+INSERT INTO realm_world (world, realm) VALUES ('sb_necropolis', 'necropolis');
 INSERT INTO realm_resource (id, realm, item, p0, soft, dur, amount_min, amount_max) VALUES ('cinderheart', 'ashes', 'cinderheart', 0.06, 12, 36, 1, 1);
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('cinderheart', 'block', 'MAGMA_BLOCK');
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('cinderheart', 'block', 'GILDED_BLACKSTONE');
@@ -14,3 +15,10 @@ INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('heartwood', 
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('heartwood', 'block', 'MOSS_BLOCK');
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('heartwood', 'mob', 'BOGGED');
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('heartwood', 'mob', 'SPIDER');
+INSERT INTO realm_resource (id, realm, item, p0, soft, dur, amount_min, amount_max) VALUES ('soul_ash', 'necropolis', 'soul_ash', 0.06, 12, 36, 1, 1);
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('soul_ash', 'block', 'SOUL_SAND');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('soul_ash', 'block', 'SOUL_SOIL');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('soul_ash', 'block', 'BONE_BLOCK');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('soul_ash', 'mob', 'SKELETON');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('soul_ash', 'mob', 'WITHER_SKELETON');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('soul_ash', 'mob', 'ZOMBIE');

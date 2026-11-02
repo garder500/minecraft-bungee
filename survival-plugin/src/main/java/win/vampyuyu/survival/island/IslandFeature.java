@@ -19,6 +19,7 @@ public final class IslandFeature implements Feature {
     private IslandMenus menus;
     private SkyGates gates;
     private GroveRealm grove;
+    private NecropolisRealm necropolis;
     private Scheduler.Handle levelTask;
     private HubNpcs hubNpcs;
 
@@ -53,6 +54,8 @@ public final class IslandFeature implements Feature {
         gates.start();
         grove = new GroveRealm(core, service, gates);
         grove.start();
+        necropolis = new NecropolisRealm(core, service, gates);
+        necropolis.start();
         for (org.bukkit.entity.Player online : org.bukkit.Bukkit.getOnlinePlayers()) {
             service.notifyLegacy(online);
         }
@@ -79,6 +82,8 @@ public final class IslandFeature implements Feature {
         prepare(setup, cfg, "end", SkyblockWorlds.END, World.Environment.THE_END, Biome.THE_END, islandSpawnY, 0, 0);
         prepare(setup, cfg, "grove", SkyblockWorlds.GROVE, World.Environment.NORMAL, Biome.LUSH_CAVES, GroveRealm.SURFACE_Y + 1, 0,
             GrovePlan.spawn()[2]);
+        prepare(setup, cfg, "necropolis", SkyblockWorlds.NECROPOLIS, World.Environment.NORMAL, Biome.DEEP_DARK,
+            NecropolisRealm.SURFACE_Y + 1, 0, NecropolisPlan.spawn()[2]);
     }
 
     private static void prepare(WorldSetup setup, IslandConfig cfg, String key, String name, World.Environment env,
@@ -98,6 +103,10 @@ public final class IslandFeature implements Feature {
         if (hubNpcs != null) {
             hubNpcs.disable();
             hubNpcs = null;
+        }
+        if (necropolis != null) {
+            necropolis.close();
+            necropolis = null;
         }
         if (grove != null) {
             grove.close();

@@ -23,6 +23,9 @@ final class MachineSettings {
     final double bloomConsume;
     final double bloomRate;
     final double bloomBoneMealChance;
+    final double memoryConsume;
+    final double memoryRate;
+    final double memoryShardChance;
 
     MachineSettings(Settings s) {
         emberConsume = positive(s, "module.ember.consume-factor", 1.8);
@@ -30,6 +33,9 @@ final class MachineSettings {
         bloomConsume = positive(s, "module.bloom.consume-factor", 0.5);
         bloomRate = positive(s, "module.bloom.rate-factor", 0.8);
         bloomBoneMealChance = positive(s, "module.bloom.bone-meal-chance", 0.25);
+        memoryConsume = positive(s, "module.memory.consume-factor", 1.3);
+        memoryRate = positive(s, "module.memory.rate-factor", 0.7);
+        memoryShardChance = positive(s, "module.memory.shard-chance", 0.03);
         generatorOutput = positive(s, "coal-generator.output", 10);
         coalSeconds = (int) Math.max(1, positive(s, "coal-generator.coal-seconds", 40));
         solarOutput = positive(s, "solar-panel.output", 6);
@@ -65,13 +71,31 @@ final class MachineSettings {
     double consume(MachineData data) {
         double base = consume(data.kind());
         MachineModule module = MachineModule.of(data.module);
-        return module == null ? base : base * (module == MachineModule.EMBER ? emberConsume : bloomConsume);
+        return module == null ? base : base * consumeFactor(module);
     }
 
     /** Mining cycles per second of this machine, with its module. */
     double rate(MachineData data) {
         double base = rate(data.kind());
         MachineModule module = MachineModule.of(data.module);
-        return module == null ? base : base * (module == MachineModule.EMBER ? emberRate : bloomRate);
+        return module == null ? base : base * rateFactor(module);
+    }
+
+    /** Factor a module puts on the Miner's Flux use. */
+    double consumeFactor(MachineModule module) {
+        return switch (module) {
+            case EMBER -> emberConsume;
+            case BLOOM -> bloomConsume;
+            case MEMORY -> memoryConsume;
+        };
+    }
+
+    /** Factor a module puts on the Miner's cycles per second. */
+    double rateFactor(MachineModule module) {
+        return switch (module) {
+            case EMBER -> emberRate;
+            case BLOOM -> bloomRate;
+            case MEMORY -> memoryRate;
+        };
     }
 }
