@@ -36,4 +36,10 @@ public interface SkyGateApi {
 
     /** The arrival point at the Quai (the end of the bridge from the hub), or null while the hub world is missing. */
     Location quaiSpawn();
+
+    /**
+     * A refusal rule for the Gates: it gets the player and the Realm and returns the reason a Gate stays shut, or null
+     * to let the player through (the storms of the Celestial Breath close some routes). Several guards may be added.
+     */
+    default void addTravelGuard(java.util.function.BiFunction<Player, Realm, String> guard) {}
 }

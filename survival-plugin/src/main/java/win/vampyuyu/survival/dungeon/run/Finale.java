@@ -107,6 +107,7 @@ final class Finale {
                 continue;
             }
             rp.rewarded = true;
+            Bukkit.getPluginManager().callEvent(new win.vampyuyu.survival.api.event.DungeonClearEvent(rp.id, run.floorNumber(), run.seed));
             // the Catacombs level the run started with gives its percentage on top of coins and Combat XP
             int levelBefore = Catacombs.level(cfg, xpBefore);
             double mult = 1 + Catacombs.bonusPercent(cfg, levelBefore) / 100.0;

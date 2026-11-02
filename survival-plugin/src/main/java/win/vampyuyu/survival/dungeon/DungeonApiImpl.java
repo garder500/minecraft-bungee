@@ -14,9 +14,24 @@ import win.vampyuyu.survival.dungeon.run.RunManager;
  */
 public final class DungeonApiImpl implements DungeonApi {
     private final RunManager runs;
+    private final win.vampyuyu.survival.dungeon.party.PartyService parties;
 
     public DungeonApiImpl(RunManager runs) {
+        this(runs, null);
+    }
+
+    public DungeonApiImpl(RunManager runs, win.vampyuyu.survival.dungeon.party.PartyService parties) {
         this.runs = runs;
+        this.parties = parties;
+    }
+
+    @Override
+    public String startRun(Player leader, int floor, long seed) {
+        if (parties == null) {
+            return "Dungeons are not available.";
+        }
+        var party = parties.ensure(leader.getUniqueId(), leader.getName());
+        return runs.startAsAdmin(party, leader.getUniqueId(), floor, seed);
     }
 
     @Override

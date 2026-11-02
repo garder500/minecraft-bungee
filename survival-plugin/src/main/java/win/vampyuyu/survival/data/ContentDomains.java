@@ -113,6 +113,8 @@ public final class ContentDomains {
         new Root("npc_reaction", "id", null, List.of()),
         settings("npc")));
 
+    public static final Domain BREATH = new Domain("breath", List.of(settings("breath")));
+
     /** Plugin level settings: the debug flag and the feature toggles (read before any feature enables). */
     public static final Domain CORE = new Domain("core", List.of(settings("core")));
 
@@ -164,7 +166,7 @@ public final class ContentDomains {
 
     /** In the order they are synced. */
     public static final List<Domain> ALL = List.of(QUESTS, QUESTS_DAILY, CORE, ISLAND, UTILITY, WINGS, MENU, ECONOMY, SKILLS, QUARRY, GADGETS, BOSS,
-        RESONANCE, TRADES, DUNGEON, BASTION, ITEMS, REALM, PROMOTION, RUNES, STATIONS, NPC, PARAGON);
+        RESONANCE, TRADES, DUNGEON, BASTION, ITEMS, REALM, PROMOTION, RUNES, STATIONS, NPC, PARAGON, BREATH);
 
     private ContentDomains() {}
 
