@@ -464,3 +464,17 @@ INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VA
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.cryo.consume-factor', 'real', '1.3', 'Cryo Module (Frozen Heights): factor on the Miner''s Flux use.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.cryo.rate-factor', 'real', '1.3', 'Cryo Module: factor on the Miner''s cycles per second.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.cryo.ice-chance', 'real', '0.3', 'Cryo Module: chance a mining cycle also gives a packed ice.');
+
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.recycler.consume-factor', 'real', '0.7', 'Recycler Module (Putrid Marshes): factor on the Miner''s Flux use.');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.recycler.rate-factor', 'real', '0.9', 'Recycler Module: factor on the Miner''s cycles per second.');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.recycler.salvage-chance', 'real', '0.15', 'Recycler Module: chance a mining cycle also gives back a second copy of what was mined (the residue is recycled).');
+INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('recycler_module', 120, 'recycler_module', 1, 1800);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('recycler_module', 0, 'custom:rot_resin', 3);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('recycler_module', 1, 'custom:miner_1', 1);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('recycler_module', 2, 'SLIME_BALL', 8);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('recycler_module', 3, 'REDSTONE', 8);
+INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('mire_cyst', 121, 'mire_cyst', 1, 2400);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('mire_cyst', 0, 'custom:bronzite', 24);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('mire_cyst', 1, 'custom:rot_resin', 4);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('mire_cyst', 2, 'SLIME_BALL', 16);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('mire_cyst', 3, 'ROTTEN_FLESH', 32);

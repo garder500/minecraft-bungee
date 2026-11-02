@@ -201,3 +201,5 @@ INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('frost'
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('frost', 4, 'keep_inventory', 'true');
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('frost', 5, 'mob_griefing', 'false');
 INSERT INTO setting (id, type, value, note) VALUES ('island.frost.gate-boss', 'text', 'sylvan_matriarch', 'Boss id whose defeat lights the Sky Gate of the Frozen Heights for the players who fought it.');
+
+INSERT INTO setting (id, type, value, note) VALUES ('island.marsh.gate-boss', 'text', 'sylvan_matriarch', 'Boss id whose defeat lights the Sky Gate of the Putrid Marshes for the players who fought it.');

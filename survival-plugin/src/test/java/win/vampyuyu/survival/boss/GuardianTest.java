@@ -18,7 +18,7 @@ import win.vampyuyu.survival.items.combat.PowerCurve;
 
 /** The Guardians (Lava Colossus, Mycelial Queen, Judge of Lost Souls): data, hard pity (GDD 15.2), readability (GDD 8.7). */
 public class GuardianTest {
-    private static final List<String> IDS = List.of("magma_warden", "sylvan_matriarch", "frost_revenant", "crypt_lord");
+    private static final List<String> IDS = List.of("magma_warden", "sylvan_matriarch", "frost_revenant", "crypt_lord", "mire_abomination");
 
     @Before
     public void server() {
@@ -44,6 +44,8 @@ public class GuardianTest {
         assertEquals("heartwood", guardians.get("sylvan_matriarch").resource());
         assertEquals(Realm.NECROPOLIS, Realm.byId(guardians.get("crypt_lord").realm()));
         assertEquals("soul_ash", guardians.get("crypt_lord").resource());
+        assertEquals(Realm.MARSHES, Realm.byId(guardians.get("mire_abomination").realm()));
+        assertEquals("rot_resin", guardians.get("mire_abomination").resource());
         assertEquals(Realm.HEIGHTS, Realm.byId(guardians.get("frost_revenant").realm()));
         assertEquals("stasis_crystal", guardians.get("frost_revenant").resource());
         for (Guardians.Guardian g : guardians.byBoss().values()) {

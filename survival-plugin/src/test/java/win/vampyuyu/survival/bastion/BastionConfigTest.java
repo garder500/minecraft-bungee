@@ -23,7 +23,7 @@ class BastionConfigTest {
     void theShippedSeedHasTheBastions() {
         BastionConfig cfg = BastionConfig.load(seeded());
         assertEquals(List.of(), cfg.problems());
-        assertEquals(List.of("ashes_bastion", "grove_bastion", "necropolis_bastion", "heights_bastion"), List.copyOf(cfg.bastions().keySet()));
+        assertEquals(List.of("ashes_bastion", "grove_bastion", "necropolis_bastion", "heights_bastion", "marsh_bastion"), List.copyOf(cfg.bastions().keySet()));
         assertEquals("magma_warden", cfg.get("ashes_bastion").orElseThrow().guardian());
         assertEquals("sylvan_matriarch", cfg.get("grove_bastion").orElseThrow().guardian());
         assertEquals("ashes_bastion", cfg.ofKey("magma_core").orElseThrow().id());
@@ -33,6 +33,9 @@ class BastionConfigTest {
         assertEquals("necropolis_bastion", cfg.ofKey("judge_seal").orElseThrow().id());
         assertEquals("frost_revenant", cfg.get("heights_bastion").orElseThrow().guardian());
         assertEquals("frost", cfg.get("heights_bastion").orElseThrow().palette());
+        assertEquals("mire_abomination", cfg.get("marsh_bastion").orElseThrow().guardian());
+        assertEquals("marsh", cfg.get("marsh_bastion").orElseThrow().palette());
+        assertEquals("marsh_bastion", cfg.ofKey("mire_cyst").orElseThrow().id());
         assertEquals("heights_bastion", cfg.ofKey("frost_heart").orElseThrow().id());
         assertTrue(cfg.get("nope").isEmpty());
         assertEquals(4, cfg.maxConcurrent);

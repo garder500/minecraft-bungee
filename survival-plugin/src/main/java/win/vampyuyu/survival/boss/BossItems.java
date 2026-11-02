@@ -66,6 +66,7 @@ public final class BossItems {
     public static final String MYCELIAL_CORE = "mycelial_core";
     public static final String JUDGE_CORE = "judge_core";
     public static final String FROST_CORE = "frost_core";
+    public static final String MIRE_CORE = "mire_core";
 
     /** Damage of the ore ladder swords, tier 1 to 5 (the same numbers as the {@code item_def} rows of the quarry). */
     static final double[] TIER_DAMAGE = {40, 70, 120, 200, 320};
@@ -131,6 +132,15 @@ public final class BossItems {
         t.add(weapon("venom_dagger", "Venom Dagger", Rarity.EPIC, Material.IRON_SWORD, "SWORD", false, 3, Element.EARTH,
             "venom_strike", stats(Stat.MIGHT, 10, Stat.SWIFTNESS, 5),
             "<gray>A fang taken from the Mycelial Queen,", "<gray>still dripping."));
+        // mire abomination = Abomination Fangeuse, Guardian of the Putrid Marshes
+        t.add(spec("mire_cyst", "Marsh Bastion Key", Rarity.EPIC, Material.SLIME_BALL, "SUMMON ITEM", true, none,
+            "<gray>A cyst of everything the Devourer threw away.", "",
+            "<yellow>Opens the <dark_green>Marsh Bastion<yellow> (/bastion) and its", "<dark_green>Mire Abomination<yellow>. Spent by the party leader."));
+        t.add(spec(MIRE_CORE, "Abomination Core", Rarity.EPIC, Material.SCULK_CATALYST, "BOSS COMPONENT", true, none,
+            "<gray>The digestive heart of a Sarcophagus,", "<gray>still turning what it was given.",
+            "", "<gray>Guardian component of the <dark_green>Putrid Marshes<gray>."));
+        t.add(spec("mire_ichor", "Bog Ichor", Rarity.EPIC, Material.FERMENTED_SPIDER_EYE, "MATERIAL", false, none,
+            "<gray>Distilled from the Mire Abomination.", "<gray>Nothing in it is wasted."));
         // abyssal leviathan
         t.add(spec("leviathan_tooth", "Abyss Key", Rarity.EPIC, Material.PRISMARINE_SHARD, "BOSS KEY", false, none,
             "<gray>From the deepest jaws of the sea.", "<gray>One of the three keys of the Void Sigil."));

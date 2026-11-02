@@ -423,6 +423,15 @@ q(c, "Stray Hunt", "Defeat 20 strays.", "KILL_MOB", "STRAY", 20, "ARROW", 250, q
 ev(c, "Stasis", "Keep cutting ice in the Heights until you earn the Stasis affinity (200 blocks): sneak in the air to slow your fall, anywhere in the Heights.", "heights_affinity:2", 1, "FEATHER", 1200, label="heights_stasis", qid="heights_08")
 q(c, "Wake the Boreal Watcher", "Defeat the Boreal Watcher, Guardian of the Heights.", "BOSS_KILL", "frost_revenant", 1, "BLUE_ICE", 2500, label="heights_watcher", qid="heights_09")
 
+c = cat("marsh", "The Putrid Marshes", "Realm 5. Everything the Devourer threw away ends up here, and the Marsh keeps it. The Mire Abomination digests what the world discards.", True, "grove_queen", "MUD_BRICKS")
+ev(c, "Through the Brown Gate", "Light the Sky Gate of the Putrid Marshes (defeat the Mycelial Queen) and step through it at the Quai des Huit (/quai).", "marsh_enter", 1, "BROWN_STAINED_GLASS", 300, label="marsh_1", lore="The fifth Gate smells of wet earth and old meals. Nothing here is ever really gone.", qid="marsh_01")
+brk(c, "Muddy Roots", "32 muddy mangrove roots, where Rot Resin oozes", "MUDDY_MANGROVE_ROOTS", 32, "MUDDY_MANGROVE_ROOTS", 100, qid="marsh_02")
+ev(c, "Feed the Vat", "Right-click a Rot Vat with expired items (rotten flesh, spider eyes, bones...) to salvage them.", "marsh_salvage", 1, "CAULDRON", 150, label="marsh_vat", qid="marsh_03")
+ev(c, "Filtered Air", "Salvage until you earn the Filtered affinity (40 points): the miasma no longer weakens you.", "marsh_purify:1", 1, "GLASS_BOTTLE", 400, label="marsh_filtered", qid="marsh_04")
+brk(c, "Slime Heaps", "16 slime blocks from the Landfill and the Weeping Mangrove", "SLIME_BLOCK", 16, "SLIME_BLOCK", 150, qid="marsh_05")
+ev(c, "Reclaimer", "Keep salvaging until you earn the Reclaimer affinity (200 points): a Vat needs fewer items for each Rot Resin roll.", "marsh_purify:2", 1, "COMPOSTER", 1200, label="marsh_reclaimer", qid="marsh_06")
+q(c, "Digest the Digester", "Defeat the Mire Abomination, Guardian of the Marshes.", "BOSS_KILL", "mire_abomination", 1, "SLIME_BALL", 2500, label="marsh_abomination", qid="marsh_07")
+
 
 def main():
     ids = {}

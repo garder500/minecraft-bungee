@@ -128,7 +128,7 @@ final class StationGui {
         }
         ItemStack hand = player.getInventory().getItemInMainHand();
         Optional<String> id = core.items().idOf(hand);
-        Map<String, Integer> back = id.map(service::meltDown).orElse(Map.of());
+        Map<String, Integer> back = id.map(i -> service.meltDown(i, player)).orElse(Map.of());
         List<String> lore = new ArrayList<>();
         if (back.isEmpty()) {
             lore.add("<gray>Hold an item the Forge can make,");

@@ -67,3 +67,5 @@ INSERT INTO contract (id, position, kind, title, target, amount, min_tier, coins
 INSERT INTO contract (id, position, kind, title, target, amount, min_tier, coins, shards) VALUES ('c_heartwood', 9, 'deliver', 'Living wood', 'custom:heartwood', 2, 2, 900, 10);
 INSERT INTO contract (id, position, kind, title, target, amount, min_tier, coins, shards) VALUES ('c_warden', 10, 'boss', 'Break the Magma Warden', 'magma_warden', 1, 3, 1500, 15);
 INSERT INTO contract (id, position, kind, title, target, amount, min_tier, coins, shards) VALUES ('c_matriarch', 11, 'boss', 'Silence the Matriarch', 'sylvan_matriarch', 1, 3, 1500, 15);
+INSERT INTO setting_item (setting_id, position, value) VALUES ('station.crucible.components', 14, 'mire_ichor');
+INSERT INTO setting (id, type, value, note) VALUES ('station.crucible.marsh-bonus', 'real', '0.15', 'Putrid Marshes: extra share of the elemental materials the Crucible gives back when used inside the Marsh (0.6 + 0.15 = 75 percent). Boss components stay at 100 percent.');

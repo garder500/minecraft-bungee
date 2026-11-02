@@ -40,6 +40,8 @@ public final class StationConfig {
     public int alembicSlots = 2;
     public int alembicQueue = 6;
     public double returnRate = 0.6;
+    /** Putrid Marshes: extra share the Crucible gives back inside the Marsh. */
+    public double marshBonus = 0.15;
     public int duplicateShards = 25;
     public int storageHours = 12;
     public double tierBonus = 0.5;
@@ -53,6 +55,7 @@ public final class StationConfig {
         c.alembicSlots = c.clamp(s.getInt("alembic.slots", 2), 1, 10, "alembic.slots");
         c.alembicQueue = c.clamp(s.getInt("alembic.queue", 6), 1, 54, "alembic.queue");
         c.returnRate = Math.max(0, Math.min(1, s.getDouble("crucible.return-rate", 0.6)));
+        c.marshBonus = Math.max(0, Math.min(1, s.getDouble("crucible.marsh-bonus", 0.15)));
         c.duplicateShards = c.clamp(s.getInt("crucible.duplicate-shards", 25), 0, 10_000, "crucible.duplicate-shards");
         c.components = Set.copyOf(s.getList("crucible.components"));
         c.storageHours = c.clamp(s.getInt("ranch.storage-hours", 12), 1, 168, "ranch.storage-hours");
