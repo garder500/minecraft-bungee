@@ -39,11 +39,11 @@ public final class ClassesFeature implements Feature {
         core.commands().command("class")
             .aliases("classes", "vocation")
             .description("Choose your class and use its active")
-            .usage("/class [choose <class> | cast | master | reset <player>]")
+            .usage("/class [choose <class> | cast | master | ultimate | reset <player>]")
             .permission("vampyuyu.sb.classes.use", PermissionDefault.TRUE)
             .tab((CommandSender sender, Command command, String alias, String[] args) -> {
                 if (args.length == 1) {
-                    return List.of("choose", "cast", "master", "reset");
+                    return List.of("choose", "cast", "master", "ultimate", "reset");
                 }
                 if (args.length == 2 && args[0].equalsIgnoreCase("choose")) {
                     return java.util.Arrays.stream(PlayerClass.values()).map(c -> c.name().toLowerCase(Locale.ROOT)).toList();
@@ -108,6 +108,7 @@ public final class ClassesFeature implements Feature {
             }
             case "cast" -> cast(core, service, player);
             case "master" -> castMaster(core, service, player);
+            case "ultimate" -> castUltimate(core, service, player);
             default -> {
                 var current = service.classOf(player.getUniqueId());
                 if (current.isEmpty()) {
@@ -155,6 +156,22 @@ public final class ClassesFeature implements Feature {
             case NO_WEAPON -> core.msg().warn(player, "Hold your weapon to use your Master capacity.");
             case NO_BOW -> core.msg().warn(player, "Hold your bow to use your Master capacity.");
             case NO_ENGINE -> core.msg().warn(player, "Your Master capacity is not available on this server.");
+        }
+    }
+
+    /** Casts the Paragon ultimate and tells the player what happened. */
+    static void castUltimate(Core core, ClassService service, Player player) {
+        ClassService.Cast result = service.castUltimate(player);
+        switch (result) {
+            case OK -> player.sendActionBar(Msg.plain("Ultimate!  Aether " + Msg.number(service.aether(player)), NamedTextColor.LIGHT_PURPLE));
+            case NO_CLASS -> sendChoice(core, player);
+            case NO_PARAGON -> core.msg().warn(player, "Only a Paragon who is a Master of their class has an ultimate (/paragon).");
+            case NO_MASTER -> core.msg().warn(player, "Nothing to cast here.");
+            case COOLDOWN -> core.msg().warn(player, "Your ultimate is recharging: " + Msg.duration(service.ultimateCooldownLeft(player)) + ".");
+            case NO_AETHER -> core.msg().warn(player, "Not enough Aether for your ultimate.");
+            case NO_WEAPON -> core.msg().warn(player, "Hold your weapon to use your ultimate.");
+            case NO_BOW -> core.msg().warn(player, "Hold your bow to use your ultimate.");
+            case NO_ENGINE -> core.msg().warn(player, "Your ultimate is not available on this server.");
         }
     }
 

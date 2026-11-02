@@ -35,7 +35,7 @@ public final class ClassService implements ClassApi {
     static final NamespacedKey SPEED = new NamespacedKey(win.vampyuyu.survival.core.Items.NAMESPACE, "class_ranger_speed");
 
     /** Why a cast did not happen (or OK). */
-    public enum Cast { OK, NO_CLASS, COOLDOWN, NO_AETHER, NO_WEAPON, NO_BOW, NO_ENGINE, NO_MASTER }
+    public enum Cast { OK, NO_CLASS, COOLDOWN, NO_AETHER, NO_WEAPON, NO_BOW, NO_ENGINE, NO_MASTER, NO_PARAGON }
 
     /** The Duelist Afterimage: this many hits are still Surges until the time. */
     private record Flurry(int left, long until) {}
@@ -328,12 +328,50 @@ public final class ClassService implements ClassApi {
         }
         cooldowns.set(id, "master", ability.cooldownSeconds() * 1000L);
         switch (chosen) {
-            case VANGUARD -> rally(player, ability);
+            case VANGUARD -> rally(player, ability, 0, 1);
             case DUELIST -> afterimage(player, ability);
             case CHANNELER -> burst(player, ladder, held, ability.radius(), ability.power() / 100.0);
             case RANGER -> volley(player, ladder, held, (int) Math.max(1, ability.power()), ability.radius(), ClassRules.VOLLEY_SHARE);
         }
         return Cast.OK;
+    }
+
+    /** Casts the ultimate of a Paragon who is a Master (GDD 11.5): same shapes as the Master capacity, far longer cooldown. */
+    public Cast castUltimate(Player player) {
+        UUID id = player.getUniqueId();
+        PlayerClass chosen = classOf(id).orElse(null);
+        if (chosen == null) {
+            return Cast.NO_CLASS;
+        }
+        PromotionApi.Ability ability = core.service(win.vampyuyu.survival.api.ParagonApi.class).flatMap(p -> p.ultimate(id)).orElse(null);
+        if (ability == null) {
+            return Cast.NO_PARAGON;
+        }
+        LadderApi ladder = core.service(LadderApi.class).orElse(null);
+        ItemStack held = player.getInventory().getItemInMainHand();
+        Cast refused = weaponCheck(chosen, ladder, held);
+        if (refused != null) {
+            return refused;
+        }
+        if (!cooldowns.ready(id, "ultimate")) {
+            return Cast.COOLDOWN;
+        }
+        if (!aether.spend(id, ability.aetherCost(), maxAether(player), now())) {
+            return Cast.NO_AETHER;
+        }
+        cooldowns.set(id, "ultimate", ability.cooldownSeconds() * 1000L);
+        switch (chosen) {
+            case VANGUARD -> rally(player, ability, 1, 3);
+            case DUELIST -> afterimage(player, ability);
+            case CHANNELER -> burst(player, ladder, held, ability.radius(), ability.power() / 100.0);
+            case RANGER -> volley(player, ladder, held, (int) Math.max(1, ability.power()), ability.radius(), ClassRules.VOLLEY_SHARE);
+        }
+        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 0.5f, 1.6f);
+        return Cast.OK;
+    }
+
+    public long ultimateCooldownLeft(Player player) {
+        return cooldowns.remaining(player.getUniqueId(), "ultimate");
     }
 
     public long masterCooldownLeft(Player player) {
@@ -406,7 +444,7 @@ public final class ClassService implements ClassApi {
     }
 
     /** Vanguard Master: Resistance and Absorption for the player and the allies around. */
-    private void rally(Player player, PromotionApi.Ability ability) {
+    private void rally(Player player, PromotionApi.Ability ability, int resistance, int absorption) {
         int ticks = (int) Math.round(ability.seconds() * 20);
         List<Player> group = new java.util.ArrayList<>();
         group.add(player);
@@ -416,8 +454,8 @@ public final class ClassService implements ClassApi {
             }
         }
         for (Player p : group) {
-            p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, ticks, 0));
-            p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, ticks, 1));
+            p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, ticks, resistance));
+            p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, ticks, absorption));
         }
         player.getWorld().playSound(player.getLocation(), Sound.ITEM_SHIELD_BLOCK, 1f, 0.6f);
         player.getWorld().spawnParticle(Particle.CRIT, player.getLocation().add(0, 1, 0), 40, 1.5, 0.8, 1.5, 0.1);

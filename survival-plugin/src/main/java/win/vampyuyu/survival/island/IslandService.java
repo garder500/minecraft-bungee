@@ -495,9 +495,16 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         return registry.ofPlayer(player).map(cfg::radiusFor).orElse(0);
     }
 
+    /** The member slots of an island: its upgrade tier plus the Paragon perk of its owner (GDD 19.1). */
+    int memberSlots(Island island) {
+        int perk = island.owner == null ? 0
+            : core.service(win.vampyuyu.survival.api.ParagonApi.class).map(p -> p.perk(island.owner, "island_members")).orElse(0);
+        return cfg.memberSlotsFor(island) + perk;
+    }
+
     @Override
     public int memberSlots(UUID player) {
-        return registry.ofPlayer(player).map(cfg::memberSlotsFor).orElse(0);
+        return registry.ofPlayer(player).map(i -> memberSlots(i)).orElse(0);
     }
 
     void hubState(boolean padBuilt, boolean complete) {
@@ -1617,8 +1624,8 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         if (island.banned.contains(target)) {
             return Result.fail(online.getName() + " is banned from your island. Unban them first.");
         }
-        if (island.size() >= cfg.memberSlotsFor(island)) {
-            return Result.fail("Your island is full (" + cfg.memberSlotsFor(island) + " slots). Upgrade the member slots.");
+        if (island.size() >= memberSlots(island)) {
+            return Result.fail("Your island is full (" + memberSlots(island) + " slots). Upgrade the member slots.");
         }
         Invites.Added added = invites.add(target, island.id, actor.getUniqueId(), cfg.inviteExpirySeconds * 1000L,
             cfg.maxPendingInvites);
@@ -1670,7 +1677,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
             invites.take(id, invite.island());
             return Result.fail("You are banned from that island.");
         }
-        if (island.size() >= cfg.memberSlotsFor(island)) {
+        if (island.size() >= memberSlots(island)) {
             invites.take(id, invite.island());
             return Result.fail("That island is full.");
         }

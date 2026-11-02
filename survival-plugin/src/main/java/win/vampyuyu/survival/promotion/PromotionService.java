@@ -226,7 +226,7 @@ public final class PromotionService implements PromotionApi {
         }
         String target = PromotionRules.nextRank(classes.rank(id));
         if (target == null) {
-            return "You are a Master. The Paragon trials come later.";
+            return "You are a Master. The Paragon rank comes with the Astral Interior (/paragon).";
         }
         List<String> missing = missing(id);
         if (!missing.isEmpty()) {

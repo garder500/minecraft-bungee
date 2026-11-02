@@ -108,7 +108,7 @@ public final class IslandMenus {
         gui.set(14, Guis.icon(Material.EMERALD, "<green>Upgrades", "<gray>Island radius and member slots"),
             click -> upgrades(click.player()));
         gui.set(16, Guis.icon(Material.PLAYER_HEAD, "<yellow>Members",
-            "<gray>" + island.size() + "/" + cfg.memberSlotsFor(island) + " co-op members",
+            "<gray>" + island.size() + "/" + service.memberSlots(island) + " co-op members",
             "<gray>Trusted guests: " + island.trusted.size(), "<gray>Banned: " + island.banned.size()),
             click -> members(click.player()));
         gui.set(19, Guis.icon(Material.EXPERIENCE_BOTTLE, "<light_purple>Island level",
