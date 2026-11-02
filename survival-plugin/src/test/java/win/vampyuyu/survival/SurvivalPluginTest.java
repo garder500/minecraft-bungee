@@ -29,7 +29,7 @@ public class SurvivalPluginTest {
 
     @Test
     public void everyFeatureEnablesInOrder() {
-        assertEquals(List.of("utility", "island", "wings", "economy", "quarry", "classes", "trades", "gadgets", "boss", "resonance", "dungeon", "bastion", "realm", "ashes", "menu"), plugin.features().enabledIds());
+        assertEquals(List.of("utility", "island", "wings", "economy", "quarry", "classes", "trades", "gadgets", "boss", "resonance", "dungeon", "bastion", "realm", "ashes", "promotion", "menu"), plugin.features().enabledIds());
         assertTrue(plugin.features().failedIds().isEmpty());
         assertEquals(plugin.features().enabledIds(),
             SurvivalPlugin.featureList().stream().map(Feature::id).toList());
