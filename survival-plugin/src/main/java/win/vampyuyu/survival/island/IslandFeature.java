@@ -17,6 +17,7 @@ public final class IslandFeature implements Feature {
     private IslandService service;
     private IslandTracker tracker;
     private IslandMenus menus;
+    private SkyGates gates;
     private Scheduler.Handle levelTask;
     private HubNpcs hubNpcs;
 
@@ -46,6 +47,9 @@ public final class IslandFeature implements Feature {
         new HubManager(core, service).start();
         hubNpcs = new HubNpcs(core, service);
         hubNpcs.enable();
+        // after the hub build is queued: the Quai goes on the same build lane, so it is placed once the hub is
+        gates = new SkyGates(core, service);
+        gates.start();
         for (org.bukkit.entity.Player online : org.bukkit.Bukkit.getOnlinePlayers()) {
             service.notifyLegacy(online);
         }
@@ -58,6 +62,7 @@ public final class IslandFeature implements Feature {
         core.register(IslandApi.class, service);
         core.register(IslandAltarApi.class, service);
         core.register(IslandUpgradesApi.class, service);
+        core.register(win.vampyuyu.survival.api.SkyGateApi.class, gates);
     }
 
     private static void setupWorlds(Core core, IslandConfig cfg) {
@@ -88,6 +93,10 @@ public final class IslandFeature implements Feature {
         if (hubNpcs != null) {
             hubNpcs.disable();
             hubNpcs = null;
+        }
+        if (gates != null) {
+            gates.close();
+            gates = null;
         }
         if (tracker != null) {
             tracker.shutdown();
