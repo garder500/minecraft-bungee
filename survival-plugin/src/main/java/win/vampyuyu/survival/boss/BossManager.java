@@ -40,6 +40,7 @@ public final class BossManager {
         this.config = config;
         this.delivery = new LootDelivery(core);
         this.rewards = new BossRewards(core, config.settings(), delivery);
+        this.rewards.setGuardians(() -> this.config.guardians());
         this.rewards.setNameLookup(id -> this.config.definition(id).map(BossDefinition::name).orElse(id));
     }
 

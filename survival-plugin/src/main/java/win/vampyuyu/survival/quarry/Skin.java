@@ -9,7 +9,7 @@ enum Skin {
     KITSUNE("kitsune", "Kitsune", "Common", NamedTextColor.WHITE, "Quest reward: Any Boss x50"),
     TITAN_EDGE("titan_edge", "Titan Edge", "Rare", NamedTextColor.BLUE, "Dungeon floors 4 and 5, rank S"),
     CRYSTAL_SABER("crystal_saber", "Crystal Saber", "Rare", NamedTextColor.BLUE, "Forge: 12 Sunstone and 6 diamonds"),
-    FLAME_BRAND("flame_brand", "Flame Brand", "Epic", NamedTextColor.DARK_PURPLE, "Rare drop of the Magma Warden"),
+    FLAME_BRAND("flame_brand", "Flame Brand", "Epic", NamedTextColor.DARK_PURPLE, "Rare drop of the Lava Colossus"),
     FROST_FANG("frost_fang", "Frost Fang", "Epic", NamedTextColor.DARK_PURPLE, "Rare drop of the Frost Revenant"),
     WYRMFANG("wyrmfang", "Wyrmfang", "Mythic", NamedTextColor.LIGHT_PURPLE, "First victory over the Echo of the Rift");
 

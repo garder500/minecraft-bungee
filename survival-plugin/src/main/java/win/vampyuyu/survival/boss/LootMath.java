@@ -58,6 +58,13 @@ public final class LootMath {
         return clamp((base + bonus) * rankMult * mf, 0, 1);
     }
 
+    /**
+     * Hard pity: with {@code runs} = N the drop is certain on the N-th run, i.e. after N - 1 dry ones. 0 = none.
+     */
+    public static boolean hardPityReached(int dry, int runs) {
+        return runs > 0 && dry + 1 >= runs;
+    }
+
     /** Whether a participant may roll the entry at all. */
     public static boolean eligible(BossDefinition.LootEntry entry, double share, int rank) {
         if (share < entry.minShare()) {

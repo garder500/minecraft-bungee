@@ -204,7 +204,7 @@ INSERT INTO quest (id, pool, position, category, name, description, type, target
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q084', 0, 'q083');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q085', 'plan', 91, 'nether', 'Wart', 'Break 16 nether wart.', 'BREAK_BLOCK', 'NETHER_WART', 16, 'NETHER_WART', 120.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q085', 0, 'q084');
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q086', 'plan', 92, 'nether', 'Magma Cubes', 'Defeat 10 magma cubes (the Ember Spawn of the Magma Warden).', 'KILL_MOB', 'MAGMA_CUBE', 10, 'MAGMA_CREAM', 250.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q086', 'plan', 92, 'nether', 'Magma Cubes', 'Defeat 10 magma cubes (the Ember Spawn of the Lava Colossus).', 'KILL_MOB', 'MAGMA_CUBE', 10, 'MAGMA_CREAM', 250.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q086', 0, 'q085');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q087', 'plan', 93, 'nether', 'Piglin Hunter', 'Defeat 20 zombified piglins.', 'KILL_MOB', 'ZOMBIFIED_PIGLIN', 20, 'GOLD_INGOT', 200.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q087', 0, 'q086');
@@ -292,7 +292,7 @@ INSERT INTO quest (id, pool, position, category, name, description, type, target
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q129', 0, 'q057');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q130', 'plan', 135, 'forging', 'Frost Heart', 'Collect a frost heart from the Forge (/forge).', 'FORGE_ITEM', 'frost_heart', 1, 'BLUE_ICE', 250.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q130', 0, 'q057');
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q131', 'plan', 136, 'forging', 'Matriarch Egg', 'Collect a matriarch egg from the Forge (/forge).', 'FORGE_ITEM', 'matriarch_egg', 1, 'SPIDER_EYE', 250.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q131', 'plan', 136, 'forging', 'Spore Egg', 'Collect a spore egg from the Forge (/forge).', 'FORGE_ITEM', 'matriarch_egg', 1, 'SPIDER_EYE', 250.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q131', 0, 'q057');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q132', 'plan', 137, 'forging', 'Leviathan Scale', 'Collect a leviathan scale from the Forge (/forge).', 'FORGE_ITEM', 'leviathan_scale', 1, 'PRISMARINE_SHARD', 300.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q132', 0, 'q057');
@@ -535,11 +535,11 @@ INSERT INTO quest (id, pool, position, category, name, description, type, target
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q229', 0, 'q036');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q230', 'plan', 256, 'dungeons', 'Creepers', 'Defeat 20 creepers.', 'KILL_MOB', 'CREEPER', 20, 'GUNPOWDER', 150.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q230', 0, 'q036');
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q231', 'plan', 257, 'bosses', 'Magma Warden', 'Defeat the Magma Warden.', 'BOSS_KILL', 'magma_warden', 1, 'MAGMA_BLOCK', 500.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q231', 'plan', 257, 'bosses', 'Lava Colossus', 'Defeat the Lava Colossus.', 'BOSS_KILL', 'magma_warden', 1, 'MAGMA_BLOCK', 500.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q231', 0, 'q212');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q232', 'plan', 258, 'bosses', 'Frost Revenant', 'Defeat the Frost Revenant.', 'BOSS_KILL', 'frost_revenant', 1, 'BLUE_ICE', 500.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q232', 0, 'q212');
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q233', 'plan', 259, 'bosses', 'Sylvan Matriarch', 'Defeat the Sylvan Matriarch.', 'BOSS_KILL', 'sylvan_matriarch', 1, 'SPIDER_EYE', 600.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q233', 'plan', 259, 'bosses', 'Mycelial Queen', 'Defeat the Mycelial Queen.', 'BOSS_KILL', 'sylvan_matriarch', 1, 'SPIDER_EYE', 600.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q233', 0, 'q212');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q234', 'plan', 260, 'bosses', 'Abyssal Leviathan', 'Defeat the Abyssal Leviathan.', 'BOSS_KILL', 'abyssal_leviathan', 1, 'PRISMARINE_SHARD', 700.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q234', 0, 'q212');
@@ -550,11 +550,11 @@ INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q236', 0, 
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q237', 'plan', 263, 'bosses', 'Any Boss x25', 'Defeat 25 bosses.', 'BOSS_KILL', '', 25, 'DRAGON_HEAD', 2500.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q237', 0, 'q212');
 INSERT INTO quest_reward_item (quest_id, item, amount) VALUES ('q237', 'skin_flame_brand', 1);
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q238', 'plan', 264, 'bosses', 'Magma Warden x3', 'Defeat the Magma Warden 3 times.', 'BOSS_KILL', 'magma_warden', 3, 'MAGMA_BLOCK', 800.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q238', 'plan', 264, 'bosses', 'Lava Colossus x3', 'Defeat the Lava Colossus 3 times.', 'BOSS_KILL', 'magma_warden', 3, 'MAGMA_BLOCK', 800.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q238', 0, 'q212');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q239', 'plan', 265, 'bosses', 'Frost Revenant x3', 'Defeat the Frost Revenant 3 times.', 'BOSS_KILL', 'frost_revenant', 3, 'BLUE_ICE', 800.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q239', 0, 'q212');
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q240', 'plan', 266, 'bosses', 'Matriarch x3', 'Defeat the Sylvan Matriarch 3 times.', 'BOSS_KILL', 'sylvan_matriarch', 3, 'SPIDER_EYE', 900.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q240', 'plan', 266, 'bosses', 'Mycelial Queen x3', 'Defeat the Mycelial Queen 3 times.', 'BOSS_KILL', 'sylvan_matriarch', 3, 'SPIDER_EYE', 900.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q240', 0, 'q212');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q241', 'plan', 267, 'bosses', 'Leviathan x3', 'Defeat the Abyssal Leviathan 3 times.', 'BOSS_KILL', 'abyssal_leviathan', 3, 'PRISMARINE_SHARD', 1000.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q241', 0, 'q212');
@@ -659,7 +659,7 @@ INSERT INTO quest (id, pool, position, category, name, description, type, target
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q290', 0, 'q021');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q291', 'plan', 317, 'challenges', 'Zombie Siege', 'Defeat 200 zombies.', 'KILL_MOB', 'ZOMBIE', 200, 'ROTTEN_FLESH', 400.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q291', 0, 'q021');
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_01', 'plan', 318, 'grove', 'Through the Green Gate', 'Beyond the second Gate the air is thick with light. The Grove remembers how to grow. Light the Sky Gate of the Whispering Grove (defeat the Magma Warden) and step through it at the Quai des Huit (/quai).', 'EVENT', 'grove_enter', 1, 'LIME_STAINED_GLASS', 300.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_01', 'plan', 318, 'grove', 'Through the Green Gate', 'Beyond the second Gate the air is thick with light. The Grove remembers how to grow. Light the Sky Gate of the Whispering Grove (defeat the Lava Colossus) and step through it at the Quai des Huit (/quai).', 'EVENT', 'grove_enter', 1, 'LIME_STAINED_GLASS', 300.0);
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_02', 'plan', 319, 'grove', 'Mossy Footing', 'Break 32 moss blocks.', 'BREAK_BLOCK', 'MOSS_BLOCK', 32, 'MOSS_BLOCK', 100.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_02', 0, 'grove_01');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_03', 'plan', 320, 'grove', 'First Grove Harvest', 'Break 16 fully grown crops.', 'BREAK_BLOCK', 'CROPS', 16, 'WHEAT', 150.0);
@@ -674,5 +674,5 @@ INSERT INTO quest (id, pool, position, category, name, description, type, target
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_07', 0, 'grove_06');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_08', 'plan', 325, 'grove', 'Let It Grow', 'Keep harvesting in the Grove until you earn the Growth affinity (200 harvests): bone meal grows a crop one more stage, anywhere.', 'EVENT', 'grove_affinity:2', 1, 'BONE_MEAL', 1200.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_08', 0, 'grove_07');
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_09', 'plan', 326, 'grove', 'Wake the Mycelial Queen', 'Defeat the Sylvan Matriarch, the Queen''s guardian form.', 'BOSS_KILL', 'sylvan_matriarch', 1, 'SPIDER_EYE', 2500.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_09', 'plan', 326, 'grove', 'Wake the Mycelial Queen', 'Defeat the Mycelial Queen, the Queen''s guardian form.', 'BOSS_KILL', 'sylvan_matriarch', 1, 'SPIDER_EYE', 2500.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_09', 0, 'grove_08');

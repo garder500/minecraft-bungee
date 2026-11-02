@@ -44,6 +44,26 @@ under `vampyuyu:boss/<id>`.
   has no idle despawn, only its duration. Rewards of repeated kills of the same boss shrink for a while
   (`settings.repeat-*`).
 
+## Sarcophagus Guardians (GDD 12.2, 15.2)
+
+`magma_warden` (in game: **Lava Colossus**, Cracked Ashes) and `sylvan_matriarch` (**Mycelial Queen**, Whispering Grove)
+are the Guardians of the two phase 2 Realms. The technical ids stay (quests, profiles); everything visible uses the canon.
+Their extra rules live in `boss.guardian.*` setting rows of `db/seed/boss.sql`, read into `Guardians`:
+
+* **Health** follows the GDD 8.7 curve like every boss (`hp_auto`, tier 2 / tier 3), group scaling 0.5 per player capped x3,
+  enrage 9 min. `GuardianTest` re-checks the readability rules (phase x1.4 at most, an ability takes at most 35 percent of the
+  reference player).
+* **Spoken lines** (`intro`, `phase1`, `phase2`, `death`, `first-clear`): sent in chat to everyone around the fight, a random
+  line of the list, signed with the Guardian's `speaker`. Voices are not recorded.
+* **Local resource** (`resource`, `resource-min/max`, `first-clear-resource`): every eligible participant gets 2 to 4
+  Cinderheart (Lava Colossus) or Heartwood (Mycelial Queen), 6 more the first time they ever defeat it. The items are
+  registered by their own feature: while the item id is unknown the reward is skipped, never an error.
+* **Component** (`lava_core` Colossus Core, `mycelial_core` Queen Core): a normal drop (35 percent, 5 percent damage share)
+  plus the **hard pity**: certain on the 4th run without it (`hard-pity`), on the 3rd from Resonance III
+  (`hard-pity-resonance`, `resonance-rank`). The streak is the existing `BossData.dry` counter; `BossRewards.setResonance`
+  is the hook for the Resonance system (it counts 0 until then).
+* Not done here: the Bastion itself (instance, keys, first-clear Memory Shards x2) belongs to the Bastion framework.
+
 ## Commands and permissions
 
 | Command | Permission (default) | Notes |
