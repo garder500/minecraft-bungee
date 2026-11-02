@@ -71,7 +71,7 @@ public final class BossItems {
         // summon items
         t.add(spec("void_sigil", "Void Sigil", Rarity.EPIC, Material.ECHO_SHARD, "SUMMON ITEM", true, none,
             "<gray>A sigil humming with the cold of the End.", "",
-            "<yellow>Right-click at the End altar to awaken", "<yellow>the <light_purple>Voidwyrm<yellow>. Consumed on use."));
+            "<yellow>Right-click at the End altar to awaken", "<yellow>the <light_purple>Echo of the Rift<yellow>. Consumed on use."));
         t.add(spec("magma_core", "Magma Core", Rarity.EPIC, Material.MAGMA_CREAM, "SUMMON ITEM", true, none,
             "<gray>A heart of molten rock that never cools.", "",
             "<yellow>Right-click in the Nether to wake the", "<red>Magma Warden<yellow>. Consumed on use."));
@@ -86,12 +86,12 @@ public final class BossItems {
             "<yellow>Right-click while standing in water to", "<dark_aqua>rouse the Abyssal Leviathan<yellow>. Consumed on use."));
         // voidwyrm
         t.add(spec(WING_CORE, "Wing Core", Rarity.MYTHIC, Material.HEART_OF_THE_SEA, "MATERIAL", true, none,
-            "<gray>The beating heart of a dragon's wings.", "<gray>Proof that you stood against the Voidwyrm."));
-        t.add(spec("voidwyrm_scale", "Voidwyrm Scale", Rarity.EPIC, Material.PRISMARINE_SHARD, "MATERIAL", false, none,
-            "<gray>Shed from the hide of the Voidwyrm."));
+            "<gray>The beating heart of a dragon's wings.", "<gray>Proof that you stood against the Echo of the Rift."));
+        t.add(spec("voidwyrm_scale", "Rift Echo Scale", Rarity.EPIC, Material.PRISMARINE_SHARD, "MATERIAL", false, none,
+            "<gray>Shed from the hide of the Echo of the Rift."));
         t.add(weapon("void_fang", "Void Fang", Rarity.LEGENDARY, Material.DIAMOND_SWORD, "SWORD", true, 5, Element.VOID,
             "void_step", stats(Stat.MIGHT, 20, Stat.SWIFTNESS, 10),
-            "<gray>A tooth of the Voidwyrm, sharp enough to", "<gray>cut the dark between stars."));
+            "<gray>A tooth of the Echo of the Rift, sharp enough to", "<gray>cut the dark between stars."));
         // magma warden
         t.add(spec("warden_heart", "Nether Key", Rarity.EPIC, Material.FIRE_CHARGE, "BOSS KEY", false, none,
             "<gray>Torn from the Magma Warden. Still warm.", "<gray>One of the three keys of the Void Sigil."));

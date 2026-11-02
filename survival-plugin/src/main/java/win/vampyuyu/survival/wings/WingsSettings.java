@@ -151,7 +151,7 @@ public final class WingsSettings {
         claimCooldownMillis = (long) (Math.max(0, c.getDouble("claim.cooldown-hours", 24)) * 3_600_000L);
         List<String> names = rows.coreNames();
         coreNames = names.size() >= 5 ? List.copyOf(names)
-            : List.of("Feather Core", "Gilded Core", "Radiant Core", "Celestial Core", "Voidwyrm Core");
+            : List.of("Feather Core", "Gilded Core", "Radiant Core", "Celestial Core", "Rift Echo Core");
         noFlyBossRadius = Math.max(0, Math.min(128, c.getInt("no-fly.boss-radius", 40)));
         drainGlide = Math.max(0, c.getDouble("energy.drain-glide", 1.0));
         fireworkCost = Math.max(0, c.getDouble("energy.firework-cost", 12.0));
