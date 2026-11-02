@@ -97,6 +97,12 @@ public final class ContentDomains {
         new Root("promotion_chain", "id", null, List.of(new Child("promotion_step", "chain_id"))),
         settings("promotion")));
 
+    public static final Domain STATIONS = new Domain("stations", List.of(
+        new Root("alembic_recipe", "id", null, List.of(new Child("alembic_ingredient", "recipe_id"))),
+        new Root("ranch_product", "id", null, List.of()),
+        new Root("contract", "id", null, List.of()),
+        settings("station")));
+
     /** Plugin level settings: the debug flag and the feature toggles (read before any feature enables). */
     public static final Domain CORE = new Domain("core", List.of(settings("core")));
 
@@ -148,7 +154,7 @@ public final class ContentDomains {
 
     /** In the order they are synced. */
     public static final List<Domain> ALL = List.of(QUESTS, QUESTS_DAILY, CORE, ISLAND, UTILITY, WINGS, MENU, ECONOMY, SKILLS, QUARRY, GADGETS, BOSS,
-        RESONANCE, TRADES, DUNGEON, BASTION, ITEMS, REALM, PROMOTION, RUNES);
+        RESONANCE, TRADES, DUNGEON, BASTION, ITEMS, REALM, PROMOTION, RUNES, STATIONS);
 
     private ContentDomains() {}
 
