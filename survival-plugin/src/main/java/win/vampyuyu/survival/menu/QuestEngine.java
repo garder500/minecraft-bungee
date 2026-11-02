@@ -31,6 +31,9 @@ public final class QuestEngine {
     /** What the sidebar tracks. */
     public record Tracked(QuestDef def, int progress, boolean daily) {}
 
+    /** Which quests an operation looks at: the main chain belongs to the island, the rest to the player. */
+    public enum Scope { ALL, ISLAND, PERSONAL }
+
     private final QuestCatalog catalog;
 
     public QuestEngine(QuestCatalog catalog) {
@@ -39,6 +42,15 @@ public final class QuestEngine {
 
     public QuestCatalog catalog() {
         return catalog;
+    }
+
+    /** True for the quests the whole island advances together: the ones of the main chain categories. */
+    public boolean islandScope(QuestDef def) {
+        return catalog.category(def.category()).map(QuestCatalog.Category::main).orElse(false);
+    }
+
+    private boolean inScope(QuestDef def, Scope scope) {
+        return scope == Scope.ALL || (scope == Scope.ISLAND) == islandScope(def);
     }
 
     // ---------------------------------------------------------------- state queries
@@ -53,9 +65,13 @@ public final class QuestEngine {
     }
 
     public List<QuestDef> activeTutorial(QuestData data) {
+        return activeTutorial(data, Scope.ALL);
+    }
+
+    public List<QuestDef> activeTutorial(QuestData data, Scope scope) {
         List<QuestDef> out = new ArrayList<>();
         for (QuestDef def : catalog.tutorial()) {
-            if (isActive(data, def)) {
+            if (inScope(def, scope) && isActive(data, def)) {
                 out.add(def);
             }
         }
@@ -114,13 +130,17 @@ public final class QuestEngine {
      * {@code generator_built:<kind>} events are proofs; ordinary progress never skips a quest.
      */
     public List<Completion> catchUp(QuestData data, Event event) {
+        return catchUp(data, event, Scope.ALL);
+    }
+
+    public List<Completion> catchUp(QuestData data, Event event, Scope scope) {
         if (event.type() != QuestType.EVENT || !event.subject().startsWith("generator_built:")) {
             return List.of();
         }
         List<Completion> done = new ArrayList<>();
         for (QuestDef def : catalog.tutorial()) {
-            if (def.type() != QuestType.EVENT || data.completed.contains(def.id()) || isActive(data, def)
-                    || !QuestMatcher.matches(def.target(), event.subject())) {
+            if (!inScope(def, scope) || def.type() != QuestType.EVENT || data.completed.contains(def.id())
+                    || isActive(data, def) || !QuestMatcher.matches(def.target(), event.subject())) {
                 continue;
             }
             List<QuestDef> chain = new ArrayList<>();
@@ -156,12 +176,29 @@ public final class QuestEngine {
 
     /** Applies an event to every active quest it matches. Returns the quests that completed because of it. */
     public List<Completion> apply(QuestData data, Event event) {
+        return apply(data, event, Scope.ALL);
+    }
+
+    /** The active quests of a scope the event would advance, as {@link #apply} would (before it is applied). */
+    public List<QuestDef> matching(QuestData data, Event event, Scope scope) {
+        List<QuestDef> out = new ArrayList<>();
+        for (QuestDef def : catalog.tutorial()) {
+            if (inScope(def, scope) && def.type() == event.type() && isActive(data, def)
+                    && QuestMatcher.matches(def.target(), event.subject())) {
+                out.add(def);
+            }
+        }
+        return out;
+    }
+
+    /** Like {@link #apply(QuestData, Event)} for one scope; the dailies belong to {@link Scope#PERSONAL} (and ALL). */
+    public List<Completion> apply(QuestData data, Event event, Scope scope) {
         List<Completion> done = new ArrayList<>();
         if (event.type() == QuestType.FORGE_ITEM) {
             data.forged.merge(event.subject(), Math.max(0, event.value()), Integer::sum);
         }
         for (QuestDef def : catalog.tutorial()) {
-            if (def.type() == event.type() && isActive(data, def) && QuestMatcher.matches(def.target(), event.subject())) {
+            if (inScope(def, scope) && def.type() == event.type() && isActive(data, def) && QuestMatcher.matches(def.target(), event.subject())) {
                 if (bump(data.progress, def, event)) {
                     data.progress.remove(def.id());
                     data.completed.add(def.id());
@@ -169,7 +206,7 @@ public final class QuestEngine {
                 }
             }
         }
-        for (QuestDef def : dailyQuests(data)) {
+        for (QuestDef def : scope == Scope.ISLAND ? List.<QuestDef>of() : dailyQuests(data)) {
             if (def.type() == event.type() && !data.dailyDone.contains(def.id())
                     && QuestMatcher.matches(def.target(), event.subject())) {
                 if (bump(data.dailyProgress, def, event)) {
@@ -200,11 +237,17 @@ public final class QuestEngine {
      * before they unlocked: a forged item costs hours and rare materials, so it is not asked for a second time.
      */
     public List<Completion> sync(QuestData data, Function<QuestDef, OptionalInt> probe) {
+        return sync(data, probe, Scope.ALL);
+    }
+
+    public List<Completion> sync(QuestData data, Function<QuestDef, OptionalInt> probe, Scope scope) {
         List<Completion> all = new ArrayList<>();
         for (int round = 0; round < 64; round++) { // a chain can unlock a chain; bounded against cycles
-            List<Completion> found = creditForged(data, probe);
-            List<QuestDef> candidates = new ArrayList<>(activeTutorial(data));
-            candidates.addAll(dailyQuests(data).stream().filter(d -> !data.dailyDone.contains(d.id())).toList());
+            List<Completion> found = creditForged(data, probe, scope);
+            List<QuestDef> candidates = new ArrayList<>(activeTutorial(data, scope));
+            if (scope != Scope.ISLAND) {
+                candidates.addAll(dailyQuests(data).stream().filter(d -> !data.dailyDone.contains(d.id())).toList());
+            }
             for (QuestDef def : candidates) {
                 if (!def.type().absolute()) {
                     continue;
@@ -212,7 +255,7 @@ public final class QuestEngine {
                 OptionalInt value = probe.apply(def);
                 if (value.isPresent() && value.getAsInt() > 0) {
                     found.addAll(apply(data, new Event(def.type(), def.target().isEmpty() ? "ANY" : def.target(),
-                        value.getAsInt())));
+                        value.getAsInt()), scope));
                 }
             }
             if (found.isEmpty()) {
@@ -237,9 +280,9 @@ public final class QuestEngine {
         return open ? Optional.empty() : gate.stream().findFirst();
     }
 
-    private List<Completion> creditForged(QuestData data, Function<QuestDef, OptionalInt> probe) {
+    private List<Completion> creditForged(QuestData data, Function<QuestDef, OptionalInt> probe, Scope scope) {
         List<Completion> done = new ArrayList<>();
-        for (QuestDef def : activeTutorial(data)) {
+        for (QuestDef def : activeTutorial(data, scope)) {
             if (def.type() != QuestType.FORGE_ITEM) {
                 continue;
             }

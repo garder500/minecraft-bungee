@@ -253,8 +253,13 @@ final class MachineService {
     }
 
     private void announce(MachineData data, String key) {
-        for (Player player : islandMembers(data.owner)) {
-            Bukkit.getPluginManager().callEvent(new QuarryProgressEvent(player, "EVENT", key, 1));
+        fanOut(data.owner, "EVENT", key, 1);
+    }
+
+    /** Tells every online member of the owner's island about one thing a machine did (the quests count it once). */
+    private void fanOut(String ownerId, String kind, String subject, int amount) {
+        for (QuarryProgressEvent event : QuarryProgressEvent.fanOut(islandMembers(ownerId), kind, subject, amount)) {
+            Bukkit.getPluginManager().callEvent(event);
         }
     }
 
@@ -352,9 +357,7 @@ final class MachineService {
             for (ItemStack left : container.getInventory().addItem(drop.stack()).values()) {
                 world.dropItemNaturally(miner.getLocation().add(0.5, 1.2, 0.5), left);
             }
-            for (Player online : islandMembers(data.owner)) {
-                Bukkit.getPluginManager().callEvent(new QuarryProgressEvent(online, "ORE_FOUND", drop.ore(), drop.stack().getAmount()));
-            }
+            fanOut(data.owner, "ORE_FOUND", drop.ore(), drop.stack().getAmount());
         }, (geode, pity, name) -> { });
         announce(data, "machine_mined");
         return true;
@@ -380,9 +383,7 @@ final class MachineService {
             }
         }
         if (ore.isPresent() && quarry.core().items().idOf(ore.get().stack()).isPresent()) {
-            for (Player online : islandMembers(data.owner)) {
-                Bukkit.getPluginManager().callEvent(new QuarryProgressEvent(online, "ORE_FOUND", ore.get().ore(), 1));
-            }
+            fanOut(data.owner, "ORE_FOUND", ore.get().ore(), 1);
         }
         announce(data, "machine_mined");
     }
