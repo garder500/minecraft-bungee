@@ -5,6 +5,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.Feature;
 import win.vampyuyu.survival.core.FeatureManager;
+import win.vampyuyu.survival.bastion.BastionFeature;
 import win.vampyuyu.survival.boss.BossFeature;
 import win.vampyuyu.survival.resonance.ResonanceFeature;
 import win.vampyuyu.survival.classes.ClassesFeature;
@@ -31,7 +32,7 @@ public class SurvivalPlugin extends JavaPlugin {
     static List<Feature> featureList() {
         // The simple Skyblock does not load the former progression systems, except the Wings.
         return List.of(new UtilityFeature(), new IslandFeature(), new WingsFeature(), new EconomyFeature(), new QuarryFeature(), new ClassesFeature(), new GadgetsFeature(),
-            new BossFeature(), new ResonanceFeature(), new DungeonFeature(), new RealmFeature(), new AshesFeature(), new MenuFeature());
+            new BossFeature(), new ResonanceFeature(), new DungeonFeature(), new BastionFeature(), new RealmFeature(), new AshesFeature(), new MenuFeature());
     }
 
     @Override

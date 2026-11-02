@@ -26,6 +26,13 @@ public final class WorldFiles {
         return name != null && NAME.matcher(name).matches();
     }
 
+    private static final Pattern BASTION_NAME = Pattern.compile("sb_bastion_\\d+");
+
+    /** True for {@code sb_bastion_<digits>} only. */
+    public static boolean isBastionWorldName(String name) {
+        return name != null && BASTION_NAME.matcher(name).matches();
+    }
+
     /** Dungeon world folders found below {@code container} (at most {@code depth} levels deep), symlinks ignored. */
     public static List<Path> findDungeonFolders(Path container, int depth) {
         List<Path> out = new ArrayList<>();
@@ -62,7 +69,7 @@ public final class WorldFiles {
      */
     public static boolean deleteWorldFolder(Path container, Path folder) {
         if (container == null || folder == null || folder.getFileName() == null
-                || !isDungeonWorldName(folder.getFileName().toString())) {
+                || !(isDungeonWorldName(folder.getFileName().toString()) || isBastionWorldName(folder.getFileName().toString()))) {
             return false;
         }
         Path root = container.toAbsolutePath().normalize();

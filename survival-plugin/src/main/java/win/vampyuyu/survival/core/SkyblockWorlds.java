@@ -15,7 +15,14 @@ public final class SkyblockWorlds {
     /** Dungeon runs use {@code sb_dungeon_<runId>}. */
     public static final String DUNGEON_PREFIX = "sb_dungeon_";
 
+    /** Bastion instances use {@code sb_bastion_<n>}. */
+    public static final String BASTION_PREFIX = "sb_bastion_";
+
     private SkyblockWorlds() {}
+
+    public static boolean isBastion(String worldName) {
+        return worldName != null && worldName.startsWith(BASTION_PREFIX);
+    }
 
     public static boolean isDungeon(String worldName) {
         return worldName != null && worldName.startsWith(DUNGEON_PREFIX);
@@ -24,7 +31,8 @@ public final class SkyblockWorlds {
     /** True for every world that belongs to the Skyblock. */
     public static boolean isSkyblock(String worldName) {
         return HUB.equals(worldName) || WORLD.equals(worldName) || NETHER.equals(worldName)
-            || END.equals(worldName) || GROVE.equals(worldName) || ASHES.equals(worldName) || isDungeon(worldName);
+            || END.equals(worldName) || GROVE.equals(worldName) || ASHES.equals(worldName) || isDungeon(worldName)
+            || isBastion(worldName);
     }
 
     /** World name of a dungeon run. */

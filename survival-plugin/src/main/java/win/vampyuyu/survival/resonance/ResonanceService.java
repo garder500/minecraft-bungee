@@ -88,4 +88,21 @@ public final class ResonanceService implements ResonanceApi {
         }
         return false;
     }
+
+    @Override
+    public void payDefeat(UUID id, String bossId, int rank, double progress, double share) {
+        ResonanceConfig cfg = config;
+        Bastion bastion = cfg.bastions().get(bossId);
+        if (bastion == null || share < cfg.minShare() || !(progress > 0)) {
+            return;
+        }
+        int r = win.vampyuyu.survival.api.Resonance.clamp(rank);
+        edit(id, d -> {
+            long shards = ResonanceRules.defeat(d, bastion, r, Math.min(1, progress), cfg);
+            Player player = Bukkit.getPlayer(id);
+            if (player != null && shards > 0) {
+                core.scheduler().nextTick(() -> core.msg().mini(player, "<gray>Memory Shards for what you learned: <aqua>+" + shards));
+            }
+        });
+    }
 }
