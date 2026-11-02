@@ -391,6 +391,11 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         if (!teleportHub(player)) {
             return Result.fail("The hub is not ready yet. Try again in a moment.");
         }
+        if (hubLocation() != null) {
+            // quest A9 "The Island Gate": first trip to the hub
+            org.bukkit.Bukkit.getPluginManager().callEvent(
+                new win.vampyuyu.survival.api.event.QuarryProgressEvent(player, "EVENT", "hub_arrive", 1));
+        }
         return Result.ok(hubLocation() == null ? "Going to your island..." : "Going to the hub...");
     }
 

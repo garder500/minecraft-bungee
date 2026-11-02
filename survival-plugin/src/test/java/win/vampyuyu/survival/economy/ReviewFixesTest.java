@@ -319,7 +319,7 @@ public class ReviewFixesTest {
             assertTrue(id + " is a bazaar product", listed);
         }
         // summon items, weapons and the wing core are not priced
-        for (String id : List.of("void_sigil", "magma_core", "void_fang", "ember_blade", "wing_core", "tidal_trident",
+        for (String id : List.of("void_sigil", "echo_key", "magma_core", "void_fang", "ember_blade", "wing_core", "tidal_trident",
                 "dungeon_spirit_leaf", "dungeon_healing_flask")) {
             assertTrue(id, catalog.bestSell(id).isEmpty());
         }

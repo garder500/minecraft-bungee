@@ -34,7 +34,7 @@ import win.vampyuyu.survival.core.Scheduler;
  */
 public final class HubNpcs implements Listener {
     /** What a click does. */
-    public enum Action { COMMAND, ISLAND, SAY }
+    public enum Action { COMMAND, ISLAND, SAY, RIFT }
 
     /** One NPC of the hub. {@code arg} is the command (without slash) or the line to say. */
     public record Role(String pad, String name, Villager.Profession profession, Action action, String arg) {}
@@ -45,13 +45,17 @@ public final class HubNpcs implements Listener {
         new Role("archivist", "Archivist", Villager.Profession.CARTOGRAPHER, Action.COMMAND, "quests"),
         new Role("guard", "Guard", Villager.Profession.WEAPONSMITH, Action.SAY,
             "Welcome to the Hub. Use /island to go back to your island and /hub to return here. "
-                + "The Crypt Depths are east, the Rift is west."),
+                + "The Crypt Depths are east, the Rift is west. The Archivist hands out Echo Keys."),
         new Role("contract_hunter", "Contract Hunter", Villager.Profession.FLETCHER, Action.SAY,
             "No contracts on the board yet. Come back once the Hub has more to offer."),
         new Role("island_gate", "Island Gatekeeper", Villager.Profession.NONE, Action.ISLAND, ""),
         new Role("dungeon_gate", "Dungeon Gatekeeper", Villager.Profession.NONE, Action.COMMAND, "dungeon"),
-        new Role("rift_gate", "Rift Gatekeeper", Villager.Profession.NONE, Action.SAY,
-            "The Rift is sealed for now. Something stirs on the other side."));
+        new Role("rift_gate", "Rift Gatekeeper", Villager.Profession.NONE, Action.RIFT,
+            "The Rift is sealed. Only the bearer of an Echo Key may pass: the Archivist keeps one for survivors who "
+                + "wear the Bronze armor."));
+
+    /** The item that opens the Rift (summon item of the Echo of the Rift, see boss.sql). */
+    public static final String ECHO_KEY = "echo_key";
 
     private static final NamespacedKey TAG = new NamespacedKey("vampyuyu", "hub_npc");
 
@@ -184,6 +188,8 @@ public final class HubNpcs implements Listener {
     }
 
     void click(Player player, Role role) {
+        // quest events A10-A11: "met the Guard / the Archivist / the Merchant" (the pad id is the key)
+        fire(player, "hub_npc:" + role.pad());
         switch (role.action()) {
             case COMMAND -> player.performCommand(role.arg());
             case ISLAND -> {
@@ -195,6 +201,28 @@ public final class HubNpcs implements Listener {
                 }
             }
             case SAY -> core.msg().info(player, "[" + role.name() + "] " + role.arg());
+            case RIFT -> {
+                if (carriesEchoKey(player)) {
+                    fire(player, "rift_enter");
+                    core.msg().info(player, "[" + role.name() + "] The Rift knows your key. Stand on the glowing altar "
+                        + "just inside the arch and right-click the Echo Key to wake the Echo of the Rift.");
+                } else {
+                    core.msg().info(player, "[" + role.name() + "] " + role.arg());
+                }
+            }
         }
+    }
+
+    private boolean carriesEchoKey(Player player) {
+        for (org.bukkit.inventory.ItemStack stack : player.getInventory().getContents()) {
+            if (stack != null && ECHO_KEY.equals(core.items().idOf(stack).orElse(null))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void fire(Player player, String key) {
+        Bukkit.getPluginManager().callEvent(new win.vampyuyu.survival.api.event.QuarryProgressEvent(player, "EVENT", key, 1));
     }
 }
