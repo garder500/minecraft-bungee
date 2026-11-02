@@ -61,24 +61,24 @@ public class EnergyNetworkTest {
         net.put(new Pos(0, 0, 0), gen);
         net.put(new Pos(1, 0, 0), battery);
         net.put(new Pos(2, 0, 0), miner);
-        // miner I: 8 Flux and 0.5 cycles per second; the generator makes 10
+        // miner I: 2 Flux and 0.5 cycles per second; the generator makes 5
         var first = EnergyNetwork.tick(net, CFG, p -> true);
         assertTrue("half a cycle is not a cycle yet", first.isEmpty());
         assertEquals(4, gen.fuel);
-        assertEquals("10 made, 8 used, 2 stored", 2, battery.charge);
+        assertEquals("5 made, 2 used, 3 stored", 3, battery.charge);
         var second = EnergyNetwork.tick(net, CFG, p -> true);
         assertEquals(1, second.size());
         assertEquals(1, second.get(0).cycles());
         assertEquals(new Pos(2, 0, 0), second.get(0).pos());
-        assertEquals(4, battery.charge);
+        assertEquals("5 + 3 stored, 2 used", 6, battery.charge);
     }
 
     @Test
     public void withoutEnergyNothingMinesAndBatteriesDrainUntilEmpty() {
         Map<Pos, MachineData> net = new LinkedHashMap<>();
         MachineData battery = machine(MachineType.BATTERY);
-        battery.charge = 20;
-        MachineData miner = machine(MachineType.MINER_2); // 20 Flux per second
+        battery.charge = 6;
+        MachineData miner = machine(MachineType.MINER_2); // 6 Flux per second
         net.put(new Pos(0, 0, 0), battery);
         net.put(new Pos(1, 0, 0), miner);
         assertEquals(1, EnergyNetwork.tick(net, CFG, p -> true).size());
@@ -165,7 +165,7 @@ public class EnergyNetworkTest {
         net.put(new Pos(0, 0, 0), miner);
         net.put(new Pos(1, 0, 0), battery);
         EnergyNetwork.tick(net, CFG, p -> true);
-        assertEquals("14.4 Flux drawn, the rest floored", 85, battery.charge);
+        assertEquals("3.6 Flux drawn, the rest floored", 96, battery.charge);
         assertEquals(0.75, miner.progress, 1e-9);
     }
 

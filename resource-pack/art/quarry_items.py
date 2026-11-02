@@ -61,6 +61,90 @@ def sunstone_bar(c):
     bar(c, (0xF2, 0xC1, 0x4E), (0xFF, 0xF3, 0xB0))
 
 
+def ore_block(c, color, light):
+    """A Block (nine bars, 81 ores): a square slab of stacked bars, dearer looking than a bar."""
+    c.rect(1, 2, 14, 13, b.shade(color, 0.7))
+    c.rect(2, 3, 13, 12, b.shade(color, 1.0))
+    for y in (6, 9):
+        c.rect(2, y, 13, y, b.shade(color, 0.75))
+    for x in (5, 9):
+        c.rect(x, 3, x, 12, b.shade(color, 0.85))
+    c.rect(2, 3, 13, 3, b.shade(light, 1.0))
+    c.rect(2, 3, 2, 12, b.shade(light, 0.9))
+    b.sparkle(c, 11, 5, light)
+    c.outline()
+
+
+def bronzite_block(c):
+    ore_block(c, BRONZE, GOLD)
+
+
+def frostium_block(c):
+    ore_block(c, FROST, (0xFF, 0xFF, 0xFF))
+
+
+def sunstone_block(c):
+    ore_block(c, (0xF2, 0xC1, 0x4E), (0xFF, 0xF3, 0xB0))
+
+
+def voidglass_block(c):
+    ore_block(c, (0xB4, 0x8C, 0xF2), (0xE6, 0xD4, 0xFF))
+
+
+def starcore_block(c):
+    ore_block(c, (0xFF, 0x7A, 0x9C), (0xFF, 0xFF, 0xFF))
+
+
+def spring_wheel(c):
+    """A water wheel: a blue rim with spokes over a small stand."""
+    rim = (0x4A, 0x9B, 0xE8)
+    c.fill_shape(b.circle(8, 7, 6), rim)
+    c.fill_shape(b.circle(8, 7, 4), (0x2A, 0x5A, 0x90))
+    for x1, y1 in ((8, 2), (8, 12), (3, 7), (13, 7), (4, 3), (12, 11), (12, 3), (4, 11)):
+        c.line(8, 7, x1, y1, b.shade(WOOD, 1.2))
+    c.fill_shape(b.circle(8, 7, 1.5), STEEL)
+    c.rect(4, 13, 11, 14, b.shade(STEEL, 0.8))
+    c.outline()
+
+
+def heat_tap(c):
+    """A pipe with a red valve wheel and a glowing drop."""
+    c.rect(2, 8, 13, 11, b.shade(STEEL, 0.9))
+    c.rect(2, 8, 13, 8, b.shade(STEEL, 1.2))
+    c.rect(7, 4, 8, 8, b.shade(STEEL, 0.8))
+    c.rect(4, 3, 11, 4, (0xD8, 0x3A, 0x2A, 255))
+    c.rect(11, 11, 12, 13, b.shade(STEEL, 0.7))
+    c.fill_shape(b.circle(11.5, 14, 1.2), FIRE)
+    c.set(2, 9, b.shade(FIRE, 1.0))
+    c.outline()
+
+
+def void_reactor(c):
+    """A dark cube with a violet core and four braces."""
+    violet = (0xB4, 0x8C, 0xF2)
+    c.rect(2, 2, 13, 13, b.shade((0x2A, 0x16, 0x50), 1.0))
+    c.rect(2, 2, 13, 2, b.shade(violet, 0.8))
+    c.rect(2, 13, 13, 13, b.shade(violet, 0.5))
+    c.fill_shape(b.circle(7.5, 7.5, 3.4), violet)
+    c.fill_shape(b.circle(7.5, 7.5, 1.8), (0x0E, 0x06, 0x20))
+    for x, y in ((3, 3), (12, 3), (3, 12), (12, 12)):
+        c.set(x, y, b.shade(STEEL, 1.1))
+    b.sparkle(c, 9, 5, (0xE6, 0xD4, 0xFF))
+    c.outline()
+
+
+def astral_lattice(c):
+    """A gold lattice around a pink star, open to the sky."""
+    gold = b.shade(GOLD, 1.0)
+    for x in (2, 7, 12):
+        c.rect(x, 2, x + 1, 13, gold)
+    for y in (2, 7, 12):
+        c.rect(2, y, 13, y + 1, gold)
+    c.fill_shape(b.poly([(8, 3.5), (9, 7), (12.5, 8), (9, 9), (8, 12.5), (7, 9), (3.5, 8), (7, 7)]), (0xFF, 0x7A, 0x9C))
+    c.set(8, 8, (255, 255, 255, 255))
+    c.outline()
+
+
 def bronze_core(c):
     c.fill_shape(b.diamond(8, 8, 6.2, 6.2), BRONZE)
     c.fill_shape(b.diamond(8, 8, 3.4, 3.4), b.mix(BRONZE, GOLD, 0.6))
@@ -401,6 +485,15 @@ ICONS = {
     "ore/bronzite_bar": bronzite_bar,
     "ore/frostium_bar": frostium_bar,
     "ore/sunstone_bar": sunstone_bar,
+    "ore/bronzite_block": bronzite_block,
+    "ore/frostium_block": frostium_block,
+    "ore/sunstone_block": sunstone_block,
+    "ore/voidglass_block": voidglass_block,
+    "ore/starcore_block": starcore_block,
+    "machine/spring_wheel": spring_wheel,
+    "machine/heat_tap": heat_tap,
+    "machine/void_reactor": void_reactor,
+    "machine/astral_lattice": astral_lattice,
     "ore/bronzite": bronzite,
     "ore/bronze_core": bronze_core,
     "forge/forge": forge,

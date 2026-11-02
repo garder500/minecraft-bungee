@@ -37,10 +37,10 @@ public class QuarrySeedTest {
             assertEquals(9, count(db, "SELECT COUNT(*) FROM ore_roll WHERE source = 'cobble'"));
             assertEquals(3, count(db, "SELECT COUNT(*) FROM ore_roll WHERE source <> 'cobble'"));
             assertEquals(12 * 4, count(db, "SELECT COUNT(*) FROM ore_roll_chance"));
-            assertEquals(80, count(db, "SELECT COUNT(*) FROM forge_recipe"));
+            assertEquals(97, count(db, "SELECT COUNT(*) FROM forge_recipe"));
             assertTrue(count(db, "SELECT COUNT(*) FROM forge_recipe_ingredient") > 176);
             assertEquals(3, count(db, "SELECT COUNT(*) FROM forge_block_ingredient"));
-            assertEquals(18, count(db, "SELECT COUNT(*) FROM setting WHERE id GLOB 'quarry.*'"));
+            assertEquals(50, count(db, "SELECT COUNT(*) FROM setting WHERE id GLOB 'quarry.*'"));
         }
     }
 
@@ -70,12 +70,12 @@ public class QuarrySeedTest {
         try (Db db = seeded()) {
             QuarryConfig config = QuarryRepo.load(db, Logger.getAnonymousLogger());
             assertEquals(4, config.tiers);
-            assertEquals(90, config.recipes.size());
+            assertEquals(97, config.recipes.size());
             assertEquals(3, config.forgeSlots);
             assertEquals(3, config.forgeBlockRecipe.size());
             assertEquals(2, config.recipes.get("bronze_core").cost().size());
-            assertEquals(10, config.machines.generatorOutput, 0);
-            assertEquals(20, config.machines.miner2Consume, 0);
+            assertEquals(5, config.machines.generatorOutput, 0);
+            assertEquals(6, config.machines.miner2Consume, 0);
             assertEquals(9, config.roller.ores().size());
             assertEquals(3, config.outputs.ores().size());
         }

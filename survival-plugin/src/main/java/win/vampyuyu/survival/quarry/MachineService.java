@@ -191,6 +191,12 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
                 public long second() {
                     return world.getFullTime() / 20;
                 }
+
+                @Override
+                public boolean fed(Pos p, PassiveGenerator generator) {
+                    Block cell = at(world, p);
+                    return generator.met(cellsAround(cell), openSky(cell));
+                }
             };
             for (List<Pos> group : EnergyNetwork.components(live.keySet())) {
                 if (touchesUnloaded(group, all, live)) {
@@ -443,6 +449,31 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
             }
         }
         return null;
+    }
+
+    /** The cells that touch a block on one of its six faces: what a passive generator feeds on. */
+    java.util.Set<PassiveGenerator.Cell> cellsAround(Block block) {
+        java.util.Set<PassiveGenerator.Cell> out = java.util.EnumSet.noneOf(PassiveGenerator.Cell.class);
+        for (BlockFace face : SIDES) {
+            Block next = block.getRelative(face);
+            switch (next.getType()) {
+                case MAGMA_BLOCK -> out.add(PassiveGenerator.Cell.MAGMA);
+                case CRYING_OBSIDIAN -> out.add(PassiveGenerator.Cell.VOID);
+                case AMETHYST_BLOCK -> out.add(PassiveGenerator.Cell.GEODE);
+                default -> {
+                    MachineData data = store.get(next.getWorld().getName(), MachineStore.pos(next));
+                    if (data != null && data.kind() == MachineType.SPRING_STONE) {
+                        out.add(PassiveGenerator.Cell.SPRING);
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    /** True when the sky is open above a block, day or night (the Astral Lattice does not need the sun). */
+    boolean openSky(Block block) {
+        return block.getLightFromSky() >= 15;
     }
 
     /** A solar panel makes Flux in daylight with the sky open above it. */

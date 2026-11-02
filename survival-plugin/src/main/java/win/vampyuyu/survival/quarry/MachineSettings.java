@@ -17,6 +17,11 @@ final class MachineSettings {
     /** Custom item that fuels a Lightning Rod. */
     static final String ROD_FUEL_ITEM = "thunder_quartz";
     final long batteryCapacity;
+    /** Flux per second of the passive generators (Spring Wheel, Heat Tap, Void Reactor, Astral Lattice), before the overload. */
+    private final double[] passiveOutput = new double[PassiveGenerator.values().length];
+    /** Overload: extra Blocks that can sit in a generator, and the share of its output each one adds. */
+    final int overloadBlocks;
+    final double overloadBonus;
     /** Flux per second and mining cycles per second of the miners. */
     final double miner1Consume;
     final double miner1Rate;
@@ -82,21 +87,31 @@ final class MachineSettings {
         tideConsume = positive(s, "module.tide.consume-factor", 0.6);
         tideRate = positive(s, "module.tide.rate-factor", 0.9);
         tideShardChance = positive(s, "module.tide.shard-chance", 0.2);
-        generatorOutput = positive(s, "coal-generator.output", 10);
+        for (PassiveGenerator g : PassiveGenerator.values()) {
+            passiveOutput[g.ordinal()] = positive(s, g.key + ".output", g.defaultOutput);
+        }
+        overloadBlocks = (int) Math.max(0, s.getDouble("machines.overload.blocks", 3));
+        overloadBonus = positive(s, "overload.bonus", 0.25);
+        generatorOutput = positive(s, "coal-generator.output", 5);
         coalSeconds = (int) Math.max(1, positive(s, "coal-generator.coal-seconds", 40));
-        solarOutput = positive(s, "solar-panel.output", 6);
+        solarOutput = positive(s, "solar-panel.output", 2);
         rodOutput = positive(s, "lightning-rod.output", 30);
         rodQuartzSeconds = (int) Math.max(1, positive(s, "lightning-rod.quartz-seconds", 180));
         batteryCapacity = (long) positive(s, "battery.capacity", 10_000);
-        miner1Consume = positive(s, "miner-1.consume", 8);
+        miner1Consume = positive(s, "miner-1.consume", 2);
         miner1Rate = positive(s, "miner-1.cycles-per-second", 0.5);
-        miner2Consume = positive(s, "miner-2.consume", 20);
+        miner2Consume = positive(s, "miner-2.consume", 6);
         miner2Rate = positive(s, "miner-2.cycles-per-second", 1);
     }
 
     private static double positive(Settings s, String path, double fallback) {
         double v = s.getDouble("machines." + path, fallback);
         return v > 0 ? v : fallback;
+    }
+
+    /** Flux per second a passive generator makes with {@code blocks} compression Blocks in it (0 until the first one activates it). */
+    double passiveOutput(PassiveGenerator generator, int blocks) {
+        return passiveOutput[generator.ordinal()] * PassiveGenerator.overload(blocks, overloadBlocks, overloadBonus);
     }
 
     double consume(MachineType type) {
@@ -120,11 +135,6 @@ final class MachineSettings {
         double base = consume(data.kind());
         MachineModule module = MachineModule.of(data.module);
         return module == null ? base : base * consumeFactor(module);
-        return module == null ? base : base * switch (module) {
-            case EMBER -> emberConsume;
-            case BLOOM -> bloomConsume;
-            case TIDE -> tideConsume;
-        };
     }
 
     /** Mining cycles per second of this machine, with its module. */

@@ -123,7 +123,7 @@ public class MachineTest {
         machines.tick();
 
         assertEquals("the cobble was broken", Material.AIR, cobble.getType());
-        assertEquals("20 Flux used", 80, machines.store().get(sky.getName(), MachineStore.pos(battery)).charge);
+        assertEquals("6 Flux used", 94, machines.store().get(sky.getName(), MachineStore.pos(battery)).charge);
         Container container = (Container) barrel.getState();
         boolean found = false;
         for (ItemStack stack : container.getInventory().getContents()) {
