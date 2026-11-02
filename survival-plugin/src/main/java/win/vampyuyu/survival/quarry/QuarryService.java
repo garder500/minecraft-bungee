@@ -273,6 +273,27 @@ public final class QuarryService implements win.vampyuyu.survival.api.EndAccessA
         return null;
     }
 
+    /**
+     * A Sandglass (Citadel of Golden Sands): the unfinished job with the most time left loses {@code fraction} of what
+     * remains. Returns the milliseconds saved, 0 when no job was running.
+     */
+    public long accelerate(Player player, double fraction, long now) {
+        QuarryData data = data(player.getUniqueId());
+        QuarryData.Job longest = null;
+        for (QuarryData.Job job : data.jobs) {
+            if (job.finishAt > now && (longest == null || job.finishAt > longest.finishAt)) {
+                longest = job;
+            }
+        }
+        if (longest == null) {
+            return 0;
+        }
+        long saved = Math.round((longest.finishAt - now) * Math.min(1, Math.max(0, fraction)));
+        longest.finishAt -= saved;
+        dirty(player.getUniqueId());
+        return saved;
+    }
+
     /** Hands over every finished job; what does not fit is dropped at the player's feet. Returns the item names. */
     public List<String> collect(Player player, long now) {
         return collect(player, now, id -> { });

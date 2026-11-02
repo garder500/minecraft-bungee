@@ -181,4 +181,84 @@ public class EnergyNetworkTest {
         assertEquals(MachineModule.CRYO, MachineModule.ofItem("cryo_module").orElseThrow());
         assertEquals(MachineModule.CRYO, MachineModule.of("cryo"));
     }
+
+    // ---- Chrono Module (Citadel of Golden Sands)
+
+    private static Map<Pos, MachineData> chronoNet(MachineData miner, MachineData battery) {
+        Map<Pos, MachineData> net = new LinkedHashMap<>();
+        net.put(new Pos(0, 0, 0), battery);
+        net.put(new Pos(1, 0, 0), miner);
+        return net;
+    }
+
+    private static MachineData chronoMiner() {
+        MachineData miner = machine(MachineType.MINER_1);
+        miner.module = "CHRONO";
+        return miner;
+    }
+
+    private static MachineSettings tideSettings() {
+        return new MachineSettings(win.vampyuyu.survival.data.Settings.empty("quarry"), new win.vampyuyu.survival.api.TimeTide(100, 100, 100));
+    }
+
+    @Test
+    public void aChronoMinerFollowsTheTide() {
+        MachineSettings cfg = tideSettings();
+        long calm = 10_000L, surge = 150_000L, stall = 250_000L;
+        assertEquals(1.0, cfg.tideFactor(calm), 0);
+        assertEquals(1.5, cfg.tideFactor(surge), 0);
+        assertEquals(0.6, cfg.tideFactor(stall), 0);
+        MachineData miner = chronoMiner();
+        assertEquals(0.5 * 1.5, cfg.rate(miner, cfg.tideFactor(surge)), 1e-9);
+        assertEquals("an Ember module ignores the tide", 0.5 * 1.5, rateOf("EMBER", cfg, surge), 1e-9);
+    }
+
+    private static double rateOf(String module, MachineSettings cfg, long now) {
+        MachineData m = machine(MachineType.MINER_1);
+        m.module = module;
+        return cfg.rate(m, cfg.tideFactor(now));
+    }
+
+    @Test
+    public void aChronoMinerWithNothingToDoBanksCyclesAndPaysThemBack() {
+        MachineSettings cfg = tideSettings();
+        MachineData miner = chronoMiner();
+        MachineData battery = machine(MachineType.BATTERY);
+        battery.charge = 100_000;
+        Map<Pos, MachineData> net = chronoNet(miner, battery);
+        for (int i = 0; i < 20; i++) {
+            EnergyNetwork.tick(net, cfg, p -> false, p -> false, EnergyNetwork.Modifiers.NONE, 10_000L); // chest full: cannot run
+        }
+        assertTrue("cycles banked: " + miner.buffer, miner.buffer > 4.9 && miner.buffer < 5.1); // 20 s x 0.5 x 0.5
+        double before = miner.buffer;
+        var fires = EnergyNetwork.tick(net, cfg, p -> true, p -> false, EnergyNetwork.Modifiers.NONE, 10_000L);
+        assertEquals(before - 1, miner.buffer, 1e-9); // one extra cycle per second comes out
+        assertEquals("0.5 cycle of its own + 1 from the buffer: one cycle fired", 1, fires.get(0).cycles());
+    }
+
+    @Test
+    public void theBufferIsCappedAndAStallBanksWhatItCosts() {
+        MachineSettings cfg = tideSettings();
+        assertEquals(120.0, MachineModule.bank(119, 50, 1, cfg.chronoBufferCap), 0);
+        assertEquals(0.0, MachineModule.bank(-4, -2, 1, 10), 0);
+        assertEquals(0.5, MachineModule.release(0.5, 1), 0);
+        assertEquals(1.0, MachineModule.release(40, 1), 0);
+        MachineData miner = chronoMiner();
+        MachineData battery = machine(MachineType.BATTERY);
+        battery.charge = 100_000;
+        Map<Pos, MachineData> net = chronoNet(miner, battery);
+        EnergyNetwork.tick(net, cfg, p -> true, p -> false, EnergyNetwork.Modifiers.NONE, 250_000L); // a stall
+        assertEquals("0.5 x 0.4 lost", 0.2, miner.buffer, 1e-9);
+        assertEquals("only 0.6 x 0.5 done", 0.3, miner.progress, 1e-9);
+    }
+
+    @Test
+    public void aMinerWithoutTheModuleNeverBanks() {
+        MachineSettings cfg = tideSettings();
+        MachineData miner = machine(MachineType.MINER_1);
+        MachineData battery = machine(MachineType.BATTERY);
+        Map<Pos, MachineData> net = chronoNet(miner, battery);
+        EnergyNetwork.tick(net, cfg, p -> false, p -> false, EnergyNetwork.Modifiers.NONE, 10_000L);
+        assertEquals(0.0, miner.buffer, 0);
+    }
 }

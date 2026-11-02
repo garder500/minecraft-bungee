@@ -64,6 +64,7 @@ public final class BossItems {
     /** Guardian components (GDD 15.2): the hard pity of {@link Guardians} guarantees them. */
     public static final String LAVA_CORE = "lava_core";
     public static final String MYCELIAL_CORE = "mycelial_core";
+    public static final String TEMPORAL_CORE = "temporal_core";
     public static final String JUDGE_CORE = "judge_core";
     public static final String FROST_CORE = "frost_core";
     public static final String MIRE_CORE = "mire_core";
@@ -141,6 +142,15 @@ public final class BossItems {
             "", "<gray>Guardian component of the <dark_green>Putrid Marshes<gray>."));
         t.add(spec("mire_ichor", "Bog Ichor", Rarity.EPIC, Material.FERMENTED_SPIDER_EYE, "MATERIAL", false, none,
             "<gray>Distilled from the Mire Abomination.", "<gray>Nothing in it is wasted."));
+        // temporal pharaoh = Guardian of the Citadel of Golden Sands
+        t.add(spec("pharaoh_scarab", "Citadel Bastion Key", Rarity.EPIC, Material.GOLD_NUGGET, "SUMMON ITEM", true, none,
+            "<gray>A golden scarab whose legs keep ticking.", "",
+            "<yellow>Opens the <gold>Citadel Bastion<yellow> (/bastion) and its", "<gold>Temporal Pharaoh<yellow>. Spent by the party leader."));
+        t.add(spec(TEMPORAL_CORE, "Pharaoh Core", Rarity.EPIC, Material.CLOCK, "BOSS COMPONENT", true, none,
+            "<gray>The chronometer of a Sarcophagus,", "<gray>still counting hours that never end.",
+            "", "<gray>Guardian component of the <gold>Citadel of Golden Sands<gray>."));
+        t.add(spec("pharaoh_linen", "Pharaoh's Linen", Rarity.EPIC, Material.PAPER, "MATERIAL", false, none,
+            "<gray>Bandages that have outlived their wearer."));
         // abyssal leviathan
         t.add(spec("leviathan_tooth", "Abyss Key", Rarity.EPIC, Material.PRISMARINE_SHARD, "BOSS KEY", false, none,
             "<gray>From the deepest jaws of the sea.", "<gray>One of the three keys of the Void Sigil."));

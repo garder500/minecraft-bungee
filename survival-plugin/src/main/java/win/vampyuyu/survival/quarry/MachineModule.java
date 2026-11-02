@@ -20,7 +20,9 @@ enum MachineModule {
     /** Frozen Heights, advanced cooling: a cooled Miner runs faster for the same Flux per block, and gathers packed ice. */
     CRYO("cryo_module", "Cryo Module", "cryo"),
     /** Putrid Marshes, industrial: thrifty and a little slower, and the Miner sometimes recycles its residue into a second copy. */
-    RECYCLER("recycler_module", "Recycler Module", "recycler");
+    RECYCLER("recycler_module", "Recycler Module", "recycler"),
+    /** Citadel of Golden Sands, temporal: follows the Time Tide and banks the cycles it cannot run (a buffer). */
+    CHRONO("chrono_module", "Chrono Module", "chrono");
 
     final String itemId;
     final String title;
@@ -81,6 +83,20 @@ enum MachineModule {
     /** True when a Recycler's cycle gives back a second copy of what it mined. */
     static boolean salvages(double chance, Random random) {
         return random.nextDouble() < chance;
+    }
+
+    /**
+     * The Chrono Module's buffer (GDD 7.5, "buffers temporels"): a Miner that cannot run (no Flux, full chest, a stalled
+     * tide) banks the cycles it lost, scaled by {@code bankFraction}, up to {@code cap}; a Miner that runs pays them back
+     * as extra cycles, at most {@code release} per second, with no extra Flux. Returns the new buffer.
+     */
+    static double bank(double buffer, double lostCycles, double bankFraction, double cap) {
+        return Math.min(Math.max(0, cap), Math.max(0, buffer) + Math.max(0, lostCycles) * Math.max(0, bankFraction));
+    }
+
+    /** Cycles a running Chrono Miner takes out of its buffer this second. */
+    static double release(double buffer, double release) {
+        return Math.min(Math.max(0, buffer), Math.max(0, release));
     }
 
     /** Bone meal a Bloom module gathers with one cycle (0 most of the time). */

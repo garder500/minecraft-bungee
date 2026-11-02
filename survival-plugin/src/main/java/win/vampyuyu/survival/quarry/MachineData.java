@@ -21,6 +21,8 @@ public final class MachineData {
     public String built = "";
     /** Miners: the Realm module slotted in ({@link MachineModule} name), empty when none. */
     public String module = "";
+    /** Miners: cycles banked by a Chrono Module (see {@link MachineModule#bank}). */
+    public double buffer;
     /** Yaw of the 3D model (its front faces the player who placed it). */
     public float yaw = 180f;
 

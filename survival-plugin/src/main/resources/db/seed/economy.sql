@@ -291,6 +291,8 @@ INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES 
 INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('adventurer:cinderheart', 'adventurer', 29, 'cinderheart', 0.0, 60.0);
 INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('adventurer:heartwood', 'adventurer', 30, 'heartwood', 0.0, 60.0);
 INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('adventurer:soul_ash', 'adventurer', 31, 'soul_ash', 0.0, 60.0);
+INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('adventurer:chrono_sand', 'adventurer', 40, 'chrono_sand', 0.0, 60.0);
+INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('adventurer:pharaoh_linen', 'adventurer', 41, 'pharaoh_linen', 0.0, 40.0);
 INSERT INTO merchant (id, position, name, npc_name, icon, profession, npc_type, description) VALUES ('weaponsmith', 7, 'Weaponsmith', '<dark_red>Weaponsmith', 'DIAMOND_SWORD', 'WEAPONSMITH', 'VILLAGER', 'Weapons and armor (buy only).');
 INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('weaponsmith:WOODEN_SWORD', 'weaponsmith', 0, 'WOODEN_SWORD', 10.0, 0.0);
 INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('weaponsmith:STONE_SWORD', 'weaponsmith', 1, 'STONE_SWORD', 30.0, 0.0);
@@ -589,6 +591,7 @@ INSERT INTO bazaar_product (id, category, position, item_key) VALUES ('combat:vo
 INSERT INTO bazaar_product (id, category, position, item_key) VALUES ('combat:warden_heart', 'combat', 81, 'warden_heart');
 INSERT INTO bazaar_product (id, category, position, item_key) VALUES ('combat:frost_shard', 'combat', 82, 'frost_shard');
 INSERT INTO bazaar_product (id, category, position, item_key) VALUES ('combat:matriarch_silk', 'combat', 83, 'matriarch_silk');
+INSERT INTO bazaar_product (id, category, position, item_key) VALUES ('combat:pharaoh_linen', 'combat', 200, 'pharaoh_linen');
 INSERT INTO bazaar_product (id, category, position, item_key) VALUES ('combat:leviathan_tooth', 'combat', 84, 'leviathan_tooth');
 INSERT INTO bazaar_product (id, category, position, item_key) VALUES ('combat:lord_bone', 'combat', 85, 'lord_bone');
 INSERT INTO bazaar_product (id, category, position, item_key) VALUES ('combat:colossus_core', 'combat', 86, 'colossus_core');
@@ -712,6 +715,7 @@ INSERT INTO market_never_traded (pattern) VALUES ('starcore');
 INSERT INTO market_never_traded (pattern) VALUES ('cinderheart');
 INSERT INTO market_never_traded (pattern) VALUES ('heartwood');
 INSERT INTO market_never_traded (pattern) VALUES ('soul_ash');
+INSERT INTO market_never_traded (pattern) VALUES ('chrono_sand');
 INSERT INTO market_never_traded (pattern) VALUES ('wings_core_*');
 INSERT INTO auction_blocked_item (id, kind, value) VALUES ('material:BEDROCK', 'material', 'BEDROCK');
 INSERT INTO auction_blocked_item (id, kind, value) VALUES ('material:BARRIER', 'material', 'BARRIER');

@@ -109,6 +109,12 @@ final class EnergyNetwork {
     /** The full tick, with the trade modifiers of each miner. */
     static List<Fire> tick(Map<Pos, MachineData> network, MachineSettings cfg, Predicate<Pos> ready, Predicate<Pos> sunny,
             Modifiers mods) {
+        return tick(network, cfg, ready, sunny, mods, System.currentTimeMillis());
+    }
+
+    /** Same, at a given instant (the Time Tide of the Chrono Modules depends on it). */
+    static List<Fire> tick(Map<Pos, MachineData> network, MachineSettings cfg, Predicate<Pos> ready, Predicate<Pos> sunny,
+            Modifiers mods, long now) {
         double pool = 0;
         long capacity = 0;
         List<MachineData> batteries = new ArrayList<>();
@@ -131,16 +137,35 @@ final class EnergyNetwork {
         for (Map.Entry<Pos, MachineData> entry : new LinkedHashMap<>(network).entrySet()) {
             MachineData m = entry.getValue();
             MachineType type = m.kind();
-            if (type == null || !type.miner() || !ready.test(entry.getKey())) {
+            if (type == null || !type.miner()) {
                 continue;
             }
+            boolean chrono = MachineModule.of(m.module) == MachineModule.CHRONO;
             double speed = Math.max(0, mods.speed(m));
+            if (!ready.test(entry.getKey())) {
+                if (chrono) { // nowhere to put the ore: the cycles it could have run are banked
+                    m.buffer = MachineModule.bank(m.buffer, cfg.rate(m.kind()) * cfg.chronoRate * speed, cfg.chronoBankFraction, cfg.chronoBufferCap);
+                }
+                continue;
+            }
             double need = cfg.consume(m) * mods.energy(m) * speed;
             if (pool < need) {
+                if (chrono) { // no Flux: the same
+                    m.buffer = MachineModule.bank(m.buffer, cfg.rate(m.kind()) * cfg.chronoRate * speed, cfg.chronoBankFraction, cfg.chronoBufferCap);
+                }
                 continue;
             }
             pool -= need;
-            m.progress += cfg.rate(m) * speed;
+            double tide = chrono ? cfg.tideFactor(now) : 1;
+            m.progress += cfg.rate(m, tide) * speed;
+            if (chrono) {
+                if (tide < 1) { // a stalled tide slows the Miner: what it loses goes into the buffer
+                    m.buffer = MachineModule.bank(m.buffer, cfg.rate(m.kind()) * cfg.chronoRate * speed * (1 - tide), 1, cfg.chronoBufferCap);
+                }
+                double extra = tide >= 1 ? MachineModule.release(m.buffer, cfg.chronoRelease) : 0; // nothing is paid back in a stall
+                m.buffer -= extra;
+                m.progress += extra;
+            }
             int cycles = Math.min(MAX_CYCLES_PER_SECOND, (int) Math.floor(m.progress));
             m.progress -= cycles;
             if (cycles > 0) {

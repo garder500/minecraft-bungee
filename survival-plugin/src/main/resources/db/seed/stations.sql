@@ -10,6 +10,7 @@ INSERT INTO setting_item (setting_id, position, value) VALUES ('station.crucible
 INSERT INTO setting_item (setting_id, position, value) VALUES ('station.crucible.components', 3, 'leviathan_tooth');
 INSERT INTO setting_item (setting_id, position, value) VALUES ('station.crucible.components', 4, 'lord_bone');
 INSERT INTO setting_item (setting_id, position, value) VALUES ('station.crucible.components', 5, 'voidwyrm_scale');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('station.crucible.components', 6, 'pharaoh_linen');
 INSERT INTO setting (id, type, value, note) VALUES ('station.crucible.duplicate-shards', 'int', '25', 'Memory Shards for one duplicate component (the player must already own the component once).');
 INSERT INTO setting (id, type, value, note) VALUES ('station.ranch.storage-hours', 'int', '12', 'The Ranch stops producing when this many hours of output wait to be collected.');
 INSERT INTO setting (id, type, value, note) VALUES ('station.ranch.tier-bonus', 'real', '0.5', 'Extra output per generator tier above I (tier IV makes x2.5).');
@@ -69,3 +70,5 @@ INSERT INTO contract (id, position, kind, title, target, amount, min_tier, coins
 INSERT INTO contract (id, position, kind, title, target, amount, min_tier, coins, shards) VALUES ('c_matriarch', 11, 'boss', 'Silence the Matriarch', 'sylvan_matriarch', 1, 3, 1500, 15);
 INSERT INTO setting_item (setting_id, position, value) VALUES ('station.crucible.components', 14, 'mire_ichor');
 INSERT INTO setting (id, type, value, note) VALUES ('station.crucible.marsh-bonus', 'real', '0.15', 'Putrid Marshes: extra share of the elemental materials the Crucible gives back when used inside the Marsh (0.6 + 0.15 = 75 percent). Boss components stay at 100 percent.');
+INSERT INTO contract (id, position, kind, title, target, amount, min_tier, coins, shards) VALUES ('c_chrono_sand', 20, 'deliver', 'Dust that falls upward', 'custom:chrono_sand', 2, 2, 900, 10);
+INSERT INTO contract (id, position, kind, title, target, amount, min_tier, coins, shards) VALUES ('c_pharaoh', 21, 'boss', 'Stop the Temporal Pharaoh', 'temporal_pharaoh', 1, 3, 1500, 15);

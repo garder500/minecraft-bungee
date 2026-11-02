@@ -432,6 +432,16 @@ brk(c, "Slime Heaps", "16 slime blocks from the Landfill and the Weeping Mangrov
 ev(c, "Reclaimer", "Keep salvaging until you earn the Reclaimer affinity (200 points): a Vat needs fewer items for each Rot Resin roll.", "marsh_purify:2", 1, "COMPOSTER", 1200, label="marsh_reclaimer", qid="marsh_06")
 q(c, "Digest the Digester", "Defeat the Mire Abomination, Guardian of the Marshes.", "BOSS_KILL", "mire_abomination", 1, "SLIME_BALL", 2500, label="marsh_abomination", qid="marsh_07")
 
+c = cat("citadel", "The Citadel of Golden Sands", "Realm 4. Rivers of gold dust that flow upward, an hourglass the size of a tower. The Temporal Pharaoh keeps the chronology of the old world.", True, "grove_queen", "CLOCK")
+ev(c, "Through the Golden Gate", "Light the Sky Gate of the Citadel of Golden Sands (defeat the Mycelial Queen) and step through it at the Quai des Huit (/quai).", "citadel_enter", 1, "YELLOW_STAINED_GLASS", 300, label="citadel_1", lore="Beyond the fourth Gate the hours do not agree with each other. The Citadel counts them all.", qid="citadel_01")
+brk(c, "Dunes of the Citadel", "64 sandstone blocks", "SANDSTONE", 64, "SANDSTONE", 150, qid="citadel_02")
+ev(c, "Time Surges", "Be in the Citadel when the Time Tide surges: you move faster, and Chrono Modules run fast.", "citadel_tide:surge", 1, "CLOCK", 400, label="citadel_surge", qid="citadel_03")
+ev(c, "Time Stalls", "Be in the Citadel when the Time Tide stalls: you move slower, and Chrono Modules bank the lost cycles.", "citadel_tide:stall", 1, "COBWEB", 400, label="citadel_stall", qid="citadel_04")
+obtain(c, "Gold of the Sands", "Collect 16 gold ingots to forge the Chrono Module and the Sandglass.", "GOLD_INGOT", 16, "GOLD_INGOT", 300, qid="citadel_05")
+forge(c, "Turn the Sandglass", "sandglass", 1, "CLOCK", 600, qid="citadel_06")
+forge(c, "A Module That Remembers", "chrono_module", 1, "CLOCK", 900, label="citadel_module", qid="citadel_07")
+q(c, "Wake the Temporal Pharaoh", "Defeat the Temporal Pharaoh, Guardian of the Citadel.", "BOSS_KILL", "temporal_pharaoh", 1, "GOLD_BLOCK", 2500, label="citadel_pharaoh", qid="citadel_08")
+
 
 def main():
     ids = {}
