@@ -43,10 +43,15 @@ public final class PowerCurve {
     private final double[] ward = new double[TIERS];
     private final double[] vitality = new double[TIERS];
     private int hitsToDown = 8;
+    /** GDD 8.6 weapon of each tier (index tier - 1), the gear {@link #referenceDps} is measured with. */
+    private final double[] reference = new double[TIERS];
 
     public PowerCurve(Rules rules, Tier... defined) {
         this.rules = rules;
         this.tiers = new Tier[TIERS];
+        for (int t = 1; t <= TIERS; t++) {
+            reference[t - 1] = referenceWeapon(t);
+        }
         for (Tier tier : defined) {
             if (tier != null && tier.tier() >= 1 && tier.tier() <= TIERS) {
                 tiers[tier.tier() - 1] = tier;
@@ -91,6 +96,9 @@ public final class PowerCurve {
         System.arraycopy(armorWard, 0, curve.ward, 0, TIERS);
         System.arraycopy(armorVitality, 0, curve.vitality, 0, TIERS);
         curve.hitsToDown = Math.max(2, boss.getInt("settings.hits-to-down", 8));
+        for (int t = 1; t <= TIERS; t++) {
+            curve.reference[t - 1] = Math.max(1, boss.getDouble("settings.reference-weapon." + t, referenceWeapon(t)));
+        }
         return curve;
     }
 
@@ -142,9 +150,35 @@ public final class PowerCurve {
         return dps(tier, rules.weaknessMultiplier());
     }
 
-    /** Health of a boss of the tier that dies in {@code seconds} to one matching player hitting its weakness. */
+    /** GDD 8.6 weapon damage of tier {@code n}: {@code 25 + 10n + 5n^2} (40, 65, 100, 145, 200). */
+    public static double referenceWeapon(int tier) {
+        return 25 + 10.0 * tier + 5.0 * tier * tier;
+    }
+
+    /** The reference weapon of the tier (GDD 8.6, overridable by {@code boss.settings.reference-weapon.<tier>}). */
+    public double referenceWeaponOf(int tier) {
+        return reference[tier - 1];
+    }
+
+    /**
+     * {@code DPS_ref(n)} of GDD 8.7: the reference weapon of the tier alone (no Might), charged hits, Surge average and
+     * the weakness multiplier, so 576 at tier 5.
+     */
+    public double referenceDps(int tier) {
+        return dps(reference[tier - 1], 0, rules.weaknessMultiplier());
+    }
+
+    /**
+     * Health of a boss of the tier, GDD 8.7: {@code DPS_ref(n) x seconds x factor} ({@code seconds} = 180 and
+     * {@code factor} = 0.5, the share of the time a player really lands hits; 51 840 at tier 5).
+     */
+    public double bossHealth(int tier, double seconds, double factor) {
+        return Math.max(1, Math.round(seconds * factor * referenceDps(tier)));
+    }
+
+    /** Same with the factor 1: health of a boss that dies in {@code seconds} of nonstop hits on its weakness. */
     public double bossHealth(int tier, double seconds) {
-        return Math.max(1, Math.round(seconds * weakDps(tier)));
+        return bossHealth(tier, seconds, 1.0);
     }
 
     /** Health of a target of the tier with no weakness (slayers, dungeon monsters) that dies in {@code seconds}. */

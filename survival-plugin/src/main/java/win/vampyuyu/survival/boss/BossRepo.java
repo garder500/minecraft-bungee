@@ -49,13 +49,14 @@ public final class BossRepo {
 
     /**
      * Loads the boss tables. With a power curve, a boss with {@code hp_auto = 1} gets
-     * {@code boss.settings.target-seconds x} the curve's weakness damage per second of its tier as health; a slayer with
+     * {@code boss.settings.target-seconds x boss.settings.hp-factor x} the reference damage per second of its tier (GDD 8.7) as health; a slayer with
      * {@code hp_auto = 1} gets {@code boss.slayer.target-seconds x} the neutral damage per second of the tier.
      */
     static BossConfig load(Connection c, Settings settings, PowerCurve curve) throws SQLException {
         List<String> errors = new ArrayList<>();
-        double bossSeconds = settings.getDouble("settings.target-seconds", 240);
-        Map<String, BossDefinition> bosses = readBosses(c, errors, curve, bossSeconds);
+        double bossSeconds = settings.getDouble("settings.target-seconds", 180);
+        double hpFactor = Math.max(0.01, settings.getDouble("settings.hp-factor", 0.5));
+        Map<String, BossDefinition> bosses = readBosses(c, errors, curve, bossSeconds, hpFactor);
         Map<String, SlayerDefinition> slayers = SlayerParser.loadAll(c, errors, curve, settings.getDouble("slayer.target-seconds", 90));
         for (SlayerDefinition slayer : slayers.values()) {
             for (SlayerDefinition.Tier tier : slayer.tiers()) {
@@ -78,8 +79,8 @@ public final class BossRepo {
 
     // ---------------------------------------------------------------- bosses
 
-    private static Map<String, BossDefinition> readBosses(Connection c, List<String> errors, PowerCurve curve, double seconds)
-            throws SQLException {
+    private static Map<String, BossDefinition> readBosses(Connection c, List<String> errors, PowerCurve curve, double seconds,
+            double hpFactor) throws SQLException {
         Map<String, Map<String, List<AbilityRaw>>> abilities = readAbilities(c, "boss_ability", "boss_id", "boss_ability_param",
             "phase || ':' || role");
         Map<String, List<double[]>> phaseNumbers = new HashMap<>();
@@ -122,7 +123,7 @@ public final class BossRepo {
             BossDefinition def = assemble(rs, id, abilities.getOrDefault(id, Map.of()), phaseText.getOrDefault(id, List.of()),
                 phaseNumbers.getOrDefault(id, List.of()), equipment.getOrDefault(id, List.of()),
                 ranks.getOrDefault(id, List.of()), drops.getOrDefault(id, List.of()), summons.get(id),
-                altarMissing.getOrDefault(id, false), errors, curve, seconds);
+                altarMissing.getOrDefault(id, false), errors, curve, seconds, hpFactor);
             if (def != null) {
                 result.put(id, def);
             }
@@ -134,7 +135,7 @@ public final class BossRepo {
     private static @Nullable BossDefinition assemble(ResultSet rs, String id, Map<String, List<AbilityRaw>> abilities,
             List<String[]> phaseText, List<double[]> phaseNumbers, List<EquipRaw> equipment, List<Double> ranks,
             List<BossDefinition.LootEntry> drops, BossDefinition.@Nullable Summon summon, boolean altarMissing,
-            List<String> errors, PowerCurve curve, double seconds) throws SQLException {
+            List<String> errors, PowerCurve curve, double seconds, double hpFactor) throws SQLException {
         int before = errors.size();
         String path = id;
         if (!DefinitionParser.ID.matcher(id).matches()) {
@@ -147,7 +148,7 @@ public final class BossRepo {
         double health = rs.getDouble("health");
         int tier = rs.getObject("tier") == null ? 0 : rs.getInt("tier");
         if (curve != null && rs.getInt("hp_auto") == 1 && tier > 0 && curve.has(tier) && seconds > 0) {
-            health = curve.bossHealth(tier, seconds); // the written health is only the fallback
+            health = curve.bossHealth(tier, seconds, hpFactor); // the written health is only the fallback
         }
         double damage = rs.getDouble("damage");
         if (curve != null && rs.getInt("hp_auto") == 1 && tier > 0 && curve.has(tier)) {
