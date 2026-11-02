@@ -69,7 +69,9 @@ final class ForgeGui {
             lore.add("");
             java.util.Optional<String> locked = core.service(win.vampyuyu.survival.api.QuestGateApi.class)
                 .flatMap(api -> api.forgeLock(player.getUniqueId(), recipe.result()));
+            java.util.Optional<String> closed = service.realmLock(player, recipe);
             lore.add(locked.map(quest -> "<red>Locked until the quest: <yellow>" + quest)
+                .or(() -> closed.map(why -> "<red>" + why))
                 .orElse(ok ? Guis.ACCENT + "▸ Forge" : "<red>Missing materials"));
             ItemStack icon = icon(def.get().id(), lore);
             gui.set(slot++, icon, click -> {

@@ -21,6 +21,7 @@ public final class QuarryFeature implements Feature {
     private NamespacedKey recipeKey;
     private MachineStore machineStore;
     private win.vampyuyu.survival.core.Scheduler.Handle machineTask;
+    private win.vampyuyu.survival.core.Scheduler.Handle sidegradeTask;
 
     @Override
     public String id() {
@@ -50,6 +51,9 @@ public final class QuarryFeature implements Feature {
         core.listen(new PebbleListener(core, service));
         core.listen(new OutputListener(core, service));
         core.listen(new GearListener(core));
+        SidegradeListener sidegrades = new SidegradeListener(core);
+        core.listen(sidegrades);
+        sidegradeTask = core.scheduler().repeating(20, 20, sidegrades::tick);
         SkinService skins = new SkinService(core, service);
         SkinGui skinGui = new SkinGui(core, skins);
         core.listen(new SkinListener(core, skins));
@@ -207,6 +211,9 @@ public final class QuarryFeature implements Feature {
     public void disable() {
         if (machineTask != null) {
             machineTask.cancel();
+        }
+        if (sidegradeTask != null) {
+            sidegradeTask.cancel();
         }
         if (machineStore != null) {
             machineStore.flush();
