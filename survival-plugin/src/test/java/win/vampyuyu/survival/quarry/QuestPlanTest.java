@@ -34,7 +34,8 @@ public class QuestPlanTest {
         "dungeon_floor:1", "dungeon_floor:2", "dungeon_floor:3", "dungeon_floor:4", "dungeon_floor:5", "dungeon_floor:6",
         "dungeon_floor:7", "quest_done", "armor_set:bronze", "armor_set:rime", "armor_set:ember", "armor_set:void",
         "armor_set:starcore", "grove_enter", "grove_affinity:1", "grove_affinity:2",
-        "heights_enter", "heights_affinity:1", "heights_affinity:2");
+        "heights_enter", "heights_affinity:1", "heights_affinity:2",
+        "marsh_enter", "marsh_salvage", "marsh_purify:1", "marsh_purify:2");
     private static final Set<String> COMMANDS = Set.of("guide", "market", "ah", "forge", "dungeon", "balance", "pay", "bank",
         "baltop");
 

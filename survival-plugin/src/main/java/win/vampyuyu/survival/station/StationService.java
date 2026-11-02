@@ -367,7 +367,14 @@ public final class StationService implements StationApi {
 
     /** What melting this item would give back, empty when the Forge cannot make it. */
     Map<String, Integer> meltDown(String itemId) {
-        return StationRules.refund(config.forgeCost(itemId), config.returnRate, config.components());
+        return meltDown(itemId, null);
+    }
+
+    /** The same inside the Putrid Marshes, where the Crucible recovers {@code marshBonus} more of the materials. */
+    Map<String, Integer> meltDown(String itemId, Player player) {
+        boolean marsh = player != null && player.getWorld().getName().equals(win.vampyuyu.survival.core.SkyblockWorlds.MARSH);
+        double rate = Math.min(1, config.returnRate + (marsh ? config.marshBonus : 0));
+        return StationRules.refund(config.forgeCost(itemId), rate, config.components());
     }
 
     /** Melts one item of the main hand. Returns the English refusal, or null when it worked. */
@@ -377,7 +384,7 @@ public final class StationService implements StationApi {
         if (id.isEmpty()) {
             return "Hold the item you want to melt down.";
         }
-        Map<String, Integer> back = meltDown(id.get());
+        Map<String, Integer> back = meltDown(id.get(), player);
         if (back.isEmpty()) {
             return "The Crucible has nothing to take from that item.";
         }

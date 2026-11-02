@@ -29,3 +29,13 @@ INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('stasis_cryst
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('stasis_crystal', 'block', 'AMETHYST_CLUSTER');
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('stasis_crystal', 'mob', 'STRAY');
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('stasis_crystal', 'mob', 'POLAR_BEAR');
+
+-- Putrid Marshes (issue 43): Rot Resin, same pity shape as the other local resources (proposal, tune in the panel).
+INSERT INTO realm_world (world, realm) VALUES ('sb_marsh', 'marshes');
+INSERT INTO realm_resource (id, realm, item, p0, soft, dur, amount_min, amount_max) VALUES ('rot_resin', 'marshes', 'rot_resin', 0.06, 12, 36, 1, 1);
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('rot_resin', 'block', 'MUDDY_MANGROVE_ROOTS');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('rot_resin', 'block', 'SLIME_BLOCK');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('rot_resin', 'block', 'SCULK');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('rot_resin', 'mob', 'SLIME');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('rot_resin', 'mob', 'WITCH');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('rot_resin', 'mob', 'DROWNED');

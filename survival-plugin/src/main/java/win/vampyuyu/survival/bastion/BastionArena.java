@@ -30,6 +30,7 @@ public final class BastionArena {
     static Material[] floor(String palette) {
         return switch (palette) {
             case "grove" -> new Material[] {Material.MOSS_BLOCK, Material.GRASS_BLOCK, Material.PODZOL, Material.MUD_BRICKS};
+            case "marsh" -> new Material[] {Material.SCULK, Material.MUD, Material.PACKED_MUD, Material.MUD_BRICKS};
             case "necro" -> new Material[] {Material.POLISHED_DEEPSLATE, Material.DEEPSLATE_TILES, Material.SOUL_SOIL,
                 Material.CRACKED_DEEPSLATE_BRICKS};
             case "frost" -> new Material[] {Material.BLUE_ICE, Material.PACKED_ICE, Material.SNOW_BLOCK, Material.STONE_BRICKS};
@@ -41,6 +42,7 @@ public final class BastionArena {
     static Material pillar(String palette) {
         return switch (palette) {
             case "grove" -> Material.STRIPPED_DARK_OAK_LOG;
+            case "marsh" -> Material.MANGROVE_LOG;
             case "necro" -> Material.BONE_BLOCK;
             case "frost" -> Material.PACKED_ICE;
             default -> Material.POLISHED_BASALT;
@@ -50,6 +52,7 @@ public final class BastionArena {
     static Material cap(String palette) {
         return switch (palette) {
             case "grove" -> Material.SHROOMLIGHT;
+            case "marsh" -> Material.SOUL_LANTERN;
             case "necro" -> Material.SOUL_LANTERN;
             case "frost" -> Material.SEA_LANTERN;
             default -> Material.GLOWSTONE;
@@ -59,6 +62,7 @@ public final class BastionArena {
     static Material rim(String palette) {
         return switch (palette) {
             case "grove" -> Material.MOSSY_STONE_BRICK_WALL;
+            case "marsh" -> Material.MUD_BRICK_WALL;
             case "necro" -> Material.DEEPSLATE_BRICK_WALL;
             case "frost" -> Material.STONE_BRICK_WALL;
             default -> Material.BLACKSTONE_WALL;

@@ -16,3 +16,4 @@ INSERT INTO setting (id, type, value, note) VALUES ('resonance.forge.weekly-limi
 INSERT INTO setting (id, type, value, note) VALUES ('resonance.pity.runs', 'int', '4', 'The component is guaranteed within this many runs without a drop (GDD 15.2).');
 INSERT INTO setting (id, type, value, note) VALUES ('resonance.pity.runs-high-rank', 'int', '3', 'Same guarantee from the rank below on.');
 INSERT INTO setting (id, type, value, note) VALUES ('resonance.pity.high-rank-from', 'int', '3', 'Resonance rank from which the shorter guarantee applies.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('resonance.bastions', 14, 'mire_abomination|marshes|mire_ichor|30');

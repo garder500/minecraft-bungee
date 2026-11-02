@@ -29,6 +29,9 @@ final class MachineSettings {
     final double cryoConsume;
     final double cryoRate;
     final double cryoIceChance;
+    final double recyclerConsume;
+    final double recyclerRate;
+    final double recyclerSalvageChance;
 
     MachineSettings(Settings s) {
         emberConsume = positive(s, "module.ember.consume-factor", 1.8);
@@ -42,6 +45,9 @@ final class MachineSettings {
         cryoConsume = positive(s, "module.cryo.consume-factor", 1.3);
         cryoRate = positive(s, "module.cryo.rate-factor", 1.3);
         cryoIceChance = positive(s, "module.cryo.ice-chance", 0.3);
+        recyclerConsume = positive(s, "module.recycler.consume-factor", 0.7);
+        recyclerRate = positive(s, "module.recycler.rate-factor", 0.9);
+        recyclerSalvageChance = positive(s, "module.recycler.salvage-chance", 0.15);
         generatorOutput = positive(s, "coal-generator.output", 10);
         coalSeconds = (int) Math.max(1, positive(s, "coal-generator.coal-seconds", 40));
         solarOutput = positive(s, "solar-panel.output", 6);
@@ -94,6 +100,7 @@ final class MachineSettings {
             case BLOOM -> bloomConsume;
             case MEMORY -> memoryConsume;
             case CRYO -> cryoConsume;
+            case RECYCLER -> recyclerConsume;
         };
     }
 
@@ -104,6 +111,7 @@ final class MachineSettings {
             case BLOOM -> bloomRate;
             case MEMORY -> memoryRate;
             case CRYO -> cryoRate;
+            case RECYCLER -> recyclerRate;
         };
     }
 }

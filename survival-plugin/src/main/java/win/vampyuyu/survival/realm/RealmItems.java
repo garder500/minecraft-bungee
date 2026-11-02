@@ -6,11 +6,12 @@ import win.vampyuyu.survival.core.Items;
 import win.vampyuyu.survival.core.Rarity;
 
 /** The local Realm resources. Pack models: {@code vampyuyu:ore/cinderheart}, {@code vampyuyu:ore/heartwood},
- * {@code vampyuyu:ore/soul_ash}, {@code vampyuyu:ore/stasis_crystal}. */
+ * {@code vampyuyu:ore/soul_ash}, {@code vampyuyu:ore/stasis_crystal}, {@code vampyuyu:ore/rot_resin}. */
 final class RealmItems {
     static final String CINDERHEART = "cinderheart";
     static final String HEARTWOOD = "heartwood";
     static final String SOUL_ASH = "soul_ash";
+    static final String ROT_RESIN = "rot_resin";
     static final String STASIS_CRYSTAL = "stasis_crystal";
 
     private RealmItems() {}
@@ -32,5 +33,9 @@ final class RealmItems {
             .itemModel("vampyuyu:ore/stasis_crystal").type("GEM").glint(true).pdc("realm_resource", 1L)
             .lore("<gray>A crystal that holds a moment still.", "<gray>Found only in the <aqua>Frozen Heights<gray>.",
                 "<dark_gray>Runecraft: makes the Stasis rune.").build());
+        items.register(CustomItemDef.builder(ROT_RESIN, "Rot Resin", Rarity.EPIC, Material.HONEYCOMB)
+            .itemModel("vampyuyu:ore/rot_resin").type("GEM").glint(true).pdc("realm_resource", 1L)
+            .lore("<gray>Sap of a tree the Devourer left to rot.", "<gray>Found only in the <dark_green>Putrid Marshes<gray>.",
+                "<dark_gray>Forge: Recycler Module.").build());
     }
 }

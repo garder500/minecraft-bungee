@@ -420,8 +420,10 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
         cobble.remove(target);
         target.setType(Material.AIR); // the water and lava next to it form the next block
         MachineModule module = MachineModule.of(data.module);
+        ItemStack[] last = new ItemStack[1];
         quarry.draw(owner, 0, random, drop -> {
             ItemStack stack = module == MachineModule.EMBER ? MachineModule.smelt(drop.stack()) : drop.stack();
+            last[0] = stack;
             for (ItemStack left : container.getInventory().addItem(stack).values()) {
                 world.dropItemNaturally(miner.getLocation().add(0.5, 1.2, 0.5), left);
             }
@@ -429,8 +431,19 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
         }, (geode, pity, name) -> { });
         bloom(world, miner, container, module, data);
         memory(module, data);
+        recycle(world, miner, container, module, last[0]);
         announce(data, "machine_mined");
         return true;
+    }
+
+    /** A Recycler module sometimes gives back a second copy of what the cycle mined. */
+    private void recycle(World world, Block miner, Container container, MachineModule module, ItemStack mined) {
+        if (module != MachineModule.RECYCLER || mined == null || !MachineModule.salvages(settings().recyclerSalvageChance, random)) {
+            return;
+        }
+        for (ItemStack left : container.getInventory().addItem(mined.clone()).values()) {
+            world.dropItemNaturally(miner.getLocation().add(0.5, 1.2, 0.5), left);
+        }
     }
 
     /** A Memory module sometimes distils a Memory Shard for the Miner's owner (GDD 15.3). */
@@ -487,6 +500,7 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
         }
         bloom(world, miner, container, module, data);
         memory(module, data);
+        recycle(world, miner, container, module, got.get(0));
         announce(data, "machine_mined");
     }
 }

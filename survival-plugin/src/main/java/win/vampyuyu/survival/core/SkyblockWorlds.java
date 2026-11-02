@@ -16,6 +16,8 @@ public final class SkyblockWorlds {
     public static final String HEIGHTS = "sb_heights";
     /** The Cracked Ashes, first Realm (GDD 3.1), reached by its Sky Gate. */
     public static final String ASHES = "sb_ashes";
+    /** The Putrid Marshes, fifth Realm (GDD 3.1), reached by its Sky Gate. */
+    public static final String MARSH = "sb_marsh";
     /** Dungeon runs use {@code sb_dungeon_<runId>}. */
     public static final String DUNGEON_PREFIX = "sb_dungeon_";
 
@@ -36,7 +38,7 @@ public final class SkyblockWorlds {
     public static boolean isSkyblock(String worldName) {
         return HUB.equals(worldName) || WORLD.equals(worldName) || NETHER.equals(worldName)
             || END.equals(worldName) || GROVE.equals(worldName) || HEIGHTS.equals(worldName) || ASHES.equals(worldName)
-            || NECROPOLIS.equals(worldName) || isDungeon(worldName)
+            || NECROPOLIS.equals(worldName) || MARSH.equals(worldName) || isDungeon(worldName)
             || isBastion(worldName);
     }
 

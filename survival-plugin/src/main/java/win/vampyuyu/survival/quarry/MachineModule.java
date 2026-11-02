@@ -18,7 +18,9 @@ enum MachineModule {
     /** Ethereal Necropolis, spiritual: slower and hungrier, and the Miner sometimes distils a Memory Shard. */
     MEMORY("memory_module", "Memory Module", "memory"),
     /** Frozen Heights, advanced cooling: a cooled Miner runs faster for the same Flux per block, and gathers packed ice. */
-    CRYO("cryo_module", "Cryo Module", "cryo");
+    CRYO("cryo_module", "Cryo Module", "cryo"),
+    /** Putrid Marshes, industrial: thrifty and a little slower, and the Miner sometimes recycles its residue into a second copy. */
+    RECYCLER("recycler_module", "Recycler Module", "recycler");
 
     final String itemId;
     final String title;
@@ -74,6 +76,11 @@ enum MachineModule {
     /** Memory Shards a Memory module distils with one cycle (0 most of the time). */
     static int memoryShards(double chance, Random random) {
         return random.nextDouble() < chance ? 1 : 0;
+    }
+
+    /** True when a Recycler's cycle gives back a second copy of what it mined. */
+    static boolean salvages(double chance, Random random) {
+        return random.nextDouble() < chance;
     }
 
     /** Bone meal a Bloom module gathers with one cycle (0 most of the time). */
