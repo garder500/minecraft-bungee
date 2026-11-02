@@ -37,11 +37,11 @@ public class EconomySeedTest {
     public void spotValuesAreIdentical() {
         EconomyConfig c = EconomyFixtures.shipped();
         var s = c.settings();
-        assertEquals(1_000_000_000_000L, s.getLong("currency.max-balance", 0));
+        assertEquals(10_000_000_000L, s.getLong("currency.max-balance", 0));
         assertEquals(1.25, s.getDouble("bazaar.tax-percent", 0), 0);
         assertEquals(71_680, s.getInt("bazaar.max-amount", 0));
         assertEquals(0.2, s.getDouble("pressure.min-multiplier", 0), 0);
-        assertEquals(5_000_000.0, c.tiers().get(0).capacity(), 0);
+        assertEquals(50_000.0, c.tiers().get(0).capacity(), 0);
         assertEquals(0.6, c.tiers().get(2).rate(), 0);
         var wheat = c.offersOf("farmer").get(0);
         assertEquals("WHEAT", wheat.key());

@@ -26,9 +26,9 @@ INSERT INTO island_world (key, time, border, weather_clear) VALUES ('end', 'CYCL
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('end', 0, 'keep_inventory', 'true');
 INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('radius.1', 'radius', 0, 198, 0.0);
 INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('members.1', 'members', 0, 3, 0.0);
-INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('members.2', 'members', 1, 5, 20000.0);
-INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('members.3', 'members', 2, 8, 100000.0);
-INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('members.4', 'members', 3, 12, 500000.0);
+INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('members.2', 'members', 1, 5, 200.0);
+INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('members.3', 'members', 2, 8, 1000.0);
+INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('members.4', 'members', 3, 12, 5000.0);
 INSERT INTO island_template (id, position, enabled, name, icon, biome) VALUES ('classic', 0, 1, 'Classic', 'GRASS_BLOCK', 'plains');
 INSERT INTO island_template_line (template_id, position, text) VALUES ('classic', 0, 'The traditional island: an oak tree,');
 INSERT INTO island_template_line (template_id, position, text) VALUES ('classic', 1, 'a patch of grass and a starter chest.');

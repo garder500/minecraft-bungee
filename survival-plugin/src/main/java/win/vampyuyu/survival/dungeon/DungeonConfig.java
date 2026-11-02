@@ -422,9 +422,9 @@ public final class DungeonConfig {
             costOf("dungeon_wither_essence", 12, "dungeon_spirit_dust", 4), "", 0, 5, Grade.S, 0),
         new ForgeTrade("dark_scroll", "Dark Scroll", "PAPER", costOf("dungeon_relic", 5, "dungeon_spirit_dust", 16),
             "dungeon_dark_scroll", 1, 0, Grade.D, 0),
-        new ForgeTrade("sell_bones", "Bone Market", "BONE", costOf("dungeon_bone_fragment", 64), "", 0, 0, Grade.D, 600),
+        new ForgeTrade("sell_bones", "Bone Market", "BONE", costOf("dungeon_bone_fragment", 64), "", 0, 0, Grade.D, 6),
         new ForgeTrade("sell_essence", "Essence Broker", "BLACK_DYE", costOf("dungeon_wither_essence", 10), "", 0, 0,
-            Grade.D, 1500));
+            Grade.D, 15));
 
     private static Map<String, Integer> costOf(Object... pairs) {
         Map<String, Integer> m = new LinkedHashMap<>();
