@@ -29,6 +29,11 @@ final class BastionRun {
     boolean finished;
     boolean closed;
     long openedAt;
+    /** Raid: radius of the platform that is still standing, -1 until the arena starts to fall. */
+    int collapseRadius = -1;
+    /** Raid: the next ring falls when the tick counter reaches this. */
+    long nextCollapse;
+    long tickCount;
 
     BastionRun(int number, BastionConfig.Bastion bastion, UUID leader, UUID partyId) {
         this.number = number;

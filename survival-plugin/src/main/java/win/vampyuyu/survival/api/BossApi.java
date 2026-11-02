@@ -49,6 +49,11 @@ public interface BossApi {
     interface Fight {
         /** Ends the fight as a defeat (nobody is left to fight). Does nothing once it ended. */
         void abort();
+
+        /** Index of the phase the boss is in (0 = the first). Fakes that have no phases keep the default. */
+        default int phase() {
+            return 0;
+        }
     }
 
     /**

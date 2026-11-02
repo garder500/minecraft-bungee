@@ -12,3 +12,19 @@ INSERT INTO setting (id, type, value, note) VALUES ('bastion.exit-delay-seconds'
 INSERT INTO bastion (id, position, realm, name, tagline, guardian, key_item, palette, radius, min_players, max_players, time_limit_seconds, deaths_allowed) VALUES ('heights_bastion', 3, 'Frozen Heights', 'Heights Bastion', 'The Boreal Watcher holds the world still so that nothing can eat it.', 'frost_revenant', 'frost_heart', 'frost', 30, 1, 5, 1200, 3);
 INSERT INTO bastion (id, position, realm, name, tagline, guardian, key_item, palette, radius, min_players, max_players, time_limit_seconds, deaths_allowed) VALUES ('marsh_bastion', 6, 'Putrid Marshes', 'Marsh Bastion', 'The Mire Abomination digests what the Devourer discards.', 'mire_abomination', 'mire_cyst', 'marsh', 30, 1, 5, 1200, 3);
 INSERT INTO bastion (id, position, realm, name, tagline, guardian, key_item, palette, radius, min_players, max_players, time_limit_seconds, deaths_allowed) VALUES ('depths_bastion', 7, 'Abyssal Depths', 'Abyss Bastion', 'The Chained Leviathan still pulls at everything the Devourer left.', 'abyssal_leviathan', 'leviathan_scale', 'abyss', 30, 1, 5, 1200, 3);
+-- The Raid of the Devourer (GDD 4.6): a Bastion like the others, but every member must have cleared the eight Guardians' Bastions, and in its
+-- last phase the arena falls ring by ring down to a core (RaidRules). The key is forged from the eight Guardian cores (quarry.sql).
+INSERT INTO bastion (id, position, realm, name, tagline, guardian, key_item, palette, radius, min_players, max_players, time_limit_seconds, deaths_allowed) VALUES ('devourer_raid', 8, 'Gravitational Throne', 'Raid of the Devourer', 'The world-eater wakes, and all eight regulators are broken.', 'devourer', 'devourer_sigil', 'singularity', 40, 1, 5, 1500, 3);
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.raid.id', 'text', 'devourer_raid', 'Id of the Bastion that is the Raid of the Devourer (empty = no raid rules).');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.raid.requires', 'list', '', 'Bastions every member must have cleared before the Raid opens.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('bastion.raid.requires', 0, 'ashes_bastion');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('bastion.raid.requires', 1, 'grove_bastion');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('bastion.raid.requires', 2, 'necropolis_bastion');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('bastion.raid.requires', 3, 'heights_bastion');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('bastion.raid.requires', 4, 'citadel_bastion');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('bastion.raid.requires', 5, 'marsh_bastion');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('bastion.raid.requires', 6, 'depths_bastion');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('bastion.raid.requires', 7, 'tempest_bastion');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.raid.first-clear-coins', 'real', '4000', 'Coins each member gets the first time they clear the Raid, on top of the boss coins (GDD 16.2: at most 5 000 in all). A guess to measure.');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.raid.collapse-phase', 'int', '2', 'Phase index (0 = first) from which the arena falls ring by ring.');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.raid.collapse-seconds', 'int', '3', 'Seconds between two rings of the arena falling in the last phase.');

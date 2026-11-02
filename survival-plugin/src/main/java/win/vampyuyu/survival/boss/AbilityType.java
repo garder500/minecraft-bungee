@@ -28,7 +28,9 @@ public enum AbilityType {
     BONE_CAGE("bone_cage", "Traps a player inside a bone cage"),
     SOUL_DRAIN("soul_drain", "Beam that drains a player and heals the boss"),
     BLIZZARD("blizzard", "Freezing storm: stay near the warm braziers"),
-    CHAIN_ANCHORS("chain_anchors", "Chains drag everyone toward the boss until the anchors are destroyed");
+    CHAIN_ANCHORS("chain_anchors", "Chains drag everyone toward the boss until the anchors are destroyed"),
+    TIME_ECHO("time_echo", "Marks where a player stood and where they are heading: both spots strike"),
+    WEIGHTLESS("weightless", "Gravity fails: slow fall, short levitation and a drifting current, never a fall to the void");
 
     private final String id;
     private final String description;

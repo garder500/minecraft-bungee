@@ -21,6 +21,16 @@ public final class BastionConfig {
     public int maxConcurrent = 4;
     public int countdownSeconds = 8;
     public int exitDelaySeconds = 15;
+    /** Id of the Raid (the Devourer's Bastion, GDD 4.6), empty for none. */
+    public String raidId = "";
+    /** Bastions every member must have cleared before the Raid opens. */
+    public List<String> raidRequires = List.of();
+    /** Coins each member gets the first time they clear the Raid (GDD 16.2: at most 5 000). */
+    public double raidFirstClearCoins = 4000;
+    /** Phase index (0 = first) from which the arena collapses. */
+    public int raidCollapsePhase = 2;
+    /** Seconds between two rings of the arena falling. */
+    public int raidCollapseSeconds = 3;
 
     public static BastionConfig load(Db db) {
         BastionConfig c = new BastionConfig();
@@ -29,6 +39,11 @@ public final class BastionConfig {
         c.maxConcurrent = clamp(s.getInt("max-concurrent", 4), 1, 20, "max-concurrent", c);
         c.countdownSeconds = clamp(s.getInt("countdown-seconds", 8), 0, 60, "countdown-seconds", c);
         c.exitDelaySeconds = clamp(s.getInt("exit-delay-seconds", 15), 3, 300, "exit-delay-seconds", c);
+        c.raidId = s.getString("raid.id", "").trim().toLowerCase(Locale.ROOT);
+        c.raidRequires = s.getList("raid.requires").stream().map(x -> x.trim().toLowerCase(Locale.ROOT)).filter(x -> !x.isEmpty()).toList();
+        c.raidFirstClearCoins = Math.max(0, Math.min(5000, s.getDouble("raid.first-clear-coins", 4000)));
+        c.raidCollapsePhase = clamp(s.getInt("raid.collapse-phase", 2), 0, 10, "raid.collapse-phase", c);
+        c.raidCollapseSeconds = clamp(s.getInt("raid.collapse-seconds", 3), 1, 30, "raid.collapse-seconds", c);
         db.read(conn -> {
             for (Object[] r : Db.query(conn, "SELECT id, realm, name, tagline, guardian, key_item, palette, radius, min_players, "
                 + "max_players, time_limit_seconds, deaths_allowed FROM bastion ORDER BY position",
@@ -40,6 +55,10 @@ public final class BastionConfig {
         });
         if (c.bastions.isEmpty()) {
             c.problems.add("the bastion table has no valid row");
+        }
+        if (!c.raidId.isEmpty() && !c.bastions.containsKey(c.raidId)) {
+            c.problems.add("bastion.raid.id " + c.raidId + " is not a bastion, the raid is off");
+            c.raidId = "";
         }
         return c;
     }
@@ -77,6 +96,11 @@ public final class BastionConfig {
 
     public Optional<Bastion> ofKey(String itemId) {
         return bastions.values().stream().filter(b -> b.keyItem().equals(itemId)).findFirst();
+    }
+
+    /** True when the Bastion is the Raid. */
+    public boolean isRaid(String bastionId) {
+        return !raidId.isEmpty() && raidId.equals(bastionId);
     }
 
     public List<String> problems() { return java.util.Collections.unmodifiableList(problems); }

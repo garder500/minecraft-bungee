@@ -170,6 +170,16 @@ public final class BossItems {
         t.add(weapon("tidal_trident", "Tidal Trident", Rarity.LEGENDARY, Material.TRIDENT, "TRIDENT", true, 4, Element.FROST,
             "tidal_surge", stats(Stat.MIGHT, 18, Stat.DEEP_LURE, 4, Stat.LURE, 20),
             "<gray>The tide answers to whoever holds it."));
+        // the Devourer (Raid, GDD 4.6): the key is forged from the eight cores; the rewards are trophies, no stat
+        t.add(spec("devourer_sigil", "Event Horizon Key", Rarity.MYTHIC, Material.NETHER_STAR, "SUMMON ITEM", true, none,
+            "<gray>Eight regulators, one lock: the door to the", "<gray>Gravitational Throne.", "",
+            "<yellow>Opens the <light_purple>Raid of the Devourer<yellow> (/bastion). Spent by the", "<yellow>party leader. Every member must have cleared the Guardians."));
+        t.add(spec("singularity_relic", "Singularity Relic", Rarity.MYTHIC, Material.HEAVY_CORE, "TROPHY", true, none,
+            "<gray>A fragment of the Devourer's hunger, held still.", "",
+            "<gray>Proof that you stood at the edge of the singularity.", "<dark_gray>Trophy: it carries no stat."));
+        t.add(spec("horizon_lens", "Horizon Lens", Rarity.LEGENDARY, Material.SPYGLASS, "COSMETIC", true, none,
+            "<gray>Through it, light bends the wrong way.", "",
+            "<dark_gray>Cosmetic: it carries no stat."));
         // crypt lord
         t.add(spec(JUDGE_CORE, "Judge Core", Rarity.EPIC, Material.CRYING_OBSIDIAN, "BOSS COMPONENT", true, none,
             "<gray>The memory vault of a Sarcophagus,", "<gray>every verdict of the old world sealed inside.",
