@@ -56,7 +56,8 @@ public final class BossRewards {
     public void distribute(BossSession session, @Nullable Player killer) {
         BossDefinition def = session.def;
         List<Damager> ranking = session.ledger.ranking();
-        BossKillEvent event = new BossKillEvent(def.id(), killer, ranking, session.location());
+        BossKillEvent event = new BossKillEvent(def.id(), killer, ranking, session.location(),
+            session.options().resonance());
         Bukkit.getPluginManager().callEvent(event);
         BossDefinition.Loot loot = def.loot();
         int eligible = 0;
@@ -131,7 +132,7 @@ public final class BossRewards {
                 break;
             }
             try {
-                List<ItemStack> extra = hook.roll(event, player);
+                List<ItemStack> extra = hook.roll(event, player, List.copyOf(items));
                 if (extra != null) {
                     items.addAll(extra);
                 }
