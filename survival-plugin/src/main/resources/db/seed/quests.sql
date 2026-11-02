@@ -674,5 +674,5 @@ INSERT INTO quest (id, pool, position, category, name, description, type, target
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_07', 0, 'grove_06');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_08', 'plan', 325, 'grove', 'Let It Grow', 'Keep harvesting in the Grove until you earn the Growth affinity (200 harvests): bone meal grows a crop one more stage, anywhere.', 'EVENT', 'grove_affinity:2', 1, 'BONE_MEAL', 1200.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_08', 0, 'grove_07');
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_09', 'plan', 326, 'grove', 'Wake the Mycelial Queen', 'Defeat the Mycelial Queen, the Queen''s guardian form.', 'BOSS_KILL', 'sylvan_matriarch', 1, 'SPIDER_EYE', 2500.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_09', 'plan', 326, 'grove', 'Wake the Mycelial Queen', 'Defeat the Mycelial Queen, Guardian of the Grove.', 'BOSS_KILL', 'sylvan_matriarch', 1, 'SPIDER_EYE', 2500.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_09', 0, 'grove_08');

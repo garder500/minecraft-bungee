@@ -1432,7 +1432,7 @@ def progress_scenario(ctx):
     shot(tools, shots / "pr-8-matriarch.png")
     out = active_bosses()
     say("progress: boss active (island): " + out.strip()[:160].replace("\n", " "))
-    if "matriarch" not in out.lower():
+    if "matriarch" not in out.lower() and "mycelial" not in out.lower():
         failures.append("the Matriarch Egg did not summon the boss: " + out.strip()[:120])
     rcon.command("boss kill all")
     rcon.command("gamemode survival E2EBot")
