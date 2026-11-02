@@ -51,6 +51,12 @@ public final class BossApiImpl implements BossApi {
     @Override
     public Optional<Fight> spawnFight(String bossId, Location location, Player leader, @Nullable String refundItem,
             Consumer<FightResult> onEnd) {
+        return spawnFight(bossId, location, leader, refundItem, 1.0, 1.0, onEnd);
+    }
+
+    @Override
+    public Optional<Fight> spawnFight(String bossId, Location location, Player leader, @Nullable String refundItem,
+            double hpMultiplier, double damageMultiplier, Consumer<FightResult> onEnd) {
         if (bossId == null || location == null || leader == null) {
             return Optional.empty();
         }
@@ -79,7 +85,8 @@ public final class BossApiImpl implements BossApi {
             onEnd.accept(new FightResult(outcome, damage, progress, s.elapsedMillis(), resonance));
         };
         Optional<BossSession> session = manager.spawn(def.get(), location, leader,
-            new BossSession.SpawnOptions(false, false, 0, 0, -1, end, refundItem, resonance));
+            new BossSession.SpawnOptions(false, false, 0, 0, -1, end, refundItem, resonance,
+                Math.max(1.0, hpMultiplier), Math.max(1.0, damageMultiplier)));
         return session.map(s -> new Fight() {
             @Override
             public void abort() {

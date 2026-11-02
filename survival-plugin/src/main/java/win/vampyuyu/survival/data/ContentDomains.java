@@ -92,6 +92,8 @@ public final class ContentDomains {
         new Root("bastion", "id", null, List.of()),
         settings("bastion")));
 
+    public static final Domain HELLGAO = new Domain("hellgao", List.of(settings("hellgao")));
+
     public static final Domain PROMOTION = new Domain("promotion", List.of(
         new Root("promotion_spec", "id", null, List.of()),
         new Root("promotion_ability", "class", null, List.of()),
@@ -166,7 +168,7 @@ public final class ContentDomains {
 
     /** In the order they are synced. */
     public static final List<Domain> ALL = List.of(QUESTS, QUESTS_DAILY, CORE, ISLAND, UTILITY, WINGS, MENU, ECONOMY, SKILLS, QUARRY, GADGETS, BOSS,
-        RESONANCE, TRADES, DUNGEON, BASTION, ITEMS, REALM, PROMOTION, RUNES, STATIONS, NPC, PARAGON, BREATH);
+        RESONANCE, TRADES, DUNGEON, BASTION, ITEMS, REALM, HELLGAO, PROMOTION, RUNES, STATIONS, NPC, PARAGON, BREATH);
 
     private ContentDomains() {}
 

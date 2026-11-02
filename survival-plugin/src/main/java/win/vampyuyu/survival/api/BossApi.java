@@ -65,4 +65,11 @@ public interface BossApi {
      */
     Optional<Fight> spawnFight(String bossId, Location location, Player leader, @Nullable String refundItem,
         Consumer<FightResult> onEnd);
+
+    /**
+     * Same, with extra multipliers of the boss's health and damage on top of the Resonance rank (the Ascension ranks
+     * of Hell Gao). Values below 1 are ignored.
+     */
+    Optional<Fight> spawnFight(String bossId, Location location, Player leader, @Nullable String refundItem,
+        double hpMultiplier, double damageMultiplier, Consumer<FightResult> onEnd);
 }

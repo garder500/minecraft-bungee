@@ -70,6 +70,8 @@ public final class BossItems {
     public static final String MIRE_CORE = "mire_core";
     public static final String LEVIATHAN_CORE = "leviathan_core";
     public static final String THUNDER_CORE = "thunder_core";
+    /** Hell Gao (GDD 19.4): the Bastion key; one Interpulsation Key of the Breath is exchanged for it (/hellgao claim). */
+    public static final String INTERPULSE_KEY = "interpulse_key";
 
     /** Damage of the ore ladder swords, tier 1 to 5 (the same numbers as the {@code item_def} rows of the quarry). */
     static final double[] TIER_DAMAGE = {40, 70, 120, 200, 320};
@@ -160,6 +162,10 @@ public final class BossItems {
         t.add(spec(THUNDER_CORE, "Dragon Core", Rarity.EPIC, Material.WAXED_COPPER_BLOCK, "BOSS COMPONENT", true, none,
             "<gray>The kinetic regulator of a Sarcophagus,", "<gray>still turning the winds of a lost sky.",
             "", "<gray>Guardian component of the <aqua>Tempestuous Archipelago<gray>."));
+        // hell gao = the Anomaly, secret post-game superboss (no component: it pays titles and cosmetics, never a stat)
+        t.add(spec(INTERPULSE_KEY, "Interpulse Key", Rarity.MYTHIC, Material.RECOVERY_COMPASS, "SUMMON ITEM", true, none,
+            "<gray>It points at nothing, between two pulses.", "",
+            "<yellow>Opens the <light_purple>Interpulse Rift<yellow> (/hellgao) during the window", "<yellow>between two pulses. Spent by the party leader."));
         // abyssal leviathan
         // abyssal leviathan = Chained Leviathan, Guardian of the Abyssal Depths
         t.add(spec(LEVIATHAN_CORE, "Leviathan Core", Rarity.EPIC, Material.HEART_OF_THE_SEA, "BOSS COMPONENT", true, none,
