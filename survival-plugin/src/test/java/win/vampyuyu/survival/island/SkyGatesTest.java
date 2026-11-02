@@ -194,8 +194,8 @@ public class SkyGatesTest {
         assertFalse(api.travel(player, Realm.GROVE));
         assertTrue(api.extinguish(id, Realm.ASHES));
         assertTrue(api.litRealms(id).isEmpty());
-        // there is no hub world in the mock server: no arrival point
-        assertNull(api.quaiSpawn());
+        // the Quai des Huit is reached from the hub
+        assertNotNull(api.quaiSpawn());
     }
 
     @Test

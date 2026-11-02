@@ -100,11 +100,11 @@ public class SimpleSkyblockTest {
         assertTrue(plugin.core().modes().enterSurvival(player));
         assertTrue(player.getInventory().contains(Material.DIAMOND));
     }
-    @Test public void skyblockHasOverworldNetherEndAndDungeonsButNoHub() {
-        assertNull(server.getWorld(SkyblockWorlds.HUB));
+    @Test public void skyblockHasOverworldNetherEndHubAndDungeons() {
+        assertNotNull(server.getWorld(SkyblockWorlds.HUB));
         assertNotNull(server.getWorld(SkyblockWorlds.END));
         assertNotNull(server.getWorld(SkyblockWorlds.NETHER));
-        assertEquals(java.util.List.of("utility","island","wings","economy","quarry","gadgets","boss","dungeon","menu"),plugin.features().enabledIds());
+        assertEquals(java.util.List.of("utility", "island", "wings", "economy", "quarry", "classes", "trades", "gadgets", "boss", "resonance", "dungeon", "bastion", "realm", "ashes", "storm", "marsh", "depths", "promotion", "npc", "runes", "stations", "astral", "paragon", "breath", "hellgao", "menu", "movement"),plugin.features().enabledIds());
         assertNotNull(server.getCommandMap().getCommand("sbmenu"));
         assertNotNull(server.getCommandMap().getCommand("dungeon"));
     }

@@ -341,26 +341,29 @@ public class ReviewFixesTest {
     }
 
     @Test
-    public void voidSigilWorksAtTheAltarOfAnyIslandCell() {
-        WorldMock end = server.addSimpleWorld("sb_end");
+    public void theEchoIsSummonedAtTheRiftAltarOfTheHubOnly() {
+        WorldMock hub = (WorldMock) org.bukkit.Bukkit.getWorld("sb_hub");
+        if (hub == null) {
+            hub = server.addSimpleWorld("sb_hub");
+        }
         PlayerMock p = server.addPlayer();
-        Location at = new Location(end, 805, 65, -390);
-        end.getChunkAt(at).load();
-        end.getChunkAt(new Location(end, 800.5, 65, -399.5)).load();
+        Location at = new Location(hub, -30, 101, 3);
+        hub.getChunkAt(at).load();
+        hub.getChunkAt(new Location(hub, -34.5, 101, 0.5)).load();
         p.teleport(at);
         BossDefinition def = manager.config().definition("voidwyrm").orElseThrow();
         SummonListener listener = new SummonListener(plugin.core(), manager);
         String denial = listener.summon(p, def, EquipmentSlot.HAND);
-        assertNull("own cell altar accepted: " + denial, denial);
+        assertNull("the Rift altar accepts it: " + denial, denial);
         BossSession session = manager.active().iterator().next();
-        assertEquals(800.5, session.anchor().getX(), 1e-9);
-        assertEquals(-399.5, session.anchor().getZ(), 1e-9);
+        assertEquals(-34.5, session.anchor().getX(), 1e-9);
+        assertEquals(0.5, session.anchor().getZ(), 1e-9);
         PlayerMock second = server.addPlayer();
         second.teleport(at);
         assertNotNull("a second player cannot stack another one on the same altar",
             listener.summon(second, def, EquipmentSlot.HAND));
         session.end(BossSession.End.ADMIN, null);
-        p.teleport(new Location(end, 1000, 65, 1000));
+        p.teleport(new Location(hub, 1000, 101, 1000));
         assertNotNull("far from every altar", listener.summon(p, def, EquipmentSlot.HAND));
     }
 }

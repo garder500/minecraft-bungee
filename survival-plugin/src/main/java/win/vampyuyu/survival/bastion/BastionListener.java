@@ -63,7 +63,7 @@ public final class BastionListener implements Listener {
             return;
         }
         switch (e.getCause()) {
-            case ENDER_PEARL, CHORUS_FRUIT, COMMAND -> e.setCancelled(true);
+            case ENDER_PEARL, CONSUMABLE_EFFECT, COMMAND -> e.setCancelled(true);
             default -> { } // our own arrival, exit and return from the void are plugin teleports
         }
     }

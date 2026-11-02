@@ -303,7 +303,7 @@ public class IslandReviewFixesTest {
         tick(1000);
         Island island = islandOf(p);
         assertEquals(Island.State.READY, island.state());
-        assertTrue(has(fake.lastOverworldChest(), Material.ICE));
+        assertTrue(has(fake.lastOverworldChest(), Material.OAK_SAPLING));
         assertTrue(island.platformsReady);
         assertTrue(service.data(p.getUniqueId()).lootClaimed);
     }
@@ -315,13 +315,13 @@ public class IslandReviewFixesTest {
         tick(10);
         Island island = islandOf(p);
         assertEquals(Island.State.READY, island.state());
-        assertTrue(has(fake.lastOverworldChest(), Material.ICE));
+        assertTrue(has(fake.lastOverworldChest(), Material.OAK_SAPLING));
         island.lastResetAt = 0;
         p.performCommand("island reset");
         p.performCommand("island reset");
         tick(20);
         assertEquals(Island.State.READY, island.state());
-        assertTrue("a reset hands out the full starter chest again", has(fake.lastOverworldChest(), Material.ICE));
+        assertTrue("a reset hands out the full starter chest again", has(fake.lastOverworldChest(), Material.OAK_SAPLING));
         assertTrue(has(fake.lastOverworldChest(), Material.BONE_MEAL));
         assertEquals("a reset draws another generation", 3, island.generation);
     }
@@ -347,7 +347,7 @@ public class IslandReviewFixesTest {
         assertEquals(Island.State.READY, island.state());
         assertTrue("the resetter is the one marked as served", service.data(resetter.getUniqueId()).starterClaimed);
         assertTrue(service.data(resetter.getUniqueId()).lootClaimed);
-        assertTrue(has(fake.lastOverworldChest(island), Material.ICE));
+        assertTrue(has(fake.lastOverworldChest(island), Material.OAK_SAPLING));
         // The former owner now owns a personal fallback island. Never overwrite it by transferring back.
         readyIsland(resetter);
         assertFalse(service.registry().transfer(island, resetter.getUniqueId()));
@@ -355,7 +355,7 @@ public class IslandReviewFixesTest {
         member.performCommand("island reset");
         member.performCommand("island reset");
         tick(30);
-        assertTrue(has(fake.lastOverworldChest(island), Material.ICE));
+        assertTrue(has(fake.lastOverworldChest(island), Material.OAK_SAPLING));
     }
 
     @Test
@@ -571,7 +571,7 @@ public class IslandReviewFixesTest {
         // the dungeon / menu features take players out through the api
         assertTrue(service.teleportHub(runner));
         tick(3);
-        assertEquals(SkyblockWorlds.WORLD, runner.getWorld().getName());
+        assertEquals(SkyblockWorlds.HUB, runner.getWorld().getName());
         // others are not affected
         assertTrue(service.goHub(host).ok());
     }

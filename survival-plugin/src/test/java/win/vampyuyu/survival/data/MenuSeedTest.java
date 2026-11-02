@@ -19,7 +19,7 @@ public class MenuSeedTest {
             assertEquals(8, count(db, "SELECT COUNT(*) FROM menu_fairy_stat"));
             assertEquals(43, count(db, "SELECT COUNT(*) FROM menu_fairy_soul"));
             assertEquals(0, count(db, "SELECT COUNT(*) FROM menu_warp"));
-            assertEquals(39, count(db, "SELECT COUNT(*) FROM setting WHERE id GLOB 'menu.*'"));
+            assertEquals(46, count(db, "SELECT COUNT(*) FROM setting WHERE id GLOB 'menu.*'"));
             assertTrue(Settings.load(db, "menu").problems().toString(), Settings.load(db, "menu").problems().isEmpty());
         }
     }
@@ -32,7 +32,7 @@ public class MenuSeedTest {
             assertEquals("04:00", s.getString("quests.daily.reset-time", ""));
             assertEquals(10, s.getList("quests.daily.ignore-coin-reasons").size());
             assertEquals(0, count(db, "SELECT COUNT(*) FROM setting WHERE id GLOB 'menu.quests.daily.pool*' OR id GLOB 'menu.quests.tutorial*'"));
-            assertEquals(25, count(db, "SELECT COUNT(*) FROM quest WHERE pool = 'daily'"));
+            assertEquals(24, count(db, "SELECT COUNT(*) FROM quest WHERE pool = 'daily'"));
         }
     }
 }

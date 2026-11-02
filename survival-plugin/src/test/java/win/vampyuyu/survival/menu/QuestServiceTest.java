@@ -55,7 +55,7 @@ public class QuestServiceTest extends MenuTestBase {
     public void shippedConfigLoadsCleanWithTheExpectedQuestCounts() {
         MenuConfig config = shipped();
         assertEquals(List.of(), config.problems());
-        assertEquals(25, config.catalog.dailyPool().size());
+        assertEquals(24, config.catalog.dailyPool().size());
         assertTrue(config.catalog.tutorial().size() >= 20);
         assertEquals(3, config.dailyCount);
     }

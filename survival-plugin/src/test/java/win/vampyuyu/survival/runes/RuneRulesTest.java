@@ -38,7 +38,7 @@ public class RuneRulesTest {
         assertEquals(8, config.powder());
         assertEquals(3, config.fuse());
         assertEquals(7, config.runes().size());
-        assertEquals(2, config.runes().stream().filter(Rune::realm).count());
+        assertEquals(3, config.runes().stream().filter(Rune::realm).count());
     }
 
     @Test

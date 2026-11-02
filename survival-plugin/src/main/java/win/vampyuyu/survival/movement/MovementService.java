@@ -284,11 +284,11 @@ public final class MovementService implements Listener {
 
     private void noteSafeSpot(Player p) {
         Location at = p.getLocation();
-        if (at.getWorld() == null) {
+        if (at.getWorld() == null || !p.isOnGround() || at.getY() < at.getWorld().getMinHeight()) {
             return;
         }
         var feet = at.getBlock();
-        if (MovementMath.isSafeSpot(p.isOnGround(), feet.isPassable(), feet.isLiquid(), at.getY(), at.getWorld().getMinHeight())) {
+        if (MovementMath.isSafeSpot(p.isOnGround(), feet.getType().isAir() || feet.isPassable(), feet.isLiquid(), at.getY(), at.getWorld().getMinHeight())) {
             lastSafe.put(p.getUniqueId(), at);
         }
     }

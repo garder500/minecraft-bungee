@@ -85,7 +85,7 @@ public final class NecropolisPlan {
         int cx = x;
         int cz = z;
         for (int d = 6; d <= 6 + length; d++) {
-            plan.set(cx, -d, cz, d % 4 == 0 ? Material.BONE_BLOCK : Material.CHAIN, d % 4 == 0 ? null : "axis=y");
+            plan.set(cx, -d, cz, d % 4 == 0 ? Material.BONE_BLOCK : Material.IRON_CHAIN, d % 4 == 0 ? null : "axis=y");
             if (d % 3 == 0) {
                 cx += rnd.nextInt(3) - 1;
                 cz += rnd.nextInt(3) - 1;
@@ -143,7 +143,7 @@ public final class NecropolisPlan {
             }
             if (i % 4 == 0) {
                 plan.set(x, 1, z, Material.SOUL_LANTERN, "hanging=false");
-                plan.set(x, -1, z, Material.CHAIN, "axis=y");
+                plan.set(x, -1, z, Material.IRON_CHAIN, "axis=y");
             }
         }
     }
@@ -161,7 +161,7 @@ public final class NecropolisPlan {
             }
         }
         for (int x = -2; x <= 2; x += 2) {
-            plan.set(x, 7, -6, Material.CHAIN, "axis=y");
+            plan.set(x, 7, -6, Material.IRON_CHAIN, "axis=y");
             plan.set(x, 6, -6, Material.SOUL_LANTERN, "hanging=true");
         }
         ShapeKit.disc(plan, 0, 0, -6, 2.4, Material.CRYING_OBSIDIAN);

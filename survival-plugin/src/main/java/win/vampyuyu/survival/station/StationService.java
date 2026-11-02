@@ -242,7 +242,7 @@ public final class StationService implements StationApi {
                 continue;
             }
             // a Warden's bonus is a chance of one more flask
-            int flasks = random.nextDouble() < yield(player.getUniqueId()) - 1 ? 2 : 1;
+            int flasks = random.nextDouble() < this.yield(player.getUniqueId()) - 1 ? 2 : 1;
             for (int f = 0; f < flasks; f++) {
                 for (ItemStack rest : player.getInventory().addItem(flask(brew)).values()) {
                     player.getWorld().dropItem(player.getLocation(), rest);
@@ -340,7 +340,7 @@ public final class StationService implements StationApi {
         Map<Product, Integer> out = new java.util.LinkedHashMap<>();
         for (Product p : config.products().values()) {
             int units = StationRules.ranchUnits(d.ranchSince, now, p, tier, config.tierBonus, config.storageHours);
-            out.put(p, (int) Math.floor(units * yield(id) + 1e-9));
+            out.put(p, (int) Math.floor(units * this.yield(id) + 1e-9));
         }
         return out;
     }

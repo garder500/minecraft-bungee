@@ -303,6 +303,7 @@ forge_deep_miners forging FORGE_ITEM miner_2
 retired q134
 retired q135
 retired q136
+retired q096
 forge_bronze_bow forging FORGE_ITEM bronze_bow
 forge_bronze_axe forging FORGE_ITEM bronze_axe
 forge_bronze_shovel forging FORGE_ITEM bronze_shovel

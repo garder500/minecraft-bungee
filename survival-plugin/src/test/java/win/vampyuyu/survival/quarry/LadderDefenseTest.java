@@ -47,6 +47,7 @@ public class LadderDefenseTest {
     @Test
     public void bronzeWardCutsHitsAndVitalityAddsHealth() {
         PlayerMock player = server.addPlayer("Tank");
+        player.teleport(org.bukkit.Bukkit.getWorld(win.vampyuyu.survival.core.SkyblockWorlds.WORLD).getSpawnLocation()); // the hub is a safe zone
         wearBronze(player);
         LivingEntity zombie = (LivingEntity) player.getWorld().spawnEntity(player.getLocation(), EntityType.ZOMBIE);
         EntityDamageByEntityEvent hit = new EntityDamageByEntityEvent(zombie, player, EntityDamageEvent.DamageCause.ENTITY_ATTACK,

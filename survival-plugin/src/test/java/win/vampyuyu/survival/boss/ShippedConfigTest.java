@@ -146,12 +146,13 @@ public class ShippedConfigTest {
     }
 
     @Test
-    public void altarFollowsTheIslandCellsAndHubSpotsUseSpawnOffsets() throws Exception {
+    public void theEchoAltarIsInTheHubAndHubSpotsUseSpawnOffsets() throws Exception {
         BossConfig config = shipped();
         BossDefinition.Altar altar = config.bosses().get("voidwyrm").summon().altar();
-        assertEquals("island cells repeat the altar", 400, altar.cellSize(), 0);
-        assertEquals(0.5, altar.x(), 0);
-        assertEquals(65, altar.y(), 0);
+        assertEquals(win.vampyuyu.survival.core.SkyblockWorlds.HUB, altar.world());
+        assertEquals("one Rift altar, no island cells", 0, altar.cellSize(), 0);
+        assertEquals(-34.5, altar.x(), 0);
+        assertEquals(101, altar.y(), 0);
         for (var spot : config.worldBoss().locations()) {
             assertTrue(spot.name() + " is placed relative to the world spawn, then snapped to ground", spot.y() <= -900);
             assertTrue("inside the 26 block hub plaza around 0,0 (spawn pad at 0,14)",
@@ -192,8 +193,8 @@ public class ShippedConfigTest {
                 }
             }
         }
-        // 6 boss drops with pity, and 5 slayer drops that exist in tiers 3, 4 and 5
-        assertEquals(6 + 5 * 3, withPity);
+        // 15 boss drops with pity, and 5 slayer drops that exist in tiers 3, 4 and 5
+        assertEquals(15 + 5 * 3, withPity);
     }
 
     @Test
@@ -201,8 +202,10 @@ public class ShippedConfigTest {
         try (var db = BossTestData.seeded()) {
             var tiers = new java.util.HashMap<String, Integer>();
             db.read(c -> win.vampyuyu.survival.data.Db.query(c, "SELECT id, tier FROM boss", rs -> tiers.put(rs.getString(1), rs.getInt(2))));
-            assertEquals(java.util.Map.of("crypt_lord", 1, "magma_warden", 2, "frost_revenant", 3, "sylvan_matriarch", 3,
-                "abyssal_leviathan", 4, "voidwyrm", 5), tiers);
+            assertEquals(java.util.Map.ofEntries(java.util.Map.entry("crypt_lord", 1), java.util.Map.entry("magma_warden", 2),
+                java.util.Map.entry("frost_revenant", 3), java.util.Map.entry("sylvan_matriarch", 3), java.util.Map.entry("mire_abomination", 3),
+                java.util.Map.entry("temporal_pharaoh", 3), java.util.Map.entry("abyssal_leviathan", 4), java.util.Map.entry("thunder_dragon", 4),
+                java.util.Map.entry("voidwyrm", 5), java.util.Map.entry("devourer", 5), java.util.Map.entry("hell_gao", 5)), tiers);
         }
     }
 }

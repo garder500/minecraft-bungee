@@ -418,8 +418,12 @@ public final class ClassService implements ClassApi {
         riftSurge.put(player.getUniqueId(), now() + ClassRules.RIFT_SURGE_MILLIS);
     }
 
+    private static boolean passable(org.bukkit.block.Block block) {
+        return block.getType().isAir() || block.isPassable();
+    }
+
     private static boolean fits(Location feet) {
-        return feet.getBlock().isPassable() && feet.clone().add(0, 1, 0).getBlock().isPassable();
+        return passable(feet.getBlock()) && passable(feet.clone().add(0, 1, 0).getBlock());
     }
 
     private void burst(Player player, LadderApi ladder, ItemStack weapon, double radius, double share) {

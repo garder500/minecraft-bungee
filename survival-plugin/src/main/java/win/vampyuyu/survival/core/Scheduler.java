@@ -47,8 +47,12 @@ public final class Scheduler {
         return wrap(Bukkit.getScheduler().runTask(plugin, task));
     }
 
-    /** Runs on an async worker thread. */
+    /** Runs on an async worker thread. While the plugin disables no task can be registered: runs here, so a last save is not lost. */
     public Handle async(Runnable task) {
+        if (!plugin.isEnabled()) {
+            task.run();
+            return DONE;
+        }
         return wrap(Bukkit.getScheduler().runTaskAsynchronously(plugin, task));
     }
 

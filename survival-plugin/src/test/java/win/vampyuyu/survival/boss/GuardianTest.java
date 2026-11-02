@@ -37,7 +37,7 @@ public class GuardianTest {
     @Test
     public void theGuardiansAreDeclaredWithARealmAResourceAndLines() {
         Guardians guardians = BossTestData.shipped().guardians();
-        assertEquals(IDS, List.copyOf(guardians.byBoss().keySet()));
+        assertEquals(java.util.Set.copyOf(IDS), guardians.byBoss().keySet());
         assertEquals(Realm.ASHES, Realm.byId(guardians.get("magma_warden").realm()));
         assertEquals(Realm.GROVE, Realm.byId(guardians.get("sylvan_matriarch").realm()));
         assertEquals("cinderheart", guardians.get("magma_warden").resource());

@@ -7,7 +7,6 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Arrow;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -19,6 +18,8 @@ import org.junit.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
+import org.mockbukkit.mockbukkit.entity.ZombieMock;
+import org.mockbukkit.mockbukkit.world.WorldMock;
 import win.vampyuyu.survival.SurvivalPlugin;
 import win.vampyuyu.survival.api.ClassApi;
 import win.vampyuyu.survival.api.PlayerClass;
@@ -28,12 +29,30 @@ public class ClassesTest {
     private ServerMock server;
     private SurvivalPlugin plugin;
     private ClassService classes;
+    /** Players join in the hub, a safe zone that cancels damage: the fights happen here. Nothing blocks a Rift Step (the mock has no ray trace). */
+    private WorldMock arena;
 
     @Before
     public void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(SurvivalPlugin.class);
         classes = plugin.core().require(ClassService.class);
+        arena = new WorldMock() {
+            @Override
+            public org.bukkit.util.RayTraceResult rayTraceBlocks(org.bukkit.Location start, org.bukkit.util.Vector direction, double maxDistance,
+                    org.bukkit.FluidCollisionMode fluids, boolean ignorePassable) {
+                return null;
+            }
+
+            @Override
+            public <T extends org.bukkit.entity.Entity> T createEntity(org.bukkit.Location location, Class<T> type) {
+                T entity = super.createEntity(location, type); // a launched projectile stays out of the mock world otherwise
+                server.registerEntity((org.mockbukkit.mockbukkit.entity.EntityMock) entity);
+                return entity;
+            }
+        };
+        arena.setName("class_arena");
+        server.addWorld(arena);
     }
 
     @After
@@ -43,6 +62,7 @@ public class ClassesTest {
 
     private PlayerMock player(String name, PlayerClass chosen) {
         PlayerMock p = server.addPlayer(name);
+        p.setLocation(arena.getSpawnLocation()); // out of the mode check: the arena is not a Skyblock world
         if (chosen != null) {
             assertTrue(classes.choose(p.getUniqueId(), chosen));
         }
@@ -50,7 +70,16 @@ public class ClassesTest {
     }
 
     private LivingEntity zombie(PlayerMock near) {
-        return (LivingEntity) near.getWorld().spawnEntity(near.getLocation(), EntityType.ZOMBIE);
+        // the mock has no damage with a source, which a class spell uses
+        ZombieMock zombie = new ZombieMock(server, java.util.UUID.randomUUID()) {
+            @Override
+            public void damage(double amount, org.bukkit.damage.DamageSource source) {
+                damage(amount);
+            }
+        };
+        zombie.setLocation(near.getLocation());
+        server.registerEntity(zombie);
+        return zombie;
     }
 
     private double hit(PlayerMock player, LivingEntity target) {
@@ -130,7 +159,7 @@ public class ClassesTest {
     public void vanguardTakesFivePercentLessNearAnAlly() {
         PlayerMock tank = player("Wall", PlayerClass.VANGUARD);
         double alone = hurt(tank, 100);
-        server.addPlayer("Friend").teleport(tank.getLocation());
+        server.addPlayer("Friend").setLocation(tank.getLocation());
         assertEquals(alone * 0.95, hurt(tank, 100), 1e-6);
     }
 
@@ -180,7 +209,7 @@ public class ClassesTest {
         LivingEntity a = zombie(mage);
         LivingEntity b = zombie(mage);
         PlayerMock friend = server.addPlayer("Friend");
-        friend.teleport(mage.getLocation());
+        friend.setLocation(mage.getLocation());
         double friendHealth = friend.getHealth();
         assertEquals(ClassService.Cast.OK, classes.cast(mage));
         assertTrue("zombie hurt", a.getHealth() < a.getAttribute(Attribute.MAX_HEALTH).getValue());
@@ -207,6 +236,7 @@ public class ClassesTest {
         ItemStack bow = ranger.getInventory().getItemInMainHand();
         LivingEntity target = zombie(ranger);
         Arrow volley = arrows.get(arrows.size() - 1);
+        volley.setShooter(ranger); // the mock launches without a shooter
         EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(volley, target, EntityDamageEvent.DamageCause.PROJECTILE,
             org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.ARROW).build(), 3);
         server.getPluginManager().callEvent(event);

@@ -68,10 +68,10 @@ public class SlayerManagerTest {
     @Test
     public void tooPoorIsRefusedAndNothingIsTaken() {
         PlayerMock p = server.addPlayer();
-        wallet.balance.put(p.getUniqueId(), 100.0);
+        wallet.balance.put(p.getUniqueId(), 0.5);
         String refusal = slayer.start(p, slayer.slayer("zombie").orElseThrow(), 1);
         assertNotNull(refusal);
-        assertEquals(100.0, wallet.coins(p.getUniqueId()), 0);
+        assertEquals(0.5, wallet.coins(p.getUniqueId()), 0);
         assertEquals(0, wallet.takes);
         assertNull(data(p).quest);
     }

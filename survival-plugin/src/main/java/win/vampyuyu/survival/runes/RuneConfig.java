@@ -53,7 +53,8 @@ public record RuneConfig(List<Rune> runes, List<Integer> values, List<Integer> s
                 problems.add("runes.list: bad target or id in '" + row + "'");
                 continue;
             }
-            if (runes.stream().filter(r -> r.realm() == (stat == null)).count() >= MAX_RUNES) {
+            boolean realm = stat == null;
+            if (runes.stream().filter(r -> r.realm() == realm).count() >= MAX_RUNES) {
                 problems.add("runes.list: only the first " + MAX_RUNES + " " + (stat == null ? "Realm" : "stat")
                     + " runes fit the menu, '" + id + "' is ignored");
                 continue;

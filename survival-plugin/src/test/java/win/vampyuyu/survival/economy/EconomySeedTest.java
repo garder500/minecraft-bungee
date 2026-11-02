@@ -18,16 +18,16 @@ public class EconomySeedTest {
         EconomyConfig c = EconomyFixtures.shipped();
         assertEquals(List.of("farmer", "miner", "lumberjack", "fisherman", "mob_hunter", "alchemist", "adventurer",
             "weaponsmith", "builder", "rancher"), c.merchants().stream().map(EconomyConfig.Merchant::id).toList());
-        assertEquals(369, c.offers().size());
+        assertEquals(288, c.offers().size());
         assertEquals(6, c.tiers().size());
         assertEquals("Starter", c.tiers().get(0).name());
         assertEquals("Prestige", c.tiers().get(5).name());
         assertEquals(Map.of(), c.pressurePrefixes());
-        assertEquals(468, c.products().size());
+        assertEquals(346, c.products().size());
         Map<String, Long> perCategory = c.products().stream()
             .collect(Collectors.groupingBy(EconomyConfig.Product::category, Collectors.counting()));
-        assertEquals(Map.of("farming", 76L, "mining", 112L, "woods", 60L, "combat", 88L, "fishing", 67L, "misc", 65L), perCategory);
-        assertEquals(List.of("sunstone", "starcore", "wings_core_*").stream().sorted().toList(), c.neverTraded());
+        assertEquals(Map.of("farming", 44L, "mining", 68L, "woods", 53L, "combat", 67L, "fishing", 49L, "misc", 65L), perCategory);
+        assertEquals(List.of("sunstone", "starcore", "wings_core_*", "chrono_sand", "cinderheart", "heartwood", "soul_ash").stream().sorted().toList(), c.neverTraded());
         assertEquals(13, c.blockedMaterials().size());
         assertEquals(0, c.blockedItems().size());
         assertEquals(List.of("1", "6", "12", "24", "48"), c.settings().getList("auction.durations-hours"));

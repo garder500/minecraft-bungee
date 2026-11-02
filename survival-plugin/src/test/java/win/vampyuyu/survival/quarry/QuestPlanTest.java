@@ -26,7 +26,7 @@ import win.vampyuyu.survival.menu.QuestType;
  */
 public class QuestPlanTest {
     /** Keys fired by the plugin as EVENT quest progress (QuarryProgressEvent kind EVENT). */
-    private static final Set<String> EVENT_KEYS = Set.of("pebble", "spring_filled", "forge_placed", "machine_mined",
+    private static final Set<String> EVENT_KEYS = Set.of("hub_arrive", "hub_npc:guard", "hub_npc:archivist", "hub_npc:merchant", "rift_enter", "pebble", "spring_filled", "forge_placed", "machine_mined",
         "machine_placed", "machine_placed:fountain", "machine_placed:spring_stone", "machine_placed:cable",
         "machine_placed:battery", "machine_placed:coal_generator", "machine_placed:solar_panel", "machine_placed:miner_1",
         "machine_placed:miner_2", "generator_built", "generator_built:stone", "generator_built:dunes",
@@ -72,9 +72,9 @@ public class QuestPlanTest {
     public void thePlanLoadsWithoutLosingAQuest() {
         assertTrue(catalog.problems().toString(), catalog.problems().isEmpty());
         assertTrue("at least 250 quests, got " + catalog.tutorial().size(), catalog.tutorial().size() >= 250);
-        assertEquals(17, catalog.categories().size());
+        assertEquals(19, catalog.categories().size());
         long main = catalog.categories().stream().filter(QuestCatalog.Category::main).count();
-        assertEquals(9, main);
+        assertEquals(11, main);
         for (QuestCatalog.Category category : catalog.categories()) {
             assertFalse(category.id() + " is empty", catalog.questsOf(category.id()).isEmpty());
         }

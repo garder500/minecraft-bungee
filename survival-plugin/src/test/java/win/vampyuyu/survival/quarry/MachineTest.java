@@ -75,16 +75,17 @@ public class MachineTest {
     public void machinesOnTheIslandProveTheirForgeQuests() {
         PlayerMock owner = server.addPlayer("Builder");
         Island island = island(owner);
+        var catalog = win.vampyuyu.survival.menu.QuestRepo.load(plugin.core().data());
+        var battery = catalog.tutorial().stream().filter(d -> d.name().equals("Battery")).findFirst().orElseThrow();
+        var miner = catalog.tutorial().stream().filter(d -> d.name().equals("Miner I")).findFirst().orElseThrow();
+        var quests = plugin.core().profiles().section(owner.getUniqueId(), "quests",
+            win.vampyuyu.survival.menu.QuestData.class, win.vampyuyu.survival.menu.QuestData::new);
+        // before the first sync: the island's shared quest record starts from the owner's progress
+        quests.completed.addAll(battery.requires());
         owner.teleport(base(island).getLocation());
         Block at = base(island);
         assertTrue(place(owner, at, "battery"));
         assertTrue(place(owner, at.getRelative(2, 0, 0), "miner_2"));
-        var quests = plugin.core().profiles().section(owner.getUniqueId(), "quests",
-            win.vampyuyu.survival.menu.QuestData.class, win.vampyuyu.survival.menu.QuestData::new);
-        var catalog = win.vampyuyu.survival.menu.QuestRepo.load(plugin.core().data());
-        var battery = catalog.tutorial().stream().filter(d -> d.name().equals("Battery")).findFirst().orElseThrow();
-        var miner = catalog.tutorial().stream().filter(d -> d.name().equals("Miner I")).findFirst().orElseThrow();
-        quests.completed.addAll(battery.requires());
         owner.performCommand("quests categories");
         assertTrue(quests.completed.contains(battery.id()));
         assertTrue("a Miner II is made from a Miner I", quests.completed.contains(miner.id()));

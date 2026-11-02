@@ -74,6 +74,14 @@ public class PowerCurveTest {
         return 1.0;
     }
 
+    /**
+     * The bosses the tier ladder speaks for. Hell Gao is a hand-tuned post-game fight (docs/skyblock-notes/hellgao.md) and the
+     * Temporal Pharaoh is written to want Frost and resist Ember, the tier's own element (docs/skyblock-notes/citadel.md).
+     */
+    private static boolean onTheLadder(BossDefinition boss) {
+        return boss.kind() == BossDefinition.Kind.BOSS && !boss.id().equals("hell_gao") && !boss.id().equals("temporal_pharaoh");
+    }
+
     /** Share of the time a player really lands hits (GDD 8.7 factor 0.5), read from the data. */
     private static double uptime() {
         return Settings.load(db, "boss").getDouble("settings.hp-factor", 0.5);
@@ -118,9 +126,9 @@ public class PowerCurveTest {
 
     @Test
     public void everyBossIsAutoScaledFromItsTier() {
-        assertEquals(6, config.bosses().values().stream().filter(b -> b.kind() == BossDefinition.Kind.BOSS).count());
+        assertEquals(11, config.bosses().values().stream().filter(b -> b.kind() == BossDefinition.Kind.BOSS).count());
         for (BossDefinition boss : config.bosses().values()) {
-            if (boss.kind() != BossDefinition.Kind.BOSS) {
+            if (!onTheLadder(boss)) {
                 continue;
             }
             assertTrue(boss.id(), boss.tier() >= 1);
@@ -145,7 +153,7 @@ public class PowerCurveTest {
     @Test
     public void aPlayerOfTheTierKillsEachBossInAboutThreeMinutesAndOneTierBehindInAboutFive() {
         for (BossDefinition boss : config.bosses().values()) {
-            if (boss.kind() != BossDefinition.Kind.BOSS) {
+            if (!onTheLadder(boss)) {
                 continue;
             }
             double s = seconds(boss, boss.tier());
@@ -161,7 +169,7 @@ public class PowerCurveTest {
     @Test
     public void theGroupScalingIsHalfAPlayerAndCapsAtTripleWithFive() {
         for (BossDefinition boss : config.bosses().values()) {
-            if (boss.kind() != BossDefinition.Kind.BOSS) {
+            if (!onTheLadder(boss)) {
                 continue;
             }
             var a = boss.arena();
@@ -195,7 +203,7 @@ public class PowerCurveTest {
     @Test
     public void oneTierLowerTakesTwoToThreeTimesLonger() {
         for (BossDefinition boss : config.bosses().values()) {
-            if (boss.kind() != BossDefinition.Kind.BOSS || boss.tier() < 2) {
+            if (!onTheLadder(boss) || boss.tier() < 2) {
                 continue;
             }
             double ratio = seconds(boss, boss.tier() - 1) / seconds(boss, boss.tier());
@@ -206,7 +214,7 @@ public class PowerCurveTest {
     @Test
     public void twoTiersLowerCannotFinishBeforeTheTimeLimit() {
         for (BossDefinition boss : config.bosses().values()) {
-            if (boss.kind() != BossDefinition.Kind.BOSS || boss.tier() < 3) {
+            if (!onTheLadder(boss) || boss.tier() < 3) {
                 continue;
             }
             int enrage = boss.arena().enrageSeconds();
@@ -221,7 +229,7 @@ public class PowerCurveTest {
     @Test
     public void theRightElementIsClearlyFasterThanTheWrongOne() {
         for (BossDefinition boss : config.bosses().values()) {
-            if (boss.kind() != BossDefinition.Kind.BOSS) {
+            if (!onTheLadder(boss)) {
                 continue;
             }
             PowerCurve.Tier tier = curve.tier(boss.tier());
@@ -281,7 +289,7 @@ public class PowerCurveTest {
         double last = 0;
         for (int tier = 1; tier <= PowerCurve.TIERS; tier++) {
             double hp = curve.bossHealth(tier, 180, 0.5);
-            assertTrue(hp > last * 1.4);
+            assertTrue(hp > last * 1.3); // GDD 8.7: 10368, 16848, 25920, 37584, 51840
             last = hp;
         }
         Map<Integer, Double> seen = new java.util.HashMap<>();

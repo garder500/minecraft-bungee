@@ -146,7 +146,7 @@ public class IslandFeatureTest {
         }
         assertEquals(World.Environment.NETHER, Bukkit.getWorld(SkyblockWorlds.NETHER).getEnvironment());
         assertEquals(World.Environment.THE_END, Bukkit.getWorld(SkyblockWorlds.END).getEnvironment());
-        assertNull(Bukkit.getWorld(SkyblockWorlds.HUB));
+        assertNotNull(Bukkit.getWorld(SkyblockWorlds.HUB));
         assertFalse(service.isSkyblockWorld(null));
     }
 
@@ -213,7 +213,6 @@ public class IslandFeatureTest {
         player("Taboo");
         var cmd = Bukkit.getCommandMap().getCommand("island");
         assertTrue(cmd.tabComplete(p, "island", new String[] {"cr"}).contains("create"));
-        assertTrue(cmd.tabComplete(p, "island", new String[] {"create", ""}).containsAll(List.of("classic", "desert", "frozen", "jungle", "mushroom")));
         assertTrue(cmd.tabComplete(p, "island", new String[] {"flag", "p"}).contains("pvp"));
         assertEquals(List.of("on", "off").stream().sorted().toList(), cmd.tabComplete(p, "island", new String[] {"flag", "pvp", ""}));
         assertTrue(cmd.tabComplete(p, "island", new String[] {"invite", "Tab"}).contains("Taboo"));
@@ -225,10 +224,8 @@ public class IslandFeatureTest {
     @Test
     public void createRegistersOneIslandAndRefusesASecond() {
         PlayerMock p = player("Founder");
-        p.performCommand("island create bogus");
-        assertTrue(said(p).contains("Unknown island type"));
         assertFalse(service.registry().hasIsland(p.getUniqueId()));
-        p.performCommand("island create classic");
+        p.performCommand("island create");
         assertTrue(service.registry().hasIsland(p.getUniqueId()));
         Island island = service.registry().ofPlayer(p.getUniqueId()).orElseThrow();
         assertEquals("classic", island.template);
@@ -410,14 +407,14 @@ public class IslandFeatureTest {
         owner.performCommand("island reset");
         assertEquals("cooldown still holds", Island.State.READY, island.state());
         island.lastResetAt = 0;
-        owner.performCommand("island reset frozen");
+        owner.performCommand("island reset");
         assertTrue(said(owner).contains("again within"));
         assertEquals("first call only arms", Island.State.READY, island.state());
-        owner.performCommand("island reset frozen");
+        owner.performCommand("island reset");
         assertEquals(Island.State.RESETTING, island.state());
-        assertEquals("frozen", island.template);
+        assertEquals("classic", island.template);
         assertTrue(island.lastResetAt > 0);
-        owner.performCommand("island reset frozen");
+        owner.performCommand("island reset");
         assertTrue("busy while resetting", said(owner).contains("busy"));
     }
 

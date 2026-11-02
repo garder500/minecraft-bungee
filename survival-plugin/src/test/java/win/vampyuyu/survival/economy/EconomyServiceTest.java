@@ -76,10 +76,10 @@ public class EconomyServiceTest {
     public void balanceIsCappedNotOverflowed() {
         UUID id = alice.getUniqueId();
         long cap = service().settings().maxBalanceCents();
-        service().addCents(id, cap - 100, "t");
-        assertEquals(100, service().addCents(id, 5000, "t"));
+        service().addCents(id, cap - 100, "admin"); // does not count for the earning quests, whose reward would add coins
+        assertEquals(100, service().addCents(id, 5000, "admin"));
         assertEquals(cap, service().balanceCents(id));
-        assertEquals(0, service().addCents(id, Long.MAX_VALUE, "t"));
+        assertEquals(0, service().addCents(id, Long.MAX_VALUE, "admin"));
         assertEquals(cap, service().balanceCents(id));
     }
 
@@ -142,12 +142,12 @@ public class EconomyServiceTest {
     @Test
     public void payMovesCoinsAndEnforcesLimits() {
         PlayerMock bob = server.addPlayer("Bob");
-        service().addCents(alice.getUniqueId(), 100_000, "seed");
+        service().addCents(alice.getUniqueId(), 100_000, "admin");
         long now = System.currentTimeMillis();
         assertEquals(EconomyService.PayDebit.OK, service().debitForPay(alice.getUniqueId(), 100, now, "pay"));
         assertEquals(EconomyService.PayDebit.COOLDOWN, service().debitForPay(alice.getUniqueId(), 100, now + 10, "pay"));
         assertEquals(EconomyService.PayDebit.FUNDS,
-            service().debitForPay(alice.getUniqueId(), 900_000_000, now + 60_000, "pay"));
+            service().debitForPay(alice.getUniqueId(), 2_000_000, now + 60_000, "pay")); // under the daily limit, over the purse
         assertEquals(EconomyService.PayDebit.OK, service().debitForPay(alice.getUniqueId(), 100, now + 60_000, "pay"));
         assertEquals(99_800, service().balanceCents(alice.getUniqueId()));
         assertNotNull(bob);
@@ -184,7 +184,7 @@ public class EconomyServiceTest {
     @Test
     public void payOverTheThresholdNeedsConfirmation() {
         PlayerMock bob = server.addPlayer("Bob");
-        service().addCents(alice.getUniqueId(), 10_000_000, "seed");
+        service().addCents(alice.getUniqueId(), 10_000_000, "admin");
         alice.performCommand("pay Bob 60000");
         assertEquals(10_000_000, service().balanceCents(alice.getUniqueId()));
         alice.performCommand("pay confirm");

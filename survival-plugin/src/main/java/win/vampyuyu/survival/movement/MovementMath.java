@@ -84,6 +84,9 @@ public final class MovementMath {
         double r = Math.max(0, Math.min(1, resist));
         double anchors = anchorFactor(anchorsLeft, anchorsTotal);
         double s = Math.max(0, strength) * falloff * (1 - r) * anchors;
+        if (s <= 0) {
+            return Vec.ZERO;
+        }
         return new Vec(dx / d * s, dy / d * s, dz / d * s);
     }
 

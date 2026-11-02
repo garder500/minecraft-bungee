@@ -171,9 +171,14 @@ public class EnergyNetworkTest {
 
     @Test
     public void emberSmeltsAndOtherBlocksStay() {
-        assertEquals(org.bukkit.Material.STONE, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.COBBLESTONE)).getType());
-        assertEquals(org.bukkit.Material.GLASS, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.SAND)).getType());
-        assertEquals(org.bukkit.Material.PACKED_ICE, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.PACKED_ICE)).getType());
+        org.mockbukkit.mockbukkit.MockBukkit.mock(); // an ItemStack without a mock server breaks the mock for the whole JVM
+        try {
+            assertEquals(org.bukkit.Material.STONE, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.COBBLESTONE)).getType());
+            assertEquals(org.bukkit.Material.GLASS, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.SAND)).getType());
+            assertEquals(org.bukkit.Material.PACKED_ICE, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.PACKED_ICE)).getType());
+        } finally {
+            org.mockbukkit.mockbukkit.MockBukkit.unmock();
+        }
         assertEquals(MachineModule.BLOOM, MachineModule.ofItem("bloom_module").orElseThrow());
         assertEquals(MachineModule.MEMORY, MachineModule.ofItem("memory_module").orElseThrow());
         assertEquals(0, MachineModule.memoryShards(0.0, new java.util.Random(1)));

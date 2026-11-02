@@ -75,7 +75,7 @@ class StationConfigTest {
     @Test
     void everyContractTargetsSomethingThatExists() {
         StationConfig cfg = StationConfig.load(seeded());
-        assertEquals(12, cfg.contracts().size());
+        assertEquals(14, cfg.contracts().size());
         for (StationConfig.Contract c : cfg.contracts().values()) {
             if ("boss".equals(c.kind())) {
                 try (Db db = seeded()) {

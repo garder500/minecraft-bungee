@@ -71,7 +71,7 @@ public class BankServiceTest {
     @Test
     public void depositIsClippedToTheTierCapacity() {
         long capacity = bank.tiers().get(0).capacityCents();
-        eco.addCents(id, capacity + 5_000, "seed");
+        eco.addCents(id, capacity + 5_000, "admin"); // "admin" does not count for the earning quests, whose reward would add coins
         Bank.Move move = bank.deposit(id, capacity + 5_000);
         assertTrue(move.ok());
         assertEquals(capacity, move.moved());
@@ -83,7 +83,7 @@ public class BankServiceTest {
     public void upgradeCostsCoinsAndRaisesTheCap() {
         Bank.Tier gold = bank.tiers().get(1);
         assertFalse(bank.upgrade(id).ok());
-        eco.addCents(id, gold.costCents() + 7, "seed");
+        eco.addCents(id, gold.costCents() + 7, "admin");
         assertTrue(bank.upgrade(id).ok());
         assertEquals(7, eco.balanceCents(id));
         assertEquals(1, eco.data(id).bankTier);

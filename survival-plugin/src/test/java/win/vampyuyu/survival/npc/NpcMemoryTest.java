@@ -95,7 +95,7 @@ class NpcMemoryTest {
         m.recordFact(alice, "rescued");
         assertEquals(-10, m.priceDeltaPct(alice, "n"), "friend + ally + rescued = -15, clamped to -10");
         m.addRelation(alice, "m", -50);
-        assertEquals(10, m.priceDeltaPct(alice, "m"));
+        assertEquals(5, m.priceDeltaPct(alice, "m"), "disliked +10, but the rescue counts with every npc: -5");
     }
 
     @Test

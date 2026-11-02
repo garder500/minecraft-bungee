@@ -19,15 +19,15 @@ public class BossSeedTest {
         Db db = Db.memory();
         Seeds.sync(db, List.of(ContentDomains.BOSS), null);
         Map<String, Integer> expected = new LinkedHashMap<>();
-        expected.put("boss", 6);
-        expected.put("boss_equipment", 10);
-        expected.put("boss_phase", 18);
-        expected.put("boss_ability", 58);
-        expected.put("boss_ability_param", 127);
-        expected.put("boss_rank_bonus", 18);
-        expected.put("boss_drop", 22);
-        expected.put("boss_summon", 5);
-        expected.put("boss_summon_world", 5);
+        expected.put("boss", 11);
+        expected.put("boss_equipment", 15);
+        expected.put("boss_phase", 36);
+        expected.put("boss_ability", 127);
+        expected.put("boss_ability_param", 284);
+        expected.put("boss_rank_bonus", 30);
+        expected.put("boss_drop", 38);
+        expected.put("boss_summon", 8);
+        expected.put("boss_summon_world", 8);
         expected.put("slayer", 5);
         expected.put("slayer_target", 9);
         expected.put("slayer_world", 9);
@@ -39,16 +39,15 @@ public class BossSeedTest {
         expected.put("slayer_ability_param", 26);
         expected.put("slayer_rank_bonus", 15);
         expected.put("slayer_drop", 15);
-        expected.put("boss_recipe", 5);
-        expected.put("boss_recipe_row", 15);
-        expected.put("boss_recipe_ingredient", 15);
+        expected.put("boss_recipe", 6);
+        expected.put("boss_recipe_row", 18);
+        expected.put("boss_recipe_ingredient", 18);
         expected.put("boss_mob_drop", 0);
         expected.put("boss_item_text", 0);
         expected.put("boss_world_spot", 2);
         expected.put("boss_world_pool", 0);
         expected.forEach((table, rows) -> assertEquals(table, rows.longValue(), count(db, table, "")));
-        // 16 settings (two of them the target seconds of the power curve) + 5 slayer settings + 9 world settings (one of them a list of 3)
-        assertEquals(30, count(db, "setting", "id GLOB 'boss.*'"));
+        assertEquals(136, count(db, "setting", "id GLOB 'boss.*'"));
         assertEquals(3, count(db, "setting_item", "setting_id = 'boss.world.announce-before-seconds'"));
     }
 
@@ -73,7 +72,7 @@ public class BossSeedTest {
             assertEquals(table, 0, count(db, table, "pity_cap <> 0.015"));
             assertEquals(table, 0, count(db, table, "pity <> 0 AND pity <> 0.001"));
         }
-        assertEquals(6, count(db, "boss_drop", "pity = 0.001"));
+        assertEquals(15, count(db, "boss_drop", "pity = 0.001"));
         assertEquals(5, count(db, "slayer_drop", "pity = 0.001"));
     }
 

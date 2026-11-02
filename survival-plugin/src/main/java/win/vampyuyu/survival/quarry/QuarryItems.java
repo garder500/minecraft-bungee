@@ -33,6 +33,7 @@ final class QuarryItems {
 
     /** The five tiered ores, in order: each has a bar (9 ores) and a Block (9 bars = 81 ores), GDD 7.4. */
     static final String[] ORES = {BRONZITE, FROSTIUM, SUNSTONE, VOIDGLASS, STARCORE};
+    private static final String[] TIERS = {"bronze", "rime", "ember", "void", "starcore"};
 
     private QuarryItems() {}
 

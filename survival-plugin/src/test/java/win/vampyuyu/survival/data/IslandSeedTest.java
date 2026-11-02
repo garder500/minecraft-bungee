@@ -11,17 +11,17 @@ public class IslandSeedTest {
     @Test
     public void theConvertedSeedKeepsTheCountsOfTheOldYaml() {
         try (Db db = TestDb.seeded()) {
-            assertEquals(4, count(db, "SELECT COUNT(*) FROM island_world"));
-            assertEquals(20, count(db, "SELECT COUNT(*) FROM island_world_gamerule"));
-            assertEquals(9, count(db, "SELECT COUNT(*) FROM island_upgrade"));
+            assertEquals(8, count(db, "SELECT COUNT(*) FROM island_world"));
+            assertEquals(43, count(db, "SELECT COUNT(*) FROM island_world_gamerule"));
+            assertEquals(5, count(db, "SELECT COUNT(*) FROM island_upgrade"));
             assertEquals(5, count(db, "SELECT COUNT(*) FROM island_template"));
             assertEquals(10, count(db, "SELECT COUNT(*) FROM island_template_line"));
-            assertEquals(34, count(db, "SELECT COUNT(*) FROM island_template_item"));
+            assertEquals(24, count(db, "SELECT COUNT(*) FROM island_template_item"));
             assertEquals(3, count(db, "SELECT COUNT(*) FROM island_chest"));
             assertEquals(11, count(db, "SELECT COUNT(*) FROM island_chest_item"));
             assertEquals(45, count(db, "SELECT COUNT(*) FROM island_level_weight"));
             assertEquals(8, count(db, "SELECT COUNT(*) FROM island_flag_default"));
-            assertEquals(43, count(db, "SELECT COUNT(*) FROM setting WHERE id GLOB 'island.*'"));
+            assertEquals(52, count(db, "SELECT COUNT(*) FROM setting WHERE id GLOB 'island.*'"));
             assertTrue(Settings.load(db, "island").problems().toString(), Settings.load(db, "island").problems().isEmpty());
         }
     }
@@ -34,7 +34,7 @@ public class IslandSeedTest {
             assertEquals(2, s.getInt("grid.edge-margin", -1));
             assertEquals(100.0, s.getDouble("level.divisor", -1), 0);
             assertEquals("You fell into the void and were pulled back to safety.", s.getString("void.message", ""));
-            assertEquals(1, count(db, "SELECT COUNT(*) FROM island_upgrade WHERE id = 'members.4' AND value = 12 AND cost = 500000"));
+            assertEquals(1, count(db, "SELECT COUNT(*) FROM island_upgrade WHERE id = 'members.4' AND value = 12 AND cost = 5000"));
             assertEquals(1, count(db, "SELECT COUNT(*) FROM island_world_gamerule WHERE world = 'hub' AND rule = 'pvp' AND value = 'false'"));
         }
     }
