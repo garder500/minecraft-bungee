@@ -548,7 +548,14 @@ public class IslandPureTest {
             assertNotNull("anchor for pad " + pad.id(), full.anchor("pad:" + pad.id()));
             assertEquals(pad, HubPlan.pad(pad.id()));
         }
-        assertEquals(10, HubPlan.PADS.size());
+        assertEquals(12, HubPlan.PADS.size());
+        for (String id : new String[] {"merchant", "archivist", "guard", "contract_hunter", "island_gate", "dungeon_gate", "rift_gate", "eight_docks"}) {
+            assertNotNull(id, HubPlan.pad(id));
+        }
+        for (HubNpcs.Role role : HubNpcs.ROLES) {
+            assertNotNull("NPC pad exists: " + role.pad(), HubPlan.pad(role.pad()));
+        }
+        assertTrue(HubNpcs.role("eight_docks").isEmpty());
         assertTrue(HubPlan.emergencySpawn().size() < 300);
         assertNull(HubPlan.pad("nope"));
     }

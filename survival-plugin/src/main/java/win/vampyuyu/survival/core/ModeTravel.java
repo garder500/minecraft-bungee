@@ -71,7 +71,8 @@ public final class ModeTravel implements Listener {
         return world != null && SkyblockWorlds.isSkyblock(world.getName());
     }
     public static boolean retired(World world) {
-        return world != null && sky(world) && !SkyblockWorlds.WORLD.equals(world.getName())
+        return world != null && sky(world) && !SkyblockWorlds.HUB.equals(world.getName())
+            && !SkyblockWorlds.WORLD.equals(world.getName())
             && !SkyblockWorlds.NETHER.equals(world.getName()) && !SkyblockWorlds.END.equals(world.getName())
             && !SkyblockWorlds.isDungeon(world.getName());
     }

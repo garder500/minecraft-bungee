@@ -274,8 +274,13 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         return defaultSpawn(island);
     }
 
+    /** The common spawn of the hub (centre of the spawn pad, facing the fountain), or null while it is not built. */
     public Location hubLocation() {
-        return null; // Retained API compatibility; the hub is no longer a destination.
+        World hub = world(SkyblockWorlds.HUB);
+        if (hub == null || !hubPadBuilt) {
+            return null;
+        }
+        return new Location(hub, HubPlan.SPAWN_X + 0.5, cfg.hubY + 1, HubPlan.SPAWN_Z + 0.5, 180f, 0f);
     }
 
     /** True when the feet and head blocks are free and there is something solid underneath. */
@@ -337,7 +342,11 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
 
     @Override
     public boolean teleportHub(Player player) {
-        return teleportHome(player);
+        Location hub = hubLocation();
+        if (hub == null) {
+            return teleportHome(player); // the hub is still being built: never strand the player
+        }
+        return core.modes().enter(player, hub);
     }
 
     // ---------------------------------------------------------------- player-initiated teleports
@@ -380,9 +389,9 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
             return Result.fail(DUNGEON_REFUSAL);
         }
         if (!teleportHub(player)) {
-            return Result.fail("Your island is not ready yet. Try again in a moment.");
+            return Result.fail("The hub is not ready yet. Try again in a moment.");
         }
-        return Result.ok("Going to your island...");
+        return Result.ok(hubLocation() == null ? "Going to your island..." : "Going to the hub...");
     }
 
     /** /is nether and /is end: straight to the platform of the player's own island, no portal needed. */

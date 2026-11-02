@@ -18,6 +18,7 @@ public final class IslandFeature implements Feature {
     private IslandTracker tracker;
     private IslandMenus menus;
     private Scheduler.Handle levelTask;
+    private HubNpcs hubNpcs;
 
     @Override
     public String id() {
@@ -42,6 +43,9 @@ public final class IslandFeature implements Feature {
 
         service.start();
         service.recover();
+        new HubManager(core, service).start();
+        hubNpcs = new HubNpcs(core, service);
+        hubNpcs.enable();
         for (org.bukkit.entity.Player online : org.bukkit.Bukkit.getOnlinePlayers()) {
             service.notifyLegacy(online);
         }
@@ -59,6 +63,8 @@ public final class IslandFeature implements Feature {
     private static void setupWorlds(Core core, IslandConfig cfg) {
         WorldSetup setup = new WorldSetup(core.getPlugin().getLogger());
         int islandSpawnY = cfg.islandY + 1;
+        prepare(setup, cfg, "hub", SkyblockWorlds.HUB, World.Environment.NORMAL, Biome.PLAINS, cfg.hubY + 1, 0,
+            HubPlan.SPAWN_Z);
         prepare(setup, cfg, "world", SkyblockWorlds.WORLD, World.Environment.NORMAL, Biome.PLAINS, islandSpawnY, 0, 0);
         prepare(setup, cfg, "nether", SkyblockWorlds.NETHER, World.Environment.NETHER, Biome.NETHER_WASTES,
             islandSpawnY, 0, 0);
@@ -78,6 +84,10 @@ public final class IslandFeature implements Feature {
         if (levelTask != null) {
             levelTask.cancel();
             levelTask = null;
+        }
+        if (hubNpcs != null) {
+            hubNpcs.disable();
+            hubNpcs = null;
         }
         if (tracker != null) {
             tracker.shutdown();
