@@ -21,6 +21,7 @@ public final class QuarryFeature implements Feature {
     private NamespacedKey recipeKey;
     private MachineStore machineStore;
     private win.vampyuyu.survival.core.Scheduler.Handle machineTask;
+    private win.vampyuyu.survival.core.Scheduler.Handle crackTask;
     private win.vampyuyu.survival.core.Scheduler.Handle sidegradeTask;
 
     @Override
@@ -95,6 +96,7 @@ public final class QuarryFeature implements Feature {
         core.register(win.vampyuyu.survival.api.MachineApi.class, (owner, itemId) -> machineStore.count(owner.toString(), itemId));
         core.listen(new MachineListener(core, machines));
         machineTask = core.scheduler().repeating(20, 20, machines::tick);
+        crackTask = core.scheduler().repeating(20, 4, machines::animateCracks); // the visible break (GDD 7.2)
         addForgeRecipe(config);
         addStartRecipes();
         core.commands().command("forge")
@@ -209,6 +211,9 @@ public final class QuarryFeature implements Feature {
 
     @Override
     public void disable() {
+        if (crackTask != null) {
+            crackTask.cancel();
+        }
         if (machineTask != null) {
             machineTask.cancel();
         }
