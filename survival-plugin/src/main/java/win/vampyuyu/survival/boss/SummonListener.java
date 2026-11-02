@@ -147,14 +147,17 @@ public final class SummonListener implements Listener {
         if (wait.isPresent()) {
             return wait.get();
         }
+        int resonance = core.service(win.vampyuyu.survival.api.ResonanceApi.class)
+            .map(r -> r.effectiveRank(player.getUniqueId(), def.id())).orElse(0);
         Optional<BossSession> session = manager.spawn(def, spawn, player, new BossSession.SpawnOptions(
-            false, false, 0, 0, -1, null, rules.refundOnDespawn() ? rules.item() : null));
+            false, false, 0, 0, -1, null, rules.refundOnDespawn() ? rules.item() : null, resonance));
         if (session.isEmpty()) {
             gate.release(player.getUniqueId(), def.id());
             return "The summoning failed. Try somewhere else.";
         }
         consume(player, hand);
-        String message = BossSession.plain(def.name());
+        String message = BossSession.plain(def.name()) + (resonance > 0
+            ? " <gold>[Resonance " + win.vampyuyu.survival.api.Resonance.roman(resonance) + "]" : "");
         for (Player p : world.getPlayers()) {
             core.msg().mini(p, "<light_purple>" + player.getName().replace("<", "") + " <gray>awakened <white>" + message + "<gray>!");
         }

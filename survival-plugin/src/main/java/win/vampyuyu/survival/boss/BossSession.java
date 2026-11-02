@@ -58,9 +58,21 @@ public final class BossSession {
 
     /** Options of one spawn. */
     public record SpawnOptions(boolean personal, boolean worldEvent, int slayerTier, double hpOverride,
-            int timeLimitSeconds, @Nullable Consumer<EndInfo> onEnd, @Nullable String refundItem) {
+            int timeLimitSeconds, @Nullable Consumer<EndInfo> onEnd, @Nullable String refundItem, int resonance) {
+        /** Without a Resonance rank (0: the boss keeps its base health and damage). */
+        public SpawnOptions(boolean personal, boolean worldEvent, int slayerTier, double hpOverride,
+                int timeLimitSeconds, @Nullable Consumer<EndInfo> onEnd, @Nullable String refundItem) {
+            this(personal, worldEvent, slayerTier, hpOverride, timeLimitSeconds, onEnd, refundItem, 0);
+        }
+
         public static SpawnOptions regular() {
-            return new SpawnOptions(false, false, 0, 0, -1, null, null);
+            return new SpawnOptions(false, false, 0, 0, -1, null, null, 0);
+        }
+
+        /** The same options at a Resonance rank (1-5; 0 or less removes it). */
+        public SpawnOptions withResonance(int rank) {
+            return new SpawnOptions(personal, worldEvent, slayerTier, hpOverride, timeLimitSeconds, onEnd, refundItem,
+                rank <= 0 ? 0 : win.vampyuyu.survival.api.Resonance.clamp(rank));
         }
     }
 
@@ -153,6 +165,9 @@ public final class BossSession {
         entityId = spawned.getUniqueId();
         baseMoveSpeed = BossEntities.moveSpeed(spawned);
         double health = options.hpOverride() > 0 ? options.hpOverride() : def.health() * settings.hpScale();
+        if (options.resonance() > 0) {
+            health *= win.vampyuyu.survival.api.Resonance.hpMultiplier(options.resonance());
+        }
         baseMaxHp = Math.max(1, health);
         maxHp = baseMaxHp;
         hp = maxHp;
@@ -249,7 +264,9 @@ public final class BossSession {
 
     /** Damage a hit of this boss deals right now, multiplier {@code mult} of the base damage. */
     double hitDamage(double mult) {
-        return def.damage() * mult * phase().damageMult() * enrageMult() * settings.damageScale();
+        double resonance = options.resonance() > 0
+            ? win.vampyuyu.survival.api.Resonance.damageMultiplier(options.resonance()) : 1.0;
+        return def.damage() * mult * phase().damageMult() * enrageMult() * settings.damageScale() * resonance;
     }
 
     // ---------------------------------------------------------------- players

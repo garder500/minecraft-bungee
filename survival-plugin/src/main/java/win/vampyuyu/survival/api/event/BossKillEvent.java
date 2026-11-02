@@ -19,12 +19,20 @@ public final class BossKillEvent extends Event {
     private final @Nullable Player killer;
     private final List<Damager> topDamagers;
     private final Location location;
+    private final int resonance;
 
     /**
      * @param topDamagers participants sorted by damage, highest first
      * @param killer who landed the last hit, null when the boss died of something else
      */
     public BossKillEvent(String bossId, @Nullable Player killer, List<Damager> topDamagers, Location location) {
+        this(bossId, killer, topDamagers, location, 0);
+    }
+
+    /** @param resonance the Resonance rank (1-5) the fight ran at, 0 when it ran outside the Resonance system */
+    public BossKillEvent(String bossId, @Nullable Player killer, List<Damager> topDamagers, Location location,
+            int resonance) {
+        this.resonance = resonance;
         this.bossId = bossId;
         this.killer = killer;
         this.topDamagers = List.copyOf(topDamagers);
@@ -37,6 +45,9 @@ public final class BossKillEvent extends Event {
 
     /** Participants sorted by damage, highest first (immutable). */
     public List<Damager> getTopDamagers() { return topDamagers; }
+
+    /** Resonance rank of the fight, 1-5, or 0 when the fight had none. */
+    public int getResonance() { return resonance; }
 
     /** Where the boss died (copy). */
     public Location getLocation() { return location.clone(); }

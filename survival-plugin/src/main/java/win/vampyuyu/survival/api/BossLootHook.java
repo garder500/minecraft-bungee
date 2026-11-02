@@ -15,4 +15,13 @@ public interface BossLootHook {
      * @return extra items for this recipient, possibly empty, never null
      */
     List<org.bukkit.inventory.ItemStack> roll(BossKillEvent event, Player recipient);
+
+    /**
+     * Same as {@link #roll(BossKillEvent, Player)} but also tells the hook what the boss already dropped for this
+     * recipient, so a guarantee (pity) can tell whether it is needed. The boss feature calls this one.
+     */
+    default List<org.bukkit.inventory.ItemStack> roll(BossKillEvent event, Player recipient,
+            List<org.bukkit.inventory.ItemStack> alreadyWon) {
+        return roll(event, recipient);
+    }
 }
