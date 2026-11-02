@@ -65,6 +65,7 @@ final class LadderCombat implements Listener, win.vampyuyu.survival.api.LadderAp
             settings.elementWeakness, settings.elementResistance);
         if (surge(player, target, charge >= settings.surgeMinCharge)) {
             hit *= surgeMultiplier(player);
+            core.service(win.vampyuyu.survival.api.RuneApi.class).ifPresent(r -> r.onSurge(player, target, weapon));
             target.getWorld().spawnParticle(Particle.END_ROD, target.getLocation().add(0, target.getHeight() * 0.6, 0), 12,
                 0.3, 0.4, 0.3, 0.05);
             player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.8f, 1.6f);
@@ -113,6 +114,8 @@ final class LadderCombat implements Listener, win.vampyuyu.survival.api.LadderAp
             traits.weakTo(), traits.resists(), attunement(player), settings.elementWeakness, settings.elementResistance);
         if (surge(player, target, Boolean.TRUE.equals(pdc.get(ARROW_FULL, PersistentDataType.BOOLEAN)))) {
             hit *= surgeMultiplier(player);
+            core.service(win.vampyuyu.survival.api.RuneApi.class)
+                .ifPresent(r -> r.onSurge(player, target, player.getInventory().getItemInMainHand()));
         }
         Double share = pdc.get(ARROW_SHARE, PersistentDataType.DOUBLE);
         if (share != null) {
@@ -211,14 +214,13 @@ final class LadderCombat implements Listener, win.vampyuyu.survival.api.LadderAp
         return def.pdcDoubles().get(Keys.DAMAGE);
     }
 
-    /** A stat of the custom armor worn and the held weapon (their definition stats), e.g. the Void Fang's own Might. */
+    /** A stat of the custom armor worn and the held weapon (their definition stats and per-item bonuses such as runes), e.g. the Void Fang's own Might. */
     private double worn(Player player, Stat stat) {
         double total = 0;
         java.util.List<ItemStack> pieces = new java.util.ArrayList<>(java.util.Arrays.asList(player.getInventory().getArmorContents()));
         pieces.add(player.getInventory().getItemInMainHand());
         for (ItemStack piece : pieces) {
-            total += core.items().idOf(piece).flatMap(core.items()::def)
-                .map(d -> d.stats().getOrDefault(stat, 0.0)).orElse(0.0);
+            total += core.items().statsOf(piece).getOrDefault(stat, 0.0); // definition stats + engraved runes
         }
         return total;
     }

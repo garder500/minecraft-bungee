@@ -7,7 +7,8 @@ import win.vampyuyu.survival.core.Feature;
 /**
  * Local resources of the Realms (GDD 3.2, 15.1): Cinderheart in the Cracked Ashes, Heartwood in the Whispering Grove.
  * Obtained by breaking the Realm's blocks and killing its mobs, with a pity curve per player. Their real uses
- * (sidegrades, modules, runes) come in phase 3; for now they can be sold to the adventurer.
+ * come in phase 3: the Realm runes (Scorch, Verdant) are made from them at the Runecraft table; sidegrades and modules
+ * are still to come. They can also be sold to the adventurer.
  */
 public final class RealmFeature implements Feature {
     @Override

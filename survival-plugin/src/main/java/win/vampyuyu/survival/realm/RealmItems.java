@@ -16,10 +16,10 @@ final class RealmItems {
         items.register(CustomItemDef.builder(CINDERHEART, "Cinderheart", Rarity.EPIC, Material.MAGMA_CREAM)
             .itemModel("vampyuyu:ore/cinderheart").type("GEM").glint(true).pdc("realm_resource", 1L)
             .lore("<gray>A heart of cooled obsidian that still burns.", "<gray>Found only in the <gold>Cracked Ashes<gray>.",
-                "<dark_gray>Sidegrades, modules and runes will use it.").build());
+                "<dark_gray>Runecraft: makes the Scorch rune.").build());
         items.register(CustomItemDef.builder(HEARTWOOD, "Heartwood", Rarity.EPIC, Material.DARK_OAK_LOG)
             .itemModel("vampyuyu:ore/heartwood").type("GEM").glint(true).pdc("realm_resource", 1L)
             .lore("<gray>Living wood that murmurs when held.", "<gray>Found only in the <green>Whispering Grove<gray>.",
-                "<dark_gray>Sidegrades, modules and runes will use it.").build());
+                "<dark_gray>Runecraft: makes the Verdant rune.").build());
     }
 }
