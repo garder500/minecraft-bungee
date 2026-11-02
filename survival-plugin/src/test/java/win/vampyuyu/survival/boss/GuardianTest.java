@@ -18,7 +18,7 @@ import win.vampyuyu.survival.items.combat.PowerCurve;
 
 /** The Guardians (Lava Colossus, Mycelial Queen, Judge of Lost Souls): data, hard pity (GDD 15.2), readability (GDD 8.7). */
 public class GuardianTest {
-    private static final List<String> IDS = List.of("magma_warden", "sylvan_matriarch", "frost_revenant", "crypt_lord", "mire_abomination", "temporal_pharaoh", "abyssal_leviathan");
+    private static final List<String> IDS = List.of("magma_warden", "sylvan_matriarch", "crypt_lord", "frost_revenant", "temporal_pharaoh", "abyssal_leviathan", "mire_abomination");
 
     @Before
     public void server() {

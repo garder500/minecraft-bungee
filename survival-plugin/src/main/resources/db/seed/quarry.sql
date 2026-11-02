@@ -501,7 +501,7 @@ INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VA
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.tide.consume-factor', 'real', '0.6', 'Tide Module (Abyssal Depths): factor on the Miner''s Flux use.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.tide.rate-factor', 'real', '0.9', 'Tide Module: factor on the Miner''s cycles per second.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.tide.shard-chance', 'real', '0.2', 'Tide Module: chance a mining cycle also pumps up a prismarine shard.');
-INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('tide_module', 76, 'tide_module', 1, 1800);
+INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('tide_module', 160, 'tide_module', 1, 1800);
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('tide_module', 0, 'custom:pressure_pearl', 3);
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('tide_module', 1, 'custom:miner_1', 1);
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('tide_module', 2, 'PRISMARINE_CRYSTALS', 8);
