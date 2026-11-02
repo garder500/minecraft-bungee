@@ -82,8 +82,10 @@ menu/warps
 menu/wisps
 ore/bronzite
 ore/bronzite_bar
+ore/cinderheart
 ore/frostium
 ore/frostium_bar
+ore/heartwood
 ore/starcore
 ore/starcore_bar
 ore/sunstone

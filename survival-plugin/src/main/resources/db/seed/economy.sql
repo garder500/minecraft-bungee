@@ -288,6 +288,8 @@ INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES 
 INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('adventurer:lord_bone', 'adventurer', 26, 'lord_bone', 0.0, 40.0);
 INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('adventurer:colossus_core', 'adventurer', 27, 'colossus_core', 0.0, 300.0);
 INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('adventurer:roc_feather', 'adventurer', 28, 'roc_feather', 0.0, 300.0);
+INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('adventurer:cinderheart', 'adventurer', 29, 'cinderheart', 0.0, 60.0);
+INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('adventurer:heartwood', 'adventurer', 30, 'heartwood', 0.0, 60.0);
 INSERT INTO merchant (id, position, name, npc_name, icon, profession, npc_type, description) VALUES ('weaponsmith', 7, 'Weaponsmith', '<dark_red>Weaponsmith', 'DIAMOND_SWORD', 'WEAPONSMITH', 'VILLAGER', 'Weapons and armor (buy only).');
 INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('weaponsmith:WOODEN_SWORD', 'weaponsmith', 0, 'WOODEN_SWORD', 10.0, 0.0);
 INSERT INTO merchant_offer (id, merchant, position, item_key, buy, sell) VALUES ('weaponsmith:STONE_SWORD', 'weaponsmith', 1, 'STONE_SWORD', 30.0, 0.0);
@@ -706,6 +708,8 @@ INSERT INTO bazaar_product (id, category, position, item_key) VALUES ('misc:DIAM
 INSERT INTO bazaar_product (id, category, position, item_key) VALUES ('misc:IRON_HORSE_ARMOR', 'misc', 64, 'IRON_HORSE_ARMOR');
 INSERT INTO market_never_traded (pattern) VALUES ('sunstone');
 INSERT INTO market_never_traded (pattern) VALUES ('starcore');
+INSERT INTO market_never_traded (pattern) VALUES ('cinderheart');
+INSERT INTO market_never_traded (pattern) VALUES ('heartwood');
 INSERT INTO market_never_traded (pattern) VALUES ('wings_core_*');
 INSERT INTO auction_blocked_item (id, kind, value) VALUES ('material:BEDROCK', 'material', 'BEDROCK');
 INSERT INTO auction_blocked_item (id, kind, value) VALUES ('material:BARRIER', 'material', 'BARRIER');

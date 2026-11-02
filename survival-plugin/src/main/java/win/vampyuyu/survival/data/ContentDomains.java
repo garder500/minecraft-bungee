@@ -22,6 +22,10 @@ public final class ContentDomains {
         new Root("forge_block_ingredient", "item", null, List.of()),
         settings("quarry")));
 
+    public static final Domain REALM = new Domain("realm", List.of(
+        new Root("realm_world", "world", null, List.of()),
+        new Root("realm_resource", "id", null, List.of(new Child("realm_resource_source", "resource_id")))));
+
     public static final Domain GADGETS = new Domain("gadgets", List.of(settings("gadgets")));
 
     public static final Domain ECONOMY = new Domain("economy", List.of(
@@ -128,7 +132,7 @@ public final class ContentDomains {
 
     /** In the order they are synced. */
     public static final List<Domain> ALL = List.of(QUESTS, QUESTS_DAILY, CORE, ISLAND, UTILITY, WINGS, MENU, ECONOMY, SKILLS, QUARRY, GADGETS, BOSS,
-        DUNGEON, ITEMS);
+        DUNGEON, ITEMS, REALM);
 
     private ContentDomains() {}
 
