@@ -39,11 +39,11 @@ public final class ClassesFeature implements Feature {
         core.commands().command("class")
             .aliases("classes", "vocation")
             .description("Choose your class and use its active")
-            .usage("/class [choose <class> | cast | reset <player>]")
+            .usage("/class [choose <class> | cast | master | reset <player>]")
             .permission("vampyuyu.sb.classes.use", PermissionDefault.TRUE)
             .tab((CommandSender sender, Command command, String alias, String[] args) -> {
                 if (args.length == 1) {
-                    return List.of("choose", "cast", "reset");
+                    return List.of("choose", "cast", "master", "reset");
                 }
                 if (args.length == 2 && args[0].equalsIgnoreCase("choose")) {
                     return java.util.Arrays.stream(PlayerClass.values()).map(c -> c.name().toLowerCase(Locale.ROOT)).toList();
@@ -107,14 +107,16 @@ public final class ClassesFeature implements Feature {
                 }
             }
             case "cast" -> cast(core, service, player);
+            case "master" -> castMaster(core, service, player);
             default -> {
                 var current = service.classOf(player.getUniqueId());
                 if (current.isEmpty()) {
                     sendChoice(core, player);
                 } else {
                     PlayerClass c = current.get();
-                    core.msg().info(player, c.displayName() + " (Novice) - " + c.role());
-                    core.msg().info(player, "Active " + c.active() + ": " + c.activeText() + " - " + Msg.number(c.aetherCost())
+                    String rank = service.rank(player.getUniqueId());
+                    core.msg().info(player, c.displayName() + " (" + rank.charAt(0) + rank.substring(1).toLowerCase(Locale.ROOT) + ") - " + c.role());
+                    core.msg().info(player, "Active " + c.active() + ": " + c.activeText() + " - " + Msg.number(service.activeCost(player.getUniqueId(), c))
                         + " Aether, " + c.cooldownSeconds() + " s cooldown");
                     core.msg().info(player, "Passive: " + c.passiveText());
                     core.msg().info(player, "Aether: " + Msg.number(service.aether(player)) + " / " + Msg.number(service.maxAether(player)));
@@ -132,11 +134,27 @@ public final class ClassesFeature implements Feature {
             case OK -> player.sendActionBar(Msg.plain(chosen.active() + "!  Aether " + Msg.number(service.aether(player)), NamedTextColor.AQUA));
             case NO_CLASS -> sendChoice(core, player);
             case COOLDOWN -> core.msg().warn(player, chosen.active() + " is recharging: " + Msg.duration(service.cooldownLeft(player)) + ".");
-            case NO_AETHER -> core.msg().warn(player, "Not enough Aether for " + chosen.active() + " (" + Msg.number(chosen.aetherCost())
+            case NO_MASTER -> core.msg().warn(player, "Nothing to cast here.");
+            case NO_AETHER -> core.msg().warn(player, "Not enough Aether for " + chosen.active() + " (" + Msg.number(service.activeCost(player.getUniqueId(), chosen))
                 + " needed, " + Msg.duration(service.aetherWait(player, chosen)) + " to wait).");
             case NO_WEAPON -> core.msg().warn(player, "Hold your weapon to cast " + chosen.active() + ".");
             case NO_BOW -> core.msg().warn(player, "Hold your bow to cast " + chosen.active() + ".");
             case NO_ENGINE -> core.msg().warn(player, chosen.active() + " is not available on this server.");
+        }
+    }
+
+    /** Casts the Master capacity and tells the player what happened. */
+    static void castMaster(Core core, ClassService service, Player player) {
+        ClassService.Cast result = service.castMaster(player);
+        switch (result) {
+            case OK -> player.sendActionBar(Msg.plain("Master capacity!  Aether " + Msg.number(service.aether(player)), NamedTextColor.GOLD));
+            case NO_CLASS -> sendChoice(core, player);
+            case NO_MASTER -> core.msg().warn(player, "Only a Master can do that. Talk to the Master of your class (/promotion).");
+            case COOLDOWN -> core.msg().warn(player, "Your Master capacity is recharging: " + Msg.duration(service.masterCooldownLeft(player)) + ".");
+            case NO_AETHER -> core.msg().warn(player, "Not enough Aether for your Master capacity.");
+            case NO_WEAPON -> core.msg().warn(player, "Hold your weapon to use your Master capacity.");
+            case NO_BOW -> core.msg().warn(player, "Hold your bow to use your Master capacity.");
+            case NO_ENGINE -> core.msg().warn(player, "Your Master capacity is not available on this server.");
         }
     }
 

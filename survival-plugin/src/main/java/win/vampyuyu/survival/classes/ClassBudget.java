@@ -25,6 +25,15 @@ public final class ClassBudget {
             room(chosen.dexterity(), META_DEXTERITY, usedDexterity));
     }
 
+    /** The class bonus plus what a specialization adds, all of it inside the meta cap. */
+    public static Bonus with(PlayerClass chosen, double extraVitality, double extraMight, double extraDexterity) {
+        if (chosen == null) {
+            return new Bonus(0, 0, 0);
+        }
+        return new Bonus(room(chosen.vitality() + extraVitality, META_VITALITY, 0), room(chosen.might() + extraMight, META_MIGHT, 0),
+            room(chosen.dexterity() + extraDexterity, META_DEXTERITY, 0));
+    }
+
     public static Bonus of(PlayerClass chosen) {
         return of(chosen, 0, 0, 0);
     }

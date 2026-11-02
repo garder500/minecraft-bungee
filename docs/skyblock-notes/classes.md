@@ -9,4 +9,4 @@ GDD 11. Package `survival-plugin/.../classes`, API in `api/ClassApi`, `api/Playe
 - Combat goes through `LadderCombat` (Might, Attunement, Surge every N hits, Surge power 2.0 + Dex/200); abilities that
   deal weapon damage use `LadderApi` (Elemental Burst, Gale Volley arrows at 40%).
 - Rule 11.4: nothing asks for a class; with none chosen every modifier is neutral.
-- Not done here: Adept/Master/Paragon ranks, the class-change quest, trades (Artisan, Warden), a menu and HUD for Aether.
+- Adept and Master ranks: see `promotion.md`. Not done here: Paragon, trades (Artisan, Warden), a menu and HUD for Aether.
