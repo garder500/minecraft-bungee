@@ -39,7 +39,7 @@ public class SurvivalPlugin extends JavaPlugin {
     static List<Feature> featureList() {
         // The simple Skyblock does not load the former progression systems, except the Wings.
         return List.of(new UtilityFeature(), new IslandFeature(), new WingsFeature(), new EconomyFeature(), new QuarryFeature(), new ClassesFeature(), new TradesFeature(), new GadgetsFeature(),
-            new BossFeature(), new ResonanceFeature(), new DungeonFeature(), new BastionFeature(), new RealmFeature(), new AshesFeature(), new StormFeature(), new MarshFeature(), new DepthsFeature(), new PromotionFeature(), new RuneFeature(), new StationFeature(), new MenuFeature());
+            new BossFeature(), new ResonanceFeature(), new DungeonFeature(), new BastionFeature(), new RealmFeature(), new AshesFeature(), new StormFeature(), new MarshFeature(), new DepthsFeature(), new PromotionFeature(), new RuneFeature(), new StationFeature(), new MenuFeature(), new win.vampyuyu.survival.movement.MovementFeature());
     }
 
     @Override
