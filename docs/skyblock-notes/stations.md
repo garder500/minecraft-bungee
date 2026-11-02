@@ -23,7 +23,9 @@ Recipes are shapeless with vanilla ingredients (see `StationFeature.addRecipes`)
   contracts drawn from `contract` within their generator tier (same draw all day). Kinds: kill (mob type), deliver (items
   taken at turn-in), boss (any `BossKillEvent` the player damaged). Rewards: coins (capped per day), Memory Shards, an item.
 
+## Warden trade
+The Warden trade (TradeApi) is wired: +20% Ranch output, a chance of one more flask per brew, and trade XP for each collection.
+
 ## Not done
-- Warden/Artisan métier bonuses (+20% Ranch/Alembic): métiers do not exist yet, no hook was added.
 - Tonics use vanilla potion effects, not the elemental resistance of `LadderDefense`; no "Aether" draught (no Aether API).
 - No custom models/icons: stations and flasks use vanilla ones.

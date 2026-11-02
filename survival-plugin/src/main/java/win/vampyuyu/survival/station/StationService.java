@@ -22,6 +22,8 @@ import win.vampyuyu.survival.api.Element;
 import win.vampyuyu.survival.api.GeneratorApi;
 import win.vampyuyu.survival.api.ResonanceApi;
 import win.vampyuyu.survival.api.StationApi;
+import win.vampyuyu.survival.api.Trade;
+import win.vampyuyu.survival.api.TradeApi;
 import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.CustomItemDef;
 import win.vampyuyu.survival.core.Msg;
@@ -38,6 +40,7 @@ public final class StationService implements StationApi {
     private final Core core;
     private volatile StationConfig config;
     private final Map<UUID, Oil> oils = new ConcurrentHashMap<>();
+    private final java.util.Random random = new java.util.Random();
 
     public StationService(Core core, StationConfig config) {
         this.core = core;
@@ -59,6 +62,15 @@ public final class StationService implements StationApi {
     /** The generator tier (1 to 5): the stations grow with the player's progression. */
     int tier(UUID id) {
         return Math.max(1, core.service(GeneratorApi.class).map(g -> g.tier(id)).orElse(1));
+    }
+
+    /** The Warden's yield multiplier (1 without the trade, see {@link TradeApi}). */
+    double yield(UUID id) {
+        return core.service(TradeApi.class).map(t -> t.yieldFactor(id)).orElse(1.0);
+    }
+
+    private void wardenXp(UUID id, int amount) {
+        core.service(TradeApi.class).ifPresent(t -> t.addXp(id, Trade.WARDEN, amount));
     }
 
     // ---------------------------------------------------------------- items
@@ -229,12 +241,19 @@ public final class StationService implements StationApi {
             if (brew == null) {
                 continue;
             }
-            for (ItemStack rest : player.getInventory().addItem(flask(brew)).values()) {
-                player.getWorld().dropItem(player.getLocation(), rest);
+            // a Warden's bonus is a chance of one more flask
+            int flasks = random.nextDouble() < yield(player.getUniqueId()) - 1 ? 2 : 1;
+            for (int f = 0; f < flasks; f++) {
+                for (ItemStack rest : player.getInventory().addItem(flask(brew)).values()) {
+                    player.getWorld().dropItem(player.getLocation(), rest);
+                }
             }
             n++;
         }
         d.ready.clear();
+        if (n > 0) {
+            wardenXp(player.getUniqueId(), n);
+        }
         if (had) {
             dirty(player.getUniqueId());
         }
@@ -320,7 +339,8 @@ public final class StationService implements StationApi {
         int tier = tier(id);
         Map<Product, Integer> out = new java.util.LinkedHashMap<>();
         for (Product p : config.products().values()) {
-            out.put(p, StationRules.ranchUnits(d.ranchSince, now, p, tier, config.tierBonus, config.storageHours));
+            int units = StationRules.ranchUnits(d.ranchSince, now, p, tier, config.tierBonus, config.storageHours);
+            out.put(p, (int) Math.floor(units * yield(id) + 1e-9));
         }
         return out;
     }
@@ -336,6 +356,7 @@ public final class StationService implements StationApi {
             }
         }
         if (total > 0) {
+            wardenXp(player.getUniqueId(), 2);
             data(player.getUniqueId()).ranchSince = now;
             dirty(player.getUniqueId());
         }
