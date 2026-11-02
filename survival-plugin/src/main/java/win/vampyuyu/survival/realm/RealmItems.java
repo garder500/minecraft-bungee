@@ -16,6 +16,7 @@ final class RealmItems {
     static final String STASIS_CRYSTAL = "stasis_crystal";
     static final String CHRONO_SAND = "chrono_sand";
     static final String PRESSURE_PEARL = "pressure_pearl";
+    static final String THUNDER_QUARTZ = "thunder_quartz";
 
     private RealmItems() {}
 
@@ -48,5 +49,9 @@ final class RealmItems {
             .itemModel("vampyuyu:ore/pressure_pearl").type("GEM").glint(true).pdc("realm_resource", 1L)
             .lore("<gray>A pearl that holds the weight of an ocean.", "<gray>Found only in the <dark_aqua>Abyssal Depths<gray>, by fishing.",
                 "<dark_gray>Restarts the pumps. Forges the Tide Module.").build());
+        items.register(CustomItemDef.builder(THUNDER_QUARTZ, "Thunder Quartz", Rarity.EPIC, Material.QUARTZ)
+            .itemModel("vampyuyu:ore/thunder_quartz").type("GEM").glint(true).pdc("realm_resource", 1L)
+            .lore("<gray>Quartz that still crackles with the last storm.", "<gray>Found only in the <aqua>Tempestuous Archipelago<gray>.",
+                "<dark_gray>Burns in a Lightning Rod. Forges its Bastion key.").build());
     }
 }

@@ -68,10 +68,16 @@ final class EnergyNetwork {
      * battery. Read before {@link #tick}, which spends the fuel and the charge.
      */
     static boolean hasFlux(Map<Pos, MachineData> network, Predicate<Pos> sunny) {
+        return hasFlux(network, sunny, Sky.NONE);
+    }
+
+    /** Same, counting the Lightning Rods that are in a thunderstorm or burning Thunder Quartz. */
+    static boolean hasFlux(Map<Pos, MachineData> network, Predicate<Pos> sunny, Sky sky) {
         for (Map.Entry<Pos, MachineData> entry : network.entrySet()) {
             MachineData m = entry.getValue();
             MachineType type = m.kind();
-            if ((type == MachineType.SOLAR_PANEL && sunny.test(entry.getKey()))
+            if ((type == MachineType.LIGHTNING_ROD && (m.fuel > 0 || sky.stormy(entry.getKey())))
+                    || (type == MachineType.SOLAR_PANEL && sunny.test(entry.getKey()))
                     || (type == MachineType.COAL_GENERATOR && m.fuel > 0) || (type == MachineType.BATTERY && m.charge > 0)) {
                 return true;
             }
@@ -106,22 +112,65 @@ final class EnergyNetwork {
         double speed(MachineData miner);
     }
 
+    /** The weather above the machines: where a Lightning Rod stands in a thunderstorm, and which second it is (for the surges). */
+    interface Sky {
+        Sky NONE = new Sky() {
+            @Override
+            public boolean stormy(Pos pos) {
+                return false;
+            }
+
+            @Override
+            public long second() {
+                return 0;
+            }
+        };
+
+        /** True when the sky is open above the position during a thunderstorm. */
+        boolean stormy(Pos pos);
+
+        /** Any count that grows by one each second. */
+        long second();
+    }
+
     /** The full tick, with the trade modifiers of each miner. */
     static List<Fire> tick(Map<Pos, MachineData> network, MachineSettings cfg, Predicate<Pos> ready, Predicate<Pos> sunny,
             Modifiers mods) {
-        return tick(network, cfg, ready, sunny, mods, System.currentTimeMillis());
+        return tick(network, cfg, ready, sunny, mods, System.currentTimeMillis(), Sky.NONE);
     }
 
     /** Same, at a given instant (the Time Tide of the Chrono Modules depends on it). */
     static List<Fire> tick(Map<Pos, MachineData> network, MachineSettings cfg, Predicate<Pos> ready, Predicate<Pos> sunny,
             Modifiers mods, long now) {
+        return tick(network, cfg, ready, sunny, mods, now, Sky.NONE);
+    }
+
+    /** The full tick, with the weather for the Lightning Rods. */
+    static List<Fire> tick(Map<Pos, MachineData> network, MachineSettings cfg, Predicate<Pos> ready, Predicate<Pos> sunny,
+            Modifiers mods, Sky sky) {
+        return tick(network, cfg, ready, sunny, mods, System.currentTimeMillis(), sky);
+    }
+
+    /** Same, at a given instant and with the weather. */
+    static List<Fire> tick(Map<Pos, MachineData> network, MachineSettings cfg, Predicate<Pos> ready, Predicate<Pos> sunny,
+            Modifiers mods, long now, Sky sky) {
         double pool = 0;
         long capacity = 0;
         List<MachineData> batteries = new ArrayList<>();
         for (Map.Entry<Pos, MachineData> entry : network.entrySet()) {
             MachineData m = entry.getValue();
             MachineType type = m.kind();
-            if (type == MachineType.SOLAR_PANEL && sunny.test(entry.getKey())) {
+            if (type == MachineType.LIGHTNING_ROD) {
+                boolean burning = m.fuel > 0;
+                if (burning) {
+                    m.fuel--;
+                }
+                if (burning || sky.stormy(entry.getKey())) {
+                    Pos at = entry.getKey();
+                    pool += cfg.rodOutput * win.vampyuyu.survival.realm.StormMath.surge(
+                        win.vampyuyu.survival.realm.StormMath.seedOf(at.x(), at.y(), at.z()), sky.second());
+                }
+            } else if (type == MachineType.SOLAR_PANEL && sunny.test(entry.getKey())) {
                 pool += cfg.solarOutput;
             } else if (type == MachineType.COAL_GENERATOR && m.fuel > 0) {
                 m.fuel--;

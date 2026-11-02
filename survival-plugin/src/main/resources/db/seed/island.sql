@@ -214,3 +214,4 @@ INSERT INTO setting (id, type, value, note) VALUES ('island.citadel.gate-boss', 
 INSERT INTO setting (id, type, value, note) VALUES ('island.citadel.tide.calm-seconds', 'int', '720', 'Time Tide of the Citadel: length of the calm stretch of one cycle. The tide depends on the clock only.');
 INSERT INTO setting (id, type, value, note) VALUES ('island.citadel.tide.surge-seconds', 'int', '240', 'Time Tide: length of the surge (time runs fast: Speed and Haste in the Citadel, Chrono Modules run faster).');
 INSERT INTO setting (id, type, value, note) VALUES ('island.citadel.tide.stall-seconds', 'int', '240', 'Time Tide: length of the stall (time crawls: Slowness in the Citadel, Chrono Modules run slower and bank the lost cycles).');
+INSERT INTO setting (id, type, value, note) VALUES ('island.storm.gate-boss', 'text', 'sylvan_matriarch', 'Boss id whose defeat lights the Sky Gate of the Tempestuous Archipelago for the players who fought it.');

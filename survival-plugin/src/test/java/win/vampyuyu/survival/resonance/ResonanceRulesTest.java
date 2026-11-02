@@ -135,7 +135,8 @@ public class ResonanceRulesTest {
             Seeds.sync(db, ContentDomains.ALL, null);
             ResonanceConfig seeded = ResonanceConfig.load(db);
             assertEquals(java.util.List.of(), seeded.problems());
-            assertEquals(6, seeded.bastions().size());
+            assertEquals(9, seeded.bastions().size());
+            assertEquals(Realm.ARCHIPELAGO, seeded.bastions().get("thunder_dragon").realm());
             assertEquals(Realm.ASHES, seeded.bastions().get("magma_warden").realm());
             assertNull("the Echo belongs to no Realm", seeded.bastions().get("voidwyrm").realm());
             assertNotNull(seeded.bastions().get("crypt_lord"));

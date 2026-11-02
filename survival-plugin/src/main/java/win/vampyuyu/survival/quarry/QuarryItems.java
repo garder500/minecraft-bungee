@@ -123,6 +123,11 @@ final class QuarryItems {
             CustomItemDef.builder("solar_panel", "Solar Panel", Rarity.RARE, Material.DAYLIGHT_DETECTOR)
                 .itemModel("vampyuyu:machine/solar_panel").type("MACHINE")
                 .lore("<gray>Makes <white>6 Flux/s <gray>in daylight,", "<gray>with the sky open above it.").build(),
+            CustomItemDef.builder("lightning_rod", "Lightning Rod", Rarity.EPIC, Material.LIGHTNING_ROD)
+                .itemModel("vampyuyu:machine/lightning_rod").type("MACHINE")
+                .lore("<gray>Very strong, very unstable Flux:", "<gray>about <white>38 Flux/s <gray>on average, from 0 to x4.",
+                    "<gray>Works in a thunderstorm with the sky open,", "<gray>or burning <aqua>Thunder Quartz<gray> (right-click).",
+                    "<dark_gray>Pair it with a Battery.").build(),
             CustomItemDef.builder("battery", "Battery", Rarity.UNCOMMON, Material.WAXED_COPPER_BLOCK)
                 .itemModel("vampyuyu:machine/battery").type("MACHINE")
                 .lore("<gray>Stores Flux. Capacity: <white>10,000").build(),

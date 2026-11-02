@@ -1,4 +1,4 @@
-# Realm resources: Cinderheart and Heartwood (GDD 3.2, 15.1)
+# Realm resources: Cinderheart, Heartwood and Thunder Quartz (GDD 3.2, 15.1)
 
 Feature `realm` (`survival-plugin/.../realm/`), API `api/RealmResourceApi`, schema `V016__realm_resources.sql`, seed `db/seed/realm.sql` (domain `realm`).
 
@@ -9,3 +9,4 @@ Feature `realm` (`survival-plugin/.../realm/`), API `api/RealmResourceApi`, sche
 - **First use**: sold to the adventurer (60 coins), not tradable on the market. Real uses are phase 3: runes are done (`runes.md`: Scorch from Cinderheart, Verdant from Heartwood), sidegrades and modules are not.
 - Bastions and Guardians can call `RealmResourceApi.roll(player, resourceId, kind)` to feed a resource.
 - Sprites are placeholders (procedural hearts). The generated concept sheet is meant for `art/concepts/realm.png` (mapping already in `import_textures.py`); the sandbox could not download it.
+- **Thunder Quartz** (`thunder_quartz`, Tempestuous Archipelago, `storm.md`): nodes of the zone, pity rows for `sb_storm`, fuel of the Lightning Rod and key of the Tempest Bastion.

@@ -326,10 +326,30 @@ def voidglass(c):
     c.outline()
 
 
+def thunder_quartz(c):
+    c.fill_shape(b.poly([(8, 0.5), (11, 4), (10.5, 12), (8, 15.5), (5.5, 12), (5, 4)]), (0xD8, 0xF0, 0xFF))
+    c.fill_shape(b.poly([(8, 3), (9.5, 5), (9, 11), (8, 13), (7, 11), (6.5, 5)]), (0x7F, 0xC8, 0xF0))
+    c.fill_shape(b.poly([(9, 4), (6.5, 8.5), (8.2, 8.5), (7, 12.5), (10, 7), (8.3, 7)]), (0xFF, 0xE6, 0x6B))
+    b.sparkle(c, 4, 3, (0xFF, 0xFF, 0xFF))
+    c.outline()
+
+
 def starcore(c):
     c.fill_shape(b.union(b.poly([(8, 0.5), (9.5, 6.5), (15.5, 8), (9.5, 9.5), (8, 15.5), (6.5, 9.5), (0.5, 8), (6.5, 6.5)])),
                  (0xFF, 0x7A, 0x9C))
     c.fill_shape(b.circle(8, 8, 1.8), (0xFF, 0xFF, 0xFF))
+    c.outline()
+
+
+def lightning_rod(c):
+    c.rect(7, 2, 8, 12, b.shade((0xC8, 0x7A, 0x4A), 1.0))
+    c.rect(7, 2, 7, 12, b.shade((0xE8, 0x9A, 0x6A), 1.0))
+    c.rect(6, 1, 9, 2, b.shade((0xE8, 0x9A, 0x6A), 1.1))
+    c.rect(4, 12, 11, 14, b.shade(STEEL, 0.8))
+    c.rect(5, 11, 10, 11, b.shade(STEEL, 1.1))
+    c.line(12, 1, 10, 5, (0xFF, 0xE6, 0x6B, 255))
+    c.line(10, 5, 12, 6, (0xFF, 0xE6, 0x6B, 255))
+    c.line(12, 6, 10, 10, (0xFF, 0xE6, 0x6B, 255))
     c.outline()
 
 
@@ -392,7 +412,9 @@ ICONS = {
     "ore/void_lens": void_lens,
     "ore/voidglass": voidglass,
     "ore/starcore": starcore,
+    "ore/thunder_quartz": thunder_quartz,
     "machine/solar_panel": solar_panel,
+    "machine/lightning_rod": lightning_rod,
     "skin/kitsune": skin_kitsune,
     "skin/titan_edge": skin_titan_edge,
     "skin/crystal_saber": skin_crystal_saber,

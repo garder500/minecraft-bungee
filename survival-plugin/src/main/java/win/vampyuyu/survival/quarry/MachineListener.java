@@ -217,6 +217,14 @@ final class MachineListener implements Listener {
             core.msg().ok(player, "Added " + amount + " coal: " + Msg.duration(data.fuel * 1000L) + " of fuel.");
             return;
         }
+        if (type == MachineType.LIGHTNING_ROD && core.items().is(held, MachineSettings.ROD_FUEL_ITEM)) {
+            int amount = held.getAmount();
+            data.fuel += amount * cfg.rodQuartzSeconds;
+            held.setAmount(0);
+            machines.store().markDirty();
+            core.msg().ok(player, "Added " + amount + " Thunder Quartz: the rod crackles for " + Msg.duration(data.fuel * 1000L) + ".");
+            return;
+        }
         if (type == MachineType.SPRING_STONE && held.getType() == Material.BUCKET) {
             player.getInventory().setItemInMainHand(new ItemStack(Material.WATER_BUCKET));
             core.msg().ok(player, "The Spring Stone never runs dry: bucket filled.");
@@ -240,6 +248,10 @@ final class MachineListener implements Listener {
                 : "out of fuel. Right-click it holding coal."));
             case BATTERY -> core.msg().info(player, "Battery: " + data.charge + " / " + cfg.batteryCapacity + " Flux.");
             case CABLE -> core.msg().info(player, "Copper Cable: it joins the machines that touch it.");
+            case LIGHTNING_ROD -> core.msg().info(player, "Lightning Rod: about " + (int) (cfg.rodOutput * win.vampyuyu.survival.realm.StormMath.SURGE_MEAN)
+                + " Flux/s on average, but it swings from nothing to x4 from one second to the next. It needs the sky open above it in a thunderstorm"
+                + (data.fuel > 0 ? ", or Thunder Quartz (" + Msg.duration(data.fuel * 1000L) + " left)." : ", or Thunder Quartz (right-click it).")
+                + " Put a Battery on the network to smooth it out.");
             case SOLAR_PANEL -> core.msg().info(player, "Solar Panel: " + (int) cfg.solarOutput + " Flux/s in daylight with the sky open above it.");
             default -> {
                 MachineModule slotted = MachineModule.of(data.module);
