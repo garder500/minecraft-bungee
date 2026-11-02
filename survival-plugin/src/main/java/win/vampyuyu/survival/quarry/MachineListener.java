@@ -78,6 +78,46 @@ final class MachineListener implements Listener {
             });
     }
 
+    /** Slots the module held into a Miner; the one already there comes back to the player. */
+    private void installModule(Player player, Block block, MachineData data, MachineModule module) {
+        MachineModule old = MachineModule.of(data.module);
+        if (old == module) {
+            core.msg().info(player, "This Miner already has the " + module.title + ".");
+            return;
+        }
+        ItemStack held = player.getInventory().getItemInMainHand();
+        held.setAmount(held.getAmount() - 1);
+        if (old != null) {
+            giveBack(player, block, old);
+        }
+        data.module = module.name();
+        machines.store().markDirty();
+        core.msg().ok(player, module.title + " installed. " + describe(module));
+    }
+
+    private void removeModule(Player player, Block block, MachineData data) {
+        MachineModule old = MachineModule.of(data.module);
+        data.module = "";
+        machines.store().markDirty();
+        giveBack(player, block, old);
+        core.msg().ok(player, old.title + " taken out.");
+    }
+
+    private void giveBack(Player player, Block block, MachineModule module) {
+        for (ItemStack left : player.getInventory().addItem(core.items().create(module.itemId)).values()) {
+            block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 1.2, 0.5), left);
+        }
+    }
+
+    private String describe(MachineModule module) {
+        MachineSettings cfg = machines.settings();
+        return switch (module) {
+            case EMBER -> String.format(Locale.ROOT, "Speed x%.1f, Flux use x%.1f, smelts what it breaks.", cfg.emberRate, cfg.emberConsume);
+            case BLOOM -> String.format(Locale.ROOT, "Speed x%.1f, Flux use x%.1f, %.0f%% of cycles also give a bone meal.",
+                cfg.bloomRate, cfg.bloomConsume, cfg.bloomBoneMealChance * 100);
+        };
+    }
+
     private static void fire(Player player, String key) {
         org.bukkit.Bukkit.getPluginManager().callEvent(new win.vampyuyu.survival.api.event.QuarryProgressEvent(player, "EVENT", key, 1));
     }
@@ -130,7 +170,7 @@ final class MachineListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onInteract(PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND || event.getAction() != Action.RIGHT_CLICK_BLOCK
-                || event.getClickedBlock() == null || event.getPlayer().isSneaking()) {
+                || event.getClickedBlock() == null) {
             return;
         }
         Block block = event.getClickedBlock();
@@ -139,9 +179,25 @@ final class MachineListener implements Listener {
         if (type == null) {
             return;
         }
-        event.setCancelled(true);
         Player player = event.getPlayer();
         ItemStack held = player.getInventory().getItemInMainHand();
+        if (player.isSneaking()) { // sneaking keeps placing blocks, except an empty hand which takes the module out
+            if (type.miner() && held.getType().isAir() && MachineModule.of(data.module) != null) {
+                event.setCancelled(true);
+                removeModule(player, block, data);
+            }
+            return;
+        }
+        event.setCancelled(true);
+        Optional<MachineModule> module = core.items().idOf(held).flatMap(MachineModule::ofItem);
+        if (module.isPresent()) {
+            if (type.miner()) {
+                installModule(player, block, data, module.get());
+            } else {
+                core.msg().warn(player, module.get().title + " fits a Miner.");
+            }
+            return;
+        }
         MachineSettings cfg = machines.settings();
         if (type == MachineType.COAL_GENERATOR && held.getType() == Material.COAL && core.items().idOf(held).isEmpty()) {
             int amount = held.getAmount();
@@ -175,8 +231,13 @@ final class MachineListener implements Listener {
             case BATTERY -> core.msg().info(player, "Battery: " + data.charge + " / " + cfg.batteryCapacity + " Flux.");
             case CABLE -> core.msg().info(player, "Copper Cable: it joins the machines that touch it.");
             case SOLAR_PANEL -> core.msg().info(player, "Solar Panel: " + (int) cfg.solarOutput + " Flux/s in daylight with the sky open above it.");
-            default -> core.msg().info(player, type.title + ": needs generator cobble and a chest or barrel next to it, and "
-                + String.format(Locale.ROOT, "%.0f", cfg.consume(type)) + " Flux/s from a network.");
+            default -> {
+                MachineModule slotted = MachineModule.of(data.module);
+                core.msg().info(player, type.title + ": needs generator cobble and a chest or barrel next to it, and "
+                    + String.format(Locale.ROOT, "%.0f", cfg.consume(data)) + " Flux/s from a network."
+                    + (slotted == null ? " Right-click with a Realm module to slot it in."
+                        : " " + slotted.title + " slotted (sneak with an empty hand to take it out)."));
+            }
         }
     }
 
