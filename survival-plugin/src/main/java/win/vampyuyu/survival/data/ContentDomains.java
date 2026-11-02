@@ -83,6 +83,10 @@ public final class ContentDomains {
         new Root("dungeon_boss", "id", null, List.of(new Child("dungeon_boss_attack", "boss_id"))),
         settings("dungeon")));
 
+    public static final Domain BASTION = new Domain("bastion", List.of(
+        new Root("bastion", "id", null, List.of()),
+        settings("bastion")));
+
     /** Plugin level settings: the debug flag and the feature toggles (read before any feature enables). */
     public static final Domain CORE = new Domain("core", List.of(settings("core")));
 
@@ -134,7 +138,7 @@ public final class ContentDomains {
 
     /** In the order they are synced. */
     public static final List<Domain> ALL = List.of(QUESTS, QUESTS_DAILY, CORE, ISLAND, UTILITY, WINGS, MENU, ECONOMY, SKILLS, QUARRY, GADGETS, BOSS,
-        RESONANCE, DUNGEON, ITEMS, REALM);
+        RESONANCE, DUNGEON, BASTION, ITEMS, REALM);
 
     private ContentDomains() {}
 

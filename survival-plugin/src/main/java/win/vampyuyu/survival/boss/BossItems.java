@@ -79,15 +79,15 @@ public final class BossItems {
         t.add(spec("echo_key", "Echo Key", Rarity.RARE, Material.TRIAL_KEY, "SUMMON ITEM", true, none,
             "<gray>The Archivist's key to the Rift, cut from a", "<gray>shard that still remembers the sky.", "",
             "<yellow>Right-click at the Rift altar in the Hub to", "<yellow>awaken the <light_purple>Echo of the Rift<yellow>. Consumed on use."));
-        t.add(spec("magma_core", "Magma Core", Rarity.EPIC, Material.MAGMA_CREAM, "SUMMON ITEM", true, none,
+        t.add(spec("magma_core", "Ashes Bastion Key", Rarity.EPIC, Material.MAGMA_CREAM, "SUMMON ITEM", true, none,
             "<gray>A heart of molten rock that never cools.", "",
-            "<yellow>Right-click in the Nether to wake the", "<red>Lava Colossus<yellow>. Consumed on use."));
+            "<yellow>Opens the <red>Ashes Bastion<yellow> (/bastion) and its", "<red>Lava Colossus<yellow>. Spent by the party leader."));
         t.add(spec("frost_heart", "Frost Heart", Rarity.EPIC, Material.PRISMARINE_CRYSTALS, "SUMMON ITEM", true, none,
             "<gray>A frozen heart that still beats, slowly.", "",
             "<yellow>Right-click outdoors to call the", "<aqua>Frost Revenant<yellow>. Consumed on use."));
-        t.add(spec("matriarch_egg", "Spore Egg", Rarity.EPIC, Material.FERMENTED_SPIDER_EYE, "SUMMON ITEM", true, none,
+        t.add(spec("matriarch_egg", "Grove Bastion Key", Rarity.EPIC, Material.FERMENTED_SPIDER_EYE, "SUMMON ITEM", true, none,
             "<gray>Something moves inside the sac.", "",
-            "<yellow>Right-click outdoors to hatch the", "<dark_green>Mycelial Queen<yellow>. Consumed on use."));
+            "<yellow>Opens the <dark_green>Grove Bastion<yellow> (/bastion) and its", "<dark_green>Mycelial Queen<yellow>. Spent by the party leader."));
         t.add(spec("leviathan_scale", "Leviathan Scale", Rarity.EPIC, Material.NAUTILUS_SHELL, "SUMMON ITEM", true, none,
             "<gray>A scale the size of a shield, cold and wet.", "",
             "<yellow>Right-click while standing in water to", "<dark_aqua>rouse the Abyssal Leviathan<yellow>. Consumed on use."));

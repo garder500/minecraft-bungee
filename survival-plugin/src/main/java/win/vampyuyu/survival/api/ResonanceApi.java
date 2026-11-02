@@ -18,4 +18,10 @@ public interface ResonanceApi {
 
     /** Memory Shards the player holds. */
     long shards(UUID player);
+
+    /**
+     * Pays the Shards of a lost fight (GDD 15.4): a fraction of a clear scaled by {@code progress}, to a player who
+     * dealt at least the minimum {@code share} of the damage. Does nothing for a boss that is not a Bastion.
+     */
+    void payDefeat(UUID player, String bossId, int rank, double progress, double share);
 }

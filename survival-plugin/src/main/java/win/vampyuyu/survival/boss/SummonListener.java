@@ -96,6 +96,9 @@ public final class SummonListener implements Listener {
         if (core.service(DungeonApi.class).map(d -> d.inDungeon(player)).orElse(false)) {
             return "You cannot summon this inside a dungeon.";
         }
+        if (core.service(win.vampyuyu.survival.api.BastionApi.class).map(b -> b.isKey(rules.item())).orElse(false)) {
+            return "This is a Bastion key. Take it to a Bastion gate and open it with /bastion.";
+        }
         World world = player.getWorld();
         if (rules.worlds().isEmpty() ? !SkyblockWorlds.isSkyblock(world.getName()) : !rules.worlds().contains(world.getName())) {
             return "This item does not work in this world.";

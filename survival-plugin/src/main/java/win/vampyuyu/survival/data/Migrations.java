@@ -24,7 +24,8 @@ public final class Migrations {
         "V013__items",
         "V014__elements",
         "V015__dungeon_bosses",
-        "V016__realm_resources");
+        "V016__realm_resources",
+        "V017__bastion");
 
     private Migrations() {}
 
