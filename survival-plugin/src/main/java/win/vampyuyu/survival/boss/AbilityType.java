@@ -27,7 +27,8 @@ public enum AbilityType {
     FIRE_RING("fire_ring", "Expanding ring of fire with a gap"),
     BONE_CAGE("bone_cage", "Traps a player inside a bone cage"),
     SOUL_DRAIN("soul_drain", "Beam that drains a player and heals the boss"),
-    BLIZZARD("blizzard", "Freezing storm: stay near the warm braziers");
+    BLIZZARD("blizzard", "Freezing storm: stay near the warm braziers"),
+    CHAIN_ANCHORS("chain_anchors", "Chains drag everyone toward the boss until the anchors are destroyed");
 
     private final String id;
     private final String description;

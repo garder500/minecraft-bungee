@@ -22,7 +22,9 @@ enum MachineModule {
     /** Putrid Marshes, industrial: thrifty and a little slower, and the Miner sometimes recycles its residue into a second copy. */
     RECYCLER("recycler_module", "Recycler Module", "recycler"),
     /** Citadel of Golden Sands, temporal: follows the Time Tide and banks the cycles it cannot run (a buffer). */
-    CHRONO("chrono_module", "Chrono Module", "chrono");
+    CHRONO("chrono_module", "Chrono Module", "chrono"),
+    /** Abyssal Depths, fluids: thrifty and a little slower, and the pump brings up prismarine from the water. */
+    TIDE("tide_module", "Tide Module", "tide");
 
     final String itemId;
     final String title;
@@ -97,6 +99,11 @@ enum MachineModule {
     /** Cycles a running Chrono Miner takes out of its buffer this second. */
     static double release(double buffer, double release) {
         return Math.min(Math.max(0, buffer), Math.max(0, release));
+    }
+
+    /** Prismarine shards a Tide module pumps up with one cycle (0 most of the time). */
+    static int tideBonus(double chance, Random random) {
+        return random.nextDouble() < chance ? 1 : 0;
     }
 
     /** Bone meal a Bloom module gathers with one cycle (0 most of the time). */

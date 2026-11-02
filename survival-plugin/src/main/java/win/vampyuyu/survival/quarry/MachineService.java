@@ -460,13 +460,15 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
         }
     }
 
-    /** A Bloom module sometimes gathers a bone meal with the cycle, a Cryo module a packed ice. */
+    /** A Bloom module sometimes gathers a bone meal with the cycle, a Cryo module a packed ice, a Tide module a prismarine shard. */
     private void bloom(World world, Block miner, Container container, MachineModule module, MachineData data) {
         Material bonus;
         if (module == MachineModule.BLOOM && MachineModule.bloomBonus(settings().bloomBoneMealChance, random) > 0) {
             bonus = Material.BONE_MEAL;
         } else if (module == MachineModule.CRYO && MachineModule.cryoBonus(settings().cryoIceChance, random) > 0) {
             bonus = Material.PACKED_ICE;
+        } else if (module == MachineModule.TIDE && MachineModule.tideBonus(settings().tideShardChance, random) > 0) {
+            bonus = Material.PRISMARINE_SHARD;
         } else {
             return;
         }

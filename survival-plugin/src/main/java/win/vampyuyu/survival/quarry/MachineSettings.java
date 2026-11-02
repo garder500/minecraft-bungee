@@ -42,6 +42,9 @@ final class MachineSettings {
     final double chronoRelease;
     /** The Time Tide of the Citadel (the {@code island.citadel.tide.*} settings). */
     final win.vampyuyu.survival.api.TimeTide tide;
+    final double tideConsume;
+    final double tideRate;
+    final double tideShardChance;
 
     MachineSettings(Settings s) {
         this(s, win.vampyuyu.survival.api.TimeTide.defaults());
@@ -70,6 +73,9 @@ final class MachineSettings {
         recyclerConsume = positive(s, "module.recycler.consume-factor", 0.7);
         recyclerRate = positive(s, "module.recycler.rate-factor", 0.9);
         recyclerSalvageChance = positive(s, "module.recycler.salvage-chance", 0.15);
+        tideConsume = positive(s, "module.tide.consume-factor", 0.6);
+        tideRate = positive(s, "module.tide.rate-factor", 0.9);
+        tideShardChance = positive(s, "module.tide.shard-chance", 0.2);
         generatorOutput = positive(s, "coal-generator.output", 10);
         coalSeconds = (int) Math.max(1, positive(s, "coal-generator.coal-seconds", 40));
         solarOutput = positive(s, "solar-panel.output", 6);
@@ -106,6 +112,11 @@ final class MachineSettings {
         double base = consume(data.kind());
         MachineModule module = MachineModule.of(data.module);
         return module == null ? base : base * consumeFactor(module);
+        return module == null ? base : base * switch (module) {
+            case EMBER -> emberConsume;
+            case BLOOM -> bloomConsume;
+            case TIDE -> tideConsume;
+        };
     }
 
     /** Mining cycles per second of this machine, with its module. */
@@ -129,6 +140,7 @@ final class MachineSettings {
             case CRYO -> cryoConsume;
             case RECYCLER -> recyclerConsume;
             case CHRONO -> chronoConsume;
+            case TIDE -> tideConsume;
         };
     }
 
@@ -141,6 +153,7 @@ final class MachineSettings {
             case CRYO -> cryoRate;
             case RECYCLER -> recyclerRate;
             case CHRONO -> chronoRate * tide;
+            case TIDE -> tideRate;
         };
     }
 

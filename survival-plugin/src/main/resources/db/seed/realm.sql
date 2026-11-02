@@ -46,3 +46,12 @@ INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('chrono_sand'
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('chrono_sand', 'block', 'GOLD_BLOCK');
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('chrono_sand', 'mob', 'HUSK');
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('chrono_sand', 'mob', 'SILVERFISH');
+-- Abyssal Depths (issue 45): the Pressure Pearl is mostly fished (DepthsRealm, kind "fish", same curve as the other kinds); a few
+-- blocks and mobs of the domes also roll it. The numbers are proposals to tune in the panel.
+INSERT INTO realm_world (world, realm) VALUES ('sb_depths', 'depths');
+INSERT INTO realm_resource (id, realm, item, p0, soft, dur, amount_min, amount_max) VALUES ('pressure_pearl', 'depths', 'pressure_pearl', 0.08, 10, 30, 1, 1);
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('pressure_pearl', 'block', 'SEA_LANTERN');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('pressure_pearl', 'block', 'PRISMARINE_BRICKS');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('pressure_pearl', 'mob', 'GUARDIAN');
+INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('pressure_pearl', 'mob', 'DROWNED');
+INSERT INTO setting (id, type, value, note) VALUES ('realm.depths.gate-boss', 'text', 'sylvan_matriarch', 'Boss id whose defeat lights the Sky Gate of the Abyssal Depths for the players who fought it (a proposal: the Guardian of Realm 2).');
