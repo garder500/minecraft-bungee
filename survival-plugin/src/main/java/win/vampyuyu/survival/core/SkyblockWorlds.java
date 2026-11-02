@@ -8,6 +8,8 @@ public final class SkyblockWorlds {
     public static final String WORLD = "sb_world";
     public static final String NETHER = "sb_nether";
     public static final String END = "sb_end";
+    /** The Whispering Grove, second Realm (GDD 3.1), reached by its Sky Gate. */
+    public static final String GROVE = "sb_grove";
     /** Dungeon runs use {@code sb_dungeon_<runId>}. */
     public static final String DUNGEON_PREFIX = "sb_dungeon_";
 
@@ -20,7 +22,7 @@ public final class SkyblockWorlds {
     /** True for every world that belongs to the Skyblock. */
     public static boolean isSkyblock(String worldName) {
         return HUB.equals(worldName) || WORLD.equals(worldName) || NETHER.equals(worldName)
-            || END.equals(worldName) || isDungeon(worldName);
+            || END.equals(worldName) || GROVE.equals(worldName) || isDungeon(worldName);
     }
 
     /** World name of a dungeon run. */

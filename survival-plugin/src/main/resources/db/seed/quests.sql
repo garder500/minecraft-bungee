@@ -16,6 +16,7 @@ INSERT INTO quest_category (id, position, name, description, main, icon, unlock)
 INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('bosses', 12, 'The Bosses', 'Eight bosses of the world, each with its own silhouette and its glowing weak spot.', 0, 'DRAGON_HEAD', 'q212');
 INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('mastery', 13, 'Mastery', 'Long goals for players who have done it all.', 0, 'NETHER_STAR', 'q065');
 INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('challenges', 14, 'Challenges', 'Repeatable-feeling goals: bigger numbers, once each.', 0, 'TARGET', 'q021');
+INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('grove', 15, 'The Whispering Grove', 'Realm 2. Roots as wide as towers, spores that glow, islands that live. The Mycelial Queen keeps the biological codes of the old world.', 1, 'MOSS_BLOCK', NULL);
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q001', 'plan', 0, 'start', 'First Tree', 'Your fragment is quiet, but a lone tree still stands. Its wood is the first thing the world gives back. Break 8 logs.', 'BREAK_BLOCK', 'LOGS', 8, 'OAK_LOG', 20.0);
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q002', 'plan', 1, 'start', 'Planks', 'Craft 4 planks.', 'CRAFT_ITEM', 'PLANKS', 4, 'OAK_PLANKS', 20.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q002', 0, 'q001');
@@ -658,3 +659,20 @@ INSERT INTO quest (id, pool, position, category, name, description, type, target
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q290', 0, 'q021');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q291', 'plan', 317, 'challenges', 'Zombie Siege', 'Defeat 200 zombies.', 'KILL_MOB', 'ZOMBIE', 200, 'ROTTEN_FLESH', 400.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q291', 0, 'q021');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_01', 'plan', 318, 'grove', 'Through the Green Gate', 'Beyond the second Gate the air is thick with light. The Grove remembers how to grow. Light the Sky Gate of the Whispering Grove (defeat the Magma Warden) and step through it at the Quai des Huit (/quai).', 'EVENT', 'grove_enter', 1, 'LIME_STAINED_GLASS', 300.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_02', 'plan', 319, 'grove', 'Mossy Footing', 'Break 32 moss blocks.', 'BREAK_BLOCK', 'MOSS_BLOCK', 32, 'MOSS_BLOCK', 100.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_02', 0, 'grove_01');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_03', 'plan', 320, 'grove', 'First Grove Harvest', 'Break 16 fully grown crops.', 'BREAK_BLOCK', 'CROPS', 16, 'WHEAT', 150.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_03', 0, 'grove_02');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_04', 'plan', 321, 'grove', 'Breathe the Spores', 'Harvest grown crops in the Grove until you earn the Respiration affinity (40 harvests): the spore haze no longer touches you.', 'EVENT', 'grove_affinity:1', 1, 'SPORE_BLOSSOM', 400.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_04', 0, 'grove_03');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_05', 'plan', 322, 'grove', 'Planting the Roots', 'Plant 32 saplings.', 'PLACE_BLOCK', 'SAPLINGS', 32, 'MANGROVE_PROPAGULE', 200.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_05', 0, 'grove_04');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_06', 'plan', 323, 'grove', 'Heartwood', 'Break 64 mangrove logs, the living wood of the Grove.', 'BREAK_BLOCK', 'MANGROVE_LOG', 64, 'MANGROVE_LOG', 300.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_06', 0, 'grove_05');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_07', 'plan', 324, 'grove', 'Tame the Green', 'Craft a composter.', 'CRAFT_ITEM', 'COMPOSTER', 1, 'COMPOSTER', 150.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_07', 0, 'grove_06');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_08', 'plan', 325, 'grove', 'Let It Grow', 'Keep harvesting in the Grove until you earn the Growth affinity (200 harvests): bone meal grows a crop one more stage, anywhere.', 'EVENT', 'grove_affinity:2', 1, 'BONE_MEAL', 1200.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_08', 0, 'grove_07');
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('grove_09', 'plan', 326, 'grove', 'Wake the Mycelial Queen', 'Defeat the Sylvan Matriarch, the Queen''s guardian form.', 'BOSS_KILL', 'sylvan_matriarch', 1, 'SPIDER_EYE', 2500.0);
+INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('grove_09', 0, 'grove_08');

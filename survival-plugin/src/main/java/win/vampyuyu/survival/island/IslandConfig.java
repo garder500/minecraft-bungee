@@ -82,7 +82,7 @@ public final class IslandConfig {
         this.cellSize = cell;
         this.islandY = c.getInt("grid.island-y", 64);
         this.edgeMargin = Math.max(2, c.getInt("grid.edge-margin", 16));
-        for (String key : List.of("hub", "world", "nether", "end")) {
+        for (String key : List.of("hub", "world", "nether", "end", "grove")) {
             IslandRepo.WorldRow row = rows.worlds().get(key);
             worlds.put(key, row == null ? new WorldCfg("CYCLE", 60000000, false, new LinkedHashMap<>())
                 : new WorldCfg(row.time(), row.border(), row.weatherClear(), new LinkedHashMap<>(row.gamerules())));
