@@ -55,10 +55,19 @@ final class RealmListener implements Listener {
     }
 
     private void give(Player player, RealmResource resource, String kind, Location at) {
+        double factor = core.service(win.vampyuyu.survival.api.BreathApi.class).map(b -> b.yieldFactor(resource.id())).orElse(1.0);
         for (ItemStack stack : service.roll(player.getUniqueId(), resource.id(), kind)) {
+            stack.setAmount(Math.max(1, Math.min(stack.getMaxStackSize(), stackAmount(stack.getAmount(), factor))));
             player.getInventory().addItem(stack).values().forEach(rest -> at.getWorld().dropItemNaturally(at, rest));
             core.msg().ok(player, "You found " + stack.getAmount() + " " + resource.id().substring(0, 1).toUpperCase(Locale.ROOT)
                 + resource.id().substring(1) + "!");
         }
+    }
+
+    /** {@code amount * factor}, the fraction decided by a draw so that +30 % is +30 % on average. */
+    static int stackAmount(int amount, double factor) {
+        double scaled = amount * factor;
+        int whole = (int) Math.floor(scaled);
+        return whole + (java.util.concurrent.ThreadLocalRandom.current().nextDouble() < scaled - whole ? 1 : 0);
     }
 }

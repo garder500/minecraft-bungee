@@ -71,8 +71,10 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
         @Override
         public double energy(MachineData miner) {
             UUID owner = ownerOf(miner);
-            return owner == null ? 1 : quarry.core().service(win.vampyuyu.survival.api.TradeApi.class)
-                .map(t -> t.minerEnergyFactor(owner)).orElse(1.0);
+            double breath = quarry.core().service(win.vampyuyu.survival.api.BreathApi.class)
+                .map(win.vampyuyu.survival.api.BreathApi::machineFactor).orElse(1.0);
+            return breath * (owner == null ? 1 : quarry.core().service(win.vampyuyu.survival.api.TradeApi.class)
+                .map(t -> t.minerEnergyFactor(owner)).orElse(1.0));
         }
 
         @Override

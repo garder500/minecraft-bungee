@@ -168,11 +168,25 @@ public final class SkyGates implements SkyGateApi, Listener {
 
     // ---------------------------------------------------------------- travel
 
+    private final List<java.util.function.BiFunction<Player, Realm, String>> guards = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    @Override
+    public void addTravelGuard(java.util.function.BiFunction<Player, Realm, String> guard) {
+        guards.add(guard);
+    }
+
     @Override
     public boolean travel(Player player, Realm realm) {
         if (!state.isLit(player.getUniqueId(), realm)) {
             notice(player, "The Sky Gate to the " + realm.title() + " is dormant.", false);
             return false;
+        }
+        for (var guard : guards) {
+            String refusal = guard.apply(player, realm);
+            if (refusal != null) {
+                notice(player, refusal, false);
+                return false;
+            }
         }
         if (service.inDungeon(player)) {
             notice(player, "You cannot leave a dungeon run like that.", false);
