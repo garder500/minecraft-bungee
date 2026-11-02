@@ -24,4 +24,10 @@ public interface ResonanceApi {
      * dealt at least the minimum {@code share} of the damage. Does nothing for a boss that is not a Bastion.
      */
     void payDefeat(UUID player, String bossId, int rank, double progress, double share);
+
+    /** Adds Memory Shards (contracts, the Crucible). They count as earned. Does nothing for a non-positive amount. */
+    void grantShards(UUID player, long amount);
+
+    /** True when the player already owned this boss component once (GDD 15.3): only then is a duplicate worth Shards. */
+    boolean foundComponent(UUID player, String componentItemId);
 }

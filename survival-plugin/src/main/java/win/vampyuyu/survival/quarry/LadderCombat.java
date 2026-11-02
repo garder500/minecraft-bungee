@@ -61,7 +61,7 @@ final class LadderCombat implements Listener, win.vampyuyu.survival.api.LadderAp
         double charge = attackStrength(player);
         double hit = DamageFormula.base(damage, settings.damageBonus, might(player));
         ElementTraits.Traits traits = ElementTraits.read(target);
-        hit *= DamageFormula.elementMultiplier(def.get().element(), traits.weakTo(), traits.resists(), attunement(player),
+        hit *= DamageFormula.elementMultiplier(weaponElement(player, def.get()), traits.weakTo(), traits.resists(), attunement(player),
             settings.elementWeakness, settings.elementResistance);
         if (surge(player, target, charge >= settings.surgeMinCharge)) {
             hit *= surgeMultiplier(player);
@@ -92,8 +92,8 @@ final class LadderCombat implements Listener, win.vampyuyu.survival.api.LadderAp
         pdc.set(ARROW_DAMAGE, PersistentDataType.DOUBLE, DamageFormula.base(damage, settings.damageBonus, might(player))
             * DamageFormula.drawFactor(event.getForce()));
         pdc.set(ARROW_FULL, PersistentDataType.BOOLEAN, event.getForce() >= settings.surgeMinCharge);
-        if (def.get().element() != null) {
-            pdc.set(ARROW_ELEMENT, PersistentDataType.STRING, def.get().element().name());
+        if (weaponElement(player, def.get()) != null) {
+            pdc.set(ARROW_ELEMENT, PersistentDataType.STRING, weaponElement(player, def.get()).name());
         }
     }
 
@@ -168,7 +168,7 @@ final class LadderCombat implements Listener, win.vampyuyu.survival.api.LadderAp
                 continue;
             }
             ElementTraits.Traits traits = ElementTraits.read(target);
-            double amount = base * DamageFormula.elementMultiplier(def.get().element(), traits.weakTo(), traits.resists(),
+            double amount = base * DamageFormula.elementMultiplier(weaponElement(player, def.get()), traits.weakTo(), traits.resists(),
                 attunement(player), settings.elementWeakness, settings.elementResistance);
             target.damage(amount, org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.MAGIC)
                 .withCausingEntity(player).withDirectEntity(player).build());
@@ -188,10 +188,16 @@ final class LadderCombat implements Listener, win.vampyuyu.survival.api.LadderAp
         pdc.set(ARROW_DAMAGE, PersistentDataType.DOUBLE, DamageFormula.base(damage, settings.damageBonus, might(player)));
         pdc.set(ARROW_SHARE, PersistentDataType.DOUBLE, share);
         pdc.set(ARROW_FULL, PersistentDataType.BOOLEAN, false); // the volley's arrows never count towards a Surge
-        if (def.get().element() != null) {
-            pdc.set(ARROW_ELEMENT, PersistentDataType.STRING, def.get().element().name());
+        if (weaponElement(player, def.get()) != null) {
+            pdc.set(ARROW_ELEMENT, PersistentDataType.STRING, weaponElement(player, def.get()).name());
         }
         return true;
+    }
+
+    /** The element a hit carries: an active Alembic oil wins over the weapon's own element. */
+    private win.vampyuyu.survival.api.Element weaponElement(Player player, CustomItemDef def) {
+        return core.service(win.vampyuyu.survival.api.StationApi.class)
+            .flatMap(api -> api.oilElement(player.getUniqueId())).orElse(def.element());
     }
 
     /** Swing charge, 0.2 to 1 ({@link win.vampyuyu.survival.core.SwingCharge}, same as the items feature). */

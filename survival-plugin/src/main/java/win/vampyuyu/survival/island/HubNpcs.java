@@ -46,8 +46,7 @@ public final class HubNpcs implements Listener {
         new Role("guard", "Guard", Villager.Profession.WEAPONSMITH, Action.SAY,
             "Welcome to the Hub. Use /island to go back to your island and /hub to return here. "
                 + "The Crypt Depths are east, the Rift is west. The Archivist hands out Echo Keys."),
-        new Role("contract_hunter", "Contract Hunter", Villager.Profession.FLETCHER, Action.SAY,
-            "No contracts on the board yet. Come back once the Hub has more to offer."),
+        new Role("contract_hunter", "Contract Hunter", Villager.Profession.FLETCHER, Action.COMMAND, "contracts"),
         new Role("island_gate", "Island Gatekeeper", Villager.Profession.NONE, Action.ISLAND, ""),
         new Role("dungeon_gate", "Dungeon Gatekeeper", Villager.Profession.NONE, Action.COMMAND, "dungeon"),
         new Role("rift_gate", "Rift Gatekeeper", Villager.Profession.NONE, Action.RIFT,

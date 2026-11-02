@@ -6,10 +6,10 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 /** Remembers blocks of one kind (generated cobble, Forge blocks) in the PDC of their chunk, so it survives restarts. */
-final class BlockMarks {
+public final class BlockMarks {
     private final NamespacedKey key;
 
-    BlockMarks(String kind) {
+    public BlockMarks(String kind) {
         this.key = new NamespacedKey("vampyuyu", "marks_" + kind);
     }
 
@@ -18,7 +18,7 @@ final class BlockMarks {
     }
 
     /** Every block marked in a chunk (the marks keep only the position, so the block type is up to the caller). */
-    java.util.List<Block> blocks(org.bukkit.Chunk chunk) {
+    public java.util.List<Block> blocks(org.bukkit.Chunk chunk) {
         long[] marks = chunk.getPersistentDataContainer().get(key, PersistentDataType.LONG_ARRAY);
         java.util.List<Block> out = new java.util.ArrayList<>();
         if (marks != null) {
@@ -29,7 +29,7 @@ final class BlockMarks {
         return out;
     }
 
-    boolean has(Block block) {
+    public boolean has(Block block) {
         long[] marks = block.getChunk().getPersistentDataContainer().get(key, PersistentDataType.LONG_ARRAY);
         if (marks == null) {
             return false;
@@ -43,7 +43,7 @@ final class BlockMarks {
         return false;
     }
 
-    void add(Block block) {
+    public void add(Block block) {
         if (has(block)) {
             return;
         }
@@ -54,7 +54,7 @@ final class BlockMarks {
         pdc.set(key, PersistentDataType.LONG_ARRAY, next);
     }
 
-    void remove(Block block) {
+    public void remove(Block block) {
         PersistentDataContainer pdc = block.getChunk().getPersistentDataContainer();
         long[] marks = pdc.get(key, PersistentDataType.LONG_ARRAY);
         if (marks == null) {

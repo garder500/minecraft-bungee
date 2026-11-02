@@ -90,6 +90,27 @@ public final class ResonanceService implements ResonanceApi {
     }
 
     @Override
+    public void grantShards(UUID id, long amount) {
+        if (amount > 0) {
+            edit(id, d -> {
+                d.shards += amount;
+                d.earned += amount;
+            });
+        }
+    }
+
+    @Override
+    public boolean foundComponent(UUID id, String componentItemId) {
+        ResonanceData d = data(id);
+        for (Bastion b : config.bastions().values()) {
+            if (b.component().equals(componentItemId)) {
+                return d.found.contains(b.bossId());
+            }
+        }
+        return false;
+    }
+
+    @Override
     public void payDefeat(UUID id, String bossId, int rank, double progress, double share) {
         ResonanceConfig cfg = config;
         Bastion bastion = cfg.bastions().get(bossId);
