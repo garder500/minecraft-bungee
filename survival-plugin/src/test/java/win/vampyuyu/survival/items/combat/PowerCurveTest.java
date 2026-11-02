@@ -13,13 +13,16 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import win.vampyuyu.survival.api.Element;
 import win.vampyuyu.survival.boss.BossConfig;
 import win.vampyuyu.survival.boss.BossDefinition;
+import win.vampyuyu.survival.boss.BossMath;
+import win.vampyuyu.survival.boss.BossSettings;
 import win.vampyuyu.survival.boss.BossRepo;
 import win.vampyuyu.survival.data.Db;
+import win.vampyuyu.survival.data.Settings;
 import win.vampyuyu.survival.data.TestDb;
 
 /**
  * The power scaling: a player with the sword and the full armor of a boss's tier kills it alone in 180-300 s, one tier
- * lower takes 2-3 times longer, two tiers lower cannot finish before the boss's time limit, and the right element is
+ * lower takes 2-3 times longer, two tiers lower cannot finish before the enrage, and the right element is
  * clearly faster than the wrong one. Every number comes from the shipped seed, so a change of the data that breaks the
  * curve fails here.
  */
@@ -71,9 +74,15 @@ public class PowerCurveTest {
         return 1.0;
     }
 
+    /** Share of the time a player really lands hits (GDD 8.7 factor 0.5), read from the data. */
+    private static double uptime() {
+        return Settings.load(db, "boss").getDouble("settings.hp-factor", 0.5);
+    }
+
+    /** Seconds one player with the GDD reference weapon of {@code swordTier} needs (no Might, {@link #uptime()} of the time). */
     private static double seconds(BossDefinition boss, int swordTier) {
         PowerCurve.Tier tier = curve.tier(swordTier);
-        return simulate(boss.health(), tier.damage(), tier.might(), multiplier(tier.element(), boss));
+        return simulate(boss.health(), curve.referenceWeaponOf(swordTier), 0, multiplier(tier.element(), boss)) / uptime();
     }
 
     @Test
@@ -117,7 +126,7 @@ public class PowerCurveTest {
             assertTrue(boss.id(), boss.tier() >= 1);
             assertNotNull(boss.id() + " has a weakness", boss.weakness());
             assertNotNull(boss.id() + " has a resistance", boss.resistance());
-            assertEquals(boss.id(), curve.bossHealth(boss.tier(), 240), boss.health(), 0);
+            assertEquals(boss.id(), curve.bossHealth(boss.tier(), 180, 0.5), boss.health(), 0);
         }
         // bosses of the same tier share the health, a higher tier has more
         assertEquals(config.bosses().get("frost_revenant").health(), config.bosses().get("sylvan_matriarch").health(), 0);
@@ -126,13 +135,60 @@ public class PowerCurveTest {
     }
 
     @Test
-    public void aMatchingSwordAndArmorKillEachBossAloneInThreeToFiveMinutes() {
+    public void theVoidwyrmHasAboutFiftyTwoThousandHealthAtTierFive() {
+        BossDefinition wyrm = config.bosses().get("voidwyrm");
+        assertEquals(52_000, wyrm.health(), 520); // GDD 8.7: DPS_ref(5) 576 x 180 s x 0.5
+        assertEquals(576, curve.referenceDps(5), 1e-6);
+        assertEquals(1.0, BossSettings.parse(Settings.load(db, "boss")).hpScale(), 0); // no second halving on top
+    }
+
+    @Test
+    public void aPlayerOfTheTierKillsEachBossInAboutThreeMinutesAndOneTierBehindInAboutFive() {
         for (BossDefinition boss : config.bosses().values()) {
             if (boss.kind() != BossDefinition.Kind.BOSS) {
                 continue;
             }
             double s = seconds(boss, boss.tier());
-            assertTrue(boss.id() + " took " + s + " s", s >= 180 && s <= 300);
+            assertTrue(boss.id() + " took " + s + " s", s >= 170 && s <= 200);
+            if (boss.tier() >= 2) {
+                double behind = seconds(boss, boss.tier() - 1);
+                assertTrue(boss.id() + " one tier behind took " + behind + " s", behind >= 300 && behind <= 450);
+                assertTrue(boss.id() + " is dead before the enrage", behind < boss.arena().enrageSeconds());
+            }
+        }
+    }
+
+    @Test
+    public void theGroupScalingIsHalfAPlayerAndCapsAtTripleWithFive() {
+        for (BossDefinition boss : config.bosses().values()) {
+            if (boss.kind() != BossDefinition.Kind.BOSS) {
+                continue;
+            }
+            var a = boss.arena();
+            assertEquals(boss.id(), 1.0, BossMath.hpMultiplier(1, a.minPlayers(), a.scalePerPlayer(), a.scaleCap()), 1e-9);
+            assertEquals(boss.id(), 1.5, BossMath.hpMultiplier(2, a.minPlayers(), a.scalePerPlayer(), a.scaleCap()), 1e-9);
+            assertEquals(boss.id(), 3.0, BossMath.hpMultiplier(5, a.minPlayers(), a.scalePerPlayer(), a.scaleCap()), 1e-9);
+            assertEquals(boss.id(), 3.0, BossMath.hpMultiplier(9, a.minPlayers(), a.scalePerPlayer(), a.scaleCap()), 1e-9);
+            assertEquals(boss.id(), 540, a.enrageSeconds());
+        }
+    }
+
+    @Test
+    public void readabilityRulesHoldPhasesAtMostOnePointFourAndAbilitiesAtMostAThirdOfTheReferencePlayer() {
+        double hitsToDown = Settings.load(db, "boss").getInt("settings.hits-to-down", 8);
+        double damageScale = Settings.load(db, "boss").getDouble("settings.damage-scale", 1);
+        for (BossDefinition boss : config.bosses().values()) {
+            if (boss.kind() != BossDefinition.Kind.BOSS) {
+                continue;
+            }
+            for (var phase : boss.phases()) {
+                assertTrue(boss.id() + " phase " + phase.name() + " x" + phase.damageMult(), phase.damageMult() <= 1.4 + 1e-9);
+                for (var ability : java.util.stream.Stream.concat(phase.enter().stream(), phase.abilities().stream()).toList()) {
+                    // a boss hit takes 1/hitsToDown of the reference player's health, then the global and phase multipliers
+                    double share = ability.damage() * phase.damageMult() * damageScale / hitsToDown;
+                    assertTrue(boss.id() + " " + ability.type() + " takes " + share, share <= 0.35);
+                }
+            }
         }
     }
 
@@ -153,12 +209,12 @@ public class PowerCurveTest {
             if (boss.kind() != BossDefinition.Kind.BOSS || boss.tier() < 3) {
                 continue;
             }
-            int limit = boss.arena().timeLimitSeconds();
-            assertTrue(boss.id() + " has a time limit", limit > 0);
+            int enrage = boss.arena().enrageSeconds();
+            assertTrue(boss.id() + " has an enrage", enrage > 0);
             double s = seconds(boss, boss.tier() - 2);
-            assertTrue(boss.id() + " would finish in " + s + " s, limit " + limit, s > limit);
+            assertTrue(boss.id() + " would finish in " + s + " s, enrage " + enrage, s > enrage * 0.95);
             // and the matching player has plenty of room
-            assertTrue(seconds(boss, boss.tier()) < limit / 2.0);
+            assertTrue(seconds(boss, boss.tier()) < enrage / 2.0);
         }
     }
 
@@ -192,16 +248,16 @@ public class PowerCurveTest {
         } finally {
             TestDb.exec(db, "UPDATE boss SET hp_auto = 1 WHERE id = 'crypt_lord'");
         }
-        assertEquals(curve.bossHealth(1, 240), BossRepo.load(db).bosses().get("crypt_lord").health(), 0);
+        assertEquals(curve.bossHealth(1, 180, 0.5), BossRepo.load(db).bosses().get("crypt_lord").health(), 0);
     }
 
     @Test
     public void theTargetSecondsSettingScalesTheHealth() {
-        TestDb.set(db, "boss.settings.target-seconds", "real", "480");
+        TestDb.set(db, "boss.settings.target-seconds", "real", "360");
         try {
-            assertEquals(curve.bossHealth(3, 480), BossRepo.load(db).bosses().get("frost_revenant").health(), 0);
+            assertEquals(curve.bossHealth(3, 360, 0.5), BossRepo.load(db).bosses().get("frost_revenant").health(), 0);
         } finally {
-            TestDb.set(db, "boss.settings.target-seconds", "real", "240");
+            TestDb.set(db, "boss.settings.target-seconds", "real", "180");
         }
     }
 
@@ -224,8 +280,8 @@ public class PowerCurveTest {
     public void healthIsMonotonicAlongTheLadder() {
         double last = 0;
         for (int tier = 1; tier <= PowerCurve.TIERS; tier++) {
-            double hp = curve.bossHealth(tier, 240);
-            assertTrue(hp > last * 1.5);
+            double hp = curve.bossHealth(tier, 180, 0.5);
+            assertTrue(hp > last * 1.4);
             last = hp;
         }
         Map<Integer, Double> seen = new java.util.HashMap<>();
