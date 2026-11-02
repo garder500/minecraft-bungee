@@ -134,4 +134,42 @@ public class EnergyNetworkTest {
         net.put(new Pos(1, 0, 0), miner);
         assertEquals(EnergyNetwork.MAX_CYCLES_PER_SECOND, EnergyNetwork.tick(net, CFG, p -> true).get(0).cycles());
     }
+
+    @Test
+    public void moduleNumbersTradeSpeedForFlux() {
+        var plain = machine(MachineType.MINER_1);
+        var ember = machine(MachineType.MINER_1);
+        ember.module = "EMBER";
+        var bloom = machine(MachineType.MINER_1);
+        bloom.module = "BLOOM";
+        assertEquals(CFG.consume(plain), CFG.consume(machine(MachineType.MINER_1)), 0);
+        assertTrue("Ember is faster", CFG.rate(ember) > CFG.rate(plain));
+        assertTrue("and hungrier per cycle", CFG.consume(ember) / CFG.rate(ember) > CFG.consume(plain) / CFG.rate(plain));
+        assertTrue("Bloom is slower", CFG.rate(bloom) < CFG.rate(plain));
+        assertTrue("and cheaper per cycle", CFG.consume(bloom) / CFG.rate(bloom) < CFG.consume(plain) / CFG.rate(plain));
+        ember.module = "NOPE";
+        assertEquals("an unknown module is ignored", CFG.rate(plain), CFG.rate(ember), 0);
+    }
+
+    @Test
+    public void aSlottedModuleChangesWhatTheNetworkSpends() {
+        var miner = machine(MachineType.MINER_1);
+        miner.module = "EMBER";
+        var battery = machine(MachineType.BATTERY);
+        battery.charge = 100;
+        Map<Pos, MachineData> net = new LinkedHashMap<>();
+        net.put(new Pos(0, 0, 0), miner);
+        net.put(new Pos(1, 0, 0), battery);
+        EnergyNetwork.tick(net, CFG, p -> true);
+        assertEquals("14.4 Flux drawn, the rest floored", 85, battery.charge);
+        assertEquals(0.75, miner.progress, 1e-9);
+    }
+
+    @Test
+    public void emberSmeltsAndOtherBlocksStay() {
+        assertEquals(org.bukkit.Material.STONE, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.COBBLESTONE)).getType());
+        assertEquals(org.bukkit.Material.GLASS, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.SAND)).getType());
+        assertEquals(org.bukkit.Material.PACKED_ICE, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.PACKED_ICE)).getType());
+        assertEquals(MachineModule.BLOOM, MachineModule.ofItem("bloom_module").orElseThrow());
+    }
 }

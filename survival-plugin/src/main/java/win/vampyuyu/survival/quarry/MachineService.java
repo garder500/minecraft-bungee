@@ -353,14 +353,28 @@ final class MachineService {
         }
         cobble.remove(target);
         target.setType(Material.AIR); // the water and lava next to it form the next block
+        MachineModule module = MachineModule.of(data.module);
         quarry.draw(owner, 0, random, drop -> {
-            for (ItemStack left : container.getInventory().addItem(drop.stack()).values()) {
+            ItemStack stack = module == MachineModule.EMBER ? MachineModule.smelt(drop.stack()) : drop.stack();
+            for (ItemStack left : container.getInventory().addItem(stack).values()) {
                 world.dropItemNaturally(miner.getLocation().add(0.5, 1.2, 0.5), left);
             }
             fanOut(data.owner, "ORE_FOUND", drop.ore(), drop.stack().getAmount());
         }, (geode, pity, name) -> { });
+        bloom(world, miner, container, module, data);
         announce(data, "machine_mined");
         return true;
+    }
+
+    /** A Bloom module sometimes gathers a bone meal with the cycle. */
+    private void bloom(World world, Block miner, Container container, MachineModule module, MachineData data) {
+        if (module != MachineModule.BLOOM
+                || MachineModule.bloomBonus(settings().bloomBoneMealChance, random) == 0) {
+            return;
+        }
+        for (ItemStack left : container.getInventory().addItem(new ItemStack(Material.BONE_MEAL)).values()) {
+            world.dropItemNaturally(miner.getLocation().add(0.5, 1.2, 0.5), left);
+        }
     }
 
     /**
@@ -372,7 +386,8 @@ final class MachineService {
         outputs.remove(target);
         target.setType(Material.AIR); // the generator makes the next one above its Fountain
         java.util.List<ItemStack> got = new java.util.ArrayList<>();
-        got.add(new ItemStack(type));
+        MachineModule module = MachineModule.of(data.module);
+        got.add(module == MachineModule.EMBER ? MachineModule.smelt(new ItemStack(type)) : new ItemStack(type));
         String source = OutputListener.source(type);
         java.util.Optional<QuarryService.Drop> ore = source == null ? java.util.Optional.empty()
             : quarry.drawOutput(owner, source, type, random);
@@ -385,6 +400,7 @@ final class MachineService {
         if (ore.isPresent() && quarry.core().items().idOf(ore.get().stack()).isPresent()) {
             fanOut(data.owner, "ORE_FOUND", ore.get().ore(), 1);
         }
+        bloom(world, miner, container, module, data);
         announce(data, "machine_mined");
     }
 }

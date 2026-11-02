@@ -106,12 +106,12 @@ final class EnergyNetwork {
             if (type == null || !type.miner() || !ready.test(entry.getKey())) {
                 continue;
             }
-            double need = cfg.consume(type);
+            double need = cfg.consume(m);
             if (pool < need) {
                 continue;
             }
             pool -= need;
-            m.progress += cfg.rate(type);
+            m.progress += cfg.rate(m);
             int cycles = Math.min(MAX_CYCLES_PER_SECOND, (int) Math.floor(m.progress));
             m.progress -= cycles;
             if (cycles > 0) {

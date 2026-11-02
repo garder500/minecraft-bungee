@@ -14,6 +14,11 @@ INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.coal-genera
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.coal-generator.coal-seconds', 'int', '40', 'Seconds one coal burns.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.battery.capacity', 'int', '10000', 'Flux a battery stores.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.solar-panel.output', 'int', '6', 'Flux per second of a solar panel in daylight under the open sky.');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.ember.consume-factor', 'real', '1.8', 'Ember Module (Cracked Ashes): factor on the Miner''s Flux use.');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.ember.rate-factor', 'real', '1.5', 'Ember Module: factor on the Miner''s cycles per second.');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.bloom.consume-factor', 'real', '0.5', 'Bloom Module (Whispering Grove): factor on the Miner''s Flux use.');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.bloom.rate-factor', 'real', '0.8', 'Bloom Module: factor on the Miner''s cycles per second.');
+INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.module.bloom.bone-meal-chance', 'real', '0.25', 'Bloom Module: chance a mining cycle also gives a bone meal.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.miner-1.consume', 'int', '8', 'Flux per second the Miner I uses.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.miner-1.cycles-per-second', 'real', '0.5', 'Mining cycles per second of the Miner I.');
 INSERT INTO setting (id, type, value, note) VALUES ('quarry.machines.miner-2.consume', 'int', '20', 'Flux per second the Miner II uses.');
@@ -381,3 +386,13 @@ INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VA
 INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('echo_key', 66, 'echo_key', 1, 300);
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('echo_key', 0, 'custom:bronzite', 16);
 INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('echo_key', 1, 'IRON_INGOT', 4);
+INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('ember_module', 67, 'ember_module', 1, 1800);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('ember_module', 0, 'custom:cinderheart', 3);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('ember_module', 1, 'custom:miner_1', 1);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('ember_module', 2, 'MAGMA_BLOCK', 8);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('ember_module', 3, 'REDSTONE', 8);
+INSERT INTO forge_recipe (id, position, result, amount, seconds) VALUES ('bloom_module', 68, 'bloom_module', 1, 1800);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('bloom_module', 0, 'custom:heartwood', 3);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('bloom_module', 1, 'custom:miner_1', 1);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('bloom_module', 2, 'MOSS_BLOCK', 8);
+INSERT INTO forge_recipe_ingredient (forge_recipe_id, position, item, amount) VALUES ('bloom_module', 3, 'REDSTONE', 8);

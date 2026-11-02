@@ -15,6 +15,8 @@ public final class MachineData {
     public double progress;
     /** The generator this Fountain last was (a {@link GeneratorStructure.Kind} name), empty when it is only a Fountain. */
     public String built = "";
+    /** Miners: the Realm module slotted in ({@link MachineModule} name), empty when none. */
+    public String module = "";
     /** Yaw of the 3D model (its front faces the player who placed it). */
     public float yaw = 180f;
 

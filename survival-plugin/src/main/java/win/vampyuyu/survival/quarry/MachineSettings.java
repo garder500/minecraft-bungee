@@ -17,7 +17,19 @@ final class MachineSettings {
     final double miner2Consume;
     final double miner2Rate;
 
+    /** Module numbers: factors on the Miner's Flux use and speed, and the Bloom bone meal chance per cycle. */
+    final double emberConsume;
+    final double emberRate;
+    final double bloomConsume;
+    final double bloomRate;
+    final double bloomBoneMealChance;
+
     MachineSettings(Settings s) {
+        emberConsume = positive(s, "module.ember.consume-factor", 1.8);
+        emberRate = positive(s, "module.ember.rate-factor", 1.5);
+        bloomConsume = positive(s, "module.bloom.consume-factor", 0.5);
+        bloomRate = positive(s, "module.bloom.rate-factor", 0.8);
+        bloomBoneMealChance = positive(s, "module.bloom.bone-meal-chance", 0.25);
         generatorOutput = positive(s, "coal-generator.output", 10);
         coalSeconds = (int) Math.max(1, positive(s, "coal-generator.coal-seconds", 40));
         solarOutput = positive(s, "solar-panel.output", 6);
@@ -47,5 +59,19 @@ final class MachineSettings {
             case MINER_2 -> miner2Rate;
             default -> 0;
         };
+    }
+
+    /** Flux per second of this machine, with its module. */
+    double consume(MachineData data) {
+        double base = consume(data.kind());
+        MachineModule module = MachineModule.of(data.module);
+        return module == null ? base : base * (module == MachineModule.EMBER ? emberConsume : bloomConsume);
+    }
+
+    /** Mining cycles per second of this machine, with its module. */
+    double rate(MachineData data) {
+        double base = rate(data.kind());
+        MachineModule module = MachineModule.of(data.module);
+        return module == null ? base : base * (module == MachineModule.EMBER ? emberRate : bloomRate);
     }
 }
