@@ -17,6 +17,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
+import win.vampyuyu.survival.api.BastionHook;
 import win.vampyuyu.survival.api.BossApi;
 import win.vampyuyu.survival.api.EconomyApi;
 import win.vampyuyu.survival.api.IslandApi;
@@ -40,6 +41,7 @@ public final class BastionService {
     private final RunManager.WorldFactory worlds;
     private final Map<Integer, BastionRun> runs = new LinkedHashMap<>();
     private final Map<UUID, BastionRun> byPlayer = new HashMap<>();
+    private final List<BastionHook> hooks = new ArrayList<>();
     private int counter;
     private boolean shuttingDown;
 
@@ -52,6 +54,23 @@ public final class BastionService {
     public BastionConfig cfg() { return cfg; }
 
     public void reload(BastionConfig fresh) { this.cfg = fresh; }
+
+    /** Adds rules to the Bastions (a secret Bastion, a Guardian scaling). Kept until the plugin disables. */
+    public void addHook(BastionHook hook) {
+        if (hook != null) {
+            hooks.add(hook);
+        }
+    }
+
+    /** False when a hook hides this Bastion from the viewer. */
+    boolean visibleTo(Player viewer, String bastionId) {
+        for (BastionHook h : hooks) {
+            if (!h.visibleTo(viewer, bastionId)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     // ------------------------------------------------------------------ queries
 
@@ -164,6 +183,12 @@ public final class BastionService {
             String key = core.items().def(b.keyItem()).map(d -> d.name()).orElse("key");
             return "You need a " + key + " to open the " + b.name() + ". The party leader spends it when the fight opens.";
         }
+        for (BastionHook h : hooks) {
+            String refusal = h.refuse(leader, members, b.id());
+            if (refusal != null) {
+                return refusal;
+            }
+        }
         return null;
     }
 
@@ -261,8 +286,18 @@ public final class BastionService {
             return;
         }
         BossApi boss = core.service(BossApi.class).orElse(null);
+        BastionHook.Scaling scaling = BastionHook.Scaling.NONE;
+        for (BastionHook h : hooks) {
+            BastionHook.Scaling s = h.scaling(leader, b.id());
+            if (s != null) {
+                scaling = new BastionHook.Scaling(scaling.hpMultiplier() * s.hpMultiplier(),
+                    scaling.damageMultiplier() * s.damageMultiplier());
+            }
+        }
+        run.scaling = scaling;
         Optional<BossApi.Fight> fight = boss == null ? Optional.empty()
-            : boss.spawnFight(b.guardian(), BastionArena.centre(run.world), leader, b.keyItem(), r -> finish(run, r));
+            : boss.spawnFight(b.guardian(), BastionArena.centre(run.world), leader, b.keyItem(), scaling.hpMultiplier(),
+                scaling.damageMultiplier(), r -> finish(run, r));
         if (fight.isEmpty()) {
             tell(run, "The Guardian did not answer. The Bastion closes, no key was spent.");
             close(run, false);
@@ -275,6 +310,9 @@ public final class BastionService {
         }
         run.opened = true;
         run.openedAt = System.currentTimeMillis();
+        for (BastionHook h : hooks) {
+            h.opened(b.id(), leader, new ArrayList<>(run.members), run.scaling);
+        }
         for (UUID id : run.members) {
             Player p = Bukkit.getPlayer(id);
             if (p != null) {
@@ -305,6 +343,15 @@ public final class BastionService {
         switch (result.outcome()) {
             case CLEARED -> {
                 String time = Msg.duration(result.elapsedMillis());
+                List<UUID> winners = new ArrayList<>();
+                for (UUID id : present) {
+                    if (result.damage().getOrDefault(id, 0.0) > 0) {
+                        winners.add(id);
+                    }
+                }
+                for (BastionHook h : hooks) {
+                    h.cleared(b.id(), winners, result.elapsedMillis(), run.scaling);
+                }
                 for (UUID id : present) {
                     double coins = 0;
                     if (result.damage().getOrDefault(id, 0.0) > 0) {

@@ -23,7 +23,7 @@ class BastionConfigTest {
     void theShippedSeedHasTheBastions() {
         BastionConfig cfg = BastionConfig.load(seeded());
         assertEquals(List.of(), cfg.problems());
-        assertEquals(List.of("ashes_bastion", "grove_bastion", "necropolis_bastion", "heights_bastion", "citadel_bastion", "tempest_bastion", "marsh_bastion", "depths_bastion", "devourer_raid"), List.copyOf(cfg.bastions().keySet()));
+        assertEquals(List.of("ashes_bastion", "grove_bastion", "necropolis_bastion", "heights_bastion", "citadel_bastion", "tempest_bastion", "marsh_bastion", "depths_bastion", "devourer_raid", "hell_gao_bastion"), List.copyOf(cfg.bastions().keySet()));
         assertEquals("thunder_dragon", cfg.get("tempest_bastion").orElseThrow().guardian());
         assertEquals("storm", cfg.get("tempest_bastion").orElseThrow().palette());
         assertEquals("tempest_bastion", cfg.ofKey("tempest_key").orElseThrow().id());

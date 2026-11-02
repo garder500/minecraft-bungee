@@ -28,6 +28,9 @@ public interface BreathApi {
     /** Interpulsation Keys the player has assembled and not used yet. */
     int keys(UUID player);
 
+    /** Milliseconds until the next pulsation is due, 0 when overdue, -1 when none is scheduled (Hell Gao's window ends there). */
+    long millisToNextPulse();
+
     /** Uses one key (the Hell Gao arena calls it when it opens). False when the player has none. */
     boolean consumeKey(UUID player);
 }

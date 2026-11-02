@@ -34,6 +34,8 @@ final class BastionRun {
     /** Raid: the next ring falls when the tick counter reaches this. */
     long nextCollapse;
     long tickCount;
+    /** What the hooks scaled the Guardian by (Ascension), set when it wakes. */
+    win.vampyuyu.survival.api.BastionHook.Scaling scaling = win.vampyuyu.survival.api.BastionHook.Scaling.NONE;
 
     BastionRun(int number, BastionConfig.Bastion bastion, UUID leader, UUID partyId) {
         this.number = number;

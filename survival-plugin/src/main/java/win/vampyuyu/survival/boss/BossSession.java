@@ -58,7 +58,14 @@ public final class BossSession {
 
     /** Options of one spawn. */
     public record SpawnOptions(boolean personal, boolean worldEvent, int slayerTier, double hpOverride,
-            int timeLimitSeconds, @Nullable Consumer<EndInfo> onEnd, @Nullable String refundItem, int resonance) {
+            int timeLimitSeconds, @Nullable Consumer<EndInfo> onEnd, @Nullable String refundItem, int resonance,
+            double hpMultiplier, double damageMultiplier) {
+        /** With a Resonance rank and no extra multiplier. */
+        public SpawnOptions(boolean personal, boolean worldEvent, int slayerTier, double hpOverride,
+                int timeLimitSeconds, @Nullable Consumer<EndInfo> onEnd, @Nullable String refundItem, int resonance) {
+            this(personal, worldEvent, slayerTier, hpOverride, timeLimitSeconds, onEnd, refundItem, resonance, 1.0, 1.0);
+        }
+
         /** Without a Resonance rank (0: the boss keeps its base health and damage). */
         public SpawnOptions(boolean personal, boolean worldEvent, int slayerTier, double hpOverride,
                 int timeLimitSeconds, @Nullable Consumer<EndInfo> onEnd, @Nullable String refundItem) {
@@ -72,7 +79,7 @@ public final class BossSession {
         /** The same options at a Resonance rank (1-5; 0 or less removes it). */
         public SpawnOptions withResonance(int rank) {
             return new SpawnOptions(personal, worldEvent, slayerTier, hpOverride, timeLimitSeconds, onEnd, refundItem,
-                rank <= 0 ? 0 : win.vampyuyu.survival.api.Resonance.clamp(rank));
+                rank <= 0 ? 0 : win.vampyuyu.survival.api.Resonance.clamp(rank), hpMultiplier, damageMultiplier);
         }
     }
 
@@ -173,6 +180,7 @@ public final class BossSession {
         if (options.resonance() > 0) {
             health *= win.vampyuyu.survival.api.Resonance.hpMultiplier(options.resonance());
         }
+        health *= Math.max(1.0, options.hpMultiplier());
         baseMaxHp = Math.max(1, health);
         maxHp = baseMaxHp;
         hp = maxHp;
@@ -272,7 +280,8 @@ public final class BossSession {
     double hitDamage(double mult) {
         double resonance = options.resonance() > 0
             ? win.vampyuyu.survival.api.Resonance.damageMultiplier(options.resonance()) : 1.0;
-        return def.damage() * mult * phase().damageMult() * enrageMult() * settings.damageScale() * resonance;
+        return def.damage() * mult * phase().damageMult() * enrageMult() * settings.damageScale() * resonance
+            * Math.max(1.0, options.damageMultiplier());
     }
 
     // ---------------------------------------------------------------- players

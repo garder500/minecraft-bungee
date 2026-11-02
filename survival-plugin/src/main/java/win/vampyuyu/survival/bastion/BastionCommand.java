@@ -49,6 +49,9 @@ public final class BastionCommand implements CommandExecutor, TabCompleter {
     private void list(CommandSender sender) {
         core.msg().mini(sender, "<gold><bold>Bastions");
         for (BastionConfig.Bastion b : service.cfg().bastions().values()) {
+            if (sender instanceof Player viewer && !service.visibleTo(viewer, b.id())) {
+                continue;
+            }
             String key = core.items().def(b.keyItem()).map(d -> d.name()).orElse(b.keyItem());
             int have = sender instanceof Player p ? service.keysOf(p, b.keyItem()) : 0;
             Component line = Msg.component("<yellow>" + b.name() + " <gray>(" + b.realm() + ", " + b.minPlayers() + "-"
@@ -73,6 +76,10 @@ public final class BastionCommand implements CommandExecutor, TabCompleter {
             return;
         }
         BastionConfig.Bastion b = found.get();
+        if (sender instanceof Player viewer && !service.visibleTo(viewer, b.id())) {
+            core.msg().error(sender, "There is no Bastion called " + args[1] + ".");
+            return;
+        }
         String key = core.items().def(b.keyItem()).map(d -> d.name()).orElse(b.keyItem());
         core.msg().mini(sender, "<gold><bold>" + b.name() + " <gray>- " + b.realm());
         core.msg().mini(sender, "<gray>" + b.tagline());
@@ -140,7 +147,11 @@ public final class BastionCommand implements CommandExecutor, TabCompleter {
                 out.add("admin");
             }
         } else if (args.length == 2 && (args[0].equalsIgnoreCase("info") || args[0].equalsIgnoreCase("enter"))) {
-            out.addAll(service.cfg().bastions().keySet());
+            for (String id : service.cfg().bastions().keySet()) {
+                if (!(sender instanceof Player viewer) || service.visibleTo(viewer, id)) {
+                    out.add(id);
+                }
+            }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("admin") && sender.hasPermission(BastionListener.ADMIN)) {
             out.addAll(List.of("list", "abort", "reload"));
         }

@@ -214,6 +214,11 @@ public final class BreathService implements BreathApi {
     }
 
     @Override
+    public long millisToNextPulse() {
+        return state.nextAt <= 0 ? -1 : Math.max(0, state.nextAt - System.currentTimeMillis());
+    }
+
+    @Override
     public int cycle() {
         return state.cycle;
     }

@@ -37,6 +37,8 @@ public final class BastionArena {
             case "citadel" -> new Material[] {Material.SMOOTH_SANDSTONE, Material.CUT_SANDSTONE, Material.SAND, Material.CHISELED_SANDSTONE};
             case "abyss" -> new Material[] {Material.PRISMARINE_BRICKS, Material.PRISMARINE, Material.DARK_PRISMARINE,
                 Material.DARK_PRISMARINE};
+            case "rift" -> new Material[] {Material.CRYING_OBSIDIAN, Material.OBSIDIAN, Material.PURPUR_BLOCK,
+                Material.AMETHYST_BLOCK};
             case "storm" -> new Material[] {Material.WAXED_OXIDIZED_CUT_COPPER, Material.LIGHT_GRAY_CONCRETE, Material.ANDESITE,
                 Material.WAXED_WEATHERED_CUT_COPPER};
             case "singularity" -> new Material[] {Material.CRYING_OBSIDIAN, Material.OBSIDIAN, Material.DEEPSLATE_TILES,
@@ -56,6 +58,7 @@ public final class BastionArena {
             case "abyss" -> Material.DARK_PRISMARINE;
             case "storm" -> Material.WAXED_COPPER_BLOCK;
             case "singularity" -> Material.PURPUR_PILLAR;
+            case "rift" -> Material.PURPUR_PILLAR;
             default -> Material.POLISHED_BASALT;
         };
     }
@@ -70,6 +73,7 @@ public final class BastionArena {
             case "abyss" -> Material.SEA_LANTERN;
             case "storm" -> Material.LIGHTNING_ROD;
             case "singularity" -> Material.CRYING_OBSIDIAN;
+            case "rift" -> Material.SEA_LANTERN;
             default -> Material.GLOWSTONE;
         };
     }
@@ -84,6 +88,7 @@ public final class BastionArena {
             case "abyss" -> Material.PRISMARINE_WALL;
             case "storm" -> Material.IRON_BARS;
             case "singularity" -> Material.END_STONE_BRICK_WALL;
+            case "rift" -> Material.END_ROD;
             default -> Material.BLACKSTONE_WALL;
         };
     }
