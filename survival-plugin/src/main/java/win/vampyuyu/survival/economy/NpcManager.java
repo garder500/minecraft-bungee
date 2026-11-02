@@ -368,6 +368,9 @@ final class NpcManager implements Listener {
             core.msg().error(player, "This merchant is closed right now.");
             return;
         }
+        core.service(win.vampyuyu.survival.api.NpcMemoryApi.class).flatMap(m -> m.greet(player.getUniqueId(), player.getName(), id))
+            .ifPresent(line -> player.sendMessage(MINI.deserialize("<gray>" + MINI.escapeTags(r.name.isEmpty() ? id : r.name)
+                + ":</gray> <white>" + MINI.escapeTags(line))));
         ui.open(player, shop.get());
     }
 

@@ -29,7 +29,8 @@ public final class Migrations {
         "V018__promotion",
         "V019__stations",
         "V020__necropolis",
-        "V021__realm_checks");
+        "V021__realm_checks",
+        "V022__npc_memory");
 
     private Migrations() {}
 
