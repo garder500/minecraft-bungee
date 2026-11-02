@@ -113,7 +113,7 @@ Google (consent, upload, refresh) is only testable with real credentials.
 ## Skyblock content database (survival-plugin)
 
 No YAML: every Skyblock content and tuning value (quests, items, bosses, dungeon, ores and pity, Forge recipes, economy,
-island, minions, skills, wings, menu, feature toggles) lives in SQLite `plugins/VampyuyuSurvival/skyblock.db`, typed
+island, skills, wings, menu, feature toggles) lives in SQLite `plugins/VampyuyuSurvival/skyblock.db`, typed
 tables (`survival-plugin/src/main/java/win/vampyuyu/survival/data/`). Schema: `src/main/resources/db/migrations/V*.sql`
 listed in `Migrations.ALL` (never edit a shipped migration: add a new one). Defaults: `db/seed/<domain>.sql` (plain
 INSERTs), registered in `ContentDomains`; at start a changed seed replaces the `origin='seed'` rows, rows edited in the

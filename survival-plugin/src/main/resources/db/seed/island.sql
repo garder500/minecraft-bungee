@@ -26,13 +26,9 @@ INSERT INTO island_world (key, time, border, weather_clear) VALUES ('end', 'CYCL
 INSERT INTO island_world_gamerule (world, position, rule, value) VALUES ('end', 0, 'keep_inventory', 'true');
 INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('radius.1', 'radius', 0, 198, 0.0);
 INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('members.1', 'members', 0, 3, 0.0);
-INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('members.2', 'members', 1, 5, 20000.0);
-INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('members.3', 'members', 2, 8, 100000.0);
-INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('members.4', 'members', 3, 12, 500000.0);
-INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('minions.1', 'minions', 0, 0, 0.0);
-INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('minions.2', 'minions', 1, 2, 50000.0);
-INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('minions.3', 'minions', 2, 4, 250000.0);
-INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('minions.4', 'minions', 3, 6, 1000000.0);
+INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('members.2', 'members', 1, 5, 200.0);
+INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('members.3', 'members', 2, 8, 1000.0);
+INSERT INTO island_upgrade (id, kind, position, value, cost) VALUES ('members.4', 'members', 3, 12, 5000.0);
 INSERT INTO island_template (id, position, enabled, name, icon, biome) VALUES ('classic', 0, 1, 'Classic', 'GRASS_BLOCK', 'plains');
 INSERT INTO island_template_line (template_id, position, text) VALUES ('classic', 0, 'The traditional island: an oak tree,');
 INSERT INTO island_template_line (template_id, position, text) VALUES ('classic', 1, 'a patch of grass and a starter chest.');
@@ -151,7 +147,6 @@ INSERT INTO setting (id, type, value, note) VALUES ('island.generation.max-milli
 INSERT INTO setting (id, type, value, note) VALUES ('island.generation.chunk-timeout-ticks', 'int', '600', 'A job that has waited this many ticks for chunks is abandoned.');
 INSERT INTO setting (id, type, value, note) VALUES ('island.generation.retries', 'int', '3', 'A failed island build, platform build or wipe is retried this many times (0 = never), waiting retry-delay-ticks and doubling the wait each time. After that the island stays unfinished (RESETTING or BUILDING), the owner and online admins are told, and /islandadmin rebuild (or the next restart) retries.');
 INSERT INTO setting (id, type, value, note) VALUES ('island.generation.retry-delay-ticks', 'int', '100', '');
-INSERT INTO setting (id, type, value, note) VALUES ('island.upgrades.minions-enabled', 'bool', 'false', 'The "Minion slots" upgrade is hidden and refused until the minions feature can read it (it needs an api/ method that does not exist yet, see docs/skyblock-notes/island.md). Turn it on only when it does.');
 INSERT INTO setting (id, type, value, note) VALUES ('island.starter-chest.once-per-player', 'bool', 'true', 'Fill the starter chest (and the Nether/End ruin chests) only the first time a player gets an island, so "reset and recreate" cannot farm loot.');
 INSERT INTO setting (id, type, value, note) VALUES ('island.platforms.end-gate-lit', 'bool', 'true', 'Legacy field: End gates are no longer generated, regardless of this value.');
 INSERT INTO setting (id, type, value, note) VALUES ('island.protection.trusted-containers', 'bool', 'false', 'Trusted guests may open containers even when the island''s visitor_chests setting is off.');

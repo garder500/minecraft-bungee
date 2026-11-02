@@ -129,7 +129,7 @@ public class ForgeTest {
         give(DungeonItems.BONE_FRAGMENT, 64);
         var r = svc.forge.buy(alice, svc.forge.trade("sell_bones"));
         assertTrue(r.message(), r.ok());
-        assertEquals(600.0, paid.get(), 0.0);
+        assertEquals(6.0, paid.get(), 0.0);
         assertEquals(0, have(DungeonItems.BONE_FRAGMENT));
     }
 

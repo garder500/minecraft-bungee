@@ -40,7 +40,6 @@ public final class LegacyFeatureFixture {
             new win.vampyuyu.survival.items.ItemsFeature(),
             new win.vampyuyu.survival.skills.SkillsFeature(),
             new win.vampyuyu.survival.boss.BossFeature(),
-            new win.vampyuyu.survival.minions.MinionsFeature(),
             new win.vampyuyu.survival.dungeon.DungeonFeature()).stream().filter(f -> !live.contains(f.id())).toList());
         instances.put(plugin, features);
         features.enableAll(core);

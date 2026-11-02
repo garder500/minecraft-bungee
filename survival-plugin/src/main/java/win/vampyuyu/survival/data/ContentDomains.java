@@ -34,17 +34,6 @@ public final class ContentDomains {
         new Root("auction_blocked_item", "id", null, List.of()),
         settings("economy")));
 
-    public static final Domain MINIONS = new Domain("minions", List.of(
-        settings("minions"),
-        new Root("minion_tier", "id", null, List.of()),
-        new Root("minion_type", "id", null, List.of(new Child("minion_drop", "type_id"))),
-        new Root("minion_fuel", "id", null, List.of(new Child("minion_fuel_kind", "fuel_id"))),
-        new Root("minion_upgrade", "id", null, List.of(new Child("minion_upgrade_lore", "upgrade_id"))),
-        new Root("minion_skin", "id", null, List.of()),
-        new Root("minion_recipe", "id", null, List.of(new Child("minion_recipe_row", "recipe_id"),
-            new Child("minion_recipe_ingredient", "recipe_id"))),
-        new Root("minion_smelt", "id", null, List.of())));
-
     public static final Domain SKILLS = new Domain("skills", List.of(
         settings("skills"),
         new Root("skill", "id", null, List.of(new Child("skill_stat_range", "skill_id"), new Child("skill_unlock", "skill_id"))),
@@ -138,7 +127,7 @@ public final class ContentDomains {
     }
 
     /** In the order they are synced. */
-    public static final List<Domain> ALL = List.of(QUESTS, QUESTS_DAILY, CORE, ISLAND, UTILITY, WINGS, MENU, ECONOMY, MINIONS, SKILLS, QUARRY, GADGETS, BOSS,
+    public static final List<Domain> ALL = List.of(QUESTS, QUESTS_DAILY, CORE, ISLAND, UTILITY, WINGS, MENU, ECONOMY, SKILLS, QUARRY, GADGETS, BOSS,
         DUNGEON, ITEMS);
 
     private ContentDomains() {}

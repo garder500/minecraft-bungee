@@ -99,13 +99,13 @@ public class BankServiceTest {
             d.bankInterestAt = now - 3 * periodMs - 10;
             return null;
         });
-        eco.addCents(id, 50_000_000, "seed");
-        Bank.Move move = bank.deposit(id, 50_000_000);
+        eco.addCents(id, 3_000_000, "seed");
+        Bank.Move move = bank.deposit(id, 3_000_000);
         assertTrue(move.ok());
         // Three periods were paid on the OLD balance only (compounding 0.5% of 10,000.00 coins).
         long expected = 5_000 + 5_025 + 5_050;
         assertEquals(expected, move.interest());
-        assertEquals(1_000_000 + expected + 50_000_000, eco.bankCents(id));
+        assertEquals(1_000_000 + expected + 3_000_000, eco.bankCents(id));
         assertTrue(eco.data(id).bankInterestAt > now - periodMs);
         // Nothing more is due immediately.
         assertEquals(0, bank.settle(id));

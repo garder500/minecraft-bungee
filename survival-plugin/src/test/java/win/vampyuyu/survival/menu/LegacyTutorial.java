@@ -27,7 +27,6 @@ final class LegacyTutorial {
         add(plan, "mining_3", "Miner", "Reach Mining level 3.", QuestType.SKILL_LEVEL, "MINING", 3, Material.STONE_PICKAXE, List.of("mine_stone"), 250.0, xp());
         add(plan, "farming_3", "Farmer", "Reach Farming level 3.", QuestType.SKILL_LEVEL, "FARMING", 3, Material.WOODEN_HOE, List.of("farm_crops"), 200.0, xp());
         add(plan, "combat_3", "Fighter", "Reach Combat level 3.", QuestType.SKILL_LEVEL, "COMBAT", 3, Material.STONE_SWORD, List.of("first_blood"), 250.0, xp());
-        add(plan, "craft_minion", "Automation", "Craft your first minion.", QuestType.CRAFT_ITEM, "custom:re:minion_(?!fuel_|upgrade_|skin_|enchanted_|super_)[a-z_]+_[0-9]+", 1, Material.ARMOR_STAND, List.of("mining_3"), 500.0, xp("CARPENTRY", 80.0));
         add(plan, "earn_coins", "Pocket Change", "Earn 1,000 coins.", QuestType.COINS_EARN, "", 1000, Material.GOLD_NUGGET, List.of("create_island"), 100.0, xp());
         add(plan, "open_bazaar", "Open for Business", "Open the Bazaar.", QuestType.COMMAND, "bazaar", 1, Material.EMERALD, List.of("earn_coins"), 100.0, xp());
         add(plan, "open_auction", "Going Once", "Open the Auction House.", QuestType.COMMAND, "auctionhouse", 1, Material.GOLD_BLOCK, List.of("open_bazaar"), 100.0, xp());

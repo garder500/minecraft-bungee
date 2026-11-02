@@ -29,7 +29,7 @@ plus `EVENT` (a keyed event fired by a feature). A test loads the real config an
 
 ## Admin reset
 `/islandadmin resetall` rebuilds every island and wipes, for every known player (also those who left their island):
-coins, bank, auctions and bazaar orders, quests, fairy souls, generator progress and skins, skills, minions, boss and
+coins, bank, auctions and bazaar orders, quests, fairy souls, generator progress and skins, skills, boss and
 dungeon records, Skyblock inventory and bed. Kept on purpose: Wings, island settings, menu preferences.
 
 ## Implementation notes (what is in the code)

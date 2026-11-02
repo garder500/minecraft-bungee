@@ -33,7 +33,6 @@ public final class Island {
     public boolean locked;
     public int radiusTier;
     public int memberTier;
-    public int minionTier;
     /** Weighted block value from the last scan, and the level derived from it. */
     public double value;
     public long level;

@@ -22,7 +22,7 @@ public class EconomySeedTest {
         assertEquals(6, c.tiers().size());
         assertEquals("Starter", c.tiers().get(0).name());
         assertEquals("Prestige", c.tiers().get(5).name());
-        assertEquals(Map.of("minion_enchanted_", 150.0, "minion_super_", 22500.0), c.pressurePrefixes());
+        assertEquals(Map.of(), c.pressurePrefixes());
         assertEquals(468, c.products().size());
         Map<String, Long> perCategory = c.products().stream()
             .collect(Collectors.groupingBy(EconomyConfig.Product::category, Collectors.counting()));
@@ -37,11 +37,11 @@ public class EconomySeedTest {
     public void spotValuesAreIdentical() {
         EconomyConfig c = EconomyFixtures.shipped();
         var s = c.settings();
-        assertEquals(1_000_000_000_000L, s.getLong("currency.max-balance", 0));
+        assertEquals(10_000_000_000L, s.getLong("currency.max-balance", 0));
         assertEquals(1.25, s.getDouble("bazaar.tax-percent", 0), 0);
         assertEquals(71_680, s.getInt("bazaar.max-amount", 0));
         assertEquals(0.2, s.getDouble("pressure.min-multiplier", 0), 0);
-        assertEquals(5_000_000.0, c.tiers().get(0).capacity(), 0);
+        assertEquals(50_000.0, c.tiers().get(0).capacity(), 0);
         assertEquals(0.6, c.tiers().get(2).rate(), 0);
         var wheat = c.offersOf("farmer").get(0);
         assertEquals("WHEAT", wheat.key());

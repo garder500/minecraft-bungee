@@ -90,9 +90,9 @@ INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('spirit_cache', 
 INSERT INTO dungeon_trade (id, position, name, icon, give, amount, cache_rolls, cache_grade, coins) VALUES ('dark_scroll', 4, 'Dark Scroll', 'PAPER', 'dungeon_dark_scroll', 1, 0, 'D', 0.0);
 INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('dark_scroll', 'dungeon_relic', 5);
 INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('dark_scroll', 'dungeon_spirit_dust', 16);
-INSERT INTO dungeon_trade (id, position, name, icon, give, amount, cache_rolls, cache_grade, coins) VALUES ('sell_bones', 5, 'Bone Market', 'BONE', '', 0, 0, 'D', 600.0);
+INSERT INTO dungeon_trade (id, position, name, icon, give, amount, cache_rolls, cache_grade, coins) VALUES ('sell_bones', 5, 'Bone Market', 'BONE', '', 0, 0, 'D', 6.0);
 INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('sell_bones', 'dungeon_bone_fragment', 64);
-INSERT INTO dungeon_trade (id, position, name, icon, give, amount, cache_rolls, cache_grade, coins) VALUES ('sell_essence', 6, 'Essence Broker', 'BLACK_DYE', '', 0, 0, 'D', 1500.0);
+INSERT INTO dungeon_trade (id, position, name, icon, give, amount, cache_rolls, cache_grade, coins) VALUES ('sell_essence', 6, 'Essence Broker', 'BLACK_DYE', '', 0, 0, 'D', 15.0);
 INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('sell_essence', 'dungeon_wither_essence', 10);
 INSERT INTO dungeon_floor (id, number, name, palette, grid, rooms, puzzles, traps, secret_rooms, mini_bosses, shop, fairy, wither_doors, loops, hp, damage, mob_level, par_seconds, secrets_needed_percent, reward, min_combat_level, tier, weakness, resistance) VALUES ('1', 1, 'The Entrance', 'stone_brick', 3, 8, 1, 0, 1, 0, 0, 1, 0, 0, 1.0, 1.0, 3, 420, 40, 1.0, 0, 1, 'EARTH', 'VOID');
 INSERT INTO dungeon_floor (id, number, name, palette, grid, rooms, puzzles, traps, secret_rooms, mini_bosses, shop, fairy, wither_doors, loops, hp, damage, mob_level, par_seconds, secrets_needed_percent, reward, min_combat_level, tier, weakness, resistance) VALUES ('2', 2, 'The Ossuary', 'mossy', 4, 13, 2, 1, 1, 1, 1, 1, 1, 1, 1.3, 1.4, 8, 600, 45, 1.5, 5, 1, 'EARTH', 'ASTRAL');

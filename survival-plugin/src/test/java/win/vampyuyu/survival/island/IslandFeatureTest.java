@@ -462,7 +462,6 @@ public class IslandFeatureTest {
         PlayerMock visitor = player("Visitor");
         visitor.performCommand("island upgrade members");
         assertTrue(said(visitor).contains("do not have an island"));
-        assertEquals(0, service.minionSlotBonus(UUID.randomUUID()));
     }
 
     @Test
@@ -503,8 +502,6 @@ public class IslandFeatureTest {
             win.vampyuyu.survival.quarry.QuarryData::new, d -> d.skins.add("kitsune"));
         profiles.edit(owner.getUniqueId(), "skills", win.vampyuyu.survival.skills.SkillsData.class,
             win.vampyuyu.survival.skills.SkillsData::new, d -> d.xp.put("MINING", 900.0));
-        profiles.edit(owner.getUniqueId(), "minions", win.vampyuyu.survival.minions.MinionProfile.class,
-            win.vampyuyu.survival.minions.MinionProfile::new, d -> d.crafted.add("cobble_1"));
         profiles.edit(owner.getUniqueId(), "boss", win.vampyuyu.survival.boss.BossData.class,
             win.vampyuyu.survival.boss.BossData::new, d -> d.kills.put("voidwyrm", 3));
         profiles.edit(owner.getUniqueId(), "dungeon", win.vampyuyu.survival.dungeon.DungeonData.class,
@@ -536,8 +533,6 @@ public class IslandFeatureTest {
             win.vampyuyu.survival.quarry.QuarryData.class, win.vampyuyu.survival.quarry.QuarryData::new).skins.isEmpty());
         assertTrue("the skills are gone", profiles.section(owner.getUniqueId(), "skills",
             win.vampyuyu.survival.skills.SkillsData.class, win.vampyuyu.survival.skills.SkillsData::new).xp.isEmpty());
-        assertTrue("the minions are gone", profiles.section(owner.getUniqueId(), "minions",
-            win.vampyuyu.survival.minions.MinionProfile.class, win.vampyuyu.survival.minions.MinionProfile::new).crafted.isEmpty());
         assertTrue("the boss records are gone", profiles.section(owner.getUniqueId(), "boss",
             win.vampyuyu.survival.boss.BossData.class, win.vampyuyu.survival.boss.BossData::new).kills.isEmpty());
         assertEquals("the dungeon records are gone", 0, profiles.section(owner.getUniqueId(), "dungeon",
