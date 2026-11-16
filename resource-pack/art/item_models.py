@@ -78,17 +78,39 @@ def crystals(name, stone, body, light, seed):
     return s
 
 
-def core(name, shell, gem, glow, seed):
-    """A gem core: a faceted gem (two boxes turned against each other) inside a four-post frame."""
-    s = bs.Skin(name, [("shell", shell, "plain"), ("dark", shade(shell, 0.6), "plain"), ("gem", gem, "plain"),
-                       ("glow", glow, "glow")], seed)
-    for x, z in ((3, 3), (11.5, 3), (3, 11.5), (11.5, 11.5)):
-        s.box((x, 1, z), (x + 1.5, 15, z + 1.5), "shell")
-    s.box((3, 0, 3), (13, 1.5, 13), "dark")
-    s.box((3, 14.5, 3), (13, 16, 13), "dark")
+def core(name, shell, gem, glow, seed, motif=None):
+    """A guardian core: a faceted orb (two boxes turned against each other) held by the four-prong dark iron cage of the
+    flat sprites (a prong at each compass point, a hub plate above and below). motif: 'flux' adds a cyan ring around the
+    orb's waist, 'lava' lets cracks of lava break out of it."""
+    s = bs.Skin(name, [("iron", (42, 38, 50), "plain"), ("iron_hi", (110, 104, 120), "plain"), ("gem", gem, "plain"),
+                       ("glow", glow, "glow"), ("shell", shell, "plain")], seed)
+    s.box((5.5, 1.0, 5.5), (10.5, 2.6, 10.5), "iron")              # lower hub
+    s.box((5.5, 13.4, 5.5), (10.5, 15.0, 10.5), "iron")            # upper hub
+    s.box((6.8, 15.0, 6.8), (9.2, 16.0, 9.2), "iron_hi")
+    for sign in (1, -1):
+        for axis in ("x", "z"):
+            def prong(d0, d1, y0, y1, w, mat="iron"):
+                lo, hi = sorted((8 + sign * d0, 8 + sign * d1))
+                a, b = ((lo, y0, 8 - w / 2), (hi, y1, 8 + w / 2)) if axis == "x" else ((8 - w / 2, y0, lo), (8 - w / 2 + w, y1, hi))
+                s.box(a, b, mat)
+            prong(2.6, 4.6, 2.6, 4.0, 1.6)                           # foot on the lower hub
+            prong(4.2, 5.6, 4.0, 6.2, 1.6)
+            prong(5.0, 6.4, 6.2, 9.8, 1.8, "iron_hi")                # the bulge, the part that catches the light
+            prong(4.2, 5.6, 9.8, 12.0, 1.6)
+            prong(2.6, 4.6, 12.0, 13.4, 1.6)                          # claw on the upper hub
     s.box((5.5, 4.5, 5.5), (10.5, 11.5, 10.5), "gem", rot=("y", 45, [8, 8, 8]))
     s.box((5.5, 4.5, 5.5), (10.5, 11.5, 10.5), "gem", rot=("x", 45, [8, 8, 8]))
     s.box((6.8, 6.8, 6.8), (9.2, 9.2, 9.2), "glow", rot=("y", 45, [8, 8, 8]))
+    if motif == "flux":                                               # the cyan Flux ring inside the cage
+        s.box((4.0, 7.5, 4.0), (12.0, 8.5, 4.7), "glow")
+        s.box((4.0, 7.5, 11.3), (12.0, 8.5, 12.0), "glow")
+        s.box((4.0, 7.5, 4.7), (4.7, 8.5, 11.3), "glow")
+        s.box((11.3, 7.5, 4.7), (12.0, 8.5, 11.3), "glow")
+    elif motif == "lava":                                             # cracks: shards of lava breaking out of the orb
+        s.box((7.4, 11.4, 7.4), (8.6, 12.8, 8.6), "glow", rot=("z", 18, [8, 11, 8]))
+        s.box((7.4, 3.2, 7.4), (8.6, 4.6, 8.6), "glow", rot=("z", -18, [8, 5, 8]))
+        s.box((4.2, 7.0, 7.4), (5.6, 8.0, 8.6), "glow", rot=("x", 25, [5, 7, 8]))
+        s.box((10.4, 8.4, 7.4), (11.8, 9.4, 8.6), "glow", rot=("x", -25, [11, 9, 8]))
     return s
 
 
@@ -315,43 +337,142 @@ def tool_materials(tier):
     return mats, bool(glow)
 
 
-def axe(tier, seed):
+OBSIDIAN = hx("#3a2440")
+RIFT = hx("#1c0f3a")
+
+
+def tier_materials(tier):
+    """The tool materials plus what the head of this Realm needs: obsidian for Cracked Ashes, a darker void body..."""
     mats, glow = tool_materials(tier)
+    body = {"ember": OBSIDIAN, "void": RIFT}.get(tier)
+    if body:
+        mats = mats + [("body", body, "plain")]
+    return mats, glow
+
+
+def decal(s, x0, y0, x1, y1, mat, surf, t=0.15):
+    """A thin patch on both faces of a head whose faces are at z = 8 -/+ surf (the front is the +z one)."""
+    s.box((x0, y0, 8 + surf), (x1, y1, 8 + surf + t), mat)
+    s.box((x0, y0, 8 - surf - t), (x1, y1, 8 - surf), mat)
+
+
+def gem_socket(s, tier, x0, y0, x1, y1, z):
+    """The gem sits at the same place on every tool of a tier: a dark bezel on the face, then the gem. Starcore's is a
+    four-point star, the others a square cabochon. z: the face the bezel rests on."""
+    s.box((x0 - 0.45, y0 - 0.45, z), (x1 + 0.45, y1 + 0.45, z + 0.15), "dark")
+    s.box((x0 - 0.45, y0 - 0.45, 16 - z - 0.15), (x1 + 0.45, y1 + 0.45, 16 - z), "dark")
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    for zz in (z + 0.15, 16 - z - 0.15 - 0.25):
+        if tier == "starcore":
+            s.box((x0 - 0.2, cy - 0.3, zz), (x1 + 0.2, cy + 0.3, zz + 0.25), "gem")
+            s.box((cx - 0.3, y0 - 0.2, zz), (cx + 0.3, y1 + 0.2, zz + 0.25), "gem")
+            s.box((cx - 0.55, cy - 0.55, zz), (cx + 0.55, cy + 0.55, zz + 0.3), "gem")
+        else:
+            s.box((x0, y0, zz), (x1, y1, zz + 0.25), "gem")
+
+
+def axe(tier, seed):
+    mats, glow = tier_materials(tier)
     s = sm.Sword(f"{tier}_axe", mats, seed)
     s.box((7.3, -1.5, 7.3), (8.7, 13.4, 8.7), "handle")
     s.box((7.05, -2.2, 7.05), (8.95, -1.0, 8.95), "dark")                  # butt of the handle
     for k in range(3):
         s.box((7.15, 0.2 + k * 1.3, 7.15), (8.85, 0.9 + k * 1.3, 8.85), "wrap")
     s.box((6.8, 9.2, 6.9), (9.2, 13.6, 9.1), "dark")                       # socket
-    s.box((9.2, 9.8, 7.3), (11.4, 13.0, 8.7), "head")                      # cheek
-    s.box((11.4, 8.8, 7.5), (13.4, 14.0, 8.5), "head")                     # blade, flaring out
-    s.box((13.4, 7.8, 7.65), (15.2, 15.0, 8.35), "edge")                   # bit
+    s.box((9.2, 9.8, 7.3), (11.4, 13.0, 8.7), "body" if tier in ("ember", "void") else "head")  # cheek
     s.box((5.0, 10.4, 7.4), (6.8, 12.4, 8.6), "head")                      # poll
     s.box((4.2, 10.8, 7.5), (5.0, 12.0, 8.5), "edge")
-    if glow:
-        s.box((10.0, 10.8, 8.7), (11.2, 12.0, 8.95), "gem")                # gem on both cheeks
-        s.box((10.0, 10.8, 7.05), (11.2, 12.0, 7.3), "gem")
+    gem_socket(s, tier, 10.0, 10.8, 11.2, 12.0, 8.7)                       # the same place on every tier
+    if tier == "bronze":                                                   # riveted Flux bronze: plate, seam, rivets
+        s.box((11.4, 8.8, 7.5), (13.4, 14.0, 8.5), "head")
+        s.box((13.4, 7.8, 7.65), (15.2, 15.0, 8.35), "edge")
+        s.box((11.4, 8.8, 7.45), (11.9, 14.0, 8.55), "dark")                # the seam of the riveted plate
+        for y in (9.4, 13.2):
+            decal(s, 12.3, y, 13.0, y + 0.7, "edge", 0.5)
+        decal(s, 13.8, 11.0, 14.6, 11.8, "dark", 0.35)
+    elif tier == "ember":                                                  # jagged obsidian with lava cracks
+        s.box((11.4, 9.4, 7.5), (13.0, 13.6, 8.5), "body")
+        for y0, y1, x1 in ((13.2, 15.8, 14.6), (10.8, 13.0, 15.8), (8.4, 10.6, 14.4), (6.6, 8.2, 13.8)):
+            s.box((13.0, y0, 7.6), (x1, y1, 8.4), "body")                  # a tooth each, no two alike
+            s.box((x1, y0 + 0.5, 7.7), (x1 + 0.7, y1 - 0.5, 8.3), "edge")  # the tips glow hot
+        decal(s, 11.8, 10.0, 12.2, 13.2, "gem", 0.5)                       # cracks
+        decal(s, 12.2, 11.2, 13.0, 11.6, "gem", 0.5)
+        decal(s, 12.6, 9.6, 13.0, 11.4, "gem", 0.5)
+    elif tier == "rime":                                                   # crystal teeth
+        s.box((11.4, 9.0, 7.55), (12.8, 13.8, 8.45), "head")
+        for i, y in enumerate((7.6, 9.4, 11.2, 13.0)):
+            long = (1.4, 2.2, 2.6, 1.8)[i]
+            s.box((12.8, y, 7.65), (14.2, y + 1.6, 8.35), "head")
+            s.box((14.2, y + 0.3, 7.75), (14.2 + long, y + 1.3, 8.25), "edge")
+            s.box((14.2 + long, y + 0.6, 7.85), (14.2 + long + 0.6, y + 1.0, 8.15), "edge")
+    elif tier == "starcore":                                               # gold, broad, with sun-ray horns
+        s.box((11.4, 8.4, 7.5), (13.6, 14.4, 8.5), "head")
+        s.box((13.6, 7.6, 7.65), (15.4, 15.2, 8.35), "edge")
+        s.box((12.4, 14.4, 7.65), (14.2, 15.8, 8.35), "head")
+        s.box((12.4, 7.0, 7.65), (14.2, 8.4, 8.35), "head")
+        s.box((12.9, 15.8, 7.75), (13.7, 16.6, 8.25), "edge")
+        s.box((12.9, 6.2, 7.75), (13.7, 7.0, 8.25), "edge")
+    elif tier == "void":                                                   # dark, split by a rift with a pink eye
+        s.box((11.4, 9.0, 7.5), (13.0, 14.2, 8.5), "body")
+        s.box((13.0, 11.8, 7.6), (15.4, 15.2, 8.4), "body")                # upper horn
+        s.box((13.0, 7.8, 7.6), (14.6, 10.0, 8.4), "body")                 # lower horn, the rift between the two
+        s.box((13.0, 10.0, 7.7), (13.5, 11.8, 8.3), "edge")
+        decal(s, 11.9, 10.3, 12.9, 11.5, "edge", 0.5)                      # the eye: lid, rift, pupil
+        decal(s, 12.1, 10.6, 12.7, 11.2, "gem", 0.62)
+        decal(s, 12.25, 10.7, 12.55, 11.1, "dark", 0.77)
     return s
 
 
 def shovel(tier, seed):
-    mats, glow = tool_materials(tier)
+    mats, glow = tier_materials(tier)
     s = sm.Sword(f"{tier}_shovel", mats, seed)
     s.box((7.35, -1.0, 7.35), (8.65, 11.2, 8.65), "handle")
     s.box((5.8, -2.4, 7.3), (10.2, -1.0, 8.7), "dark")                     # T grip
     for k in range(3):
         s.box((7.2, 1.0 + k * 1.3, 7.2), (8.8, 1.7 + k * 1.3, 8.8), "wrap")
     s.box((6.9, 10.4, 7.0), (9.1, 12.2, 9.0), "dark")                      # socket
-    s.box((5.2, 12.2, 7.55), (10.8, 16.6, 8.45), "head")                   # blade
-    s.box((5.8, 16.6, 7.6), (10.2, 17.8, 8.4), "head")
-    s.box((6.8, 17.8, 7.65), (9.2, 18.8, 8.35), "edge")                    # tip
-    s.box((4.8, 12.6, 7.65), (5.2, 16.2, 8.35), "edge")                    # rim
-    s.box((10.8, 12.6, 7.65), (11.2, 16.2, 8.35), "edge")
+    body = "body" if tier in ("ember", "void") else "head"
+    if tier == "rime":
+        s.box((5.8, 12.2, 7.55), (10.2, 15.6, 8.45), body)                 # narrower: the crystals do the rest
+        for i, x in enumerate((5.8, 6.9, 8.0, 9.1)):
+            top = (17.2, 18.6, 19.0, 17.8)[i]
+            s.box((x, 15.6, 7.65), (x + 1.1, top - 1.0, 8.35), "head")
+            s.box((x + 0.15, top - 1.0, 7.75), (x + 0.95, top, 8.25), "edge")
+    else:
+        s.box((5.2, 12.2, 7.55), (10.8, 16.6, 8.45), body)                 # blade
+        s.box((4.8, 12.6, 7.65), (5.2, 16.2, 8.35), "edge")                # rim
+        s.box((10.8, 12.6, 7.65), (11.2, 16.2, 8.35), "edge")
+    if tier == "bronze":                                                   # riveted plate
+        s.box((5.8, 16.6, 7.6), (10.2, 17.8, 8.4), "head")
+        s.box((6.8, 17.8, 7.65), (9.2, 18.8, 8.35), "edge")
+        s.box((5.2, 12.2, 7.5), (10.8, 12.7, 8.5), "dark")
+        for x in (5.7, 9.9):
+            for y in (13.0, 15.6):
+                decal(s, x, y, x + 0.6, y + 0.6, "edge", 0.45)
+    elif tier == "ember":                                                  # jagged tip, lava cracks
+        for x0, x1, top in ((5.2, 6.8, 18.4), (7.2, 8.8, 19.4), (9.2, 10.8, 17.8)):
+            s.box((x0, 16.6, 7.6), (x1, top - 0.8, 8.4), "body")
+            s.box((x0 + 0.2, top - 0.8, 7.7), (x1 - 0.2, top, 8.3), "edge")
+        decal(s, 6.0, 14.8, 6.35, 16.4, "gem", 0.45)
+        decal(s, 9.5, 13.6, 9.85, 15.6, "gem", 0.45)
+        decal(s, 6.0, 15.0, 7.2, 15.35, "gem", 0.45)
+    elif tier == "starcore":                                               # gold, the point of a star
+        s.box((5.8, 16.6, 7.6), (10.2, 17.6, 8.4), "head")
+        s.box((6.8, 17.6, 7.65), (9.2, 18.6, 8.35), "head")
+        s.box((7.4, 18.6, 7.7), (8.6, 19.8, 8.3), "edge")
+        decal(s, 6.2, 16.0, 6.8, 16.5, "edge", 0.45)
+        decal(s, 9.2, 16.0, 9.8, 16.5, "edge", 0.45)
+    elif tier == "void":                                                   # dark, a rift eye under a split tip
+        s.box((5.8, 16.6, 7.6), (10.2, 17.8, 8.4), "body")
+        s.box((5.8, 17.8, 7.65), (7.4, 19.4, 8.35), "body")
+        s.box((8.6, 17.8, 7.65), (10.2, 18.8, 8.35), "body")
+        s.box((7.4, 17.8, 7.7), (8.6, 18.4, 8.3), "edge")
+        decal(s, 6.4, 16.8, 9.6, 17.7, "edge", 0.4)
+        decal(s, 6.8, 17.0, 9.2, 17.5, "gem", 0.55)
+        decal(s, 7.6, 17.05, 8.4, 17.45, "dark", 0.7)
     s.box((7.6, 12.2, 8.45), (8.4, 16.4, 8.7), "dark")                     # spine on both faces
     s.box((7.6, 12.2, 7.3), (8.4, 16.4, 7.55), "dark")
-    if glow:
-        s.box((7.3, 13.2, 8.7), (8.7, 14.6, 8.95), "gem")
-        s.box((7.3, 13.2, 7.05), (8.7, 14.6, 7.3), "gem")
+    gem_socket(s, tier, 7.3, 13.2, 8.7, 14.6, 8.45)
     return s
 
 
@@ -428,8 +549,8 @@ def main():
         "ore/bronzite": (crystals("bronzite", (96, 92, 90), (201, 132, 66), (255, 206, 130), 21), ITEM_DISPLAY),
         "ore/frostium": (crystals("frostium", (92, 100, 108), (127, 200, 232), (225, 247, 255), 22), ITEM_DISPLAY),
         "ore/sunstone": (crystals("sunstone", (110, 90, 70), (242, 193, 78), (255, 240, 170), 23), ITEM_DISPLAY),
-        "ore/bronze_core": (core("bronze_core", hx("#7a4a1e"), hx("#c98442"), hx("#4af0ff"), 24), ITEM_DISPLAY),
-        "ore/ember_core": (core("ember_core", hx("#2a1a2e"), hx("#c8461e"), hx("#ff8a2a"), 25), ITEM_DISPLAY),
+        "ore/bronze_core": (core("bronze_core", hx("#7a4a1e"), hx("#c98442"), hx("#4af0ff"), 24, "flux"), ITEM_DISPLAY),
+        "ore/ember_core": (core("ember_core", hx("#2a1a2e"), hx("#c8461e"), hx("#ff8a2a"), 25, "lava"), ITEM_DISPLAY),
         "ore/void_lens": (lens("void_lens", hx("#3a1a6a"), hx("#0e0a1a"), hx("#ff4a8a"), 26), ITEM_DISPLAY),
         "ore/voidglass": (voidglass("voidglass", (110, 70, 180), (40, 24, 70), (210, 140, 255), 27), ITEM_DISPLAY),
         "ore/starcore": (starcore("starcore", (230, 200, 120), (255, 245, 200), (255, 250, 220), 28), ITEM_DISPLAY),
