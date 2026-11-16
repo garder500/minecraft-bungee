@@ -19,7 +19,7 @@ import win.vampyuyu.survival.core.Core;
 
 /**
  * Boss drops are custom items on vanilla materials (cobweb, magma block, rotten flesh, ender pearl...). Without this
- * guard a Tarantula Web would be placed as a plain cobweb, a Null Sphere thrown, a Revenant Flesh eaten, a Wing Core
+ * guard a Spinner Web would be placed as a plain cobweb, a Hollow Pearl thrown, an Unrotting Flesh eaten, a Wing Core
  * crafted into a Leviathan Scale. Material and summon items do nothing vanilla; weapons are left alone.
  */
 public final class BossItemGuard implements Listener {

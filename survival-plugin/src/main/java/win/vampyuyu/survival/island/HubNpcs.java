@@ -44,14 +44,14 @@ public final class HubNpcs implements Listener {
         new Role("merchant", "Merchant", Villager.Profession.LIBRARIAN, Action.COMMAND, "shop"),
         new Role("archivist", "Archivist", Villager.Profession.CARTOGRAPHER, Action.COMMAND, "quests"),
         new Role("guard", "Guard", Villager.Profession.WEAPONSMITH, Action.SAY,
-            "Welcome to the Hub. Use /island to go back to your island and /hub to return here. "
-                + "The Crypt Depths are east, the Rift is west. The Archivist hands out Echo Keys."),
+            "Welcome to the Hub, survivor. Your island is a fragment of Aethelgard: /island takes you back to it, /hub brings you here. "
+                + "The Crypt Depths are east, the Rift is west. The Archivist keeps the Echo Keys."),
         new Role("contract_hunter", "Contract Hunter", Villager.Profession.FLETCHER, Action.COMMAND, "contracts"),
         new Role("island_gate", "Island Gatekeeper", Villager.Profession.NONE, Action.ISLAND, ""),
         new Role("dungeon_gate", "Dungeon Gatekeeper", Villager.Profession.NONE, Action.COMMAND, "dungeon"),
         new Role("rift_gate", "Rift Gatekeeper", Villager.Profession.NONE, Action.RIFT,
-            "The Rift is sealed. Only the bearer of an Echo Key may pass: the Archivist keeps one for survivors who "
-                + "wear the Bronze armor."));
+            "The Rift is sealed. It opens only for a key cut from a shard that remembers the sky: the Archivist keeps one for "
+                + "survivors who wear the Bronze armor."));
 
     /** The item that opens the Rift (summon item of the Echo of the Rift, see boss.sql). */
     public static final String ECHO_KEY = "echo_key";

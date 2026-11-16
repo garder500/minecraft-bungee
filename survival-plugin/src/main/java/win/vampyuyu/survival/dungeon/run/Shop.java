@@ -22,7 +22,7 @@ final class Shop {
     static void open(DungeonRun run, Player p) {
         var gui = run.ctx.core.guis().create(3, "<gold><bold>Crypt Merchant");
         boolean eco = run.ctx.economy().isPresent();
-        good(run, gui, 11, DungeonItems.SPIRIT_LEAF, "<green>Spirit Leaf", "<gray>Revives a ghost of your party instantly.");
+        good(run, gui, 11, DungeonItems.SPIRIT_LEAF, "<green>Recall Leaf", "<gray>Revives a ghost of your party instantly.");
         good(run, gui, 15, DungeonItems.HEALING_FLASK, "<aqua>Healing Flask",
             "<gray>Restores " + run.ctx.cfg.flaskHealPercent + "% of your health.");
         if (!eco) {

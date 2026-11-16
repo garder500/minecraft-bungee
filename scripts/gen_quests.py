@@ -52,9 +52,29 @@ def ev(c, name, desc, key, amount, icon, coins, **kw):
     q(c, name, desc, "EVENT", key, amount, icon, coins, **kw)
 
 
+# In-game display names of the forged items (ids never change, names follow the lore bible, docs/skyblock-notes/lore.md).
+ITEM_NAMES = {
+    "magma_core": "Ashes Bastion Key", "frost_heart": "Heights Bastion Key", "matriarch_egg": "Grove Bastion Key",
+    "leviathan_scale": "Abyss Bastion Key", "void_sigil": "Void Sigil", "void_lens": "Void Lens",
+    "bronze_core": "Bronze Core", "ember_core": "Ember Core", "cable": "Copper Cable", "solar_panel": "Solar Panel",
+    "coal_generator": "Coal Generator", "battery": "Battery", "miner_1": "Miner I", "miner_2": "Miner II",
+    "sandglass": "Sandglass", "chrono_module": "Chrono Module", "skin_crystal_saber": "Crystal Saber Skin",
+}
+
+
+def item_name(item):
+    return ITEM_NAMES.get(item, item.replace("_", " ").title())
+
+
 def forge(c, name, item, amount, icon, coins, **kw):
-    q(c, name, f"Collect {'a' if amount == 1 else amount} {item.replace('_', ' ')} from the Forge (/forge).", "FORGE_ITEM",
-      item, amount, icon, coins, **kw)
+    name_ = item_name(item)
+    if amount > 1:
+        what = f"{amount}x {name_}"
+    elif name_.endswith(("Leggings", "Boots")):
+        what = f"the {name_}"
+    else:
+        what = f"{'an' if name_[0] in 'AEIOU' else 'a'} {name_}"
+    q(c, name, f"Collect {what} from the Forge (/forge).", "FORGE_ITEM", item, amount, icon, coins, **kw)
 
 
 def ore(c, name, what, ore_id, amount, icon, coins, **kw):
@@ -155,7 +175,7 @@ ore(c, "Voidglass", "a Voidglass", "voidglass", 1, "ECHO_SHARD", 500)
 ore(c, "Starcore", "a Starcore Shard", "starcore", 1, "NETHER_STAR", 800)
 brk(c, "Mine 5,000", "5,000 cobblestone", "COBBLESTONE", 5000, "COBBLESTONE", 500)
 
-c = cat("rift", "The Hub and the Rift", "With the Bronze armor on your back the Call shows you the way out of the islet: the Hub, its people, and the Rift where the first Echo waits (GDD 13.2, A9-A13).", True, "bronze_armor", "CRYING_OBSIDIAN")
+c = cat("rift", "The Hub and the Rift", "With the Bronze armor on your back the Call shows you the way out of the islet: the Hub, its people, and the Rift where the first Echo waits.", True, "bronze_armor", "CRYING_OBSIDIAN")
 ev(c, "The Island Gate", "Travel to the Hub with /hub (and use /island to come back).", "hub_arrive", 1, "ENDER_PEARL", 150, qid="hub_gate",
    lore="Bronze on your back, you feel the fragment loosen. Beyond the gate there are other survivors.")
 ev(c, "The Guard", "Click the Guard on the Hub plaza and listen.", "hub_npc:guard", 1, "IRON_SWORD", 80, qid="hub_guard")
@@ -167,7 +187,7 @@ ev(c, "Enter the Rift", "Carry your Echo Key to the Rift arch, west of the Hub p
 q(c, "Defeat the Echo of the Rift", "Right-click the Echo Key on the Rift altar, then defeat the Echo of the Rift. It drops the Wing Core that grants your Wings and lights the road to the Quai des Huit.", "BOSS_KILL", "voidwyrm", 1, "DRAGON_HEAD", 1500, qid="echo_defeat", label="voidwyrm_1",
   lore="The first Echo of the Devourer screams in the sky. End it, and the Eight Realms can be reached.")
 
-c = cat("nether", "The Nether and the Ember", "A portal, the Ember generator, quartz and soul sand.", True, "tier2", "NETHERRACK")
+c = cat("nether", "The Nether and the Ember", "Your fragment has a slag-red twin. Through a portal wait the Ember generator, quartz and soul sand.", True, "tier2", "NETHERRACK")
 cmd(c, "Nether Plan", "Read the Nether plan with /guide.", "guide", "WRITABLE_BOOK", 50, label="nether_plan")
 craft(c, "Flint and Steel", "flint and steel", "FLINT_AND_STEEL", 1, "FLINT_AND_STEEL", 80)
 q(c, "Light a Portal", "Place 10 obsidian.", "PLACE_BLOCK", "OBSIDIAN", 10, "OBSIDIAN", 100)
@@ -198,7 +218,7 @@ q(c, "Echo of the Rift Again", "Defeat the Echo of the Rift 3 times.", "BOSS_KIL
 q(c, "Echo of the Rift Master", "Defeat the Echo of the Rift 10 times.", "BOSS_KILL", "voidwyrm", 10, "DRAGON_HEAD", 6000)
 
 # --------------------------------------------------------------------------------------------- parallel
-c = cat("farm", "Farming and Food", "A calm category. Play it alongside the generators.", False, "fountain_craft", "WHEAT")
+c = cat("farm", "Farming and Food", "Quiet work for a fragment that is learning to grow things again. Play it alongside the generators.", False, "fountain_craft", "WHEAT")
 craft(c, "Hoe", "a wooden hoe", "WOODEN_HOE", 1, "WOODEN_HOE", 20)
 q(c, "Till the Soil", "Plant 16 crops or seeds.", "PLACE_BLOCK", "CROPS", 16, "WHEAT_SEEDS", 20)
 brk(c, "Wheat", "32 wheat", "WHEAT", 32, "WHEAT", 40)
@@ -220,7 +240,7 @@ craft(c, "Golden Apple", "a golden apple", "GOLDEN_APPLE", 1, "GOLDEN_APPLE", 15
 brk(c, "Harvest 1,000", "1,000 crops", "CROPS", 1000, "HAY_BLOCK", 300)
 q(c, "Fisher", "Catch 20 fish.", "FISH", "", 20, "FISHING_ROD", 120)
 
-c = cat("forging", "Forge and Gear", "Everything the Forge makes, from the bronze tools to the boss keys.", False, "forge_placed", "BLAST_FURNACE")
+c = cat("forging", "Forge and Gear", "Everything the Forge makes, from the bronze tools to the Bastion keys.", False, "forge_placed", "BLAST_FURNACE")
 forge(c, "Bronze Cleaver", "bronze_cleaver", 1, "IRON_SWORD", 100)
 forge(c, "Bronze Pick", "bronze_pick", 1, "IRON_PICKAXE", 100)
 forge(c, "Rimeblade", "rimeblade", 1, "IRON_SWORD", 200)
@@ -231,10 +251,10 @@ forge(c, "Coal Generator", "coal_generator", 1, "STONECUTTER", 100)
 forge(c, "Battery", "battery", 1, "WAXED_COPPER_BLOCK", 120)
 forge(c, "Miner I", "miner_1", 1, "LODESTONE", 200)
 forge(c, "Miner II", "miner_2", 1, "LODESTONE", 400)
-forge(c, "Magma Core", "magma_core", 1, "MAGMA_CREAM", 250)
-forge(c, "Frost Heart", "frost_heart", 1, "BLUE_ICE", 250)
-forge(c, "Spore Egg", "matriarch_egg", 1, "SPIDER_EYE", 250)
-forge(c, "Leviathan Scale", "leviathan_scale", 1, "PRISMARINE_SHARD", 300)
+forge(c, "Ashes Bastion Key", "magma_core", 1, "MAGMA_CREAM", 250)
+forge(c, "Heights Bastion Key", "frost_heart", 1, "BLUE_ICE", 250)
+forge(c, "Grove Bastion Key", "matriarch_egg", 1, "SPIDER_EYE", 250)
+forge(c, "Abyss Bastion Key", "leviathan_scale", 1, "PRISMARINE_SHARD", 300)
 forge(c, "Crystal Saber Skin", "skin_crystal_saber", 1, "PAPER", 300)
 retired(c)  # q134 Forge 5 bronze cores: a generator only ever uses one
 retired(c)  # q135 Forge 10 bronze cores
@@ -290,7 +310,7 @@ ev(c, "Machine Park", "Place 10 more machines of any kind.", "machine_placed", 1
 craft(c, "Hopper", "a hopper", "HOPPER", 1, "HOPPER", 150)
 craft(c, "Lever", "a lever", "LEVER", 1, "LEVER", 80)
 
-c = cat("market", "Market and Economy", "Sell, buy and auction. The market never sells or buys ultra-rare items.", False, "stone_gen", "EMERALD")
+c = cat("market", "Market and Economy", "Sell, buy and auction. The market never sells or buys the rarest things.", False, "stone_gen", "EMERALD")
 cmd(c, "Browse the Drift Market", "Open the Drift Market with /ah.", "ah", "GOLD_INGOT", 30)
 earn(c, "Pocket Money", 500, "GOLD_NUGGET", 50)
 earn(c, "Merchant", 2000, "GOLD_INGOT", 100)
@@ -311,7 +331,7 @@ q(c, "Selling Spree II", "Earn 15,000 more coins.", "COINS_EARN", "", 15000, "GO
 q(c, "Selling Spree III", "Earn 75,000 more coins.", "COINS_EARN", "", 75000, "EMERALD", 1200)
 q(c, "Selling Spree IV", "Earn 150,000 more coins.", "COINS_EARN", "", 150000, "EMERALD_BLOCK", 2500)
 
-c = cat("dungeons", "Dungeons", "Rooms, secrets and boss keys. Floors 6 and 7 hold the Wing Cores.", False, "iron_pick", "DEEPSLATE_BRICKS")
+c = cat("dungeons", "Dungeons", "Rooms and secrets below the Hub. Floors 6 and 7 hold the Wing Cores.", False, "iron_pick", "DEEPSLATE_BRICKS")
 cmd(c, "Find the Dungeon", "Open the dungeon menu with /dungeon.", "dungeon", "DEEPSLATE_BRICKS", 40)
 ev(c, "First Clear", "Clear a dungeon floor.", "dungeon_clear", 1, "DEEPSLATE_BRICKS", 150, label="first_clear")
 ev(c, "Floor 1", "Clear floor 1.", "dungeon_floor:1", 1, "DEEPSLATE_BRICKS", 100)
@@ -333,25 +353,25 @@ kill(c, "Skeletons", "50 skeletons", "SKELETON", 50, "BONE", 150)
 kill(c, "Spiders", "30 spiders", "SPIDER", 30, "STRING", 150)
 kill(c, "Creepers", "20 creepers", "CREEPER", 20, "GUNPOWDER", 150)
 
-c = cat("bosses", "The Bosses", "Eight bosses of the world, each with its own silhouette and its glowing weak spot.", False, "first_clear", "DRAGON_HEAD")
+c = cat("bosses", "The Bosses", "The Guardians keep the Devourer's laws in order, and the Echo of the Rift is its torn-off hunger. Each has its own silhouette and its glowing weak spot.", False, "first_clear", "DRAGON_HEAD")
 q(c, "Lava Colossus", "Defeat the Lava Colossus.", "BOSS_KILL", "magma_warden", 1, "MAGMA_BLOCK", 500)
 q(c, "Boreal Watcher", "Defeat the Boreal Watcher.", "BOSS_KILL", "frost_revenant", 1, "BLUE_ICE", 500)
 q(c, "Mycelial Queen", "Defeat the Mycelial Queen.", "BOSS_KILL", "sylvan_matriarch", 1, "SPIDER_EYE", 600)
-q(c, "Abyssal Leviathan", "Defeat the Abyssal Leviathan.", "BOSS_KILL", "abyssal_leviathan", 1, "PRISMARINE_SHARD", 700)
+q(c, "Chained Leviathan", "Defeat the Chained Leviathan.", "BOSS_KILL", "abyssal_leviathan", 1, "PRISMARINE_SHARD", 700)
 q(c, "Any Boss x3", "Defeat 3 bosses.", "BOSS_KILL", "", 3, "DRAGON_HEAD", 400)
 q(c, "Any Boss x10", "Defeat 10 bosses.", "BOSS_KILL", "", 10, "DRAGON_HEAD", 1000)
 q(c, "Any Boss x25", "Defeat 25 bosses.", "BOSS_KILL", "", 25, "DRAGON_HEAD", 2500, items={"skin_flame_brand": 1})
 q(c, "Lava Colossus x3", "Defeat the Lava Colossus 3 times.", "BOSS_KILL", "magma_warden", 3, "MAGMA_BLOCK", 800)
 q(c, "Boreal Watcher x3", "Defeat the Boreal Watcher 3 times.", "BOSS_KILL", "frost_revenant", 3, "BLUE_ICE", 800)
 q(c, "Mycelial Queen x3", "Defeat the Mycelial Queen 3 times.", "BOSS_KILL", "sylvan_matriarch", 3, "SPIDER_EYE", 900)
-q(c, "Leviathan x3", "Defeat the Abyssal Leviathan 3 times.", "BOSS_KILL", "abyssal_leviathan", 3, "PRISMARINE_SHARD", 1000)
+q(c, "Chained Leviathan x3", "Defeat the Chained Leviathan 3 times.", "BOSS_KILL", "abyssal_leviathan", 3, "PRISMARINE_SHARD", 1000)
 q(c, "Crypt Lord", "Defeat the Crypt Lord, the boss of the dungeon floors (/dungeon).", "BOSS_KILL", "crypt_lord", 1, "SKELETON_SKULL", 800)
 q(c, "Crypt Lord x3", "Defeat the Crypt Lord 3 times.", "BOSS_KILL", "crypt_lord", 3, "SKELETON_SKULL", 1100)
 q(c, "Any Boss x50", "Defeat 50 bosses.", "BOSS_KILL", "", 50, "DRAGON_HEAD", 5000, items={"skin_kitsune": 1})
 q(c, "Any Boss x100", "Defeat 100 bosses.", "BOSS_KILL", "", 100, "DRAGON_HEAD", 10000)
-forge(c, "Summon Items", "magma_core", 2, "MAGMA_CREAM", 400)
+forge(c, "Keys for a Party", "magma_core", 2, "MAGMA_CREAM", 400)
 
-c = cat("mastery", "Mastery", "Long goals for players who have done it all.", False, "tier3", "NETHER_STAR")
+c = cat("mastery", "Mastery", "Long goals for survivors who have done it all.", False, "tier3", "NETHER_STAR")
 q(c, "Quest Starter", "Complete 10 more quests.", "EVENT", "quest_done", 10, "BOOK", 200)
 q(c, "Quest Hunter", "Complete 25 more quests.", "EVENT", "quest_done", 25, "BOOK", 500)
 q(c, "Quest Master", "Complete 50 more quests.", "EVENT", "quest_done", 50, "ENCHANTED_BOOK", 1000)
@@ -359,8 +379,8 @@ q(c, "Quest Legend", "Complete 100 more quests.", "EVENT", "quest_done", 100, "E
 brk(c, "Quarryman", "10,000 blocks of any kind", "", 10000, "DIAMOND_PICKAXE", 1000)
 brk(c, "Quarry Titan", "50,000 blocks of any kind", "", 50000, "NETHERITE_PICKAXE", 3000)
 brk(c, "Ore Hunter", "250 ore blocks", "ORES", 250, "IRON_ORE", 600)
-kill(c, "Monster Slayer", "200 mobs of any kind", "", 200, "IRON_SWORD", 600)
-kill(c, "Monster Slayer II", "1,000 mobs of any kind", "", 1000, "DIAMOND_SWORD", 2000)
+kill(c, "Field Hunter", "200 mobs of any kind", "", 200, "IRON_SWORD", 600)
+kill(c, "Field Hunter II", "1,000 mobs of any kind", "", 1000, "DIAMOND_SWORD", 2000)
 ore(c, "Bronzite 50", "50 Bronzite", "bronzite", 50, "RAW_COPPER", 800)
 ore(c, "Frostium 25", "25 Frostium", "frostium", 25, "PRISMARINE_CRYSTALS", 1000)
 ore(c, "Sunstone 10", "10 Sunstone", "sunstone", 10, "GLOWSTONE_DUST", 1500)
@@ -372,7 +392,7 @@ ev(c, "Floor 7 Again", "Clear floor 7 three more times.", "dungeon_floor:7", 3, 
 ev(c, "Generators Everywhere", "Complete 3 more generator rings of any kind (each ring counts once).", "generator_built", 3, "SMOOTH_STONE", 1500)
 
 # --------------------------------------------------------------------------------------------- daily style
-c = cat("challenges", "Challenges", "Repeatable-feeling goals: bigger numbers, once each.", False, "stone_gen", "TARGET")
+c = cat("challenges", "Challenges", "Long days of plain work: bigger numbers, once each.", False, "stone_gen", "TARGET")
 brk(c, "Daily Miner", "200 blocks", "STONE", 200, "STONE_PICKAXE", 50)
 brk(c, "Daily Woodcutter", "100 logs", "LOGS", 100, "OAK_LOG", 50)
 brk(c, "Daily Farmer", "100 crops", "CROPS", 100, "WHEAT", 50)
@@ -401,7 +421,7 @@ kill(c, "Creeper Wave", "40 creepers", "CREEPER", 40, "GUNPOWDER", 300)
 kill(c, "Endermite Wave", "40 endermites", "ENDERMITE", 40, "ENDER_PEARL", 400)
 kill(c, "Zombie Siege", "200 zombies", "ZOMBIE", 200, "ROTTEN_FLESH", 400)
 
-c = cat("grove", "The Whispering Grove", "Realm 2. Roots as wide as towers, spores that glow, islands that live. The Mycelial Queen keeps the biological codes of the old world.", True, "voidwyrm_1", "MOSS_BLOCK")
+c = cat("grove", "The Whispering Grove", "Realm 2. Roots as wide as towers, spores that glow, islands that live. The Mycelial Queen keeps the living codes of the old world.", True, "voidwyrm_1", "MOSS_BLOCK")
 ev(c, "Through the Green Gate", "Light the Sky Gate of the Whispering Grove (defeat the Lava Colossus) and step through it at the Quai des Huit (/quai).", "grove_enter", 1, "LIME_STAINED_GLASS", 300, label="grove_1", lore="Beyond the second Gate the air is thick with light. The Grove remembers how to grow.", qid="grove_01")
 brk(c, "Mossy Footing", "32 moss blocks", "MOSS_BLOCK", 32, "MOSS_BLOCK", 100, qid="grove_02")
 brk(c, "First Grove Harvest", "16 fully grown crops", "CROPS", 16, "WHEAT", 150, qid="grove_03")
@@ -432,7 +452,7 @@ brk(c, "Slime Heaps", "16 slime blocks from the Landfill and the Weeping Mangrov
 ev(c, "Reclaimer", "Keep salvaging until you earn the Reclaimer affinity (200 points): a Vat needs fewer items for each Rot Resin roll.", "marsh_purify:2", 1, "COMPOSTER", 1200, label="marsh_reclaimer", qid="marsh_06")
 q(c, "Digest the Digester", "Defeat the Mire Abomination, Guardian of the Marshes.", "BOSS_KILL", "mire_abomination", 1, "SLIME_BALL", 2500, label="marsh_abomination", qid="marsh_07")
 
-c = cat("citadel", "The Citadel of Golden Sands", "Realm 4. Rivers of gold dust that flow upward, an hourglass the size of a tower. The Temporal Pharaoh keeps the chronology of the old world.", True, "grove_queen", "CLOCK")
+c = cat("citadel", "The Citadel of Golden Sands", "Realm 4. Rivers of gold dust that flow upward, an hourglass the size of a tower. The Temporal Pharaoh counts the hours the Devourer stole.", True, "grove_queen", "CLOCK")
 ev(c, "Through the Golden Gate", "Light the Sky Gate of the Citadel of Golden Sands (defeat the Mycelial Queen) and step through it at the Quai des Huit (/quai).", "citadel_enter", 1, "YELLOW_STAINED_GLASS", 300, label="citadel_1", lore="Beyond the fourth Gate the hours do not agree with each other. The Citadel counts them all.", qid="citadel_01")
 brk(c, "Dunes of the Citadel", "64 sandstone blocks", "SANDSTONE", 64, "SANDSTONE", 150, qid="citadel_02")
 ev(c, "Time Surges", "Be in the Citadel when the Time Tide surges: you move faster, and Chrono Modules run fast.", "citadel_tide:surge", 1, "CLOCK", 400, label="citadel_surge", qid="citadel_03")

@@ -412,18 +412,18 @@ public final class DungeonConfig {
 
     /** The built-in Crypt Forge (mirrored in the seed, a test keeps them equal). */
     public static final List<ForgeTrade> DEFAULT_TRADES = List.of(
-        new ForgeTrade("spirit_leaf", "Spirit Leaf", "FERN", costOf("dungeon_bone_fragment", 16, "dungeon_crypt_shard", 4),
+        new ForgeTrade("spirit_leaf", "Recall Leaf", "FERN", costOf("dungeon_bone_fragment", 16, "dungeon_crypt_shard", 4),
             "dungeon_spirit_leaf", 1, 0, Grade.D, 0),
         new ForgeTrade("healing_flasks", "Healing Flasks", "GLASS_BOTTLE", costOf("dungeon_bone_fragment", 12),
             "dungeon_healing_flask", 3, 0, Grade.D, 0),
         new ForgeTrade("crypt_cache", "Crypt Cache", "ENDER_CHEST",
             costOf("dungeon_crypt_shard", 12, "dungeon_wither_essence", 3), "", 0, 4, Grade.B, 0),
-        new ForgeTrade("spirit_cache", "Spirit Cache", "SHULKER_BOX",
+        new ForgeTrade("spirit_cache", "Mourning Cache", "SHULKER_BOX",
             costOf("dungeon_wither_essence", 12, "dungeon_spirit_dust", 4), "", 0, 5, Grade.S, 0),
         new ForgeTrade("dark_scroll", "Dark Scroll", "PAPER", costOf("dungeon_relic", 5, "dungeon_spirit_dust", 16),
             "dungeon_dark_scroll", 1, 0, Grade.D, 0),
         new ForgeTrade("sell_bones", "Bone Market", "BONE", costOf("dungeon_bone_fragment", 64), "", 0, 0, Grade.D, 6),
-        new ForgeTrade("sell_essence", "Essence Broker", "BLACK_DYE", costOf("dungeon_wither_essence", 10), "", 0, 0,
+        new ForgeTrade("sell_essence", "Ash Broker", "BLACK_DYE", costOf("dungeon_wither_essence", 10), "", 0, 0,
             Grade.D, 15));
 
     private static Map<String, Integer> costOf(Object... pairs) {

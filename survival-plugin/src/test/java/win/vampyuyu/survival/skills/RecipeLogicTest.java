@@ -55,7 +55,7 @@ public class RecipeLogicTest extends SkillsBase {
             ItemStack item = core.items().create(id);
             assertTrue(core.items().is(item, id));
         }
-        assertEquals("Enchanted Diamond", core.items().def("enchanted_diamond").orElseThrow().name());
+        assertEquals("Compressed Diamond", core.items().def("enchanted_diamond").orElseThrow().name());
     }
 
     @Test

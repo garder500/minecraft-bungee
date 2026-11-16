@@ -125,7 +125,7 @@ final class QuarryItems {
                 .lore("<gray>Glass that remembers the dark.", "<gray>Found in tier IV generators.").build(),
             CustomItemDef.builder(STARCORE, "Starcore Shard", Rarity.MYTHIC, Material.NETHER_STAR)
                 .itemModel("vampyuyu:ore/starcore").type("GEM").glint(true)
-                .lore("<gray>A fragment of a fallen star.", "<gray>Only geodes of tier IV hold one.").build(),
+                .lore("<gray>A fragment of a fallen star, still faintly warm.", "<gray>Only geodes of tier IV hold one.").build(),
             CustomItemDef.builder(VOID_LENS, "Void Lens", Rarity.EPIC, Material.ENDER_EYE)
                 .itemModel("vampyuyu:ore/void_lens").type("KEY").glint(true)
                 .lore("<gray>Needs a tier III generator.", "<gray>Right-click on your island to open", "<gray>your <light_purple>End <gray>and the tier IV generator.").build(),
@@ -180,7 +180,7 @@ final class QuarryItems {
                     "<gray>Banks the cycles it cannot run and pays them back.", "<dark_gray>Realm module: Citadel of Golden Sands.").build(),
             CustomItemDef.builder(SANDGLASS, "Sandglass", Rarity.EPIC, Material.CLOCK)
                 .itemModel("vampyuyu:ore/sandglass").type("CONSUMABLE").glint(true)
-                .lore("<gray>Right-click to turn it over: your longest", "<gray>Forge job loses <white>half<gray> of its remaining time.",
+                .lore("<gray>Borrowed time, in a glass.", "<gray>Right-click to turn it over: your longest", "<gray>Forge job loses <white>half<gray> of its remaining time.",
                     "<dark_gray>Consumed on use. Citadel of Golden Sands.").build(),
             CustomItemDef.builder("tide_module", "Tide Module", Rarity.EPIC, Material.HEART_OF_THE_SEA)
                 .itemModel("vampyuyu:ore/pressure_pearl").type("MODULE").glint(true)

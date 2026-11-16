@@ -63,7 +63,7 @@ INSERT INTO menu_default_zone (world, position, name) VALUES ('nether', 2, 'The 
 INSERT INTO menu_default_zone (world, position, name) VALUES ('end', 3, 'The End');
 INSERT INTO menu_zone (id, position, name, world, min_x, min_y, min_z, max_x, max_y, max_z) VALUES ('zone1', 1, 'Hub Spawn', 'hub', -16.0, -64.0, -16.0, 16.0, 320.0, 16.0);
 INSERT INTO menu_zone (id, position, name, world, min_x, min_y, min_z, max_x, max_y, max_z) VALUES ('zone2', 2, 'Hub Village', 'hub', -96.0, -64.0, -96.0, 96.0, 320.0, 96.0);
-INSERT INTO menu_zone (id, position, name, world, min_x, min_y, min_z, max_x, max_y, max_z) VALUES ('zone3', 3, 'Wilderness', 'nether', -30000000.0, -64.0, -30000000.0, 30000000.0, 320.0, 30000000.0);
+INSERT INTO menu_zone (id, position, name, world, min_x, min_y, min_z, max_x, max_y, max_z) VALUES ('zone3', 3, 'Cinder Wastes', 'nether', -30000000.0, -64.0, -30000000.0, 30000000.0, 320.0, 30000000.0);
 INSERT INTO menu_zone (id, position, name, world, min_x, min_y, min_z, max_x, max_y, max_z) VALUES ('zone4', 4, 'The Void Gate', 'end', -60.0, 0.0, -60.0, 60.0, 320.0, 60.0);
 INSERT INTO menu_sound (event, position, sound) VALUES ('welcome', 0, 'entity.player.levelup');
 INSERT INTO menu_sound (event, position, sound) VALUES ('quest-complete', 1, 'ui.toast.challenge_complete');
