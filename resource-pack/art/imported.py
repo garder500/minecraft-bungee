@@ -11,6 +11,13 @@ def imported(model_id):
     return _LIST.exists() and model_id in _LIST.read_text().split()
 
 
+def has_gui(model_id):
+    """True when the item keeps its imported flat sprite as <id>_gui.png (3D in the hand): its item definition and
+    models belong to the 3D scripts, and it is not listed in imported.txt."""
+    kind, name = model_id.split("/")
+    return (_PACK / "textures/item" / kind / f"{name}_gui.png").exists()
+
+
 def gui_model(model_id):
     """The model id of the flat GUI sprite of an item that is 3D in the hand. An item whose imported sprite was moved to
     textures/item/<id>_gui.png (committed, so the procedural scripts cannot overwrite it) gets its own flat model

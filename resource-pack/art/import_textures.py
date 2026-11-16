@@ -15,6 +15,7 @@ import pathlib
 import sys
 
 from PIL import Image
+from imported import has_gui
 
 ART = pathlib.Path(__file__).resolve().parent
 CONCEPTS = ART / "concepts"
@@ -161,6 +162,10 @@ HANDHELD = {"weapon", "tool"}
 
 def write(model_id, sprite):
     family, name = model_id.split("/")
+    if has_gui(model_id):  # 3D item: only refresh the flat GUI sprite, the 3D scripts own the models and definitions
+        tex = PACK / "textures/item" / family / f"{name}_gui.png"
+        sprite.save(tex, optimize=True)
+        return
     tex = PACK / "textures/item" / family / f"{name}.png"
     tex.parent.mkdir(parents=True, exist_ok=True)
     sprite.save(tex, optimize=True)
@@ -170,6 +175,8 @@ def write(model_id, sprite):
         model.parent.mkdir(parents=True, exist_ok=True)
         model.write_text(json.dumps({"parent": parent, "textures": {"layer0": f"vampyuyu:item/{model_id}"}}, indent=2) + "\n")
     item = PACK / "items" / family / f"{name}.json"
+    if (PACK / "models/item" / family / f"{name}_3d.json").exists():
+        return  # 3D in the hand (item_models.py / sword_models.py / helmet_models.py own the definition)
     if family in FLAT or not item.exists():
         item.parent.mkdir(parents=True, exist_ok=True)
         item.write_text(json.dumps({"model": {"type": "minecraft:model", "model": f"vampyuyu:item/{model_id}"}},
@@ -197,7 +204,8 @@ def main():
                 print(f"  {model_id}: empty cell, skipped")
                 continue
             write(model_id, outline(pixelate(shape)))
-            done.append(model_id)
+            if not has_gui(model_id):
+                done.append(model_id)
     listed = set((ART / "imported.txt").read_text().split()) if (ART / "imported.txt").exists() else set()
     (ART / "imported.txt").write_text("\n".join(sorted(listed | set(done))) + "\n")
     print(f"imported {len(done)} sprites")

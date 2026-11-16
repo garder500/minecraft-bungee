@@ -14,7 +14,7 @@ import sys
 import zlib
 
 import boss_items as b
-from imported import imported
+from imported import has_gui, imported
 
 BRONZE = (0xC9, 0x84, 0x42)
 GOLD = (0xF2, 0xC1, 0x4E)
@@ -453,14 +453,20 @@ def main():
     for icon_id in all_ids():
         if icon_id in SWORDS_3D:
             continue
+        if has_gui(icon_id):  # 3D in the hand, flat sprite in <id>_gui.png: the 3D scripts own its definitions
+            continue
         tex = b.PACK / "textures" / "item" / f"{icon_id}.png"
         tex.parent.mkdir(parents=True, exist_ok=True)
         if not imported(icon_id):  # an imported sprite (import_textures.py) wins over the procedural one
             tex.write_bytes(draw(icon_id).png())
         b.write_json(b.PACK / "models" / "item" / f"{icon_id}.json",
                      {"parent": "minecraft:item/generated", "textures": {"layer0": f"vampyuyu:item/{icon_id}"}})
-        b.write_json(b.PACK / "items" / f"{icon_id}.json",
-                     {"model": {"type": "minecraft:model", "model": f"vampyuyu:item/{icon_id}"}})
+        if (b.PACK / "models" / "item" / f"{icon_id}_3d.json").exists():
+            continue  # item_models.py / sword_models.py own the definition (GUI sprite, 3D elsewhere): never flatten it
+        item = b.PACK / "items" / f"{icon_id}.json"
+        flat = {"model": {"type": "minecraft:model", "model": f"vampyuyu:item/{icon_id}"}}
+        if not (item.exists() and json.loads(item.read_text()) == flat):  # same content: keep the other script's layout
+            b.write_json(item, flat)
     if "--sheet" in sys.argv:
         sheet(sys.argv[sys.argv.index("--sheet") + 1])
     print(f"wrote {len(all_ids())} quarry icons")
