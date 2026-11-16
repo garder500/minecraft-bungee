@@ -1,0 +1,301 @@
+{
+ "providers": [
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_none.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue000"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_cinder.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue001"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_cinder_dead.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue002"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_gale.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue003"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_gale_dead.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue004"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_thorn.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue005"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_thorn_dead.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue006"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_rime.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue007"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_rime_dead.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue008"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_vesper.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue009"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_vesper_dead.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue00a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_nacre.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue00b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_nacre_dead.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue00c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_sahrin.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue00d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_sahrin_dead.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue00e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_murk.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue00f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_murk_dead.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue010"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_gun_pip.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue011"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_gun_tickhand.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue012"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_gun_gravebell.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue013"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_gun_shard_knife.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue014"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_gun_gnat.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue015"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_gun_mistral.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue016"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_gun_scrapper.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue017"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_gun_mire_maw.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue018"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_gun_bronzite_carbine.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue019"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_gun_flux_rifle.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue01a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_gun_longwind.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue01b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_gun_watchers_eye.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue01c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_gun_grinder.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue01d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_gun_light_ward.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue01e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_gun_heavy_ward.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue01f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_skull.png",
+   "ascent": 7,
+   "height": 8,
+   "chars": [
+    "\ue020"
+   ]
+  }
+ ]
+}

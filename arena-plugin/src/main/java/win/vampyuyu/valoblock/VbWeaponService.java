@@ -667,7 +667,14 @@ public final class VbWeaponService implements WeaponService, Listener {
       refresh(p, m, g);
       return;
     }
-    VbWeapon w = ArmoryMenu.at(e.getSlot());
+    int tab = VbArmoryLayout.tabAt(e.getSlot());
+    if (tab >= 0) {
+      ArmoryMenu.setTab(p.getUniqueId(), tab);
+      p.playSound(p.getLocation(), "ui.button.click", SoundCategory.PLAYERS, 0.6f, 1.2f);
+      refresh(p, m, g);
+      return;
+    }
+    VbWeapon w = ArmoryMenu.at(p.getUniqueId(), e.getSlot());
     if (w == null) return;
     Armory.Result r = e.isRightClick() ? Armory.sell(m, g.loadout, p.getUniqueId(), w) : e.isLeftClick() ? Armory.buy(m, g.loadout, p.getUniqueId(), w) : null;
     if (r == null) return;
@@ -691,6 +698,7 @@ public final class VbWeaponService implements WeaponService, Listener {
   @EventHandler
   public void quit(PlayerQuitEvent e) {
     gear.remove(e.getPlayer().getUniqueId());
+    ArmoryMenu.forget(e.getPlayer().getUniqueId());
   }
 
   // ------------------------------------------------------------------ the menu

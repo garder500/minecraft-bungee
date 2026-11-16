@@ -54,4 +54,9 @@ public interface AgentService {
   default int[] charges(UUID player) {
     return null;
   }
+
+  /** Most charges each ability slot 4 to 7 can hold (the pips of the HUD), or null without a kit. */
+  default int[] maxCharges(UUID player) {
+    return null;
+  }
 }

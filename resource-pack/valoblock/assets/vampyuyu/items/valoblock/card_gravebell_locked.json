@@ -1,0 +1,7 @@
+{
+ "model": {
+  "type": "minecraft:model",
+  "model": "vampyuyu:item/valoblock/card_gravebell_locked"
+ },
+ "oversized_in_gui": true
+}

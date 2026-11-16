@@ -43,6 +43,14 @@ final class VbHooks implements GameHooks {
   public void onJoin(ArenaSession s, org.bukkit.entity.Player p) {
     VbPack pack = module.pack;
     if (pack != null) pack.sendSoon(p);
+    // The lobby spawn may sit inside blocks (a map built over it): lift the player to the nearest safe spot.
+    org.bukkit.Location here = p.getLocation();
+    org.bukkit.Location safe = SafeSpawn.lifted(here.getWorld(), here);
+    if (safe == null) module.plugin.getLogger().warning("ValoBlock: the spawn of arena " + s.config.id() + " is inside blocks and no free spot was found above it");
+    else if (safe != here) {
+      module.plugin.getLogger().warning("ValoBlock: the spawn of arena " + s.config.id() + " was inside blocks, moved " + p.getName() + " up to y=" + safe.getBlockY());
+      p.teleport(safe);
+    }
   }
 
   @Override
