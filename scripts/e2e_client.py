@@ -186,11 +186,15 @@ def start_server(zip_path, sha1, plugin=False, pack_required=True):
         served = WORK / "pack" / "pack"
         served.mkdir(exist_ok=True)
         shutil.copy(zip_path, served / f"{sha1}.zip")
+        # The second pack (guns, agents, scope): the plugin adds it over the menu pack when a player joins a ValoBlock arena.
+        valo_zip, valo_sha1 = build_pack.build(WORK / "pack", "valoblock")
+        shutil.copy(valo_zip, served / f"{valo_sha1}.zip")
         (data / "arenas" / "e2e.json").write_text(json.dumps(ARENA_VB if VALOBLOCK else ARENA, indent=1))
         (server / "token").write_text(API_TOKEN)
         env.update(ROLE_BRIDGE_TOKEN_FILE=str(server / "token"), SERVER_ID="survival",
                    MENU_PACK_BASE_URL=f"http://127.0.0.1:{HTTP_PORT}", MENU_PACK_REQUIRED="true" if pack_required else "false",
                    MENU_PACK_SHA1_FILE=str(WORK / "pack" / "vampyuyu-menus.sha1"),
+                   VALOBLOCK_PACK_SHA1_FILE=str(WORK / "pack" / "vampyuyu-valoblock.sha1"),
                    ROLE_BRIDGE_URL="http://127.0.0.1:9", ARENA_REDIS_HOST="127.0.0.1",
                    WEREWOLF_LOG_CONSOLE="false")
     log = open(server / "console.log", "w")
@@ -1042,7 +1046,16 @@ def valoblock_scenario(ctx):
     say("maps: " + vb(rcon, "map list").replace("\n", " | "))
     if ctx.get("rules", "").startswith("map="):  # --rules map=stormbreak plays another map
         say(vb(rcon, "map use " + ctx["rules"].split("=", 1)[1]))
+    reloads = client_log.read_text(errors="replace").count("Reloading ResourceManager")
     api("POST", "/arenas/action", {"action": "arena-join", "arenaId": "e2e", "uuid": me})
+    # Joining the arena adds the second pack (ValoBlock guns, agents, scope): accept its prompt, wait for the reload.
+    for _ in range(40):
+        if client_log.read_text(errors="replace").count("Reloading ResourceManager") > reloads:
+            break
+        subprocess.run([tools["xdotool"], "mousemove", "485", "445", "click", "1"], env=ctx["env"])
+        time.sleep(3)
+    else:
+        failures.append("the client never reloaded for the ValoBlock pack (second pack not offered or not accepted)")
     time.sleep(4)
     out = vb(rcon, "start")
     say("vb start: " + out)

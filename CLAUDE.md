@@ -41,6 +41,16 @@ All user-facing text is English (menus, HUD, chat); the user talks to Claude in 
    `docker exec vampyuyu-local-lobby-1 rcon-cli <command>`.
 5. Before concluding: read the whole diff, run the tests again, and say what was NOT verified.
 
+## ValoBlock pack (second pack)
+
+Every ValoBlock asset (flat sprites, 3D gun models and their fire/reload/aim states, agent faces, scope overlay) lives in
+`resource-pack/valoblock/`, not in the base pack. `make art-valoblock` regenerates it (`art/valoblock_items.py`, then
+`valoblock_models.py` and `valoblock_agents.py`; stdlib only), `make pack-valoblock` builds
+`resource-pack/dist/vampyuyu-valoblock.zip` (+ `.sha1`). The panel serves it at `/pack/<sha1>.zip` next to the base pack
+(`VALOBLOCK_PACK_FILE`); the plugin (`valoblock/VbPack.java`, bookkeeping in `PackTracker`) adds it on match join over the
+base pack and removes it on leave, match end or quit; a client that declines or fails the download is taken out of the match
+(`VALOBLOCK_PACK_REQUIRED=false` makes it optional). `make test-pack` checks both packs.
+
 ## Werewolf controls (arena-plugin, `werewolf/hud/ClickControls.java`)
 
 - **Left-click** (like breaking a block, also on a far player, also with an empty hand) picks the player or

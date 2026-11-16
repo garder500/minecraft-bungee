@@ -40,6 +40,18 @@ final class VbHooks implements GameHooks {
   }
 
   @Override
+  public void onJoin(ArenaSession s, org.bukkit.entity.Player p) {
+    VbPack pack = module.pack;
+    if (pack != null) pack.sendSoon(p);
+  }
+
+  @Override
+  public void onLeave(ArenaSession s, org.bukkit.entity.Player p) {
+    VbPack pack = module.pack;
+    if (pack != null) pack.remove(p);
+  }
+
+  @Override
   public boolean hosts(ArenaSession s, org.bukkit.Location where) {
     return module.map.covers(s, where);
   }
@@ -70,6 +82,7 @@ final class VbHooks implements GameHooks {
         module.agents.restore(id);
       }
       module.bots.matchEnded(m);
+      if (module.pack != null) module.pack.removeAll(m.participants());
       for (java.util.UUID bot : m.bots()) module.bots.remove(bot);
     }
     return GameHooks.DONE;

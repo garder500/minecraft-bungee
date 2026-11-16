@@ -11,7 +11,8 @@ FROM python:3.13-alpine@sha256:2d9aefe2fef018a7eb2c13064c89c71929800fd2e5dccdbf5
 WORKDIR /build
 COPY scripts/build_pack.py scripts/build_pack.py
 COPY resource-pack/pack resource-pack/pack
-RUN python3 scripts/build_pack.py /out
+COPY resource-pack/valoblock resource-pack/valoblock
+RUN python3 scripts/build_pack.py /out && python3 scripts/build_pack.py --pack valoblock /out
 FROM golang:1.26-alpine@sha256:3082400e369fa24d5fc60bca20edab3f6d604e0c5a690ec66b295eff4dd87ade AS go-base
 WORKDIR /src
 COPY go.mod go.sum ./
@@ -36,6 +37,8 @@ FROM runtime AS panel
 COPY --from=panel-build /out/panel /app/panel
 COPY --from=pack /out/vampyuyu-menus.zip /app/vampyuyu-menus.zip
 ENV MENU_PACK_FILE=/app/vampyuyu-menus.zip
+COPY --from=pack /out/vampyuyu-valoblock.zip /app/vampyuyu-valoblock.zip
+ENV VALOBLOCK_PACK_FILE=/app/vampyuyu-valoblock.zip
 EXPOSE 8080
 ENTRYPOINT ["/app/panel"]
 FROM runtime AS controller
@@ -79,6 +82,7 @@ RUN --mount=type=cache,target=/home/gradle/.gradle gradle shadowJar --no-daemon 
 # never rebuilds or restarts the lobby.
 FROM ${MINECRAFT_IMAGE} AS server-base
 COPY --from=pack /out/vampyuyu-menus.sha1 /opt/vampyuyu-menus.sha1
+COPY --from=pack /out/vampyuyu-valoblock.sha1 /opt/vampyuyu-valoblock.sha1
 COPY --from=network-build /build/target/network-display.jar /plugins/network-display.jar
 COPY --from=arena-build /build/target/nexus-arena-engine.jar /plugins/nexus-arena-engine.jar
 FROM server-base AS server

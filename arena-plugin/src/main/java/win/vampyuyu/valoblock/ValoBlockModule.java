@@ -18,6 +18,8 @@ public final class ValoBlockModule {
   public volatile BotService bots = BotService.NOOP;
   public volatile MapService map = MapService.NOOP;
   public volatile VbHud hud = VbHud.NOOP;
+  /** The ValoBlock resource pack (null when not configured). */
+  public volatile VbPack pack;
 
   /**
    * ValoBlock runs on the Bukkit scheduler and touches entities from it, which Folia forbids. On Folia the
@@ -138,6 +140,11 @@ public final class ValoBlockModule {
     VbBotService service = new VbBotService(plugin);
     service.start();
     bots = service;
+  }
+
+  /** The second resource pack: offered on match join, taken back on leave (null when not configured). */
+  public void enablePack() {
+    pack = VbPack.load(plugin);
   }
 
   /** Plugin disable: skins and temporary blocks back, bot bodies gone. */

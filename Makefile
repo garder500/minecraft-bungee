@@ -6,7 +6,7 @@ ZIP ?=
 OUT ?=
 export COMPOSE SERVER WORLD ZIP OUT
 
-.PHONY: dev-server hotswap dev-stop hud-sheet export-all zip-all help status up stop configure export zip import restore inspect export-panel import-panel backup test-archives pack art test-pack e2e-pack plugin plugin-prod plugin-build plugin-test plugin-clear plugin-clear-prod plugin-status plugin-status-prod test-plugins reload-data reload-data-prod reload-data-clear reload-data-clear-prod
+.PHONY: pack-valoblock art-valoblock dev-server hotswap dev-stop hud-sheet export-all zip-all help status up stop configure export zip import restore inspect export-panel import-panel backup test-archives pack art test-pack e2e-pack plugin plugin-prod plugin-build plugin-test plugin-clear plugin-clear-prod plugin-status plugin-status-prod test-plugins reload-data reload-data-prod reload-data-clear reload-data-clear-prod
 help: ## Show operator commands
 	@python3 scripts/world_archive.py help
 status: ## Show container status
@@ -38,11 +38,15 @@ test-archives: ## Run isolated ZIP safety and restoration tests
 	@python3 -m unittest discover -s scripts -p 'test_world_archive.py' -v
 pack: ## Build the reproducible menu resource pack and print its SHA-1
 	@python3 scripts/build_pack.py
+pack-valoblock: ## Build the reproducible ValoBlock resource pack (resource-pack/dist/vampyuyu-valoblock.zip) and print its SHA-1
+	@python3 scripts/build_pack.py --pack valoblock
+art-valoblock: ## Regenerate the ValoBlock sprites, agent faces, 3D gun models and scope overlay (stdlib only, deterministic)
+	@python3 resource-pack/art/valoblock_items.py && python3 resource-pack/art/valoblock_agents.py
 art: ## Repaint pack textures from resource-pack/art/render.py (needs headless Chrome)
 	@python3 resource-pack/art/render.py
 e2e-pack: ## Boot a creative Paper 26.3 + headless 26.3 client and check the pack loads and renders (see scripts/e2e_client.py)
 	@python3 scripts/e2e_client.py
-test-pack: ## Validate the menu resource pack structure and reproducibility
+test-pack: ## Validate both resource packs (menus and ValoBlock): structure, models, reproducibility
 	@python3 scripts/test_pack.py
 	@python3 scripts/test_hud_sheet.py
 	@python3 resource-pack/art/test_skyblock_icon.py

@@ -66,6 +66,8 @@ public final class VbWeaponService implements WeaponService, Listener {
     long lastKnife = Long.MIN_VALUE / 2;
     boolean wasReloading;
     String shownId = "";
+    String look = ""; // the custom_model_data state last written on the held stack
+    boolean scoped;
 
     GunState gun(VbWeapon w) {
       return guns.computeIfAbsent(w.id(), k -> new GunState(w));
@@ -197,6 +199,7 @@ public final class VbWeaponService implements WeaponService, Listener {
           PlayerInventory inv = p.getInventory();
           for (int i = 0; i < inv.getSize(); i++) if (WeaponItems.isVb(inv.getItem(i))) inv.setItem(i, null);
           if (WeaponItems.isVb(inv.getChestplate())) inv.setChestplate(null);
+          if (WeaponItems.isVb(inv.getHelmet())) inv.setHelmet(null); // the scope
           p.setWalkSpeed(0.2f);
         });
   }
@@ -213,6 +216,9 @@ public final class VbWeaponService implements WeaponService, Listener {
     for (VbWeapon w : VbData.weapons().all()) if (w.isShield() && w.shield() == shield) ward = w;
     inv.setChestplate(ward == null ? null : WeaponItems.worn(ward));
     g.shownId = "";
+    g.look = "";
+    g.scoped = false;
+    if (WeaponItems.isScope(inv.getHelmet())) inv.setHelmet(null);
   }
 
   private void place(PlayerInventory inv, int slot, Gear g, VbWeapon w) {
@@ -247,7 +253,29 @@ public final class VbWeaponService implements WeaponService, Listener {
       g.wasReloading = reloading;
       pump(p, m, g, w, gs, now, false);
       refreshStack(p, w, gs);
+      look(p, g, w, gs, now);
     }
+  }
+
+  /**
+   * The pack's states: the muzzle flash of the last 2 ticks, the magazine out while reloading, the tighter hold while
+   * sneaking, and the sniper scope. The stack is only rewritten when the state changes (a rewrite every tick would
+   * flicker); a state left on a gun put away is cleared in heldChange.
+   */
+  private void look(Player p, Gear g, VbWeapon w, GunState gs, long now) {
+    boolean sneaking = p.isSneaking();
+    String want = GunVisual.state(gs.reloading(), gs.sinceShot(now), sneaking);
+    if (!want.equals(g.look)) {
+      g.look = want;
+      WeaponItems.setState(p.getInventory().getItemInMainHand(), want);
+    }
+    setScope(p, g, GunVisual.scoped(w.zoom(), sneaking, gs.reloading()));
+  }
+
+  private void setScope(Player p, Gear g, boolean on) {
+    if (on == g.scoped) return;
+    g.scoped = on;
+    p.getInventory().setHelmet(on ? WeaponItems.scope() : null);
   }
 
   private void refreshStack(Player p, VbWeapon w, GunState gs) {
@@ -572,7 +600,13 @@ public final class VbWeaponService implements WeaponService, Listener {
     Player p = e.getPlayer();
     if (matchOf(p.getUniqueId()) == null) return;
     VbWeapon w = held(p); // the gun being put away: a reload in progress is lost
-    if (w != null && w.isGun()) gear(p.getUniqueId()).gun(w).cancelReload();
+    if (w != null && w.isGun()) {
+      Gear g = gear(p.getUniqueId());
+      g.gun(w).cancelReload();
+      WeaponItems.setState(p.getInventory().getItemInMainHand(), ""); // back to the plain look in the hotbar slot
+      g.look = "";
+      setScope(p, g, false);
+    }
   }
 
   @EventHandler(priority = EventPriority.HIGH)
