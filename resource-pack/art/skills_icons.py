@@ -4,8 +4,10 @@
     python3 resource-pack/art/skills_icons.py            # write textures, models and item definitions
     python3 resource-pack/art/skills_icons.py --check    # fail when the committed files differ from the output
 
-Stdlib only and fully deterministic. Every item is a shape (gem, ingot, lump...) painted in two or three colours,
-outlined automatically, with a sparkle overlay that marks the tier (green for enchanted, blue for compacted).
+Stdlib only and fully deterministic. Every item keeps the silhouette of its family (gem, ingot, lump...) but is
+painted with the palette of its Realm (REALM below, palettes from docs/skyblock-notes/lore.md): shadow, base, light,
+highlight, and one glow pixel inside the shape that marks the Realm motif. One glow pixel = enchanted, two = compacted.
+Outline #140F18, light from the top left, no anti-aliasing.
 Output, all under assets/vampyuyu/ and all containing "skills" in the path:
     textures/item/skills/<id>.png, models/item/skills/<id>.json, items/skills/<id>.json
 The same ITEMS table is the reference for the enchanted_items section of survival-plugin db/seed/skills.sql.
@@ -82,7 +84,36 @@ ITEMS = [
 ]
 
 SIZE = 16
-OUTLINE = (14, 11, 24)
+OUTLINE = (20, 15, 24)
+
+# shadow, base, light, highlight, glow of the eight Realms
+REALMS = {
+    "ashes": ("120a16", "2a1a2e", "5a2a2a", "c8461e", "ff8a2a"),
+    "grove": ("2c3a1e", "4f6b2a", "8fb84a", "d6f08a", "f1e7c9"),
+    "frost": ("1f3557", "3b6fa8", "7fc8e8", "e6f7ff", "b6a8ff"),
+    "citadel": ("5a3a12", "a8742a", "f2c14e", "fff1b0", "3fb6a8"),
+    "marsh": ("2a2a1a", "4e5a22", "8a9a2e", "c9d36a", "b04aa0"),
+    "storm": ("1e2440", "3a4a8a", "7a8ee0", "f0f4ff", "ffe94a"),
+    "abyss": ("0a1a2a", "12405a", "2a8a9a", "bff0f0", "ff6ab0"),
+    "necro": ("241f3a", "4a4570", "9c95c8", "e8e4ff", "6affd8"),
+}
+
+# Realm of each item (where the resource would be found or used); "dark" items use the lower half of the ramp
+REALM = {
+    "cobblestone": "storm", "coal": "ashes", "iron": "frost", "gold": "citadel", "diamond": "frost",
+    "emerald": "storm", "lapis": "abyss", "redstone": "ashes", "quartz": "necro", "obsidian": "necro",
+    "glowstone": "citadel", "coal_block": "ashes", "iron_block": "frost", "gold_block": "citadel",
+    "diamond_block": "frost", "emerald_block": "storm", "lapis_block": "abyss", "redstone_block": "ashes",
+    "quartz_block": "necro", "bread": "citadel", "carrot": "grove", "potato": "grove", "pumpkin": "ashes",
+    "melon": "marsh", "sugar": "frost", "cactus": "citadel", "cocoa": "grove", "nether_wart": "ashes",
+    "golden_carrot": "citadel", "baked_potato": "ashes", "oak_log": "grove", "spruce_log": "frost",
+    "birch_log": "necro", "jungle_log": "marsh", "acacia_log": "citadel", "dark_oak_log": "grove",
+    "rotten_flesh": "marsh", "bone": "necro", "string": "storm", "gunpowder": "storm", "ender_pearl": "abyss",
+    "blaze_rod": "ashes", "slime_ball": "marsh", "slime_block": "marsh", "eye_of_ender": "necro",
+    "raw_fish": "abyss", "raw_salmon": "frost", "pufferfish": "storm", "clownfish": "storm",
+    "lily_pad": "marsh", "ink_sac": "abyss", "cooked_fish": "citadel", "cooked_salmon": "ashes",
+}
+DARK = {"cocoa", "coal", "coal_block", "obsidian", "dark_oak_log", "ink_sac", "spruce_log", "gunpowder", "rotten_flesh"}
 
 
 def hexrgb(value):
@@ -195,8 +226,14 @@ SHAPES = {
 
 # ---------------------------------------------------------------- painting
 
-def paint(shape, colours, tier):
-    main, shade, light = (hexrgb(c) for c in colours)
+def paint(shape, colours, tier, item_id=""):
+    key = item_id[len("enchanted_"):]
+    ramp = [hexrgb(c) for c in REALMS[REALM[key]]]
+    glow = ramp[4]
+    if key in DARK:
+        shade, main, light = ramp[0], ramp[1], ramp[2]
+    else:
+        shade, main, light = ramp[1], ramp[2], ramp[3]
     mask = SHAPES[shape]
     grid = [[None] * SIZE for _ in range(SIZE)]
     for y in range(SIZE):
@@ -265,17 +302,12 @@ def paint(shape, colours, tier):
                     out[y][x] = OUTLINE
     grid = out
 
-    # tier sparkle: enchanted = green four-point star, compacted = blue star plus a second small one
-    star = (166, 255, 166) if tier == 1 else (150, 200, 255)
-    for dx, dy in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
-        px, py = 12 + dx, 3 + dy
-        if 0 <= px < SIZE and 0 <= py < SIZE:
-            grid[py][px] = star if (dx, dy) != (0, 0) else (255, 255, 255)
-    if tier == 2:
-        for dx, dy in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
-            px, py = 3 + dx, 12 + dy
-            if 0 <= px < SIZE and 0 <= py < SIZE:
-                grid[py][px] = star if (dx, dy) != (0, 0) else (255, 255, 255)
+    # Realm motif: one glow pixel inside the shape (enchanted), two (compacted)
+    spots = [(10, 5)] + ([(5, 10)] if tier == 2 else [])
+    for tx, ty in spots:
+        best = min(((x - tx) ** 2 + (y - ty) ** 2, y, x) for y in range(1, SIZE - 1) for x in range(1, SIZE - 1)
+                   if all(grid[y + dy][x + dx] not in (None, OUTLINE) for dx, dy in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))))
+        grid[best[1]][best[2]] = glow
     return grid
 
 
@@ -297,7 +329,7 @@ def png_bytes(grid):
 def outputs():
     files = {}
     for item_id, _name, _material, shape, colours, tier in ITEMS:
-        files[PACK / "textures/item/skills" / f"{item_id}.png"] = png_bytes(paint(shape, colours, tier))
+        files[PACK / "textures/item/skills" / f"{item_id}.png"] = png_bytes(paint(shape, colours, tier, item_id))
         model = {"parent": "minecraft:item/generated", "textures": {"layer0": f"vampyuyu:item/skills/{item_id}"}}
         files[PACK / "models/item/skills" / f"{item_id}.json"] = (json.dumps(model, indent=2) + "\n").encode()
         definition = {"model": {"type": "minecraft:model", "model": f"vampyuyu:item/skills/{item_id}"}}
