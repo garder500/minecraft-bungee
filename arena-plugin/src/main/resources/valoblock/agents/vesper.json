@@ -1,0 +1,99 @@
+{
+  "id": "vesper",
+  "name": "Vesper",
+  "role": "Seer",
+  "roleColor": "#c9a8ff",
+  "realm": "Ethereal Necropolis",
+  "quote": "\"The dead tell me where the living hide.\"",
+  "menuColor": "#2a2240",
+  "colors": {
+    "torso": "#4a4570",
+    "trim": "#6affd8",
+    "glow": "#e8e4ff",
+    "arm": "#241f3a",
+    "legs": "#241f3a",
+    "boots": "#9c95c8",
+    "bg": "#1e1a30"
+  },
+  "face": {
+    "palette": {
+      "h": "#4a4570",
+      "s": "#a8a2c4",
+      "w": "#6affd8",
+      "e": "#6affd8",
+      "m": "#6a6488"
+    },
+    "rows": [
+      "hhhhhhhh",
+      "hhhhhhhh",
+      "hhsssssh",
+      "ssssssss",
+      "seessees",
+      "ssssssss",
+      "ssmmmmss",
+      "ssssssss"
+    ]
+  },
+  "skin": {
+    "value": "",
+    "signature": "",
+    "_todo": "TODO: paste a signed textures property (value + signature from a skin signing service). Empty = the skin swap is skipped."
+  },
+  "build": "Glow = per-viewer glowing (the VoteMarks technique from Werewolf). Echo = a mannequin with the agent skin.",
+  "abilities": [
+    {
+      "slot": 4,
+      "id": "echo_step",
+      "name": "Echo Step",
+      "item": "ECHO_SHARD",
+      "text": "A ghost of you walks forward. Whoever shoots it is revealed.",
+      "cost": 200,
+      "maxCharges": 1,
+      "num": {
+        "distance": 14,
+        "seconds": 4,
+        "revealSeconds": 3
+      }
+    },
+    {
+      "slot": 5,
+      "id": "judgment",
+      "name": "Judgment",
+      "item": "SOUL_LANTERN",
+      "text": "Soul flare. Blinds every player looking at it for 1.5 s.",
+      "cost": 250,
+      "maxCharges": 1,
+      "num": {
+        "blindSeconds": 1.5,
+        "range": 20,
+        "flareSeconds": 2
+      }
+    },
+    {
+      "slot": 6,
+      "id": "soul_lantern",
+      "name": "Soul Lantern",
+      "item": "LANTERN",
+      "text": "Placed lantern pulses twice; enemies inside glow for 3 s.",
+      "charges": 1,
+      "rechargeKills": 0,
+      "num": {
+        "pulses": 2,
+        "glowSeconds": 3,
+        "radius": 5,
+        "seconds": 4
+      }
+    },
+    {
+      "slot": 7,
+      "id": "verdict",
+      "name": "Verdict",
+      "item": "WITHER_ROSE",
+      "text": "Every enemy glows through walls for 4 s.",
+      "ultPoints": 8,
+      "num": {
+        "seconds": 4
+      }
+    }
+  ]
+}

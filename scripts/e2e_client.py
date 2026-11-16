@@ -123,6 +123,7 @@ def stop_stale():
 ARENA_JAR = ROOT / "arena-plugin/target/nexus-arena-engine.jar"
 NETWORK_JAR = ROOT / "network-plugin/target/network-display.jar"
 SURVIVAL_JAR = ROOT / "survival-plugin/target/survival-plugin.jar"
+VALOBLOCK = False  # set by the valoblock scenario: the e2e arena is a ValoBlock arena
 WITH_SURVIVAL = False  # set by the back scenario: also load the survival plugin
 API_PORT = 8085
 API_TOKEN = "e2e-token-" + "x" * 30
@@ -145,6 +146,17 @@ ARENA = {
     "maxPlayers": 20, "discussionSeconds": 60, "voteSeconds": 30, "nightSeconds": 30,
     "werewolf": {"roles": {}, "cupidSeconds": 15, "witchSeconds": 15, "hunterSeconds": 15,
                  "ambienceEnabled": True},
+}
+
+
+# The valoblock scenario's arena: the lobby zone is the flat world, the match is played in the plugin's own vb_arena world.
+ARENA_VB = {
+    "id": "e2e", "name": "E2E ValoBlock", "worldName": "world", "preset": "valoblock",
+    "bounds": {"minX": -40, "minY": -64, "minZ": -40, "maxX": 40, "maxY": 320, "maxZ": 40},
+    "spawn": {"x": 0.5, "y": -60, "z": 0.5, "yaw": 0, "pitch": 0},
+    "allowedBreakBlocks": [], "allowedPlaceBlocks": [], "allowPvP": True, "allowChests": False,
+    "allowDoors": True, "gameMode": "ADVENTURE", "durationSeconds": 3600, "minPlayers": 1,
+    "maxPlayers": 10,
 }
 
 
@@ -174,11 +186,15 @@ def start_server(zip_path, sha1, plugin=False, pack_required=True):
         served = WORK / "pack" / "pack"
         served.mkdir(exist_ok=True)
         shutil.copy(zip_path, served / f"{sha1}.zip")
-        (data / "arenas" / "e2e.json").write_text(json.dumps(ARENA, indent=1))
+        # The second pack (guns, agents, scope): the plugin adds it over the menu pack when a player joins a ValoBlock arena.
+        valo_zip, valo_sha1 = build_pack.build(WORK / "pack", "valoblock")
+        shutil.copy(valo_zip, served / f"{valo_sha1}.zip")
+        (data / "arenas" / "e2e.json").write_text(json.dumps(ARENA_VB if VALOBLOCK else ARENA, indent=1))
         (server / "token").write_text(API_TOKEN)
         env.update(ROLE_BRIDGE_TOKEN_FILE=str(server / "token"), SERVER_ID="survival",
                    MENU_PACK_BASE_URL=f"http://127.0.0.1:{HTTP_PORT}", MENU_PACK_REQUIRED="true" if pack_required else "false",
                    MENU_PACK_SHA1_FILE=str(WORK / "pack" / "vampyuyu-menus.sha1"),
+                   VALOBLOCK_PACK_SHA1_FILE=str(WORK / "pack" / "vampyuyu-valoblock.sha1"),
                    ROLE_BRIDGE_URL="http://127.0.0.1:9", ARENA_REDIS_HOST="127.0.0.1",
                    WEREWOLF_LOG_CONSOLE="false")
     log = open(server / "console.log", "w")
@@ -216,6 +232,11 @@ def prepare_client(tools):
     dst.mkdir()
     for name in ("instance.cfg", "mmc-pack.json"):
         shutil.copy(src / name, dst / name)
+    cfg = dst / "instance.cfg"
+    # A garbage-collected Java store path in the copied instance: point the copy at the JAVA25 one.
+    for path in re.findall(r"^JavaPath=(.*)$", cfg.read_text(), re.M):
+        if not pathlib.Path(path).exists():
+            cfg.write_text(cfg.read_text().replace("JavaPath=" + path, "JavaPath=" + java25()))
     game = dst / "minecraft"
     game.mkdir()
     (game / "options.txt").write_text("\n".join([
@@ -995,6 +1016,128 @@ def werewolf_scenario(ctx):
         failures.append(f"the ambient bed never followed the phases: {beds}")
     say(f"phases: {' > '.join(seen)}")
 
+
+
+def vb(rcon, command):
+    """A /vb command over RCON, colour codes stripped."""
+    return re.sub("\u00a7.", "", rcon.command("vb " + command)).strip()
+
+
+def valoblock_scenario(ctx):
+    """A ValoBlock practice match on the Hourfall greybox: 1 human, 9 bots, driven by /vb debug commands.
+    Screenshots: agent select, buy phase, Armory, combat HUD, the next round after a death (respawn).
+    The checks use the server only; the screenshots must be looked at by a person."""
+    tools, shots, client_log, failures, server = (ctx[k] for k in
+                                                  ("tools", "shots", "client_log", "failures", "server"))
+    for _ in range(60):
+        try:
+            state = api("GET", "/arenas")
+            break
+        except Exception:
+            time.sleep(2)
+    else:
+        failures.append("the plugin's private API never answered")
+        return
+    if [a["config"]["id"] for a in state["arenas"]] != ["e2e"]:
+        failures.append(f"arena e2e not loaded: {state['arenas']}")
+        return
+    me = next(p["uuid"] for p in state["onlinePlayers"] if p["name"] == "E2EBot")
+    rcon = Rcon()
+    say("maps: " + vb(rcon, "map list").replace("\n", " | "))
+    if ctx.get("rules", "").startswith("map="):  # --rules map=stormbreak plays another map
+        say(vb(rcon, "map use " + ctx["rules"].split("=", 1)[1]))
+    reloads = client_log.read_text(errors="replace").count("Reloading ResourceManager")
+    api("POST", "/arenas/action", {"action": "arena-join", "arenaId": "e2e", "uuid": me})
+    # Joining the arena adds the second pack (ValoBlock guns, agents, scope): accept its prompt, wait for the reload.
+    for _ in range(40):
+        if client_log.read_text(errors="replace").count("Reloading ResourceManager") > reloads:
+            break
+        subprocess.run([tools["xdotool"], "mousemove", "485", "445", "click", "1"], env=ctx["env"])
+        time.sleep(3)
+    else:
+        failures.append("the client never reloaded for the ValoBlock pack (second pack not offered or not accepted)")
+    time.sleep(4)
+    out = vb(rcon, "start")
+    say("vb start: " + out)
+    if "started" not in out:
+        failures.append("vb start: " + out)
+        return
+    time.sleep(8)
+    shot(tools, shots / "vb-01-agent-select.png")
+    say("where: " + vb(rcon, "debug where E2EBot"))
+    out = vb(rcon, "debug where E2EBot")
+    if "vb_arena" not in out:
+        failures.append("the human is not in the vb_arena world at the start: " + out)
+    vb(rcon, "debug skip")  # agent select -> buy (unlocked players get a random agent, bots fill)
+    time.sleep(6)
+    say("status: " + vb(rcon, "status"))
+    # Hourfall: the Seedbearer barrier is the row z 104-107, x 40-79 (the markers of the other maps differ).
+    if not ctx.get("rules"):
+        out = vb(rcon, "debug block 60 65 106")
+        say("barrier at the Seedbearer exit in the buy phase: " + out)
+        if "BARRIER" not in out:
+            failures.append("no spawn barrier in the buy phase: " + out)
+        out = vb(rcon, "debug block 0 65 0")
+        if out.split()[-1] in ("AIR", "STONE"):
+            failures.append("the corner cell of the greybox is not a wall: " + out)
+    shot(tools, shots / "vb-02-buy.png")
+    say(vb(rcon, "debug armory E2EBot"))
+    time.sleep(3)
+    shot(tools, shots / "vb-03-armory.png")
+    subprocess.run([tools["xdotool"], "key", "Escape"], env=ctx["env"])
+    time.sleep(1)
+    vb(rcon, "debug skip")  # buy -> combat
+    time.sleep(8)
+    if not ctx.get("rules") and "BARRIER" in vb(rcon, "debug block 60 65 106"):
+        failures.append("the spawn barrier is still up in combat")
+    mannequins = rcon.command("execute if entity @e[type=minecraft:mannequin]")
+    say("bot bodies: " + mannequins.strip())
+    if "count: 9" not in mannequins.lower():
+        failures.append("expected 9 bot bodies (1 human, 5v5): " + mannequins.strip())
+    shot(tools, shots / "vb-04-combat.png")
+    time.sleep(10)
+    shot(tools, shots / "vb-05-combat-later.png")
+    say("where: " + vb(rcon, "debug where E2EBot"))
+    # Death and respawn: the human dies, the round ends, the next round puts them back on a spawn, alive.
+    vb(rcon, "debug kill E2EBot")
+    rcon.command("gamemode spectator E2EBot")  # what the engine / weapon service does to a dead player
+    time.sleep(2)
+    say("dead: " + vb(rcon, "debug where E2EBot"))
+    shot(tools, shots / "vb-06-dead.png")
+    vb(rcon, "debug win b")
+    time.sleep(1)
+    vb(rcon, "debug skip")  # round end -> next buy phase
+    time.sleep(5)
+    out = vb(rcon, "debug where E2EBot")
+    say("after the next round started: " + out)
+    if "alive=true" not in out or "mode=ADVENTURE" not in out or "hp=100" not in out or "vb_arena" not in out:
+        failures.append("the human was not respawned for the next round: " + out)
+    shot(tools, shots / "vb-07-next-round.png")
+    say(vb(rcon, "stop"))
+    for _ in range(40):
+        if api("GET", "/arenas")["arenas"][0]["phase"] == "WAITING":
+            break
+        time.sleep(1)
+    else:
+        failures.append("the arena did not return to WAITING after /vb stop")
+    time.sleep(3)
+    out = rcon.command("execute if entity @e[type=minecraft:mannequin]")
+    if "passed" in out.lower():
+        failures.append("bot bodies are still in the world after the stop")
+    back = player_state(rcon)
+    dimension = rcon.command("data get entity E2EBot Dimension")
+    say(f"after the stop: {back} {dimension.strip()}")
+    if "vb_arena" in dimension:
+        failures.append("the human was not sent back out of vb_arena after the stop")
+    shot(tools, shots / "vb-08-after-stop.png")
+    console = (server / "console.log").read_text(errors="replace")
+    for line in console.splitlines():
+        if ("win.vampyuyu" in line or "NexusArena" in line) and (
+                "Exception" in line or "ERROR" in line or "SEVERE" in line):
+            failures.append("server: " + line.strip()[:200])
+    for needle in FATAL:
+        if needle in client_log.read_text(errors="replace"):
+            failures.append(f"client log contains '{needle}'")
 
 
 def dev_server():
@@ -2301,7 +2444,7 @@ def bosses_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "imported", "dungeon", "start", "craft", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "imported", "dungeon", "start", "craft", "valoblock", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -2309,7 +2452,8 @@ def main():
     args = ap.parse_args()
     if args.scenario == "dev":
         return dev_server()
-    global WITH_SURVIVAL
+    global WITH_SURVIVAL, VALOBLOCK
+    VALOBLOCK = args.scenario == "valoblock"
     WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "imported", "dungeon", "start", "craft")
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
@@ -2333,7 +2477,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "imported", "dungeon", "start", "craft"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "imported", "dungeon", "start", "craft", "valoblock"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -2364,7 +2508,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "imported", "dungeon", "start", "craft"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "imported", "dungeon", "start", "craft", "valoblock"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -2419,6 +2563,8 @@ def main():
             start_scenario(ctx)
         elif args.scenario == "craft":
             craft_scenario(ctx)
+        elif args.scenario == "valoblock":
+            valoblock_scenario(ctx)
         else:
             shader_scenario(ctx)
     finally:

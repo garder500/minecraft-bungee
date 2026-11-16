@@ -1,0 +1,98 @@
+{
+  "id": "cinder",
+  "name": "Cinder",
+  "role": "Vanguard",
+  "roleColor": "#ff7a59",
+  "realm": "Cracked Ashes",
+  "quote": "\"The Colossus taught me: keep moving or cool down.\"",
+  "menuColor": "#3a2420",
+  "colors": {
+    "torso": "#3a2238",
+    "trim": "#ff8a2a",
+    "glow": "#ffd36a",
+    "arm": "#2a1a2e",
+    "legs": "#2a1a2e",
+    "boots": "#5a2a2a",
+    "bg": "#2a1a1e"
+  },
+  "face": {
+    "palette": {
+      "h": "#2a1a2e",
+      "s": "#c48a6a",
+      "w": "#2a1a2e",
+      "e": "#ff8a2a",
+      "m": "#3a2a3a"
+    },
+    "rows": [
+      "hhhhhhhh",
+      "hhhhhhhh",
+      "hhsssshh",
+      "ssssssss",
+      "swessews",
+      "smmmmmms",
+      "mmmmmmmm",
+      "mmmmmmmm"
+    ]
+  },
+  "skin": {
+    "value": "",
+    "signature": "",
+    "_todo": "TODO: paste a signed textures property (value + signature from a skin signing service). Empty = the skin swap is skipped."
+  },
+  "build": "Magma pool = temporary magma blocks + fire particles, restored after 6 s. Dash = velocity impulse.",
+  "abilities": [
+    {
+      "slot": 4,
+      "id": "slag_pot",
+      "name": "Slag Pot",
+      "item": "MAGMA_CREAM",
+      "text": "Thrown pot. A magma pool for 6 s, 30 damage per second.",
+      "cost": 200,
+      "maxCharges": 1,
+      "num": {
+        "seconds": 6,
+        "dps": 30,
+        "radius": 2.5
+      }
+    },
+    {
+      "slot": 5,
+      "id": "heat_shimmer",
+      "name": "Heat Shimmer",
+      "item": "BLAZE_POWDER",
+      "text": "6 s of Speed I and silent footsteps.",
+      "cost": 150,
+      "maxCharges": 1,
+      "num": {
+        "seconds": 6
+      }
+    },
+    {
+      "slot": 6,
+      "id": "ember_dash",
+      "name": "Ember Dash",
+      "item": "FIRE_CHARGE",
+      "text": "Short dash leaving a 3 s fire trail. Recharges after 2 kills.",
+      "charges": 1,
+      "rechargeKills": 2,
+      "num": {
+        "power": 1.6,
+        "trailSeconds": 3
+      }
+    },
+    {
+      "slot": 7,
+      "id": "colossus_step",
+      "name": "Colossus Step",
+      "item": "NETHERITE_BOOTS",
+      "text": "Leap and slam: knockback ring, 60 damage at the centre.",
+      "ultPoints": 7,
+      "num": {
+        "damage": 60,
+        "radius": 6,
+        "knockback": 1.2,
+        "leap": 1.0
+      }
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "id": "rime",
+  "name": "Rime",
+  "role": "Warden",
+  "roleColor": "#7fd8ff",
+  "realm": "Frozen Heights",
+  "quote": "\"Hold still. I will hold it for you.\"",
+  "menuColor": "#1e2e3a",
+  "colors": {
+    "torso": "#3b6fa8",
+    "trim": "#e6f7ff",
+    "glow": "#b6a8ff",
+    "arm": "#7fc8e8",
+    "legs": "#1f3557",
+    "boots": "#e6f7ff",
+    "bg": "#182436"
+  },
+  "face": {
+    "palette": {
+      "h": "#e6f7ff",
+      "s": "#e0c0b0",
+      "w": "#b6a8ff",
+      "e": "#b6a8ff",
+      "m": "#c09080",
+      "v": "#7fc8e8"
+    },
+    "rows": [
+      "hhhhhhhh",
+      "hhhhhhhh",
+      "hssssssh",
+      "ssssssss",
+      "svvvvvvs",
+      "ssssssss",
+      "ssmmmmss",
+      "ssssssss"
+    ]
+  },
+  "skin": {
+    "value": "",
+    "signature": "",
+    "_todo": "TODO: paste a signed textures property (value + signature from a skin signing service). Empty = the skin swap is skipped."
+  },
+  "build": "Pane = packed-ice blocks with a hit counter. Stasis = resistance 255 + no movement + a frost shell display.",
+  "abilities": [
+    {
+      "slot": 4,
+      "id": "frost_mine",
+      "name": "Frost Mine",
+      "item": "SNOWBALL",
+      "text": "Proximity mine: Slowness II for 4 s.",
+      "cost": 200,
+      "maxCharges": 1,
+      "num": {
+        "slowSeconds": 4,
+        "slowLevel": 1,
+        "triggerRadius": 2
+      }
+    },
+    {
+      "slot": 5,
+      "id": "stasis_pane",
+      "name": "Stasis Pane",
+      "item": "PACKED_ICE",
+      "text": "An ice pane that stops 3 bullets, then shatters.",
+      "cost": 300,
+      "maxCharges": 1,
+      "num": {
+        "hits": 3,
+        "width": 3,
+        "height": 3,
+        "seconds": 20
+      }
+    },
+    {
+      "slot": 6,
+      "id": "hold_moment",
+      "name": "Hold the Moment",
+      "item": "CLOCK",
+      "text": "Freeze yourself for 2 s: no damage taken, no action.",
+      "charges": 1,
+      "rechargeKills": 0,
+      "num": {
+        "seconds": 2
+      }
+    },
+    {
+      "slot": 7,
+      "id": "glacial_hour",
+      "name": "Glacial Hour",
+      "item": "BLUE_ICE",
+      "text": "A 12-block dome for 8 s: enemies inside are slowed and cannot reload.",
+      "ultPoints": 8,
+      "num": {
+        "radius": 12,
+        "seconds": 8
+      }
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "id": "sahrin",
+  "name": "Sahrin",
+  "role": "Weaver",
+  "roleColor": "#8fd0a0",
+  "realm": "Citadel of Golden Sands",
+  "quote": "\"Time is a wall, if you stack it right.\"",
+  "menuColor": "#1e3024",
+  "colors": {
+    "torso": "#a8742a",
+    "trim": "#f2c14e",
+    "glow": "#3fb6a8",
+    "arm": "#e8dcc0",
+    "legs": "#5a3a12",
+    "boots": "#f2c14e",
+    "bg": "#2a2214"
+  },
+  "face": {
+    "palette": {
+      "h": "#e8dcc0",
+      "s": "#a8744a",
+      "w": "#fff1b0",
+      "e": "#3fb6a8",
+      "m": "#e8dcc0",
+      "j": "#3fb6a8"
+    },
+    "rows": [
+      "hhhhhhhh",
+      "hhhjhhhh",
+      "hssssssh",
+      "ssssssss",
+      "swessews",
+      "ssssssss",
+      "smmmmmms",
+      "smmmmmms"
+    ]
+  },
+  "skin": {
+    "value": "",
+    "signature": "",
+    "_todo": "TODO: paste a signed textures property (value + signature from a skin signing service). Empty = the skin swap is skipped."
+  },
+  "build": "Smoke = a sphere of block_display sand + upward particles. Rewind = stored location.",
+  "abilities": [
+    {
+      "slot": 4,
+      "id": "rewind",
+      "name": "Rewind",
+      "item": "RECOVERY_COMPASS",
+      "text": "Marks your position. Return to it any time in the next 8 s.",
+      "cost": 250,
+      "maxCharges": 1,
+      "num": {
+        "seconds": 8
+      }
+    },
+    {
+      "slot": 5,
+      "id": "hourglass_trap",
+      "name": "Hourglass Trap",
+      "item": "SAND",
+      "text": "Sand zone that slows and reveals whoever walks in.",
+      "cost": 200,
+      "maxCharges": 1,
+      "num": {
+        "radius": 3,
+        "seconds": 20,
+        "slowSeconds": 3,
+        "revealSeconds": 3
+      }
+    },
+    {
+      "slot": 6,
+      "id": "sand_veil",
+      "name": "Sand Veil",
+      "item": "SUSPICIOUS_SAND",
+      "text": "Thrown at range: a 15 s sand cloud that blocks sight. Grains rise upward.",
+      "charges": 2,
+      "rechargeKills": 0,
+      "num": {
+        "radius": 4,
+        "seconds": 15
+      }
+    },
+    {
+      "slot": 7,
+      "id": "time_tide",
+      "name": "Time Tide",
+      "item": "CLOCK",
+      "text": "Allies in a wide area: Speed I and reload x1.5 for 8 s.",
+      "ultPoints": 7,
+      "num": {
+        "radius": 12,
+        "seconds": 8,
+        "reloadFactor": 1.5
+      }
+    }
+  ]
+}

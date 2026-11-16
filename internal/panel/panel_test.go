@@ -261,6 +261,43 @@ func TestMenuPackServedOnlyByHash(t *testing.T) {
 	}
 }
 
+func TestBothPacksAreServedEachByItsOwnHash(t *testing.T) {
+	s, _ := setup(t)
+	dir := t.TempDir()
+	menus, valo := filepath.Join(dir, "menus.zip"), filepath.Join(dir, "valoblock.zip")
+	if e := os.WriteFile(menus, []byte("PK-menus"), 0o600); e != nil {
+		t.Fatal(e)
+	}
+	if e := os.WriteFile(valo, []byte("PK-valoblock"), 0o600); e != nil {
+		t.Fatal(e)
+	}
+	s.PackFile, s.ValoBlockPackFile = menus, valo
+	hash := func(b string) string { sum := sha1.Sum([]byte(b)); return hex.EncodeToString(sum[:]) }
+	get := func(path string) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		s.Handler().ServeHTTP(w, httptest.NewRequest("GET", path, nil))
+		return w
+	}
+	if w := get("/pack/" + hash("PK-menus") + ".zip"); w.Code != 200 || w.Body.String() != "PK-menus" {
+		t.Fatalf("menu pack: %d %q", w.Code, w.Body.String())
+	}
+	if w := get("/pack/" + hash("PK-valoblock") + ".zip"); w.Code != 200 || w.Body.String() != "PK-valoblock" {
+		t.Fatalf("valoblock pack: %d %q", w.Code, w.Body.String())
+	}
+	if w := get("/pack/" + hash("PK-other") + ".zip"); w.Code != 404 {
+		t.Fatalf("unknown hash must be 404, got %d", w.Code)
+	}
+	s.ValoBlockPackFile = ""
+	s2, _ := setup(t)
+	s2.PackFile = menus
+	if w := httptest.NewRecorder(); true {
+		s2.Handler().ServeHTTP(w, httptest.NewRequest("GET", "/pack/"+hash("PK-valoblock")+".zip", nil))
+		if w.Code != 404 {
+			t.Fatal("a pack that is not configured must be 404")
+		}
+	}
+}
+
 func TestGameLogDownloadsNeedALoginAndAPlainLogName(t *testing.T) {
 	var seen []string
 	controller := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

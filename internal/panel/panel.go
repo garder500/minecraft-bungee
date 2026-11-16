@@ -42,6 +42,9 @@ type Server struct {
 	// PackFile is the menu resource pack served publicly at /pack/<sha1>.zip.
 	PackFile string
 	pack     packCache
+	// ValoBlockPackFile is the ValoBlock resource pack (guns, agents, scope), served at the same route by its own hash.
+	ValoBlockPackFile string
+	valoPack          packCache
 	// Textures serves item icons from the official client jar; nil leaves the inventory view text-only.
 	Textures *TextureStore
 	// Skins proxies player skins from Mojang for the inventory view; nil shows default skins only.

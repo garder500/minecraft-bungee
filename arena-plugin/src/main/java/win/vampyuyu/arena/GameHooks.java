@@ -129,6 +129,11 @@ public interface GameHooks {
     return false;
   }
 
+  /** A window the game opened itself (its own menu): allowed even where the arena forbids chests. */
+  default boolean ownsInventory(ArenaSession s, org.bukkit.inventory.Inventory inventory) {
+    return false;
+  }
+
   /** Whether the game can be played with practice bots. */
   default boolean practice() {
     return false;

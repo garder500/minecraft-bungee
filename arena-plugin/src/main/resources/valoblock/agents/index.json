@@ -1,0 +1,40 @@
+{
+  "agents": [
+    "cinder",
+    "gale",
+    "thorn",
+    "rime",
+    "vesper",
+    "nacre",
+    "sahrin",
+    "murk"
+  ],
+  "roles": [
+    {
+      "name": "Vanguard",
+      "color": "#ff7a59",
+      "text": "Opens the site, takes the first duel."
+    },
+    {
+      "name": "Warden",
+      "color": "#7fd8ff",
+      "text": "Holds ground, slows pushes, anchors a site."
+    },
+    {
+      "name": "Seer",
+      "color": "#c9a8ff",
+      "text": "Finds enemies before anyone sees them."
+    },
+    {
+      "name": "Weaver",
+      "color": "#8fd0a0",
+      "text": "Cuts sightlines with smokes and zones."
+    }
+  ],
+  "ultimate": {
+    "perKill": 1,
+    "perOrb": 1,
+    "perRound": 1,
+    "_note": "Design: ultimate points come from orbs on the map and kills. perRound is an addition, set 0 to remove it."
+  }
+}

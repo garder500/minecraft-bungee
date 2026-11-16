@@ -1,0 +1,17 @@
+{
+  "id": "valoblock",
+  "name": "ValoBlock",
+  "worldName": "world",
+  "preset": "valoblock",
+  "bounds": {"minX": -60, "minY": -64, "minZ": -60, "maxX": 60, "maxY": 320, "maxZ": 60},
+  "spawn": {"x": 0.5, "y": 65, "z": 0.5, "yaw": 0, "pitch": 0},
+  "allowedBreakBlocks": [],
+  "allowedPlaceBlocks": [],
+  "allowPvP": true,
+  "allowChests": false,
+  "allowDoors": true,
+  "gameMode": "ADVENTURE",
+  "durationSeconds": 3600,
+  "minPlayers": 1,
+  "maxPlayers": 10
+}

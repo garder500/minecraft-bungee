@@ -4,6 +4,7 @@ import hashlib, json, pathlib, re, struct, sys, tempfile, unittest, zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PACK = ROOT / "resource-pack" / "pack"
+VALO = ROOT / "resource-pack" / "valoblock"
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "resource-pack"))
 import build_pack  # noqa: E402
@@ -267,6 +268,136 @@ class PackTest(unittest.TestCase):
             self.assertEqual(first.read_bytes(), second.read_bytes())
             self.assertRegex((pathlib.Path(a) / "vampyuyu-menus.sha1").read_text().strip(), r"^[0-9a-f]{40}$")
             self.assertLess(first.stat().st_size, 8 << 20, "keep the optional pack small")
+
+def walk_models(node):
+    """Every model reference of an item definition tree (model, select cases and fallback)."""
+    if node["type"] == "minecraft:model":
+        yield node["model"]
+    for case in node.get("cases", []):
+        yield from walk_models(case["model"])
+    if "fallback" in node:
+        yield from walk_models(node["fallback"])
+
+def gui_model(definition):
+    """The model an item definition uses in the GUI: a plain model, or the gui case of a display_context select."""
+    node = definition["model"]
+    if node["type"] == "minecraft:model":
+        return node["model"]
+    assert node["property"] == "minecraft:display_context", node["property"]
+    return next(c["model"]["model"] for c in node["cases"] if c["when"] == "gui")
+
+class ValoBlockPackTest(unittest.TestCase):
+    """resource-pack/valoblock: the second pack, sent over the menu pack while a player is in a ValoBlock match."""
+    base = VALO / "assets/vampyuyu"
+    weapons = json.loads((ROOT / "arena-plugin/src/main/resources/valoblock/weapons.json").read_text())["weapons"]
+
+    def test_mcmeta_targets_26_3(self):
+        meta = json.loads((VALO / "pack.mcmeta").read_text())["pack"]
+        self.assertEqual(meta["min_format"], 97)
+        self.assertGreaterEqual(meta["max_format"], 97)
+        self.assertTrue(meta["description"])
+
+    def test_nothing_of_valoblock_is_left_in_the_menu_pack(self):
+        found = [str(p.relative_to(PACK)) for p in PACK.rglob("*") if "valoblock" in p.relative_to(PACK).as_posix()]
+        self.assertEqual(found, [], "ValoBlock assets belong in resource-pack/valoblock")
+
+    def test_flat_sprites_exist_for_every_weapon_and_its_locked_twin(self):
+        self.assertGreaterEqual(len(self.weapons), 15)
+        for w in self.weapons:
+            for name in (w["id"], w["id"] + "_locked"):
+                self.assertEqual(png_size(self.base / f"textures/item/valoblock/{name}.png"), (32, 32), name)
+                model = json.loads((self.base / f"models/item/valoblock/{name}.json").read_text())
+                self.assertEqual(model["textures"]["layer0"], f"vampyuyu:item/valoblock/{name}")
+                definition = json.loads((self.base / f"items/valoblock/{name}.json").read_text())
+                self.assertEqual(gui_model(definition), f"vampyuyu:item/valoblock/{name}", "the GUI shows the flat sprite")
+
+    def test_every_gun_and_the_knife_has_3d_models_for_each_state(self):
+        guns = [w for w in self.weapons if w["texture"] != "ward"]
+        self.assertGreaterEqual(len(guns), 13)
+        for w in guns:
+            name = w["id"]
+            definition = json.loads((self.base / f"items/valoblock/{name}.json").read_text())
+            node = definition["model"]["cases"] and definition["model"]["fallback"]
+            self.assertEqual(node["property"], "minecraft:custom_model_data")
+            self.assertEqual(node["index"], 0)
+            self.assertEqual([c["when"] for c in node["cases"]], ["fire", "reload", "aim"])
+            self.assertEqual(
+                sorted(set(walk_models(definition["model"]))),
+                sorted({f"vampyuyu:item/valoblock/{n}" for n in (name, f"{name}_3d", f"{name}_fire", f"{name}_reload", f"{name}_aim")}))
+            self.assertEqual(png_size(self.base / f"textures/item/valoblock/{name}_3d.png"), (16, 16), name)
+            for state in ("3d", "fire", "reload", "aim"):
+                model = json.loads((self.base / f"models/item/valoblock/{name}_{state}.json").read_text())
+                self.assertEqual(model["textures"]["0"], f"vampyuyu:item/valoblock/{name}_3d")
+                self.assertGreater(len(model["elements"]), 8, f"{name}_{state}")
+                for key in ("thirdperson_righthand", "firstperson_righthand", "gui"):
+                    self.assertIn(key, model["display"])
+                for el in model["elements"]:
+                    for i in range(3):
+                        self.assertTrue(-16 <= el["from"][i] <= 32 and -16 <= el["to"][i] <= 32, (name, state))
+                        self.assertGreater(el["to"][i] - el["from"][i], 0.04, (name, state))
+            held = json.loads((self.base / f"models/item/valoblock/{name}_3d.json").read_text())
+            fire = json.loads((self.base / f"models/item/valoblock/{name}_fire.json").read_text())
+            if w["texture"] != "knife":
+                self.assertGreater(len(fire["elements"]), len(held["elements"]), f"{name}: the flash adds boxes")
+            hold = held["display"]["firstperson_righthand"]["translation"]
+            aim = json.loads((self.base / f"models/item/valoblock/{name}_aim.json").read_text())["display"]["firstperson_righthand"]["translation"]
+            self.assertNotEqual(hold, aim, f"{name}: aiming holds the gun differently")
+
+    def test_shields_stay_flat(self):
+        for w in (w for w in self.weapons if w["texture"] == "ward"):
+            definition = json.loads((self.base / f"items/valoblock/{w['id']}.json").read_text())
+            self.assertEqual(definition["model"]["type"], "minecraft:model")
+
+    def test_scope_overlay_matches_the_plugin_camera_overlay(self):
+        self.assertEqual(png_size(self.base / "textures/misc/scope.png"), (512, 288))
+        code = (ROOT / "arena-plugin/src/main/java/win/vampyuyu/valoblock/WeaponItems.java").read_text()
+        self.assertIn('new NamespacedKey("vampyuyu", "misc/scope")', code)  # textures/misc/scope.png of this pack
+
+    def test_agent_menu_sprites_exist_for_every_agent(self):
+        agents = ROOT / "arena-plugin/src/main/resources/valoblock/agents"
+        index = json.loads((agents / "index.json").read_text())
+        names = ["agent_empty", "lock_in", "random"] + ["role_" + r["name"].lower() for r in index["roles"]]
+        for agent in index["agents"]:
+            data = json.loads((agents / f"{agent}.json").read_text())
+            self.assertEqual(len(data["face"]["rows"]), 8, agent)
+            names += [f"agent_{agent}", f"agent_{agent}_dim", f"agent_{agent}_ring"]
+        for name in names:
+            self.assertEqual(png_size(self.base / f"textures/item/valoblock/{name}.png"), (32, 32), name)
+            model = json.loads((self.base / f"models/item/valoblock/{name}.json").read_text())
+            self.assertEqual(model["textures"]["layer0"], f"vampyuyu:item/valoblock/{name}")
+            definition = json.loads((self.base / f"items/valoblock/{name}.json").read_text())
+            self.assertEqual(definition["model"]["model"], f"vampyuyu:item/valoblock/{name}")
+
+    def test_every_model_and_texture_it_names_is_inside_this_pack(self):
+        for model in (self.base / "models/item/valoblock").glob("*.json"):
+            data = json.loads(model.read_text())
+            for ref in data.get("textures", {}).values():
+                namespace, _, rel = ref.partition(":")
+                self.assertTrue((VALO / "assets" / namespace / "textures" / f"{rel}.png").is_file(), f"{model.name}: {ref}")
+        for item in (self.base / "items/valoblock").glob("*.json"):
+            for ref in walk_models(json.loads(item.read_text())["model"]):
+                namespace, _, rel = ref.partition(":")
+                self.assertTrue((VALO / "assets" / namespace / "models" / f"{rel}.json").is_file(), f"{item.name}: {ref}")
+
+    def test_both_packs_build_reproducibly_and_stay_apart(self):
+        with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
+            first, digest = build_pack.build(a, "valoblock")
+            second, again = build_pack.build(b, "valoblock")
+            self.assertEqual(digest, again)
+            self.assertEqual(first.read_bytes(), second.read_bytes())
+            self.assertEqual(first.name, "vampyuyu-valoblock.zip")
+            self.assertRegex((pathlib.Path(a) / "vampyuyu-valoblock.sha1").read_text().strip(), r"^[0-9a-f]{40}$")
+            menus, menus_digest = build_pack.build(a)
+            self.assertNotEqual(digest, menus_digest, "two different packs, two different hashes")
+            with zipfile.ZipFile(first) as z:
+                members = set(z.namelist())
+            self.assertIn("pack.mcmeta", members)
+            self.assertIn("assets/vampyuyu/textures/misc/scope.png", members)
+            self.assertIn("assets/vampyuyu/items/valoblock/longwind.json", members)
+            self.assertFalse([m for m in members if m.startswith("assets/vampyuyu/font/") or "/werewolf/" in m], "no menu assets in this pack")
+            with zipfile.ZipFile(menus) as z:
+                self.assertFalse([m for m in z.namelist() if "valoblock" in m], "no ValoBlock assets in the base pack")
+            self.assertLess(first.stat().st_size, 2 << 20)
 
 if __name__ == "__main__":
     unittest.main()

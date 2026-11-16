@@ -1,0 +1,6 @@
+{
+ "parent": "minecraft:item/generated",
+ "textures": {
+  "layer0": "vampyuyu:item/valoblock/bronzite_carbine_locked"
+ }
+}

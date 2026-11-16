@@ -1,0 +1,99 @@
+{
+  "id": "nacre",
+  "name": "Nacre",
+  "role": "Seer",
+  "roleColor": "#c9a8ff",
+  "realm": "Abyssal Depths",
+  "quote": "\"Down there, you learn to listen.\"",
+  "menuColor": "#2a2240",
+  "colors": {
+    "torso": "#12405a",
+    "trim": "#c98442",
+    "glow": "#ff6ab0",
+    "arm": "#2a8a9a",
+    "legs": "#0a1a2a",
+    "boots": "#c98442",
+    "bg": "#0e2230"
+  },
+  "face": {
+    "palette": {
+      "h": "#c98442",
+      "s": "#8a6a5a",
+      "w": "#bff0f0",
+      "e": "#2a8a9a",
+      "m": "#5a4a4a",
+      "v": "#2a8a9a"
+    },
+    "rows": [
+      "hhhhhhhh",
+      "hhhhhhhh",
+      "hvvvvvvh",
+      "hvvvvvvh",
+      "hwevvweh",
+      "hvvvvvvh",
+      "ssmmmmss",
+      "ssssssss"
+    ]
+  },
+  "skin": {
+    "value": "",
+    "signature": "",
+    "_todo": "TODO: paste a signed textures property (value + signature from a skin signing service). Empty = the skin swap is skipped."
+  },
+  "build": "Sonar = expanding particle ring + glow. Undertow pulls with an impulse towards the centre.",
+  "abilities": [
+    {
+      "slot": 4,
+      "id": "ink_burst",
+      "name": "Ink Burst",
+      "item": "INK_SAC",
+      "text": "Short black cloud that blinds and muffles footsteps inside it.",
+      "cost": 150,
+      "maxCharges": 1,
+      "num": {
+        "radius": 3.5,
+        "seconds": 6
+      }
+    },
+    {
+      "slot": 5,
+      "id": "pressure_bubble",
+      "name": "Pressure Bubble",
+      "item": "NAUTILUS_SHELL",
+      "text": "A dome that pushes players out for 4 s. Good for breaking a seal.",
+      "cost": 250,
+      "maxCharges": 1,
+      "num": {
+        "radius": 5,
+        "seconds": 4,
+        "push": 0.5
+      }
+    },
+    {
+      "slot": 6,
+      "id": "sonar_pearl",
+      "name": "Sonar Pearl",
+      "item": "ENDER_PEARL",
+      "text": "Thrown pearl. One sonar ring reveals enemies within 12 blocks.",
+      "charges": 1,
+      "rechargeKills": 0,
+      "num": {
+        "radius": 12,
+        "glowSeconds": 2
+      }
+    },
+    {
+      "slot": 7,
+      "id": "undertow",
+      "name": "Undertow",
+      "item": "PRISMARINE_SHARD",
+      "text": "8 s field that drags enemies toward its centre.",
+      "ultPoints": 7,
+      "num": {
+        "seconds": 8,
+        "radius": 10,
+        "pull": 0.22
+      }
+    }
+  ]
+}

@@ -585,7 +585,7 @@ public final class ArenaManager {
         continue;
       }
       if (due) {
-        s.game.advance();
+        s.game.advance(s.observedPhase);
         phaseChanged(s);
       }
     }
