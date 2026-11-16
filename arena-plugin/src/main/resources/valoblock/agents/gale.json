@@ -1,0 +1,101 @@
+{
+  "id": "gale",
+  "name": "Gale",
+  "role": "Vanguard",
+  "roleColor": "#ff7a59",
+  "realm": "Tempestuous Archipelago",
+  "quote": "\"The wind always finds a door. I just follow it.\"",
+  "menuColor": "#3a2420",
+  "colors": {
+    "torso": "#3a4a8a",
+    "trim": "#ffe94a",
+    "glow": "#f0f4ff",
+    "arm": "#7a8ee0",
+    "legs": "#1e2440",
+    "boots": "#ffe94a",
+    "bg": "#1a1e30"
+  },
+  "face": {
+    "palette": {
+      "h": "#3a4a8a",
+      "s": "#d8a888",
+      "w": "#f0f4ff",
+      "e": "#3a4a8a",
+      "m": "#a8786a",
+      "v": "#ffe94a"
+    },
+    "rows": [
+      "hhhhhhvv",
+      "hhhhhhhh",
+      "hssssssh",
+      "vvvvvvvv",
+      "swessews",
+      "ssssssss",
+      "ssmmmmss",
+      "ssssssss"
+    ]
+  },
+  "skin": {
+    "value": "",
+    "signature": "",
+    "_todo": "TODO: paste a signed textures property (value + signature from a skin signing service). Empty = the skin swap is skipped."
+  },
+  "build": "Wind Pad reuses the movement toolkit launch zone. Lightning = visual-only bolt + scripted damage.",
+  "abilities": [
+    {
+      "slot": 4,
+      "id": "wind_pad",
+      "name": "Wind Pad",
+      "item": "FEATHER",
+      "text": "Places an Archipelago wind pad: anyone who steps on it is launched. 20 s.",
+      "cost": 150,
+      "maxCharges": 1,
+      "num": {
+        "seconds": 20,
+        "launch": 1.4
+      }
+    },
+    {
+      "slot": 5,
+      "id": "static_orb",
+      "name": "Static Orb",
+      "item": "HEART_OF_THE_SEA",
+      "text": "Bouncing orb. On its second bounce it flashes everyone facing it.",
+      "cost": 250,
+      "maxCharges": 1,
+      "num": {
+        "bounces": 2,
+        "blindSeconds": 1.5,
+        "range": 24
+      }
+    },
+    {
+      "slot": 6,
+      "id": "charged_slide",
+      "name": "Charged Slide",
+      "item": "LIGHTNING_ROD",
+      "text": "Low slide under fire; reload is instant during it. Recharges after 2 kills.",
+      "charges": 1,
+      "rechargeKills": 2,
+      "num": {
+        "seconds": 1.5,
+        "power": 1.1
+      }
+    },
+    {
+      "slot": 7,
+      "id": "storm_call",
+      "name": "Storm Call",
+      "item": "TRIDENT",
+      "text": "Marks 3 spots. Lightning hits each after 1.5 s for 90 damage.",
+      "ultPoints": 8,
+      "num": {
+        "spots": 3,
+        "delaySeconds": 1.5,
+        "damage": 90,
+        "radius": 3,
+        "range": 30
+      }
+    }
+  ]
+}

@@ -117,6 +117,7 @@ public final class NexusArenaEngine extends JavaPlugin {
       werewolf.registerCommand();
       valoblock.registerCommand();
       valoblock.enableWeapons();
+      valoblock.enableAgents();
       getCommand("arena")
           .setTabCompleter(
               (sender, cmd, alias, args) ->
@@ -333,6 +334,13 @@ public final class NexusArenaEngine extends JavaPlugin {
 
   @Override
   public void onDisable() {
+    if (valoblock != null) {
+      try {
+        valoblock.shutdown();
+      } catch (RuntimeException e) {
+        getLogger().warning("ValoBlock shutdown: " + e);
+      }
+    }
     if (api != null) api.close();
     clock.shutdownNow();
     if (redis != null) redis.close();

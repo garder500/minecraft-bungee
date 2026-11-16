@@ -28,6 +28,7 @@ final class VbHooks implements GameHooks {
   public void onStop(ArenaSession s, Throwable error) {
     if (s.game instanceof VbMatch m) {
       module.hud.clear(m);
+      module.agents.matchEnded(m);
       for (java.util.UUID id : m.participants()) {
         module.weapons.clear(id);
         module.agents.restore(id);

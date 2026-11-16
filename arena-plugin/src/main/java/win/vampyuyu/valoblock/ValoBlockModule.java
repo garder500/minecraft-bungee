@@ -35,6 +35,17 @@ public final class ValoBlockModule {
       public void phaseChanged(VbMatch m, VbPhase from, VbPhase to) {
         if (to == VbPhase.BUY) map.barriers(true);
         if (to == VbPhase.COMBAT) map.barriers(false);
+        agents.phaseChanged(m, from, to);
+      }
+
+      @Override
+      public void agentLocked(VbMatch m, UUID player, String agent) {
+        agents.lockedIn(m, player, agent);
+      }
+
+      @Override
+      public void killed(VbMatch m, UUID victim, UUID killer) {
+        agents.killed(m, victim, killer);
       }
 
       @Override
@@ -43,6 +54,7 @@ public final class ValoBlockModule {
           if (m.isBot(id) && round == 1) bots.spawn(m, id, m.side(id));
           map.teleportToSpawn(id, m.side(id));
           weapons.roundStarted(m, id, m.keepsLoadout(id));
+          agents.roundStarted(m, id, m.keepsLoadout(id));
         }
       }
     };
@@ -53,6 +65,18 @@ public final class ValoBlockModule {
     VbWeaponService service = new VbWeaponService(plugin);
     service.start();
     weapons = service;
+  }
+
+  /** The agents: select menu, skins, abilities (listener and per-tick task). */
+  public void enableAgents() {
+    VbAgentService service = new VbAgentService(plugin);
+    service.start();
+    agents = service;
+  }
+
+  /** Plugin disable: skins and temporary blocks back. */
+  public void shutdown() {
+    if (agents instanceof VbAgentService s) s.shutdown();
   }
 
   public void registerCommand() {

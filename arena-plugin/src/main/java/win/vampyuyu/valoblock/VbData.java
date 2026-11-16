@@ -22,11 +22,18 @@ public final class VbData {
   public static final String MATCH = "/valoblock/match.json";
   public static final String SITES = "/valoblock/sites.json";
   public static final String WEAPONS = "/valoblock/weapons.json";
-  public static final List<String> FILES = List.of(MATCH, SITES, WEAPONS);
+  public static final String AGENTS_INDEX = "/valoblock/agents/index.json";
+  public static final List<String> FILES = List.of(MATCH, SITES, WEAPONS, AGENTS_INDEX);
+
+  /** Resource path of one agent file. */
+  public static String agentFile(String id) {
+    return "/valoblock/agents/" + id + ".json";
+  }
 
   private static volatile VbRules rules;
   private static volatile List<VbSite> sites;
   private static volatile VbWeapons weapons;
+  private static volatile VbAgents agents;
 
   private VbData() {}
 
@@ -49,13 +56,23 @@ public final class VbData {
     return weapons;
   }
 
+  public static VbAgents agents() {
+    rules();
+    return agents;
+  }
+
   public static synchronized void reload() {
     VbRules newRules = VbRules.parse(read(MATCH));
     List<VbSite> newSites = parseSites(read(SITES));
     VbWeapons newWeapons = VbWeapons.parse(read(WEAPONS));
+    JsonObject index = read(AGENTS_INDEX);
+    java.util.Map<String, JsonObject> files = new java.util.LinkedHashMap<>();
+    for (String id : VbAgents.ids(index)) files.put(id, read(agentFile(id)));
+    VbAgents newAgents = VbAgents.parse(index, files);
     rules = newRules;
     sites = newSites;
     weapons = newWeapons;
+    agents = newAgents;
   }
 
   static List<VbSite> parseSites(JsonObject j) {
@@ -89,6 +106,9 @@ public final class VbData {
 
   /** The data files read from the override folder, for /vb reload. */
   public static List<String> overrides() {
-    return FILES.stream().filter(f -> DataFiles.override(f) != null).map(f -> f.substring(1)).toList();
+    List<String> all = new ArrayList<>(FILES);
+    VbAgents a = agents;
+    if (a != null) for (String id : a.ids()) all.add(agentFile(id));
+    return all.stream().filter(f -> DataFiles.override(f) != null).map(f -> f.substring(1)).toList();
   }
 }

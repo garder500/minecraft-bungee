@@ -35,6 +35,7 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.potion.PotionEffect;
@@ -75,6 +76,7 @@ public final class VbWeaponService implements WeaponService, Listener {
   private final Map<UUID, Gear> gear = new ConcurrentHashMap<>();
   private final Set<Item> drops = new HashSet<>();
   private final Random random = new Random();
+  private final Map<UUID, double[]> reloadMods = new ConcurrentHashMap<>(); // {factor, until ms}
 
   public VbWeaponService(NexusArenaEngine plugin) {
     this.plugin = plugin;
@@ -132,9 +134,26 @@ public final class VbWeaponService implements WeaponService, Listener {
   }
 
   @Override
+  public void reloadModifier(UUID player, double factor, double seconds) {
+    if (seconds <= 0) reloadMods.remove(player);
+    else reloadMods.put(player, new double[] {factor, System.currentTimeMillis() + seconds * 1000});
+  }
+
+  /** The reload speed an ability gives the player right now (1 when none). */
+  private void applyMods(UUID id, GunState gs, long now) {
+    double[] mod = reloadMods.get(id);
+    if (mod != null && now >= mod[1]) {
+      reloadMods.remove(id);
+      mod = null;
+    }
+    gs.setReloadFactor(mod == null ? 1 : mod[0]);
+  }
+
+  @Override
   public void clear(UUID player) {
     sync(
         () -> {
+          reloadMods.remove(player);
           gear.remove(player);
           for (Item d : drops) d.remove();
           drops.clear();
@@ -186,6 +205,7 @@ public final class VbWeaponService implements WeaponService, Listener {
       }
       if (w == null || !w.isGun()) continue;
       GunState gs = g.gun(w);
+      applyMods(p.getUniqueId(), gs, now);
       gs.tick(now);
       boolean reloading = gs.reloading();
       if (g.wasReloading && !reloading) p.playSound(p.getLocation(), "item.crossbow.loading_end", SoundCategory.PLAYERS, 0.8f, 1.3f);
@@ -202,7 +222,7 @@ public final class VbWeaponService implements WeaponService, Listener {
   }
 
   private void pump(Player p, VbMatch m, Gear g, VbWeapon w, GunState gs, long now, boolean click) {
-    if (!fighting(m) || !m.alive().contains(p.getUniqueId())) return;
+    if (!fighting(m) || !m.alive().contains(p.getUniqueId()) || plugin.valoblock.agents.frozen(p.getUniqueId())) return;
     boolean held = now - g.lastRight < HOLD_MS;
     for (int i = 0; i < 4 && gs.poll(now, click, held); i++) {
       click = false;
@@ -235,6 +255,7 @@ public final class VbWeaponService implements WeaponService, Listener {
         if (v != null && w.slowOnHit() > 0)
           v.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, (int) (w.slowOnHit() * 20), 0, false, false, false));
       }
+      plugin.valoblock.agents.bulletPassed(p, origin, dir, ray.end == null ? w.range() : Math.sqrt(Math.pow(ray.end[0] - origin[0], 2) + Math.pow(ray.end[1] - origin[1], 2) + Math.pow(ray.end[2] - origin[2], 2)));
       if (traced++ < MAX_TRACERS) tracer(world, origin, dir, ray.end, WeaponItems.tracer(w.metal()));
     }
     fireSound(p, w);
@@ -296,6 +317,7 @@ public final class VbWeaponService implements WeaponService, Listener {
       if (hit == null || hit.getHitBlock() == null) break;
       double at = from + hit.getHitPosition().distance(start.toVector());
       Material mat = hit.getHitBlock().getType();
+      if (!(mat.name().contains("GLASS") || org.bukkit.Tag.LEAVES.isTagged(mat))) plugin.valoblock.agents.bulletHit(hit.getHitBlock());
       if (mat.name().contains("GLASS") || org.bukkit.Tag.LEAVES.isTagged(mat)) {
         from = at + 0.05;
         continue;
@@ -386,7 +408,7 @@ public final class VbWeaponService implements WeaponService, Listener {
 
   private void knife(Player p, VbMatch m, Gear g, VbWeapon knife) {
     long now = System.currentTimeMillis();
-    if (!fighting(m) || !m.alive().contains(p.getUniqueId()) || now - g.lastKnife < 500) return;
+    if (!fighting(m) || !m.alive().contains(p.getUniqueId()) || now - g.lastKnife < 500 || plugin.valoblock.agents.frozen(p.getUniqueId())) return;
     g.lastKnife = now;
     Location eye = p.getEyeLocation();
     double[] o = {eye.getX(), eye.getY(), eye.getZ()};
@@ -443,6 +465,7 @@ public final class VbWeaponService implements WeaponService, Listener {
     long now = System.currentTimeMillis();
     if (right && w.isGun()) {
       g.lastRight = now;
+      applyMods(p.getUniqueId(), g.gun(w), now);
       pump(p, m, g, w, g.gun(w), now, true);
       refreshStack(p, w, g.gun(w));
     } else if (!right && w.slot() == VbWeapon.Slot.MELEE) {
@@ -471,7 +494,8 @@ public final class VbWeaponService implements WeaponService, Listener {
     VbWeapon w = held(p);
     if (w == null || !w.isGun()) return;
     GunState gs = gear(p.getUniqueId()).gun(w);
-    if (gs.startReload(System.currentTimeMillis())) {
+    applyMods(p.getUniqueId(), gs, System.currentTimeMillis());
+    if (!plugin.valoblock.agents.frozen(p.getUniqueId()) && gs.startReload(System.currentTimeMillis())) {
       p.playSound(p.getLocation(), "item.crossbow.loading_start", SoundCategory.PLAYERS, 0.8f, 1.0f);
       refreshStack(p, w, gs);
     }
@@ -538,9 +562,13 @@ public final class VbWeaponService implements WeaponService, Listener {
     }
     e.setCancelled(true);
     if (e.getClickedInventory() != e.getView().getTopInventory()) return;
+    Gear g = gear(p.getUniqueId());
+    if (plugin.valoblock.agents.armoryClick(p, m, e.getSlot(), e.isRightClick())) {
+      refresh(p, m, g);
+      return;
+    }
     VbWeapon w = ArmoryMenu.at(e.getSlot());
     if (w == null) return;
-    Gear g = gear(p.getUniqueId());
     Armory.Result r = e.isRightClick() ? Armory.sell(m, g.loadout, p.getUniqueId(), w) : e.isLeftClick() ? Armory.buy(m, g.loadout, p.getUniqueId(), w) : null;
     if (r == null) return;
     if (r.ok()) {
@@ -572,13 +600,19 @@ public final class VbWeaponService implements WeaponService, Listener {
       p.sendMessage(Component.text(Armory.Result.NOT_BUY_PHASE.text, NamedTextColor.RED));
       return;
     }
-    p.openInventory(ArmoryMenu.build(m, gear(p.getUniqueId()).loadout, p));
+    openMenu(p, m, gear(p.getUniqueId()));
+  }
+
+  private void openMenu(Player p, VbMatch m, Gear g) {
+    Inventory inv = ArmoryMenu.build(m, g.loadout, p);
+    plugin.valoblock.agents.decorateArmory(inv, p, m);
+    p.openInventory(inv);
   }
 
   /** Re-draws the chest after a purchase: new title (Shards left) and states, opened again. */
   private void refresh(Player p, VbMatch m, Gear g) {
     Bukkit.getScheduler().runTask(plugin, () -> {
-      if (p.isOnline()) p.openInventory(ArmoryMenu.build(m, g.loadout, p));
+      if (p.isOnline()) openMenu(p, m, g);
     });
   }
 }

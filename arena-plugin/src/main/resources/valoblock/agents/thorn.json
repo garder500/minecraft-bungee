@@ -1,0 +1,103 @@
+{
+  "id": "thorn",
+  "name": "Thorn",
+  "role": "Warden",
+  "roleColor": "#7fd8ff",
+  "realm": "Whispering Grove",
+  "quote": "\"Roots remember every footstep.\"",
+  "menuColor": "#1e2e3a",
+  "colors": {
+    "torso": "#6a4422",
+    "trim": "#8fb84a",
+    "glow": "#d6f08a",
+    "arm": "#4f6b2a",
+    "legs": "#3a2414",
+    "boots": "#2c3a1e",
+    "bg": "#1a2418"
+  },
+  "face": {
+    "palette": {
+      "h": "#4f6b2a",
+      "s": "#b88a62",
+      "w": "#f1e7c9",
+      "e": "#4f6b2a",
+      "m": "#8a5a3a",
+      "g": "#d6f08a"
+    },
+    "rows": [
+      "hhghhghh",
+      "hghhhhgh",
+      "hssssssh",
+      "ssssssss",
+      "swessews",
+      "ssssssss",
+      "ssmmmmss",
+      "ssssssss"
+    ]
+  },
+  "skin": {
+    "value": "",
+    "signature": "",
+    "_todo": "TODO: paste a signed textures property (value + signature from a skin signing service). Empty = the skin swap is skipped."
+  },
+  "build": "Wall = temporary log blocks with a hit counter. Vines = block_display carpets, never real blocks.",
+  "abilities": [
+    {
+      "slot": 4,
+      "id": "root_snare",
+      "name": "Root Snare",
+      "item": "STRING",
+      "text": "Hidden tripwire. The first enemy through is slowed and revealed.",
+      "cost": 200,
+      "maxCharges": 1,
+      "num": {
+        "slowSeconds": 3,
+        "revealSeconds": 3,
+        "triggerRadius": 1.5
+      }
+    },
+    {
+      "slot": 5,
+      "id": "spore_mend",
+      "name": "Spore Mend",
+      "item": "SPORE_BLOSSOM",
+      "text": "Spore zone: 40 HP over 4 s to anyone inside.",
+      "cost": 150,
+      "maxCharges": 1,
+      "num": {
+        "heal": 40,
+        "seconds": 4,
+        "radius": 3.5
+      }
+    },
+    {
+      "slot": 6,
+      "id": "bark_wall",
+      "name": "Bark Wall",
+      "item": "OAK_LOG",
+      "text": "A 5-wide wooden wall for 12 s. Breakable by gunfire.",
+      "charges": 1,
+      "rechargeKills": 0,
+      "num": {
+        "width": 5,
+        "height": 3,
+        "seconds": 12,
+        "hits": 12
+      }
+    },
+    {
+      "slot": 7,
+      "id": "overgrowth",
+      "name": "Overgrowth",
+      "item": "VINE",
+      "text": "Vines cover the site for 10 s. Enemies who touch them are slowed and revealed.",
+      "ultPoints": 7,
+      "num": {
+        "seconds": 10,
+        "radius": 7,
+        "slowSeconds": 2,
+        "revealSeconds": 2
+      }
+    }
+  ]
+}

@@ -15,6 +15,7 @@ public final class GunState {
   private long sprayStart = Long.MIN_VALUE / 2;
   private int shotIndex; // index of the shot to fire next in the current spray
   private int lastIndex; // index of the shot just fired
+  private double reloadFactor = 1; // abilities: > 1 faster, <= 0 no reload
 
   public GunState(VbWeapon w) {
     this(w, w.magazine());
@@ -56,11 +57,16 @@ public final class GunState {
     }
   }
 
+  /** Reload speed from abilities: 1 normal, 1.5 faster, 100 instant, 0 or less cannot reload. */
+  public void setReloadFactor(double f) {
+    reloadFactor = f;
+  }
+
   /** Starts a reload; false when full, already reloading or nothing to reload. */
   public boolean startReload(long now) {
     tick(now);
-    if (reloadEnd != 0 || mag >= w.magazine() || w.magazine() <= 0) return false;
-    reloadEnd = now + Math.round(w.reload() * 1000);
+    if (reloadEnd != 0 || mag >= w.magazine() || w.magazine() <= 0 || reloadFactor <= 0) return false;
+    reloadEnd = now + Math.round(w.reload() * 1000 / reloadFactor);
     burstLeft = 0;
     return true;
   }

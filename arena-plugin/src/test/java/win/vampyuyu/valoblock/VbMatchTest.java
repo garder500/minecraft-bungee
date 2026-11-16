@@ -91,11 +91,63 @@ public class VbMatchTest {
   public void agentsAreUniquePerTeamAndOnlyDuringSelect() {
     VbMatch m = match(4);
     UUID a = m.squad(0).get(0), b = m.squad(0).get(1), c = m.squad(1).get(0);
-    m.lockAgent(a, "Vesper");
-    assertThrows(IllegalArgumentException.class, () -> m.lockAgent(b, "Vesper"));
-    m.lockAgent(c, "Vesper"); // other team may
+    m.lockAgent(a, "vesper");
+    assertThrows(IllegalArgumentException.class, () -> m.lockAgent(b, "vesper"));
+    m.lockAgent(c, "vesper"); // other team may
     m.advance();
-    assertThrows(IllegalStateException.class, () -> m.lockAgent(b, "Nox"));
+    assertThrows(IllegalStateException.class, () -> m.lockAgent(b, "nacre"));
+  }
+
+  @Test
+  public void lockInIsFinalAndRefusesUnknownAgents() {
+    VbMatch m = match(4);
+    UUID a = m.squad(0).get(0);
+    assertThrows(IllegalArgumentException.class, () -> m.lockAgent(a, "nobody"));
+    m.lockAgent(a, "cinder");
+    assertEquals("cinder", m.agent(a));
+    assertThrows(IllegalStateException.class, () -> m.lockAgent(a, "gale"));
+    assertTrue(m.takenByTeammate(m.squad(0).get(1), "cinder"));
+    assertFalse(m.freeAgents(0).contains("cinder"));
+    assertTrue(m.freeAgents(1).contains("cinder"));
+  }
+
+  @Test
+  public void whenSelectTimeRunsOutEveryoneGetsADistinctAgentOfTheirTeam() {
+    VbMatch m = match(3);
+    List<String> locked = new ArrayList<>();
+    m.setEvents(new VbEvents() {
+      @Override
+      public void agentLocked(VbMatch match, UUID player, String agent) {
+        locked.add(player + ":" + agent);
+      }
+    });
+    UUID early = m.squad(0).get(0);
+    m.lockAgent(early, "thorn");
+    m.advance(); // select over: the rest get random free agents, bots too
+    assertEquals(10, m.participants().size());
+    for (int squad = 0; squad < 2; squad++) {
+      Set<String> seen = new HashSet<>();
+      for (UUID id : m.squad(squad)) {
+        assertFalse("a player has an agent", m.agent(id).isEmpty());
+        assertTrue("one agent per team", seen.add(m.agent(id)));
+      }
+    }
+    assertEquals("thorn", m.agent(early));
+    assertEquals(10, locked.size());
+  }
+
+  @Test
+  public void healAndDrainRespectTheLimits() {
+    VbMatch m = combat();
+    UUID id = m.squad(0).get(0);
+    assertEquals(0, m.heal(id, 30)); // already full
+    m.damage(id, m.squad(1).get(0), 40);
+    assertEquals(60, m.health(id));
+    assertEquals(25, m.heal(id, 25));
+    assertEquals(15, m.heal(id, 50));
+    assertEquals(99, m.drain(id, 500)); // never below 1
+    assertEquals(1, m.health(id));
+    assertFalse(m.damage(id, null, 0));
   }
 
   @Test

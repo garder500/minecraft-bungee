@@ -16,5 +16,8 @@ public interface VbEvents {
 
   default void seedPlanted(VbMatch match, VbSite site, UUID planter) {}
 
+  /** A player (human or bot) holds an agent: by lock in or by the random fill when the select time ran out. */
+  default void agentLocked(VbMatch match, UUID player, String agent) {}
+
   default void matchEnded(VbMatch match, String winner) {}
 }

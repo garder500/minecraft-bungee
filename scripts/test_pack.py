@@ -270,6 +270,22 @@ class PackTest(unittest.TestCase):
                 definition = json.loads((base / f"items/valoblock/{name}.json").read_text())
                 self.assertEqual(definition["model"]["model"], f"vampyuyu:item/valoblock/{name}")
 
+    def test_valoblock_agent_menu_sprites_exist_for_every_agent(self):
+        agents = ROOT / "arena-plugin/src/main/resources/valoblock/agents"
+        index = json.loads((agents / "index.json").read_text())
+        names = ["agent_empty", "lock_in", "random"] + ["role_" + r["name"].lower() for r in index["roles"]]
+        for agent in index["agents"]:
+            data = json.loads((agents / f"{agent}.json").read_text())
+            self.assertEqual(len(data["face"]["rows"]), 8, agent)
+            names += [f"agent_{agent}", f"agent_{agent}_dim", f"agent_{agent}_ring"]
+        base = PACK / "assets/vampyuyu"
+        for name in names:
+            self.assertEqual(png_size(base / f"textures/item/valoblock/{name}.png"), (32, 32), name)
+            model = json.loads((base / f"models/item/valoblock/{name}.json").read_text())
+            self.assertEqual(model["textures"]["layer0"], f"vampyuyu:item/valoblock/{name}")
+            definition = json.loads((base / f"items/valoblock/{name}.json").read_text())
+            self.assertEqual(definition["model"]["model"], f"vampyuyu:item/valoblock/{name}")
+
     def test_build_is_reproducible_and_complete(self):
         with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
             first, digest = build_pack.build(a)

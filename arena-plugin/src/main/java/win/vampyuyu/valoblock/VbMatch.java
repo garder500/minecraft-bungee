@@ -54,6 +54,7 @@ public final class VbMatch implements GamePreset {
   private VbSite plantedSite, plantingSite;
   private String winner = "";
   private boolean botsFilled;
+  private final Set<UUID> invulnerable = new HashSet<>();
 
   public VbMatch(VbRules rules, Collection<UUID> humans, Random random) {
     this.rules = rules;
@@ -241,6 +242,7 @@ public final class VbMatch implements GamePreset {
     switch (phase) {
       case AGENT_SELECT -> {
         fillBots();
+        fillAgents();
         startRound();
       }
       case BUY -> setPhase(VbPhase.COMBAT);
@@ -318,13 +320,51 @@ public final class VbMatch implements GamePreset {
 
   // ------------------------------------------------------- agent select
 
+  /**
+   * Locks an agent in (final). One agent per team: a teammate already holds it, or the id is unknown, and
+   * the call is refused with an exception; so is a second lock in by the same player.
+   */
   public synchronized void lockAgent(UUID player, String agent) {
     if (phase != VbPhase.AGENT_SELECT) throw new IllegalStateException("Agent select is over");
     Member m = member(player);
+    if (VbData.agents().get(agent) == null) throw new IllegalArgumentException("Unknown agent " + agent);
+    if (!m.agent.isEmpty()) throw new IllegalStateException("You already locked in " + m.agent);
     for (Member o : members.values())
       if (o != m && o.squad == m.squad && agent.equals(o.agent))
         throw new IllegalArgumentException("That agent is already taken in your team");
     m.agent = agent;
+    events.agentLocked(this, player, agent);
+  }
+
+  /** The agents nobody of the squad holds yet, in roster order. */
+  public synchronized List<String> freeAgents(int squad) {
+    List<String> free = new ArrayList<>(VbData.agents().ids());
+    for (Member o : members.values()) if (o.squad == squad) free.remove(o.agent);
+    return free;
+  }
+
+  /** Whether a teammate (not {@code player}) holds the agent. */
+  public synchronized boolean takenByTeammate(UUID player, String agent) {
+    Member m = member(player);
+    for (Member o : members.values()) if (o != m && o.squad == m.squad && agent.equals(o.agent)) return true;
+    return false;
+  }
+
+  /** Whoever did not lock an agent in when the time ran out gets a random free one of their team (bots included). */
+  private void fillAgents() {
+    for (Member m : members.values()) {
+      if (!m.agent.isEmpty()) continue;
+      List<String> free = freeAgents(m.squad);
+      if (free.isEmpty()) continue; // more members than agents: no agent
+      m.agent = free.get(random.nextInt(free.size()));
+      events.agentLocked(this, m.id, m.agent);
+    }
+  }
+
+  /** Picks a random free agent for a player now (the Random button's choice, not a lock in). */
+  public synchronized String randomFree(UUID player) {
+    List<String> free = freeAgents(member(player).squad);
+    return free.isEmpty() ? null : free.get(random.nextInt(free.size()));
   }
 
   /** Tops each squad up to the team size with bots (names and bodies are the BotService's job). */
@@ -386,7 +426,7 @@ public final class VbMatch implements GamePreset {
   public synchronized boolean damage(UUID victim, UUID attacker, int amount) {
     if (phase != VbPhase.COMBAT && phase != VbPhase.PLANTED) return false;
     Member v = member(victim);
-    if (!v.alive || amount <= 0) return false;
+    if (!v.alive || amount <= 0 || invulnerable.contains(victim)) return false;
     Member a = attacker == null ? null : members.get(attacker);
     if (a != null && a != v && a.squad == v.squad) return false;
     int absorbed = Math.min(v.shield, amount);
@@ -395,6 +435,34 @@ public final class VbMatch implements GamePreset {
     if (v.hp > 0) return false;
     die(v, a);
     return true;
+  }
+
+  /** Hold the Moment and the like: no damage at all while set (cleared at every round start). */
+  public synchronized void setInvulnerable(UUID player, boolean on) {
+    if (on) invulnerable.add(player);
+    else invulnerable.remove(player);
+  }
+
+  public synchronized boolean invulnerable(UUID player) {
+    return invulnerable.contains(player);
+  }
+
+  /** Heals a living player, never above the maximum. Returns the health gained. */
+  public synchronized int heal(UUID player, int amount) {
+    Member v = member(player);
+    if ((phase != VbPhase.COMBAT && phase != VbPhase.PLANTED) || !v.alive || amount <= 0) return 0;
+    int gained = Math.min(amount, rules.maxHealth() - v.hp);
+    v.hp += gained;
+    return gained;
+  }
+
+  /** Takes health without a shield or a kill credit, never below 1 (a drain). Returns the health lost. */
+  public synchronized int drain(UUID player, int amount) {
+    Member v = member(player);
+    if ((phase != VbPhase.COMBAT && phase != VbPhase.PLANTED) || !v.alive || amount <= 0 || invulnerable.contains(player)) return 0;
+    int lost = Math.max(0, Math.min(amount, v.hp - 1));
+    v.hp -= lost;
+    return lost;
   }
 
   /** Kills a player outright (void, admin, ability). */
@@ -503,6 +571,7 @@ public final class VbMatch implements GamePreset {
     }
     seedCarrier = null;
     plantedSite = plantingSite = null;
+    invulnerable.clear();
     resetTimers();
     List<Member> bearers = new ArrayList<>();
     for (Member m : members.values()) if (m.alive && sideOf(m) == VbSide.SEEDBEARERS) bearers.add(m);
