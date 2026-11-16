@@ -22,8 +22,10 @@ public final class VbData {
   public static final String MATCH = "/valoblock/match.json";
   public static final String SITES = "/valoblock/sites.json";
   public static final String WEAPONS = "/valoblock/weapons.json";
+  public static final String BOTS = "/valoblock/bots.json";
+  public static final String MAP = "/valoblock/map.json";
   public static final String AGENTS_INDEX = "/valoblock/agents/index.json";
-  public static final List<String> FILES = List.of(MATCH, SITES, WEAPONS, AGENTS_INDEX);
+  public static final List<String> FILES = List.of(MATCH, SITES, WEAPONS, AGENTS_INDEX, BOTS, MAP);
 
   /** Resource path of one agent file. */
   public static String agentFile(String id) {
@@ -34,6 +36,8 @@ public final class VbData {
   private static volatile List<VbSite> sites;
   private static volatile VbWeapons weapons;
   private static volatile VbAgents agents;
+  private static volatile BotConfig bots;
+  private static volatile Waypoints waypoints;
 
   private VbData() {}
 
@@ -61,6 +65,17 @@ public final class VbData {
     return agents;
   }
 
+  public static BotConfig bots() {
+    rules();
+    return bots;
+  }
+
+  /** The waypoint graph bots walk on (a real map replaces the placeholder in a later slice). */
+  public static Waypoints waypoints() {
+    rules();
+    return waypoints;
+  }
+
   public static synchronized void reload() {
     VbRules newRules = VbRules.parse(read(MATCH));
     List<VbSite> newSites = parseSites(read(SITES));
@@ -69,7 +84,13 @@ public final class VbData {
     java.util.Map<String, JsonObject> files = new java.util.LinkedHashMap<>();
     for (String id : VbAgents.ids(index)) files.put(id, read(agentFile(id)));
     VbAgents newAgents = VbAgents.parse(index, files);
+    BotConfig newBots = BotConfig.parse(read(BOTS));
+    Waypoints newWaypoints = Waypoints.parse(read(MAP), newSites);
+    for (String f : newBots.primaryOrder())
+      if (newWeapons.get(f) == null || !newWeapons.get(f).isGun()) throw new IllegalArgumentException("bots.json: primaryOrder names an unknown gun " + f);
     rules = newRules;
+    bots = newBots;
+    waypoints = newWaypoints;
     sites = newSites;
     weapons = newWeapons;
     agents = newAgents;

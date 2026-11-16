@@ -1,0 +1,58 @@
+{
+  "_note": "Placeholder waypoint graph around the two placeholder sites of sites.json. The real map (slice 5) replaces it. Positions are feet positions. Nodes are linked by straight lines; bots steer along them.",
+  "map": "placeholder",
+  "spawns": {
+    "SEEDBEARERS": ["as1", "as2", "as3", "as4", "as5"],
+    "SEALERS": ["ds1", "ds2", "ds3", "ds4", "ds5"]
+  },
+  "nodes": [
+    {"id": "as1", "pos": [-4, 65, -40]}, {"id": "as2", "pos": [-2, 65, -40]}, {"id": "as3", "pos": [0, 65, -40]},
+    {"id": "as4", "pos": [2, 65, -40]}, {"id": "as5", "pos": [4, 65, -40]},
+    {"id": "ds1", "pos": [-4, 65, 45]}, {"id": "ds2", "pos": [-2, 65, 45]}, {"id": "ds3", "pos": [0, 65, 45]},
+    {"id": "ds4", "pos": [2, 65, 45]}, {"id": "ds5", "pos": [4, 65, 45]},
+    {"id": "aroad", "pos": [0, 65, -25]},
+    {"id": "hub", "pos": [0, 65, 5]},
+    {"id": "dmid", "pos": [0, 65, 35]},
+    {"id": "a_stage", "pos": [-14, 65, 8]},
+    {"id": "a_site", "pos": [-25, 65, 25]},
+    {"id": "a_anchor1", "pos": [-27, 65, 28]},
+    {"id": "a_anchor2", "pos": [-22, 65, 22]},
+    {"id": "a_corner", "pos": [-20, 65, 14]},
+    {"id": "b_stage", "pos": [14, 65, 8]},
+    {"id": "b_site", "pos": [25, 65, 25]},
+    {"id": "b_anchor1", "pos": [27, 65, 28]},
+    {"id": "b_anchor2", "pos": [22, 65, 22]},
+    {"id": "b_corner", "pos": [20, 65, 14]},
+    {"id": "a_back", "pos": [-18, 65, 38]},
+    {"id": "b_back", "pos": [18, 65, 38]}
+  ],
+  "links": [
+    ["as1", "aroad"], ["as2", "aroad"], ["as3", "aroad"], ["as4", "aroad"], ["as5", "aroad"],
+    ["aroad", "hub"],
+    ["hub", "a_stage"], ["hub", "b_stage"],
+    ["a_stage", "a_corner"], ["a_corner", "a_site"], ["a_site", "a_anchor1"], ["a_site", "a_anchor2"],
+    ["b_stage", "b_corner"], ["b_corner", "b_site"], ["b_site", "b_anchor1"], ["b_site", "b_anchor2"],
+    ["hub", "dmid"],
+    ["ds1", "dmid"], ["ds2", "dmid"], ["ds3", "dmid"], ["ds4", "dmid"], ["ds5", "dmid"],
+    ["dmid", "a_back"], ["dmid", "b_back"],
+    ["a_back", "a_anchor1"], ["b_back", "b_anchor1"]
+  ],
+  "siteData": {
+    "A": {
+      "weight": 0.55,
+      "anchors": ["a_anchor1", "a_anchor2"],
+      "stage": "a_stage",
+      "plant": "a_site",
+      "peeks": ["a_corner"],
+      "smokes": [{"node": "a_stage", "at": [-22, 66, 20]}]
+    },
+    "B": {
+      "weight": 0.45,
+      "anchors": ["b_anchor1", "b_anchor2"],
+      "stage": "b_stage",
+      "plant": "b_site",
+      "peeks": ["b_corner"],
+      "smokes": [{"node": "b_stage", "at": [22, 66, 20]}]
+    }
+  }
+}

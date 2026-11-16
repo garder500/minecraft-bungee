@@ -54,6 +54,7 @@ public final class VbMatch implements GamePreset {
   private VbSite plantedSite, plantingSite;
   private String winner = "";
   private boolean botsFilled;
+  private final List<UUID> pendingSeats = new ArrayList<>();
   private final Set<UUID> invulnerable = new HashSet<>();
 
   public VbMatch(VbRules rules, Collection<UUID> humans, Random random) {
@@ -235,6 +236,8 @@ public final class VbMatch implements GamePreset {
       if (phase != VbPhase.END && members.values().stream().filter(x -> x.squad == s).allMatch(x -> x.left))
         endMatch("Team " + teamName(1 - s));
     }
+    // A match of bots and humans who all left has nobody to play for.
+    if (phase != VbPhase.END && botsFilled && members.values().stream().filter(x -> !x.bot).allMatch(x -> x.left)) endMatch("DRAW");
   }
 
   @Override
@@ -350,21 +353,34 @@ public final class VbMatch implements GamePreset {
     return false;
   }
 
-  /** Whoever did not lock an agent in when the time ran out gets a random free one of their team (bots included). */
+  /**
+   * Whoever did not lock an agent in when the time ran out gets a free one of their team: humans a random
+   * one, then bots one whose role nobody of the team holds yet (a team without a Weaver gets one), else random.
+   */
   private void fillAgents() {
-    for (Member m : members.values()) {
-      if (!m.agent.isEmpty()) continue;
-      List<String> free = freeAgents(m.squad);
-      if (free.isEmpty()) continue; // more members than agents: no agent
-      m.agent = free.get(random.nextInt(free.size()));
-      events.agentLocked(this, m.id, m.agent);
-    }
+    for (boolean bots : new boolean[] {false, true})
+      for (Member m : members.values()) {
+        if (!m.agent.isEmpty() || m.bot != bots) continue;
+        List<String> free = freeAgents(m.squad);
+        if (free.isEmpty()) continue; // more members than agents: no agent
+        if (bots) {
+          List<String> held = new ArrayList<>();
+          for (Member o : members.values()) if (o.squad == m.squad && !o.agent.isEmpty()) held.add(o.agent);
+          m.agent = BotAgentPicker.pick(free, held, VbData.agents(), random);
+        } else m.agent = free.get(random.nextInt(free.size()));
+        events.agentLocked(this, m.id, m.agent);
+      }
   }
 
   /** Picks a random free agent for a player now (the Random button's choice, not a lock in). */
   public synchronized String randomFree(UUID player) {
     List<String> free = freeAgents(member(player).squad);
     return free.isEmpty() ? null : free.get(random.nextInt(free.size()));
+  }
+
+  /** Whether bots fill seats of this match (a practice match: no ranked points). */
+  public synchronized boolean hasBots() {
+    return botsFilled && members.values().stream().anyMatch(m -> m.bot);
   }
 
   /** Tops each squad up to the team size with bots (names and bodies are the BotService's job). */
@@ -378,6 +394,61 @@ public final class VbMatch implements GamePreset {
         UUID id = new UUID(random.nextLong(), random.nextLong());
         members.put(id, new Member(id, squad, true));
       }
+    }
+  }
+
+  // ------------------------------------------------------- late humans
+
+  /** A human who arrives after the select asks for a seat: they take a bot's at the next buy phase. */
+  public synchronized void queueSeat(UUID human) {
+    if (phase == VbPhase.END || members.containsKey(human) || pendingSeats.contains(human)) return;
+    pendingSeats.add(human);
+  }
+
+  public synchronized int pendingSeats() {
+    return pendingSeats.size();
+  }
+
+  /**
+   * The human takes over a bot of the squad that has fewer humans, with its Shards, shield, kills, agent and
+   * alive flag (its guns follow through {@link VbEvents#botReplaced}). Returns the bot's id, or null when there is no bot.
+   */
+  public synchronized UUID replaceBot(UUID human) {
+    if (members.containsKey(human)) throw new IllegalArgumentException("Already in this match");
+    int[] humans = new int[2];
+    for (Member m : members.values()) if (!m.bot && !m.left) humans[m.squad]++;
+    Member bot = null;
+    for (int pass = 0; pass < 2 && bot == null; pass++) {
+      int squad = (humans[0] <= humans[1]) == (pass == 0) ? 0 : 1;
+      for (Member m : members.values()) if (m.bot && m.squad == squad) { bot = m; break; }
+    }
+    if (bot == null) return null;
+    Member in = new Member(human, bot.squad, false);
+    in.agent = bot.agent;
+    in.hp = bot.hp;
+    in.shield = bot.shield;
+    in.credits = bot.credits;
+    in.kills = bot.kills;
+    in.alive = bot.alive;
+    in.survivedLast = bot.survivedLast;
+    // Same seat in the order: rebuild the map so the new member keeps the bot's place.
+    Map<UUID, Member> old = new LinkedHashMap<>(members);
+    members.clear();
+    for (var e : old.entrySet()) {
+      if (e.getKey().equals(bot.id)) members.put(human, in);
+      else members.put(e.getKey(), e.getValue());
+    }
+    if (bot.id.equals(seedCarrier)) seedCarrier = human;
+    invulnerable.remove(bot.id);
+    events.botReplaced(this, bot.id, human);
+    if (!in.agent.isEmpty()) events.agentLocked(this, human, in.agent);
+    return bot.id;
+  }
+
+  private void seatPending() {
+    for (UUID human : List.copyOf(pendingSeats)) {
+      pendingSeats.remove(human);
+      replaceBot(human);
     }
   }
 
@@ -558,6 +629,7 @@ public final class VbMatch implements GamePreset {
   }
 
   private void startRound() {
+    seatPending();
     round = score.nextRound();
     boolean pistol = score.pistolRound(round);
     if (pistol) lossStreak[0] = lossStreak[1] = 0;

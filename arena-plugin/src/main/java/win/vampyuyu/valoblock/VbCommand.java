@@ -10,7 +10,7 @@ import win.vampyuyu.arena.NexusArenaEngine;
 
 /** /vb: operate ValoBlock arenas (start, stop, status, reload) and drive tests (debug). Admin only. */
 public final class VbCommand implements CommandExecutor, TabCompleter {
-  private static final List<String> SUBS = List.of("help", "use", "start", "stop", "status", "reload", "debug");
+  private static final List<String> SUBS = List.of("help", "use", "start", "stop", "status", "reload", "level", "debug");
   private static final List<String> DEBUG = List.of("skip", "state", "win", "kill", "plant", "seal");
 
   private final NexusArenaEngine plugin;
@@ -70,11 +70,15 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
           var files = VbData.overrides();
           say(sender, "ValoBlock data reloaded" + (files.isEmpty() ? "" : " (overrides: " + String.join(", ", files) + ")"));
         }
+        case "level" -> {
+          if (args.length >= 2) plugin.valoblock.bots.level(args[1]); // validated: unknown level throws
+          say(sender, "Bot level for the next match: " + plugin.valoblock.bots.level() + " (" + String.join(", ", VbData.bots().levels().keySet()) + ")");
+        }
         case "debug" -> debug(sender, args);
         default -> {
           for (String line :
               List.of(
-                  "/vb use <arena> · start · stop · status · reload",
+                  "/vb use <arena> · start · stop · status · reload · level [recruit|veteran|elite]",
                   "/vb debug skip | state | win <a|b> | kill <player> | plant <a|b> | seal"))
             say(sender, line);
         }
@@ -128,6 +132,7 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
     if (!sender.hasPermission("nexusarena.admin")) return List.of();
     if (args.length == 1) return SUBS;
     if (args.length == 2 && args[0].equalsIgnoreCase("debug")) return DEBUG;
+    if (args.length == 2 && args[0].equalsIgnoreCase("level")) return new ArrayList<>(VbData.bots().levels().keySet());
     if (args.length == 2 && args[0].equalsIgnoreCase("use")) return plugin.arenas.all().stream().map(s -> s.config.id()).toList();
     return List.of();
   }

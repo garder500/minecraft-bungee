@@ -36,23 +36,31 @@ public final class ValoBlockModule {
         if (to == VbPhase.BUY) map.barriers(true);
         if (to == VbPhase.COMBAT) map.barriers(false);
         agents.phaseChanged(m, from, to);
+        bots.phaseChanged(m, from, to);
       }
 
       @Override
       public void agentLocked(VbMatch m, UUID player, String agent) {
         agents.lockedIn(m, player, agent);
+        bots.agentLocked(m, player, agent);
       }
 
       @Override
       public void killed(VbMatch m, UUID victim, UUID killer) {
         agents.killed(m, victim, killer);
+        bots.killed(m, victim, killer);
+      }
+
+      @Override
+      public void botReplaced(VbMatch m, UUID bot, UUID human) {
+        bots.replaced(m, bot, human);
       }
 
       @Override
       public void roundStarted(VbMatch m, int round) {
         for (UUID id : m.participants()) {
-          if (m.isBot(id) && round == 1) bots.spawn(m, id, m.side(id));
-          map.teleportToSpawn(id, m.side(id));
+          if (m.isBot(id)) bots.roundStarted(m, id, m.keepsLoadout(id));
+          else map.teleportToSpawn(id, m.side(id));
           weapons.roundStarted(m, id, m.keepsLoadout(id));
           agents.roundStarted(m, id, m.keepsLoadout(id));
         }
@@ -74,8 +82,16 @@ public final class ValoBlockModule {
     agents = service;
   }
 
-  /** Plugin disable: skins and temporary blocks back. */
+  /** The bots: bodies and brains that fill empty seats (server-thread task). */
+  public void enableBots() {
+    VbBotService service = new VbBotService(plugin);
+    service.start();
+    bots = service;
+  }
+
+  /** Plugin disable: skins and temporary blocks back, bot bodies gone. */
   public void shutdown() {
+    if (bots instanceof VbBotService s) s.shutdown();
     if (agents instanceof VbAgentService s) s.shutdown();
   }
 

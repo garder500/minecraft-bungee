@@ -14,4 +14,10 @@ public interface WeaponService {
 
   /** Remove every gun the player holds (round or match end). */
   default void clear(UUID player) {}
+
+  /** A human took a bot's seat: they get its loadout. */
+  default void adopt(UUID player, Loadout loadout) {}
+
+  /** A gun lies on the ground (a dead bot's): a human can pick it up with its rounds. */
+  default void dropGun(org.bukkit.Location at, VbWeapon weapon, int rounds) {}
 }

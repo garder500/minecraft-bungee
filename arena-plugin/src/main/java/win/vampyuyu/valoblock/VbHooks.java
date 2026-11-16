@@ -20,7 +20,11 @@ final class VbHooks implements GameHooks {
   public boolean tickGame(ArenaSession s, long now, boolean due) {
     // The match only changes phase through damage, holds and the engine's clock, which the engine
     // already follows; the HUD is drawn here once slice 5 provides it.
-    if (s.game instanceof VbMatch m) module.hud.render(m, now);
+    if (s.game instanceof VbMatch m) {
+      // Bots fill the empty seats after the select: a practice match, no rewards (EventRewards reads this).
+      if (!s.practice && m.hasBots()) s.practice = true;
+      module.hud.render(m, now);
+    }
     return false;
   }
 
@@ -33,6 +37,7 @@ final class VbHooks implements GameHooks {
         module.weapons.clear(id);
         module.agents.restore(id);
       }
+      module.bots.matchEnded(m);
       for (java.util.UUID bot : m.bots()) module.bots.remove(bot);
     }
   }

@@ -19,5 +19,8 @@ public interface VbEvents {
   /** A player (human or bot) holds an agent: by lock in or by the random fill when the select time ran out. */
   default void agentLocked(VbMatch match, UUID player, String agent) {}
 
+  /** A late human took a bot's seat (its Shards and guns go with it). */
+  default void botReplaced(VbMatch match, UUID bot, UUID human) {}
+
   default void matchEnded(VbMatch match, String winner) {}
 }

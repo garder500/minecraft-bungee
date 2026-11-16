@@ -150,6 +150,23 @@ public final class VbWeaponService implements WeaponService, Listener {
   }
 
   @Override
+  public void adopt(UUID player, Loadout loadout) {
+    sync(() -> {
+      Gear g = gear(player);
+      g.loadout = loadout;
+      g.guns.clear();
+    });
+  }
+
+  @Override
+  public void dropGun(Location at, VbWeapon w, int rounds) {
+    sync(() -> {
+      Item item = at.getWorld().dropItemNaturally(at.clone().add(0, 0.5, 0), WeaponItems.carried(w, rounds));
+      drops.add(item);
+    });
+  }
+
+  @Override
   public void clear(UUID player) {
     sync(
         () -> {
@@ -259,13 +276,15 @@ public final class VbWeaponService implements WeaponService, Listener {
       if (traced++ < MAX_TRACERS) tracer(world, origin, dir, ray.end, WeaponItems.tracer(w.metal()));
     }
     fireSound(p, w);
+    plugin.valoblock.bots.gunfire(m, p.getUniqueId(), origin[0], origin[1], origin[2]);
     for (var e : damage.entrySet()) {
       UUID vid = e.getKey();
       boolean died = m.damage(vid, p.getUniqueId(), e.getValue()[0]);
       boolean head = e.getValue()[1] > 0;
-      Player v = Bukkit.getPlayer(vid);
+      Player v = m.isBot(vid) ? null : Bukkit.getPlayer(vid);
       if (v != null) mirrorHealth(v, m);
       if (died && v != null) spectate(v);
+      if (m.isBot(vid)) plugin.valoblock.bots.damaged(vid);
       p.playSound(p.getLocation(), "entity.arrow.hit_player", SoundCategory.PLAYERS, 0.7f, head ? 1.9f : 1.2f);
       plugin.valoblock.hud.hitMarker(p.getUniqueId(), head, died);
       if (died && !w.killSound().isEmpty()) world.playSound(p.getLocation(), w.killSound(), SoundCategory.PLAYERS, 1f, 0.8f);
@@ -335,13 +354,20 @@ public final class VbWeaponService implements WeaponService, Listener {
     double best = stop;
     int shooterSquad = m.squadOf(shooter.getUniqueId());
     for (UUID id : m.alive()) {
-      if (m.isBot(id) || id.equals(shooter.getUniqueId()) || m.squadOf(id) == shooterSquad) continue;
-      Player v = Bukkit.getPlayer(id);
-      if (v == null || !v.getWorld().equals(world)) continue;
-      PositionHistory.Sample s = gear(id).history.at(now, rewind);
+      if (id.equals(shooter.getUniqueId()) || m.squadOf(id) == shooterSquad) continue;
+      Player v = m.isBot(id) ? null : Bukkit.getPlayer(id);
+      PositionHistory.Sample s = null;
       double x, y, z;
       boolean sneak;
-      if (s == null) {
+      if (m.isBot(id)) { // a bot's body: where its brain stands now (no rewind)
+        double[] at = plugin.valoblock.bots.position(id);
+        if (at == null) continue;
+        x = at[0];
+        y = at[1];
+        z = at[2];
+        sneak = at[3] != 0;
+      } else if (v == null || !v.getWorld().equals(world)) continue;
+      else if ((s = gear(id).history.at(now, rewind)) == null) {
         Location l = v.getLocation();
         x = l.getX();
         y = l.getY();
@@ -419,11 +445,18 @@ public final class VbWeaponService implements WeaponService, Listener {
     UUID target = null;
     double best = reach;
     for (UUID id : m.alive()) {
-      if (m.isBot(id) || id.equals(p.getUniqueId()) || m.squadOf(id) == m.squadOf(p.getUniqueId())) continue;
-      Player v = Bukkit.getPlayer(id);
-      if (v == null || !v.getWorld().equals(p.getWorld())) continue;
-      Location l = v.getLocation();
-      GunMath.Hit h = GunMath.rayHitbox(o, d, best, l.getX(), l.getY(), l.getZ(), v.isSneaking());
+      if (id.equals(p.getUniqueId()) || m.squadOf(id) == m.squadOf(p.getUniqueId())) continue;
+      double[] at;
+      if (m.isBot(id)) {
+        at = plugin.valoblock.bots.position(id);
+        if (at == null) continue;
+      } else {
+        Player v = Bukkit.getPlayer(id);
+        if (v == null || !v.getWorld().equals(p.getWorld())) continue;
+        Location l = v.getLocation();
+        at = new double[] {l.getX(), l.getY(), l.getZ(), v.isSneaking() ? 1 : 0, l.getYaw()};
+      }
+      GunMath.Hit h = GunMath.rayHitbox(o, d, best, at[0], at[1], at[2], at[3] != 0);
       if (h != null) {
         best = h.distance();
         target = id;
@@ -431,12 +464,17 @@ public final class VbWeaponService implements WeaponService, Listener {
     }
     p.getWorld().playSound(p.getLocation(), "entity.player.attack.sweep", SoundCategory.PLAYERS, 0.6f, 1.4f);
     if (target == null) return;
-    Player v = Bukkit.getPlayer(target);
-    Vector face = v.getLocation().getDirection();
-    int dmg = GunMath.knifeDamage(knife, face.getX(), face.getZ(), p.getLocation().getX() - v.getLocation().getX(), p.getLocation().getZ() - v.getLocation().getZ());
+    Player v = m.isBot(target) ? null : Bukkit.getPlayer(target);
+    double[] tp = v == null ? plugin.valoblock.bots.position(target) : null;
+    if (v == null && tp == null) return;
+    double faceX = v != null ? v.getLocation().getDirection().getX() : -Math.sin(Math.toRadians(tp[4]));
+    double faceZ = v != null ? v.getLocation().getDirection().getZ() : Math.cos(Math.toRadians(tp[4]));
+    double vx = v != null ? v.getLocation().getX() : tp[0], vz = v != null ? v.getLocation().getZ() : tp[2];
+    int dmg = GunMath.knifeDamage(knife, faceX, faceZ, p.getLocation().getX() - vx, p.getLocation().getZ() - vz);
     boolean died = m.damage(target, p.getUniqueId(), dmg);
-    mirrorHealth(v, m);
-    if (died) spectate(v);
+    if (v != null) mirrorHealth(v, m);
+    else plugin.valoblock.bots.damaged(target);
+    if (died && v != null) spectate(v);
     p.playSound(p.getLocation(), "entity.arrow.hit_player", SoundCategory.PLAYERS, 0.7f, dmg > knife.body() ? 1.9f : 1.2f);
     plugin.valoblock.hud.hitMarker(p.getUniqueId(), dmg > knife.body(), died);
   }
@@ -476,6 +514,16 @@ public final class VbWeaponService implements WeaponService, Listener {
   /** A left-click on a player with the knife arrives as damage, not as an interact. */
   @EventHandler(priority = EventPriority.HIGH)
   public void damage(EntityDamageEvent e) {
+    UUID bot = plugin.valoblock.bots.botOf(e.getEntity());
+    if (bot != null) { // a bot's mannequin: never vanilla damage, a knife swing still counts
+      e.setCancelled(true);
+      if (e instanceof org.bukkit.event.entity.EntityDamageByEntityEvent by && by.getDamager() instanceof Player a) {
+        VbMatch m = matchOf(a.getUniqueId());
+        VbWeapon w = held(a);
+        if (m != null && w != null && w.slot() == VbWeapon.Slot.MELEE) knife(a, m, gear(a.getUniqueId()), w);
+      }
+      return;
+    }
     if (!(e.getEntity() instanceof Player v) || matchOf(v.getUniqueId()) == null) return;
     e.setCancelled(true); // health is the match's: never vanilla damage
     if (e instanceof org.bukkit.event.entity.EntityDamageByEntityEvent by && by.getDamager() instanceof Player a) {
