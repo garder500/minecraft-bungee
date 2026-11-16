@@ -19,21 +19,23 @@ import json, pathlib, struct, sys, zlib
 ART = pathlib.Path(__file__).resolve().parent
 ASSETS = ART.parent / "pack" / "assets" / "vampyuyu"
 
-# palette per tier: (light feather, mid feather, dark feather, outline, glow)
-TIERS = {
-    1: ((255, 250, 235), (247, 226, 160), (214, 170, 72), (150, 104, 36), (255, 244, 190)),
-    2: ((250, 255, 255), (214, 240, 248), (150, 200, 226), (70, 112, 160), (120, 230, 255)),
-    3: ((255, 248, 252), (250, 214, 236), (222, 150, 196), (138, 70, 120), (255, 150, 220)),
-    4: ((252, 246, 255), (222, 204, 250), (166, 130, 226), (84, 54, 150), (190, 140, 255)),
-    5: ((255, 255, 250), (255, 236, 150), (255, 190, 70), (190, 110, 20), (140, 255, 235)),
+def _h(*hexes):
+    return tuple(tuple(int(h[i:i + 2], 16) for i in (1, 3, 5)) for h in hexes)
+
+
+# Realm palettes (shadow, base, light, highlight, glow) from the lore bible: tier 1 Citadel of Golden Sands,
+# 2 Frozen Heights, 3 Abyssal Depths, 4 Ethereal Necropolis, 5 the Astral Interiority.
+REALM = {
+    1: _h("#5a3a12", "#a8742a", "#f2c14e", "#fff1b0", "#3fb6a8"),
+    2: _h("#1f3557", "#3b6fa8", "#7fc8e8", "#e6f7ff", "#b6a8ff"),
+    3: _h("#0a1a2a", "#12405a", "#2a8a9a", "#bff0f0", "#ff6ab0"),
+    4: _h("#241f3a", "#4a4570", "#9c95c8", "#e8e4ff", "#6affd8"),
+    5: _h("#0e0a1a", "#3a1a6a", "#8a4aff", "#e0c8ff", "#ff4a8a"),
 }
-CORE = {  # (light, mid, dark, outline) of the five Wing Cores
-    1: ((220, 240, 255), (130, 190, 240), (60, 110, 200), (24, 40, 110)),
-    2: ((255, 232, 255), (226, 150, 240), (150, 70, 200), (70, 24, 120)),
-    3: ((255, 245, 190), (255, 200, 60), (214, 130, 20), (110, 56, 8)),
-    4: ((255, 220, 244), (255, 120, 190), (200, 50, 130), (100, 14, 70)),
-    5: ((235, 255, 255), (120, 240, 255), (40, 170, 230), (10, 60, 130)),
-}
+OUTLINE = (20, 15, 24)
+# palette per tier for the equipment texture: (light feather, mid feather, dark feather, outline, glow)
+TIERS = {t: (r[3], r[2], r[1], r[0], r[4]) for t, r in REALM.items()}
+CORE = TIERS  # the Wing Cores take the same Realm as their wings
 
 
 def png(path, w, h, px):
@@ -154,9 +156,9 @@ WING_ROWS = [  # left wing, 8 columns (x=7 is next to the body), rows from y=1; 
 
 
 def icon_wings(tier):
-    """16x16 pair of feathered wings with a gem on the chest; one more sparkle per tier."""
-    light, mid, dark, outline, glow = TIERS[tier]
-    shade = {"l": light, "m": mid, "d": dark, "o": outline, "g": glow}
+    """16x16 pair of feathered wings (the wing silhouette) with the Realm glow pixel on the chest; flat steps only."""
+    sh, base, lt, hi, glow = REALM[tier]
+    shade = {"l": hi, "m": lt, "d": base, "o": OUTLINE, "g": glow}
     px = {}
     for row, line in enumerate(WING_ROWS):
         y = 1 + row
@@ -164,51 +166,47 @@ def icon_wings(tier):
             if ch == ".":
                 continue
             c = shade[ch]
-            if ch in "lmd" and (col + row) % 4 == 0:  # feather ribs
-                c = mix(c, dark, 0.3)
+            if ch in "lm" and (col + row) % 4 == 0:  # feather ribs
+                c = lt if ch == "l" else base
             px[(col, y)] = c + (255,)
             px[(15 - col, y)] = c + (255,)
-    for (x, y) in ((7, 7), (8, 7), (7, 8), (8, 8)):     # body gem between the wings
+    for (x, y) in ((7, 7), (8, 7), (7, 8), (8, 8)):     # the Realm motif between the wings
         px[(x, y)] = glow + (255,)
-    px[(7, 9)] = outline + (255,)
-    px[(8, 9)] = outline + (255,)
+    px[(7, 9)] = OUTLINE + (255,)
+    px[(8, 9)] = OUTLINE + (255,)
     for i in range(tier - 1):                           # sparkles: one more per tier
         sx, sy = ((2, 14), (13, 14), (4, 0), (11, 0))[i % 4]
-        px[(sx, sy)] = light + (255,)
-        px.setdefault((sx + 1, sy), glow + (200,))
-        px.setdefault((sx - 1, sy), glow + (200,))
+        px[(sx, sy)] = hi + (255,)
+        px.setdefault((sx + 1, sy), lt + (255,))
+        px.setdefault((sx - 1, sy), lt + (255,))
     return {k: v for k, v in px.items() if 0 <= k[0] < 16 and 0 <= k[1] < 16}
 
 
 def icon_core(tier):
-    """16x16 faceted crystal with a halo."""
-    light, mid, dark, outline = CORE[tier]
+    """16x16 faceted crystal (outline, light top left, glow core), no halo."""
+    sh, base, lt, hi, glow = REALM[tier]
     px = {}
     shape = [(7, 1, 8), (6, 2, 9), (5, 3, 10), (4, 4, 11), (3, 5, 12), (3, 6, 12), (3, 7, 12), (4, 8, 11),
              (4, 9, 11), (5, 10, 10), (5, 11, 10), (6, 12, 9), (7, 13, 8)]
     for left, y, right in shape:
         for x in range(left, right + 1):
             t = (x - left) / max(1, right - left)
-            c = light if t < 0.3 and y < 8 else (mid if t < 0.62 else dark)
+            c = lt if t < 0.3 and y < 8 else (base if t < 0.62 else sh)
             if y >= 9 and t < 0.3:
-                c = mid
+                c = base
             px[(x, y)] = c + (255,)
     cells = set(px)
     for (x, y) in list(cells):
         if any((x + dx, y + dy) not in cells for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
-            px[(x, y)] = outline + (255,)
+            px[(x, y)] = OUTLINE + (255,)
     for (x, y) in ((7, 3), (6, 4), (6, 5), (5, 6)):     # highlight streak
-        px[(x, y)] = (255, 255, 255, 255)
-    halo = mid + (70,)
-    for (x, y) in list(cells):
-        for dx, dy in ((2, 0), (-2, 0), (0, 2)):
-            px.setdefault((x + dx, y + dy), halo)
+        px[(x, y)] = hi + (255,)
+    for (x, y) in ((8, 7), (9, 7), (8, 8)):             # the glow pixel marks the Realm motif
+        px[(x, y)] = glow + (255,)
     if tier >= 3:                                       # small orbiting sparkle for the higher cores
-        px[(13, 2)] = (255, 255, 255, 255)
-        px[(12, 2)] = light + (170,)
-        px[(14, 2)] = light + (170,)
-        px[(13, 1)] = light + (170,)
-        px[(13, 3)] = light + (170,)
+        px[(13, 2)] = hi + (255,)
+        for (x, y) in ((12, 2), (14, 2), (13, 1), (13, 3)):
+            px[(x, y)] = lt + (255,)
     return {k: v for k, v in px.items() if 0 <= k[0] < 16 and 0 <= k[1] < 16}
 
 
