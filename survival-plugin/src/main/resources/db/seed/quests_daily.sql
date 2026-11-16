@@ -16,7 +16,7 @@ INSERT INTO quest (id, pool, position, category, name, description, type, target
 INSERT INTO quest_reward_xp (quest_id, skill, amount) VALUES ('kill_spiders', 'COMBAT', 70.0);
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('kill_creepers', 'daily', 7, '', 'Quiet Defusal', 'Defeat 8 creepers.', 'KILL_MOB', 'CREEPER', 8, 'GUNPOWDER', 160.0);
 INSERT INTO quest_reward_xp (quest_id, skill, amount) VALUES ('kill_creepers', 'COMBAT', 80.0);
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('kill_any', 'daily', 8, '', 'Monster Slayer', 'Defeat 40 mobs.', 'KILL_MOB', 'ANY', 40, 'IRON_SWORD', 200.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('kill_any', 'daily', 8, '', 'Pest Control', 'Defeat 40 mobs.', 'KILL_MOB', 'ANY', 40, 'IRON_SWORD', 200.0);
 INSERT INTO quest_reward_xp (quest_id, skill, amount) VALUES ('kill_any', 'COMBAT', 100.0);
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('go_fishing', 'daily', 9, '', 'Catch of the Day', 'Catch 12 fish.', 'FISH', '', 12, 'FISHING_ROD', 140.0);
 INSERT INTO quest_reward_xp (quest_id, skill, amount) VALUES ('go_fishing', 'FISHING', 80.0);
@@ -36,12 +36,12 @@ INSERT INTO quest (id, pool, position, category, name, description, type, target
 INSERT INTO quest_reward_xp (quest_id, skill, amount) VALUES ('place_saplings', 'FORAGING', 50.0);
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('place_blocks', 'daily', 18, '', 'Builder', 'Place 200 blocks.', 'PLACE_BLOCK', '', 200, 'BRICKS', 100.0);
 INSERT INTO quest_reward_xp (quest_id, skill, amount) VALUES ('place_blocks', 'CARPENTRY', 40.0);
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('visit_islands', 'daily', 19, '', 'Neighbourhood Watch', 'Walk into an island 3 times.', 'ISLAND_ENTER', '', 3, 'GRASS_BLOCK', 80.0);
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('visit_nether', 'daily', 20, '', 'Hot Tourist', 'Visit the Nether.', 'VISIT_WORLD', 'nether', 1, 'NETHERRACK', 150.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('visit_islands', 'daily', 19, '', 'Fellow Survivors', 'Visit islands 3 times.', 'ISLAND_ENTER', '', 3, 'GRASS_BLOCK', 80.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('visit_nether', 'daily', 20, '', 'Slag Tourist', 'Visit your Nether.', 'VISIT_WORLD', 'nether', 1, 'NETHERRACK', 150.0);
 INSERT INTO quest_reward_xp (quest_id, skill, amount) VALUES ('visit_nether', 'COMBAT', 40.0);
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('visit_end', 'daily', 21, '', 'Edge of the World', 'Visit the End.', 'VISIT_WORLD', 'end', 1, 'END_STONE', 250.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('visit_end', 'daily', 21, '', 'Edge of the World', 'Visit your End.', 'VISIT_WORLD', 'end', 1, 'END_STONE', 250.0);
 INSERT INTO quest_reward_xp (quest_id, skill, amount) VALUES ('visit_end', 'COMBAT', 60.0);
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('find_soul', 'daily', 22, '', 'Soul Searcher', 'Collect a Wisp.', 'COLLECT_SOUL', '', 1, 'PINK_DYE', 200.0);
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('bazaar_visit', 'daily', 23, '', 'Window Shopping', 'Open the Sky Exchange.', 'COMMAND', 'bazaar', 1, 'EMERALD', 60.0);
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('boss_hunt', 'daily', 24, '', 'Boss Rush', 'Take part in defeating a boss.', 'BOSS_KILL', '', 1, 'WITHER_SKELETON_SKULL', 500.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('find_soul', 'daily', 22, '', 'Soul Searcher', 'Collect a wisp of a forgotten soul.', 'COLLECT_SOUL', '', 1, 'PINK_DYE', 200.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('bazaar_visit', 'daily', 23, '', 'Window Shopping', 'Open the Sky Exchange and see what the survivors trade.', 'COMMAND', 'bazaar', 1, 'EMERALD', 60.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('boss_hunt', 'daily', 24, '', 'Hold the Line', 'Take part in defeating a boss.', 'BOSS_KILL', '', 1, 'WITHER_SKELETON_SKULL', 500.0);
 INSERT INTO quest_reward_xp (quest_id, skill, amount) VALUES ('boss_hunt', 'COMBAT', 200.0);
