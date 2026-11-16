@@ -39,6 +39,11 @@ public final class GunState {
     return reloadEnd != 0;
   }
 
+  /** Milliseconds since the last shot allowed (a huge number when none was fired). */
+  public long sinceShot(long now) {
+    return now - lastShot;
+  }
+
   /** Index (0 = first) in the spray of the shot {@link #poll} just allowed. */
   public int lastShotIndex() {
     return lastIndex;

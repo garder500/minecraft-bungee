@@ -58,6 +58,47 @@ public final class WeaponItems {
     return it;
   }
 
+  /** The look the pack draws for the held stack (custom_model_data string 0), "" for the plain held model. */
+  public static String state(ItemStack it) {
+    if (it == null || !it.hasItemMeta()) return "";
+    var cmd = it.getItemMeta().getCustomModelDataComponent();
+    return cmd.getStrings().isEmpty() ? "" : cmd.getStrings().get(0);
+  }
+
+  /** Sets (or with "" clears) the look of the stack: "fire", "reload" or "aim" (see GunVisual). */
+  public static void setState(ItemStack it, String state) {
+    ItemMeta meta = it.getItemMeta();
+    var cmd = meta.getCustomModelDataComponent();
+    cmd.setStrings(state.isEmpty() ? List.of() : List.of(state));
+    meta.setCustomModelDataComponent(cmd);
+    it.setItemMeta(meta);
+  }
+
+  /**
+   * The sniper scope: an invisible helmet whose equippable camera overlay is the pack's scope texture (the same
+   * mechanism as the pumpkin blur), so the screen is covered while the player is aiming. It draws nothing on the head.
+   */
+  public static final NamespacedKey SCOPE = new NamespacedKey("vampyuyu", "vb_scope");
+
+  public static ItemStack scope() {
+    ItemStack it = new ItemStack(Material.PAPER);
+    ItemMeta meta = it.getItemMeta();
+    meta.displayName(text("Scope", WeaponText.GRAY));
+    meta.setItemModel(new NamespacedKey("vampyuyu", "blank"));
+    var eq = meta.getEquippable();
+    eq.setSlot(org.bukkit.inventory.EquipmentSlot.HEAD);
+    eq.setCameraOverlay(new NamespacedKey("vampyuyu", "misc/scope"));
+    eq.setSwappable(false);
+    meta.setEquippable(eq);
+    meta.getPersistentDataContainer().set(SCOPE, PersistentDataType.BYTE, (byte) 1);
+    it.setItemMeta(meta);
+    return it;
+  }
+
+  public static boolean isScope(ItemStack it) {
+    return it != null && it.hasItemMeta() && it.getItemMeta().getPersistentDataContainer().has(SCOPE, PersistentDataType.BYTE);
+  }
+
   /** A menu entry: the weapon with its tooltip and the owned / locked look. */
   public static ItemStack menu(VbWeapon w, Armory.Display display, int missing) {
     ItemStack it = new ItemStack(base(w));
@@ -110,7 +151,7 @@ public final class WeaponItems {
 
   /** Whether the stack is any ValoBlock item (weapon, shield, armory). */
   public static boolean isVb(ItemStack it) {
-    return id(it) != null || isArmory(it);
+    return id(it) != null || isArmory(it) || isScope(it);
   }
 
   /** Dust colour of the tracer by metal. */

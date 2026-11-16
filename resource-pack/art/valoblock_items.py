@@ -22,7 +22,7 @@ import struct
 import zlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PACK = ROOT / "pack/assets/vampyuyu"
+PACK = ROOT / "valoblock/assets/vampyuyu"  # the separate ValoBlock pack
 DATA = ROOT.parent / "arena-plugin/src/main/resources/valoblock/weapons.json"
 
 TEMPLATES = {
@@ -94,15 +94,16 @@ def png(rows):
             + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
 
 
-def write_item(name, rows):
+def write_item(name, rows, definition=True):
     tex = PACK / f"textures/item/valoblock/{name}.png"
     model = PACK / f"models/item/valoblock/{name}.json"
-    definition = PACK / f"items/valoblock/{name}.json"
-    for f in (tex, model, definition):
+    f_def = PACK / f"items/valoblock/{name}.json"
+    for f in (tex, model, f_def):
         f.parent.mkdir(parents=True, exist_ok=True)
     tex.write_bytes(png(rows))
     model.write_text(json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"vampyuyu:item/valoblock/{name}"}}, indent=1) + "\n")
-    definition.write_text(json.dumps({"model": {"type": "minecraft:model", "model": f"vampyuyu:item/valoblock/{name}"}}, indent=1) + "\n")
+    if definition:  # the 3D weapons get theirs from valoblock_models.py (a select on the display context)
+        f_def.write_text(json.dumps({"model": {"type": "minecraft:model", "model": f"vampyuyu:item/valoblock/{name}"}}, indent=1) + "\n")
 
 
 def weapons():
@@ -112,10 +113,12 @@ def weapons():
 def main():
     n = 0
     for w in weapons():
-        write_item(w["id"], sprite(w["texture"], w["metal"]))
+        write_item(w["id"], sprite(w["texture"], w["metal"]), definition=w["texture"] == "ward")
         write_item(w["id"] + "_locked", sprite(w["texture"], w["metal"], LOCKED_ALPHA))
         n += 2
     print(f"wrote {n} items under {PACK}")
+    import valoblock_models  # the 3D models and their item definitions come second, on purpose
+    valoblock_models.main()
 
 
 if __name__ == "__main__":
