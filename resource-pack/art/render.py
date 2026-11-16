@@ -247,62 +247,10 @@ def confirm():
             + text(60, 124, 408, "This cannot be undone.", 13, "#ffe3c4"))
     return W, H, frame(W, H, svg, body)
 
-ICONS={
-'star':'<path d="M12 2l2.4 7.3 7.6.1-6.1 4.5 2.3 7.4L12 16.8 5.8 21.3l2.3-7.4L2 9.4l7.6-.1z" fill="#cfe4ff" fill-opacity=".55"/>',
-'vial':'<path d="M9 3h6M10 3v6l-4 9a2 2 0 0 0 2 3h8a2 2 0 0 0 2-3l-4-9V3" /><path d="M8 15h8" stroke="#b78cff"/>',
-'book':'<path d="M5 3h11l3 3v15H5z"/><path d="M8 8h8M8 12h8M8 16h5"/>',
-'clock':'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-'exit':'<path d="M6 3h10v18H6z"/><circle cx="13" cy="12" r="1" fill="#fff6d8"/><path d="M20 12h-4M18 10l2 2-2 2" stroke="#f08a80"/>',
-'play':'<path d="M7 4l13 8-13 8z" fill="#8fd16a" fill-opacity=".7" stroke="#d6f2c2"/>',
-'stop':'<rect x="5" y="5" width="14" height="14" rx="1" fill="#d6483c" fill-opacity=".7" stroke="#f6c3be"/>',
-'back':'<path d="M20 12H5M11 6l-6 6 6 6"/>',
-'next':'<path d="M4 12h15M13 6l6 6-6 6"/>',
-'axe':'<path d="M4 20L15 9"/><path d="M12 4c4-1 7 1 8 4-3 1-6 0-8-1z" fill="#e9b23a" fill-opacity=".5"/>',
-'map':'<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
-'compass':'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="#c8453a"/>',
-'bed':'<path d="M3 18V8M3 14h18v4M21 14v-3a3 3 0 0 0-3-3h-7v6"/><circle cx="7" cy="11" r="1.8" fill="#c8453a"/>',
-'bone':'<path d="M7 17l10-10M5.5 15.5a2.2 2.2 0 1 0 1.5 3.7 2.2 2.2 0 1 0 3.7-1.5M18.5 8.5a2.2 2.2 0 1 0-1.5-3.7 2.2 2.2 0 1 0-3.7 1.5"/>',
-'sun':'<circle cx="12" cy="12" r="4" fill="#e9b23a" fill-opacity=".6"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
-'lever':'<rect x="3" y="15" width="18" height="5" rx="1"/><path d="M12 15l5-10"/><circle cx="17" cy="5" r="1.6" fill="#c8453a"/>',
-'coin':'<circle cx="12" cy="12" r="9" fill="#e9b23a" fill-opacity=".4"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4"/>',
-'door':'<path d="M6 3h12v18H6z"/><circle cx="15" cy="12" r="1.2" fill="#fff6d8"/>',
-'pearl':'<circle cx="12" cy="12" r="8" fill="#3fb59a" fill-opacity=".45"/><path d="M8 9c1-2 3-3 5-3" stroke="#d8fff4"/>',
-'plus':'<path d="M12 5v14M5 12h14"/>',
-'pencil':'<path d="M4 20l1-5L16 4l4 4L9 19z"/><path d="M13 7l4 4"/>',
-'trash':'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" stroke="#f08a80"/>',
-'warn':'<path d="M12 3l10 18H2z" stroke="#f0b26a"/><path d="M12 10v5M12 18v.5" stroke="#f0b26a"/>',
-'tag':'<path d="M4 4h8l8 8-8 8-8-8z"/><circle cx="8.5" cy="8.5" r="1.3" fill="#fff6d8"/>',
-'ruler':'<path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/>',
-'sword':'<path d="M5 19L18 6V3h-3L2 16M7 13l4 4M4 20l3-3"/>',
-'chest':'<rect x="3" y="9" width="18" height="11" rx="1"/><path d="M3 13h18M12 12v3"/><path d="M3 9a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4"/>',
-'note':'<path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5" fill="#fff6d8"/><circle cx="17.5" cy="16" r="2.5" fill="#fff6d8"/>',
-}
-
-ICON_STROKE = 'stroke="#fff6d8" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"'
-
-def icon_html(name):
-    return (f'<!doctype html><html style="background:transparent"><body style="margin:0;background:transparent">'
-            f'<svg width="128" height="128" viewBox="-4 -4 32 32" {ICON_STROKE}>{ICONS[name]}</svg></body></html>')
-
 def render_icons():
-    """One transparent 128px PNG, item model and item definition per icon (item_model vampyuyu:icon/<name>)."""
-    import json
-    base = PACK
-    for sub in ("textures/item/icon", "models/item/icon", "items/icon"):
-        (base / sub).mkdir(parents=True, exist_ok=True)
-    for name in ICONS:
-        with tempfile.TemporaryDirectory() as tmp:
-            page = pathlib.Path(tmp) / "i.html"
-            page.write_text(icon_html(name), encoding="utf-8")
-            subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--no-sandbox",
-                            "--default-background-color=00000000", "--window-size=128,128",
-                            f"--screenshot={base / 'textures/item/icon' / (name + '.png')}", page.as_uri()],
-                           check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        (base / "models/item/icon" / f"{name}.json").write_text(json.dumps(
-            {"parent": "minecraft:item/generated", "textures": {"layer0": f"vampyuyu:item/icon/{name}"}}, indent=2) + "\n")
-        (base / "items/icon" / f"{name}.json").write_text(json.dumps(
-            {"model": {"type": "minecraft:model", "model": f"vampyuyu:item/icon/{name}"}}, indent=2) + "\n")
-    print("wrote", len(ICONS), "icons")
+    """The menu and werewolf icons are 16x16 pixel art (stdlib, no Chrome): see skyblock_icon.py."""
+    import skyblock_icon
+    skyblock_icon.write_icons()
 
 def compass():
     """In-game arena compass: heads on a council ring under a howling-wolf moon, controls on the bottom row."""
@@ -428,31 +376,15 @@ def render_werewolf():
     vampyuyu:hud font. Icons are reduced with a quality filter, never upscaled."""
     from PIL import Image, ImageEnhance
     icon_dir = PACK / "textures" / "item" / "icon"
-    def save_icon(name, image):
-        image.save(icon_dir / f"{name}.png", optimize=True)
-        (PACK / "models/item/icon" / f"{name}.json").write_text(json.dumps(
-            {"parent": "minecraft:item/generated", "textures": {"layer0": f"vampyuyu:item/icon/{name}"}}, indent=2) + "\n")
-        (PACK / "items/icon" / f"{name}.json").write_text(json.dumps(
-            {"model": {"type": "minecraft:model", "model": f"vampyuyu:item/icon/{name}"}}, indent=2) + "\n")
     def grey(image):
         rgb = ImageEnhance.Brightness(image.convert("RGBA").convert("LA").convert("RGBA")).enhance(.6)
         rgb.putalpha(image.convert("RGBA").getchannel("A"))
         return rgb
     for sub in ("textures/item/icon", "models/item/icon", "items/icon", "textures/font/card", "font"):
         (PACK / sub).mkdir(parents=True, exist_ok=True)
-    icons = {p.stem: Image.open(p).convert("RGBA").resize((32, 32), Image.LANCZOS)
-             for p in sorted((WEREWOLF / "icons").glob("*.png"))}
-    icons["timer"] = icons.pop("clock")  # "clock" already names the admin menus' line icon
-    for name, image in icons.items():
-        save_icon(name, image)
-    save_icon("potion-life-off", grey(icons["potion-life"]))
-    save_icon("potion-death-off", grey(icons["potion-death"]))
-    save_icon("mark-last", grey(icons["shield"]))
-    save_icon("skip", skip_icon())
+    import skyblock_icon
+    skyblock_icon.write_icons()  # icon/* are hand-drawn 16x16 sprites; only the HUD card glyphs come from the guide
     cards = {p.stem: Image.open(p).convert("RGBA") for p in sorted((WEREWOLF / "cards").glob("*.png"))}
-    for role in layout.CARDS:
-        save_icon(f"card-{role}", cards[role].resize((64, 64), Image.LANCZOS))
-    save_icon("mark-wolf", grey(cards["werewolf"].resize((64, 64), Image.LANCZOS)))
     providers = []
     for i, role in enumerate(layout.CARDS):
         face = cards[role].resize((64, 64), Image.LANCZOS)
@@ -464,34 +396,7 @@ def render_werewolf():
             providers.append({"type": "bitmap", "file": f"vampyuyu:font/card/{role}-dead.png", "ascent": layout.CARD_ASCENT,
                               "height": layout.CARD_HEIGHT, "chars": [chr(layout.CARD_BASE + layout.CARD_DEAD + i)]})
     (PACK / "font" / "hud.json").write_text(json.dumps({"providers": providers}, indent=1) + "\n")
-    print("wrote", len(icons) + 4 + len(layout.CARDS) + 1, "werewolf icons and", len(providers), "card glyphs")
-
-def skip_icon():
-    """Hand-drawn 16x16 pixel ballot struck through, shown 2x: the SKIP button of the vote."""
-    from PIL import Image
-    rows = ["................",
-            "..oooooooooooo..",
-            "..oppppppppppo..",
-            "..oppppppppprro.",
-            "..opppppppprrro.",
-            "..oplllllprrrpo.",
-            "..oppppprrrpppo.",
-            "..opllrrrllllpo.",
-            "..oppprrrppppo..",
-            "..oprrrllllppo..",
-            "..orrrpppppppo..",
-            ".orrrlllllllpo..",
-            ".orrppppppppppo.",
-            "..oooooooooooo..",
-            "................",
-            "................"]
-    palette = {"o": (20, 18, 31, 255), "p": (246, 234, 208, 255), "l": (143, 132, 179, 255),
-               "r": (255, 90, 90, 255), ".": (0, 0, 0, 0)}
-    image = Image.new("RGBA", (16, 16))
-    for y, row in enumerate(rows):
-        for x, ch in enumerate(row[:16]):
-            image.putpixel((x, y), palette[ch])
-    return image.resize((32, 32), Image.NEAREST)
+    print("wrote", len(providers), "card glyphs")
 
 import sky_menus  # noqa: E402  (Skyblock backgrounds; same frame and tiling)
 
@@ -548,11 +453,10 @@ def write_font():
     print("wrote font with", len(providers) - 1, "tiles")
 
 if __name__ == "__main__":
-    wanted = sys.argv[1:] or [*ART, "icons", "werewolf", "skyblock_icon"]
+    wanted = sys.argv[1:] or [*ART, "icons", "werewolf"]
     for n in wanted:
         if n == "skyblock_icon":
-            import skyblock_icon  # stdlib-only pixel art, same folder
-            skyblock_icon.write()
+            render_icons()  # kept as an alias: the Skyblock icon is drawn with the others
         else:
             render_icons() if n == "icons" else render_werewolf() if n == "werewolf" else render(n)
     write_font()
