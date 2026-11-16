@@ -37,7 +37,7 @@ import win.vampyuyu.valoblock.AgentSelectMenu.State;
  * skins (saved and restored), the ability items on the hotbar (slots 4-7 are indexes 3-6) and their use.
  */
 public final class VbAgentService implements AgentService, Listener {
-  static final int ARMORY_A = 46, ARMORY_B = 47; // abilities 4 and 5 in the last row of the Armory
+  static final int ARMORY_A = VbArmoryLayout.ABILITY[0], ARMORY_B = VbArmoryLayout.ABILITY[1]; // abilities 4 and 5 in the Armory window
   private static final long COOLDOWN_MS = 350;
 
   private final NexusArenaEngine plugin;
@@ -76,6 +76,15 @@ public final class VbAgentService implements AgentService, Listener {
     AgentKit k = kits.get(id);
     if (k == null) return null;
     return new int[] {k.charges(4), k.charges(5), k.charges(6), k.charges(7)};
+  }
+
+  @Override
+  public int[] maxCharges(UUID id) {
+    AgentKit k = kits.get(id);
+    if (k == null) return null;
+    int[] out = new int[4];
+    for (int i = 0; i < 4; i++) out[i] = VbHudState.maxCharges(k.agent().ability(4 + i));
+    return out;
   }
 
   AgentKit kit(UUID id) {
@@ -234,30 +243,19 @@ public final class VbAgentService implements AgentService, Listener {
     }
   }
 
-  /** Once a second during agent select: open the menu for whoever has not locked in, refresh the title and the cells. */
+  /** Once a second during agent select: open the menu for whoever has not locked in and refresh the cells (the title cannot change its font while open). */
   private void selectTick() {
-    long now = System.currentTimeMillis();
     for (Player p : Bukkit.getOnlinePlayers()) {
       ArenaSession s = plugin.arenas.session(p.getUniqueId());
       if (s == null || !(s.game instanceof VbMatch m) || m.vbPhase() != VbPhase.AGENT_SELECT) continue;
       State st = state(p.getUniqueId());
-      int left = (int) Math.max(0, (s.phaseEndsAt - now + 999) / 1000);
       Inventory top = p.getOpenInventory().getTopInventory();
       if (AgentSelectMenu.isMenu(top)) {
-        setTitle(p, AgentText.title(left));
         AgentSelectMenu.fill(top, m, p.getUniqueId(), this::state);
       } else if (!st.locked) {
-        if (!st.dismissed && top.getType() == org.bukkit.event.inventory.InventoryType.CRAFTING) p.openInventory(AgentSelectMenu.build(m, p, this::state, left));
+        if (!st.dismissed && top.getType() == org.bukkit.event.inventory.InventoryType.CRAFTING) p.openInventory(AgentSelectMenu.build(m, p, this::state));
         if (p.getInventory().getItem(4) == null) p.getInventory().setItem(4, AgentItems.selectItem());
       }
-    }
-  }
-
-  private static void setTitle(Player p, String title) {
-    try {
-      p.getOpenInventory().setTitle(title);
-    } catch (RuntimeException | LinkageError ignored) {
-      // cosmetic: the countdown just does not move
     }
   }
 
@@ -299,7 +297,7 @@ public final class VbAgentService implements AgentService, Listener {
     if (reopen) {
       if (m.vbPhase() == VbPhase.AGENT_SELECT) {
         state(p.getUniqueId()).dismissed = false;
-        p.openInventory(AgentSelectMenu.build(m, p, this::state, m.seconds()));
+        p.openInventory(AgentSelectMenu.build(m, p, this::state));
       }
       return;
     }
@@ -356,6 +354,7 @@ public final class VbAgentService implements AgentService, Listener {
     String action = AgentItems.action(e.getCurrentItem());
     if (action == null || action.equals("none")) return;
     State st = state(p.getUniqueId());
+    boolean portraitMoves = action.startsWith("pick:") || action.equals("random");
     if (st.locked || m.vbPhase() != VbPhase.AGENT_SELECT) return;
     if (action.startsWith("pick:")) {
       String id = action.substring(5);
@@ -385,11 +384,25 @@ public final class VbAgentService implements AgentService, Listener {
       }
     }
     refreshMenus(m);
+    if (portraitMoves && !st.locked) redrawFor(p, m, st);
+  }
+
+  /** The portrait lives in the window title: a pick opens the window again (next tick) with the new agent. */
+  private void redrawFor(Player p, VbMatch m, State st) {
+    Bukkit.getScheduler().runTask(plugin, () -> {
+      if (!p.isOnline() || st.locked || m.vbPhase() != VbPhase.AGENT_SELECT || !AgentSelectMenu.isMenu(p.getOpenInventory().getTopInventory())) return;
+      st.reopening = true;
+      try {
+        p.openInventory(AgentSelectMenu.build(m, p, this::state));
+      } finally {
+        st.reopening = false;
+      }
+    });
   }
 
   @EventHandler
   public void close(InventoryCloseEvent e) {
-    if (e.getPlayer() instanceof Player p && AgentSelectMenu.isMenu(e.getInventory()) && !state(p.getUniqueId()).locked) state(p.getUniqueId()).dismissed = true;
+    if (e.getPlayer() instanceof Player p && AgentSelectMenu.isMenu(e.getInventory()) && !state(p.getUniqueId()).locked && !state(p.getUniqueId()).reopening) state(p.getUniqueId()).dismissed = true;
   }
 
   @EventHandler

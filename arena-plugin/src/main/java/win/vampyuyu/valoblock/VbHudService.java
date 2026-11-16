@@ -12,20 +12,22 @@ import org.bukkit.entity.Player;
 import win.vampyuyu.arena.NexusArenaEngine;
 
 /**
- * The ValoBlock HUD as Adventure text (boss bars and the action bar), laid out like VB-HUD: team pips,
- * score and the clock on top (a pink fuse bar once the Seed is planted), the last kills under it for 4 s,
- * and health, shield, ability charges and ammo at the bottom. It is the only writer of the action bar of
- * a ValoBlock player (other code calls {@link #notice}); the bar is resent only when it changes or every
- * 2 s so it does not fade. Not the pack's glyph HUD: that needs new sprites, geometry and a shader entry.
+ * The ValoBlock HUD (design VB-UI2): agent heads, score and the clock on top as a boss bar (a pink fuse bar once the Seed is
+ * planted), the last kills under it for 4 s with weapon icons, and the glyph HUD in the action bar: big health and shield,
+ * four ability tiles with charge pips, the magazine, the crosshair and the hit marker, all drawn by the ValoBlock pack's core
+ * shader ({@link VbGlyphs}, {@link VbHudState}); the pack also hides the vanilla hearts, hunger, armour and XP bar. It is
+ * the only writer of the action bar of a ValoBlock player (other code calls {@link #notice}); the bar is resent only when
+ * it changes or every 2 s so it does not fade.
  */
 public final class VbHudService implements VbHud {
   static final TextColor ALLY = TextColor.color(0xff9a7a), ENEMY = TextColor.color(0x7fd8ff);
   static final long FEED_MS = 4000, NOTICE_MS = 2000, FRAME_MS = 200, RESEND_MS = 2000;
   static final int FEED_LINES = 3;
+  static final long HIT_MS = 700, HEAD_MS = 1000;
 
-  private record Feed(UUID killer, UUID victim, String weapon, int killerSquad, int victimSquad, long at) {}
+  record Feed(UUID killer, UUID victim, String weapon, int killerSquad, int victimSquad, long at, boolean head) {}
 
-  private static final class Viewer {
+  static final class Viewer {
     BossBar top;
     final List<BossBar> feed = new ArrayList<>();
     String lastFeedKey = "";
@@ -33,6 +35,10 @@ public final class VbHudService implements VbHud {
     long lastActionAt;
     Component notice;
     long noticeUntil;
+    String hit; // "w", "h" or "k" while the hit marker shows
+    long hitUntil;
+    double lastX, lastZ;
+    long movedAt;
   }
 
   private final NexusArenaEngine plugin;
@@ -41,6 +47,8 @@ public final class VbHudService implements VbHud {
   /** Matches that are over: the clock may still have a frame queued, which must draw nothing (no stuck boss bar). */
   private final Set<VbMatch> cleared = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
   private final Map<VbMatch, Long> lastFrame = new ConcurrentHashMap<>();
+  /** When each shooter last killed with a head shot: the kill and its hit marker arrive in either order. */
+  private final Map<UUID, Long> headKillAt = new ConcurrentHashMap<>();
 
   public VbHudService(NexusArenaEngine plugin) {
     this.plugin = plugin;
@@ -57,7 +65,9 @@ public final class VbHudService implements VbHud {
   public void killed(VbMatch m, UUID victim, UUID killer, String weapon) {
     Deque<Feed> q = feeds.computeIfAbsent(m, k -> new ArrayDeque<>());
     synchronized (q) {
-      q.addLast(new Feed(killer, victim, weapon == null ? "" : weapon, killer == null ? -1 : m.squadOf(killer), m.squadOf(victim), System.currentTimeMillis()));
+      long now = System.currentTimeMillis();
+      boolean head = killer != null && now - headKillAt.getOrDefault(killer, 0L) < HEAD_MS;
+      q.addLast(new Feed(killer, victim, weapon == null ? "" : weapon, killer == null ? -1 : m.squadOf(killer), m.squadOf(victim), now, head));
       while (q.size() > FEED_LINES) q.removeFirst();
     }
   }
@@ -74,10 +84,22 @@ public final class VbHudService implements VbHud {
   public void hitMarker(UUID shooter, boolean head, boolean kill) {
     Player p = Bukkit.getPlayer(shooter);
     if (p == null) return;
+    long now = System.currentTimeMillis();
     Viewer v = viewers.computeIfAbsent(shooter, k -> new Viewer());
-    v.notice = kill ? Component.text("✖ ELIMINATED", NamedTextColor.RED) : head ? Component.text("● HEADSHOT", NamedTextColor.YELLOW) : Component.text("● HIT", NamedTextColor.WHITE);
-    v.noticeUntil = System.currentTimeMillis() + 700;
-    v.lastAction = "";
+    v.hit = kill ? "k" : head ? "h" : "w";
+    v.hitUntil = now + HIT_MS;
+    if (kill && head) {
+      headKillAt.put(shooter, now);
+      // the kill may already be in the feed (it is recorded while the damage is applied): add the skull to it
+      for (Map.Entry<VbMatch, Deque<Feed>> e : feeds.entrySet()) {
+        Deque<Feed> q = e.getValue();
+        synchronized (q) {
+          List<Feed> all = new ArrayList<>(q);
+          q.clear();
+          for (Feed f : all) q.addLast(shooter.equals(f.killer()) && now - f.at() < HEAD_MS ? new Feed(f.killer(), f.victim(), f.weapon(), f.killerSquad(), f.victimSquad(), f.at(), true) : f);
+        }
+      }
+    }
   }
 
   // ---------------------------------------------------------------- frames
@@ -121,11 +143,19 @@ public final class VbHudService implements VbHud {
     return String.format(Locale.ROOT, "%d:%02d", seconds / 60, seconds % 60);
   }
 
-  private static Component pips(VbMatch m, int squad, TextColor team) {
+  /** One head glyph per squad member: their agent (a crossed-out face once dead), a grey blank until they locked one in. */
+  static Component heads(VbMatch m, int squad) {
+    VbGlyphs g = VbGlyphs.get();
     Component out = Component.empty();
     Set<UUID> alive = m.alive();
-    for (UUID id : m.squad(squad)) out = out.append(Component.text("■", alive.contains(id) ? team : NamedTextColor.DARK_GRAY));
+    for (UUID id : m.squad(squad)) out = out.append(g.inline(headName(m.agent(id), alive.contains(id), g)));
     return out;
+  }
+
+  /** The inline sprite of a squad member: head_<agent>, head_<agent>_dead or head_none. */
+  static String headName(String agent, boolean alive, VbGlyphs g) {
+    if (agent == null || agent.isEmpty() || !g.hasInline("head_" + agent)) return "head_none";
+    return alive ? "head_" + agent : "head_" + agent + "_dead";
   }
 
   /** The top line, as plain data so a test can read it. */
@@ -141,12 +171,12 @@ public final class VbHudService implements VbHud {
     };
     Component time = phase == VbPhase.END ? Component.empty() : Component.text(clock(left) + " ", phase == VbPhase.PLANTED ? NamedTextColor.LIGHT_PURPLE : NamedTextColor.WHITE);
     return Component.empty()
-        .append(pips(m, mine, ALLY))
+        .append(heads(m, mine))
         .append(Component.text("  " + m.score().wins(mine) + "  ", ALLY))
         .append(time)
         .append(Component.text("· " + label, NamedTextColor.GRAY))
         .append(Component.text("  " + m.score().wins(theirs) + "  ", ENEMY))
-        .append(pips(m, theirs, ENEMY));
+        .append(heads(m, theirs));
   }
 
   private void top(Player p, Viewer v, VbMatch m, int mine, VbPhase phase, long left, double fraction) {
@@ -174,7 +204,7 @@ public final class VbHudService implements VbHud {
       synchronized (q) {
         for (Feed f : q) if (wall - f.at() < FEED_MS) live.add(f);
       }
-    String key = live.stream().map(f -> f.at() + "").reduce("", (a, b) -> a + "," + b);
+    String key = live.stream().map(f -> f.at() + (f.head() ? "h" : "")).reduce("", (a, b) -> a + "," + b);
     if (key.equals(v.lastFeedKey)) return;
     v.lastFeedKey = key;
     for (BossBar b : v.feed) p.hideBossBar(b);
@@ -195,9 +225,18 @@ public final class VbHudService implements VbHud {
     TextColor killer = f.killerSquad() == mine ? ALLY : ENEMY;
     Component v = Component.text(name(m, f.victim()), victim);
     if (f.killer() == null) return v.append(Component.text(" was eliminated", NamedTextColor.GRAY));
-    return Component.text(name(m, f.killer()), killer)
-        .append(Component.text(f.weapon().isEmpty() ? " · " : " · " + f.weapon() + " · ", NamedTextColor.GOLD))
-        .append(v);
+    return Component.text(name(m, f.killer()), killer).append(weaponMark(f)).append(v);
+  }
+
+  /** The weapon icon between killer and victim (and a skull for a head shot); the weapon's name when it has no icon. */
+  static Component weaponMark(Feed f) {
+    VbGlyphs g = VbGlyphs.get();
+    String icon = null;
+    for (VbWeapon w : VbData.weapons().all()) if (w.name().equals(f.weapon()) && g.hasInline("gun_" + w.id())) icon = "gun_" + w.id();
+    Component out = Component.text("  ", NamedTextColor.GOLD);
+    out = out.append(icon == null ? Component.text(f.weapon().isEmpty() ? "·" : f.weapon(), NamedTextColor.GOLD) : g.inline(icon));
+    if (f.head()) out = out.append(Component.text(" ")).append(g.inline("skull"));
+    return out.append(Component.text("  ", NamedTextColor.GOLD));
   }
 
   private String name(VbMatch m, UUID id) {
@@ -206,34 +245,30 @@ public final class VbHudService implements VbHud {
     return p == null ? "Player" : p.getName();
   }
 
-  /** The bottom line: health and shield, the four ability slots, the magazine. */
-  Component status(VbMatch m, UUID id) {
-    Component out = Component.text("❤ " + m.health(id), NamedTextColor.WHITE);
-    int shield = m.shield(id);
-    if (shield > 0) out = out.append(Component.text("  ◆ " + shield, TextColor.color(0x7fc8e8)));
-    int[] c = plugin.valoblock.agents.charges(id);
-    if (c != null) {
-      out = out.append(Component.text("    "));
-      TextColor[] colors = {TextColor.color(0xffd36a), TextColor.color(0xffd36a), TextColor.color(0x5ad07a), TextColor.color(0xc9a8ff)};
-      for (int i = 0; i < 4; i++) {
-        boolean ready = c[i] > 0;
-        String text = (i == 3 ? "ULT" : "" + (4 + i)) + (i == 3 ? "" : ":" + c[i]);
-        out = out.append(Component.text("[" + text + "] ", ready ? colors[i] : NamedTextColor.DARK_GRAY));
-      }
-    }
-    String ammo = plugin.valoblock.weapons.ammoText(id);
-    if (ammo != null) out = out.append(Component.text("   " + ammo, NamedTextColor.WHITE));
-    return out;
+  /** The values the glyph HUD of this player shows right now. */
+  VbHudState.Input input(VbMatch m, UUID id, Player p, Viewer v, long wall) {
+    String agent = m.agent(id);
+    int[] ammo = VbHudState.parseAmmo(plugin.valoblock.weapons.ammoText(id));
+    var loc = p.getLocation();
+    if (Math.abs(loc.getX() - v.lastX) + Math.abs(loc.getZ() - v.lastZ) > 0.05) v.movedAt = wall;
+    v.lastX = loc.getX();
+    v.lastZ = loc.getZ();
+    String hit = v.hit != null && wall < v.hitUntil ? v.hit : null;
+    return new VbHudState.Input(m.alive().contains(id), m.health(id), m.shield(id), agent == null || agent.isEmpty() ? null : agent,
+        plugin.valoblock.agents.charges(id), plugin.valoblock.agents.maxCharges(id), ammo == null ? -1 : ammo[0], ammo == null ? 0 : ammo[1],
+        VbHudState.spreadLevel(p.isSneaking(), wall - v.movedAt < 300, !p.isOnGround()), hit);
   }
 
   private void action(Player p, Viewer v, VbMatch m, UUID id, VbPhase phase, long wall) {
-    Component c;
-    if (v.notice != null && wall < v.noticeUntil) c = v.notice;
-    else {
-      v.notice = null;
-      c = m.alive().contains(id) ? status(m, id) : Component.text("Eliminated: spectating", NamedTextColor.GRAY);
-    }
-    String key = PlainTextComponentSerializer.plainText().serialize(c);
+    var input = input(m, id, p, v, wall);
+    var glyphs = VbHudState.glyphs(input);
+    boolean notice = v.notice != null && wall < v.noticeUntil;
+    if (!notice) v.notice = null;
+    Component c = VbGlyphs.get().glyphs(glyphs);
+    if (notice) c = c.append(v.notice);
+    else if (!input.alive()) c = Component.text("Eliminated: spectating", NamedTextColor.GRAY);
+    // The colours carry the element and the bar width, so the key is the glyph list itself, not its text.
+    String key = glyphs + "|" + (notice ? PlainTextComponentSerializer.plainText().serialize(v.notice) : input.alive() ? "" : "dead");
     if (key.equals(v.lastAction) && wall - v.lastActionAt < RESEND_MS) return;
     v.lastAction = key;
     v.lastActionAt = wall;
@@ -246,6 +281,7 @@ public final class VbHudService implements VbHud {
     feeds.remove(m);
     lastFrame.remove(m);
     for (UUID id : m.participants()) {
+      headKillAt.remove(id);
       Viewer v = viewers.remove(id);
       Player p = Bukkit.getPlayer(id);
       if (v == null || p == null) continue;
