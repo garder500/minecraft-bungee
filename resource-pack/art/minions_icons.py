@@ -13,10 +13,12 @@ upgrade_<id> for the upgrade items. Keep the lists in step with survival-plugin/
 """
 import json, pathlib, struct, sys, zlib
 
+import boss_items as lore
+
 ART = pathlib.Path(__file__).resolve().parent
 PACK = ART.parent / "pack" / "assets" / "vampyuyu"
 SIZE = 16
-OUTLINE = (22, 17, 30, 255)
+OUTLINE = (20, 15, 24, 255)   # #140F18, the one outline colour of every sprite
 SKIN = (238, 202, 154, 255)
 SKIN_D = (205, 164, 118, 255)
 EYE = (30, 24, 40, 255)
@@ -53,6 +55,21 @@ TYPES = {
     "zombie": ((76, 146, 80), (50, 100, 58), "sword", (190, 196, 205)),
     "skeleton": ((220, 220, 214), (150, 150, 146), "bow", (150, 100, 56)),
     "slime": ((110, 220, 90), (70, 170, 60), "sword", (150, 240, 130)),
+}
+# Realm of each item (lore bible): its palette and glow replace the free colours below.
+REALM_OF = {
+    "cobblestone": "ashes", "coal": "ashes", "iron": "ashes", "redstone": "ashes",
+    "gold": "citadel", "sand": "citadel", "clay": "citadel",
+    "diamond": "frost", "lapis": "depths", "emerald": "storm", "fishing": "depths",
+    "wheat": "grove", "carrot": "grove", "potato": "grove", "pumpkin": "grove", "melon": "grove", "oak": "grove",
+    "spruce": "grove", "birch": "grove", "cow": "grove", "chicken": "grove", "pig": "grove", "sheep": "grove",
+    "zombie": "marsh", "slime": "marsh", "skeleton": "necro",
+    "fuel_enchanted_coal": "ashes", "fuel_enchanted_charcoal": "ashes", "fuel_enchanted_lava_bucket": "ashes",
+    "fuel_hamster_wheel": "citadel", "fuel_foul_flesh": "marsh", "fuel_catalyst": "storm",
+    "fuel_hyper_catalyst": "astral",
+    "upgrade_auto_smelter": "ashes", "upgrade_compactor": "depths", "upgrade_super_compactor": "depths",
+    "upgrade_diamond_spreading": "frost", "upgrade_minion_expander": "grove", "upgrade_flycatcher": "marsh",
+    "upgrade_mithril_infusion": "necro",
 }
 FUELS = ["enchanted_coal", "enchanted_charcoal", "enchanted_lava_bucket", "hamster_wheel", "foul_flesh", "catalyst",
          "hyper_catalyst"]
@@ -100,6 +117,22 @@ class Canvas:
                     self.px[y][x] = mix(c, (255, 255, 255, 255), light)
                 elif down or right:
                     self.px[y][x] = mix(c, (0, 0, 0, 255), dark)
+
+    def to_realm(self, realm, glow_chroma=100, cuts=(70, 130, 195)):
+        """Maps every colour onto the Realm palette (shadow, base, light, highlight; saturated bright pixels become the
+        glow). Drawn before outline(): the outline is kept as is."""
+        ramp = lore.realm_rgb(realm)
+        lift = lore.LIFT.get(realm, 0)
+        for y in range(SIZE):
+            for x in range(SIZE):
+                c = self.px[y][x]
+                if c is None or c == OUTLINE:
+                    continue
+                lum = 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2]
+                if max(c[:3]) - min(c[:3]) >= glow_chroma and max(c[:3]) >= 200:
+                    self.px[y][x] = ramp[4]
+                else:
+                    self.px[y][x] = ramp[min(3, lore.lore_step(lum, cuts) + lift)]
 
     def outline(self):
         src = [row[:] for row in self.px]
@@ -201,7 +234,17 @@ def minion(type_id):
     cv.rect(7, 6, 8, 6, SKIN_D)                                 # mouth
     cv.rect(6, 8, 9, 8, mix(body, (255, 255, 255, 255), 0.3))   # collar
     cv.shade()
+    cv.to_realm(REALM_OF[type_id], glow_chroma=999)
+    ramp = lore.realm_rgb(REALM_OF[type_id])
+    for y in range(SIZE):                                       # only the face takes the highlight step
+        for x in range(SIZE):
+            if cv.px[y][x] == ramp[3] and not (4 <= x <= 11 and 3 <= y <= 6):
+                cv.px[y][x] = ramp[2]
     cv.outline()
+    glow = ramp[4]
+    for x in (5, 9):                                            # the Realm glow lights the eyes
+        cv.set(x, 4, glow)
+    cv.set(7, 9, rgba(head)), cv.set(8, 9, rgba(head))          # chest mark in the colour of what it works
     return cv
 
 
@@ -265,6 +308,7 @@ def fuel(name):
         for (x, y) in ((3, 4), (12, 11), (12, 4), (3, 12)):
             cv.set(x, y, (255, 255, 255, 255))
     cv.shade(0.14, 0.2)
+    cv.to_realm(REALM_OF["fuel_" + name])
     cv.outline()
     return cv
 
@@ -319,6 +363,7 @@ def upgrade(name):
         cv.rect(6, 6, 9, 10, (110, 230, 225, 255))
         cv.rect(7, 7, 8, 8, (220, 255, 255, 255))
     cv.shade(0.12, 0.2)
+    cv.to_realm(REALM_OF["upgrade_" + name])
     cv.outline()
     return cv
 

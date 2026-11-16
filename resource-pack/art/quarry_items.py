@@ -34,12 +34,15 @@ def bronzite(c):
 
 
 def pebble(c):
-    gray = (0x9A, 0x98, 0x96)
-    c.fill_shape(b.union(b.circle(6.5, 9.5, 3.2), b.circle(10.2, 8, 2.6)), gray)
-    c.set(5, 8, b.shade(gray, 1.35))
-    c.set(9, 6, b.shade(gray, 1.35))
-    c.set(8, 10, b.shade(gray, 0.7))
+    # a pebble of Aethelgard: cooled stone of the Cracked Ashes with one ember in its crack
+    c.fill_shape(b.union(b.circle(6.5, 9.5, 3.4), b.circle(10.2, 8, 2.8), b.circle(8.5, 11, 2.4)), b.BASE)
+    c.set(5, 8, b.shade(b.BASE, 1.35))
+    c.set(6, 8, b.shade(b.BASE, 1.35))
+    c.set(9, 6, b.shade(b.BASE, 1.35))
+    c.set(8, 10, b.shade(b.BASE, 0.7))
+    c.set(9, 10, b.shade(b.ACCENT, 1.4))
     c.outline()
+    b.requant(c, "ashes")
 
 
 def bar(c, color, light):
@@ -62,11 +65,14 @@ def sunstone_bar(c):
 
 
 def bronze_core(c):
-    c.fill_shape(b.diamond(8, 8, 6.2, 6.2), BRONZE)
-    c.fill_shape(b.diamond(8, 8, 3.4, 3.4), b.mix(BRONZE, GOLD, 0.6))
-    c.fill_shape(b.diamond(8, 8, 1.4, 1.4), (0xFF, 0xF1, 0xC2))
-    b.sparkle(c, 4, 4, GOLD)
+    # bronzite casing with a cyan Flux heart (Flux machinery palette)
+    c.fill_shape(b.diamond(8, 8, 6.2, 6.2), b.BASE)
+    c.fill_shape(b.diamond(8, 8, 3.4, 3.4), b.shade(b.BASE, 1.25), light=1.0, dark=0.8)
+    c.fill_shape(b.diamond(8, 8, 1.4, 1.4), b.ACCENT)
+    c.set(4, 7, b.shade(b.BASE, 1.5))
+    c.set(5, 6, b.shade(b.BASE, 1.5))
     c.outline()
+    b.requant(c, "flux")
 
 
 def forge(c):
@@ -163,11 +169,14 @@ def sunstone(c):
 
 
 def ember_core(c):
-    c.fill_shape(b.diamond(8, 8, 6.2, 6.2), (0xC2, 0x3B, 0x1E))
-    c.fill_shape(b.diamond(8, 8, 3.6, 3.6), FIRE)
-    c.fill_shape(b.diamond(8, 8, 1.5, 1.5), (0xFF, 0xF1, 0xC2))
-    b.sparkle(c, 4, 4, FIRE)
+    # a cooled slag diamond split by a lava vein (Cracked Ashes motif)
+    c.fill_shape(b.diamond(8, 8, 6.2, 6.2), b.BASE)
+    c.fill_shape(b.diamond(8, 8, 3.6, 3.6), b.shade(b.BASE, 1.25), light=1.0, dark=0.8)
+    c.line(10, 4, 6, 12, b.ACCENT)
+    c.line(11, 4, 7, 12, b.ACCENT)
+    c.set(5, 6, b.shade(b.BASE, 1.5))
     c.outline()
+    b.requant(c, "ashes")
 
 
 def bronze_pick(c):
@@ -228,11 +237,14 @@ def miner_2(c):
 
 
 def void_lens(c):
-    c.fill_shape(b.ellipse(8, 8, 6.4, 4.4), (0x6A, 0x3F, 0xB0))
-    c.fill_shape(b.ellipse(8, 8, 3.6, 3.6), (0x2A, 0x16, 0x50))
-    c.fill_shape(b.circle(8, 8, 1.6), (0xE6, 0xD4, 0xFF))
-    b.sparkle(c, 4, 5, (0xB4, 0x8C, 0xF2))
+    # a rift that looks back: a lens with a dark iris and one glowing pupil (Astral Interiority motif)
+    c.fill_shape(b.ellipse(8, 8, 6.4, 4.4), b.shade(b.BASE, 1.25), light=1.0, dark=0.8)
+    c.fill_shape(b.ellipse(8, 8, 3.6, 3.6), b.shade(b.BASE, 0.7), light=1.0, dark=1.0)
+    c.fill_shape(b.circle(8, 8, 1.6), b.ACCENT, light=1.0, dark=1.0)
+    c.set(5, 6, b.shade(b.BASE, 1.5))
+    c.set(4, 7, b.shade(b.BASE, 1.5))
     c.outline()
+    b.requant(c, "astral")
 
 
 def px(c, cells, color):
