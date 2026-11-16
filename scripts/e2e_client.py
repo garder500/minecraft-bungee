@@ -1087,7 +1087,9 @@ def valoblock_scenario(ctx):
     say("where: " + vb(rcon, "debug where E2EBot"))
     # Death and respawn: the human dies, the round ends, the next round puts them back on a spawn, alive.
     vb(rcon, "debug kill E2EBot")
+    rcon.command("gamemode spectator E2EBot")  # what the engine / weapon service does to a dead player
     time.sleep(2)
+    say("dead: " + vb(rcon, "debug where E2EBot"))
     shot(tools, shots / "vb-06-dead.png")
     vb(rcon, "debug win b")
     time.sleep(1)
@@ -1114,7 +1116,6 @@ def valoblock_scenario(ctx):
     say(f"after the stop: {back} {dimension.strip()}")
     if "vb_arena" in dimension:
         failures.append("the human was not sent back out of vb_arena after the stop")
-    out = vb(rcon, "debug block 0 65 0") if False else ""
     shot(tools, shots / "vb-08-after-stop.png")
     console = (server / "console.log").read_text(errors="replace")
     for line in console.splitlines():

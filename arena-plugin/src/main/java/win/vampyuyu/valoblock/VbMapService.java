@@ -59,6 +59,13 @@ public final class VbMapService implements MapService {
   /** Orb pick-up check, five times a second. */
   public void start() {
     Bukkit.getScheduler().runTaskTimer(plugin, this::tickOrbs, 20, 4);
+    // Create the world once the arenas are loaded, so a start from the panel (not the server thread) finds it.
+    Bukkit.getScheduler().runTask(plugin, () -> {
+      if (plugin.arenas.all().stream().anyMatch(a -> a.config.preset().equals(VbPreset.ID))) {
+        String err = createWorld();
+        if (err != null) plugin.getLogger().warning("ValoBlock: " + err);
+      }
+    });
   }
 
   public String selected() {
@@ -89,6 +96,8 @@ public final class VbMapService implements MapService {
   public String createWorld() {
     try {
       if (world() == null) {
+        // Matches are ephemeral: blocks a crashed server left in an older copy are discarded first.
+        deleteStale(Bukkit.getWorldContainer().toPath().resolve(WORLD));
         World created = new WorldCreator(WORLD).generator(new SkyWorld.VoidGenerator()).createWorld();
         if (created == null) return "The server refused to create the world " + WORLD;
         world = created;
@@ -109,6 +118,13 @@ public final class VbMapService implements MapService {
       return null;
     } catch (Throwable e) {
       return "Could not create the world " + WORLD + " (" + e + ")";
+    }
+  }
+
+  private static void deleteStale(java.nio.file.Path dir) throws java.io.IOException {
+    if (!java.nio.file.Files.isDirectory(dir)) return;
+    try (var walk = java.nio.file.Files.walk(dir)) {
+      for (var path : walk.sorted(Comparator.reverseOrder()).toList()) java.nio.file.Files.deleteIfExists(path);
     }
   }
 
