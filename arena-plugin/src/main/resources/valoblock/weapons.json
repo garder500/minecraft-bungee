@@ -123,7 +123,7 @@
    },
    "firstShotPerfect": false,
    "note": "One headshot kills an unshielded player. Rings a bell sound on a kill.",
-   "killSound": "BLOCK_BELL_USE"
+   "killSound": "block.bell.use"
   },
   {
    "id": "shard_knife",

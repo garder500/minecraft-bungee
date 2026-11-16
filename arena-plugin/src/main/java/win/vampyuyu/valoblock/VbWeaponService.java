@@ -244,6 +244,7 @@ public final class VbWeaponService implements WeaponService, Listener {
       boolean head = e.getValue()[1] > 0;
       Player v = Bukkit.getPlayer(vid);
       if (v != null) mirrorHealth(v, m);
+      if (died && v != null) spectate(v);
       p.playSound(p.getLocation(), "entity.arrow.hit_player", SoundCategory.PLAYERS, 0.7f, head ? 1.9f : 1.2f);
       plugin.valoblock.hud.hitMarker(p.getUniqueId(), head, died);
       if (died && !w.killSound().isEmpty()) world.playSound(p.getLocation(), w.killSound(), SoundCategory.PLAYERS, 1f, 0.8f);
@@ -253,6 +254,11 @@ public final class VbWeaponService implements WeaponService, Listener {
     Location now2 = p.getLocation();
     float pitch = (float) Math.max(-90, now2.getPitch() - k[0]);
     p.setRotation((float) (now2.getYaw() + k[1]), pitch);
+  }
+
+  /** A player killed mid-round watches the rest of it (nothing brings them back until the respawn slice). */
+  private void spectate(Player v) {
+    Bukkit.getScheduler().runTask(plugin, () -> v.setGameMode(org.bukkit.GameMode.SPECTATOR));
   }
 
   private boolean moving(Gear g, long now) {
@@ -408,6 +414,7 @@ public final class VbWeaponService implements WeaponService, Listener {
     int dmg = GunMath.knifeDamage(knife, face.getX(), face.getZ(), p.getLocation().getX() - v.getLocation().getX(), p.getLocation().getZ() - v.getLocation().getZ());
     boolean died = m.damage(target, p.getUniqueId(), dmg);
     mirrorHealth(v, m);
+    if (died) spectate(v);
     p.playSound(p.getLocation(), "entity.arrow.hit_player", SoundCategory.PLAYERS, 0.7f, dmg > knife.body() ? 1.9f : 1.2f);
     plugin.valoblock.hud.hitMarker(p.getUniqueId(), dmg > knife.body(), died);
   }
