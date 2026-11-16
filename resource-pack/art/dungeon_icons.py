@@ -4,8 +4,9 @@
     python3 resource-pack/art/dungeon_icons.py
 
 Writes textures/item/dungeon/*.png, models/item/dungeon/*.json and items/dungeon/*.json under
-pack/assets/vampyuyu/, used as item models vampyuyu:dungeon/<name>. Rarity colours follow the Skyblock
-convention: the brighter and more saturated the item, the rarer it is.
+pack/assets/vampyuyu/, used as item models vampyuyu:dungeon/<name>. Rarity colours follow the lore
+bible: every item takes the five-colour palette of its Realm (shadow, base, light, highlight, glow), one outline
+colour, light from the top left, flat steps only (no gradients, no alpha); the glow pixel marks the Realm motif.
 """
 import json
 import math
@@ -80,121 +81,154 @@ def disc(img, cx, cy, r, color):
                 put(img, x, y, color)
 
 
-def lit(img, base, light_dir=(-1, -1)):
-    """Re-colours opaque pixels by their position along the light direction (upper left lit, lower right dark)."""
+def pal(*hexes):
+    return tuple(tuple(int(h[i:i + 2], 16) for i in (1, 3, 5)) + (255,) for h in hexes)
+
+
+NECRO = pal("#241f3a", "#4a4570", "#9c95c8", "#e8e4ff", "#6affd8")      # Ethereal Necropolis
+GROVE = pal("#2c3a1e", "#4f6b2a", "#8fb84a", "#d6f08a", "#f1e7c9")      # Whispering Grove
+CITADEL = pal("#5a3a12", "#a8742a", "#f2c14e", "#fff1b0", "#3fb6a8")    # Citadel of Golden Sands
+MARSH = pal("#2a2a1a", "#4e5a22", "#8a9a2e", "#c9d36a", "#b04aa0")      # Putrid Marshes
+
+
+def lit(img, p, base):
+    """Flat three-step shading of the `base` pixels: highlight on the upper-left rim, shadow on the lower-right rim."""
+    sh, mid, lt, hi, glow = p
     for y in range(16):
         for x in range(16):
-            if img[y][x] == base:
-                t = ((x - 8) * light_dir[0] + (y - 8) * light_dir[1]) / 12.0
-                img[y][x] = shade(base, 1.0 + max(-0.35, min(0.35, t * 0.5)))
+            if img[y][x] != base:
+                continue
+            up = y == 0 or img[y - 1][x][3] == 0
+            left = x == 0 or img[y][x - 1][3] == 0
+            down = y == 15 or img[y + 1][x][3] == 0
+            right = x == 15 or img[y][x + 1][3] == 0
+            if up or left:
+                img[y][x] = hi if (up and left) else lt
+            elif down or right:
+                img[y][x] = mid
+            else:
+                img[y][x] = lt if x + y < 14 else mid
 
 
 # ---------------------------------------------------------------- icons
 
 def bone_fragment():
+    """A broken bone with two knobs at each end, a crack and one soul-flame pixel."""
+    sh, mid, lt, hi, glow = NECRO
     img = canvas()
-    ivory = rgb(226, 220, 196)
-    line(img, 4, 12, 12, 4, ivory, 2)
+    line(img, 4, 12, 12, 4, lt, 2)
     for cx, cy in ((3, 13), (5, 13), (3, 11), (11, 3), (13, 3), (13, 5)):
-        disc(img, cx, cy, 1, ivory)
+        disc(img, cx, cy, 1, lt)
+    lit(img, NECRO, lt)
     for x, y in ((6, 9), (9, 6)):
-        put(img, x, y, rgb(170, 162, 140))
-    put(img, 12, 4, rgb(255, 252, 238))
-    lit(img, ivory)
+        put(img, x, y, sh)
+    put(img, 7, 8, glow)
     outline(img)
     return img
 
 
 def crypt_shard():
+    """A pointed crystal sliver in ash lavender with a soul-flame core."""
+    sh, mid, lt, hi, glow = NECRO
     img = canvas()
-    teal = rgb(70, 190, 180)
     for y in range(1, 15):
         half = (y - 1) * 0.55 if y < 8 else (14 - y) * 0.75
         for x in range(16):
             if abs(x - 7.5) <= half:
-                put(img, x, y, teal)
-    for y in range(16):
-        for x in range(16):
-            if img[y][x] == teal:
-                img[y][x] = shade(teal, 1.25 if x < 7 else 0.78 if x > 8 else 1.0)
+                put(img, x, y, lt if x < 8 else mid)
     for y in range(3, 9):
-        put(img, 6, y, rgb(190, 255, 245))
+        put(img, 6, y, hi)
+    for y in range(9, 13):
+        put(img, 7, y, glow if y < 11 else lt)
+    put(img, 7, 8, glow)
     outline(img)
     return img
 
 
 def wither_essence():
+    """A decaying drop of essence: a dark orb, a bruise-purple core, spores around it (Putrid Marshes decay)."""
+    sh, mid, lt, hi, glow = MARSH
     img = canvas()
-    disc(img, 8, 8, 5, rgb(40, 24, 62))
-    disc(img, 8, 8, 3, rgb(86, 44, 130))
-    disc(img, 7, 7, 1, rgb(190, 110, 255))
+    disc(img, 8, 8, 5, sh)
+    disc(img, 8, 8, 3, mid)
+    for x, y in ((7, 6), (8, 6), (6, 7)):
+        put(img, x, y, lt)
+    disc(img, 9, 9, 1, glow)
+    put(img, 6, 6, hi)
     for x, y in ((3, 3), (12, 4), (13, 11), (3, 12), (8, 1), (8, 14)):
-        put(img, x, y, rgb(130, 70, 190))
-    for x, y in ((6, 6), (7, 6)):
-        put(img, x, y, rgb(235, 200, 255))
+        put(img, x, y, mid)
     outline(img)
     return img
 
 
 def spirit_dust():
+    """A small heap of dust under four drifting motes; the soul flame glows in the heap."""
+    sh, mid, lt, hi, glow = NECRO
     img = canvas()
-    cyan = rgb(110, 225, 245)
     for y in range(8, 14):
         half = (y - 7) * 1.3
         for x in range(16):
             if abs(x - 7.5) <= half:
-                put(img, x, y, shade(cyan, 0.7 + 0.5 * (1 - (y - 8) / 6) if x < 8 else 0.55 + 0.4 * (1 - (y - 8) / 6)))
+                put(img, x, y, lt)
+    lit(img, NECRO, lt)
+    for x in range(16):
+        put(img, x, 13, mid if img[13][x][3] else CLEAR)
     for x, y in ((5, 5), (10, 4), (8, 2), (12, 7), (3, 8)):
-        put(img, x, y, rgb(235, 255, 255))
-        put(img, x, y - 1, rgb(160, 235, 250))
-        put(img, x, y + 1, rgb(160, 235, 250))
-        put(img, x - 1, y, rgb(160, 235, 250))
-        put(img, x + 1, y, rgb(160, 235, 250))
+        put(img, x, y, hi)
+        for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+            put(img, x + dx, y + dy, lt)
+    for x, y in ((8, 11), (7, 11)):
+        put(img, x, y, glow)
     outline(img)
     return img
 
 
 def relic():
+    """A golden ring-and-cross (ankh) from the Citadel with a turquoise inlay."""
+    sh, mid, lt, hi, glow = CITADEL
     img = canvas()
-    gold = rgb(240, 190, 50)
     for y in range(16):
         for x in range(16):
             d = math.hypot(x - 7.5, y - 5.5)
             if 2.6 <= d <= 4.6:
-                put(img, x, y, gold)
-    line(img, 8, 9, 8, 14, gold, 2)
-    line(img, 4, 11, 11, 11, gold, 2)
-    lit(img, gold)
-    put(img, 7, 5, rgb(220, 40, 60))
-    put(img, 8, 5, rgb(255, 110, 120))
-    put(img, 7, 6, rgb(170, 20, 50))
-    put(img, 8, 6, rgb(220, 40, 60))
+                put(img, x, y, lt)
+    line(img, 8, 9, 8, 14, lt, 2)
+    line(img, 4, 11, 11, 11, lt, 2)
+    lit(img, CITADEL, lt)
+    put(img, 7, 5, glow)
+    put(img, 8, 5, glow)
+    put(img, 7, 6, mid)
+    put(img, 8, 6, glow)
     outline(img)
     return img
 
 
 def dark_scroll():
+    """A rolled scroll of ash paper, two lines of script and a soul-flame seal."""
+    sh, mid, lt, hi, glow = NECRO
     img = canvas()
-    paper = rgb(74, 66, 96)
     for y in range(4, 12):
         for x in range(3, 13):
-            put(img, x, y, paper)
+            put(img, x, y, mid)
     for y in range(3, 13):
         for x in (2, 13):
-            put(img, x, y, rgb(120, 110, 150))
-        put(img, 3, y, rgb(104, 94, 134))
-        put(img, 12, y, rgb(104, 94, 134))
+            put(img, x, y, lt)
+        put(img, 3, y, lt)
+        put(img, 12, y, sh)
+    for x in range(2, 14):
+        put(img, x, 3, hi if x < 8 else lt)
     for y in (6, 9):
-        line(img, 5, y, 10, y, rgb(150, 70, 190))
-    disc(img, 8, 8, 1, rgb(190, 30, 50))
-    put(img, 8, 7, rgb(250, 90, 100))
+        line(img, 5, y, 10, y, lt)
+    disc(img, 8, 8, 1, glow)
+    put(img, 8, 7, hi)
     outline(img)
     return img
 
 
 def spirit_leaf():
+    """A leaf of the Whispering Grove with a pale vein and a spore."""
+    sh, mid, lt, hi, glow = GROVE
     img = canvas()
-    green = rgb(80, 205, 120)
     c = math.cos(math.radians(45))
     for y in range(16):
         for x in range(16):
@@ -202,33 +236,34 @@ def spirit_leaf():
             v = ((x - 8) * c - (y - 8) * c)
             # the leaf points to the upper right: u runs along the leaf
             if (v / 3.6) ** 2 + ((u + 0.5) / 7.2) ** 2 <= 1.0 and u > -6:
-                put(img, x, y, shade(green, 1.2 - 0.5 * (v + 3.6) / 7.2))
-    line(img, 3, 13, 12, 4, rgb(210, 255, 225), 1)
-    line(img, 2, 14, 3, 13, rgb(110, 80, 50), 1)
+                put(img, x, y, lt if v < 0 else mid)
+    line(img, 3, 13, 12, 4, hi, 1)
+    line(img, 2, 14, 3, 13, sh, 1)
     for x, y in ((11, 11), (4, 4), (13, 8)):
-        put(img, x, y, rgb(200, 255, 255))
+        put(img, x, y, glow)
     outline(img)
     return img
 
 
 def healing_flask():
+    """A round flask: glass, a green sap of the Grove, a cork; the pale glow pixel is the light in the liquid."""
+    sh, mid, lt, hi, glow = GROVE
     img = canvas()
-    glass = rgb(190, 225, 240)
-    red = rgb(215, 40, 60)
+    glass = pal("#bfe3d0")[0]
     disc(img, 8, 10, 4, glass)
     for y in range(6, 15):
         for x in range(16):
             if (x - 8) ** 2 + (y - 10) ** 2 <= 9 and y >= 9:
-                put(img, x, y, red if x > 6 else shade(red, 1.25))
+                put(img, x, y, lt if x <= 6 else mid)
     for y in range(3, 7):
         put(img, 7, y, glass)
         put(img, 8, y, glass)
     put(img, 6, 6, glass)
     put(img, 9, 6, glass)
-    put(img, 7, 2, rgb(150, 105, 60))
-    put(img, 8, 2, rgb(125, 85, 48))
-    put(img, 6, 9, rgb(255, 255, 255))
-    put(img, 7, 11, rgb(255, 150, 160))
+    put(img, 7, 2, sh)
+    put(img, 8, 2, mid)
+    put(img, 6, 9, hi)
+    put(img, 7, 11, glow)
     outline(img)
     return img
 

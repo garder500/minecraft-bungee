@@ -14,7 +14,6 @@ shape, no flight) in gold and white.
 """
 import json
 import pathlib
-import random
 import struct
 import zlib
 
@@ -22,13 +21,29 @@ ART = pathlib.Path(__file__).resolve().parent
 PACK = ART.parent / "pack/assets/vampyuyu"
 TIERS = ("bronze", "rime", "ember", "void", "starcore")
 
-PALETTES = {  # plate, light, dark, trim, accent (gem / glow / crystal)
-    "bronze": ((178, 112, 48), (232, 170, 92), (104, 60, 26), (236, 186, 64), (255, 222, 128)),
-    "rime": ((150, 196, 232), (226, 244, 255), (64, 104, 156), (236, 246, 255), (86, 156, 255)),
-    "ember": ((228, 146, 38), (255, 214, 110), (146, 66, 18), (255, 204, 84), (255, 116, 32)),
-    "void": ((62, 32, 104), (138, 84, 208), (24, 12, 44), (196, 136, 255), (232, 160, 255)),
-    "starcore": ((238, 232, 216), (255, 255, 250), (176, 156, 116), (240, 192, 72), (120, 204, 255)),
+def _h(hexes):
+    return tuple(tuple(int(h[i:i + 2], 16) for i in (1, 3, 5)) for h in hexes.split())
+
+
+# Realm palettes (shadow, base, light, highlight, glow) from the lore bible: bronze = Citadel of Golden Sands,
+# rime = Frozen Heights, ember = Cracked Ashes, void = Ethereal Necropolis, starcore = the Astral Interiority.
+REALM = {
+    "bronze": _h("#5a3a12 #a8742a #f2c14e #fff1b0 #3fb6a8"),
+    "rime": _h("#1f3557 #3b6fa8 #7fc8e8 #e6f7ff #b6a8ff"),
+    "ember": _h("#120a16 #5a2a2a #c8461e #ff8a2a #ffd36a"),
+    "void": _h("#241f3a #4a4570 #9c95c8 #e8e4ff #6affd8"),
+    "starcore": _h("#0e0a1a #3a1a6a #8a4aff #e0c8ff #ff4a8a"),
 }
+OUTLINE = (20, 15, 24)
+# glow pixels of the Realm motif on the plate: ashes crack, frost eye, sand clock, soul flame, singularity spark
+MOTIF = {
+    "bronze": ((12, 7), (12, 8), (11, 8)),
+    "rime": ((7, 13), (8, 13), (7, 12), (8, 12)),
+    "ember": ((11, 7), (11, 8), (12, 9), (12, 10), (13, 11)),
+    "void": ((12, 7), (12, 8), (11, 9), (12, 9)),
+    "starcore": ((12, 7), (11, 8), (13, 8), (12, 9)),
+}
+PALETTES = {t: (REALM[t][2], REALM[t][3], REALM[t][0], REALM[t][3], REALM[t][4]) for t in REALM}  # legacy order
 
 
 def png(width, height, rows):
@@ -45,35 +60,31 @@ def mix(a, b, t):
 
 
 def texture(kind, tier):
-    """A 16x16 texture of one material of a helmet."""
-    plate, light, dark, trim, accent = PALETTES[tier]
-    rnd = random.Random(zlib.crc32(f"{tier}:{kind}".encode()))
+    """A 16x16 flat-shaded texture of one material of a helmet: palette steps only, light from the top left."""
+    sh, base, lt, hi, glow = REALM[tier]
     rows = []
     for y in range(16):
         row = []
         for x in range(16):
-            t = y / 15
-            if kind == "plate":  # a sheen from the top-left, panel lines, rivets
-                c = mix(light, dark, min(1, t * 0.9 + x / 60))
+            if kind == "plate":  # three flat steps along the light, panel lines, rivets, the Realm motif
+                v = x + y
+                c = hi if v < 4 else lt if v < 13 else base if v < 25 else sh
                 if y in (5, 11):
-                    c = mix(c, dark, 0.6)
+                    c = base if c in (hi, lt) else sh
                 if (x, y) in ((2, 2), (13, 2), (2, 8), (13, 8), (2, 14), (13, 14)):
-                    c = trim
-                c = mix(c, (255, 255, 255), rnd.random() * 0.06)
-            elif kind == "trim":  # polished gold (or silver): a bright line and a deep edge
-                c = mix(mix(trim, (255, 250, 220), 0.5), mix(trim, dark, 0.45), t)
-                if y == 2:
-                    c = (255, 250, 225)
-                if y >= 14:
-                    c = mix(trim, dark, 0.6)
+                    c = hi
+                if (x, y) in MOTIF[tier]:
+                    c = glow
+            elif kind == "trim":  # a bright edge, a body step and a deep edge
+                c = hi if y <= 2 else sh if y >= 14 else base if y >= 11 else lt
             elif kind == "dark":
-                c = mix(dark, (8, 6, 12), 0.6)
-            else:  # accent: a gem or crystal with a facet highlight
+                c = OUTLINE if (x + y) % 5 else sh
+            else:  # accent: a faceted gem, outline ring, highlight top left, glow core
                 d = abs(x - 7.5) + abs(y - 7.5)
-                c = mix(mix(accent, (255, 255, 255), 0.55), mix(accent, dark, 0.35), min(1, d / 11))
-                if (x - y) in (0, 1) and x < 8:
-                    c = mix(c, (255, 255, 255), 0.6)
-            row.append(tuple(max(0, min(255, v)) for v in c) + (255,))
+                c = OUTLINE if d > 9 else sh if d > 7 else base if d > 4 else lt if d > 2 else glow
+                if d <= 7 and (x, y) in ((5, 5), (6, 5), (5, 6)):
+                    c = hi
+            row.append(tuple(c) + (255,))
         rows.append(row)
     return png(16, 16, rows)
 
@@ -173,7 +184,7 @@ def helmet(tier):
 def wings():
     """Elytra-layout texture (64x32, the wing box at u=22 v=0, 10x20x2): rows of white feathers with gold tips."""
     rows = [[(0, 0, 0, 0)] * 64 for _ in range(32)]
-    white, cream, gold, deep = (250, 246, 232), (232, 220, 190), (240, 196, 80), (176, 128, 40)
+    white, cream, gold, deep = REALM["starcore"][3], REALM["starcore"][2], REALM["starcore"][4], REALM["starcore"][1]
     for y in range(0, 22):
         for x in range(22, 46):
             band = (y // 3) % 2
