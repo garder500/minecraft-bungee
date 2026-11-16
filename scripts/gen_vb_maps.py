@@ -32,6 +32,8 @@ PALETTES = {
                        defend="LIGHT_BLUE_CONCRETE", feature="YELLOW_CONCRETE", high="WAXED_COPPER_BLOCK", crate="BARREL",
                        foliage="AZALEA_LEAVES", water="BLUE_CONCRETE"),
 }
+# Standing height of the high-ground cells (h), in blocks above the floor: the themed builders build to it.
+HIGH_Y = {"hourfall": 4, "rootvault": 6, "stormbreak": 1}
 WALKABLE = set(".RBAFh")  # h (high ground, 1 block up) is walked on top
 
 
@@ -41,7 +43,7 @@ def build(name, d):
     n = len(plan)
 
     def centre(col, row):
-        return [round((col + 0.5) * cell, 2), 1 if plan[row][col] == "h" else 0, round((row + 0.5) * cell, 2)]
+        return [round((col + 0.5) * cell, 2), HIGH_Y[mid] if plan[row][col] == "h" else 0, round((row + 0.5) * cell, 2)]
 
     def nid(col, row):
         return "n_%d_%d" % (col, row)
@@ -111,7 +113,7 @@ def build(name, d):
     orbs = [centre(*nearest(7, 14)), centre(*nearest(22, 15))]
     return dict(
         id=mid, name=name, realm=d["realm"], feature=d["featureName"], featureText=d["feature"],
-        cell=cell, wallHeight=4, palette=PALETTES[mid],
+        cell=cell, wallHeight=4, highY=HIGH_Y[mid], palette=PALETTES[mid],
         plan=plan,
         spawns={s: markers[s]["spawns"] for s in markers},
         buyZones={s: markers[s]["buy"] for s in markers},

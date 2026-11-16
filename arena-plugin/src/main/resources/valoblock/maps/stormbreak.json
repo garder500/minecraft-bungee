@@ -6,6 +6,7 @@
   "featureText": "Islands joined by narrow bridges. Wind pads (yellow) launch players from island to island in 2 s; every 45 s a gust shoves everyone standing on a bridge sideways. Falling into the sea is death, so bridges are quiet but risky.",
   "cell": 5,
   "wallHeight": 4,
+  "highY": 1,
   "palette": {"floor": "DEEPSLATE_TILES", "wall": "DEEPSLATE_BRICKS", "site": "MAGENTA_TERRACOTTA", "attack": "ORANGE_CONCRETE", "defend": "LIGHT_BLUE_CONCRETE", "feature": "YELLOW_CONCRETE", "high": "WAXED_COPPER_BLOCK", "crate": "BARREL", "foliage": "AZALEA_LEAVES", "water": "BLUE_CONCRETE"},
   "plan": [
     "wwwwwwwwwwBBBBBBBBBBwwwwwwwwww",

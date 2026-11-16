@@ -42,7 +42,7 @@ public final class VbMap {
   public record Barrier(VbSide side, Box box) {}
 
   private final String id, name, realm, feature;
-  private final int cell, wallHeight;
+  private final int cell, wallHeight, highY;
   private final Map<String, String> palette;
   private final List<String> plan;
   private final Map<VbSide, List<double[]>> spawns;
@@ -61,6 +61,8 @@ public final class VbMap {
     feature = j.has("feature") ? j.get("feature").getAsString() : "";
     cell = (int) VbRules.d(j, "cell");
     wallHeight = (int) VbRules.d(j, "wallHeight");
+    highY = j.has("highY") ? (int) VbRules.d(j, "highY") : 1;
+    if (highY < 1 || highY > 8) throw new IllegalArgumentException(id + ": highY must be 1 to 8");
     if (cell < 1 || cell > 16) throw new IllegalArgumentException(id + ": cell must be 1 to 16");
     if (wallHeight < 2 || wallHeight > 12) throw new IllegalArgumentException(id + ": wallHeight must be 2 to 12");
     palette = new LinkedHashMap<>();
@@ -171,6 +173,16 @@ public final class VbMap {
     return wallHeight;
   }
 
+  /** Height of the high-ground cells (h) above the floor: a themed build raises them, the bot graph stands on them. */
+  public int highY() {
+    return highY;
+  }
+
+  /** Where feet stand on a plan character, relative to the floor level. */
+  public int standY(char c) {
+    return c == 'h' ? highY : 0;
+  }
+
   /** Blocks along x. */
   public int width() {
     return plan.get(0).length() * cell;
@@ -271,7 +283,7 @@ public final class VbMap {
               }
               case 'h' -> {
                 sink.set(x, -1, z, Kind.FLOOR);
-                sink.set(x, 0, z, Kind.HIGH);
+                for (int y = 0; y < highY; y++) sink.set(x, y, z, Kind.HIGH);
               }
               case 'c' -> {
                 sink.set(x, -1, z, Kind.FLOOR);
@@ -292,7 +304,7 @@ public final class VbMap {
           }
       }
     int w = width(), d = depth();
-    for (int y = -1; y < 8; y++) {
+    for (int y = -1; y < Math.max(8, highY + 4); y++) {
       for (int x = -1; x <= w; x++) {
         sink.set(x, y, -1, Kind.BARRIER);
         sink.set(x, y, d, Kind.BARRIER);
@@ -302,6 +314,11 @@ public final class VbMap {
         sink.set(w, y, z, Kind.BARRIER);
       }
     }
+  }
+
+  /** The most the map can reach above (the invisible border and the clear box go this high). */
+  public int highestY() {
+    return 24;
   }
 
   /** The most the map can reach below, above and to the sides (for clearing). */
