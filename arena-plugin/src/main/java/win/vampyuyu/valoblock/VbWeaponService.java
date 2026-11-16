@@ -68,6 +68,7 @@ public final class VbWeaponService implements WeaponService, Listener {
     String shownId = "";
     String look = ""; // the custom_model_data state last written on the held stack
     boolean scoped;
+    long inspectUntil; // end of the inspect pose of the gun just drawn (ms)
 
     GunState gun(VbWeapon w) {
       return guns.computeIfAbsent(w.id(), k -> new GunState(w));
@@ -219,6 +220,7 @@ public final class VbWeaponService implements WeaponService, Listener {
     g.look = "";
     g.scoped = false;
     if (WeaponItems.isScope(inv.getHelmet())) inv.setHelmet(null);
+    plugin.valoblock.agents.dressed(p);
   }
 
   private void place(PlayerInventory inv, int slot, Gear g, VbWeapon w) {
@@ -264,7 +266,7 @@ public final class VbWeaponService implements WeaponService, Listener {
    */
   private void look(Player p, Gear g, VbWeapon w, GunState gs, long now) {
     boolean sneaking = p.isSneaking();
-    String want = GunVisual.state(gs.reloading(), gs.sinceShot(now), sneaking);
+    String want = GunVisual.state(gs.reloading(), gs.sinceShot(now), sneaking, now < g.inspectUntil);
     if (!want.equals(g.look)) {
       g.look = want;
       WeaponItems.setState(p.getInventory().getItemInMainHand(), want);
@@ -276,6 +278,7 @@ public final class VbWeaponService implements WeaponService, Listener {
     if (on == g.scoped) return;
     g.scoped = on;
     p.getInventory().setHelmet(on ? WeaponItems.scope() : null);
+    if (!on) plugin.valoblock.agents.dressed(p); // the hood comes back
   }
 
   private void refreshStack(Player p, VbWeapon w, GunState gs) {
@@ -599,6 +602,7 @@ public final class VbWeaponService implements WeaponService, Listener {
   public void heldChange(PlayerItemHeldEvent e) {
     Player p = e.getPlayer();
     if (matchOf(p.getUniqueId()) == null) return;
+    gear(p.getUniqueId()).inspectUntil = System.currentTimeMillis() + GunVisual.INSPECT_MS; // the gun drawn next shows its inspect pose
     VbWeapon w = held(p); // the gun being put away: a reload in progress is lost
     if (w != null && w.isGun()) {
       Gear g = gear(p.getUniqueId());
@@ -667,7 +671,14 @@ public final class VbWeaponService implements WeaponService, Listener {
       refresh(p, m, g);
       return;
     }
-    VbWeapon w = ArmoryMenu.at(e.getSlot());
+    int tab = VbArmoryLayout.tabAt(e.getSlot());
+    if (tab >= 0) {
+      ArmoryMenu.setTab(p.getUniqueId(), tab);
+      p.playSound(p.getLocation(), "ui.button.click", SoundCategory.PLAYERS, 0.6f, 1.2f);
+      refresh(p, m, g);
+      return;
+    }
+    VbWeapon w = ArmoryMenu.at(p.getUniqueId(), e.getSlot());
     if (w == null) return;
     Armory.Result r = e.isRightClick() ? Armory.sell(m, g.loadout, p.getUniqueId(), w) : e.isLeftClick() ? Armory.buy(m, g.loadout, p.getUniqueId(), w) : null;
     if (r == null) return;
@@ -691,6 +702,7 @@ public final class VbWeaponService implements WeaponService, Listener {
   @EventHandler
   public void quit(PlayerQuitEvent e) {
     gear.remove(e.getPlayer().getUniqueId());
+    ArmoryMenu.forget(e.getPlayer().getUniqueId());
   }
 
   // ------------------------------------------------------------------ the menu

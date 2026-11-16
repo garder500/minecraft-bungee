@@ -181,9 +181,20 @@ public final class VbBotService implements BotService {
       mq.setDescription(Component.empty());
       mq.customName(Component.text(name));
       mq.setCustomNameVisible(true);
-      if (agent != null && agent.hasSkin())
-        mq.setProfile(ResolvableProfile.resolvableProfile().addProperty(new ProfileProperty("textures", agent.skinValue(), agent.skinSignature())).build());
+      if (agent != null) mq.setProfile(skinProfile(agent));
     });
+  }
+
+  /**
+   * The mannequin's skin without any signing: the profile's texture override points at the agent skin inside the
+   * ValoBlock pack (textures/entity/valoblock/skin_&lt;id&gt;.png). The override wins over a signed property, so a signed
+   * one is only kept for the day the pack is not needed.
+   */
+  static ResolvableProfile skinProfile(VbAgent agent) {
+    var b = ResolvableProfile.resolvableProfile();
+    if (agent.hasSkin()) b.addProperty(new ProfileProperty("textures", agent.skinValue(), agent.skinSignature()));
+    return b.skinPatch(sp -> sp.body(net.kyori.adventure.key.Key.key("vampyuyu", "entity/valoblock/skin_" + agent.id()))
+        .model(org.bukkit.profile.PlayerTextures.SkinModel.CLASSIC)).build();
   }
 
   private void equip(Bot b) {

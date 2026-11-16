@@ -11,13 +11,18 @@ import win.vampyuyu.arena.NexusArenaEngine;
 /** /vb: operate ValoBlock arenas (start, stop, status, reload) and drive tests (debug). Admin only. */
 public final class VbCommand implements CommandExecutor, TabCompleter {
   private static final List<String> SUBS = List.of("help", "use", "start", "stop", "status", "reload", "level", "map", "debug");
-  private static final List<String> DEBUG = List.of("skip", "state", "win", "kill", "plant", "seal", "armory", "block", "where");
+  private static final List<String> DEBUG = List.of("skip", "state", "win", "kill", "plant", "seal", "armory", "block", "where", "tp", "god");
 
   private final NexusArenaEngine plugin;
   private final Map<String, String> selected = new HashMap<>();
 
   public VbCommand(NexusArenaEngine plugin) {
     this.plugin = plugin;
+  }
+
+  /** Subcommands an admin may run while inside an arena (to run the match they are playing in); the rest stays locked. */
+  static boolean allowedInsideArena(String sub) {
+    return sub.equals("start") || sub.equals("stop") || sub.equals("status") || sub.equals("help");
   }
 
   private static void say(CommandSender to, String text) {
@@ -44,9 +49,9 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
     try {
       if (!sender.hasPermission("nexusarena.admin"))
         throw new IllegalArgumentException("Arena administrator permission required");
-      if (sender instanceof Player p && plugin.arenas.locked(p.getUniqueId()))
-        throw new IllegalArgumentException("Administrator access outside an arena required");
       String sub = args.length == 0 ? "help" : args[0].toLowerCase(Locale.ROOT);
+      if (sender instanceof Player p && plugin.arenas.locked(p.getUniqueId()) && !allowedInsideArena(sub))
+        throw new IllegalArgumentException("Administrator access outside an arena required");
       switch (sub) {
         case "use" -> {
           if (args.length < 2) throw new IllegalArgumentException("Usage: /vb use <arena>");
@@ -234,6 +239,28 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
         var w = plugin.valoblock.map.world();
         if (w == null) throw new IllegalArgumentException("The ValoBlock world is not loaded");
         say(sender, "block " + w.getBlockAt(Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4])).getType());
+      }
+      case "god" -> {
+        // /vb debug god <player> [on|off]: the bots cannot hurt the player (screenshots of a Realm mechanic need a living human).
+        if (args.length < 3) throw new IllegalArgumentException("Usage: /vb debug god <player> [on|off]");
+        Player p = plugin.getServer().getPlayerExact(args[2]);
+        if (p == null) throw new IllegalArgumentException("Nobody called " + args[2] + " is online");
+        boolean on = args.length < 4 || !args[3].equalsIgnoreCase("off");
+        m.setInvulnerable(p.getUniqueId(), on);
+        say(sender, "god " + p.getName() + " " + (on ? "on" : "off"));
+      }
+      case "tp" -> {
+        // /vb debug tp <player> <x> <y> <z> [yaw pitch]: x and z are blocks of the map (slot 0); the engine cancels arena teleports unless allowed.
+        if (args.length < 6) throw new IllegalArgumentException("Usage: /vb debug tp <player> <x> <y> <z> [yaw pitch]");
+        Player p = plugin.getServer().getPlayerExact(args[2]);
+        var w = plugin.valoblock.map.world();
+        if (p == null || w == null) throw new IllegalArgumentException("No such player or the ValoBlock world is not loaded");
+        float yaw = args.length > 6 ? Float.parseFloat(args[6]) : p.getLocation().getYaw();
+        float pitch = args.length > 7 ? Float.parseFloat(args[7]) : p.getLocation().getPitch();
+        plugin.arenas.allowTeleport(p.getUniqueId(), true);
+        p.teleportAsync(new org.bukkit.Location(w, Double.parseDouble(args[3]), Double.parseDouble(args[4]), Double.parseDouble(args[5]), yaw, pitch))
+            .whenComplete((ok, err) -> plugin.arenas.allowTeleport(p.getUniqueId(), false));
+        say(sender, "tp " + p.getName() + " queued");
       }
       case "where" -> {
         Player p = args.length >= 3 ? plugin.getServer().getPlayerExact(args[2]) : sender instanceof Player self ? self : null;

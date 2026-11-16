@@ -1,0 +1,528 @@
+{
+ "providers": [
+  {
+   "type": "space",
+   "advances": {
+    "\ue000": -8,
+    "\ue001": -177,
+    "\ue002": -1,
+    "\ue010": -167,
+    "\ue011": -51,
+    "\ue012": -169
+   }
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_00.png",
+   "ascent": 13,
+   "height": 37,
+   "chars": [
+    "\ue100"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_01.png",
+   "ascent": 13,
+   "height": 37,
+   "chars": [
+    "\ue101"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_02.png",
+   "ascent": 13,
+   "height": 37,
+   "chars": [
+    "\ue102"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_03.png",
+   "ascent": 13,
+   "height": 37,
+   "chars": [
+    "\ue103"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_10.png",
+   "ascent": -24,
+   "height": 37,
+   "chars": [
+    "\ue104"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_11.png",
+   "ascent": -24,
+   "height": 37,
+   "chars": [
+    "\ue105"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_12.png",
+   "ascent": -24,
+   "height": 37,
+   "chars": [
+    "\ue106"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_13.png",
+   "ascent": -24,
+   "height": 37,
+   "chars": [
+    "\ue107"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_20.png",
+   "ascent": -61,
+   "height": 37,
+   "chars": [
+    "\ue108"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_21.png",
+   "ascent": -61,
+   "height": 37,
+   "chars": [
+    "\ue109"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_22.png",
+   "ascent": -61,
+   "height": 37,
+   "chars": [
+    "\ue10a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_23.png",
+   "ascent": -61,
+   "height": 37,
+   "chars": [
+    "\ue10b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_30.png",
+   "ascent": -98,
+   "height": 37,
+   "chars": [
+    "\ue10c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_31.png",
+   "ascent": -98,
+   "height": 37,
+   "chars": [
+    "\ue10d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_32.png",
+   "ascent": -98,
+   "height": 37,
+   "chars": [
+    "\ue10e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_33.png",
+   "ascent": -98,
+   "height": 37,
+   "chars": [
+    "\ue10f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_40.png",
+   "ascent": -135,
+   "height": 37,
+   "chars": [
+    "\ue110"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_41.png",
+   "ascent": -135,
+   "height": 37,
+   "chars": [
+    "\ue111"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_42.png",
+   "ascent": -135,
+   "height": 37,
+   "chars": [
+    "\ue112"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_43.png",
+   "ascent": -135,
+   "height": 37,
+   "chars": [
+    "\ue113"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_50.png",
+   "ascent": -172,
+   "height": 37,
+   "chars": [
+    "\ue114"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_51.png",
+   "ascent": -172,
+   "height": 37,
+   "chars": [
+    "\ue115"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_52.png",
+   "ascent": -172,
+   "height": 37,
+   "chars": [
+    "\ue116"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_select_53.png",
+   "ascent": -172,
+   "height": 37,
+   "chars": [
+    "\ue117"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_00.png",
+   "ascent": 13,
+   "height": 37,
+   "chars": [
+    "\ue200"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_01.png",
+   "ascent": 13,
+   "height": 37,
+   "chars": [
+    "\ue201"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_02.png",
+   "ascent": 13,
+   "height": 37,
+   "chars": [
+    "\ue202"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_03.png",
+   "ascent": 13,
+   "height": 37,
+   "chars": [
+    "\ue203"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_10.png",
+   "ascent": -24,
+   "height": 37,
+   "chars": [
+    "\ue204"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_11.png",
+   "ascent": -24,
+   "height": 37,
+   "chars": [
+    "\ue205"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_12.png",
+   "ascent": -24,
+   "height": 37,
+   "chars": [
+    "\ue206"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_13.png",
+   "ascent": -24,
+   "height": 37,
+   "chars": [
+    "\ue207"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_20.png",
+   "ascent": -61,
+   "height": 37,
+   "chars": [
+    "\ue208"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_21.png",
+   "ascent": -61,
+   "height": 37,
+   "chars": [
+    "\ue209"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_22.png",
+   "ascent": -61,
+   "height": 37,
+   "chars": [
+    "\ue20a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_23.png",
+   "ascent": -61,
+   "height": 37,
+   "chars": [
+    "\ue20b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_30.png",
+   "ascent": -98,
+   "height": 37,
+   "chars": [
+    "\ue20c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_31.png",
+   "ascent": -98,
+   "height": 37,
+   "chars": [
+    "\ue20d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_32.png",
+   "ascent": -98,
+   "height": 37,
+   "chars": [
+    "\ue20e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_33.png",
+   "ascent": -98,
+   "height": 37,
+   "chars": [
+    "\ue20f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_40.png",
+   "ascent": -135,
+   "height": 37,
+   "chars": [
+    "\ue210"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_41.png",
+   "ascent": -135,
+   "height": 37,
+   "chars": [
+    "\ue211"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_42.png",
+   "ascent": -135,
+   "height": 37,
+   "chars": [
+    "\ue212"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_43.png",
+   "ascent": -135,
+   "height": 37,
+   "chars": [
+    "\ue213"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_50.png",
+   "ascent": -172,
+   "height": 37,
+   "chars": [
+    "\ue214"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_51.png",
+   "ascent": -172,
+   "height": 37,
+   "chars": [
+    "\ue215"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_52.png",
+   "ascent": -172,
+   "height": 37,
+   "chars": [
+    "\ue216"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_armory_53.png",
+   "ascent": -172,
+   "height": 37,
+   "chars": [
+    "\ue217"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_portrait_cinder.png",
+   "ascent": -8,
+   "height": 64,
+   "chars": [
+    "\ue300"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_portrait_gale.png",
+   "ascent": -8,
+   "height": 64,
+   "chars": [
+    "\ue301"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_portrait_thorn.png",
+   "ascent": -8,
+   "height": 64,
+   "chars": [
+    "\ue302"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_portrait_rime.png",
+   "ascent": -8,
+   "height": 64,
+   "chars": [
+    "\ue303"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_portrait_vesper.png",
+   "ascent": -8,
+   "height": 64,
+   "chars": [
+    "\ue304"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_portrait_nacre.png",
+   "ascent": -8,
+   "height": 64,
+   "chars": [
+    "\ue305"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_portrait_sahrin.png",
+   "ascent": -8,
+   "height": 64,
+   "chars": [
+    "\ue306"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_portrait_murk.png",
+   "ascent": -8,
+   "height": 64,
+   "chars": [
+    "\ue307"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_portrait_none.png",
+   "ascent": -8,
+   "height": 64,
+   "chars": [
+    "\ue3ff"
+   ]
+  }
+ ]
+}

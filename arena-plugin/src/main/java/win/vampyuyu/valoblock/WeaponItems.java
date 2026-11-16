@@ -65,7 +65,7 @@ public final class WeaponItems {
     return cmd.getStrings().isEmpty() ? "" : cmd.getStrings().get(0);
   }
 
-  /** Sets (or with "" clears) the look of the stack: "fire", "reload" or "aim" (see GunVisual). */
+  /** Sets (or with "" clears) the look of the stack: "fire", "reload", "inspect" or "aim" (see GunVisual). */
   public static void setState(ItemStack it, String state) {
     ItemMeta meta = it.getItemMeta();
     var cmd = meta.getCustomModelDataComponent();
@@ -99,8 +99,21 @@ public final class WeaponItems {
     return it != null && it.hasItemMeta() && it.getItemMeta().getPersistentDataContainer().has(SCOPE, PersistentDataType.BYTE);
   }
 
-  /** A menu entry: the weapon with its tooltip and the owned / locked look. */
-  public static ItemStack menu(VbWeapon w, Armory.Display display, int missing) {
+  /** The card model of a weapon in the Armory: the frame says the state (owned green, too expensive dimmed). */
+  public static NamespacedKey cardModel(VbWeapon w, Armory.Display display) {
+    String suffix = switch (display) {
+      case OWNED -> "_owned";
+      case LOCKED -> "_locked";
+      case AFFORDABLE -> "";
+    };
+    return new NamespacedKey("vampyuyu", "valoblock/card_" + w.id() + suffix);
+  }
+
+  /**
+   * One of the four slots of an Armory card. The first ({@code art}) wears the 2 x 2 card model; the other three are
+   * invisible twins with the same tooltip and weapon tag, so a click or a hover anywhere on the card does the same.
+   */
+  public static ItemStack card(VbWeapon w, Armory.Display display, int missing, boolean art) {
     ItemStack it = new ItemStack(base(w));
     ItemMeta meta = it.getItemMeta();
     List<WeaponText.Line> lines = WeaponText.tooltip(w, display, missing);
@@ -108,9 +121,8 @@ public final class WeaponItems {
     List<Component> lore = new ArrayList<>();
     for (WeaponText.Line l : lines.subList(1, lines.size())) lore.add(text(l.text(), l.color()));
     meta.lore(lore);
-    meta.setItemModel(model(w, display == Armory.Display.LOCKED));
+    meta.setItemModel(art ? cardModel(w, display) : AgentItems.model("blank"));
     meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
-    if (display == Armory.Display.OWNED) meta.setEnchantmentGlintOverride(true); // the green "owned" frame stands in as a glint
     meta.getPersistentDataContainer().set(ID, PersistentDataType.STRING, w.id());
     it.setItemMeta(meta);
     return it;

@@ -1023,6 +1023,121 @@ def vb(rcon, command):
     return re.sub("\u00a7.", "", rcon.command("vb " + command)).strip()
 
 
+def valoblock_extras(ctx, rcon, map_id, failures):
+    """Combat-phase captures of the valoblock scenario: the held 3D gun (idle, firing, reloading), the combat HUD,
+    one Realm mechanic of the map (gate, root drop, wind pad) and an overview from a high point."""
+    tools, shots, env = ctx["tools"], ctx["shots"], ctx["env"]
+    xdo = tools["xdotool"]
+    cell = {"stormbreak": 5}.get(map_id, 4)
+
+    def at(col, row):  # cell centre in blocks (slot 0 of the vb_arena world)
+        return (col + 0.5) * cell, (row + 0.5) * cell
+
+    def tp(x, y, z, yaw=0, pitch=0):
+        say("tp: " + vb(rcon, f"debug tp E2EBot {x} {y} {z} {yaw} {pitch}"))
+        time.sleep(1)
+
+    def key(*k):
+        subprocess.run([xdo, *k], env=env)
+
+    say("inventory: " + rcon.command("data get entity E2EBot Inventory")[:900])
+    rcon.command("gamemode adventure E2EBot")
+    say(vb(rcon, "debug god E2EBot on"))  # the bots would kill the human within seconds
+    sx, sz = {"stormbreak": (62.5, 142.5)}.get(map_id, (50.0, 114.0))
+    # Realm mechanic
+    if map_id == "hourfall":
+        gates = [at(12, 11), at(17, 11), at(12, 18), at(17, 18)]
+        gx, gz = gates[0]
+        seen = set()
+        t0 = time.time()
+        tp(gx, 65, gz + 6, 180, 5)
+        while time.time() - t0 < 75 and len(seen) < 2:  # the Time Tide swaps every 30 s: one shot per state
+            states = ["AIR" if "AIR" in vb(rcon, f"debug block {int(x)} 66 {int(z)}") else "WALL" for x, z in gates]
+            say(f"t+{time.time() - t0:.0f}s gates (12,11) (17,11) (12,18) (17,18): {states}")
+            name = "open" if states[0] == "AIR" else "closed"
+            if name not in seen:
+                time.sleep(1.5)
+                shot(tools, shots / f"vb-20-gate-{name}.png")
+                seen.add(name)
+            time.sleep(2)
+        if len(seen) < 2:
+            failures.append(f"hourfall: the gate (12,11) was only seen {seen} in 75 s")
+    elif map_id == "rootvault":
+        rx, rz = at(8, 7)
+        tp(rx, 71.3, rz - 3, 0, 20)
+        shot(tools, shots / "vb-20-rootdrop-branch.png")  # on the canopy branch, before the hole
+        vb(rcon, f"debug tp E2EBot {rx} 71.3 {rz} 0 20")
+        t0 = time.time()
+        for i in range(8):
+            time.sleep(0.25)
+            say(f"drop t+{time.time() - t0:.1f}s: " + vb(rcon, "debug where E2EBot"))
+            if i == 0:
+                say("effects mid-fall: " + rcon.command("data get entity E2EBot active_effects").strip()[:300])
+            if i in (1, 3, 5):
+                shot(tools, shots / f"vb-20-rootdrop-{i}.png")
+        say("effects: " + rcon.command("data get entity E2EBot active_effects").strip()[:300])
+    elif map_id == "stormbreak":
+        px, pz = at(12, 4)
+        tp(px, 65, pz, 0, 20)
+        time.sleep(1)
+        shot(tools, shots / "vb-20-windpad-before.png")
+        subprocess.run([xdo, "keydown", "shift"], env=env)
+        for i in range(4):
+            time.sleep(0.6)
+            say(f"flight {i}: " + vb(rcon, "debug where E2EBot"))
+            shot(tools, shots / f"vb-20-windpad-{i}.png")
+        subprocess.run([xdo, "keyup", "shift"], env=env)
+    # Gun in first person: look at a wall at the spawn, hotbar slot 1 then 2.
+    for slot in ("1", "2", "3"):
+        tp(sx, 65, sz, 180, 0)
+        key("key", slot)
+        time.sleep(2)
+        shot(tools, shots / f"vb-10-gun-slot{slot}-idle.png")
+    tp(sx, 65, sz, 180, 0)
+    key("key", "2")
+    time.sleep(1)
+    key("mousemove", "427", "240")
+    key("click", "3")  # right-click: fire
+    shot(tools, shots / "vb-11-gun-firing.png")
+    time.sleep(0.4)
+    shot(tools, shots / "vb-11-gun-after-shot.png")
+    time.sleep(1)
+    key("key", "f")  # reload
+    time.sleep(0.5)
+    shot(tools, shots / "vb-12-gun-reloading.png")
+    time.sleep(3)
+    shot(tools, shots / "vb-13-hud-combat.png")
+    say("where: " + vb(rcon, "debug where E2EBot"))
+    # Overview in combat: spectator, high above the south half, looking north.
+    size = 150 if map_id == "stormbreak" else 120
+    m = size / 2
+    rcon.command("gamemode spectator E2EBot")
+    tp(m, size * 0.7, size - 6, 180, 40)
+    time.sleep(12)
+    shot(tools, shots / "vb-31-overview-combat.png")
+    tp(0, size * 0.7, m, -90, 45)
+    time.sleep(12)
+    shot(tools, shots / "vb-32-overview-side.png")
+    rcon.command("gamemode adventure E2EBot")
+    tp(sx, 65, sz, 180, 0)
+
+
+def valoblock_overview(ctx, rcon, size=120):
+    """Spectator shots from a high point (buy phase: nothing fights, no HUD)."""
+    tools, shots = ctx["tools"], ctx["shots"]
+
+    def tp(x, y, z, yaw, pitch):
+        say("tp: " + vb(rcon, f"debug tp E2EBot {x} {y} {z} {yaw} {pitch}"))
+
+    # Overview from a high point: spectator (no HUD), looking down at the middle of the map.
+    rcon.command("gamemode spectator E2EBot")
+    m = size / 2
+    tp(m, size * 0.7, 6, 0, 40)
+    time.sleep(12)  # the software client loads far chunks slowly
+    shot(tools, shots / "vb-30-overview-a.png")
+    rcon.command("gamemode adventure E2EBot")
+
+
 def valoblock_scenario(ctx):
     """A ValoBlock practice match on the Hourfall greybox: 1 human, 9 bots, driven by /vb debug commands.
     Screenshots: agent select, buy phase, Armory, combat HUD, the next round after a death (respawn).
@@ -1086,6 +1201,9 @@ def valoblock_scenario(ctx):
     shot(tools, shots / "vb-03-armory.png")
     subprocess.run([tools["xdotool"], "key", "Escape"], env=ctx["env"])
     time.sleep(1)
+    valoblock_overview(ctx, rcon, 150 if ctx.get("rules") == "map=stormbreak" else 120)
+    vb(rcon, "debug tp E2EBot %s 65 %s" % ((62.5, 142.5) if ctx.get("rules") == "map=stormbreak" else (50.0, 114.0)))
+    time.sleep(2)
     vb(rcon, "debug skip")  # buy -> combat
     time.sleep(8)
     if not ctx.get("rules") and "BARRIER" in vb(rcon, "debug block 60 65 106"):
@@ -1095,6 +1213,7 @@ def valoblock_scenario(ctx):
     if "count: 9" not in mannequins.lower():
         failures.append("expected 9 bot bodies (1 human, 5v5): " + mannequins.strip())
     shot(tools, shots / "vb-04-combat.png")
+    valoblock_extras(ctx, rcon, ctx.get("rules", "map=hourfall").split("=", 1)[-1] or "hourfall", failures)
     time.sleep(10)
     shot(tools, shots / "vb-05-combat-later.png")
     say("where: " + vb(rcon, "debug where E2EBot"))
@@ -1120,7 +1239,11 @@ def valoblock_scenario(ctx):
         time.sleep(1)
     else:
         failures.append("the arena did not return to WAITING after /vb stop")
-    time.sleep(3)
+    time.sleep(8)
+    now = client_log.read_text(errors="replace").count("Reloading ResourceManager")
+    say(f"client resource reloads: before join {reloads}, after the stop {now}")
+    if now < reloads + 2:
+        failures.append("the client did not reload again after the stop (ValoBlock pack not removed?)")
     out = rcon.command("execute if entity @e[type=minecraft:mannequin]")
     if "passed" in out.lower():
         failures.append("bot bodies are still in the world after the stop")
