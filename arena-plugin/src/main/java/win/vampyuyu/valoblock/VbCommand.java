@@ -20,6 +20,11 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
     this.plugin = plugin;
   }
 
+  /** Subcommands an admin may run while inside an arena (to run the match they are playing in); the rest stays locked. */
+  static boolean allowedInsideArena(String sub) {
+    return sub.equals("start") || sub.equals("stop") || sub.equals("status") || sub.equals("help");
+  }
+
   private static void say(CommandSender to, String text) {
     to.sendMessage(Component.text(text, NamedTextColor.GOLD));
   }
@@ -44,9 +49,9 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
     try {
       if (!sender.hasPermission("nexusarena.admin"))
         throw new IllegalArgumentException("Arena administrator permission required");
-      if (sender instanceof Player p && plugin.arenas.locked(p.getUniqueId()))
-        throw new IllegalArgumentException("Administrator access outside an arena required");
       String sub = args.length == 0 ? "help" : args[0].toLowerCase(Locale.ROOT);
+      if (sender instanceof Player p && plugin.arenas.locked(p.getUniqueId()) && !allowedInsideArena(sub))
+        throw new IllegalArgumentException("Administrator access outside an arena required");
       switch (sub) {
         case "use" -> {
           if (args.length < 2) throw new IllegalArgumentException("Usage: /vb use <arena>");

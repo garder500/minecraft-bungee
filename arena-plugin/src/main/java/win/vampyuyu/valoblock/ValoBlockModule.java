@@ -9,7 +9,7 @@ import win.vampyuyu.arena.NexusArenaEngine;
  * later slices plug in (all no-ops for now). The constructor has no side effects.
  */
 public final class ValoBlockModule {
-  private final NexusArenaEngine plugin;
+  final NexusArenaEngine plugin;
   private final VbPreset preset;
 
   // Replaced by their real implementations in later slices.
