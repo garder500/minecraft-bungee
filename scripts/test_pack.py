@@ -320,12 +320,12 @@ class ValoBlockPackTest(unittest.TestCase):
             node = definition["model"]["cases"] and definition["model"]["fallback"]
             self.assertEqual(node["property"], "minecraft:custom_model_data")
             self.assertEqual(node["index"], 0)
-            self.assertEqual([c["when"] for c in node["cases"]], ["fire", "reload", "aim"])
+            self.assertEqual([c["when"] for c in node["cases"]], ["fire", "reload", "inspect", "aim"])
             self.assertEqual(
                 sorted(set(walk_models(definition["model"]))),
-                sorted({f"vampyuyu:item/valoblock/{n}" for n in (name, f"{name}_3d", f"{name}_fire", f"{name}_reload", f"{name}_aim")}))
-            self.assertEqual(png_size(self.base / f"textures/item/valoblock/{name}_3d.png"), (16, 16), name)
-            for state in ("3d", "fire", "reload", "aim"):
+                sorted({f"vampyuyu:item/valoblock/{n}" for n in (name, f"{name}_3d", f"{name}_fire", f"{name}_reload", f"{name}_inspect", f"{name}_aim")}))
+            self.assertEqual(png_size(self.base / f"textures/item/valoblock/{name}_3d.png"), (32, 32), name)
+            for state in ("3d", "fire", "reload", "inspect", "aim"):
                 model = json.loads((self.base / f"models/item/valoblock/{name}_{state}.json").read_text())
                 self.assertEqual(model["textures"]["0"], f"vampyuyu:item/valoblock/{name}_3d")
                 self.assertGreater(len(model["elements"]), 8, f"{name}_{state}")

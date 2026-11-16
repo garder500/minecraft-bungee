@@ -49,6 +49,7 @@ e2e-pack: ## Boot a creative Paper 26.3 + headless 26.3 client and check the pac
 test-pack: ## Validate both resource packs (menus and ValoBlock): structure, models, reproducibility
 	@python3 scripts/test_pack.py
 	@python3 scripts/test_hud_sheet.py
+	@python3 scripts/test_valoblock_models.py
 	@python3 resource-pack/art/test_skyblock_icon.py
 hud-sheet: ## Render every HUD state to resource-pack/dist/hud-sheet/ (index.html is self-contained) [SCALE=2|3|4] [MODE=auto|large|medium|small]
 	@python3 resource-pack/art/hud_sheet.py --scale $(or $(SCALE),3) --mode $(or $(MODE),auto)
