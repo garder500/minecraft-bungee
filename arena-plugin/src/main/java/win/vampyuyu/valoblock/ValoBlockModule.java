@@ -48,6 +48,13 @@ public final class ValoBlockModule {
     };
   }
 
+  /** The guns: the listener and the per-tick task (server thread). */
+  public void enableWeapons() {
+    VbWeaponService service = new VbWeaponService(plugin);
+    service.start();
+    weapons = service;
+  }
+
   public void registerCommand() {
     VbCommand vb = new VbCommand(plugin);
     Objects.requireNonNull(plugin.getCommand("vb")).setExecutor(vb);

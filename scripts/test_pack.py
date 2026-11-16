@@ -258,6 +258,18 @@ class PackTest(unittest.TestCase):
                 self.assertGreaterEqual(len(beds), 4, "each main phase changes the loop")
                 self.assertIn("assets/vampyuyu/sounds.json", members)
 
+    def test_valoblock_weapons_have_textures_models_and_definitions(self):
+        weapons = json.loads((ROOT / "arena-plugin/src/main/resources/valoblock/weapons.json").read_text())["weapons"]
+        self.assertGreaterEqual(len(weapons), 15)
+        base = PACK / "assets/vampyuyu"
+        for w in weapons:
+            for name in (w["id"], w["id"] + "_locked"):
+                self.assertEqual(png_size(base / f"textures/item/valoblock/{name}.png"), (32, 32), name)
+                model = json.loads((base / f"models/item/valoblock/{name}.json").read_text())
+                self.assertEqual(model["textures"]["layer0"], f"vampyuyu:item/valoblock/{name}")
+                definition = json.loads((base / f"items/valoblock/{name}.json").read_text())
+                self.assertEqual(definition["model"]["model"], f"vampyuyu:item/valoblock/{name}")
+
     def test_build_is_reproducible_and_complete(self):
         with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
             first, digest = build_pack.build(a)

@@ -368,6 +368,11 @@ public final class VbMatch implements GamePreset {
     return true;
   }
 
+  /** Sets the shield value (selling a shield back sets 0). Buy phase only. */
+  public synchronized void setShield(UUID player, int value) {
+    if (phase == VbPhase.BUY) member(player).shield = Math.max(0, value);
+  }
+
   private void pay(Member m, int amount) {
     m.credits = Math.min(rules.economy().cap(), m.credits + amount);
   }

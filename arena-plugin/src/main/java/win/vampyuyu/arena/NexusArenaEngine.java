@@ -116,6 +116,7 @@ public final class NexusArenaEngine extends JavaPlugin {
       Objects.requireNonNull(getCommand("arena")).setExecutor(this::command);
       werewolf.registerCommand();
       valoblock.registerCommand();
+      valoblock.enableWeapons();
       getCommand("arena")
           .setTabCompleter(
               (sender, cmd, alias, args) ->

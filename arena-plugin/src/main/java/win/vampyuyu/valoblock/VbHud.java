@@ -7,4 +7,7 @@ public interface VbHud {
   default void render(VbMatch match, long now) {}
 
   default void clear(VbMatch match) {}
+
+  /** The shooter hit someone (head shot, or a kill). */
+  default void hitMarker(java.util.UUID shooter, boolean head, boolean kill) {}
 }

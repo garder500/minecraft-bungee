@@ -21,10 +21,12 @@ import win.vampyuyu.werewolf.DataFiles;
 public final class VbData {
   public static final String MATCH = "/valoblock/match.json";
   public static final String SITES = "/valoblock/sites.json";
-  public static final List<String> FILES = List.of(MATCH, SITES);
+  public static final String WEAPONS = "/valoblock/weapons.json";
+  public static final List<String> FILES = List.of(MATCH, SITES, WEAPONS);
 
   private static volatile VbRules rules;
   private static volatile List<VbSite> sites;
+  private static volatile VbWeapons weapons;
 
   private VbData() {}
 
@@ -42,11 +44,18 @@ public final class VbData {
     return sites;
   }
 
+  public static VbWeapons weapons() {
+    rules();
+    return weapons;
+  }
+
   public static synchronized void reload() {
     VbRules newRules = VbRules.parse(read(MATCH));
     List<VbSite> newSites = parseSites(read(SITES));
+    VbWeapons newWeapons = VbWeapons.parse(read(WEAPONS));
     rules = newRules;
     sites = newSites;
+    weapons = newWeapons;
   }
 
   static List<VbSite> parseSites(JsonObject j) {
