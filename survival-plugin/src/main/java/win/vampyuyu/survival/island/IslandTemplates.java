@@ -11,7 +11,7 @@ import win.vampyuyu.survival.island.IslandConfig.ItemSpec;
  * Code-generated overworld islands, the Nether platform and the End platform. All coordinates are relative to the
  * island centre: y = 0 is the top layer of the island (players stand at y = 1) and the spawn anchor is (0, 1, 0).
  *
- * <p>Layout shared by every overworld template: spawn at the centre, the sealed End gate to the north (z = -6), the
+ * <p>Layout shared by every overworld template: spawn at the centre, no End gate (Realms are reached through the Sky Gates of the Quai), the
  * starter chest to the west/east. The outline radius is {@link #RADIUS} with a wobble of at least 84 percent, so
  * everything is placed within 9.5 blocks of the centre.
  */
@@ -20,7 +20,8 @@ public final class IslandTemplates {
     public static final int DEPTH = 5;
     /** Radius of the Nether and End platforms. */
     public static final double PLATFORM_RADIUS = 15;
-    public static final int GATE_Z = -6;
+    /** Where the End gate of early islands stood (z, relative to the centre): only used to clean it up, never built. */
+    public static final int LEGACY_GATE_Z = -6;
     /** Fixed spots (relative to the island centre) shared with the portal code and the notes. */
     public static final int[] NETHER_SPAWN = {-4, 1, 5};
     public static final int[] NETHER_PORTAL = {-4, 1, 2};
@@ -31,7 +32,7 @@ public final class IslandTemplates {
     /** Generates one template into a plan. */
     @FunctionalInterface
     interface Builder {
-        void build(BlockPlan plan, Random rnd, List<ItemSpec> chest, String biome, boolean gateLit);
+        void build(BlockPlan plan, Random rnd, List<ItemSpec> chest, String biome);
     }
 
     private static final Map<String, Builder> BUILDERS = Map.of(
@@ -73,17 +74,15 @@ public final class IslandTemplates {
      *
      * @param chest contents of the starter chest
      * @param biome biome key such as {@code plains}, empty to leave the biome
-     * @param gateLit whether the End gate starts activated
      */
-    public static BlockPlan overworld(String templateId, Random rnd, List<ItemSpec> chest, String biome, boolean gateLit) {
+    public static BlockPlan overworld(String templateId, Random rnd, List<ItemSpec> chest, String biome) {
         Builder builder = BUILDERS.get(templateId);
         if (builder == null) {
             throw new IllegalArgumentException("Unknown island template: " + templateId);
         }
         BlockPlan plan = new BlockPlan();
-        builder.build(plan, rnd, chest, biome, gateLit);
+        builder.build(plan, rnd, chest, biome);
         plan.anchor("spawn", 0, 1, 0);
-        plan.anchor("gate", 0, 1, GATE_Z);
         int r = (int) RADIUS + 3;
         plan.biome(-r, -DEPTH - 2, -r, r, 12, r, biome);
         return plan;
@@ -97,42 +96,45 @@ public final class IslandTemplates {
         plan.set(0, -DEPTH, 0, Material.BEDROCK);
     }
 
-    /** Sealed gate: 12 End portal frames around a 3x3 portal. */
-    private static void endGate(BlockPlan plan, boolean lit) {
-        int cx = 0;
-        int cz = GATE_Z;
-        String eye = lit ? "true" : "false";
-        for (int d = -1; d <= 1; d++) {
-            plan.set(cx + d, 0, cz - 2, Material.END_PORTAL_FRAME, "eye=" + eye + ",facing=south");
-            plan.set(cx + d, 0, cz + 2, Material.END_PORTAL_FRAME, "eye=" + eye + ",facing=north");
-            plan.set(cx - 2, 0, cz + d, Material.END_PORTAL_FRAME, "eye=" + eye + ",facing=east");
-            plan.set(cx + 2, 0, cz + d, Material.END_PORTAL_FRAME, "eye=" + eye + ",facing=west");
-        }
-        if (lit) {
-            for (int x = -1; x <= 1; x++) {
-                for (int z = -1; z <= 1; z++) {
-                    plan.set(cx + x, 0, cz + z, Material.END_PORTAL);
+    /**
+     * Footprint (x, z at y = 0, relative to the island centre) of the vanilla End gate that early islands carried:
+     * 12 End portal frames around a 3x3 End portal, the 5x5 square without its corners, centred on x = 0,
+     * z = {@link #LEGACY_GATE_Z}. Used only by the one-time cleanup of those islands.
+     */
+    public static List<int[]> legacyGateFootprint() {
+        List<int[]> cells = new java.util.ArrayList<>();
+        for (int x = -2; x <= 2; x++) {
+            for (int z = -2; z <= 2; z++) {
+                if (Math.abs(x) == 2 && Math.abs(z) == 2) {
+                    continue;
                 }
+                cells.add(new int[] {x, LEGACY_GATE_Z + z});
             }
         }
-        plan.anchor("end_gate", cx, 1, cz);
+        return cells;
+    }
+
+    /** The top-layer block of a template, which replaces the old gate blocks. */
+    public static Material groundOf(String templateId) {
+        return switch (templateId == null ? "" : templateId) {
+            case "desert" -> Material.SAND;
+            case "frozen" -> Material.SNOW_BLOCK;
+            case "mushroom" -> Material.MYCELIUM;
+            default -> Material.GRASS_BLOCK;
+        };
     }
 
     private static void decorate(BlockPlan plan, Random rnd, Material ground, Material[] plants, int count) {
         for (int i = 0; i < count * 6 && count > 0; i++) {
             int x = rnd.nextInt(19) - 9;
             int z = rnd.nextInt(19) - 9;
-            if (plan.get(x, 0, z) == ground && plan.get(x, 1, z) == null && !nearGate(x, z) && Math.abs(x) + Math.abs(z) > 2) {
+            if (plan.get(x, 0, z) == ground && plan.get(x, 1, z) == null && Math.abs(x) + Math.abs(z) > 2) {
                 plan.set(x, 1, z, plants[rnd.nextInt(plants.length)]);
                 if (--count == 0) {
                     break;
                 }
             }
         }
-    }
-
-    static boolean nearGate(int x, int z) {
-        return Math.abs(x) <= 3 && z >= GATE_Z - 3 && z <= GATE_Z + 3;
     }
 
     private static void oakTree(BlockPlan plan, int tx, int tz, Material log, Material leaves, int height) {
@@ -162,7 +164,7 @@ public final class IslandTemplates {
 
     // ---------------------------------------------------------------- templates
 
-    private static void classic(BlockPlan plan, Random rnd, List<ItemSpec> chest, String biome, boolean lit) {
+    private static void classic(BlockPlan plan, Random rnd, List<ItemSpec> chest, String biome) {
         base(plan, rnd, d -> d == 0 ? Material.GRASS_BLOCK : d <= 2 ? Material.DIRT : Material.STONE);
         oakTree(plan, 4, 3, Material.OAK_LOG, Material.OAK_LEAVES, 5);
         decorate(plan, rnd, Material.GRASS_BLOCK, new Material[] {Material.SHORT_GRASS, Material.SHORT_GRASS,
@@ -171,7 +173,7 @@ public final class IslandTemplates {
         plan.anchor("chest", -5, 1, 2);
     }
 
-    private static void desert(BlockPlan plan, Random rnd, List<ItemSpec> chest, String biome, boolean lit) {
+    private static void desert(BlockPlan plan, Random rnd, List<ItemSpec> chest, String biome) {
         base(plan, rnd, d -> d == 0 ? Material.SAND : d <= 2 ? Material.SANDSTONE : Material.STONE);
         ShapeKit.fixSupport(plan, Material.SAND, Material.SANDSTONE);
         // cacti stand alone on sand: nothing solid on their sides
@@ -212,7 +214,7 @@ public final class IslandTemplates {
         plan.anchor("chest", 6, 1, 0);
     }
 
-    private static void frozen(BlockPlan plan, Random rnd, List<ItemSpec> chest, String biome, boolean lit) {
+    private static void frozen(BlockPlan plan, Random rnd, List<ItemSpec> chest, String biome) {
         base(plan, rnd, d -> d == 0 ? Material.SNOW_BLOCK : d == 1 ? Material.DIRT : d == 2 ? Material.PACKED_ICE
             : Material.STONE);
         // spruce
@@ -241,7 +243,7 @@ public final class IslandTemplates {
         for (int i = 0; i < 30; i++) {
             int x = rnd.nextInt(19) - 9;
             int z = rnd.nextInt(19) - 9;
-            if (plan.get(x, 0, z) == Material.SNOW_BLOCK && plan.get(x, 1, z) == null && !nearGate(x, z)
+            if (plan.get(x, 0, z) == Material.SNOW_BLOCK && plan.get(x, 1, z) == null
                     && !(x == 0 && z == 0)) {
                 plan.set(x, 1, z, Material.SNOW, "layers=" + (1 + rnd.nextInt(2)));
             }
@@ -250,12 +252,12 @@ public final class IslandTemplates {
         plan.anchor("chest", -5, 1, 2);
     }
 
-    private static void jungle(BlockPlan plan, Random rnd, List<ItemSpec> chest, String biome, boolean lit) {
+    private static void jungle(BlockPlan plan, Random rnd, List<ItemSpec> chest, String biome) {
         base(plan, rnd, d -> d == 0 ? Material.GRASS_BLOCK : d <= 2 ? Material.DIRT : Material.STONE);
         for (int i = 0; i < 14; i++) {
             int x = rnd.nextInt(19) - 9;
             int z = rnd.nextInt(19) - 9;
-            if (plan.get(x, 0, z) == Material.GRASS_BLOCK && !nearGate(x, z)) {
+            if (plan.get(x, 0, z) == Material.GRASS_BLOCK) {
                 plan.set(x, 0, z, Material.PODZOL);
             }
         }
@@ -285,7 +287,7 @@ public final class IslandTemplates {
         plan.anchor("chest", 6, 1, -1);
     }
 
-    private static void mushroom(BlockPlan plan, Random rnd, List<ItemSpec> chest, String biome, boolean lit) {
+    private static void mushroom(BlockPlan plan, Random rnd, List<ItemSpec> chest, String biome) {
         base(plan, rnd, d -> d == 0 ? Material.MYCELIUM : d <= 2 ? Material.DIRT : Material.STONE);
         // giant red mushroom
         int tx = 4;

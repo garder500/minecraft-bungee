@@ -193,10 +193,70 @@ public class SimpleSkyblockTest {
     @Test public void noTemplateHasAnEndGateAndTheEndPortalRoutesToTheIslandEnd() {
         assertEquals(SkyblockWorlds.END,PortalMapper.route(SkyblockWorlds.WORLD,PlayerTeleportEvent.TeleportCause.END_PORTAL,true,true).world());
         for(var template:islands.config().enabledTemplates()) {
-            BlockPlan plan=IslandTemplates.overworld(template.id(),new java.util.Random(1),java.util.List.of(),"",true);
+            BlockPlan plan=IslandTemplates.overworld(template.id(),new java.util.Random(1),java.util.List.of(),"");
             assertEquals(0,plan.count(Material.END_PORTAL));
             assertEquals(0,plan.count(Material.END_PORTAL_FRAME));
         }
+    }
+    private void oldGate(int ox, int oy, int oz) {
+        for (int[] c : IslandTemplates.legacyGateFootprint()) {
+            boolean inner = Math.abs(c[0]) <= 1 && Math.abs(c[1] - IslandTemplates.LEGACY_GATE_Z) <= 1;
+            sky.getBlockAt(ox + c[0], oy, oz + c[1]).setType(inner ? Material.END_PORTAL : Material.END_PORTAL_FRAME, false);
+        }
+    }
+    @Test public void legacyGateFootprintIsTheTwelveFramesAndNinePortalBlocks() {
+        assertEquals(21, IslandTemplates.legacyGateFootprint().size());
+        assertEquals(Material.GRASS_BLOCK, IslandTemplates.groundOf("classic"));
+        assertEquals(Material.SAND, IslandTemplates.groundOf("desert"));
+    }
+    @Test public void oldGateCleanupRemovesExactlyTheOldFootprintAndRunsOnce() {
+        int ox = islands.grid().centerOf(personal.cellX), oz = islands.grid().centerOf(personal.cellZ);
+        int oy = islands.config().islandY;
+        personal.gateCleaned = false;
+        var real = new IslandService.JobFactory() {
+            public PlanRunner.Job plan(String l, World w, BlockPlan p, int x, int y, int z) { return null; }
+            public PlanRunner.Job wipe(String l, World w, int x, int z, int r) { return null; }
+            public IslandService.Counting scan(String l, World w, int x, int z, int r) { return null; }
+            @Override public GateCleanupJob gateCleanup(org.bukkit.plugin.Plugin pl, String l, World w, int x, int y, int z, Material g) {
+                return new GateCleanupJob(pl, l, w, x, y, z, g) {
+                    @Override java.util.concurrent.CompletableFuture<org.bukkit.Chunk> load(int cx, int cz) {
+                        return java.util.concurrent.CompletableFuture.completedFuture(null);
+                    }
+                    @Override void unpin(int cx, int cz) {}
+                };
+            }
+        };
+        islands.jobs(real);
+        oldGate(ox, oy, oz);
+        // neighbours that must survive: a corner of the 5x5, a block just outside, a player's block on the footprint layer above
+        Material[] keep = {Material.STONE, Material.OAK_LOG, Material.ENDER_CHEST};
+        sky.getBlockAt(ox + 2, oy, oz + IslandTemplates.LEGACY_GATE_Z + 2).setType(keep[0], false);
+        sky.getBlockAt(ox + 3, oy, oz + IslandTemplates.LEGACY_GATE_Z).setType(keep[1], false);
+        sky.getBlockAt(ox, oy + 1, oz + IslandTemplates.LEGACY_GATE_Z).setType(keep[2], false);
+        // a non-gate block inside the footprint is not replaced either
+        sky.getBlockAt(ox - 2, oy, oz + IslandTemplates.LEGACY_GATE_Z - 1).setType(Material.COBBLESTONE, false);
+        islands.cleanLegacyGates();
+        for (int i = 0; i < 40; i++) server.getScheduler().performOneTick();
+        int count = 0;
+        for (int[] c : IslandTemplates.legacyGateFootprint()) {
+            Material m = sky.getBlockAt(ox + c[0], oy, oz + c[1]).getType();
+            if (c[0] == -2 && c[1] == IslandTemplates.LEGACY_GATE_Z - 1) {
+                assertEquals(Material.COBBLESTONE, m);
+            } else {
+                assertEquals(Material.GRASS_BLOCK, m);
+                count++;
+            }
+        }
+        assertEquals(20, count);
+        assertEquals(keep[0], sky.getBlockAt(ox + 2, oy, oz + IslandTemplates.LEGACY_GATE_Z + 2).getType());
+        assertEquals(keep[1], sky.getBlockAt(ox + 3, oy, oz + IslandTemplates.LEGACY_GATE_Z).getType());
+        assertEquals(keep[2], sky.getBlockAt(ox, oy + 1, oz + IslandTemplates.LEGACY_GATE_Z).getType());
+        assertTrue(personal.gateCleaned);
+        // idempotent: a block placed on the footprint afterwards is left alone, and no new job is queued
+        sky.getBlockAt(ox, oy, oz + IslandTemplates.LEGACY_GATE_Z).setType(Material.END_PORTAL_FRAME, false);
+        islands.cleanLegacyGates();
+        for (int i = 0; i < 40; i++) server.getScheduler().performOneTick();
+        assertEquals(Material.END_PORTAL_FRAME, sky.getBlockAt(ox, oy, oz + IslandTemplates.LEGACY_GATE_Z).getType());
     }
     @Test public void registeredPortalListenersKeepBothNetherRoutesSeparateAndBlockTheSkyblockEnd() {
         plugin.core().modes().enterIsland(player);
