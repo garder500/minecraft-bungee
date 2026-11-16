@@ -15,7 +15,7 @@ import math
 import pathlib
 
 import boss_skins as bs
-from imported import imported
+from imported import gui_model, imported
 
 PACK = bs.PACK
 TURN = ("z", -45, [8, 8, 8])
@@ -43,7 +43,7 @@ class Sword(bs.Skin):
         model = {"textures": {"0": three, "particle": three},
                  "gui_light": "front", "display": DISPLAY, "elements": self.elements}
         definition = {"model": {"type": "minecraft:select", "property": "minecraft:display_context",
-                                "cases": [{"when": "gui", "model": {"type": "minecraft:model", "model": f"vampyuyu:item/{kind}/{name}"}}],
+                                "cases": [{"when": "gui", "model": {"type": "minecraft:model", "model": gui_model(f"{kind}/{name}")}}],
                                 "fallback": {"type": "minecraft:model", "model": three}}}
         for path, data in (
                 (PACK / "models" / "item" / kind / f"{name}_3d.json", model),

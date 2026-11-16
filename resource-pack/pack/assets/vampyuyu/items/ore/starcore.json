@@ -1,6 +1,19 @@
 {
  "model": {
-  "type": "minecraft:model",
-  "model": "vampyuyu:item/ore/starcore"
+  "type": "minecraft:select",
+  "property": "minecraft:display_context",
+  "cases": [
+   {
+    "when": "gui",
+    "model": {
+     "type": "minecraft:model",
+     "model": "vampyuyu:item/ore/starcore_gui"
+    }
+   }
+  ],
+  "fallback": {
+   "type": "minecraft:model",
+   "model": "vampyuyu:item/ore/starcore_3d"
+  }
  }
 }

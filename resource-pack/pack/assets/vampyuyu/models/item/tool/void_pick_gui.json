@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "vampyuyu:item/tool/void_pick_gui"
+  }
+}

@@ -10,7 +10,7 @@ Forge are drawn as full blocks: in the world the plugin puts them on an item dis
 import json
 
 import boss_skins as bs
-from imported import imported
+from imported import gui_model, imported
 import sword_models as sm
 
 PACK = bs.PACK
@@ -46,7 +46,7 @@ def write(model_id, s, display, block=False):
     three = f"vampyuyu:item/{kind}/{name}_3d"
     model = {"textures": {"0": three, "particle": three},
              "gui_light": "front", "display": display, "elements": s.elements}
-    flat = {"model": {"type": "minecraft:model", "model": f"vampyuyu:item/{model_id}"}}
+    flat = {"model": {"type": "minecraft:model", "model": gui_model(model_id)}}
     definition = {"model": {"type": "minecraft:model", "model": three}} if block else {"model": {
         "type": "minecraft:select", "property": "minecraft:display_context",
         "cases": [{"when": "gui", "model": flat["model"]}],
@@ -285,19 +285,6 @@ def spring_stone(name, seed):
     return s
 
 
-def pick(name, head, edge, handle, seed):
-    s = sm.Sword(name, [("head", head, "plain"), ("edge", edge, "plain"), ("handle", handle, "plain"),
-                        ("wrap", shade(handle, 0.6), "plain")], seed)
-    s.box((7.25, 0, 7.25), (8.75, 11, 8.75), "handle")
-    for k in range(2):
-        s.box((7.1, 1 + k * 1.3, 7.1), (8.9, 1.8 + k * 1.3, 8.9), "wrap")
-    s.box((7.0, 11, 7.0), (9.0, 12.4, 9.0), "head")
-    s.box((2, 11.2, 7.3), (14, 12.8, 8.7), "head")
-    s.box((0.6, 10.2, 7.4), (3.4, 12.2, 8.6), "edge", rot=("z", 18, [3, 11, 8]))
-    s.box((12.6, 10.2, 7.4), (15.4, 12.2, 8.6), "edge", rot=("z", -18, [13, 11, 8]))
-    return s
-
-
 def hx(h):
     return tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
 
@@ -369,6 +356,68 @@ def gem_socket(s, tier, x0, y0, x1, y1, z):
             s.box((cx - 0.55, cy - 0.55, zz), (cx + 0.55, cy + 0.55, zz + 0.3), "gem")
         else:
             s.box((x0, y0, zz), (x1, y1, zz + 0.25), "gem")
+
+
+def pick(tier, seed):
+    """A pickaxe in the Realm head language of the axes and shovels: the same socket, handle and palette, a head that
+    runs both ways from a centre boss, the gem socket at the centre of the head on both faces. The head is built for
+    one side and mirrored about x = 8."""
+    mats, glow = tier_materials(tier)
+    s = sm.Sword(f"{tier}_pick", mats, seed)
+    body = "body" if tier in ("ember", "void") else "head"
+    s.box((7.3, -1.5, 7.3), (8.7, 12.6, 8.7), "handle")
+    s.box((7.05, -2.2, 7.05), (8.95, -1.0, 8.95), "dark")                  # butt of the handle
+    for k in range(3):
+        s.box((7.15, 0.2 + k * 1.3, 7.15), (8.85, 0.9 + k * 1.3, 8.85), "wrap")
+    s.box((6.6, 9.4, 6.9), (9.4, 13.4, 9.1), "dark")                       # socket
+    s.box((6.3, 10.0, 7.3), (9.7, 13.0, 8.7), body)                        # centre boss, the gem sits on it
+
+    def both(a, b, mat, rot=None):
+        """The same box on the left and on the right of the boss."""
+        (x0, y0, z0), (x1, y1, z1) = a, b
+        s.box((x0, y0, z0), (x1, y1, z1), mat, rot=rot or sm.TURN)
+        s.box((16 - x1, y0, z0), (16 - x0, y1, z1), mat, rot=rot or sm.TURN)
+
+    def pair(x0, y0, x1, y1, mat, surf, t=0.15):
+        decal(s, x0, y0, x1, y1, mat, surf, t)
+        decal(s, 16 - x1, y0, 16 - x0, y1, mat, surf, t)
+
+    if tier == "bronze":                                                   # riveted Flux bronze: plate, seam, rivets
+        both((9.7, 10.2, 7.5), (12.4, 12.8, 8.5), "head")
+        both((12.4, 9.4, 7.65), (14.4, 12.6, 8.35), "edge")
+        both((14.4, 8.4, 7.7), (15.6, 11.2, 8.3), "edge")                  # the point curves down
+        both((9.7, 10.2, 7.45), (10.2, 12.8, 8.55), "dark")                # the seam of the riveted plate
+        pair(11.0, 11.8, 11.6, 12.4, "edge", 0.5)
+        pair(11.0, 10.4, 11.6, 11.0, "edge", 0.5)
+    elif tier == "ember":                                                  # jagged obsidian with lava cracks
+        both((9.7, 10.4, 7.5), (12.2, 12.8, 8.5), "body")
+        for x0, x1, y0, y1 in ((12.2, 13.6, 9.6, 13.2), (13.6, 14.8, 8.4, 12.2), (14.8, 15.8, 7.0, 10.6)):
+            both((x0, y0, 7.6), (x1, y1, 8.4), "body")                     # a tooth each, no two alike
+        both((15.8, 7.4, 7.7), (16.4, 9.8, 8.3), "edge")                   # the tip glows hot
+        both((13.6, 12.2, 7.7), (14.4, 13.4, 8.3), "edge")
+        pair(10.6, 10.8, 11.0, 12.4, "gem", 0.5)                           # cracks
+        pair(11.0, 11.6, 12.0, 12.0, "gem", 0.5)
+    elif tier == "rime":                                                   # crystal teeth
+        both((9.7, 10.4, 7.55), (11.8, 12.6, 8.45), "head")
+        for x, top, down in ((11.8, 14.6, 9.0), (13.0, 15.2, 8.0), (14.2, 14.0, 6.8)):
+            both((x, 10.4, 7.65), (x + 1.2, 12.4, 8.35), "head")
+            both((x + 0.2, 12.4, 7.75), (x + 1.0, top, 8.25), "edge")      # teeth above...
+            both((x + 0.2, down, 7.75), (x + 1.0, 10.4, 8.25), "edge")     # ...and below
+        both((15.4, 10.6, 7.8), (16.2, 12.2, 8.2), "edge")
+    elif tier == "starcore":                                               # gold, broad, with sun-ray horns
+        both((9.7, 9.6, 7.5), (12.6, 13.4, 8.5), "head")
+        both((12.6, 8.6, 7.65), (15.0, 14.4, 8.35), "edge")
+        both((13.0, 14.4, 7.65), (14.6, 15.6, 8.35), "head")
+        both((13.0, 7.4, 7.65), (14.6, 8.6, 8.35), "head")
+        both((13.5, 15.6, 7.75), (14.1, 16.4, 8.25), "edge")
+        both((13.5, 6.6, 7.75), (14.1, 7.4, 8.25), "edge")
+    elif tier == "void":                                                   # dark, split by a rift with a pink eye
+        both((9.7, 10.4, 7.5), (12.0, 12.8, 8.5), "body")
+        both((12.0, 11.8, 7.6), (15.4, 13.8, 8.4), "body")                 # upper horn
+        both((12.0, 8.6, 7.6), (14.6, 10.4, 8.4), "body")                  # lower horn, the rift between the two
+        both((12.0, 10.4, 7.7), (13.4, 11.8, 8.3), "edge")
+    gem_socket(s, tier, 7.4, 10.9, 8.6, 12.1, 8.7)                         # centre of the head, both faces
+    return s
 
 
 def axe(tier, seed):
@@ -546,14 +595,14 @@ def main():
     out = {
         **{f"tool/{tier}_axe": (axe(tier, 90 + i), TOOL_DISPLAY) for i, tier in enumerate(TOOL_COLOURS)},
         **{f"tool/{tier}_shovel": (shovel(tier, 95 + i), TOOL_DISPLAY) for i, tier in enumerate(TOOL_COLOURS)},
-        "ore/bronzite": (crystals("bronzite", (96, 92, 90), (201, 132, 66), (255, 206, 130), 21), ITEM_DISPLAY),
-        "ore/frostium": (crystals("frostium", (92, 100, 108), (127, 200, 232), (225, 247, 255), 22), ITEM_DISPLAY),
-        "ore/sunstone": (crystals("sunstone", (110, 90, 70), (242, 193, 78), (255, 240, 170), 23), ITEM_DISPLAY),
+        "ore/bronzite": (crystals("bronzite", (96, 92, 90), hx("#c98442"), hx("#4af0ff"), 21), ITEM_DISPLAY),
+        "ore/frostium": (crystals("frostium", (92, 100, 108), hx("#7fc8e8"), hx("#e6f7ff"), 22), ITEM_DISPLAY),
+        "ore/sunstone": (crystals("sunstone", (110, 90, 70), hx("#f2c14e"), hx("#3fb6a8"), 23), ITEM_DISPLAY),
         "ore/bronze_core": (core("bronze_core", hx("#7a4a1e"), hx("#c98442"), hx("#4af0ff"), 24, "flux"), ITEM_DISPLAY),
         "ore/ember_core": (core("ember_core", hx("#2a1a2e"), hx("#c8461e"), hx("#ff8a2a"), 25, "lava"), ITEM_DISPLAY),
         "ore/void_lens": (lens("void_lens", hx("#3a1a6a"), hx("#0e0a1a"), hx("#ff4a8a"), 26), ITEM_DISPLAY),
-        "ore/voidglass": (voidglass("voidglass", (110, 70, 180), (40, 24, 70), (210, 140, 255), 27), ITEM_DISPLAY),
-        "ore/starcore": (starcore("starcore", (230, 200, 120), (255, 245, 200), (255, 250, 220), 28), ITEM_DISPLAY),
+        "ore/voidglass": (voidglass("voidglass", hx("#4a2a8a"), hx("#1c0f3a"), hx("#ff4a8a"), 27), ITEM_DISPLAY),
+        "ore/starcore": (starcore("starcore", hx("#f2c14e"), hx("#fff1b0"), hx("#3fb6a8"), 28), ITEM_DISPLAY),
         "ore/pebble": (pebble_model("pebble", 40), ITEM_DISPLAY),
         "machine/fountain": (fountain("fountain", 41), BLOCK_DISPLAY),
         "machine/spring_stone": (spring_stone("spring_stone", 42), BLOCK_DISPLAY),
@@ -565,11 +614,7 @@ def main():
         "machine/solar_panel": (solar_panel("solar_panel", 33), BLOCK_DISPLAY),
         "machine/miner_1": (miner("miner_1", 1, 34), BLOCK_DISPLAY),
         "machine/miner_2": (miner("miner_2", 2, 35), BLOCK_DISPLAY),
-        "tool/bronze_pick": (pick("bronze_pick", (201, 132, 66), (244, 190, 110), (110, 70, 40), 36), sm.DISPLAY),
-        "tool/ember_pick": (pick("ember_pick", (216, 104, 58), (255, 162, 58), (74, 40, 30), 43), sm.DISPLAY),
-        "tool/void_pick": (pick("void_pick", (74, 42, 144), (228, 106, 255), (28, 16, 56), 44), sm.DISPLAY),
-        "tool/starcore_pick": (pick("starcore_pick", (226, 215, 130), (255, 255, 255), (138, 106, 28), 45), sm.DISPLAY),
-        "tool/rime_pick": (pick("rime_pick", (127, 200, 232), (214, 244, 255), (60, 80, 120), 37), sm.DISPLAY),
+        **{f"tool/{tier}_pick": (pick(tier, 80 + i), TOOL_DISPLAY) for i, tier in enumerate(TOOL_COLOURS)},
     }
     for model_id, (s, display) in out.items():
         write(model_id, s, display, display is BLOCK_DISPLAY or model_id.endswith(("_axe", "_shovel")))

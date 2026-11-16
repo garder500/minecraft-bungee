@@ -1705,6 +1705,47 @@ def tools_scenario(ctx):
         failures.append(f"a Void Bow arrow dealt {dealt} (expected about 180, vanilla would be about 6-9)")
 
 
+def imported_scenario(ctx):
+    """The hand-imported items that became 3D: the five main swords, the five pickaxes and the five ores, each held
+    (first person), then in the inventory (the flat sprite) and in third person."""
+    tools, env, shots = (ctx[k] for k in ("tools", "env", "shots"))
+    xdo, rcon = tools["xdotool"], Rcon()
+    rcon.command("op E2EBot")
+    rcon.command("gamemode creative E2EBot")
+    groups = {
+        "sword": ["weapon/bronze_cleaver", "weapon/rimeblade", "weapon/ember_sword", "weapon/void_sword", "weapon/starcore_sword"],
+        "pick": [f"tool/{t}_pick" for t in ("bronze", "rime", "ember", "void", "starcore")],
+        "ore": ["ore/bronzite", "ore/frostium", "ore/sunstone", "ore/voidglass", "ore/starcore"],
+        # held blocks: the machines against a vanilla stone and furnace (a vanilla block is the size reference)
+        "machine": ["minecraft:stone", "forge/forge", "machine/solar_panel", "machine/miner_1", "minecraft:furnace"],
+    }
+    only = os.environ.get("E2E_GROUPS")
+    for group, models in groups.items():
+        if only and group not in only.split(","):
+            continue
+        rcon.command("clear E2EBot")
+        for i, m in enumerate(models):
+            if m.startswith("minecraft:"):
+                rcon.command(f"item replace entity E2EBot hotbar.{i} with {m}")
+            else:
+                rcon.command(f'item replace entity E2EBot hotbar.{i} with minecraft:iron_sword[item_model="vampyuyu:{m}"]')
+        time.sleep(3)
+        for i, m in enumerate(models):
+            subprocess.run([xdo, "key", str(i + 1)], env=env)
+            time.sleep(1.5)
+            shot(tools, shots / f"im-{group}-{i + 1}-{m.replace(":", "/").split("/")[-1]}.png")
+        subprocess.run([xdo, "key", "e"], env=env)
+        time.sleep(2)
+        shot(tools, shots / f"im-{group}-inventory.png")
+        subprocess.run([xdo, "key", "Escape"], env=env)
+        time.sleep(1)
+        subprocess.run([xdo, "key", "F5", "F5"], env=env)
+        time.sleep(2)
+        shot(tools, shots / f"im-{group}-third-person.png")
+        subprocess.run([xdo, "key", "F5"], env=env)
+        time.sleep(1)
+
+
 def swords_scenario(ctx):
     """The two weapons and the six skins as real 3D box models: each one held in first person, then the inventory."""
     tools, env, shots = (ctx[k] for k in ("tools", "env", "shots"))
@@ -1720,7 +1761,7 @@ def swords_scenario(ctx):
     for i, m in enumerate(models):
         subprocess.run([xdo, "key", str(i + 1)], env=env)
         time.sleep(1.5)
-        shot(tools, shots / f"sw-{i + 1}-{m.split('/')[1]}.png")
+        shot(tools, shots / f"sw-{i + 1}-{m.replace(":", "/").split("/")[-1]}.png")
     subprocess.run([xdo, "key", "e"], env=env)
     time.sleep(2)
     shot(tools, shots / "sw-9-inventory.png")
@@ -2260,7 +2301,7 @@ def bosses_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "dungeon", "start", "craft", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "imported", "dungeon", "start", "craft", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -2269,7 +2310,7 @@ def main():
     if args.scenario == "dev":
         return dev_server()
     global WITH_SURVIVAL
-    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "dungeon", "start", "craft")
+    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "imported", "dungeon", "start", "craft")
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
@@ -2292,7 +2333,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "dungeon", "start", "craft"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "imported", "dungeon", "start", "craft"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -2323,7 +2364,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "dungeon", "start", "craft"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "imported", "dungeon", "start", "craft"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -2360,6 +2401,8 @@ def main():
             back_scenario(ctx)
         elif args.scenario == "skyblock":
             skyblock_scenario(ctx)
+        elif args.scenario == "imported":
+            imported_scenario(ctx)
         elif args.scenario == "quarry":
             quarry_scenario(ctx)
         elif args.scenario == "progress":

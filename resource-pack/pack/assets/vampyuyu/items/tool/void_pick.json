@@ -1,6 +1,19 @@
 {
  "model": {
-  "type": "minecraft:model",
-  "model": "vampyuyu:item/tool/void_pick"
+  "type": "minecraft:select",
+  "property": "minecraft:display_context",
+  "cases": [
+   {
+    "when": "gui",
+    "model": {
+     "type": "minecraft:model",
+     "model": "vampyuyu:item/tool/void_pick_gui"
+    }
+   }
+  ],
+  "fallback": {
+   "type": "minecraft:model",
+   "model": "vampyuyu:item/tool/void_pick_3d"
+  }
  }
 }
