@@ -82,145 +82,145 @@ public final class BossItems {
         List<Spec> t = new ArrayList<>();
         // summon items
         t.add(spec("void_sigil", "Void Sigil", Rarity.EPIC, Material.ECHO_SHARD, "SUMMON ITEM", true, none,
-            "<gray>A sigil humming with the cold of the End.", "",
+            "<gray>A sigil humming with the cold of the Rift.", "",
             "<yellow>Trophy of the three boss keys. The Rift now", "<yellow>answers the <light_purple>Echo Key<yellow> instead."));
         t.add(spec("echo_key", "Echo Key", Rarity.RARE, Material.TRIAL_KEY, "SUMMON ITEM", true, none,
-            "<gray>The Archivist's key to the Rift, cut from a", "<gray>shard that still remembers the sky.", "",
+            "<gray>Cut from a shard that still remembers the sky.", "",
             "<yellow>Right-click at the Rift altar in the Hub to", "<yellow>awaken the <light_purple>Echo of the Rift<yellow>. Consumed on use."));
         t.add(spec("magma_core", "Ashes Bastion Key", Rarity.EPIC, Material.MAGMA_CREAM, "SUMMON ITEM", true, none,
-            "<gray>A heart of molten rock that never cools.", "",
+            "<gray>A heart of cooled slag, split by one bright vein.", "",
             "<yellow>Opens the <red>Ashes Bastion<yellow> (/bastion) and its", "<red>Lava Colossus<yellow>. Spent by the party leader."));
         t.add(spec("frost_heart", "Heights Bastion Key", Rarity.EPIC, Material.PRISMARINE_CRYSTALS, "SUMMON ITEM", true, none,
-            "<gray>A frozen heart that still beats, slowly.", "",
+            "<gray>A heart of ice that beats once in a long while.", "",
             "<yellow>Opens the <aqua>Heights Bastion<yellow> (/bastion) and its", "<aqua>Boreal Watcher<yellow>. Spent by the party leader."));
         t.add(spec("matriarch_egg", "Grove Bastion Key", Rarity.EPIC, Material.FERMENTED_SPIDER_EYE, "SUMMON ITEM", true, none,
-            "<gray>Something moves inside the sac.", "",
+            "<gray>Something small moves inside, listening.", "",
             "<yellow>Opens the <dark_green>Grove Bastion<yellow> (/bastion) and its", "<dark_green>Mycelial Queen<yellow>. Spent by the party leader."));
         t.add(spec("judge_seal", "Necropolis Bastion Key", Rarity.EPIC, Material.ECHO_SHARD, "SUMMON ITEM", true, none,
-            "<gray>A seal that remembers every verdict.", "",
+            "<gray>A seal that remembers every verdict it signed.", "",
             "<yellow>Opens the <dark_purple>Necropolis Bastion<yellow> (/bastion) and its", "<dark_purple>Judge of Lost Souls<yellow>. Spent by the party leader."));
         t.add(spec("leviathan_scale", "Abyss Bastion Key", Rarity.EPIC, Material.NAUTILUS_SHELL, "SUMMON ITEM", true, none,
-            "<gray>A scale the size of a shield, cold and wet.", "",
+            "<gray>A scale the size of a shield. Cold, and still wet.", "",
             "<yellow>Opens the <dark_aqua>Abyss Bastion<yellow> (/bastion) and its", "<dark_aqua>Chained Leviathan<yellow>. Spent by the party leader."));
         // voidwyrm
         t.add(spec(WING_CORE, "Wing Core", Rarity.MYTHIC, Material.HEART_OF_THE_SEA, "MATERIAL", true, none,
-            "<gray>The beating heart of a dragon's wings.", "<gray>Proof that you stood against the Echo of the Rift."));
+            "<gray>The still heart of a pair of wings.", "<gray>Proof that you stood against the Echo of the Rift."));
         t.add(spec("voidwyrm_scale", "Rift Echo Scale", Rarity.EPIC, Material.PRISMARINE_SHARD, "MATERIAL", false, none,
-            "<gray>Shed from the hide of the Echo of the Rift."));
+            "<gray>Shed where the Echo of the Rift tore loose."));
         t.add(weapon("void_fang", "Void Fang", Rarity.LEGENDARY, Material.DIAMOND_SWORD, "SWORD", true, 5, Element.VOID,
             "void_step", stats(Stat.MIGHT, 20, Stat.SWIFTNESS, 10),
-            "<gray>A tooth of the Echo of the Rift, sharp enough to", "<gray>cut the dark between stars."));
+            "<gray>A tooth of the Echo of the Rift.", "<gray>It cuts the dark between two stars."));
         // magma warden = Lava Colossus, Guardian of the Cracked Ashes
         t.add(spec(LAVA_CORE, "Colossus Core", Rarity.EPIC, Material.MAGMA_BLOCK, "BOSS COMPONENT", true, none,
-            "<gray>The thermal regulator of a Sarcophagus,", "<gray>still pulsing with the Devourer's heat.",
+            "<gray>The thermal regulator of a Sarcophagus.", "<gray>It is still cooling. It never finishes.",
             "", "<gray>Guardian component of the <red>Cracked Ashes<gray>."));
-        t.add(spec("warden_heart", "Nether Key", Rarity.EPIC, Material.FIRE_CHARGE, "BOSS KEY", false, none,
-            "<gray>Torn from the Lava Colossus. Still warm.", "<gray>One of the three keys of the Void Sigil."));
+        t.add(spec("warden_heart", "Ashes Key", Rarity.EPIC, Material.FIRE_CHARGE, "BOSS KEY", false, none,
+            "<gray>Broken from the Lava Colossus. Still warm.", "<gray>One of the three keys of the Void Sigil."));
         t.add(weapon("ember_blade", "Ember Blade", Rarity.EPIC, Material.GOLDEN_SWORD, "SWORD", false, 2, Element.EMBER,
             "magma_burst", stats(Stat.MIGHT, 10, Stat.ATTUNEMENT, 3),
-            "<gray>Forged in the pools of the Lava Colossus."));
+            "<gray>Poured in the magma seas of the Ashes.", "<gray>The edge is cooled; the core is not."));
         // frost revenant = Boreal Watcher, Guardian of the Frozen Heights
         t.add(spec(FROST_CORE, "Watcher Core", Rarity.EPIC, Material.BLUE_ICE, "BOSS COMPONENT", true, none,
-            "<gray>The entropic brake of a Sarcophagus,", "<gray>holding a heartbeat between two ticks.",
+            "<gray>The brake of a Sarcophagus.", "<gray>The eye inside has not blinked since the Heights froze.",
             "", "<gray>Guardian component of the <aqua>Frozen Heights<gray>."));
         t.add(spec("frost_shard", "Frost Key", Rarity.EPIC, Material.AMETHYST_SHARD, "BOSS KEY", false, none,
-            "<gray>A sliver of the Boreal Watcher's armor.", "<gray>One of the three keys of the Void Sigil."));
+            "<gray>A sliver of the Boreal Watcher's ice.", "<gray>One of the three keys of the Void Sigil."));
         t.add(weapon("glacial_edge", "Glacial Edge", Rarity.EPIC, Material.IRON_SWORD, "SWORD", false, 3, Element.FROST,
             "rime_nova", stats(Stat.MIGHT, 12, Stat.SWIFTNESS, 10),
-            "<gray>A blade of ice that never melts."));
+            "<gray>Ice that holds a moment still.", "<gray>It does not melt."));
         // sylvan matriarch = Mycelial Queen, Guardian of the Whispering Grove
         t.add(spec(MYCELIAL_CORE, "Queen Core", Rarity.EPIC, Material.MOSS_BLOCK, "BOSS COMPONENT", true, none,
-            "<gray>The living archive of a Sarcophagus,", "<gray>every code of the old world in one spore.",
+            "<gray>The living archive of a Sarcophagus.", "<gray>Spores drift out of it toward whoever holds it.",
             "", "<gray>Guardian component of the <green>Whispering Grove<gray>."));
         t.add(spec("matriarch_silk", "Mycelial Silk", Rarity.EPIC, Material.STRING, "MATERIAL", false, none,
-            "<gray>Strong enough to bind a dragon."));
+            "<gray>Spun by the Queen from what she remembers.", "<gray>Strong enough to hold a dragon."));
         t.add(weapon("venom_dagger", "Venom Dagger", Rarity.EPIC, Material.IRON_SWORD, "SWORD", false, 3, Element.EARTH,
             "venom_strike", stats(Stat.MIGHT, 10, Stat.SWIFTNESS, 5),
-            "<gray>A fang taken from the Mycelial Queen,", "<gray>still dripping."));
+            "<gray>A fang the Queen gave up, little by little.", "<gray>It is still dripping."));
         // mire abomination = Abomination Fangeuse, Guardian of the Putrid Marshes
         t.add(spec("mire_cyst", "Marsh Bastion Key", Rarity.EPIC, Material.SLIME_BALL, "SUMMON ITEM", true, none,
-            "<gray>A cyst of everything the Devourer threw away.", "",
+            "<gray>A cyst of everything the Devourer threw away.", "<gray>Warm, and not yet finished digesting.", "",
             "<yellow>Opens the <dark_green>Marsh Bastion<yellow> (/bastion) and its", "<dark_green>Mire Abomination<yellow>. Spent by the party leader."));
-        t.add(spec(MIRE_CORE, "Abomination Core", Rarity.EPIC, Material.SCULK_CATALYST, "BOSS COMPONENT", true, none,
-            "<gray>The digestive heart of a Sarcophagus,", "<gray>still turning what it was given.",
+        t.add(spec(MIRE_CORE, "Mire Core", Rarity.EPIC, Material.SCULK_CATALYST, "BOSS COMPONENT", true, none,
+            "<gray>The digestive heart of a Sarcophagus.", "<gray>Warm. It should not be warm.",
             "", "<gray>Guardian component of the <dark_green>Putrid Marshes<gray>."));
         t.add(spec("mire_ichor", "Bog Ichor", Rarity.EPIC, Material.FERMENTED_SPIDER_EYE, "MATERIAL", false, none,
-            "<gray>Distilled from the Mire Abomination.", "<gray>Nothing in it is wasted."));
+            "<gray>Pressed from what the Mire Abomination keeps.", "<gray>Nothing in it is wasted."));
         // temporal pharaoh = Guardian of the Citadel of Golden Sands
         t.add(spec("pharaoh_scarab", "Citadel Bastion Key", Rarity.EPIC, Material.GOLD_NUGGET, "SUMMON ITEM", true, none,
-            "<gray>A golden scarab whose legs keep ticking.", "",
+            "<gray>A golden scarab. Its legs keep ticking.", "<gray>Borrowed time, in the shape of a beetle.", "",
             "<yellow>Opens the <gold>Citadel Bastion<yellow> (/bastion) and its", "<gold>Temporal Pharaoh<yellow>. Spent by the party leader."));
-        t.add(spec(TEMPORAL_CORE, "Pharaoh Core", Rarity.EPIC, Material.CLOCK, "BOSS COMPONENT", true, none,
-            "<gray>The chronometer of a Sarcophagus,", "<gray>still counting hours that never end.",
+        t.add(spec(TEMPORAL_CORE, "Temporal Core", Rarity.EPIC, Material.CLOCK, "BOSS COMPONENT", true, none,
+            "<gray>The chronometer of a Sarcophagus.", "<gray>The sand inside runs up, then down, then up.",
             "", "<gray>Guardian component of the <gold>Citadel of Golden Sands<gray>."));
         t.add(spec("pharaoh_linen", "Pharaoh's Linen", Rarity.EPIC, Material.PAPER, "MATERIAL", false, none,
-            "<gray>Bandages that have outlived their wearer."));
+            "<gray>Linen that has outlived its wearer.", "<gray>It still keeps count of the hours."));
         // thunder dragon = Primordial Thunder Dragon, Guardian of the Tempestuous Archipelago
         t.add(spec("tempest_key", "Tempest Bastion Key", Rarity.EPIC, Material.BREEZE_ROD, "SUMMON ITEM", true, none,
-            "<gray>A rod of wind that hums before the thunder.", "",
+            "<gray>A rod of wind. It hums before the sky does.", "",
             "<yellow>Opens the <aqua>Tempest Bastion<yellow> (/bastion) and its", "<aqua>Primordial Thunder Dragon<yellow>. Spent by the party leader."));
         t.add(spec(THUNDER_CORE, "Dragon Core", Rarity.EPIC, Material.WAXED_COPPER_BLOCK, "BOSS COMPONENT", true, none,
-            "<gray>The kinetic regulator of a Sarcophagus,", "<gray>still turning the winds of a lost sky.",
+            "<gray>The wind regulator of a Sarcophagus.", "<gray>Hold it by the cage. Only by the cage.",
             "", "<gray>Guardian component of the <aqua>Tempestuous Archipelago<gray>."));
         // hell gao = the Anomaly, secret post-game superboss (no component: it pays titles and cosmetics, never a stat)
         t.add(spec(INTERPULSE_KEY, "Interpulse Key", Rarity.MYTHIC, Material.RECOVERY_COMPASS, "SUMMON ITEM", true, none,
-            "<gray>It points at nothing, between two pulses.", "",
+            "<gray>It points at nothing, between two pulses.", "<gray>Villagers look away from it.", "",
             "<yellow>Opens the <light_purple>Interpulse Rift<yellow> (/hellgao) during the window", "<yellow>between two pulses. Spent by the party leader."));
         // abyssal leviathan
         // abyssal leviathan = Chained Leviathan, Guardian of the Abyssal Depths
         t.add(spec(LEVIATHAN_CORE, "Leviathan Core", Rarity.EPIC, Material.HEART_OF_THE_SEA, "BOSS COMPONENT", true, none,
-            "<gray>The gravitational regulator of a Sarcophagus,", "<gray>still pulling at everything near it.",
+            "<gray>The gravity regulator of a Sarcophagus.", "<gray>Heavy. It is still pulling at something far below.",
             "", "<gray>Guardian component of the <dark_aqua>Abyssal Depths<gray>."));
         t.add(spec("leviathan_tooth", "Abyss Key", Rarity.EPIC, Material.PRISMARINE_SHARD, "BOSS KEY", false, none,
-            "<gray>From the deepest jaws of the sea.", "<gray>One of the three keys of the Void Sigil."));
+            "<gray>Taken from the deepest dark of the sea.", "<gray>One of the three keys of the Void Sigil."));
         t.add(weapon("tidal_trident", "Tidal Trident", Rarity.LEGENDARY, Material.TRIDENT, "TRIDENT", true, 4, Element.FROST,
             "tidal_surge", stats(Stat.MIGHT, 18, Stat.DEEP_LURE, 4, Stat.LURE, 20),
-            "<gray>The tide answers to whoever holds it."));
+            "<gray>The tide still answers to the hand on it.", "<gray>It was never asked to."));
         // the Devourer (Raid, GDD 4.6): the key is forged from the eight cores; the rewards are trophies, no stat
         t.add(spec("devourer_sigil", "Event Horizon Key", Rarity.MYTHIC, Material.NETHER_STAR, "SUMMON ITEM", true, none,
-            "<gray>Eight regulators, one lock: the door to the", "<gray>Gravitational Throne.", "",
+            "<gray>Eight regulators, one lock.", "<gray>The door to the Gravitational Throne.", "",
             "<yellow>Opens the <light_purple>Raid of the Devourer<yellow> (/bastion). Spent by the", "<yellow>party leader. Every member must have cleared the Guardians."));
         t.add(spec("singularity_relic", "Singularity Relic", Rarity.MYTHIC, Material.HEAVY_CORE, "TROPHY", true, none,
             "<gray>A fragment of the Devourer's hunger, held still.", "",
             "<gray>Proof that you stood at the edge of the singularity.", "<dark_gray>Trophy: it carries no stat."));
         t.add(spec("horizon_lens", "Horizon Lens", Rarity.LEGENDARY, Material.SPYGLASS, "COSMETIC", true, none,
-            "<gray>Through it, light bends the wrong way.", "",
+            "<gray>Through it, light bends the wrong way.", "<gray>Everything looks borrowed.", "",
             "<dark_gray>Cosmetic: it carries no stat."));
         // crypt lord
         t.add(spec(JUDGE_CORE, "Judge Core", Rarity.EPIC, Material.CRYING_OBSIDIAN, "BOSS COMPONENT", true, none,
-            "<gray>The memory vault of a Sarcophagus,", "<gray>every verdict of the old world sealed inside.",
+            "<gray>The memory vault of a Sarcophagus.", "<gray>It weighs the same as the soul you last forgot.",
             "", "<gray>Guardian component of the <dark_purple>Ethereal Necropolis<gray>."));
         t.add(spec("lord_bone", "Crypt Lord's Bone", Rarity.EPIC, Material.BONE, "MATERIAL", false, none,
-            "<gray>A bone from the lord of the crypt."));
+            "<gray>A bone the Judge kept, to remember a name.", "<gray>Dry as a verdict."));
         t.add(weapon("necro_scepter", "Necro Scepter", Rarity.LEGENDARY, Material.BLAZE_ROD, "WAND", true, 1, Element.EARTH,
             "grave_call", stats(Stat.AETHER, 250, Stat.MIGHT, 10),
-            "<gray>The dead listen to the one who holds it."));
+            "<gray>The forgotten listen to the hand that holds it.", "<gray>They are only asking to be named."));
         // world bosses
-        t.add(spec("colossus_core", "Colossus Core", Rarity.LEGENDARY, Material.IRON_INGOT, "MATERIAL", true, none,
-            "<gray>The living core of the Ancient Colossus."));
+        t.add(spec("colossus_core", "Colossus Plate", Rarity.LEGENDARY, Material.IRON_INGOT, "MATERIAL", true, none,
+            "<gray>A plate of the Ancient Colossus.", "<gray>Still ticking, like something wound."));
         t.add(spec("roc_feather", "Storm Roc Feather", Rarity.LEGENDARY, Material.FEATHER, "MATERIAL", true, none,
-            "<gray>Crackles with static."));
+            "<gray>Crackles with static.", "<gray>It remembers the wind it flew in."));
         // slayers
-        t.add(spec("revenant_flesh", "Revenant Flesh", Rarity.UNCOMMON, Material.ROTTEN_FLESH, "MATERIAL", false, none,
-            "<gray>Refuses to rot."));
-        t.add(spec("revenant_catalyst", "Revenant Catalyst", Rarity.EPIC, Material.GHAST_TEAR, "MATERIAL", true, none,
-            "<gray>A reagent that stirs the dead."));
-        t.add(spec("tarantula_web", "Tarantula Web", Rarity.UNCOMMON, Material.COBWEB, "MATERIAL", false, none,
-            "<gray>Sticky and surprisingly strong."));
-        t.add(spec("tarantula_charm", "Tarantula Charm", Rarity.EPIC, Material.SPIDER_EYE, "MATERIAL", true, none,
-            "<gray>Eight tiny eyes watch you."));
+        t.add(spec("revenant_flesh", "Unrotting Flesh", Rarity.UNCOMMON, Material.ROTTEN_FLESH, "MATERIAL", false, none,
+            "<gray>It refuses to rot.", "<gray>No one asked it to stay."));
+        t.add(spec("revenant_catalyst", "Restless Catalyst", Rarity.EPIC, Material.GHAST_TEAR, "MATERIAL", true, none,
+            "<gray>A reagent that stirs what lies still."));
+        t.add(spec("tarantula_web", "Spinner Web", Rarity.UNCOMMON, Material.COBWEB, "MATERIAL", false, none,
+            "<gray>Sticky, and stronger than it looks."));
+        t.add(spec("tarantula_charm", "Many-Eyed Charm", Rarity.EPIC, Material.SPIDER_EYE, "MATERIAL", true, none,
+            "<gray>Eight tiny eyes follow the hand that holds it."));
         t.add(spec("ravager_tooth", "Ravager Tooth", Rarity.UNCOMMON, Material.BONE_MEAL, "MATERIAL", false, none,
-            "<gray>Sharper than it looks."));
+            "<gray>Sharper than it looks.", "<gray>It was kept for the pack's sake."));
         t.add(spec("ravager_pelt", "Ravager Pelt", Rarity.EPIC, Material.RABBIT_HIDE, "MATERIAL", true, none,
-            "<gray>The pelt of a beast that hunts in packs."));
-        t.add(spec("null_sphere", "Null Sphere", Rarity.UNCOMMON, Material.ENDER_PEARL, "MATERIAL", false, none,
-            "<gray>Cold to the touch and utterly empty."));
+            "<gray>The pelt of a beast that hunted in packs.", "<gray>Still warm on the inside."));
+        t.add(spec("null_sphere", "Hollow Pearl", Rarity.UNCOMMON, Material.ENDER_PEARL, "MATERIAL", false, none,
+            "<gray>Cold to the touch, and empty all the way through."));
         t.add(spec("void_conduit", "Void Conduit", Rarity.EPIC, Material.END_CRYSTAL, "MATERIAL", true, none,
-            "<gray>Channels the void into something usable."));
-        t.add(spec("demon_ember", "Demon Ember", Rarity.UNCOMMON, Material.BLAZE_POWDER, "MATERIAL", false, none,
-            "<gray>Burns without fuel."));
-        t.add(spec("demon_core", "Demon Core", Rarity.EPIC, Material.MAGMA_BLOCK, "MATERIAL", true, none,
-            "<gray>A fragment of an unquenchable furnace."));
+            "<gray>It carries the dark where it is needed."));
+        t.add(spec("demon_ember", "Living Ember", Rarity.UNCOMMON, Material.BLAZE_POWDER, "MATERIAL", false, none,
+            "<gray>Burns without fuel.", "<gray>It never learned to go out."));
+        t.add(spec("demon_core", "Furnace Heart", Rarity.EPIC, Material.MAGMA_BLOCK, "MATERIAL", true, none,
+            "<gray>A fragment of a furnace that never cooled."));
         return t;
     }
 
