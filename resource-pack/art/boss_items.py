@@ -101,6 +101,67 @@ class Canvas:
                 + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b""))
 
 
+# ---------------------------------------------------------------- Realm palettes (lore bible, section 2)
+# shadow, base, light, highlight, glow. The glow is the only saturated colour of a sprite and marks the Realm motif.
+REALMS = {
+    "ashes": ("#120a16", "#2a1a2e", "#5a2a2a", "#c8461e", "#ff8a2a"),
+    "grove": ("#2c3a1e", "#4f6b2a", "#8fb84a", "#d6f08a", "#f1e7c9"),
+    "frost": ("#1f3557", "#3b6fa8", "#7fc8e8", "#e6f7ff", "#b6a8ff"),
+    "citadel": ("#5a3a12", "#a8742a", "#f2c14e", "#fff1b0", "#3fb6a8"),
+    "marsh": ("#2a2a1a", "#4e5a22", "#8a9a2e", "#c9d36a", "#b04aa0"),
+    "storm": ("#1e2440", "#3a4a8a", "#7a8ee0", "#f0f4ff", "#ffe94a"),
+    "depths": ("#0a1a2a", "#12405a", "#2a8a9a", "#bff0f0", "#ff6ab0"),
+    "necro": ("#241f3a", "#4a4570", "#9c95c8", "#e8e4ff", "#6affd8"),
+    "astral": ("#0e0a1a", "#3a1a6a", "#8a4aff", "#e0c8ff", "#ff4a8a"),
+    "flux": ("#4a2a12", "#7a4a1e", "#c98442", "#f2c14e", "#4af0ff"),
+}
+LORE_OUT = (0x14, 0x0F, 0x18, 255)
+BASE = (170, 170, 170)      # sentinel body colour of the painters: its shades pick the palette step
+ACCENT = (255, 0, 255)      # sentinel accent colour: becomes the Realm glow
+
+
+def realm_rgb(realm):
+    return [tuple(int(h[i:i + 2], 16) for i in (1, 3, 5)) + (255,) for h in REALMS[realm]]
+
+
+def lore_step(lum, cuts):
+    for i, cut in enumerate(cuts):
+        if lum < cut:
+            return i
+    return len(cuts)
+
+
+LIFT = {"ashes": 1}   # the Ashes shadow is almost the outline colour: its sprites use steps 2..4 of the ramp
+
+
+def requant(c, realm, cuts=(145, 190, 232), glow_chroma=90):
+    """Maps every pixel of a finished (outlined) canvas onto the Realm palette: light steps by luminance, saturated
+    bright pixels become the glow, the outline becomes #140F18. No anti-aliasing, no colour outside the palette."""
+    ramp = realm_rgb(realm)
+    for y in range(16):
+        for x in range(16):
+            px = c.p[y][x]
+            if px is None:
+                continue
+            if tuple(px[:3]) == OUT[:3] or tuple(px[:3]) == LORE_OUT[:3]:
+                c.p[y][x] = LORE_OUT
+                continue
+            r, g, bl = px[:3]
+            lum = 0.3 * r + 0.59 * g + 0.11 * bl
+            if max(r, g, bl) - min(r, g, bl) >= glow_chroma:
+                c.p[y][x] = ramp[4] if max(r, g, bl) >= 200 else ramp[2]
+            else:
+                c.p[y][x] = ramp[min(3, lore_step(lum, cuts) + LIFT.get(realm, 0))]
+
+
+def lore_icon(painter, realm):
+    c = Canvas()
+    painter(c, BASE, ACCENT)
+    c.outline()
+    requant(c, realm)
+    return c
+
+
 # ---------------------------------------------------------------- shape helpers
 
 def circle(cx, cy, r):
@@ -400,6 +461,18 @@ LORE = ["lava_core", "mycelial_core", "frost_core", "temporal_core", "judge_core
         "judge_seal", "tempest_key", "interpulse_key", "pharaoh_linen"]
 
 
+REALM_OF = {
+    "void_sigil": "astral", "magma_core": "ashes", "frost_heart": "frost", "matriarch_egg": "grove",
+    "leviathan_scale": "depths", "wing_core": "storm", "voidwyrm_scale": "astral", "void_fang": "astral",
+    "warden_heart": "ashes", "ember_blade": "ashes", "frost_shard": "frost", "glacial_edge": "frost",
+    "matriarch_silk": "grove", "venom_dagger": "grove", "leviathan_tooth": "depths", "tidal_trident": "depths",
+    "lord_bone": "necro", "necro_scepter": "necro", "colossus_core": "ashes", "roc_feather": "storm",
+    "revenant_flesh": "marsh", "revenant_catalyst": "marsh", "tarantula_web": "grove", "tarantula_charm": "necro",
+    "ravager_tooth": "citadel", "ravager_pelt": "citadel", "null_sphere": "astral", "void_conduit": "astral",
+    "demon_ember": "ashes", "demon_core": "ashes",
+}
+
+
 def all_ids():
     return list(ICONS) + LORE
 
@@ -408,11 +481,7 @@ def draw(item_id):
     if item_id in LORE:
         import lore_sprites
         return lore_sprites.draw(item_id)
-    painter, rgb, accent = ICONS[item_id]
-    c = Canvas()
-    painter(c, rgb, accent)
-    c.outline()
-    return c
+    return lore_icon(ICONS[item_id][0], REALM_OF[item_id])
 
 
 def write_json(path, data):
