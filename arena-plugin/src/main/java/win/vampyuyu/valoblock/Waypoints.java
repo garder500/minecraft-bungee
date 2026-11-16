@@ -32,6 +32,8 @@ public final class Waypoints {
   private final Map<String, List<String>> links;
   private final Map<VbSide, List<String>> spawns;
   private final Map<String, SiteInfo> sites;
+  /** Nodes bots must not route through right now (a closed gate); the start and the goal of a path are exempt. */
+  private volatile Set<String> blocked = Set.of();
 
   private Waypoints(String map, Map<String, Node> nodes, Map<String, List<String>> links, Map<VbSide, List<String>> spawns, Map<String, SiteInfo> sites) {
     this.map = map;
@@ -43,6 +45,15 @@ public final class Waypoints {
 
   public String map() {
     return map;
+  }
+
+  /** Sets the nodes a path avoids (empty: none). A route to or from a blocked node itself still works. */
+  public void setBlocked(Collection<String> ids) {
+    blocked = Set.copyOf(ids);
+  }
+
+  public Set<String> blocked() {
+    return blocked;
   }
 
   public Node node(String id) {
@@ -84,6 +95,11 @@ public final class Waypoints {
 
   /** Shortest list of node ids from one node to another (inclusive), or empty when unreachable. */
   public List<String> path(String from, String to) {
+    return path(from, to, blocked);
+  }
+
+  /** Same, going around the given nodes (never the start or the goal). */
+  public List<String> path(String from, String to, Set<String> avoid) {
     node(from);
     node(to);
     Map<String, Double> dist = new HashMap<>();
@@ -97,6 +113,7 @@ public final class Waypoints {
       if (cur.getValue() > dist.getOrDefault(u, Double.MAX_VALUE)) continue;
       if (u.equals(to)) break;
       for (String v : links.getOrDefault(u, List.of())) {
+        if (!avoid.isEmpty() && avoid.contains(v) && !v.equals(to)) continue;
         Node a = nodes.get(u), b = nodes.get(v);
         double nd = cur.getValue() + a.dist(b.x, b.y, b.z);
         if (nd < dist.getOrDefault(v, Double.MAX_VALUE)) {

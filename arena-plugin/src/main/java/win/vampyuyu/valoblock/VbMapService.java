@@ -34,6 +34,8 @@ public final class VbMapService implements MapService {
     volatile VbMatch match;
     final List<ItemDisplay> orbs = new ArrayList<>();
     volatile boolean barriersUp;
+    /** Everything the themed build placed (set by {@link #build}); clearing sets the same blocks to air. */
+    volatile VbCanvas canvas;
 
     Instance(String arena, int slot, VbMap map) {
       this.arena = arena;
@@ -51,14 +53,18 @@ public final class VbMapService implements MapService {
   private final BitSet used = new BitSet();
   private volatile String selected = VbData.MAP_IDS.get(0);
   private volatile World world;
+  final VbRealmService realm;
+  private final Map<String, org.bukkit.block.data.BlockData> dataCache = new ConcurrentHashMap<>();
 
   public VbMapService(NexusArenaEngine plugin) {
     this.plugin = plugin;
+    this.realm = new VbRealmService(plugin, this);
   }
 
   /** Orb pick-up check, five times a second. */
   public void start() {
     Bukkit.getScheduler().runTaskTimer(plugin, this::tickOrbs, 20, 4);
+    realm.start();
     // Create the world once the arenas are loaded, so a start from the panel (not the server thread) finds it.
     Bukkit.getScheduler().runTask(plugin, () -> {
       if (plugin.arenas.all().stream().anyMatch(a -> a.config.preset().equals(VbPreset.ID))) {
@@ -77,7 +83,7 @@ public final class VbMapService implements MapService {
     selected = id;
   }
 
-  private void onServer(Runnable r) {
+  void onServer(Runnable r) {
     if (Bukkit.isPrimaryThread()) r.run();
     else Bukkit.getScheduler().runTask(plugin, r);
   }
@@ -174,10 +180,30 @@ public final class VbMapService implements MapService {
     if (w == null) return;
     tickets(in, true);
     int ox = in.ox();
-    in.map.greybox((x, y, z, k) -> {
-      Material m = Material.matchMaterial(in.map.material(k));
-      w.getBlockAt(ox + x, FEET_Y + y, z).setType(m == null ? Material.STONE : m, false);
+    VbCanvas canvas = VbThemes.canvas(in.map);
+    in.canvas = canvas;
+    canvas.emit((x, y, z, d) -> w.getBlockAt(ox + x, FEET_Y + y, z).setBlockData(blockData(d), false));
+  }
+
+  /** The block data of a canvas string (cached); an unknown block becomes stone and is logged once. */
+  private org.bukkit.block.data.BlockData blockData(String d) {
+    return dataCache.computeIfAbsent(d, k -> {
+      try {
+        return Bukkit.createBlockData(k);
+      } catch (IllegalArgumentException e) {
+        plugin.getLogger().warning("ValoBlock: unknown block '" + k + "' in a map build");
+        return Material.STONE.createBlockData();
+      }
     });
+  }
+
+  /** Sets every block the build placed to air (and the buy-phase barriers). */
+  private void erase(Instance in, World w) {
+    int ox = in.ox();
+    VbCanvas canvas = in.canvas;
+    org.bukkit.block.data.BlockData air = Material.AIR.createBlockData();
+    if (canvas != null) canvas.emit((x, y, z, d) -> w.getBlockAt(ox + x, FEET_Y + y, z).setBlockData(air, false));
+    in.map.barrierBlocks((x, y, z, k) -> w.getBlockAt(ox + x, FEET_Y + y, z).setBlockData(air, false));
   }
 
   private void clear(Instance in) {
@@ -189,8 +215,8 @@ public final class VbMapService implements MapService {
     if (w == null) return;
     int ox = in.ox();
     onServer(() -> {
-      in.map.greybox((x, y, z, k) -> w.getBlockAt(ox + x, FEET_Y + y, z).setType(Material.AIR, false));
-      in.map.barrierBlocks((x, y, z, k) -> w.getBlockAt(ox + x, FEET_Y + y, z).setType(Material.AIR, false));
+      realm.stopNow(in); // gates open, effects off: the Realm rules never outlive the match
+      erase(in, w);
       tickets(in, false);
     });
   }
@@ -209,6 +235,7 @@ public final class VbMapService implements MapService {
     Instance in = instances.remove(s.config.id());
     if (in == null) return;
     in.match = null;
+    onServer(() -> realm.stopNow(in));
     VbData.deactivate();
     clear(in);
   }
@@ -271,6 +298,7 @@ public final class VbMapService implements MapService {
       onServer(() -> placeOrbs(in));
     }
     if (to == VbPhase.ROUND_END || to == VbPhase.END) clearOrbs(in);
+    realm.phaseChanged(in, from, to);
   }
 
   private void barriers(Instance in, boolean up) {
@@ -363,8 +391,7 @@ public final class VbMapService implements MapService {
   private void in_clear(Instance in) {
     World w = world();
     if (w == null) return;
-    int ox = in.ox();
-    in.map.greybox((x, y, z, k) -> w.getBlockAt(ox + x, FEET_Y + y, z).setType(Material.AIR, false));
+    erase(in, w);
     tickets(in, false);
   }
 
@@ -382,6 +409,7 @@ public final class VbMapService implements MapService {
 
   /** Plugin disable: clear every instance. */
   public void shutdown() {
+    realm.stopAll();
     for (Instance in : instances.values()) {
       clearOrbs(in);
       tickets(in, false);
