@@ -4,7 +4,9 @@
   "side": "vampyuyu:block/machine/miner_1_side",
   "front": "vampyuyu:block/machine/miner_1_front",
   "bottom": "vampyuyu:block/machine/bottom",
-  "particle": "vampyuyu:block/machine/miner_1_side"
+  "particle": "vampyuyu:block/machine/miner_1_side",
+  "frame": "vampyuyu:block/machine/window_frame",
+  "window": "vampyuyu:block/machine/window_flux"
  },
  "gui_light": "front",
  "display": {
@@ -164,6 +166,99 @@
       16
      ],
      "texture": "#bottom"
+    }
+   }
+  },
+  {
+   "from": [
+    3,
+    3,
+    15
+   ],
+   "to": [
+    13,
+    13,
+    16.1
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#frame"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#frame"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#frame"
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#frame"
+    },
+    "up": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#frame"
+    },
+    "down": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#frame"
+    }
+   }
+  },
+  {
+   "from": [
+    4,
+    4,
+    15
+   ],
+   "to": [
+    12,
+    12,
+    16.25
+   ],
+   "shade": false,
+   "light_emission": 15,
+   "faces": {
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "texture": "#window"
     }
    }
   }
