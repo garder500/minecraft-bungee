@@ -1046,7 +1046,16 @@ def valoblock_scenario(ctx):
     say("maps: " + vb(rcon, "map list").replace("\n", " | "))
     if ctx.get("rules", "").startswith("map="):  # --rules map=stormbreak plays another map
         say(vb(rcon, "map use " + ctx["rules"].split("=", 1)[1]))
+    reloads = client_log.read_text(errors="replace").count("Reloading ResourceManager")
     api("POST", "/arenas/action", {"action": "arena-join", "arenaId": "e2e", "uuid": me})
+    # Joining the arena adds the second pack (ValoBlock guns, agents, scope): accept its prompt, wait for the reload.
+    for _ in range(40):
+        if client_log.read_text(errors="replace").count("Reloading ResourceManager") > reloads:
+            break
+        subprocess.run([tools["xdotool"], "mousemove", "485", "445", "click", "1"], env=ctx["env"])
+        time.sleep(3)
+    else:
+        failures.append("the client never reloaded for the ValoBlock pack (second pack not offered or not accepted)")
     time.sleep(4)
     out = vb(rcon, "start")
     say("vb start: " + out)

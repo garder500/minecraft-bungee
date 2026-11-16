@@ -36,7 +36,7 @@ x-paper-env: &paper-env
   MENU_PACK_REQUIRED: ${MENU_PACK_REQUIRED:-false}
   MENU_PACK_BASE_URL: ${MENU_PACK_BASE_URL:-http://localhost:8080}
   # The ValoBlock pack (sent over the base pack while a player is in a match) comes from the same host.
-  # Its SHA-1 is baked in the image (/opt/vampyuyu-valoblock.sha1). false: a client may refuse it and still play.
+  # Its SHA-1 is baked in the image (/opt/vampyuyu-valoblock.sha1). true: a client that declines or fails the download is taken out of the match (it is not kicked from the server); false: it may refuse and still play.
   VALOBLOCK_PACK_REQUIRED: ${VALOBLOCK_PACK_REQUIRED:-true}
   MC_CONNECT_ADDRESS: ${MC_CONNECT_ADDRESS:-localhost:25565}
   # Paper reads the managed forwarding secret from config/paper-global.yml.

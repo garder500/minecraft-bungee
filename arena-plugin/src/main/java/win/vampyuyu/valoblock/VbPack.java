@@ -43,7 +43,7 @@ public final class VbPack implements Listener {
   /**
    * VALOBLOCK_PACK_SHA1_FILE (default /opt/vampyuyu-valoblock.sha1, written by the image build), served from
    * VALOBLOCK_PACK_BASE_URL or else MENU_PACK_BASE_URL (the panel serves both). VALOBLOCK_PACK_REQUIRED=false makes
-   * it optional (default true: a client that refuses it cannot play ValoBlock).
+   * it tolerated (default true: a client that declines or fails the pack is taken out of the match with a message).
    */
   public static VbPack load(NexusArenaEngine plugin) {
     String base = System.getenv("VALOBLOCK_PACK_BASE_URL");
@@ -88,7 +88,8 @@ public final class VbPack implements Listener {
         url,
         hash,
         required ? "ValoBlock guns and agents (required to play)" : "ValoBlock guns and agents",
-        required);
+        false); // never the wire "required" flag: a vanilla client then disconnects itself on a decline and the match
+                // handler (message, leave the arena) would never run. The match ejects a refusal when `required`.
   }
 
   /** Takes the pack back (leaving the match, the match ending). Safe to call twice. */
