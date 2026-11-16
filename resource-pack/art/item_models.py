@@ -228,8 +228,8 @@ def miner(name, tier, seed):
 
 
 def pebble_model(name, seed):
-    s = bs.Skin(name, [("stone", (150, 148, 146), "plain"), ("dark", (104, 102, 100), "plain"),
-                       ("light", (190, 188, 184), "plain")], seed)
+    s = bs.Skin(name, [("stone", hx("#8a8794"), "plain"), ("dark", hx("#4a4658"), "plain"),
+                       ("light", hx("#c4c0d0"), "plain")], seed)
     s.box((3, 0, 5), (9, 4, 11), "stone", rot=("y", 20, [6, 2, 8]))
     s.box((8, 0, 7), (13, 3, 12), "dark", rot=("y", -25, [10, 2, 9]))
     s.box((4, 4, 6), (8, 5, 10), "light", rot=("y", 20, [6, 4, 8]))
@@ -276,12 +276,18 @@ def pick(name, head, edge, handle, seed):
     return s
 
 
+def hx(h):
+    return tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
+
+
+# head, edge, handle, glow: each tier takes the five-tone palette of its Realm (shadow, base, light, highlight, glow);
+# the glow is the one saturated colour and marks the motif (Flux cyan, lava vein, Watcher's eye, turquoise inlay, rift)
 TOOL_COLOURS = {
-    "bronze": ((201, 132, 66), (244, 190, 110), (110, 70, 40), None),
-    "rime": ((127, 200, 232), (214, 244, 255), (60, 80, 120), (200, 245, 255)),
-    "ember": ((216, 104, 58), (255, 162, 58), (74, 40, 30), (255, 140, 40)),
-    "void": ((74, 42, 144), (228, 106, 255), (28, 16, 56), (200, 100, 255)),
-    "starcore": ((226, 215, 130), (255, 255, 255), (138, 106, 28), (255, 250, 220)),
+    "bronze": (hx("#c98442"), hx("#f2c14e"), hx("#4a2a12"), hx("#4af0ff")),      # Flux machinery
+    "rime": (hx("#7fc8e8"), hx("#e6f7ff"), hx("#1f3557"), hx("#b6a8ff")),        # Frozen Heights
+    "ember": (hx("#c8461e"), hx("#ff8a2a"), hx("#2a1a2e"), hx("#ff8a2a")),       # Cracked Ashes
+    "void": (hx("#3a1a6a"), hx("#e0c8ff"), hx("#0e0a1a"), hx("#ff4a8a")),        # Astral Interiority
+    "starcore": (hx("#f2c14e"), hx("#fff1b0"), hx("#5a3a12"), hx("#3fb6a8")),    # Citadel of Golden Sands
 }
 BOW_DISPLAY = {  # the hand transforms of a vanilla bow, so it is aimed and drawn like one
     "thirdperson_righthand": {"rotation": [-80, 260, -40], "translation": [-1, -2, 2.5], "scale": [0.9, 0.9, 0.9]},
@@ -422,9 +428,9 @@ def main():
         "ore/bronzite": (crystals("bronzite", (96, 92, 90), (201, 132, 66), (255, 206, 130), 21), ITEM_DISPLAY),
         "ore/frostium": (crystals("frostium", (92, 100, 108), (127, 200, 232), (225, 247, 255), 22), ITEM_DISPLAY),
         "ore/sunstone": (crystals("sunstone", (110, 90, 70), (242, 193, 78), (255, 240, 170), 23), ITEM_DISPLAY),
-        "ore/bronze_core": (core("bronze_core", (190, 140, 70), (230, 150, 70), (255, 210, 120), 24), ITEM_DISPLAY),
-        "ore/ember_core": (core("ember_core", (110, 60, 40), (240, 90, 40), (255, 200, 80), 25), ITEM_DISPLAY),
-        "ore/void_lens": (lens("void_lens", (80, 60, 130), (60, 40, 110), (200, 120, 255), 26), ITEM_DISPLAY),
+        "ore/bronze_core": (core("bronze_core", hx("#7a4a1e"), hx("#c98442"), hx("#4af0ff"), 24), ITEM_DISPLAY),
+        "ore/ember_core": (core("ember_core", hx("#2a1a2e"), hx("#c8461e"), hx("#ff8a2a"), 25), ITEM_DISPLAY),
+        "ore/void_lens": (lens("void_lens", hx("#3a1a6a"), hx("#0e0a1a"), hx("#ff4a8a"), 26), ITEM_DISPLAY),
         "ore/voidglass": (voidglass("voidglass", (110, 70, 180), (40, 24, 70), (210, 140, 255), 27), ITEM_DISPLAY),
         "ore/starcore": (starcore("starcore", (230, 200, 120), (255, 245, 200), (255, 250, 220), 28), ITEM_DISPLAY),
         "ore/pebble": (pebble_model("pebble", 40), ITEM_DISPLAY),
