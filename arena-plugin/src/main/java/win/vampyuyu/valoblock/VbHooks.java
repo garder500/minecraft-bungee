@@ -46,12 +46,6 @@ final class VbHooks implements GameHooks {
   }
 
   @Override
-  public void onLeave(ArenaSession s, org.bukkit.entity.Player p) {
-    VbPack pack = module.pack;
-    if (pack != null) pack.remove(p);
-  }
-
-  @Override
   public boolean hosts(ArenaSession s, org.bukkit.Location where) {
     return module.map.covers(s, where);
   }
@@ -102,6 +96,8 @@ final class VbHooks implements GameHooks {
     }
     module.weapons.clear(id);
     module.agents.restore(id);
+    VbPack pack = module.pack;
+    if (pack != null) pack.remove(p);
   }
 
   @Override
