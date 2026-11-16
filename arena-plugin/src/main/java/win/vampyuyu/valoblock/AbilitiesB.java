@@ -52,7 +52,13 @@ final class AbilitiesB {
         if (mark == null || mark.until() <= e.now) return false;
         e.marks.remove(c.id());
         Location from = c.p().getLocation();
-        c.p().teleport(mark.where());
+        // The engine cancels teleports of arena players unless they are allowed.
+        c.env().plugin.arenas.allowTeleport(c.id(), true);
+        try {
+          c.p().teleport(mark.where());
+        } finally {
+          c.env().plugin.arenas.allowTeleport(c.id(), false);
+        }
         c.p().setVelocity(new Vector());
         from.getWorld().spawnParticle(Particle.END_ROD, from.add(0, 1, 0), 25, 0.3, 0.6, 0.3, 0.05);
         e.sound(mark.where(), "block.beacon.deactivate", 1f, 1.5f);

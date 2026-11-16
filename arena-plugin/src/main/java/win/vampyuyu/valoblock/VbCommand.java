@@ -10,8 +10,8 @@ import win.vampyuyu.arena.NexusArenaEngine;
 
 /** /vb: operate ValoBlock arenas (start, stop, status, reload) and drive tests (debug). Admin only. */
 public final class VbCommand implements CommandExecutor, TabCompleter {
-  private static final List<String> SUBS = List.of("help", "use", "start", "stop", "status", "reload", "level", "debug");
-  private static final List<String> DEBUG = List.of("skip", "state", "win", "kill", "plant", "seal");
+  private static final List<String> SUBS = List.of("help", "use", "start", "stop", "status", "reload", "level", "map", "debug");
+  private static final List<String> DEBUG = List.of("skip", "state", "win", "kill", "plant", "seal", "armory", "block", "where");
 
   private final NexusArenaEngine plugin;
   private final Map<String, String> selected = new HashMap<>();
@@ -74,11 +74,13 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
           if (args.length >= 2) plugin.valoblock.bots.level(args[1]); // validated: unknown level throws
           say(sender, "Bot level for the next match: " + plugin.valoblock.bots.level() + " (" + String.join(", ", VbData.bots().levels().keySet()) + ")");
         }
+        case "map" -> map(sender, args);
         case "debug" -> debug(sender, args);
         default -> {
           for (String line :
               List.of(
                   "/vb use <arena> · start · stop · status · reload · level [recruit|veteran|elite]",
+                  "/vb map [list | use <id> | preview <id> | mark ... | save | discard]  (map editor, see /vb map help)",
                   "/vb debug skip | state | win <a|b> | kill <player> | plant <a|b> | seal"))
             say(sender, line);
         }
@@ -87,6 +89,103 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
       sender.sendMessage(Component.text(NexusArenaEngine.reason(e), NamedTextColor.RED));
     }
     return true;
+  }
+
+  // ------------------------------------------------------------- map editor
+
+  private static final List<String> MAP_SUBS = List.of("help", "list", "use", "preview", "mark", "save", "discard");
+  private static final List<String> MARKS = List.of("spawn", "site", "buy", "barrier", "orb", "node", "rmnode", "link");
+  private final Map<String, VbMapEditor> editors = new HashMap<>();
+
+  private VbMapService maps() {
+    if (plugin.valoblock.map instanceof VbMapService m) return m;
+    throw new IllegalArgumentException("The ValoBlock map service is not running");
+  }
+
+  private void map(CommandSender sender, String[] args) {
+    String sub = args.length < 2 ? "list" : args[1].toLowerCase(Locale.ROOT);
+    switch (sub) {
+      case "list" -> {
+        say(sender, "Next match map: " + maps().selected());
+        for (VbMap m : VbData.maps().values())
+          say(sender, " " + m.id() + " · " + m.name() + " · " + m.realm() + " · " + m.width() + "x" + m.depth() + " blocks, " + m.cell() + " per cell");
+      }
+      case "use" -> {
+        if (args.length < 3) throw new IllegalArgumentException("Usage: /vb map use <id>");
+        maps().select(args[2].toLowerCase(Locale.ROOT));
+        say(sender, "The next match is played on " + maps().selected());
+      }
+      case "preview" -> {
+        if (!(sender instanceof Player p)) throw new IllegalArgumentException("Only a player can preview a map");
+        if (args.length < 3) throw new IllegalArgumentException("Usage: /vb map preview <id>");
+        String id = args[2].toLowerCase(Locale.ROOT);
+        var at = maps().preview(id);
+        editors.put(sender.getName(), new VbMapEditor(VbData.maps().get(id).source()));
+        p.teleport(at);
+        say(sender, "Preview of " + id + " built; you are on the Seedbearer spawn. Place markers with /vb map mark, then /vb map save.");
+      }
+      case "mark" -> mark(sender, args);
+      case "save" -> {
+        VbMapEditor ed = editors.get(sender.getName());
+        if (ed == null) throw new IllegalArgumentException("Nothing to save: /vb map preview <id> first");
+        VbMap checked = ed.check(); // refuses an inconsistent file before it is written
+        var file = win.vampyuyu.werewolf.DataFiles.target(VbData.mapFile(checked.id()));
+        if (file == null) throw new IllegalArgumentException("Data overrides are off");
+        try {
+          java.nio.file.Files.createDirectories(file.getParent());
+          java.nio.file.Files.writeString(file, new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(ed.json()));
+        } catch (java.io.IOException e) {
+          throw new IllegalArgumentException("Could not write " + file + ": " + e.getMessage());
+        }
+        VbData.reload();
+        say(sender, "Saved as an override: overrides/" + VbData.mapFile(checked.id()).substring(1) + " (loaded)");
+      }
+      case "discard" -> {
+        editors.remove(sender.getName());
+        say(sender, "Unsaved map edits dropped");
+      }
+      default -> {
+        for (String line :
+            List.of(
+                "/vb map list | use <id> | preview <id> | save | discard",
+                "In the preview, stand where the marker goes, then /vb map mark:",
+                "spawn <seedbearers|sealers> <n> · site <id> <min|max> · buy <side> <min|max> · barrier <side> <min|max>",
+                "orb <n> · node <id> · link <a> <b> · rmnode <id>"))
+          say(sender, line);
+      }
+    }
+  }
+
+  private void mark(CommandSender sender, String[] args) {
+    if (!(sender instanceof Player p)) throw new IllegalArgumentException("Only a player can place a marker");
+    VbMapEditor ed = editors.get(sender.getName());
+    if (ed == null) throw new IllegalArgumentException("Start with /vb map preview <id>");
+    double[] at = maps().previewPosition(p.getLocation());
+    if (at == null) throw new IllegalArgumentException("Stand inside the map preview");
+    if (args.length < 3) throw new IllegalArgumentException("Usage: /vb map mark " + String.join("|", MARKS) + " ...");
+    String what = args[2].toLowerCase(Locale.ROOT);
+    String msg;
+    try {
+      msg = switch (what) {
+        case "spawn" -> ed.spawn(VbSide.valueOf(sideName(args, 3)), Integer.parseInt(args[4]), at[0], at[1], at[2]);
+        case "site", "buy", "barrier" -> ed.corner(what, args[3], args[4].equalsIgnoreCase("max"), at[0], at[1], at[2]);
+        case "orb" -> ed.orb(Integer.parseInt(args[3]), at[0], at[1], at[2]);
+        case "node" -> ed.node(args[3], at[0], at[1], at[2]);
+        case "link" -> ed.link(args[3], args[4]);
+        case "rmnode" -> ed.removeNode(args[3]);
+        default -> throw new IllegalArgumentException("Marker kinds: " + String.join(", ", MARKS));
+      };
+    } catch (ArrayIndexOutOfBoundsException | NumberFormatException e) {
+      throw new IllegalArgumentException("Missing or wrong argument for " + what + " (/vb map help)");
+    }
+    say(sender, msg);
+  }
+
+  private static String sideName(String[] args, int i) {
+    String k = args[i].toUpperCase(Locale.ROOT);
+    if (k.startsWith("SEEDB")) return "SEEDBEARERS";
+    if (k.startsWith("SEAL")) return "SEALERS";
+    throw new IllegalArgumentException("Side must be seedbearers or sealers");
   }
 
   private void debug(CommandSender sender, String[] args) {
@@ -123,6 +222,25 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
         m.holdSeal(sealer, m.rules().sealSeconds());
         say(sender, m.status());
       }
+      case "armory" -> {
+        Player p = args.length >= 3 ? plugin.getServer().getPlayerExact(args[2]) : sender instanceof Player self ? self : null;
+        if (p == null) throw new IllegalArgumentException("Usage: /vb debug armory <player>");
+        plugin.valoblock.weapons.openArmory(p, m);
+        say(sender, "Armory opened for " + p.getName() + " (buy phase only)");
+      }
+      case "block" -> {
+        // The block of the ValoBlock world at a position: checks barriers and the greybox without a client.
+        if (args.length < 5) throw new IllegalArgumentException("Usage: /vb debug block <x> <y> <z>");
+        var w = plugin.valoblock.map.world();
+        if (w == null) throw new IllegalArgumentException("The ValoBlock world is not loaded");
+        say(sender, "block " + w.getBlockAt(Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4])).getType());
+      }
+      case "where" -> {
+        Player p = args.length >= 3 ? plugin.getServer().getPlayerExact(args[2]) : sender instanceof Player self ? self : null;
+        if (p == null) throw new IllegalArgumentException("Usage: /vb debug where <player>");
+        var l = p.getLocation();
+        say(sender, String.format(Locale.ROOT, "where %s %.1f %.1f %.1f mode=%s alive=%s hp=%d", l.getWorld().getName(), l.getX(), l.getY(), l.getZ(), p.getGameMode(), m.alive().contains(p.getUniqueId()), m.health(p.getUniqueId())));
+      }
       default -> throw new IllegalArgumentException("Debug: " + String.join(", ", DEBUG));
     }
   }
@@ -133,6 +251,9 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
     if (args.length == 1) return SUBS;
     if (args.length == 2 && args[0].equalsIgnoreCase("debug")) return DEBUG;
     if (args.length == 2 && args[0].equalsIgnoreCase("level")) return new ArrayList<>(VbData.bots().levels().keySet());
+    if (args.length == 2 && args[0].equalsIgnoreCase("map")) return MAP_SUBS;
+    if (args.length == 3 && args[0].equalsIgnoreCase("map") && (args[1].equalsIgnoreCase("use") || args[1].equalsIgnoreCase("preview"))) return new ArrayList<>(VbData.maps().keySet());
+    if (args.length == 3 && args[0].equalsIgnoreCase("map") && args[1].equalsIgnoreCase("mark")) return MARKS;
     if (args.length == 2 && args[0].equalsIgnoreCase("use")) return plugin.arenas.all().stream().map(s -> s.config.id()).toList();
     return List.of();
   }

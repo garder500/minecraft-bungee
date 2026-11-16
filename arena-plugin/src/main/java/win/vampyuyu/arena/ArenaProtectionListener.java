@@ -119,6 +119,7 @@ public final class ArenaProtectionListener implements Listener {
     if (e.getPlayer() instanceof Player p
         && arena(p) != null
         && !(e.getInventory().getHolder() instanceof CompassMenuHolder)
+        && !arena(p).hooks.ownsInventory(arena(p), e.getInventory())
         && !arena(p).config.allowChests()) e.setCancelled(true);
   }
 

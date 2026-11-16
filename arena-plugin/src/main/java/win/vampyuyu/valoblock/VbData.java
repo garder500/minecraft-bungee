@@ -25,7 +25,20 @@ public final class VbData {
   public static final String BOTS = "/valoblock/bots.json";
   public static final String MAP = "/valoblock/map.json";
   public static final String AGENTS_INDEX = "/valoblock/agents/index.json";
-  public static final List<String> FILES = List.of(MATCH, SITES, WEAPONS, AGENTS_INDEX, BOTS, MAP);
+  /** The maps that ship (valoblock/maps/&lt;id&gt;.json); the first is the default. */
+  public static final List<String> MAP_IDS = List.of("hourfall", "rootvault", "stormbreak");
+  public static final List<String> FILES;
+
+  static {
+    List<String> f = new ArrayList<>(List.of(MATCH, SITES, WEAPONS, AGENTS_INDEX, BOTS, MAP));
+    for (String id : MAP_IDS) f.add(mapFile(id));
+    FILES = List.copyOf(f);
+  }
+
+  /** Resource path of one map file. */
+  public static String mapFile(String id) {
+    return "/valoblock/maps/" + id + ".json";
+  }
 
   /** Resource path of one agent file. */
   public static String agentFile(String id) {
@@ -38,6 +51,10 @@ public final class VbData {
   private static volatile VbAgents agents;
   private static volatile BotConfig bots;
   private static volatile Waypoints waypoints;
+  private static volatile java.util.Map<String, VbMap> maps = java.util.Map.of();
+  // The map of the running match, at its slot: absolute coordinates. Null: the placeholder files above.
+  private static volatile List<VbSite> activeSites;
+  private static volatile Waypoints activeWaypoints;
 
   private VbData() {}
 
@@ -52,7 +69,26 @@ public final class VbData {
 
   public static List<VbSite> sites() {
     rules();
-    return sites;
+    List<VbSite> a = activeSites;
+    return a != null ? a : sites;
+  }
+
+  /** The maps by id (relative coordinates). */
+  public static java.util.Map<String, VbMap> maps() {
+    rules();
+    return maps;
+  }
+
+  /** The running match's map was built at an origin: sites and bot graph now follow it. */
+  public static void activate(List<VbSite> mapSites, Waypoints graph) {
+    activeSites = mapSites;
+    activeWaypoints = graph;
+  }
+
+  /** Back to the placeholder files. */
+  public static void deactivate() {
+    activeSites = null;
+    activeWaypoints = null;
   }
 
   public static VbWeapons weapons() {
@@ -73,7 +109,8 @@ public final class VbData {
   /** The waypoint graph bots walk on (a real map replaces the placeholder in a later slice). */
   public static Waypoints waypoints() {
     rules();
-    return waypoints;
+    Waypoints a = activeWaypoints;
+    return a != null ? a : waypoints;
   }
 
   public static synchronized void reload() {
@@ -86,8 +123,15 @@ public final class VbData {
     VbAgents newAgents = VbAgents.parse(index, files);
     BotConfig newBots = BotConfig.parse(read(BOTS));
     Waypoints newWaypoints = Waypoints.parse(read(MAP), newSites);
+    java.util.Map<String, VbMap> newMaps = new java.util.LinkedHashMap<>();
+    for (String id : MAP_IDS) {
+      VbMap m = VbMap.parse(read(mapFile(id)));
+      if (!m.id().equals(id)) throw new IllegalArgumentException("maps/" + id + ".json: its id is " + m.id());
+      newMaps.put(id, m);
+    }
     for (String f : newBots.primaryOrder())
       if (newWeapons.get(f) == null || !newWeapons.get(f).isGun()) throw new IllegalArgumentException("bots.json: primaryOrder names an unknown gun " + f);
+    maps = java.util.Collections.unmodifiableMap(newMaps);
     rules = newRules;
     bots = newBots;
     waypoints = newWaypoints;

@@ -108,6 +108,22 @@ public final class VbWeaponService implements WeaponService, Listener {
     return id == null ? null : VbData.weapons().get(id);
   }
 
+  @Override
+  public String heldName(UUID id) {
+    Player p = Bukkit.getPlayer(id);
+    VbWeapon w = p == null ? null : held(p);
+    return w == null ? null : w.name();
+  }
+
+  @Override
+  public String ammoText(UUID id) {
+    Player p = Bukkit.getPlayer(id);
+    VbWeapon w = p == null ? null : held(p);
+    Gear g = gear.get(id);
+    if (w == null || g == null || !w.isGun()) return null;
+    return g.gun(w).magazine() + " / " + w.magazine();
+  }
+
   private void sync(Runnable r) {
     if (Bukkit.isPrimaryThread()) r.run();
     else Bukkit.getScheduler().runTask(plugin, r);
@@ -643,7 +659,12 @@ public final class VbWeaponService implements WeaponService, Listener {
 
   // ------------------------------------------------------------------ the menu
 
-  private void openArmory(Player p, VbMatch m) {
+  @Override
+  public void openArmory(Player p, VbMatch m) {
+    sync(() -> openArmoryNow(p, m));
+  }
+
+  private void openArmoryNow(Player p, VbMatch m) {
     if (m.vbPhase() != VbPhase.BUY) {
       p.sendMessage(Component.text(Armory.Result.NOT_BUY_PHASE.text, NamedTextColor.RED));
       return;

@@ -49,4 +49,9 @@ public interface AgentService {
   default boolean frozen(UUID player) {
     return false;
   }
+
+  /** Charges of the ability slots 4 to 7 (the ultimate is 1 when ready), or null without a kit. */
+  default int[] charges(UUID player) {
+    return null;
+  }
 }

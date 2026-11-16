@@ -147,10 +147,15 @@ public final class VbBotService implements BotService {
     Waypoints g = VbData.waypoints();
     VbSide side = m.side(b.id);
     List<String> spawns = g.spawns(side);
+    // Humans take the first spawn points of their side (VbMapService), bots the ones after them.
     int index = 0;
+    boolean mine = false;
     for (UUID other : m.squad(m.squadOf(b.id))) {
-      if (other.equals(b.id)) break;
-      if (m.isBot(other)) index++;
+      if (!m.isBot(other)) index++;
+      else if (!mine) {
+        if (other.equals(b.id)) mine = true;
+        else index++;
+      }
     }
     Waypoints.Node node = g.node(spawns.get(index % spawns.size()));
     if (b.brain == null) b.brain = new BotBrain(b.id, cfg(), cfg().level(level()), g);
@@ -188,6 +193,8 @@ public final class VbBotService implements BotService {
   }
 
   private World worldOf(VbMatch m) {
+    World mapWorld = plugin.valoblock.map.world();
+    if (mapWorld != null) return mapWorld;
     for (UUID id : m.participants()) {
       if (m.isBot(id)) continue;
       Player p = Bukkit.getPlayer(id);
@@ -290,7 +297,8 @@ public final class VbBotService implements BotService {
   @Override
   public void killed(VbMatch m, UUID victim, UUID killer) {
     boolean botInvolved = m.isBot(victim) || (killer != null && m.isBot(killer));
-    String line = botInvolved ? (killer == null ? display(m, victim) + " was eliminated" : display(m, killer) + " eliminated " + display(m, victim)) : null;
+    // With the HUD the kill feed shows it; the chat line stays for a server without one.
+    String line = botInvolved && plugin.valoblock.hud == VbHud.NOOP ? (killer == null ? display(m, victim) + " was eliminated" : display(m, killer) + " eliminated " + display(m, victim)) : null;
     Round r = rounds.get(m);
     if (r != null && victim.equals(r.lastCarrier) && m.plantedSite() == null && r.carrierPos != null) r.seedDrop = r.carrierPos.clone();
     sync(() -> {
@@ -304,6 +312,15 @@ public final class VbBotService implements BotService {
       Bot v = bots.get(victim);
       if (v != null) die(v);
     });
+  }
+
+  @Override
+  public String weaponName(UUID id) {
+    Bot b = bots.get(id);
+    if (b == null || b.loadout == null) return null;
+    VbWeapon w = b.loadout.get(VbWeapon.Slot.PRIMARY);
+    if (w == null) w = b.loadout.get(VbWeapon.Slot.SIDEARM);
+    return w == null ? null : w.name();
   }
 
   private String display(VbMatch m, UUID id) {

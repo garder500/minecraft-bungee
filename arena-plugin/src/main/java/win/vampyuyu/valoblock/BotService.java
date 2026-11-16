@@ -52,4 +52,9 @@ public interface BotService {
   default String level() {
     return VbData.bots().defaultLevel();
   }
+
+  /** The name of the gun a bot fights with, or null. */
+  default String weaponName(UUID bot) {
+    return null;
+  }
 }

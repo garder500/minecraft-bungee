@@ -20,4 +20,17 @@ public interface WeaponService {
 
   /** A gun lies on the ground (a dead bot's): a human can pick it up with its rounds. */
   default void dropGun(org.bukkit.Location at, VbWeapon weapon, int rounds) {}
+
+  /** The name of the weapon in the player's hand, or null. */
+  default String heldName(UUID player) {
+    return null;
+  }
+
+  /** "18 / 50" for the held gun (rounds in the magazine / magazine size), or null when the hand holds no gun. */
+  default String ammoText(UUID player) {
+    return null;
+  }
+
+  /** Opens the Armory chest for the player (/vb debug armory); it only opens in the buy phase. */
+  default void openArmory(org.bukkit.entity.Player player, VbMatch match) {}
 }

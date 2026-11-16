@@ -71,6 +71,13 @@ public final class VbAgentService implements AgentService, Listener {
     return env;
   }
 
+  @Override
+  public int[] charges(UUID id) {
+    AgentKit k = kits.get(id);
+    if (k == null) return null;
+    return new int[] {k.charges(4), k.charges(5), k.charges(6), k.charges(7)};
+  }
+
   AgentKit kit(UUID id) {
     return kits.get(id);
   }
@@ -306,7 +313,7 @@ public final class VbAgentService implements AgentService, Listener {
     lastUse.put(p.getUniqueId(), now);
     VbPhase phase = m.vbPhase();
     if ((phase != VbPhase.COMBAT && phase != VbPhase.PLANTED) || !m.alive().contains(p.getUniqueId())) {
-      p.sendActionBar(Component.text("Abilities work during combat", NamedTextColor.GRAY));
+      plugin.valoblock.hud.notice(p, Component.text("Abilities work during combat", NamedTextColor.GRAY));
       return;
     }
     if (env.frozen.contains(p.getUniqueId())) return;
@@ -320,7 +327,7 @@ public final class VbAgentService implements AgentService, Listener {
       }
       AgentKit.Result r = kit.canUse(slot);
       if (r != AgentKit.Result.OK) {
-        p.sendActionBar(Component.text(r.text, NamedTextColor.RED));
+        plugin.valoblock.hud.notice(p, Component.text(r.text, NamedTextColor.RED));
         p.playSound(p.getLocation(), "block.note_block.bass", SoundCategory.PLAYERS, 0.8f, 0.7f);
         return;
       }
@@ -328,7 +335,7 @@ public final class VbAgentService implements AgentService, Listener {
       boolean ok = AbilitiesA.cast(c) || AbilitiesB.cast(c);
       if (!ok) {
         kit.refund(slot);
-        p.sendActionBar(Component.text("That cannot be used here", NamedTextColor.RED));
+        plugin.valoblock.hud.notice(p, Component.text("That cannot be used here", NamedTextColor.RED));
       }
     } catch (RuntimeException ex) {
       kit.refund(slot);

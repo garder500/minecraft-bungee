@@ -13,7 +13,34 @@ final class VbHooks implements GameHooks {
 
   @Override
   public String canStart(ArenaSession s) {
-    return module.map.problem();
+    return module.map.problem(s);
+  }
+
+  @Override
+  public boolean ownsInventory(ArenaSession s, org.bukkit.inventory.Inventory inventory) {
+    var holder = inventory.getHolder();
+    return holder instanceof AgentSelectMenu || holder instanceof ArmoryMenu;
+  }
+
+  /** The HUD shows the phase and the result; the engine's chat lines talk about the compass (Werewolf). */
+  @Override
+  public boolean announcesInChat() {
+    return false;
+  }
+
+  @Override
+  public void beforeStart(ArenaSession s) {
+    module.map.prepare(s);
+  }
+
+  @Override
+  public void onStart(ArenaSession s) {
+    if (s.game instanceof VbMatch m) module.map.started(s, m);
+  }
+
+  @Override
+  public boolean hosts(ArenaSession s, org.bukkit.Location where) {
+    return module.map.covers(s, where);
   }
 
   @Override
@@ -23,13 +50,17 @@ final class VbHooks implements GameHooks {
     if (s.game instanceof VbMatch m) {
       // Bots fill the empty seats after the select: a practice match, no rewards (EventRewards reads this).
       if (!s.practice && m.hasBots()) s.practice = true;
-      module.hud.render(m, now);
+      module.hud.render(m, now, s.phaseEndsAt);
     }
     return false;
   }
 
+  /**
+   * The match is cleaned up here, while the session still has its game: by onStop the engine has
+   * already dropped it (stopPlayers sets game to null), so nothing keyed on it would run.
+   */
   @Override
-  public void onStop(ArenaSession s, Throwable error) {
+  public java.util.concurrent.CompletableFuture<Void> concluding(ArenaSession s, String reason) {
     if (s.game instanceof VbMatch m) {
       module.hud.clear(m);
       module.agents.matchEnded(m);
@@ -40,5 +71,11 @@ final class VbHooks implements GameHooks {
       module.bots.matchEnded(m);
       for (java.util.UUID bot : m.bots()) module.bots.remove(bot);
     }
+    return GameHooks.DONE;
+  }
+
+  @Override
+  public void onStop(ArenaSession s, Throwable error) {
+    module.map.release(s);
   }
 }

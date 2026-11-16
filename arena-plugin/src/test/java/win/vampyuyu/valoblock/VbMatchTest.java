@@ -488,4 +488,22 @@ public class VbMatchTest {
     assertEquals(
         List.of("AGENT_SELECT>BUY", "BUY>COMBAT", "COMBAT>PLANTED", "plantB", "PLANTED>ROUND_END", "end1"), log);
   }
+
+  @Test
+  public void everyoneIsAliveAgainWhenARoundStarts() {
+    VbMatch m = buyPhase();
+    List<Integer> aliveAtStart = new ArrayList<>();
+    m.setEvents(new VbEvents() {
+      @Override
+      public void roundStarted(VbMatch match, int round) {
+        aliveAtStart.add(match.alive().size());
+      }
+    });
+    m.advance();
+    killAll(m, VbSide.SEALERS, first(m, VbSide.SEEDBEARERS));
+    assertTrue("the dead stay out until the next round", m.alive().size() < 10);
+    m.advance(); // round end -> next buy phase
+    assertEquals(List.of(10), aliveAtStart);
+    assertEquals("everyone is alive() again, so the engine does not re-spectate them", 10, m.alive().size());
+  }
 }

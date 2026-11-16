@@ -30,6 +30,14 @@ public final class DataFiles {
     return file.startsWith(base) && Files.isRegularFile(file) ? file : null;
   }
 
+  /** Where the override for a resource path goes (the file may not exist yet), or null when overrides are off. */
+  public static Path target(String resource) {
+    Path base = root;
+    if (base == null) return null;
+    Path file = base.resolve(resource.substring(1)).normalize();
+    return file.startsWith(base) ? file : null;
+  }
+
   /** The override when present, else the jar resource; null when neither exists. Caller closes. */
   public static InputStream open(Class<?> owner, String resource) throws IOException {
     Path file = override(resource);
