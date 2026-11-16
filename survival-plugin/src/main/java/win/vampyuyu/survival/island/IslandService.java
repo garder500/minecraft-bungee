@@ -686,11 +686,11 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
     }
 
     /**
-     * A new or reset island starts over: the quests, the fairy souls and the generator progress (Fountain, pebbles)
+     * A new or reset island starts over: the quests and the generator progress (Fountain, pebbles)
      * are tied to the island, so they restart with it. Skills, coins, minions and the like are kept.
      */
     private void resetIslandProgress(UUID id) {
-        core.profiles().removeSections(id, "quests", "fairy_souls", "quarry");
+        core.profiles().removeSections(id, "quests", "quarry");
     }
 
     /** Online players standing in any of the island's three cells. */
@@ -1146,7 +1146,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
 
     /**
      * Admin: starts over for everybody who has an island. Every island is wiped and rebuilt with the full starter
-     * chest, and its owner and members lose their coins and bank, quests, fairy souls, generator progress, skills,
+     * chest, and its owner and members lose their coins and bank, quests, generator progress, skills,
      * minions, boss and dungeon records, Wings, Skyblock inventory and Skyblock bed. Members, flags and upgrades are
      * kept. Returns the number of islands being reset.
      */
@@ -1207,9 +1207,9 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
             for (UUID id : people) {
                 try {
                     core.service(win.vampyuyu.survival.api.EconomyApi.class).ifPresent(e -> e.reset(id));
-                    // Every Skyblock progress section: quests, fairy souls, generator tier and skins, skills, minions,
+                    // Every Skyblock progress section: quests, generator tier and skins, skills, minions,
                     // boss and dungeon records and the Wings. Island settings and menu preferences are kept.
-                    core.profiles().removeSections(id, "quests", "fairy_souls", "quarry", "skills", "boss",
+                    core.profiles().removeSections(id, "quests", "quarry", "skills", "boss",
                         "dungeon", "wings");
                     core.profiles().edit(id, "island", PlayerIslandData.class, PlayerIslandData::new, d -> {
                         d.starterClaimed = false;

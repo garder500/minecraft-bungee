@@ -31,8 +31,6 @@ public enum QuestType {
     COMMAND(false, "Use a command"),
     /** Enter a Skyblock world. Target: hub, world, nether or end. */
     VISIT_WORLD(false, "Visit an area"),
-    /** Collect fairy souls (target ignored). */
-    COLLECT_SOUL(false, "Collect Wisps"),
     /** Enchant an item (target ignored). */
     ENCHANT_ITEM(false, "Enchant an item"),
     /** Find an ore in a cobble generator. Target: ore id (bronzite, diamond...) or ANY. */

@@ -134,7 +134,7 @@ public class QuestPlanTest {
                     if (def.amount() < 2 || def.amount() > 4) bad.add(def.id() + " tier " + def.amount());
                 }
                 case GENERATOR_UPGRADE -> bad.add(def.id() + " is an event that can be missed: use GENERATOR_TIER");
-                case SKILL_LEVEL, COLLECT_SOUL, ENCHANT_ITEM, ISLAND_ENTER -> bad.add(def.id() + " type " + def.type());
+                case SKILL_LEVEL, ENCHANT_ITEM, ISLAND_ENTER -> bad.add(def.id() + " type " + def.type());
                 default -> { }
             }
         }

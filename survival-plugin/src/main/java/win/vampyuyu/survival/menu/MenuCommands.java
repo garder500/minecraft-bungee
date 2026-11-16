@@ -22,11 +22,10 @@ final class MenuCommands {
     private final WarpsGui warpsGui;
     private final WarpService warps;
     private final SettingsGui settings;
-    private final FairySouls fairy;
     private final Supplier<Boolean> reloader;
 
     MenuCommands(MenuRuntime rt, MainMenu mainMenu, QuestsGui questsGui, QuestService quests, WarpsGui warpsGui,
-            WarpService warps, SettingsGui settings, FairySouls fairy, Supplier<Boolean> reloader) {
+            WarpService warps, SettingsGui settings, Supplier<Boolean> reloader) {
         this.rt = rt;
         this.mainMenu = mainMenu;
         this.questsGui = questsGui;
@@ -34,12 +33,11 @@ final class MenuCommands {
         this.warpsGui = warpsGui;
         this.warps = warps;
         this.settings = settings;
-        this.fairy = fairy;
         this.reloader = reloader;
     }
 
     void register() {
-        rt.core.permissions().register(ADMIN, "Menu administration (reload, wisps)", PermissionDefault.OP);
+        rt.core.permissions().register(ADMIN, "Menu administration (reload)", PermissionDefault.OP);
         rt.core.commands().command("sbmenu").aliases("skyblockmenu")
             .description("Open the Isles")
             .usage("/<command> [reload]")
@@ -51,11 +49,6 @@ final class MenuCommands {
             .usage("/<command> [tutorial|daily|track <id>|list]")
             .permission("vampyuyu.sb.menu.quests", PermissionDefault.TRUE)
             .executor(this::quests).tab(this::questsTab).register();
-        rt.core.commands().command("fairy").aliases("fairysouls", "souls")
-            .description("Wisps: progress and a hint to the nearest one")
-            .usage("/<command> [admin add [id]|admin remove <id>|admin list]")
-            .permission("vampyuyu.sb.menu.fairy", PermissionDefault.TRUE)
-            .executor(this::fairy).tab(this::fairyTab).register();
         rt.core.commands().command("sbwarps").aliases("skyblockwarps")
             .description("Travel around Skyblock")
             .usage("/<command> [hub|island|nether|end|visit [player]|public]")
@@ -155,69 +148,6 @@ final class MenuCommands {
             rt.engine().dailyQuests(data).stream().filter(d -> !data.dailyDone.contains(d.id()))
                 .forEach(d -> ids.add("daily:" + d.id()));
             return filter(ids, args[1]);
-        }
-        return List.of();
-    }
-
-    // ---------------------------------------------------------------- /fairy
-
-    private boolean fairy(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length >= 1 && args[0].equalsIgnoreCase("admin")) {
-            return fairyAdmin(sender, args);
-        }
-        player(sender).ifPresent(fairy::hint);
-        return true;
-    }
-
-    private boolean fairyAdmin(CommandSender sender, String[] args) {
-        if (!sender.hasPermission(ADMIN)) {
-            rt.core.msg().error(sender, "You do not have permission for Wisp administration.");
-            return true;
-        }
-        String sub = args.length < 2 ? "" : args[1].toLowerCase(Locale.ROOT);
-        switch (sub) {
-            case "add" -> player(sender).ifPresent(p -> {
-                Optional<String> id = fairy.addAdmin(p.getLocation(), args.length > 2 ? args[2] : null);
-                if (id.isPresent()) {
-                    rt.core.msg().ok(p, "Wisp '" + id.get() + "' placed here.");
-                } else {
-                    rt.core.msg().error(p, "Could not place a soul: use a free id (a-z, 0-9, _) inside a Skyblock world.");
-                }
-            });
-            case "remove" -> {
-                if (args.length < 3) {
-                    rt.core.msg().error(sender, "Usage: /fairy admin remove <id>");
-                } else if (fairy.removeAdmin(args[2].toLowerCase(Locale.ROOT))) {
-                    rt.core.msg().ok(sender, "Wisp '" + args[2] + "' removed.");
-                } else {
-                    rt.core.msg().error(sender, "No admin placed soul called '" + args[2] + "'.");
-                }
-            }
-            case "list" -> {
-                List<SoulLogic.SoulDef> souls = fairy.adminSouls();
-                rt.core.msg().info(sender, souls.size() + " admin placed souls" + (souls.isEmpty() ? "." : ":"));
-                for (SoulLogic.SoulDef def : souls) {
-                    rt.core.msg().info(sender, "  " + def.id() + " in " + def.world() + " at " + Math.round(def.x()) + ", "
-                        + Math.round(def.y()) + ", " + Math.round(def.z()));
-                }
-            }
-            default -> rt.core.msg().error(sender, "Usage: /fairy admin <add [id]|remove <id>|list>");
-        }
-        return true;
-    }
-
-    private List<String> fairyTab(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.hasPermission(ADMIN)) {
-            return List.of();
-        }
-        if (args.length == 1) {
-            return filter(List.of("admin"), args[0]);
-        }
-        if (args.length == 2 && args[0].equalsIgnoreCase("admin")) {
-            return filter(List.of("add", "remove", "list"), args[1]);
-        }
-        if (args.length == 3 && args[0].equalsIgnoreCase("admin") && args[1].equalsIgnoreCase("remove")) {
-            return filter(fairy.adminSouls().stream().map(SoulLogic.SoulDef::id).toList(), args[2]);
         }
         return List.of();
     }

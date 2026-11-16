@@ -8,8 +8,6 @@ import java.util.Map;
 import win.vampyuyu.survival.api.Stat;
 import win.vampyuyu.survival.data.Db;
 import win.vampyuyu.survival.data.Settings;
-import win.vampyuyu.survival.menu.SoulLogic.SoulDef;
-import win.vampyuyu.survival.menu.SoulLogic.StatStep;
 
 /**
  * Reads the menu tuning from the content database: {@code menu.*} settings, the {@code menu_*} tables and, through
@@ -20,17 +18,14 @@ public final class MenuRepo {
 
     /** The table part of the configuration. */
     public record Rows(Map<String, List<String>> commands, Map<String, MenuConfig.WarpPoint> warps,
-            Map<String, String> defaultZones, List<Zones.Zone> zones, Map<String, String> sounds, List<StatStep> fairyCycle,
-            List<SoulDef> fairyFixed, List<SoulDef> fairyIsland, List<String> problems) {
+            Map<String, String> defaultZones, List<Zones.Zone> zones, Map<String, String> sounds,
+            List<String> problems) {
         public Rows {
             commands = Map.copyOf(commands);
             warps = Map.copyOf(warps);
             defaultZones = Map.copyOf(defaultZones);
             zones = List.copyOf(zones);
             sounds = Map.copyOf(sounds);
-            fairyCycle = List.copyOf(fairyCycle);
-            fairyFixed = List.copyOf(fairyFixed);
-            fairyIsland = List.copyOf(fairyIsland);
             problems = List.copyOf(problems);
         }
     }
@@ -74,31 +69,7 @@ public final class MenuRepo {
                 sounds.put(rs.getString(1), rs.getString(2));
                 return null;
             });
-            List<StatStep> cycle = new ArrayList<>();
-            Db.query(c, "SELECT id, stat, amount FROM menu_fairy_stat ORDER BY position", rs -> {
-                if (!Stat.known(rs.getString(2))) {
-                    problems.add("fairy stat step " + rs.getString(1) + ": unknown stat '" + rs.getString(2) + "'");
-                    return null;
-                }
-                // an old stat name converts (Magic Find becomes Fortune); a dropped stat gives no step
-                for (Stat.Converted conv : Stat.resolve(rs.getString(2))) {
-                    cycle.add(new StatStep(conv.stat(), rs.getDouble(3) * conv.factor()));
-                }
-                return null;
-            });
-            List<SoulDef> fixed = new ArrayList<>();
-            List<SoulDef> island = new ArrayList<>();
-            Db.query(c, "SELECT id, kind, world, x, y, z FROM menu_fairy_soul ORDER BY kind, position", rs -> {
-                boolean relative = rs.getString(2).equals("island");
-                try {
-                    (relative ? island : fixed).add(new SoulDef(rs.getString(1), rs.getString(3), rs.getDouble(4),
-                        rs.getDouble(5), rs.getDouble(6), relative));
-                } catch (IllegalArgumentException e) {
-                    problems.add("wisp " + rs.getString(1) + ": " + e.getMessage());
-                }
-                return null;
-            });
-            return new Rows(commands, warps, defaultZones, zones, sounds, cycle, fixed, island, problems);
+            return new Rows(commands, warps, defaultZones, zones, sounds, problems);
         });
     }
 }

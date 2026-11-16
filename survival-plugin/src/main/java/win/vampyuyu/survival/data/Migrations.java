@@ -31,7 +31,8 @@ public final class Migrations {
         "V020__necropolis",
         "V021__realm_checks",
         "V022__npc_memory",
-        "V023__paragon");
+        "V023__paragon",
+        "V024__remove_fairy_souls");
 
     private Migrations() {}
 

@@ -38,8 +38,8 @@ BACKGROUNDS = {
 
 # The Skyblock menu's button slots (chest indexes) and the player's island in their middle. MainMenu.java places its
 # buttons on exactly these slots, in this order: quests, skills, collections, forge, island, minions, exchange,
-# market, bank, bosses, crypt, hunts, wisps, leaderboards, profile, warps, settings.
-SB_MAIN = [11, 13, 15, 19, 22, 25, 29, 31, 33, 37, 40, 43, 1, 7, 45, 49, 53]
+# market, bank, bosses, crypt, hunts, leaderboards, profile, warps, settings.
+SB_MAIN = [11, 13, 15, 19, 22, 25, 29, 31, 33, 37, 40, 43, 7, 45, 49, 53]
 SB_MAIN_CENTRE = 22
 
 # Role cards drawn as glyphs of the vampyuyu:hud font (plugin: WerewolfHud.glyph): the back and

@@ -30,7 +30,6 @@ public class MainMenuTest extends MenuTestBase {
     private PlayerMock player;
     private QuestsGui questsGui;
     private SettingsGui settings;
-    private FairyGui fairyGui;
 
     @Before
     public void setUp() {
@@ -40,13 +39,11 @@ public class MainMenuTest extends MenuTestBase {
         questsGui = new QuestsGui(rt, quests);
         warpsGui = new WarpsGui(rt, new WarpService(rt));
         settings = new SettingsGui(rt, p -> { });
-        FairySouls fairy = new FairySouls(rt, quests, new FairySoulsTest.FakeDisplays());
         boards = new LeaderboardsGui(rt);
-        fairyGui = new FairyGui(rt, fairy);
-        menu = new MainMenu(rt, quests, questsGui, warpsGui, settings, fairyGui, boards);
+        menu = new MainMenu(rt, quests, questsGui, warpsGui, settings, boards);
         warpsGui.runWith(menu::run);
         boards.runWith(menu::run);
-        commands = new MenuCommands(rt, menu, questsGui, quests, warpsGui, new WarpService(rt), settings, fairy,
+        commands = new MenuCommands(rt, menu, questsGui, quests, warpsGui, new WarpService(rt), settings,
             () -> true);
         player = playerIn("sb_hub");
     }
@@ -93,14 +90,14 @@ public class MainMenuTest extends MenuTestBase {
         // a missing feature leaves its slot empty, it does not shift the others
         assertNull(player.getOpenInventory().getTopInventory().getItem(MainMenu.SB_MAIN[6]));
         // menu-owned entries are always there
-        for (String own : List.of("Quests", "Wisps", "Profile", "Warps", "Settings")) {
+        for (String own : List.of("Quests", "Profile", "Warps", "Settings")) {
             assertTrue(own, names.contains(own));
         }
         assertFalse("no Close button", names.contains("Close"));
     }
 
     @Test
-    public void allSeventeenButtonsSitExactlyOnTheConstellationSlots() {
+    public void allSixteenButtonsSitExactlyOnTheConstellationSlots() {
         command("skills", "skill");
         command("collections", "collection");
         command("forge");
@@ -117,8 +114,8 @@ public class MainMenuTest extends MenuTestBase {
         Inventory top = player.getOpenInventory().getTopInventory();
         assertEquals(54, top.getSize());
         List<String> order = List.of("Quests", "Skills", "Collections", "Forge", "Create Island", "Minions", "Sky Exchange",
-            "Drift Market", "Bank", "Bosses", "Crypt Depths", "Hunts", "Wisps", "Leaderboards", "Profile", "Warps", "Settings");
-        assertEquals(17, MainMenu.SB_MAIN.length);
+            "Drift Market", "Bank", "Bosses", "Crypt Depths", "Hunts", "Leaderboards", "Profile", "Warps", "Settings");
+        assertEquals(16, MainMenu.SB_MAIN.length);
         java.util.Set<Integer> expected = new java.util.HashSet<>();
         for (int i = 0; i < order.size(); i++) {
             expected.add(MainMenu.SB_MAIN[i]);
@@ -130,7 +127,7 @@ public class MainMenuTest extends MenuTestBase {
             }
         }
         // the layout mirrors resource-pack/layout.py SB_MAIN
-        assertArrayEquals(new int[] {11, 13, 15, 19, 22, 25, 29, 31, 33, 37, 40, 43, 1, 7, 45, 49, 53}, MainMenu.SB_MAIN);
+        assertArrayEquals(new int[] {11, 13, 15, 19, 22, 25, 29, 31, 33, 37, 40, 43, 7, 45, 49, 53}, MainMenu.SB_MAIN);
     }
 
     @Test
@@ -235,8 +232,6 @@ public class MainMenuTest extends MenuTestBase {
         win.vampyuyu.survival.core.MenuRules.check(player.getOpenInventory().getTopInventory(), "daily");
         questsGui.tutorial(player);
         win.vampyuyu.survival.core.MenuRules.check(player.getOpenInventory().getTopInventory(), "tutorial");
-        fairyGui.open(player);
-        win.vampyuyu.survival.core.MenuRules.check(player.getOpenInventory().getTopInventory(), "wisps");
     }
 
     @Test

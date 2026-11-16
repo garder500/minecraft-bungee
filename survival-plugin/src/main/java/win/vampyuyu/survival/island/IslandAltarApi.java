@@ -27,6 +27,6 @@ public interface IslandAltarApi {
     Optional<Location> hubSpawn();
 
     /** NPC pads in the hub by id (merchant, banker, reforger, enchanter, quest_master, minion_vendor, boss_arena,
-     * fairy_souls, island_gate, dungeon_gate): the location is the block to stand an NPC on. Empty until built. */
+     * island_gate, dungeon_gate, rift_gate): the location is the block to stand an NPC on. Empty until built. */
     Map<String, Location> hubPads();
 }
