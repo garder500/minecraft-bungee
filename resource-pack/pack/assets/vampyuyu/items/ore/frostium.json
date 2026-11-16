@@ -1,6 +1,19 @@
 {
  "model": {
-  "type": "minecraft:model",
-  "model": "vampyuyu:item/ore/frostium"
+  "type": "minecraft:select",
+  "property": "minecraft:display_context",
+  "cases": [
+   {
+    "when": "gui",
+    "model": {
+     "type": "minecraft:model",
+     "model": "vampyuyu:item/ore/frostium_gui"
+    }
+   }
+  ],
+  "fallback": {
+   "type": "minecraft:model",
+   "model": "vampyuyu:item/ore/frostium_3d"
+  }
  }
 }

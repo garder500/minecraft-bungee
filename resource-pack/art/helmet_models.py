@@ -7,14 +7,13 @@ A helmet item with no equipment asset is drawn on the head as its item model (li
 about 1.5-14.5 of the model space, so the helmet is grown to clear it (GROW). Each helmet is built from
 several boxes instead of one cube: a rounded dome and cap, cheek guards, a face plate under a real visor slit (the
 player's eyes show through it), a brow band, and the tier's ornaments (a bronze crest and nasal, a ring of rime
-crystals, an ember sun disc with rays, void horns and blade, starcore feather wings). The textures are clean pixel art
+crystals, an ember sun disc with rays, void horns and blade, starcore feather crown). The textures are clean pixel art
 drawn here from each tier's palette: plates with a light-to-dark sheen and rivets, gold trim, dark visor, gems.
 In menus the helmet keeps its flat sprite. The Starcore chestplate also gets a "wings" equipment layer (the elytra
 shape, no flight) in gold and white.
 """
 import json
 import pathlib
-import random
 import struct
 import zlib
 
@@ -22,13 +21,29 @@ ART = pathlib.Path(__file__).resolve().parent
 PACK = ART.parent / "pack/assets/vampyuyu"
 TIERS = ("bronze", "rime", "ember", "void", "starcore")
 
-PALETTES = {  # plate, light, dark, trim, accent (gem / glow / crystal)
-    "bronze": ((178, 112, 48), (232, 170, 92), (104, 60, 26), (236, 186, 64), (255, 222, 128)),
-    "rime": ((150, 196, 232), (226, 244, 255), (64, 104, 156), (236, 246, 255), (86, 156, 255)),
-    "ember": ((228, 146, 38), (255, 214, 110), (146, 66, 18), (255, 204, 84), (255, 116, 32)),
-    "void": ((62, 32, 104), (138, 84, 208), (24, 12, 44), (196, 136, 255), (232, 160, 255)),
-    "starcore": ((238, 232, 216), (255, 255, 250), (176, 156, 116), (240, 192, 72), (120, 204, 255)),
+def _h(hexes):
+    return tuple(tuple(int(h[i:i + 2], 16) for i in (1, 3, 5)) for h in hexes.split())
+
+
+# Realm palettes (shadow, base, light, highlight, glow) from the lore bible: bronze = Citadel of Golden Sands,
+# rime = Frozen Heights, ember = Cracked Ashes, void = Ethereal Necropolis, starcore = the Astral Interiority.
+REALM = {
+    "bronze": _h("#5a3a12 #a8742a #f2c14e #fff1b0 #3fb6a8"),
+    "rime": _h("#1f3557 #3b6fa8 #7fc8e8 #e6f7ff #b6a8ff"),
+    "ember": _h("#120a16 #5a2a2a #c8461e #ff8a2a #ffd36a"),
+    "void": _h("#241f3a #4a4570 #9c95c8 #e8e4ff #6affd8"),
+    "starcore": _h("#0e0a1a #3a1a6a #8a4aff #e0c8ff #ff4a8a"),
 }
+OUTLINE = (20, 15, 24)
+# glow pixels of the Realm motif on the plate: ashes crack, frost eye, sand clock, soul flame, singularity spark
+MOTIF = {
+    "bronze": ((12, 7), (12, 8), (11, 8)),
+    "rime": ((7, 13), (8, 13), (7, 12), (8, 12)),
+    "ember": ((11, 7), (11, 8), (12, 9), (12, 10), (13, 11)),
+    "void": ((12, 7), (12, 8), (11, 9), (12, 9)),
+    "starcore": ((12, 7), (11, 8), (13, 8), (12, 9)),
+}
+PALETTES = {t: (REALM[t][2], REALM[t][3], REALM[t][0], REALM[t][3], REALM[t][4]) for t in REALM}  # legacy order
 
 
 def png(width, height, rows):
@@ -45,35 +60,31 @@ def mix(a, b, t):
 
 
 def texture(kind, tier):
-    """A 16x16 texture of one material of a helmet."""
-    plate, light, dark, trim, accent = PALETTES[tier]
-    rnd = random.Random(zlib.crc32(f"{tier}:{kind}".encode()))
+    """A 16x16 flat-shaded texture of one material of a helmet: palette steps only, light from the top left."""
+    sh, base, lt, hi, glow = REALM[tier]
     rows = []
     for y in range(16):
         row = []
         for x in range(16):
-            t = y / 15
-            if kind == "plate":  # a sheen from the top-left, panel lines, rivets
-                c = mix(light, dark, min(1, t * 0.9 + x / 60))
+            if kind == "plate":  # three flat steps along the light, panel lines, rivets, the Realm motif
+                v = x + y
+                c = hi if v < 4 else lt if v < 13 else base if v < 25 else sh
                 if y in (5, 11):
-                    c = mix(c, dark, 0.6)
+                    c = base if c in (hi, lt) else sh
                 if (x, y) in ((2, 2), (13, 2), (2, 8), (13, 8), (2, 14), (13, 14)):
-                    c = trim
-                c = mix(c, (255, 255, 255), rnd.random() * 0.06)
-            elif kind == "trim":  # polished gold (or silver): a bright line and a deep edge
-                c = mix(mix(trim, (255, 250, 220), 0.5), mix(trim, dark, 0.45), t)
-                if y == 2:
-                    c = (255, 250, 225)
-                if y >= 14:
-                    c = mix(trim, dark, 0.6)
+                    c = hi
+                if (x, y) in MOTIF[tier]:
+                    c = glow
+            elif kind == "trim":  # a bright edge, a body step and a deep edge
+                c = hi if y <= 2 else sh if y >= 14 else base if y >= 11 else lt
             elif kind == "dark":
-                c = mix(dark, (8, 6, 12), 0.6)
-            else:  # accent: a gem or crystal with a facet highlight
+                c = OUTLINE if (x + y) % 5 else sh
+            else:  # accent: a faceted gem, outline ring, highlight top left, glow core
                 d = abs(x - 7.5) + abs(y - 7.5)
-                c = mix(mix(accent, (255, 255, 255), 0.55), mix(accent, dark, 0.35), min(1, d / 11))
-                if (x - y) in (0, 1) and x < 8:
-                    c = mix(c, (255, 255, 255), 0.6)
-            row.append(tuple(max(0, min(255, v)) for v in c) + (255,))
+                c = OUTLINE if d > 9 else sh if d > 7 else base if d > 4 else lt if d > 2 else glow
+                if d <= 7 and (x, y) in ((5, 5), (6, 5), (5, 6)):
+                    c = hi
+            row.append(tuple(c) + (255,))
         rows.append(row)
     return png(16, 16, rows)
 
@@ -113,37 +124,73 @@ def shell():
     ]
 
 
+def mirror(el):
+    """The same piece on the other side of the head (x -> 16 - x, z-tilt reversed)."""
+    (x0, y0, z0), (x1, y1, z1) = el["from"], el["to"]
+    out = dict(el, **{"from": [16 - x1, y0, z0], "to": [16 - x0, y1, z1]})
+    if "rotation" in el:
+        r = el["rotation"]
+        o = list(r["origin"])
+        o[0] = 16 - o[0]
+        out["rotation"] = dict(r, origin=o, angle=-r["angle"] if r["axis"] != "x" else r["angle"])
+    return out
+
+
 def ornaments(tier):
     g = [5, 5, 11, 11]  # small pieces sample the middle of their texture
     if tier == "bronze":
-        return [box((7.3, 13.5, 3), (8.7, 16.5, 13.5), "trim"),                # crest
-                box((7.4, 3, 1.1), (8.6, 7.9, 1.6), "trim"),                   # nasal
-                box((7.6, 15.6, 2.6), (8.4, 16.4, 3.4), "accent", sample=g)]
+        # Citadel scarab crest: a gilded beetle on the crown, split wing cases, a teal sun-ball between its horns, legs
+        out = [box((5.8, 13.5, 4.2), (10.2, 15.6, 10.4), "trim"),             # wing cases
+               box((7.85, 15.5, 4.4), (8.15, 15.75, 10.2), "dark"),            # the split between the cases
+               box((6.6, 13.5, 2.7), (9.4, 14.9, 4.2), "trim"),                # head
+               box((6.6, 14.3, 1.5), (7.3, 15.4, 2.7), "trim"),                # the two clypeus horns
+               box((8.7, 14.3, 1.5), (9.4, 15.4, 2.7), "trim"),
+               box((7.2, 14.6, 1.2), (8.8, 16.2, 2.6), "accent", sample=g),    # the sun-ball it pushes
+               box((7.4, 3, 1.1), (8.6, 7.9, 1.6), "trim")]                    # nasal
+        for z in (5.0, 6.8, 8.6):                                              # three legs a side
+            out.append(box((4.6, 13.4, z), (5.8, 14.2, z + 0.7), "trim", rot(22.5, "z", [5.8, 13.8, z])))
+            out.append(box((10.2, 13.4, z), (11.4, 14.2, z + 0.7), "trim", rot(-22.5, "z", [10.2, 13.8, z])))
+        return out
     if tier == "rime":
+        # Frozen Heights: a ring of stasis crystals leaning out from the crown, and the violet eye on the brow
         out = []
-        for x, h, z in ((3, 2.5, 3), (5.2, 3.8, 2.4), (7.25, 5, 2), (9.3, 3.8, 2.4), (11.5, 2.5, 3)):
-            out.append(box((x, 12.5, z), (x + 1.5, 12.5 + h, z + 1.5), "accent", sample=g))
-        out.append(box((7.3, 7.9, 1.2), (8.7, 9.3, 1.6), "accent", sample=g))  # brow gem
+        ring = ((8, 3.6, 3.6, "x", -22.5), (8, 12.4, 3.6, "x", 22.5), (3.6, 8, 3.6, "z", 22.5), (12.4, 8, 3.6, "z", -22.5),
+                (4.7, 4.7, 2.6, None, 0), (11.3, 4.7, 2.6, None, 0), (4.7, 11.3, 2.6, None, 0), (11.3, 11.3, 2.6, None, 0))
+        for cx, cz, h, axis, ang in ring:
+            out.append(box((cx - 0.7, 13.0, cz - 0.7), (cx + 0.7, 13.0 + h, cz + 0.7), "accent",
+                           rot(ang, axis, [cx, 13.0, cz]) if axis else None, sample=g))
+        out.append(box((6.7, 9.4, 1.0), (9.3, 11.4, 1.6), "accent", sample=g))  # the violet eye
+        out.append(box((7.3, 11.4, 1.2), (8.7, 12.6, 1.7), "accent", sample=g))
         return out
     if tier == "ember":
-        out = [box((6.5, 9.6, 1.0), (9.5, 12.6, 1.6), "accent", sample=g)]     # the sun disc on the brow
-        for angle, x in ((-22.5, 5.2), (0, 7.4), (22.5, 9.6)):
-            out.append(box((x, 13, 1.8), (x + 1.2, 16.6, 3.0), "trim", rot(angle, "z", [x + 0.6, 13, 2.4])))
-        for angle, x in ((-45, 3.2), (45, 11.6)):
-            out.append(box((x, 12, 2.2), (x + 1.2, 14.8, 3.4), "trim", rot(angle, "z", [x + 0.6, 12, 2.8])))
+        # Cracked Ashes: a lava sun disc standing behind the crown, eight rays, a lava glint on the brow
+        c = [8, 16.4, 7.8]
+        out = [box((5.6, 15.0, 7.2), (10.4, 17.8, 8.4), "accent", sample=g),   # the disc (octagon from two boxes)
+               box((6.6, 14.0, 7.2), (9.4, 18.8, 8.4), "accent", sample=g),
+               box((6.6, 9.6, 1.0), (9.4, 12.2, 1.6), "accent", sample=g)]
+        out.append(box((7.55, 12.6, 7.4), (8.45, 20.2, 8.2), "trim"))
+        out.append(box((4.2, 15.95, 7.4), (11.8, 16.85, 8.2), "trim"))
+        out.append(box((7.55, 12.6, 7.4), (8.45, 20.2, 8.2), "trim", rot(45, "z", c)))
+        out.append(box((7.55, 12.6, 7.4), (8.45, 20.2, 8.2), "trim", rot(-45, "z", c)))
         return out
     if tier == "void":
-        return [box((7.4, 13.5, 2.5), (8.6, 17, 12), "dark"),                   # blade crest
-                box((0.5, 10, 6), (2.2, 11.6, 7.6), "accent", rot(22.5, "z", [2, 10, 7])),    # horns
-                box((-0.8, 11.2, 6.2), (0.8, 13.6, 7.4), "accent", rot(22.5, "z", [2, 10, 7])),
-                box((13.8, 10, 6), (15.5, 11.6, 7.6), "accent", rot(-22.5, "z", [14, 10, 7])),
-                box((15.2, 11.2, 6.2), (16.8, 13.6, 7.4), "accent", rot(-22.5, "z", [14, 10, 7])),
-                box((7.3, 10, 1.2), (8.7, 11.4, 1.7), "accent", sample=g)]
-    # starcore: two feathers each side, swept back, and the star on the brow
+        # Ethereal Necropolis: bone horns in three bending segments, a blade crest, a soul flame on the brow
+        out = [box((7.4, 13.5, 2.5), (8.6, 17, 12), "dark")]
+        side = [box((0.4, 9.0, 5.6), (2.2, 11.2, 7.8), "trim"),
+                box((-0.2, 10.8, 5.9), (1.4, 13.4, 7.5), "trim", rot(22.5, "z", [0.6, 10.8, 6.7])),
+                box((-1.4, 13.0, 6.2), (-0.1, 15.8, 7.2), "trim", rot(45, "z", [-0.75, 13.0, 6.7]))]
+        out += side + [mirror(e) for e in side]
+        out += [box((7.3, 9.6, 1.2), (8.7, 11.0, 1.7), "accent", sample=g),    # soul flame, a drop and a tip
+                box((7.65, 11.0, 1.2), (8.35, 12.3, 1.5), "accent", sample=g),
+                box((7.45, 17, 6.5), (8.55, 18.4, 7.6), "accent", sample=g)]   # and a spark on the blade
+        return out
+    # starcore, the Astral Interiority: a crown of feathers fanned behind the brow, the star on the brow
     out = [box((7, 10, 1.1), (9, 12, 1.7), "accent", sample=g)]
-    for side, x in ((-1, 1.4), (1, 14.1)):
-        out.append(box((x, 8.5, 6), (x + 0.5, 15.5, 13), "plate", rot(22.5 * side, "y", [x, 8.5, 6])))
-        out.append(box((x - 0.5 * side, 10.5, 8), (x + 0.5 - 0.5 * side, 17, 14.5), "trim", rot(22.5 * side, "y", [x, 8.5, 6])))
+    for ang, h, tex in ((-45, 5.0, "plate"), (-22.5, 6.2, "trim"), (0, 7.4, "plate"), (22.5, 6.2, "trim"), (45, 5.0, "plate")):
+        out.append(box((7.2, 13.0, 5.4), (8.8, 13.0 + h, 6.2), tex, rot(ang, "z", [8, 13.0, 5.8])))
+    for ang, h, tex in ((-22.5, 5.4, "trim"), (0, 6.4, "trim"), (22.5, 5.4, "trim")):  # a back row between the first
+        out.append(box((7.4, 13.0, 7.2), (8.6, 13.0 + h, 7.8), tex, rot(ang, "z", [8, 13.0, 7.5])))
+    out.append(box((7.4, 18.6, 5.3), (8.6, 20.0, 6.3), "accent", sample=g))   # star at the tip of the tallest
     return out
 
 
@@ -173,7 +220,7 @@ def helmet(tier):
 def wings():
     """Elytra-layout texture (64x32, the wing box at u=22 v=0, 10x20x2): rows of white feathers with gold tips."""
     rows = [[(0, 0, 0, 0)] * 64 for _ in range(32)]
-    white, cream, gold, deep = (250, 246, 232), (232, 220, 190), (240, 196, 80), (176, 128, 40)
+    white, cream, gold, deep = REALM["starcore"][3], REALM["starcore"][2], REALM["starcore"][4], REALM["starcore"][1]
     for y in range(0, 22):
         for x in range(22, 46):
             band = (y // 3) % 2
@@ -183,7 +230,8 @@ def wings():
                 base = gold if y < 20 else deep
             if feather == 0 and y % 3 == 2:
                 base = deep
-            rows[y][x] = base + (255,)
+            cut = 22 - (4 if ((x - 22) // 2) % 2 else 0) - (2 if ((x - 22) // 2) % 3 == 0 else 0)
+            rows[y][x] = base + (255,) if y < cut else (0, 0, 0, 0)
     return png(64, 32, rows)
 
 

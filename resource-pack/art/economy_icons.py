@@ -12,22 +12,37 @@ Writes, for every icon NAME below:
 import json, pathlib, struct, sys, zlib
 
 PACK = pathlib.Path(__file__).resolve().parent.parent / "pack" / "assets" / "vampyuyu"
-OUTLINE = (27, 18, 9, 255)
+OUTLINE = (20, 15, 24, 255)
 
 def c(r, g, b, a=255):
     return (r, g, b, a)
 
-GOLD, GOLD_D, GOLD_L = c(255, 215, 64), c(214, 150, 24), c(255, 243, 160)
-GREEN, GREEN_D = c(84, 214, 92), c(40, 140, 52)
-RED, RED_D = c(235, 84, 70), c(160, 40, 40)
-ORANGE = c(250, 150, 40)
-PAPER, PAPER_D = c(244, 232, 200), c(200, 180, 140)
-INK = c(92, 64, 36)
-STONE, STONE_D = c(206, 206, 216), c(140, 140, 158)
-WOOD, WOOD_D = c(166, 112, 60), c(110, 70, 36)
-PURPLE, PURPLE_D = c(190, 120, 255), c(120, 60, 200)
-BLUE, BLUE_D = c(100, 180, 255), c(50, 110, 200)
-WHITE = c(255, 255, 255)
+
+def hx(value):
+    return c(int(value[0:2], 16), int(value[2:4], 16), int(value[4:6], 16))
+
+
+# Realm palettes (docs/skyblock-notes/lore.md): shadow, base, light, highlight, glow. The economy belongs to the
+# Citadel of Golden Sands (gold, linen, wood, turquoise glow); accents borrow the palette of another Realm.
+CITADEL = [hx(v) for v in ("5a3a12", "a8742a", "f2c14e", "fff1b0", "3fb6a8")]
+GROVE = [hx(v) for v in ("2c3a1e", "4f6b2a", "8fb84a", "d6f08a", "f1e7c9")]
+ASHES = [hx(v) for v in ("120a16", "2a1a2e", "5a2a2a", "c8461e", "ff8a2a")]
+FROST = [hx(v) for v in ("1f3557", "3b6fa8", "7fc8e8", "e6f7ff", "b6a8ff")]
+NECRO = [hx(v) for v in ("241f3a", "4a4570", "9c95c8", "e8e4ff", "6affd8")]
+ABYSS = [hx(v) for v in ("0a1a2a", "12405a", "2a8a9a", "bff0f0", "ff6ab0")]
+
+GOLD, GOLD_D, GOLD_L = CITADEL[2], CITADEL[1], CITADEL[3]
+GLOW = CITADEL[4]
+GREEN, GREEN_D = GROVE[2], GROVE[1]
+RED, RED_D = ASHES[3], ASHES[2]
+ORANGE = ASHES[4]
+PAPER, PAPER_D = GROVE[4], hx("b8a878")
+INK = CITADEL[0]
+STONE, STONE_D = FROST[3], FROST[2]
+WOOD, WOOD_D = CITADEL[1], CITADEL[0]
+PURPLE, PURPLE_D = NECRO[2], NECRO[1]
+BLUE, BLUE_D = ABYSS[2], ABYSS[1]
+WHITE = CITADEL[3]
 
 
 class Canvas:
@@ -131,6 +146,20 @@ def scroll(cv):
     cv.rect(3, 2, 12, 2, PAPER_D); cv.rect(3, 13, 12, 13, PAPER_D)
     cv.rect(12, 3, 12, 12, PAPER_D)
     cv.rect(5, 5, 9, 5, INK); cv.rect(5, 7, 8, 7, INK)
+
+
+def glow(cv):
+    """One glow pixel marks the Realm motif: the turquoise inlay, set in the gold or the light body of the icon."""
+    best = None
+    for col in (GOLD, GOLD_L, GREEN, PAPER, STONE, PURPLE, BLUE, WOOD):
+        spots = [(abs(x - 9) + abs(y - 6), y, x) for y in range(1, 15) for x in range(1, 15)
+                 if cv.p[y][x] == col and all(cv.p[y + dy][x + dx] not in (None, OUTLINE)
+                                              for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))]
+        if spots:
+            best = min(spots)
+            break
+    if best:
+        cv.p[best[1]][best[2]] = GLOW
 
 
 def draw(name):
@@ -245,6 +274,7 @@ def draw(name):
     else:
         raise SystemExit("no drawing for " + name)
     cv.outline()
+    glow(cv)
     return cv
 
 
