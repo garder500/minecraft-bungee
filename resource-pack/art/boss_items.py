@@ -370,14 +370,6 @@ ICONS = {
     "wing_core": (wing_core, (0xB8, 0x6B, 0xFF), MYTHIC),
     "voidwyrm_scale": (scale, (0x4A, 0x1E, 0x8C), EPIC),
     "void_fang": (fang, (0xD8, 0xC8, 0xFF), LEGENDARY),
-    "lava_core": (orb, (0xB8, 0x24, 0x08), (0xFF, 0xC8, 0x30)),
-    "mycelial_core": (orb, (0x2E, 0x7A, 0x3C), (0xD8, 0xFF, 0x7A)),
-    "judge_core": (orb, (0x4A, 0x2E, 0x8C), (0xD8, 0xC8, 0xFF)),
-    "judge_seal": (sigil, (0x3C, 0x28, 0x5A), (0xB8, 0x6B, 0xFF)),
-    "frost_core": (orb, (0x2A, 0x6E, 0xB8), (0xE0, 0xF8, 0xFF)),
-    "thunder_core": (orb, (0x2A, 0x6F, 0xB8), (0xFF, 0xF0, 0x6A)),
-    "tempest_key": (sigil, (0x3A, 0x9F, 0xD8), (0xFF, 0xF0, 0x6A)),
-    "interpulse_key": (sigil, (0x12, 0x0A, 0x24), (0xFF, 0x4F, 0xD8)),
     "warden_heart": (heart, (0xC8, 0x30, 0x10), (0xFF, 0xA0, 0x30)),
     "ember_blade": (sword, (0xFF, 0x7A, 0x1E), (0xFF, 0xD0, 0x40)),
     "frost_shard": (shard, (0x8A, 0xD8, 0xFF), (0xFF, 0xFF, 0xFF)),
@@ -399,14 +391,23 @@ ICONS = {
     "null_sphere": (pearl, (0x2C, 0x8A, 0x78), (0x7A, 0xF0, 0xD8)),
     "void_conduit": (conduit, (0x3A, 0x1E, 0x7A), (0xC8, 0x7A, 0xFF)),
     "demon_ember": (flame, (0xFF, 0x7A, 0x1E), (0xFF, 0xE0, 0x60)),
-    "pharaoh_scarab": (charm, (0xD8, 0xA8, 0x20), (0x2E, 0x9A, 0xE8)),
-    "temporal_core": (orb, (0xC8, 0x8A, 0x10), (0xFF, 0xF0, 0x80)),
-    "pharaoh_linen": (web, (0xE8, 0xDC, 0xB8), (0xC8, 0xA2, 0x4A)),
     "demon_core": (orb, (0x8A, 0x10, 0x10), (0xFF, 0x60, 0x20)),
 }
 
 
+# Sprites ported pixel by pixel from the approved design (lore_sprites.py); they carry their own outline.
+LORE = ["lava_core", "mycelial_core", "frost_core", "temporal_core", "judge_core", "thunder_core", "pharaoh_scarab",
+        "judge_seal", "tempest_key", "interpulse_key", "pharaoh_linen"]
+
+
+def all_ids():
+    return list(ICONS) + LORE
+
+
 def draw(item_id):
+    if item_id in LORE:
+        import lore_sprites
+        return lore_sprites.draw(item_id)
     painter, rgb, accent = ICONS[item_id]
     c = Canvas()
     painter(c, rgb, accent)
@@ -422,7 +423,7 @@ def write_json(path, data):
 def sheet(path):
     scale_up = 10
     cols = 6
-    ids = list(ICONS)
+    ids = all_ids()
     rows = (len(ids) + cols - 1) // cols
     w, h = cols * 18 * scale_up, rows * 18 * scale_up
     drawn = {i: draw(i).p for i in ids}
@@ -450,7 +451,7 @@ def sheet(path):
 def main():
     tex = PACK / "textures" / "item" / "boss"
     tex.mkdir(parents=True, exist_ok=True)
-    for item_id in ICONS:
+    for item_id in all_ids():
         (tex / f"{item_id}.png").write_bytes(draw(item_id).png())
         write_json(PACK / "models" / "item" / "boss" / f"{item_id}.json",
                    {"parent": "minecraft:item/generated", "textures": {"layer0": f"vampyuyu:item/boss/{item_id}"}})
@@ -458,7 +459,7 @@ def main():
                    {"model": {"type": "minecraft:model", "model": f"vampyuyu:item/boss/{item_id}"}})
     if "--sheet" in sys.argv:
         sheet(sys.argv[sys.argv.index("--sheet") + 1])
-    print(f"wrote {len(ICONS)} boss icons")
+    print(f"wrote {len(all_ids())} boss icons")
 
 
 if __name__ == "__main__":

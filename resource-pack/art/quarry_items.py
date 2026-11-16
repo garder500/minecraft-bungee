@@ -61,90 +61,6 @@ def sunstone_bar(c):
     bar(c, (0xF2, 0xC1, 0x4E), (0xFF, 0xF3, 0xB0))
 
 
-def ore_block(c, color, light):
-    """A Block (nine bars, 81 ores): a square slab of stacked bars, dearer looking than a bar."""
-    c.rect(1, 2, 14, 13, b.shade(color, 0.7))
-    c.rect(2, 3, 13, 12, b.shade(color, 1.0))
-    for y in (6, 9):
-        c.rect(2, y, 13, y, b.shade(color, 0.75))
-    for x in (5, 9):
-        c.rect(x, 3, x, 12, b.shade(color, 0.85))
-    c.rect(2, 3, 13, 3, b.shade(light, 1.0))
-    c.rect(2, 3, 2, 12, b.shade(light, 0.9))
-    b.sparkle(c, 11, 5, light)
-    c.outline()
-
-
-def bronzite_block(c):
-    ore_block(c, BRONZE, GOLD)
-
-
-def frostium_block(c):
-    ore_block(c, FROST, (0xFF, 0xFF, 0xFF))
-
-
-def sunstone_block(c):
-    ore_block(c, (0xF2, 0xC1, 0x4E), (0xFF, 0xF3, 0xB0))
-
-
-def voidglass_block(c):
-    ore_block(c, (0xB4, 0x8C, 0xF2), (0xE6, 0xD4, 0xFF))
-
-
-def starcore_block(c):
-    ore_block(c, (0xFF, 0x7A, 0x9C), (0xFF, 0xFF, 0xFF))
-
-
-def spring_wheel(c):
-    """A water wheel: a blue rim with spokes over a small stand."""
-    rim = (0x4A, 0x9B, 0xE8)
-    c.fill_shape(b.circle(8, 7, 6), rim)
-    c.fill_shape(b.circle(8, 7, 4), (0x2A, 0x5A, 0x90))
-    for x1, y1 in ((8, 2), (8, 12), (3, 7), (13, 7), (4, 3), (12, 11), (12, 3), (4, 11)):
-        c.line(8, 7, x1, y1, b.shade(WOOD, 1.2))
-    c.fill_shape(b.circle(8, 7, 1.5), STEEL)
-    c.rect(4, 13, 11, 14, b.shade(STEEL, 0.8))
-    c.outline()
-
-
-def heat_tap(c):
-    """A pipe with a red valve wheel and a glowing drop."""
-    c.rect(2, 8, 13, 11, b.shade(STEEL, 0.9))
-    c.rect(2, 8, 13, 8, b.shade(STEEL, 1.2))
-    c.rect(7, 4, 8, 8, b.shade(STEEL, 0.8))
-    c.rect(4, 3, 11, 4, (0xD8, 0x3A, 0x2A, 255))
-    c.rect(11, 11, 12, 13, b.shade(STEEL, 0.7))
-    c.fill_shape(b.circle(11.5, 14, 1.2), FIRE)
-    c.set(2, 9, b.shade(FIRE, 1.0))
-    c.outline()
-
-
-def void_reactor(c):
-    """A dark cube with a violet core and four braces."""
-    violet = (0xB4, 0x8C, 0xF2)
-    c.rect(2, 2, 13, 13, b.shade((0x2A, 0x16, 0x50), 1.0))
-    c.rect(2, 2, 13, 2, b.shade(violet, 0.8))
-    c.rect(2, 13, 13, 13, b.shade(violet, 0.5))
-    c.fill_shape(b.circle(7.5, 7.5, 3.4), violet)
-    c.fill_shape(b.circle(7.5, 7.5, 1.8), (0x0E, 0x06, 0x20))
-    for x, y in ((3, 3), (12, 3), (3, 12), (12, 12)):
-        c.set(x, y, b.shade(STEEL, 1.1))
-    b.sparkle(c, 9, 5, (0xE6, 0xD4, 0xFF))
-    c.outline()
-
-
-def astral_lattice(c):
-    """A gold lattice around a pink star, open to the sky."""
-    gold = b.shade(GOLD, 1.0)
-    for x in (2, 7, 12):
-        c.rect(x, 2, x + 1, 13, gold)
-    for y in (2, 7, 12):
-        c.rect(2, y, 13, y + 1, gold)
-    c.fill_shape(b.poly([(8, 3.5), (9, 7), (12.5, 8), (9, 9), (8, 12.5), (7, 9), (3.5, 8), (7, 7)]), (0xFF, 0x7A, 0x9C))
-    c.set(8, 8, (255, 255, 255, 255))
-    c.outline()
-
-
 def bronze_core(c):
     c.fill_shape(b.diamond(8, 8, 6.2, 6.2), BRONZE)
     c.fill_shape(b.diamond(8, 8, 3.4, 3.4), b.mix(BRONZE, GOLD, 0.6))
@@ -410,30 +326,10 @@ def voidglass(c):
     c.outline()
 
 
-def thunder_quartz(c):
-    c.fill_shape(b.poly([(8, 0.5), (11, 4), (10.5, 12), (8, 15.5), (5.5, 12), (5, 4)]), (0xD8, 0xF0, 0xFF))
-    c.fill_shape(b.poly([(8, 3), (9.5, 5), (9, 11), (8, 13), (7, 11), (6.5, 5)]), (0x7F, 0xC8, 0xF0))
-    c.fill_shape(b.poly([(9, 4), (6.5, 8.5), (8.2, 8.5), (7, 12.5), (10, 7), (8.3, 7)]), (0xFF, 0xE6, 0x6B))
-    b.sparkle(c, 4, 3, (0xFF, 0xFF, 0xFF))
-    c.outline()
-
-
 def starcore(c):
     c.fill_shape(b.union(b.poly([(8, 0.5), (9.5, 6.5), (15.5, 8), (9.5, 9.5), (8, 15.5), (6.5, 9.5), (0.5, 8), (6.5, 6.5)])),
                  (0xFF, 0x7A, 0x9C))
     c.fill_shape(b.circle(8, 8, 1.8), (0xFF, 0xFF, 0xFF))
-    c.outline()
-
-
-def lightning_rod(c):
-    c.rect(7, 2, 8, 12, b.shade((0xC8, 0x7A, 0x4A), 1.0))
-    c.rect(7, 2, 7, 12, b.shade((0xE8, 0x9A, 0x6A), 1.0))
-    c.rect(6, 1, 9, 2, b.shade((0xE8, 0x9A, 0x6A), 1.1))
-    c.rect(4, 12, 11, 14, b.shade(STEEL, 0.8))
-    c.rect(5, 11, 10, 11, b.shade(STEEL, 1.1))
-    c.line(12, 1, 10, 5, (0xFF, 0xE6, 0x6B, 255))
-    c.line(10, 5, 12, 6, (0xFF, 0xE6, 0x6B, 255))
-    c.line(12, 6, 10, 10, (0xFF, 0xE6, 0x6B, 255))
     c.outline()
 
 
@@ -453,47 +349,18 @@ def solar_panel(c):
 SAND = (0xE8, 0xC8, 0x6A)
 
 
-def chrono_sand(c):
-    """A vial of golden dust that rises: a glass bulb, sand drifting upward from a heap."""
-    c.fill_shape(b.circle(8, 9, 4.8), (0xC8, 0xE8, 0xF0))
-    c.fill_shape(b.circle(8, 10, 3.4), SAND)
-    c.rect(7, 2, 8, 5, b.shade((0xC8, 0xE8, 0xF0), 1.0))
-    c.rect(6, 1, 9, 2, b.shade(GOLD, 0.9))
-    for x, y in ((7, 8), (9, 7), (8, 6), (6, 9)):
-        c.set(x, y, b.shade(GOLD, 1.25))
-    b.sparkle(c, 11, 4, GOLD)
-    c.outline()
-
-
-def sandglass(c):
-    """A small hourglass: gold frame, two glass bulbs, sand in the lower one."""
-    c.rect(3, 1, 12, 2, b.shade(GOLD, 1.0))
-    c.rect(3, 13, 12, 14, b.shade(GOLD, 1.0))
-    c.fill_shape(b.poly([(4, 3), (11, 3), (8, 8)]), (0xC8, 0xE8, 0xF0))
-    c.fill_shape(b.poly([(8, 8), (4, 12), (11, 12)]), (0xC8, 0xE8, 0xF0))
-    c.fill_shape(b.poly([(8, 9), (5, 12), (10, 12)]), SAND)
-    c.set(8, 7, b.shade(SAND, 1.0))
-    c.rect(3, 3, 3, 12, b.shade(GOLD, 0.8))
-    c.rect(12, 3, 12, 12, b.shade(GOLD, 0.8))
-    c.outline()
+# Sprites ported pixel by pixel from the approved design (lore_sprites.py); they carry their own outline.
+LORE = ["ore/chrono_sand", "ore/sandglass", "ore/soul_ash", "ore/pressure_pearl", "ore/thunder_quartz",
+        "ore/bronzite_block", "ore/frostium_block", "ore/sunstone_block", "ore/voidglass_block", "ore/starcore_block",
+        "machine/spring_wheel", "machine/heat_tap", "machine/void_reactor", "machine/astral_lattice",
+        "machine/lightning_rod"]
 
 
 ICONS = {
-    "ore/chrono_sand": chrono_sand,
-    "ore/sandglass": sandglass,
     "ore/pebble": pebble,
     "ore/bronzite_bar": bronzite_bar,
     "ore/frostium_bar": frostium_bar,
     "ore/sunstone_bar": sunstone_bar,
-    "ore/bronzite_block": bronzite_block,
-    "ore/frostium_block": frostium_block,
-    "ore/sunstone_block": sunstone_block,
-    "ore/voidglass_block": voidglass_block,
-    "ore/starcore_block": starcore_block,
-    "machine/spring_wheel": spring_wheel,
-    "machine/heat_tap": heat_tap,
-    "machine/void_reactor": void_reactor,
-    "machine/astral_lattice": astral_lattice,
     "ore/bronzite": bronzite,
     "ore/bronze_core": bronze_core,
     "forge/forge": forge,
@@ -505,9 +372,7 @@ ICONS = {
     "ore/void_lens": void_lens,
     "ore/voidglass": voidglass,
     "ore/starcore": starcore,
-    "ore/thunder_quartz": thunder_quartz,
     "machine/solar_panel": solar_panel,
-    "machine/lightning_rod": lightning_rod,
     "skin/kitsune": skin_kitsune,
     "skin/titan_edge": skin_titan_edge,
     "skin/crystal_saber": skin_crystal_saber,
@@ -530,7 +395,14 @@ ICONS = {
 }
 
 
+def all_ids():
+    return list(ICONS) + LORE
+
+
 def draw(icon_id):
+    if icon_id in LORE:
+        import lore_sprites
+        return lore_sprites.draw(icon_id.split("/")[1])
     c = b.Canvas()
     ICONS[icon_id](c)
     return c
@@ -538,7 +410,7 @@ def draw(icon_id):
 
 def sheet(path):
     scale_up = 10
-    ids = list(ICONS)
+    ids = all_ids()
     w, h = len(ids) * 18 * scale_up, 18 * scale_up
     drawn = {i: draw(i).p for i in ids}
     raw = bytearray()
@@ -566,7 +438,7 @@ SWORDS_3D = {"forge/forge", "machine/fountain", "machine/spring_stone", "machine
 
 
 def main():
-    for icon_id in ICONS:
+    for icon_id in all_ids():
         if icon_id in SWORDS_3D:
             continue
         tex = b.PACK / "textures" / "item" / f"{icon_id}.png"
@@ -579,7 +451,7 @@ def main():
                      {"model": {"type": "minecraft:model", "model": f"vampyuyu:item/{icon_id}"}})
     if "--sheet" in sys.argv:
         sheet(sys.argv[sys.argv.index("--sheet") + 1])
-    print(f"wrote {len(ICONS)} quarry icons")
+    print(f"wrote {len(all_ids())} quarry icons")
 
 
 if __name__ == "__main__":
