@@ -248,6 +248,7 @@ public final class IslandRegistry {
         island.cellX = cell[0];
         island.cellZ = cell[1];
         island.template = template;
+        island.gateCleaned = true;
         island.createdAt = now;
         island.name = ownerName + "'s island";
         island.state(Island.State.BUILDING);

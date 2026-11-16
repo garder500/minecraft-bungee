@@ -491,7 +491,7 @@ public class IslandPureTest {
         IslandConfig cfg = defaults();
         for (IslandConfig.TemplateCfg t : cfg.enabledTemplates()) {
             BlockPlan plan = IslandTemplates.overworld(t.id(), IslandTemplates.random(UUID.randomUUID()), t.chest(),
-                t.biome(), true);
+                t.biome());
             assertTrue(t.id() + " places blocks", plan.size() > 100);
             assertTrue(t.id() + " solid ground under the spawn", plan.solidAt(0, 0, 0));
             assertFalse(t.id() + " feet free", plan.solidAt(0, 1, 0));
@@ -502,8 +502,8 @@ public class IslandPureTest {
         }
         // deterministic for one island
         UUID id = UUID.randomUUID();
-        BlockPlan one = IslandTemplates.overworld("classic", IslandTemplates.random(id), List.of(), "", true);
-        BlockPlan two = IslandTemplates.overworld("classic", IslandTemplates.random(id), List.of(), "", true);
+        BlockPlan one = IslandTemplates.overworld("classic", IslandTemplates.random(id), List.of(), "");
+        BlockPlan two = IslandTemplates.overworld("classic", IslandTemplates.random(id), List.of(), "");
         assertEquals(one.blocks().keySet(), two.blocks().keySet());
     }
 

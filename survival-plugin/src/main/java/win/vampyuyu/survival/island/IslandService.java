@@ -76,6 +76,11 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         PlanRunner.Job wipe(String label, World world, int centerX, int centerZ, int radius);
 
         Counting scan(String label, World world, int centerX, int centerZ, int radius);
+
+        default GateCleanupJob gateCleanup(Plugin plugin, String label, World world, int ox, int oy, int oz,
+                org.bukkit.Material ground) {
+            return new GateCleanupJob(plugin, label, world, ox, oy, oz, ground);
+        }
     }
 
     private final Core core;
@@ -871,7 +876,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         registry.changed();
         List<ItemSpec> chest = island.kitOwed ? template.chest() : cfg.starterRepeat;
         BlockPlan plan = IslandTemplates.overworld(template.id(), IslandTemplates.random(island.id, gen, 0), chest,
-            template.biome(), cfg.endGateLit);
+            template.biome());
         int ox = grid.centerOf(island.cellX);
         int oz = grid.centerOf(island.cellZ);
         runner.submit(lane(SkyblockWorlds.WORLD, island.cellX, island.cellZ),
@@ -884,6 +889,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
                     return;
                 }
                 island.state(Island.State.READY);
+                island.gateCleaned = true; // a fresh build never has the old End gate
                 if (island.kitOwed) {
                     island.kitOwed = false;
                     // the player the kit was computed for, not whoever owns the island by now (transfer)
@@ -1446,6 +1452,47 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
                 rebuildPlatforms(island);
             }
         }
+        cleanLegacyGates();
+    }
+
+    /**
+     * One-time, idempotent: islands built while the End gate existed lose its End portal frames and End portal
+     * blocks (exact old footprint, only those block types, replaced by the island's ground block). Each island is
+     * marked once done; the total is logged.
+     */
+    void cleanLegacyGates() {
+        World overworld = world(SkyblockWorlds.WORLD);
+        List<Island> todo = new ArrayList<>();
+        for (Island island : registry.all()) {
+            if (!island.gateCleaned && island.state() == Island.State.READY) {
+                todo.add(island);
+            }
+        }
+        if (todo.isEmpty() || overworld == null) {
+            return;
+        }
+        List<CompletableFuture<Integer>> results = new ArrayList<>();
+        for (Island island : todo) {
+            int gen = island.generation;
+            GateCleanupJob job = jobs.gateCleanup(plugin, "island " + island.id + " gate cleanup", overworld,
+                grid.centerOf(island.cellX), cfg.islandY, grid.centerOf(island.cellZ),
+                IslandTemplates.groundOf(island.template));
+            results.add(runner.submit(lane(SkyblockWorlds.WORLD, island.cellX, island.cellZ), job).thenApply(ok -> {
+                if (!ok) {
+                    log.warning("Could not clean the old End gate of island " + island.id + " (retried at next start)");
+                    return 0;
+                }
+                if (current(island, gen)) {
+                    island.gateCleaned = true;
+                    registry.changed();
+                }
+                return job.removed() > 0 ? 1 : 0;
+            }));
+        }
+        CompletableFuture.allOf(results.toArray(new CompletableFuture[0])).thenRun(() -> {
+            int cleaned = results.stream().mapToInt(CompletableFuture::join).sum();
+            log.info("Old End gate cleanup: " + cleaned + " of " + todo.size() + " island(s) had a gate removed.");
+        });
     }
 
     private CompletableFuture<Boolean> cellWipe(String worldName, int[] cell) {
