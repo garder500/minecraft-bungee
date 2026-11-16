@@ -108,8 +108,12 @@ public final class VbAgentService implements AgentService, Listener {
       st.picked = agent;
       if (SkinSwap.apply(p, a)) p.sendMessage(Component.text("You are " + a.name() + ".", NamedTextColor.GRAY));
       else p.sendMessage(Component.text("You are " + a.name() + " (no skin set for this agent yet).", NamedTextColor.GRAY));
-      if (AgentSelectMenu.isMenu(p.getOpenInventory().getTopInventory())) p.closeInventory();
+      // Never close a window inside its own click event: do it on the next tick.
+      Bukkit.getScheduler().runTask(plugin, () -> {
+        if (AgentSelectMenu.isMenu(p.getOpenInventory().getTopInventory())) p.closeInventory();
+      });
       p.getInventory().remove(Material.NETHER_STAR);
+      giveItems(p, kits.get(player)); // Lock in fills the hotbar
       refreshMenus(match);
     });
   }
