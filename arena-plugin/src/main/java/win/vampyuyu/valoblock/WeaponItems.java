@@ -65,7 +65,7 @@ public final class WeaponItems {
     return cmd.getStrings().isEmpty() ? "" : cmd.getStrings().get(0);
   }
 
-  /** Sets (or with "" clears) the look of the stack: "fire", "reload" or "aim" (see GunVisual). */
+  /** Sets (or with "" clears) the look of the stack: "fire", "reload", "inspect" or "aim" (see GunVisual). */
   public static void setState(ItemStack it, String state) {
     ItemMeta meta = it.getItemMeta();
     var cmd = meta.getCustomModelDataComponent();

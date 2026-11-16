@@ -11,14 +11,23 @@ final class GunVisual {
   static final String FIRE = "fire";
   static final String RELOAD = "reload";
   static final String AIM = "aim";
+  static final String INSPECT = "inspect";
+  /** The inspect pose after a weapon swap lasts one second. */
+  static final long INSPECT_MS = 1000;
   static final String NONE = "";
 
   private GunVisual() {}
 
   /** Reload wins (the magazine is out), then the flash of a shot just fired, then the tighter hold of a sneaking player. */
   static String state(boolean reloading, long sinceShotMs, boolean sneaking) {
+    return state(reloading, sinceShotMs, sneaking, false);
+  }
+
+  /** Same, with the inspect pose of a gun just drawn (below the flash, above the aiming hold). */
+  static String state(boolean reloading, long sinceShotMs, boolean sneaking, boolean inspecting) {
     if (reloading) return RELOAD;
     if (sinceShotMs >= 0 && sinceShotMs < FIRE_MS) return FIRE;
+    if (inspecting) return INSPECT;
     if (sneaking) return AIM;
     return NONE;
   }

@@ -15,6 +15,14 @@ public class GunVisualTest {
   }
 
   @Test
+  public void inspectShowsAfterASwapBelowTheFlashAndReload() {
+    assertEquals("inspect", GunVisual.state(false, 500, true, true));
+    assertEquals("fire", GunVisual.state(false, 0, false, true));
+    assertEquals("reload", GunVisual.state(true, 0, false, true));
+    assertEquals("aim", GunVisual.state(false, 500, true, false));
+  }
+
+  @Test
   public void aGunNeverFiredIsNotFlashing() {
     assertEquals("", GunVisual.state(false, Long.MAX_VALUE / 2, false));
     assertEquals("aim", GunVisual.state(false, Long.MAX_VALUE / 2, true));

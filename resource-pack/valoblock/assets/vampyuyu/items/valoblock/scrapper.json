@@ -31,6 +31,13 @@
      }
     },
     {
+     "when": "inspect",
+     "model": {
+      "type": "minecraft:model",
+      "model": "vampyuyu:item/valoblock/scrapper_inspect"
+     }
+    },
+    {
      "when": "aim",
      "model": {
       "type": "minecraft:model",

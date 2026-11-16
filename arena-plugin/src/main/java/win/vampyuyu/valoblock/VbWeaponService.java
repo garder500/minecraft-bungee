@@ -68,6 +68,7 @@ public final class VbWeaponService implements WeaponService, Listener {
     String shownId = "";
     String look = ""; // the custom_model_data state last written on the held stack
     boolean scoped;
+    long inspectUntil; // end of the inspect pose of the gun just drawn (ms)
 
     GunState gun(VbWeapon w) {
       return guns.computeIfAbsent(w.id(), k -> new GunState(w));
@@ -264,7 +265,7 @@ public final class VbWeaponService implements WeaponService, Listener {
    */
   private void look(Player p, Gear g, VbWeapon w, GunState gs, long now) {
     boolean sneaking = p.isSneaking();
-    String want = GunVisual.state(gs.reloading(), gs.sinceShot(now), sneaking);
+    String want = GunVisual.state(gs.reloading(), gs.sinceShot(now), sneaking, now < g.inspectUntil);
     if (!want.equals(g.look)) {
       g.look = want;
       WeaponItems.setState(p.getInventory().getItemInMainHand(), want);
@@ -599,6 +600,7 @@ public final class VbWeaponService implements WeaponService, Listener {
   public void heldChange(PlayerItemHeldEvent e) {
     Player p = e.getPlayer();
     if (matchOf(p.getUniqueId()) == null) return;
+    gear(p.getUniqueId()).inspectUntil = System.currentTimeMillis() + GunVisual.INSPECT_MS; // the gun drawn next shows its inspect pose
     VbWeapon w = held(p); // the gun being put away: a reload in progress is lost
     if (w != null && w.isGun()) {
       Gear g = gear(p.getUniqueId());
