@@ -274,13 +274,13 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         return defaultSpawn(island);
     }
 
-    /** The common spawn of the hub (centre of the spawn pad, facing the fountain), or null while it is not built. */
+    /** The common spawn of the hub (centre of the Landing, facing south down the processional to the Quai), or null while it is not built. */
     public Location hubLocation() {
         World hub = world(SkyblockWorlds.HUB);
         if (hub == null || !hubPadBuilt) {
             return null;
         }
-        return new Location(hub, HubPlan.SPAWN_X + 0.5, cfg.hubY + 1, HubPlan.SPAWN_Z + 0.5, 180f, 0f);
+        return new Location(hub, HubPlan.SPAWN_X + 0.5, cfg.hubY + 1, HubPlan.SPAWN_Z + 0.5, 0f, 0f);
     }
 
     /** True when the feet and head blocks are free and there is something solid underneath. */

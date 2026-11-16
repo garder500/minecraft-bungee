@@ -6,8 +6,9 @@ All three are published last in `enable()` and are the same `IslandService` obje
 
 ## What players get
 
-* `sb_hub`: a built-once void hub (spawn pad, plaza, fountain, avenues, ring road, four towers, twelve pads (NPC pads, island, dungeon and Rift gates, the Eight Docks site) with
-  signposts, island gate arch). Capped by `hub.max-blocks`. Idempotent: `island/hub.json` stores `{version, complete,
+* `sb_hub`: a built-once hub, the last anchored fragment of Aethelgard (see `hub.md`: floating pale-stone fragment with a Well and
+  Memory Spire, the Landing spawn, a camp of ruins around eleven pads, the island, Crypt and Rift gates, the processional
+  to the Quai des Huit). Capped by `hub.max-blocks`. Idempotent: `island/hub.json` stores `{version, complete,
   hubY}`; a restart with a matching marker does not rebuild (but still marks the hub ready). The spawn pad (about 100
   blocks) is built first, the rest follows in batches.
 * `sb_world` / `sb_nether` / `sb_end`: void worlds. Every island owns the same grid cell in all three (spiral allocation,
@@ -122,8 +123,8 @@ level scan always cover the full world height; old files may keep the keys, they
 * `IslandApi` (as in `api/`): `islandAt`, `islandOf`, `isSkyblockWorld`, `canBuild`, `teleportHome`, `teleportHub`, `all`.
   `IslandInfo.center` is the overworld spawn of the cell seen from the world asked about; `radius` is the current tier.
 * `IslandAltarApi`: `dragonAltar(islandId)`, `dragonAltarAt(location)`, `netherSpawn`, `endSpawn`, `hubSpawn()`,
-  `hubPads()` (pad ids: merchant, banker, reforger, enchanter, quest_master, minion_vendor, boss_arena, fairy_souls,
-  island_gate, dungeon_gate).
+  `hubPads()` (pad ids: merchant, banker, reforger, enchanter, quest_master, minion_vendor, boss_arena,
+  island_gate, dungeon_gate, rift_gate, eight_docks).
 * `IslandUpgradesApi`: `minionSlotBonus(uuid)`, `radius(uuid)`, `memberSlots(uuid)`.
 * Events fired (main thread): `IslandEnterEvent`, `IslandLeaveEvent` (on move, teleport, join, quit, world change).
 * Consumed: `EconomyApi` (upgrades, lazy lookup).
@@ -194,6 +195,6 @@ regression suite `IslandReviewFixesTest` with scripted block jobs). Not run on a
 Non-persistent villagers on the pads: Merchant (`/shop`), Archivist (`/quests`), Guard and Contract Hunter (a line of text,
 phase 1), and three gatekeepers: island (`goHome`), dungeon (`/dungeon`), Rift (sealed until the Echo of the Rift exists).
 The Eight Docks pad is only a reserved site. NPC memory is a separate feature. Pad ids: merchant, archivist, guard,
-contract_hunter, quest_master, banker, boss_arena, fairy_souls, island_gate, dungeon_gate, rift_gate, eight_docks.
-`HubPlan.VERSION` 2 rebuilds existing hubs. The hub world is created at enable again and `ModeTravel` no longer treats it
+contract_hunter, quest_master, banker, boss_arena, island_gate, dungeon_gate, rift_gate, eight_docks (no more `fairy_souls`).
+`HubPlan.VERSION` 3 wipes the old hub square and rebuilds existing hubs. The hub world is created at enable again and `ModeTravel` no longer treats it
 as retired, so `IslandApi.teleportHub` (used by `/hub`, `/spawn`, dungeon exits) lands on the hub spawn.

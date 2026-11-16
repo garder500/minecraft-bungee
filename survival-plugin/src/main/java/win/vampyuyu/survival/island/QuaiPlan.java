@@ -15,7 +15,7 @@ import win.vampyuyu.survival.api.Realm;
  */
 public final class QuaiPlan {
     /** Bump when the layout changes so an existing Quai is rebuilt (the marker file stores it). */
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
     public static final int RADIUS = 22;
     /** Hub world Z of the platform centre: the hub border is +-100, the hub ring road ends at z = 44. */
     public static final int CENTER_Z = 72;
@@ -239,11 +239,23 @@ public final class QuaiPlan {
     private static void bridge(BlockPlan plan) {
         for (int z = BRIDGE_FROM - 1; z <= -RADIUS + 3; z++) {
             for (int w = -2; w <= 2; w++) {
-                Material m = w == 0 ? Material.QUARTZ_BRICKS : Math.abs(w) == 2 ? Material.POLISHED_ANDESITE : Material.STONE_BRICKS;
+                // the end of the hub's processional: same road, same pale stone
+                Material m = Math.abs(w) <= 1 ? Material.QUARTZ_BRICKS : Material.POLISHED_DIORITE;
                 plan.set(w, 0, z, m);
                 plan.set(w, -1, z, Material.STONE_BRICKS);
             }
         }
+        // a ruined arch half way over the bridge: the left pillar whole, the right one broken, no lintel on that side
+        int az = BRIDGE_FROM + 4;
+        for (int sx : new int[] {-3, 3}) {
+            int top = sx < 0 ? 7 : 4;
+            plan.set(sx, 0, az, Material.SMOOTH_QUARTZ);
+            ShapeKit.column(plan, sx, 1, top, az, Material.QUARTZ_PILLAR);
+        }
+        for (int x = -3; x <= 0; x++) {
+            plan.set(x, 8, az, x == 0 ? Material.CHISELED_QUARTZ_BLOCK : Material.QUARTZ_BLOCK);
+        }
+        plan.set(-1, 7, az, Material.LANTERN, "hanging=true");
         for (int z = BRIDGE_FROM + 2; z < -RADIUS; z += 3) {
             for (int sx : new int[] {-3, 3}) {
                 plan.set(sx, 0, z, Material.POLISHED_BLACKSTONE_BRICKS);
