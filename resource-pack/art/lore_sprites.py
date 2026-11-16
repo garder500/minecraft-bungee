@@ -31,7 +31,8 @@ def merge(base, overlay):
 def rgb(hexcolor):
     if hexcolor == "transparent":
         return None
-    return tuple(int(hexcolor[i:i + 2], 16) for i in (1, 3, 5))
+    # RGBA: boss_items.Canvas.png() writes colour type 6, four bytes per pixel.
+    return tuple(int(hexcolor[i:i + 2], 16) for i in (1, 3, 5)) + (255,)
 
 
 def paint(rows, pal, base_pal):
@@ -269,7 +270,7 @@ def sheet(path, ids):
             idx = (y // cell) * cols + x // cell
             ix, iy = (x % cell) // scale - 1, (y % cell) // scale - 1
             px = PIXELS[ids[idx]][iy * 16 + ix] if idx < len(ids) and 0 <= ix < 16 and 0 <= iy < 16 else None
-            data.extend(px if px else ((60, 60, 70) if (x // 10 + y // 10) % 2 else (70, 70, 80)))
+            data.extend(px[:3] if px else ((60, 60, 70) if (x // 10 + y // 10) % 2 else (70, 70, 80)))
 
     def chunk(tag, body):
         blob = tag + body
