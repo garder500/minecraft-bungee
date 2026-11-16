@@ -11,6 +11,7 @@ import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
+import win.vampyuyu.valoblock.ValoBlockModule;
 import win.vampyuyu.werewolf.WerewolfModule;
 
 public final class NexusArenaEngine extends JavaPlugin {
@@ -18,6 +19,9 @@ public final class NexusArenaEngine extends JavaPlugin {
   public CompassGUI gui;
   /** The Werewolf game: its preset, hooks, scenery and command (see WerewolfModule). */
   public WerewolfModule werewolf;
+
+  /** The ValoBlock game (see ValoBlockModule). */
+  public ValoBlockModule valoblock;
   public ArenaAdmin admin;
   public ArenaTools tools;
   public MenuSkin skin;
@@ -56,6 +60,9 @@ public final class NexusArenaEngine extends JavaPlugin {
       for (String resource : List.of("presets/werewolf.json", "presets/freeplay.json"))
         if (!Files.exists(getDataFolder().toPath().resolve(resource)))
           saveResource(resource, false);
+      // The ValoBlock arena template belongs to the Creative server only.
+      if ("creative".equals(serverId) && !Files.exists(getDataFolder().toPath().resolve("presets/valoblock.json")))
+        saveResource("presets/valoblock.json", false);
       worlds =
           Bukkit.getWorlds().stream()
               .map(
@@ -73,12 +80,14 @@ public final class NexusArenaEngine extends JavaPlugin {
       gui = new CompassGUI(this);
       werewolf = new WerewolfModule(this);
       werewolf.prepareSky();
+      valoblock = new ValoBlockModule(this);
       admin = new ArenaAdmin(this);
       skin = MenuSkin.load(this);
       tools = new ArenaTools(this);
       bridge = new CrossServerBridge(this);
       // The games register before the arenas that use them are loaded.
       arenas.registerPreset(werewolf.preset());
+      arenas.registerPreset(valoblock.preset());
       arenas.reload();
       getServer().getPluginManager().registerEvents(gui, this);
       getServer().getPluginManager().registerEvents(werewolf.controls, this);
@@ -106,6 +115,7 @@ public final class NexusArenaEngine extends JavaPlugin {
       Objects.requireNonNull(getCommand("eventadmin")).setExecutor(admin::rewards);
       Objects.requireNonNull(getCommand("arena")).setExecutor(this::command);
       werewolf.registerCommand();
+      valoblock.registerCommand();
       getCommand("arena")
           .setTabCompleter(
               (sender, cmd, alias, args) ->

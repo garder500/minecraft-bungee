@@ -15,6 +15,9 @@ commands:
   ww:
     description: Werewolf management and play
     usage: /ww <help|use|status|place|cast|time|rules|start|stop|check|reload|players|vote|abstain|hud|debug>  (tests and previews, see /ww debug help)
+  vb:
+    description: ValoBlock management (admin)
+    usage: /vb <help|use|start|stop|status|reload|debug>
 permissions:
   nexusarena.admin:
     default: op

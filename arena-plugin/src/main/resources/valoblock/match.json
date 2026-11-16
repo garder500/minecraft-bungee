@@ -1,0 +1,24 @@
+{
+  "teamSize": 5,
+  "winScore": 7,
+  "swapAfter": 6,
+  "agentSelectSeconds": 60,
+  "buySeconds": 25,
+  "combatSeconds": 100,
+  "fuseSeconds": 40,
+  "roundEndSeconds": 6,
+  "plantHoldSeconds": 4,
+  "sealSeconds": 7,
+  "sealCheckpointSeconds": 3.5,
+  "maxHealth": 100,
+  "shields": [25, 50],
+  "economy": {
+    "pistolCredits": 800,
+    "roundWon": 3000,
+    "roundLost": [1900, 2400, 2900],
+    "kill": 200,
+    "plantTeam": 300,
+    "cap": 9000,
+    "overtimeCredits": 5000
+  }
+}
