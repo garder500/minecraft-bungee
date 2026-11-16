@@ -13,6 +13,7 @@ final class VbHooks implements GameHooks {
 
   @Override
   public String canStart(ArenaSession s) {
+    if (module.disabled()) return ValoBlockModule.FOLIA_REFUSAL;
     return module.map.problem(s);
   }
 
@@ -72,6 +73,22 @@ final class VbHooks implements GameHooks {
       for (java.util.UUID bot : m.bots()) module.bots.remove(bot);
     }
     return GameHooks.DONE;
+  }
+
+  /**
+   * A player leaves mid-match with /arena leave and stays online: strip the ValoBlock items, drop the boss
+   * bars and the action bar, give the skin back. The seat is released here too (idempotent), so the HUD
+   * and the round start skip them while the snapshot is still being restored.
+   */
+  @Override
+  public void onLeave(ArenaSession s, org.bukkit.entity.Player p) {
+    java.util.UUID id = p.getUniqueId();
+    if (s.game instanceof VbMatch m) {
+      m.remove(id);
+      module.hud.left(m, id);
+    }
+    module.weapons.clear(id);
+    module.agents.restore(id);
   }
 
   @Override

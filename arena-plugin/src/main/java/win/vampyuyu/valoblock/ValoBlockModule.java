@@ -19,7 +19,39 @@ public final class ValoBlockModule {
   public volatile MapService map = MapService.NOOP;
   public volatile VbHud hud = VbHud.NOOP;
 
+  /**
+   * ValoBlock runs on the Bukkit scheduler and touches entities from it, which Folia forbids. On Folia the
+   * module stays inert (the rest of the plugin is unaffected) and arenas of this game refuse to start.
+   */
+  public static final String FOLIA_REFUSAL = "ValoBlock is not available on Folia (it needs the Bukkit scheduler)";
+
+  private final boolean folia;
+  private boolean refusalLogged;
+
+  static boolean detectFolia() {
+    try {
+      Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
+      return true;
+    } catch (ClassNotFoundException e) {
+      return false;
+    }
+  }
+
+  public boolean disabled() {
+    return folia;
+  }
+
+  private boolean refuse() {
+    if (!folia) return false;
+    if (!refusalLogged) {
+      refusalLogged = true;
+      plugin.getLogger().warning(FOLIA_REFUSAL + ": the ValoBlock services are not started.");
+    }
+    return true;
+  }
+
   public ValoBlockModule(NexusArenaEngine plugin) {
+    this.folia = detectFolia();
     this.plugin = plugin;
     this.preset = new VbPreset(this, new VbHooks(this));
   }
@@ -60,6 +92,7 @@ public final class ValoBlockModule {
       @Override
       public void roundStarted(VbMatch m, int round) {
         for (UUID id : m.participants()) {
+          if (m.hasLeft(id)) continue; // left but still online: nothing is dealt, no teleport back
           if (m.isBot(id)) bots.roundStarted(m, id, m.keepsLoadout(id));
           else map.teleportToSpawn(id, m.side(id));
           weapons.roundStarted(m, id, m.keepsLoadout(id));
@@ -71,6 +104,7 @@ public final class ValoBlockModule {
 
   /** The guns: the listener and the per-tick task (server thread). */
   public void enableWeapons() {
+    if (refuse()) return;
     VbWeaponService service = new VbWeaponService(plugin);
     service.start();
     weapons = service;
@@ -78,6 +112,7 @@ public final class ValoBlockModule {
 
   /** The agents: select menu, skins, abilities (listener and per-tick task). */
   public void enableAgents() {
+    if (refuse()) return;
     VbAgentService service = new VbAgentService(plugin);
     service.start();
     agents = service;
@@ -85,6 +120,7 @@ public final class ValoBlockModule {
 
   /** The map: the vb_arena world, greybox maps, spawns, barriers, orbs (server-thread task). */
   public void enableMaps() {
+    if (refuse()) return;
     VbMapService service = new VbMapService(plugin);
     service.start();
     map = service;
@@ -92,11 +128,13 @@ public final class ValoBlockModule {
 
   /** The HUD: boss bars for the score and the kill feed, the action bar for the player's own state. */
   public void enableHud() {
+    if (refuse()) return;
     hud = new VbHudService(plugin);
   }
 
   /** The bots: bodies and brains that fill empty seats (server-thread task). */
   public void enableBots() {
+    if (refuse()) return;
     VbBotService service = new VbBotService(plugin);
     service.start();
     bots = service;
@@ -110,6 +148,13 @@ public final class ValoBlockModule {
   }
 
   public void registerCommand() {
+    if (folia) {
+      Objects.requireNonNull(plugin.getCommand("vb")).setExecutor((sender, cmd, label, args) -> {
+        sender.sendMessage(FOLIA_REFUSAL);
+        return true;
+      });
+      return;
+    }
     VbCommand vb = new VbCommand(plugin);
     Objects.requireNonNull(plugin.getCommand("vb")).setExecutor(vb);
     Objects.requireNonNull(plugin.getCommand("vb")).setTabCompleter(vb);

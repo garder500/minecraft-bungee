@@ -10,6 +10,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.block.Block;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -59,7 +60,7 @@ final class AbilitiesA {
         if (age % 3 == 0) centre.getWorld().spawnParticle(Particle.FLAME, centre.clone().add(0, 0.2, 0), 6, r / 2, 0.1, r / 2, 0.01);
         if (age % 10 == 0) centre.getWorld().spawnParticle(Particle.LAVA, centre.clone().add(0, 0.3, 0), 2, r / 2, 0, r / 2, 0);
         if (age % 20 == 0)
-          for (Player v : e.enemies(c.m(), c.id())) if (AbilityEnv.near(v, centre, r) && v.getLocation().getY() < centre.getY() + 1.2) e.combat.damage(c.m(), v, c.id(), (int) c.n("dps", 30));
+          for (LivingEntity v : e.enemies(c.m(), c.id())) if (AbilityEnv.near(v, centre, r) && v.getLocation().getY() < centre.getY() + 1.2) e.combat.damage(c.m(), v, c.id(), (int) c.n("dps", 30));
         return true;
       });
       int placed = 0;
@@ -103,7 +104,7 @@ final class AbilitiesA {
       for (Object[] o : points) {
         Location l = (Location) o[0];
         l.getWorld().spawnParticle(Particle.FLAME, l, 2, 0.25, 0.1, 0.25, 0.01);
-        if (age % 10 == 0) for (Player v : e.enemies(c.m(), c.id())) if (AbilityEnv.near(v, l, 1.0) && Math.abs(v.getLocation().getY() - l.getY()) < 1.5) e.combat.damage(c.m(), v, c.id(), (int) (c.n("dps", 15) / 2));
+        if (age % 10 == 0) for (LivingEntity v : e.enemies(c.m(), c.id())) if (AbilityEnv.near(v, l, 1.0) && Math.abs(v.getLocation().getY() - l.getY()) < 1.5) e.combat.damage(c.m(), v, c.id(), (int) (c.n("dps", 15) / 2));
       }
       return true;
     });
@@ -122,7 +123,7 @@ final class AbilitiesA {
       if (age < 6 || !p.isOnGround()) return true;
       Location at = p.getLocation();
       double r = c.n("radius", 6);
-      for (Player v : e.enemies(c.m(), c.id())) {
+      for (LivingEntity v : e.enemies(c.m(), c.id())) {
         double d = v.getLocation().distance(at);
         if (d > r) continue;
         e.combat.damage(c.m(), v, c.id(), (int) Math.max(10, Math.round(c.n("damage", 60) * (1 - d / r))));
@@ -194,10 +195,10 @@ final class AbilitiesA {
     AbilityEnv e = c.env();
     double range = c.n("range", 30);
     List<Location> spots = new ArrayList<>();
-    List<Player> near = new ArrayList<>(e.enemies(c.m(), c.id()));
+    List<LivingEntity> near = new ArrayList<>(e.enemies(c.m(), c.id()));
     near.removeIf(v -> v.getLocation().distance(c.p().getLocation()) > range);
     near.sort((a, b) -> Double.compare(a.getLocation().distanceSquared(c.p().getLocation()), b.getLocation().distanceSquared(c.p().getLocation())));
-    for (Player v : near) if (spots.size() < (int) c.n("spots", 3)) spots.add(v.getLocation().clone());
+    for (LivingEntity v : near) if (spots.size() < (int) c.n("spots", 3)) spots.add(v.getLocation().clone());
     Location aim = e.aim(c.p(), range);
     for (int i = spots.size(); i < (int) c.n("spots", 3); i++) spots.add(aim.clone().add((i - 1) * 2.5, 0, (i % 2) * 2.0));
     e.fx.add(c.m(), c.id(), c.ticks("delaySeconds", 1.5), age -> {
@@ -206,7 +207,7 @@ final class AbilitiesA {
     }).onEnd(() -> {
       for (Location s : spots) {
         s.getWorld().strikeLightningEffect(s);
-        for (Player v : e.enemies(c.m(), c.id())) if (AbilityEnv.near(v, s, c.n("radius", 3))) e.combat.damage(c.m(), v, c.id(), (int) c.n("damage", 90));
+        for (LivingEntity v : e.enemies(c.m(), c.id())) if (AbilityEnv.near(v, s, c.n("radius", 3))) e.combat.damage(c.m(), v, c.id(), (int) c.n("damage", 90));
       }
     });
     return true;
@@ -226,7 +227,7 @@ final class AbilitiesA {
         if (a != null) a.spawnParticle(mark, at.clone().add(0, 0.2, 0), 3, 0.3, 0.05, 0.3, 0.01); // only the owner's team sees it
       }
       if (age % 2 != 0) return true;
-      for (Player v : e.enemies(c.m(), c.id())) {
+      for (LivingEntity v : e.enemies(c.m(), c.id())) {
         if (!AbilityEnv.near(v, at, radius)) continue;
         e.slow(v, c.n("slowSeconds", mine ? 4 : 3), mine ? (int) c.n("slowLevel", 1) : 1);
         if (!mine) e.reveal(c, v, c.n("revealSeconds", 3));
@@ -292,7 +293,7 @@ final class AbilitiesA {
       }
     Effects.Fx run = e.fx.add(c.m(), c.id(), c.ticks("seconds", 10), age -> {
       if (age % 10 != 0) return true;
-      for (Player v : e.enemies(c.m(), c.id())) {
+      for (LivingEntity v : e.enemies(c.m(), c.id())) {
         if (!AbilityEnv.near(v, at, r)) continue;
         for (Location l : vines)
           if (Math.abs(l.getX() - v.getLocation().getX()) < 1.1 && Math.abs(l.getZ() - v.getLocation().getZ()) < 1.1 && Math.abs(l.getY() - v.getLocation().getY()) < 1.3) {
@@ -346,10 +347,10 @@ final class AbilitiesA {
           centre.getWorld().spawnParticle(Particle.SNOWFLAKE, centre.getX() + r * Math.cos(a) * Math.cos(b), centre.getY() + r * Math.sin(b), centre.getZ() + r * Math.sin(a) * Math.cos(b), 1, 0, 0, 0, 0);
         }
       if (age % 5 == 0)
-        for (Player v : e.enemies(c.m(), c.id())) {
+        for (LivingEntity v : e.enemies(c.m(), c.id())) {
           if (v.getLocation().distance(centre) > r) continue;
           e.slow(v, 0.6, 1);
-          e.plugin.valoblock.weapons.reloadModifier(v.getUniqueId(), 0, 0.5);
+          if (v instanceof Player) e.plugin.valoblock.weapons.reloadModifier(v.getUniqueId(), 0, 0.5);
         }
       return true;
     });

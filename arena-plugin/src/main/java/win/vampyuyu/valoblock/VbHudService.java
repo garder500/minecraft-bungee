@@ -38,6 +38,8 @@ public final class VbHudService implements VbHud {
   private final NexusArenaEngine plugin;
   private final Map<UUID, Viewer> viewers = new ConcurrentHashMap<>();
   private final Map<VbMatch, Deque<Feed>> feeds = new ConcurrentHashMap<>();
+  /** Matches that are over: the clock may still have a frame queued, which must draw nothing (no stuck boss bar). */
+  private final Set<VbMatch> cleared = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
   private final Map<VbMatch, Long> lastFrame = new ConcurrentHashMap<>();
 
   public VbHudService(NexusArenaEngine plugin) {
@@ -82,6 +84,7 @@ public final class VbHudService implements VbHud {
 
   @Override
   public void render(VbMatch m, long now, long phaseEndsAt) {
+    if (cleared.contains(m)) return;
     long wall = System.currentTimeMillis();
     Long last = lastFrame.get(m);
     if (last != null && wall - last < FRAME_MS) return;
@@ -89,12 +92,21 @@ public final class VbHudService implements VbHud {
     onServer(() -> draw(m, now, phaseEndsAt, wall));
   }
 
+  void markCleared(VbMatch m) {
+    cleared.add(m);
+  }
+
+  boolean isCleared(VbMatch m) {
+    return cleared.contains(m);
+  }
+
   private void draw(VbMatch m, long now, long phaseEndsAt, long wall) {
+    if (cleared.contains(m)) return; // checked here, on the server thread, after any frame queued before clear()
     VbPhase phase = m.vbPhase();
     long left = Math.max(0, (phaseEndsAt - now + 999) / 1000);
     int total = Math.max(1, m.seconds());
     for (UUID id : m.participants()) {
-      if (m.isBot(id)) continue;
+      if (m.isBot(id) || m.hasLeft(id)) continue;
       Player p = Bukkit.getPlayer(id);
       if (p == null) continue;
       Viewer v = viewers.computeIfAbsent(id, k -> new Viewer());
@@ -230,6 +242,7 @@ public final class VbHudService implements VbHud {
 
   @Override
   public void clear(VbMatch m) {
+    markCleared(m);
     feeds.remove(m);
     lastFrame.remove(m);
     for (UUID id : m.participants()) {
@@ -242,5 +255,17 @@ public final class VbHudService implements VbHud {
         p.sendActionBar(Component.empty());
       });
     }
+  }
+
+  @Override
+  public void left(VbMatch m, UUID id) {
+    Viewer v = viewers.remove(id);
+    Player p = Bukkit.getPlayer(id);
+    if (v == null || p == null) return;
+    onServer(() -> {
+      if (v.top != null) p.hideBossBar(v.top);
+      for (BossBar b : v.feed) p.hideBossBar(b);
+      p.sendActionBar(Component.empty());
+    });
   }
 }

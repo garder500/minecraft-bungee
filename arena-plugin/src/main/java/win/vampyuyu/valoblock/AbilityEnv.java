@@ -20,6 +20,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -84,12 +85,17 @@ final class AbilityEnv {
     return p.isOnline() && p.getGameMode() != GameMode.SPECTATOR && m.alive().contains(p.getUniqueId());
   }
 
-  /** Living human players of the other squad. */
-  List<Player> enemies(VbMatch m, UUID owner) {
-    List<Player> out = new ArrayList<>();
+  /** Living fighters of the other squad: human players and the bodies of bots (hit them through {@link VbCombat}). */
+  List<LivingEntity> enemies(VbMatch m, UUID owner) {
+    List<LivingEntity> out = new ArrayList<>();
     int squad = m.squadOf(owner);
     for (UUID id : m.alive()) {
-      if (m.isBot(id) || m.squadOf(id) == squad) continue;
+      if (m.squadOf(id) == squad) continue;
+      if (m.isBot(id)) {
+        LivingEntity body = plugin.valoblock.bots.body(id);
+        if (body != null) out.add(body);
+        continue;
+      }
       Player p = Bukkit.getPlayer(id);
       if (p != null && fighting(p, m)) out.add(p);
     }
@@ -125,7 +131,7 @@ final class AbilityEnv {
   }
 
   /** Whether a player is within a radius of a point on the ground plane, a little above or below it. */
-  static boolean near(Player v, Location c, double r) {
+  static boolean near(LivingEntity v, Location c, double r) {
     Location l = v.getLocation();
     double dx = l.getX() - c.getX(), dz = l.getZ() - c.getZ(), dy = l.getY() - c.getY();
     return dx * dx + dz * dz <= r * r && dy > -1.5 && dy < 3.5;
@@ -161,15 +167,15 @@ final class AbilityEnv {
 
   // ------------------------------------------------------------------ effects on players
 
-  void slow(Player v, double seconds, int amp) {
+  void slow(LivingEntity v, double seconds, int amp) {
     v.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, (int) Math.round(seconds * 20), amp, false, true, true));
   }
 
-  void blind(Player v, double seconds) {
+  void blind(LivingEntity v, double seconds) {
     v.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, (int) Math.round(seconds * 20), 0, false, false, false));
   }
 
-  void reveal(Ctx c, Player target, double seconds) {
+  void reveal(Ctx c, LivingEntity target, double seconds) {
     reveals.reveal(target, c.m().squadOf(c.id()), team(c.m(), c.id()), (int) Math.round(seconds * 20));
   }
 
@@ -178,7 +184,7 @@ final class AbilityEnv {
     World w = at.getWorld();
     w.spawnParticle(Particle.END_ROD, at, 40, 0.3, 0.3, 0.3, 0.25);
     w.playSound(at, "entity.firework_rocket.twinkle", SoundCategory.PLAYERS, 1.2f, 1.6f);
-    for (Player v : enemies(c.m(), c.id())) {
+    for (LivingEntity v : enemies(c.m(), c.id())) {
       Location eye = v.getEyeLocation();
       if (eye.distance(at) > range) continue;
       Vector to = at.toVector().subtract(eye.toVector()).normalize();

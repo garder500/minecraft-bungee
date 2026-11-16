@@ -35,11 +35,13 @@ public final class Armory {
     if (m.vbPhase() != VbPhase.BUY) return Result.NOT_BUY_PHASE;
     if (w.isShield()) {
       if (m.shield(player) >= w.shield()) return Result.NOT_BETTER;
-      return m.buyShield(player, w.shield(), w.price()) ? Result.BOUGHT : Result.TOO_POOR;
+      if (!m.buyShield(player, w.shield(), w.price())) return Result.TOO_POOR;
+      loadout.markBought(w);
+      return Result.BOUGHT;
     }
     if (loadout.owns(w)) return Result.ALREADY_OWNED;
     VbWeapon old = loadout.get(w.slot());
-    int refund = old == null ? 0 : old.price();
+    int refund = refundOf(loadout, old);
     if (m.credits(player) + refund < w.price()) return Result.TOO_POOR;
     // Spend first when we can (a refund never overflows the cap then); otherwise refund first.
     if (m.credits(player) >= w.price()) {
@@ -50,21 +52,28 @@ public final class Armory {
       if (!m.buy(player, w.price())) return Result.TOO_POOR;
     }
     loadout.set(w);
+    loadout.markBought(w);
     return Result.BOUGHT;
   }
 
-  /** Sells an owned item back at full price during the buy phase. Free items stay. */
+  /** Only a gun bought in this buy phase is paid back when replaced or sold: a pickup or a kept gun gives nothing. */
+  private static int refundOf(Loadout loadout, VbWeapon old) {
+    return old != null && loadout.boughtThisPhase(old) ? old.price() : 0;
+  }
+
+  /** Sells an owned item during the buy phase: full price when bought in this phase, 0 otherwise. Free items stay. */
   public static Result sell(VbMatch m, Loadout loadout, UUID player, VbWeapon w) {
     if (m.vbPhase() != VbPhase.BUY) return Result.NOT_BUY_PHASE;
     if (w.free()) return Result.NOT_SELLABLE;
     if (w.isShield()) {
       if (m.shield(player) != w.shield()) return Result.NOT_OWNED;
-      if (!m.refund(player, w.price())) return Result.NOT_BUY_PHASE;
+      if (!m.refund(player, loadout.boughtThisPhase(w) ? w.price() : 0)) return Result.NOT_BUY_PHASE;
       m.setShield(player, 0);
+      loadout.remove(VbWeapon.Slot.SHIELD);
       return Result.SOLD;
     }
     if (!loadout.owns(w)) return Result.NOT_OWNED;
-    if (!m.refund(player, w.price())) return Result.NOT_BUY_PHASE;
+    if (!m.refund(player, loadout.boughtThisPhase(w) ? w.price() : 0)) return Result.NOT_BUY_PHASE;
     loadout.remove(w.slot());
     return Result.SOLD;
   }
@@ -79,13 +88,13 @@ public final class Armory {
   public static Display display(VbMatch m, Loadout loadout, UUID player, VbWeapon w) {
     boolean owned = w.isShield() ? m.shield(player) == w.shield() : loadout.owns(w);
     if (owned) return Display.OWNED;
-    int refund = !w.isShield() && loadout.get(w.slot()) != null ? loadout.get(w.slot()).price() : 0;
+    int refund = w.isShield() ? 0 : refundOf(loadout, loadout.get(w.slot()));
     return m.credits(player) + refund >= w.price() ? Display.AFFORDABLE : Display.LOCKED;
   }
 
   /** Shards still missing for an item (0 when affordable), counting the sell-back of the gun it replaces. */
   public static int missing(VbMatch m, Loadout loadout, UUID player, VbWeapon w) {
-    int refund = !w.isShield() && loadout.get(w.slot()) != null ? loadout.get(w.slot()).price() : 0;
+    int refund = w.isShield() ? 0 : refundOf(loadout, loadout.get(w.slot()));
     return Math.max(0, w.price() - m.credits(player) - refund);
   }
 }

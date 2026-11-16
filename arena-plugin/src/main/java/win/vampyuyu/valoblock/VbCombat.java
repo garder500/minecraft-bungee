@@ -4,6 +4,7 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import win.vampyuyu.arena.NexusArenaEngine;
 
@@ -16,6 +17,17 @@ final class VbCombat {
   }
 
   /** Damage from an ability. Returns true when the victim died (and is put in spectator). */
+  boolean damage(VbMatch m, LivingEntity victim, UUID attacker, int amount) {
+    UUID bot = plugin.valoblock.bots.botOf(victim);
+    if (bot != null) { // a bot: the bot service's path (the death arrives through killed())
+      boolean died = m.damage(bot, attacker, amount);
+      plugin.valoblock.bots.damaged(bot);
+      return died;
+    }
+    if (!(victim instanceof Player pv)) return false;
+    return damage(m, pv, attacker, amount);
+  }
+
   boolean damage(VbMatch m, Player victim, UUID attacker, int amount) {
     boolean died = m.damage(victim.getUniqueId(), attacker, amount);
     mirror(victim, m);
@@ -24,6 +36,16 @@ final class VbCombat {
   }
 
   /** Health taken without a kill, never below 1. */
+  int drain(VbMatch m, LivingEntity victim, int amount) {
+    UUID bot = plugin.valoblock.bots.botOf(victim);
+    if (bot != null) {
+      int lost = m.drain(bot, amount);
+      if (lost > 0) plugin.valoblock.bots.damaged(bot);
+      return lost;
+    }
+    return victim instanceof Player pv ? drain(m, pv, amount) : 0;
+  }
+
   int drain(VbMatch m, Player victim, int amount) {
     int lost = m.drain(victim.getUniqueId(), amount);
     if (lost > 0) mirror(victim, m);

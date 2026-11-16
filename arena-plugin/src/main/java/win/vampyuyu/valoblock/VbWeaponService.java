@@ -133,6 +133,7 @@ public final class VbWeaponService implements WeaponService, Listener {
 
   @Override
   public void roundStarted(VbMatch match, UUID player, boolean keep) {
+    if (match.hasLeft(player)) return;
     sync(
         () -> {
           for (Item d : drops) d.remove();
@@ -141,6 +142,7 @@ public final class VbWeaponService implements WeaponService, Listener {
           if (p == null) return;
           Gear g = gear(player);
           if (!keep) g.loadout = Loadout.starting(VbData.weapons());
+          else g.loadout.newBuyPhase();
           g.guns.clear(); // every magazine is full again at the start of a round
           deal(p, match, g);
           p.getInventory().setHeldItemSlot(g.loadout.get(VbWeapon.Slot.PRIMARY) != null ? SLOT_PRIMARY : SLOT_SIDEARM);

@@ -48,4 +48,14 @@ public class VbHudTest {
     String json = net.kyori.adventure.text.serializer.json.JSONComponentSerializer.json().serialize(comp);
     assertTrue("one grey pip for the dead player", json.contains("dark_gray"));
   }
+
+  @Test
+  public void aClearedMatchIsNeverDrawnAgain() {
+    VbHudService hud = new VbHudService(null);
+    VbMatch m = match();
+    assertFalse(hud.isCleared(m));
+    hud.markCleared(m);
+    assertTrue(hud.isCleared(m));
+    hud.render(m, 0, 0); // returns at the guard: nothing is queued (there is no server here, so any queueing would throw)
+  }
 }

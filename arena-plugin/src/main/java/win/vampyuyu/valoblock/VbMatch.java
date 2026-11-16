@@ -224,12 +224,12 @@ public final class VbMatch implements GamePreset {
     Member m = members.get(player);
     if (m == null || m.left) return;
     m.left = true;
-    if (m.alive && (phase == VbPhase.COMBAT || phase == VbPhase.PLANTED)) {
-      m.alive = false;
-      m.hp = 0;
-      dropSeedIf(player);
-      checkElimination();
-    } else m.alive = false;
+    boolean fighting = m.alive && (phase == VbPhase.COMBAT || phase == VbPhase.PLANTED);
+    m.alive = false;
+    if (fighting) m.hp = 0;
+    // The Seed never stays with someone who is gone, in any phase (the buy phase too).
+    if (player.equals(seedCarrier)) reassignSeed();
+    if (fighting) checkElimination();
     // A whole squad gone: the other one takes the match.
     for (int squad = 0; squad < 2; squad++) {
       final int s = squad;
@@ -238,6 +238,31 @@ public final class VbMatch implements GamePreset {
     }
     // A match of bots and humans who all left has nobody to play for.
     if (phase != VbPhase.END && botsFilled && members.values().stream().filter(x -> !x.bot).allMatch(x -> x.left)) endMatch("DRAW");
+  }
+
+  /** Whether the player left the match (still online or not); false for someone who never was in it. */
+  public synchronized boolean hasLeft(UUID id) {
+    Member m = members.get(id);
+    return m != null && m.left;
+  }
+
+  /** The Seed goes to a living Seedbearer who is still here, or to nobody; a plant in progress starts over. */
+  private void reassignSeed() {
+    plantTimer.reset();
+    plantingSite = null;
+    List<Member> bearers = new ArrayList<>();
+    for (Member x : members.values()) if (x.alive && !x.left && sideOf(x) == VbSide.SEEDBEARERS) bearers.add(x);
+    seedCarrier = bearers.isEmpty() || phase == VbPhase.PLANTED ? null : bearers.get(random.nextInt(bearers.size())).id;
+  }
+
+  /**
+   * The clock's advance: it applies only when the match is still in the phase the clock saw, so a plant
+   * that finished between the tick's read and this call does not skip the fuse.
+   */
+  @Override
+  public synchronized void advance(String expectedPhase) {
+    if (expectedPhase != null && !phase.name().equals(expectedPhase)) return;
+    advance();
   }
 
   @Override
