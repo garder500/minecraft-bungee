@@ -29,8 +29,8 @@ under `vampyuyu:boss/<id>`.
 * **Voidwyrm**: every participant with a damage share of at least 5 percent (`loot.wings-min-share`) gets
   `WingsApi.grantOnce(player, "boss:voidwyrm")`, a Wing Core, and the kill is announced. A participant who is offline at
   the kill gets the Wings, the combat XP, the kill count and the pity update at their next login (`BossData.pending*`).
-* **Slayers** (`/slayer`): Revenant Horror (zombies), Tarantula Broodfather (spiders), Sven Packmaster (wolves),
-  Voidgloom Seraph (endermen, End only), Demonlord Inferno (blazes, Nether only), tiers I-V. Pay coins, kill matching
+* **Slayers** (`/slayer`): The Unrotting (zombies), The Great Spinner (spiders), The Gaunt Alpha (wolves),
+  The Hollow Walker (endermen, End only), The Furnace Tender (blazes, Nether only), tiers I-V. Pay coins, kill matching
   mobs to fill the quest bar, then the personal boss spawns near you (only the owner can see and hurt it, one per owner).
   Death of the owner, leaving (quit, `/hub`), the time limit, or the boss vanishing (idle despawn, chunk unloaded)
   after the owner hurt it fails the quest (no refund). A boss that vanishes before any damage, a restart, a world unload
@@ -193,7 +193,7 @@ take the boss away while players walk to it.
 * Slayer progress and summon-item mob drops ignore farmable sources (`SpawnSources`: spawners, spawn eggs, breeding,
   built golems/snowmen/withers, infection, cure, eggs, slime splits); mob drops never use snow golems, iron golems or
   withers. Not verified in game that Paper reports these reasons for every farm design.
-* Summon items of the Frost Revenant, Matriarch and Leviathan work only in `sb_world` (islands), not the hub, so nobody can
+* Summon items of the Boreal Watcher, Matriarch and Leviathan work only in `sb_world` (islands), not the hub, so nobody can
   lock pearls and building in the hub; edit `summon.worlds` to change it.
 * No custom sounds or translated names (pack rules): vanilla sounds only.
 * Slayers run only in island worlds (`sb_world`, `sb_nether`, `sb_end`); `sb_hub` was removed from `slayers.*.worlds` (design principle, docs/skyblock-design.md section 13). World boss spots stay on the hub plaza (special event).

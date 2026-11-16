@@ -263,7 +263,7 @@ increases your fire power!" (too long, boasting, mechanical).
 | Bronzite / Frostium / Sunstone / Voidglass | Tier ores, elements Earth, Frost, Ember, Void. |
 | Ascension | Hell Gao difficulty rank 0 to 5. |
 
-## 6. Known inconsistencies (to decide, not fixed here)
+## 6. Known inconsistencies (to decide; the ones marked fixed were cleaned in the text pass)
 
 1. **Raid key**: the art sheet describes `interpulse_key` as the Raid key; in code the Raid key is the **Event Horizon
    Key** (`devourer_sigil`) and the **Interpulse Key** opens Hell Gao. This bible follows the code.
@@ -280,6 +280,15 @@ increases your fire power!" (too long, boasting, mechanical).
    are not built, and this bible does not define them **(proposed: leave undefined until the owner does)**.
 9. The Realm resource names Chrono Sand, Rot Resin, Thunder Quartz, Pressure Pearl, Soul Ash are validated
    (`design-decisions.md`); no rename.
+
+10. **Fixed (text pass)**: the five slayer bosses had borrowed names; they are now The Unrotting (zombie), The Great
+    Spinner (spider), The Gaunt Alpha (wolf), The Hollow Walker (enderman) and The Furnace Tender (blaze), matching
+    their drops (Unrotting Flesh, Spinner Web, Hollow Pearl, Living Ember, Furnace Heart). Slayer ids unchanged.
+11. **Fixed (text pass)**: compressed resources are no longer "Enchanted X": tier 1 is "Compressed X", tier 2 is
+    "Compacted X" (ids `enchanted_*` unchanged). The menu title "Enchanted Recipes" and internal ids keep the old word.
+12. **Fixed (text pass)**: dungeon items renamed (ids unchanged): Wither Essence -> Barrow Ash, Spirit Dust -> Mourning
+    Dust, Spirit Leaf -> Recall Leaf, Spirit Cache -> Mourning Cache, Essence Broker -> Ash Broker. The quarry skin
+    drop text now says Boreal Watcher instead of "Frost Revenant" (the id `frost_revenant` stays).
 
 ## 7. What is invented here
 

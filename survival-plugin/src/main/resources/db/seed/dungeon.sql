@@ -76,7 +76,7 @@ INSERT INTO dungeon_reward (id, position, item, weight, min_amount, max_amount, 
 INSERT INTO dungeon_reward (id, position, item, weight, min_amount, max_amount, min_floor, min_grade) VALUES ('skin_titan_edge', 8, 'skin_titan_edge', 4, 1, 1, 4, 'S');
 INSERT INTO dungeon_reward (id, position, item, weight, min_amount, max_amount, min_floor, min_grade) VALUES ('dungeon_relic', 9, 'dungeon_relic', 3, 1, 1, 5, 'S');
 INSERT INTO dungeon_reward (id, position, item, weight, min_amount, max_amount, min_floor, min_grade) VALUES ('dungeon_dark_scroll', 10, 'dungeon_dark_scroll', 1, 1, 1, 7, 'S+');
-INSERT INTO dungeon_trade (id, position, name, icon, give, amount, cache_rolls, cache_grade, coins) VALUES ('spirit_leaf', 0, 'Spirit Leaf', 'FERN', 'dungeon_spirit_leaf', 1, 0, 'D', 0.0);
+INSERT INTO dungeon_trade (id, position, name, icon, give, amount, cache_rolls, cache_grade, coins) VALUES ('spirit_leaf', 0, 'Recall Leaf', 'FERN', 'dungeon_spirit_leaf', 1, 0, 'D', 0.0);
 INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('spirit_leaf', 'dungeon_bone_fragment', 16);
 INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('spirit_leaf', 'dungeon_crypt_shard', 4);
 INSERT INTO dungeon_trade (id, position, name, icon, give, amount, cache_rolls, cache_grade, coins) VALUES ('healing_flasks', 1, 'Healing Flasks', 'GLASS_BOTTLE', 'dungeon_healing_flask', 3, 0, 'D', 0.0);
@@ -84,7 +84,7 @@ INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('healing_flasks'
 INSERT INTO dungeon_trade (id, position, name, icon, give, amount, cache_rolls, cache_grade, coins) VALUES ('crypt_cache', 2, 'Crypt Cache', 'ENDER_CHEST', '', 0, 4, 'B', 0.0);
 INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('crypt_cache', 'dungeon_crypt_shard', 12);
 INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('crypt_cache', 'dungeon_wither_essence', 3);
-INSERT INTO dungeon_trade (id, position, name, icon, give, amount, cache_rolls, cache_grade, coins) VALUES ('spirit_cache', 3, 'Spirit Cache', 'SHULKER_BOX', '', 0, 5, 'S', 0.0);
+INSERT INTO dungeon_trade (id, position, name, icon, give, amount, cache_rolls, cache_grade, coins) VALUES ('spirit_cache', 3, 'Mourning Cache', 'SHULKER_BOX', '', 0, 5, 'S', 0.0);
 INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('spirit_cache', 'dungeon_wither_essence', 12);
 INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('spirit_cache', 'dungeon_spirit_dust', 4);
 INSERT INTO dungeon_trade (id, position, name, icon, give, amount, cache_rolls, cache_grade, coins) VALUES ('dark_scroll', 4, 'Dark Scroll', 'PAPER', 'dungeon_dark_scroll', 1, 0, 'D', 0.0);
@@ -92,7 +92,7 @@ INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('dark_scroll', '
 INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('dark_scroll', 'dungeon_spirit_dust', 16);
 INSERT INTO dungeon_trade (id, position, name, icon, give, amount, cache_rolls, cache_grade, coins) VALUES ('sell_bones', 5, 'Bone Market', 'BONE', '', 0, 0, 'D', 6.0);
 INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('sell_bones', 'dungeon_bone_fragment', 64);
-INSERT INTO dungeon_trade (id, position, name, icon, give, amount, cache_rolls, cache_grade, coins) VALUES ('sell_essence', 6, 'Essence Broker', 'BLACK_DYE', '', 0, 0, 'D', 15.0);
+INSERT INTO dungeon_trade (id, position, name, icon, give, amount, cache_rolls, cache_grade, coins) VALUES ('sell_essence', 6, 'Ash Broker', 'BLACK_DYE', '', 0, 0, 'D', 15.0);
 INSERT INTO dungeon_trade_cost (trade_id, item, amount) VALUES ('sell_essence', 'dungeon_wither_essence', 10);
 INSERT INTO dungeon_floor (id, number, name, palette, grid, rooms, puzzles, traps, secret_rooms, mini_bosses, shop, fairy, wither_doors, loops, hp, damage, mob_level, par_seconds, secrets_needed_percent, reward, min_combat_level, tier, weakness, resistance) VALUES ('1', 1, 'The Entrance', 'stone_brick', 3, 8, 1, 0, 1, 0, 0, 1, 0, 0, 1.0, 1.0, 3, 420, 40, 1.0, 0, 1, 'EARTH', 'VOID');
 INSERT INTO dungeon_floor (id, number, name, palette, grid, rooms, puzzles, traps, secret_rooms, mini_bosses, shop, fairy, wither_doors, loops, hp, damage, mob_level, par_seconds, secrets_needed_percent, reward, min_combat_level, tier, weakness, resistance) VALUES ('2', 2, 'The Ossuary', 'mossy', 4, 13, 2, 1, 1, 1, 1, 1, 1, 1, 1.3, 1.4, 8, 600, 45, 1.5, 5, 1, 'EARTH', 'ASTRAL');
