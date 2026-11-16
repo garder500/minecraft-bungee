@@ -1,0 +1,14 @@
+{
+ "layers": {
+  "humanoid": [
+   {
+    "texture": "vampyuyu:valoblock/sahrin"
+   }
+  ],
+  "humanoid_leggings": [
+   {
+    "texture": "vampyuyu:valoblock/sahrin"
+   }
+  ]
+ }
+}

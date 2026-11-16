@@ -1,0 +1,14 @@
+{
+ "layers": {
+  "humanoid": [
+   {
+    "texture": "vampyuyu:valoblock/nacre"
+   }
+  ],
+  "humanoid_leggings": [
+   {
+    "texture": "vampyuyu:valoblock/nacre"
+   }
+  ]
+ }
+}

@@ -379,6 +379,18 @@ class ValoBlockPackTest(unittest.TestCase):
                 namespace, _, rel = ref.partition(":")
                 self.assertTrue((VALO / "assets" / namespace / "models" / f"{rel}.json").is_file(), f"{item.name}: {ref}")
 
+    def test_every_agent_has_a_64x64_skin_and_a_worn_outfit(self):
+        agents = [f for f in (ROOT / "arena-plugin/src/main/resources/valoblock/agents").glob("*.json") if f.name != "index.json"]
+        self.assertEqual(len(agents), 8)
+        for f in agents:
+            i = json.loads(f.read_text())["id"]
+            self.assertEqual(png_size(self.base / f"textures/entity/valoblock/skin_{i}.png"), (64, 64), i)
+            for layer in ("humanoid", "humanoid_leggings"):
+                self.assertEqual(png_size(self.base / f"textures/entity/equipment/{layer}/valoblock/{i}.png"), (64, 32), i)
+            eq = json.loads((self.base / f"equipment/valoblock_{i}.json").read_text())
+            self.assertEqual(eq["layers"]["humanoid"][0]["texture"], f"vampyuyu:valoblock/{i}")
+            self.assertEqual(eq["layers"]["humanoid_leggings"][0]["texture"], f"vampyuyu:valoblock/{i}")
+
     def test_both_packs_build_reproducibly_and_stay_apart(self):
         with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
             first, digest = build_pack.build(a, "valoblock")

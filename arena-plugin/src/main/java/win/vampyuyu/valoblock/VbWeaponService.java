@@ -219,6 +219,7 @@ public final class VbWeaponService implements WeaponService, Listener {
     g.look = "";
     g.scoped = false;
     if (WeaponItems.isScope(inv.getHelmet())) inv.setHelmet(null);
+    plugin.valoblock.agents.dressed(p);
   }
 
   private void place(PlayerInventory inv, int slot, Gear g, VbWeapon w) {
@@ -276,6 +277,7 @@ public final class VbWeaponService implements WeaponService, Listener {
     if (on == g.scoped) return;
     g.scoped = on;
     p.getInventory().setHelmet(on ? WeaponItems.scope() : null);
+    if (!on) plugin.valoblock.agents.dressed(p); // the hood comes back
   }
 
   private void refreshStack(Player p, VbWeapon w, GunState gs) {

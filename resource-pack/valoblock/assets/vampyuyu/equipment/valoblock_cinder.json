@@ -1,0 +1,14 @@
+{
+ "layers": {
+  "humanoid": [
+   {
+    "texture": "vampyuyu:valoblock/cinder"
+   }
+  ],
+  "humanoid_leggings": [
+   {
+    "texture": "vampyuyu:valoblock/cinder"
+   }
+  ]
+ }
+}

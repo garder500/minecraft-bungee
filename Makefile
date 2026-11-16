@@ -40,8 +40,8 @@ pack: ## Build the reproducible menu resource pack and print its SHA-1
 	@python3 scripts/build_pack.py
 pack-valoblock: ## Build the reproducible ValoBlock resource pack (resource-pack/dist/vampyuyu-valoblock.zip) and print its SHA-1
 	@python3 scripts/build_pack.py --pack valoblock
-art-valoblock: ## Regenerate the ValoBlock sprites, agent faces, 3D gun models and scope overlay (stdlib only, deterministic)
-	@python3 resource-pack/art/valoblock_items.py && python3 resource-pack/art/valoblock_agents.py
+art-valoblock: ## Regenerate the ValoBlock sprites, agent faces, skins and outfits, 3D gun models and scope overlay (stdlib only, deterministic)
+	@python3 resource-pack/art/valoblock_items.py && python3 resource-pack/art/valoblock_agents.py && python3 resource-pack/art/valoblock_skins.py
 art: ## Repaint pack textures from resource-pack/art/render.py (needs headless Chrome)
 	@python3 resource-pack/art/render.py
 e2e-pack: ## Boot a creative Paper 26.3 + headless 26.3 client and check the pack loads and renders (see scripts/e2e_client.py)
