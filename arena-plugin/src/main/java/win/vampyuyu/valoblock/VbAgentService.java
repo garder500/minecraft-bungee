@@ -56,7 +56,11 @@ public final class VbAgentService implements AgentService, Listener {
   public void start() {
     Bukkit.getPluginManager().registerEvents(this, plugin);
     Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1, 1);
-    for (Player p : Bukkit.getOnlinePlayers()) if (matchOf(p.getUniqueId()) == null) SkinSwap.restore(p);
+    for (Player p : Bukkit.getOnlinePlayers()) {
+      if (matchOf(p.getUniqueId()) != null) continue;
+      SkinSwap.restore(p);
+      OutfitItems.undress(p);
+    }
   }
 
   /** Plugin disable: skins back, blocks back, entities gone. */
@@ -64,7 +68,10 @@ public final class VbAgentService implements AgentService, Listener {
     env.fx.clear(null);
     env.reveals.clear();
     env.temp.restoreAll();
-    for (Player p : Bukkit.getOnlinePlayers()) SkinSwap.restore(p);
+    for (Player p : Bukkit.getOnlinePlayers()) {
+      SkinSwap.restore(p);
+      OutfitItems.undress(p);
+    }
   }
 
   AbilityEnv env() {
@@ -122,8 +129,9 @@ public final class VbAgentService implements AgentService, Listener {
       State st = state(player);
       st.locked = true;
       st.picked = agent;
-      if (SkinSwap.apply(p, a)) p.sendMessage(Component.text("You are " + a.name() + ".", NamedTextColor.GRAY));
-      else p.sendMessage(Component.text("You are " + a.name() + " (no skin set for this agent yet).", NamedTextColor.GRAY));
+      SkinSwap.apply(p, a); // only with a signed skin (agents/*.json); the outfit below is the visible agent until then
+      OutfitItems.dress(p, a);
+      p.sendMessage(Component.text("You are " + a.name() + ".", NamedTextColor.GRAY));
       // Never close a window inside its own click event: do it on the next tick.
       Bukkit.getScheduler().runTask(plugin, () -> {
         if (AgentSelectMenu.isMenu(p.getOpenInventory().getTopInventory())) p.closeInventory();
@@ -145,6 +153,7 @@ public final class VbAgentService implements AgentService, Listener {
       Player p = Bukkit.getPlayer(player);
       if (p == null) return;
       SkinSwap.restore(p);
+      OutfitItems.undress(p);
       p.setSilent(false);
       PlayerInventory inv = p.getInventory();
       for (int i = 0; i < inv.getSize(); i++) if (AgentItems.slotOf(inv.getItem(i)) > 0 || "reopen".equals(AgentItems.action(inv.getItem(i)))) inv.setItem(i, null);
@@ -238,7 +247,9 @@ public final class VbAgentService implements AgentService, Listener {
       selectTick();
       for (var e : kits.entrySet()) {
         Player p = Bukkit.getPlayer(e.getKey());
-        if (p != null && matchOf(e.getKey()) != null) giveItems(p, e.getValue());
+        if (p == null || matchOf(e.getKey()) == null) continue;
+        giveItems(p, e.getValue());
+        OutfitItems.dress(p, e.getValue().agent()); // a slot the shield or the scope freed gets the outfit back
       }
     }
   }
@@ -409,6 +420,7 @@ public final class VbAgentService implements AgentService, Listener {
   public void quit(PlayerQuitEvent e) {
     Player p = e.getPlayer();
     SkinSwap.restore(p);
+    OutfitItems.undress(p);
     p.setSilent(false);
     kits.remove(p.getUniqueId());
     states.remove(p.getUniqueId());
@@ -418,7 +430,40 @@ public final class VbAgentService implements AgentService, Listener {
   @EventHandler
   public void join(PlayerJoinEvent e) {
     Player p = e.getPlayer();
-    if (matchOf(p.getUniqueId()) == null) SkinSwap.restore(p); // a crash left an agent skin on them
+    if (matchOf(p.getUniqueId()) == null) { // a crash left an agent skin or outfit on them
+      SkinSwap.restore(p);
+      OutfitItems.undress(p);
+    }
+  }
+
+  @Override
+  public void dressed(Player p) {
+    AgentKit kit = kits.get(p.getUniqueId());
+    if (kit != null && matchOf(p.getUniqueId()) != null) OutfitItems.dress(p, kit.agent());
+  }
+
+  // ------------------------------------------------------------------ the outfit is never taken off by hand
+
+  @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+  public void outfitClick(InventoryClickEvent e) {
+    if (OutfitItems.isOutfit(e.getCurrentItem()) || OutfitItems.isOutfit(e.getCursor())) e.setCancelled(true);
+    else if (e.getClick() == org.bukkit.event.inventory.ClickType.NUMBER_KEY && e.getWhoClicked() instanceof Player p
+        && e.getHotbarButton() >= 0 && OutfitItems.isOutfit(p.getInventory().getItem(e.getHotbarButton()))) e.setCancelled(true);
+  }
+
+  @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+  public void outfitDrag(org.bukkit.event.inventory.InventoryDragEvent e) {
+    if (OutfitItems.isOutfit(e.getOldCursor())) e.setCancelled(true);
+  }
+
+  @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+  public void outfitDrop(org.bukkit.event.player.PlayerDropItemEvent e) {
+    if (OutfitItems.isOutfit(e.getItemDrop().getItemStack())) e.setCancelled(true);
+  }
+
+  @EventHandler(priority = EventPriority.HIGH)
+  public void outfitDeath(org.bukkit.event.entity.PlayerDeathEvent e) {
+    e.getDrops().removeIf(OutfitItems::isOutfit);
   }
 
   // ------------------------------------------------------------------ the Armory: abilities 4 and 5

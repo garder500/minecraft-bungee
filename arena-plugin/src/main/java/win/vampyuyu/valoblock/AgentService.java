@@ -17,6 +17,9 @@ public interface AgentService {
   /** Match over, quit or crash recovery: give the player's own skin back. */
   default void restore(UUID player) {}
 
+  /** A slot of the player's armour was just emptied (scope off, shield changed): the outfit may come back. */
+  default void dressed(org.bukkit.entity.Player p) {}
+
   /** The whole match is over: stop every ability effect and restore the blocks they changed. */
   default void matchEnded(VbMatch match) {}
 
