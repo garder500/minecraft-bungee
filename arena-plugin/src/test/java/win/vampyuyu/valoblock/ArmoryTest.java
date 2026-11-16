@@ -118,4 +118,42 @@ public class ArmoryTest {
     assertEquals(Result.NOT_BUY_PHASE, Armory.sell(m, lo, p, cat.get("pip")));
     assertEquals(800, credits());
   }
+
+  @Test
+  public void aPickedUpOrKeptGunSellsForNothingAndGivesNoRefundOnReplace() {
+    buyPhase();
+    m.refund(p, 3000); // 3800
+    lo.set(cat.get("gnat")); // picked up from the floor, not bought
+    assertEquals(Result.BOUGHT, Armory.buy(m, lo, p, cat.get("mistral"))); // no 900 comes back
+    assertEquals(3800 - 1600, credits());
+    // bought here: refundable now, not once a new buy phase starts (the gun is kept)
+    lo.newBuyPhase();
+    assertEquals(Result.SOLD, Armory.sell(m, lo, p, cat.get("mistral")));
+    assertEquals(3800 - 1600, credits());
+    assertNull(lo.get(VbWeapon.Slot.PRIMARY));
+  }
+
+  @Test
+  public void aGunBoughtLastRoundIsNotRefundedWhenReplaced() {
+    buyPhase();
+    m.refund(p, 3000);
+    Armory.buy(m, lo, p, cat.get("gnat"));
+    lo.newBuyPhase();
+    int before = credits();
+    assertEquals(Armory.Display.AFFORDABLE, Armory.display(m, lo, p, cat.get("mistral")));
+    assertEquals(Result.BOUGHT, Armory.buy(m, lo, p, cat.get("mistral")));
+    assertEquals(before - 1600, credits());
+  }
+
+  @Test
+  public void aKeptShieldSellsForNothing() {
+    buyPhase();
+    m.refund(p, 1000);
+    Armory.buy(m, lo, p, cat.get("light_ward"));
+    lo.newBuyPhase();
+    int before = credits();
+    assertEquals(Result.SOLD, Armory.sell(m, lo, p, cat.get("light_ward")));
+    assertEquals(before, credits());
+    assertEquals(0, m.shield(p));
+  }
 }

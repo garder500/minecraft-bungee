@@ -132,6 +132,7 @@ public final class VbBotService implements BotService {
       Bot b = bots.computeIfAbsent(id, k -> new Bot(k, m));
       b.kit = kits.get(id);
       if (b.loadout == null || !keep) b.loadout = Loadout.starting(VbData.weapons());
+      else b.loadout.newBuyPhase();
       b.guns.clear();
       if (b.kit != null) b.kit.roundStart(keep);
       BotBuyer.Outcome o = BotBuyer.buy(m, id, b.loadout, cfg(), VbData.weapons());
@@ -257,6 +258,12 @@ public final class VbBotService implements BotService {
     if (b == null || b.body == null || b.brain == null || !b.match.alive().contains(id)) return null;
     BotMover mv = b.brain.mover();
     return new double[] {mv.x(), mv.y(), mv.z(), 0, mv.yaw()};
+  }
+
+  @Override
+  public org.bukkit.entity.LivingEntity body(UUID id) {
+    Bot b = bots.get(id);
+    return b == null || b.body == null || !b.body.isValid() ? null : b.body;
   }
 
   @Override
@@ -632,7 +639,7 @@ public final class VbBotService implements BotService {
         Location at = new Location(world, act.abilityAt[0], act.abilityAt[1], act.abilityAt[2]);
         world.spawnParticle(Particle.END_ROD, at, 40, 0.3, 0.3, 0.3, 0.25);
         env.sound(at, "entity.firework_rocket.twinkle", 1.2f, 1.6f);
-        for (Player v : env.enemies(m, b.id)) {
+        for (org.bukkit.entity.LivingEntity v : env.enemies(m, b.id)) {
           Location eye = v.getEyeLocation();
           if (eye.distance(at) > cfg.flashRange()) continue;
           Vector toward = at.toVector().subtract(eye.toVector()).normalize();

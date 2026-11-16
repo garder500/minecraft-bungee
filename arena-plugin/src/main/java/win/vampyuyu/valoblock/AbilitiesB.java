@@ -10,6 +10,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.entity.Mannequin;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -170,7 +171,7 @@ final class AbilitiesB {
         if (age == total * i / (pulses + 1)) {
           AbilityEnv.ring(at.clone().add(0, 0.3, 0), r, Particle.SOUL, 40);
           e.sound(at, "block.beacon.power_select", 1f, 1.8f);
-          for (Player v : e.enemies(c.m(), c.id())) if (AbilityEnv.near(v, at, r)) e.reveal(c, v, c.n("glowSeconds", 3));
+          for (LivingEntity v : e.enemies(c.m(), c.id())) if (AbilityEnv.near(v, at, r)) e.reveal(c, v, c.n("glowSeconds", 3));
         }
       return true;
     });
@@ -181,7 +182,7 @@ final class AbilitiesB {
   /** Every enemy glows through walls (to the team). */
   private static boolean verdict(Ctx c) {
     AbilityEnv e = c.env();
-    for (Player v : e.enemies(c.m(), c.id())) e.reveal(c, v, c.n("seconds", 4));
+    for (LivingEntity v : e.enemies(c.m(), c.id())) e.reveal(c, v, c.n("seconds", 4));
     e.sound(c.p().getLocation(), "entity.wither.spawn", 0.6f, 1.6f);
     return true;
   }
@@ -195,12 +196,12 @@ final class AbilitiesB {
       Location centre = land.clone();
       double r = c.n("radius", 3.5);
       Effects.Fx f = e.fx.add(c.m(), c.id(), c.ticks("seconds", 6), null);
-      Set<Player> muffled = new HashSet<>();
+      Set<LivingEntity> muffled = new HashSet<>();
       e.cloud(f, centre, Material.BLACK_CONCRETE, r);
       Effects.Fx run = e.fx.add(c.m(), c.id(), c.ticks("seconds", 6), age -> {
         if (age % 3 == 0) centre.getWorld().spawnParticle(Particle.SQUID_INK, centre.clone().add(0, r / 2, 0), 8, r / 2, r / 3, r / 2, 0.01);
         if (age % 5 == 0)
-          for (Player v : e.enemies(c.m(), c.id())) {
+          for (LivingEntity v : e.enemies(c.m(), c.id())) {
             boolean inside = v.getLocation().add(0, 1, 0).distance(centre.clone().add(0, r / 2, 0)) <= r;
             if (inside) {
               e.blind(v, 1.0);
@@ -211,7 +212,7 @@ final class AbilitiesB {
         return true;
       });
       run.onEnd(() -> {
-        for (Player v : muffled) v.setSilent(false);
+        for (LivingEntity v : muffled) v.setSilent(false);
         f.stop();
       });
     });
@@ -254,7 +255,7 @@ final class AbilitiesB {
       e.fx.add(c.m(), c.id(), 24, age -> {
         double ring = r * age / 24.0;
         AbilityEnv.ring(centre, ring, Particle.END_ROD, Math.max(16, (int) (ring * 6)));
-        for (Player v : e.enemies(c.m(), c.id()))
+        for (LivingEntity v : e.enemies(c.m(), c.id()))
           if (!pinged.contains(v.getUniqueId()) && v.getLocation().distance(centre) <= ring) {
             pinged.add(v.getUniqueId());
             e.reveal(c, v, c.n("glowSeconds", 2));
@@ -275,7 +276,7 @@ final class AbilitiesB {
         AbilityEnv.ring(centre, r * (1 - (age % 40) / 40.0), Particle.BUBBLE, 24);
         centre.getWorld().spawnParticle(Particle.SQUID_INK, centre, 4, 0.3, 0.3, 0.3, 0.01);
       }
-      for (Player v : e.enemies(c.m(), c.id())) {
+      for (LivingEntity v : e.enemies(c.m(), c.id())) {
         Location l = v.getLocation().add(0, 1, 0);
         double d = l.distance(centre);
         if (d >= r || d < 0.6) continue;
@@ -315,7 +316,7 @@ final class AbilitiesB {
     Effects.Fx run = e.fx.add(c.m(), c.id(), c.ticks("seconds", 20), age -> {
       if (age % 10 == 0) at.getWorld().spawnParticle(Particle.DUST, at.clone().add(0, 0.2, 0), 6, r / 2, 0.1, r / 2, 0, new Particle.DustOptions(Color.fromRGB(0xE8C46A), 1f));
       if (age % 5 == 0)
-        for (Player v : e.enemies(c.m(), c.id()))
+        for (LivingEntity v : e.enemies(c.m(), c.id()))
           if (AbilityEnv.near(v, at, r)) {
             e.slow(v, c.n("slowSeconds", 3), 1);
             e.reveal(c, v, c.n("revealSeconds", 3));
@@ -372,7 +373,7 @@ final class AbilitiesB {
       Effects.Fx run = e.fx.add(c.m(), c.id(), c.ticks("seconds", 8), age -> {
         if (age % 4 == 0) at.getWorld().spawnParticle(Particle.COMPOSTER, at.clone().add(0, 0.3, 0), 4, r / 2, 0.1, r / 2, 0);
         if (age % 20 == 0)
-          for (Player v : e.enemies(c.m(), c.id()))
+          for (LivingEntity v : e.enemies(c.m(), c.id()))
             if (AbilityEnv.near(v, at, r)) {
               e.slow(v, 1.5, 1);
               e.combat.drain(c.m(), v, (int) c.n("drain", 10));
@@ -393,7 +394,7 @@ final class AbilitiesB {
       Effects.Fx f = e.fx.add(c.m(), c.id(), c.ticks("seconds", 10), age -> {
         if (age % 4 == 0) centre.getWorld().spawnParticle(Particle.DUST, centre.clone().add(0, r / 2, 0), 8, r / 2, r / 2, r / 2, 0, new Particle.DustOptions(Color.fromRGB(0x6A8A2A), 1.5f));
         if (age % 20 == 0)
-          for (Player v : e.enemies(c.m(), c.id()))
+          for (LivingEntity v : e.enemies(c.m(), c.id()))
             if (v.getLocation().add(0, 1, 0).distance(centre.clone().add(0, r / 2, 0)) <= r) e.combat.drain(c.m(), v, (int) c.n("dps", 6));
         return true;
       });
@@ -425,7 +426,7 @@ final class AbilitiesB {
         if (age % 3 == 0) l.getWorld().spawnParticle(Particle.DUST, l.clone().add(0, 1.2, 0), 4, 0.4, 1.0, 0.4, 0, new Particle.DustOptions(Color.fromRGB(0x7FA830), 1.6f));
       }
       if (age % 20 == 0)
-        for (Player v : e.enemies(c.m(), c.id()))
+        for (LivingEntity v : e.enemies(c.m(), c.id()))
           for (Location l : points)
             if (Math.abs(l.getX() - v.getLocation().getX()) < 1.2 && Math.abs(l.getZ() - v.getLocation().getZ()) < 1.2 && Math.abs(l.getY() - v.getLocation().getY()) < 3) {
               e.slow(v, 1.5, 0);
@@ -466,7 +467,7 @@ final class AbilitiesB {
           o.getWorld().spawnParticle(Particle.DUST, o.clone().add(v).add(0, 0.4 + e.random.nextDouble() * 0.6, 0), 1, 0, 0, 0, 0, new Particle.DustOptions(Color.fromRGB(0x5A6A22), 1.8f));
         }
       if (age % 5 == 0)
-        for (Player v : e.enemies(c.m(), c.id())) {
+        for (LivingEntity v : e.enemies(c.m(), c.id())) {
           Vector to = v.getLocation().toVector().subtract(o.toVector()).setY(0);
           double len = to.length();
           if (len > range || len < 0.01 || Math.acos(Math.max(-1, Math.min(1, to.normalize().dot(dir)))) > half) continue;

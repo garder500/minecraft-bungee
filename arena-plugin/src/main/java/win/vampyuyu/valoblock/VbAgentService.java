@@ -168,6 +168,7 @@ public final class VbAgentService implements AgentService, Listener {
 
   @Override
   public void roundStarted(VbMatch match, UUID player, boolean keep) {
+    if (match.hasLeft(player)) return;
     sync(() -> {
       AgentKit kit = kits.get(player);
       Player p = Bukkit.getPlayer(player);

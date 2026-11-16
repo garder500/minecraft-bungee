@@ -11,6 +11,7 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mannequin;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -37,7 +38,7 @@ final class Reveals {
   }
 
   /** Reveals {@code target} to the viewers for {@code ticks} (extends a reveal already running for that squad). */
-  void reveal(Player target, int squad, Collection<UUID> viewers, int ticks) {
+  void reveal(LivingEntity target, int squad, Collection<UUID> viewers, int ticks) {
     String key = target.getUniqueId() + "/" + squad;
     R r = active.get(key);
     if (r == null) {
@@ -59,8 +60,8 @@ final class Reveals {
     now++;
     for (var e : new ArrayList<>(active.entrySet())) {
       R r = e.getValue();
-      Player t = Bukkit.getPlayer(r.target);
-      if (t == null || r.until <= now || !r.body.isValid() || t.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
+      Entity t = Bukkit.getEntity(r.target); // a player or a bot's body
+      if (t == null || !t.isValid() || r.until <= now || !r.body.isValid() || (t instanceof Player pt && pt.getGameMode() == org.bukkit.GameMode.SPECTATOR)) {
         r.body.remove();
         active.remove(e.getKey());
         continue;

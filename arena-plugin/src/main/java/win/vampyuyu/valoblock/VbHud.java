@@ -16,6 +16,9 @@ public interface VbHud {
 
   default void clear(VbMatch match) {}
 
+  /** A player left the match and stays online: their boss bars and action bar go, nothing is drawn for them again. */
+  default void left(VbMatch match, UUID player) {}
+
   /** The shooter hit someone (head shot, or a kill). */
   default void hitMarker(UUID shooter, boolean head, boolean kill) {}
 

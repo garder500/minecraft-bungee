@@ -506,4 +506,49 @@ public class VbMatchTest {
     assertEquals(List.of(10), aliveAtStart);
     assertEquals("everyone is alive() again, so the engine does not re-spectate them", 10, m.alive().size());
   }
+
+  @Test
+  public void theSeedCarrierLeavingInTheBuyPhasePassesTheSeedOn() {
+    VbMatch m = buyPhase();
+    UUID carrier = m.seedCarrier();
+    assertNotNull(carrier);
+    m.remove(carrier);
+    assertTrue(m.hasLeft(carrier));
+    assertNotNull(m.seedCarrier());
+    assertNotEquals(carrier, m.seedCarrier());
+    assertEquals(VbSide.SEEDBEARERS, m.side(m.seedCarrier()));
+    assertTrue(m.alive().contains(m.seedCarrier()));
+  }
+
+  @Test
+  public void theSeedCarrierLeavingInCombatPassesTheSeedOnToo() {
+    VbMatch m = combat();
+    UUID carrier = m.seedCarrier();
+    m.remove(carrier);
+    assertNotNull(m.seedCarrier());
+    assertNotEquals(carrier, m.seedCarrier());
+  }
+
+  @Test
+  public void theLastSeedbearerLeavingLeavesNoCarrier() {
+    VbMatch m = buyPhase();
+    for (UUID id : of(m, VbSide.SEEDBEARERS)) if (!id.equals(m.seedCarrier())) m.remove(id);
+    UUID last = m.seedCarrier();
+    m.remove(last);
+    assertNull(m.seedCarrier());
+  }
+
+  @Test
+  public void aStaleClockAdvanceDoesNotSkipTheFuse() {
+    VbMatch m = combat();
+    // The clock read COMBAT as due; meanwhile the plant finished.
+    assertTrue(m.holdPlant(m.seedCarrier(), VbData.sites().get(0), 100));
+    assertEquals("PLANTED", m.phase());
+    m.advance("COMBAT"); // stale: the fuse is not skipped
+    assertEquals("PLANTED", m.phase());
+    assertEquals(0, m.results().size());
+    m.advance("PLANTED");
+    assertEquals("ROUND_END", m.phase());
+    assertEquals(VbMatch.Reason.FUSE, m.results().get(0).reason());
+  }
 }

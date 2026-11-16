@@ -32,6 +32,11 @@ public interface BotService {
     return null;
   }
 
+  /** The living body of a bot (so abilities can hit it), or null. */
+  default org.bukkit.entity.LivingEntity body(UUID bot) {
+    return null;
+  }
+
   /** The bot a mannequin body belongs to, or null. */
   default UUID botOf(org.bukkit.entity.Entity body) {
     return null;

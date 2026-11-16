@@ -25,6 +25,11 @@ public interface GamePreset {
 
   void advance();
 
+  /** Advances only if the game is still in the phase the clock saw (a game with its own threads overrides this). */
+  default void advance(String expectedPhase) {
+    advance();
+  }
+
   String winner();
 
   int seconds();
