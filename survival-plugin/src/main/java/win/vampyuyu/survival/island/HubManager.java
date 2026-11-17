@@ -66,16 +66,16 @@ public final class HubManager {
             return;
         }
         service.hubState(false, false);
-        if (needsWipe(marker)) {
+        if (needsWipe(marker, cfg.hubY, padPresent(hub))) {
             wipeOldHub(hub);
         } else {
             buildPad(hub, 0, true);
         }
     }
 
-    /** True when an older plan was fully or partly built: its blocks would show through the new fragment. */
-    static boolean needsWipe(Marker marker) {
-        return marker != null && marker.version > 0 && marker.version < HubPlan.VERSION;
+    /** True when something was built under an older (or unfinished) plan: its blocks would show through the new fragment. */
+    static boolean needsWipe(Marker marker, int hubY, boolean padPresent) {
+        return padPresent && !upToDate(marker, hubY);
     }
 
     /**

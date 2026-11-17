@@ -123,7 +123,7 @@ level scan always cover the full world height; old files may keep the keys, they
 * `IslandApi` (as in `api/`): `islandAt`, `islandOf`, `isSkyblockWorld`, `canBuild`, `teleportHome`, `teleportHub`, `all`.
   `IslandInfo.center` is the overworld spawn of the cell seen from the world asked about; `radius` is the current tier.
 * `IslandAltarApi`: `dragonAltar(islandId)`, `dragonAltarAt(location)`, `netherSpawn`, `endSpawn`, `hubSpawn()`,
-  `hubPads()` (pad ids: merchant, banker, reforger, enchanter, quest_master, minion_vendor, boss_arena,
+  `hubPads()` (pad ids: merchant, archivist, guard, contract_hunter, quest_master, banker, boss_arena,
   island_gate, dungeon_gate, rift_gate, eight_docks).
 * `IslandUpgradesApi`: `minionSlotBonus(uuid)`, `radius(uuid)`, `memberSlots(uuid)`.
 * Events fired (main thread): `IslandEnterEvent`, `IslandLeaveEvent` (on move, teleport, join, quit, world change).

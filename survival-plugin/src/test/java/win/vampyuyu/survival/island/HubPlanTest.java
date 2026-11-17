@@ -71,11 +71,29 @@ public class HubPlanTest {
         HubManager.Marker old = new HubManager.Marker();
         old.version = 2;
         old.complete = true;
-        assertTrue(HubManager.needsWipe(old));
-        assertFalse("a fresh world has nothing to wipe", HubManager.needsWipe(new HubManager.Marker()));
+        old.hubY = 100;
+        assertTrue(HubManager.needsWipe(old, 100, true));
+        assertTrue("an interrupted build leaves a pad and no marker", HubManager.needsWipe(new HubManager.Marker(), 100, true));
+        assertFalse("a fresh world has nothing to wipe", HubManager.needsWipe(new HubManager.Marker(), 100, false));
         old.version = HubPlan.VERSION;
-        assertFalse(HubManager.needsWipe(old));
+        assertFalse(HubManager.needsWipe(old, 100, true));
         assertTrue("wipe stops before the bridge (z 43)", HubManager.WIPE_CENTER_Z + HubManager.WIPE_RADIUS < QuaiPlan.CENTER_Z + QuaiPlan.BRIDGE_FROM - 1);
+    }
+
+    @Test
+    public void bossSpotsAndTheEchoAltarStandOnOpenGround() {
+        // boss_world_spot offsets are relative to the world spawn (0, 14), the Echo altar is a hub position
+        for (int[] spot : new int[][] {{-8, -6 + HubPlan.SPAWN_Z}, {12, -14 + HubPlan.SPAWN_Z}}) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    assertTrue("ground " + spot[0] + "," + spot[1], HubPlan.ground(spot[0] + dx, spot[1] + dz));
+                    assertTrue("open " + spot[0] + "," + spot[1], passable(FULL, spot[0] + dx, 1, spot[1] + dz)
+                        && passable(FULL, spot[0] + dx, 2, spot[1] + dz));
+                }
+            }
+        }
+        assertTrue("the Echo altar (-26.5, 0.5) is in front of the Rift tear, on the fragment", HubPlan.ground(-27, 0));
+        assertTrue(passable(FULL, -27, 1, 0) && passable(FULL, -27, 2, 0));
     }
 
     @Test

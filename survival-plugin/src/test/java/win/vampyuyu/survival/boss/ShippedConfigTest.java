@@ -151,7 +151,7 @@ public class ShippedConfigTest {
         BossDefinition.Altar altar = config.bosses().get("voidwyrm").summon().altar();
         assertEquals(win.vampyuyu.survival.core.SkyblockWorlds.HUB, altar.world());
         assertEquals("one Rift altar, no island cells", 0, altar.cellSize(), 0);
-        assertEquals(-34.5, altar.x(), 0);
+        assertEquals("in front of the Rift tear", -26.5, altar.x(), 0);
         assertEquals(101, altar.y(), 0);
         for (var spot : config.worldBoss().locations()) {
             assertTrue(spot.name() + " is placed relative to the world spawn, then snapped to ground", spot.y() <= -900);

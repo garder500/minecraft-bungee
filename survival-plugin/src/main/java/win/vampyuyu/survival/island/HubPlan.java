@@ -91,7 +91,7 @@ public final class HubPlan {
 
     /** The north road with its landing disc, and the south processional (9 wide, 11 at the Threshold). */
     private static boolean approach(int x, int z) {
-        if (Math.abs(x) <= 3 && z <= -20 && z >= -41) {
+        if (Math.abs(x) <= (z <= -26 && z >= -32 ? 4 : 3) && z <= -20 && z >= -41) {
             return true;
         }
         if (Math.hypot(x, z + 38.0) <= 5.5) {
@@ -739,10 +739,6 @@ public final class HubPlan {
         plan.set(0, 14, 41, Material.END_ROD, "facing=up");
         plan.set(-5, 13, 41, Material.AMETHYST_CLUSTER, "facing=up");
         plan.set(5, 13, 41, Material.AMETHYST_CLUSTER, "facing=up");
-        for (int x : new int[] {-3, 3}) {
-            plan.set(x, 0, 38, Material.POLISHED_ANDESITE);
-            lampPost(plan, x, 38, 2);
-        }
     }
 
     // ---------------------------------------------------------------- rim and debris
