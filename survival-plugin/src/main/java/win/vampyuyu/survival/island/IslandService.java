@@ -279,13 +279,13 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         return defaultSpawn(island);
     }
 
-    /** The common spawn of the hub (centre of the spawn pad, facing the fountain), or null while it is not built. */
+    /** The common spawn of the hub (centre of the Landing, facing south down the processional to the Quai), or null while it is not built. */
     public Location hubLocation() {
         World hub = world(SkyblockWorlds.HUB);
         if (hub == null || !hubPadBuilt) {
             return null;
         }
-        return new Location(hub, HubPlan.SPAWN_X + 0.5, cfg.hubY + 1, HubPlan.SPAWN_Z + 0.5, 180f, 0f);
+        return new Location(hub, HubPlan.SPAWN_X + 0.5, cfg.hubY + 1, HubPlan.SPAWN_Z + 0.5, 0f, 0f);
     }
 
     /** True when the feet and head blocks are free and there is something solid underneath. */
@@ -691,11 +691,11 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
     }
 
     /**
-     * A new or reset island starts over: the quests, the fairy souls and the generator progress (Fountain, pebbles)
+     * A new or reset island starts over: the quests and the generator progress (Fountain, pebbles)
      * are tied to the island, so they restart with it. Skills, coins, minions and the like are kept.
      */
     private void resetIslandProgress(UUID id) {
-        core.profiles().removeSections(id, "quests", "fairy_souls", "quarry");
+        core.profiles().removeSections(id, "quests", "quarry");
     }
 
     /** Online players standing in any of the island's three cells. */
@@ -1152,7 +1152,7 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
 
     /**
      * Admin: starts over for everybody who has an island. Every island is wiped and rebuilt with the full starter
-     * chest, and its owner and members lose their coins and bank, quests, fairy souls, generator progress, skills,
+     * chest, and its owner and members lose their coins and bank, quests, generator progress, skills,
      * minions, boss and dungeon records, Wings, Skyblock inventory and Skyblock bed. Members, flags and upgrades are
      * kept. Returns the number of islands being reset.
      */
@@ -1213,9 +1213,9 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
             for (UUID id : people) {
                 try {
                     core.service(win.vampyuyu.survival.api.EconomyApi.class).ifPresent(e -> e.reset(id));
-                    // Every Skyblock progress section: quests, fairy souls, generator tier and skins, skills, minions,
+                    // Every Skyblock progress section: quests, generator tier and skins, skills, minions,
                     // boss and dungeon records and the Wings. Island settings and menu preferences are kept.
-                    core.profiles().removeSections(id, "quests", "fairy_souls", "quarry", "skills", "boss",
+                    core.profiles().removeSections(id, "quests", "quarry", "skills", "boss",
                         "dungeon", "wings");
                     core.profiles().edit(id, "island", PlayerIslandData.class, PlayerIslandData::new, d -> {
                         d.starterClaimed = false;

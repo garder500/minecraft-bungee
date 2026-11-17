@@ -41,7 +41,6 @@ INSERT INTO quest (id, pool, position, category, name, description, type, target
 INSERT INTO quest_reward_xp (quest_id, skill, amount) VALUES ('visit_nether', 'COMBAT', 40.0);
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('visit_end', 'daily', 21, '', 'Edge of the World', 'Visit your End.', 'VISIT_WORLD', 'end', 1, 'END_STONE', 250.0);
 INSERT INTO quest_reward_xp (quest_id, skill, amount) VALUES ('visit_end', 'COMBAT', 60.0);
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('find_soul', 'daily', 22, '', 'Soul Searcher', 'Collect a wisp of a forgotten soul.', 'COLLECT_SOUL', '', 1, 'PINK_DYE', 200.0);
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('bazaar_visit', 'daily', 23, '', 'Window Shopping', 'Open the Sky Exchange and see what the survivors trade.', 'COMMAND', 'bazaar', 1, 'EMERALD', 60.0);
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('boss_hunt', 'daily', 24, '', 'Hold the Line', 'Take part in defeating a boss.', 'BOSS_KILL', '', 1, 'WITHER_SKELETON_SKULL', 500.0);
 INSERT INTO quest_reward_xp (quest_id, skill, amount) VALUES ('boss_hunt', 'COMBAT', 200.0);

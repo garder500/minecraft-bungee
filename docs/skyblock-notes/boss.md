@@ -143,7 +143,7 @@ take the boss away while players walk to it.
 
 * `StatsApi` should keep (or accept) modifiers set with `addModifier(uuid, "slayer", ...)` for players who are online; perks are re-applied on join and after each slayer level up.
 * The altar follows the island feature's documented convention (`cellX * cell-size + 0.5`, `island-y + 1`); the hub spots
-  assume the island feature's hub (spawn pad at 0,14, plaza radius 26 around 0,0) and use `y: -999` offsets from the world
+  assume the island feature's hub (spawn pad at 0,14; the hub is now the Aethelgard fragment of `hub.md`, not a plaza) and use `y: -999` offsets from the world
   spawn. An `IslandApi.dragonAltar(...)` / hub pad accessor in `api/` would replace both conventions.
 * A failure callback for dungeons: only a kill is observable (`BossKillEvent`). A `BossEndEvent(bossId, reason, ledger)`
   in `api/event` would let the dungeon feature tell a wipe from a hang. Until then `crypt_lord` has radius 48, idle

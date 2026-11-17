@@ -30,8 +30,6 @@ final class LegacyTutorial {
         add(plan, "earn_coins", "Pocket Change", "Earn 1,000 coins.", QuestType.COINS_EARN, "", 1000, Material.GOLD_NUGGET, List.of("create_island"), 100.0, xp());
         add(plan, "open_bazaar", "Open for Business", "Open the Bazaar.", QuestType.COMMAND, "bazaar", 1, Material.EMERALD, List.of("earn_coins"), 100.0, xp());
         add(plan, "open_auction", "Going Once", "Open the Auction House.", QuestType.COMMAND, "auctionhouse", 1, Material.GOLD_BLOCK, List.of("open_bazaar"), 100.0, xp());
-        add(plan, "first_soul", "A Glimmer", "Collect your first Fairy Soul.", QuestType.COLLECT_SOUL, "", 1, Material.PINK_DYE, List.of("create_island"), 100.0, xp());
-        add(plan, "five_souls", "Soul Collector", "Collect 5 Fairy Souls.", QuestType.COLLECT_SOUL, "", 5, Material.PINK_DYE, List.of("first_soul"), 300.0, xp());
         add(plan, "enchant_first", "Arcane Beginnings", "Enchant an item.", QuestType.ENCHANT_ITEM, "", 1, Material.ENCHANTING_TABLE, List.of("mining_3"), 200.0, xp("ENCHANTING", 40.0));
         add(plan, "skill_five", "Getting Serious", "Reach level 5 in any skill.", QuestType.SKILL_LEVEL, "ANY", 5, Material.EXPERIENCE_BOTTLE, List.of("mining_3"), 500.0, xp());
         add(plan, "visit_nether", "Into the Fire", "Visit the Nether.", QuestType.VISIT_WORLD, "nether", 1, Material.NETHERRACK, List.of("combat_3"), 300.0, xp());

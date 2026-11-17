@@ -28,7 +28,7 @@ The player's guide through Skyblock and the only join router. Config: `menu.yml`
   are in `commands:` (they match the real commands of the sibling branches: `/pets`, `/accessories` (`acc`, `bag`),
   `/bank`, `/minion`, `/boss`, `/slayer`, `/dungeon`, `/baltop`, `/skilltop`). **Leaderboards** opens a menu-owned
   submenu with `/baltop` and `/skilltop` unless a real `/leaderboards` command exists. Menu-owned entries: Quests,
-  Fairy Souls (own GUI), Warps, Settings. The **Recipe Book** door stays hidden: no feature registers a recipe
+  Warps, Settings. (The Fairy Souls door was removed: the menu has 16 buttons.) The **Recipe Book** door stays hidden: no feature registers a recipe
   browser and the Core exposes no recipe list (see NEEDS).
 * **Warps**: Hub, My Island, Nether, End (warm-up with cancel on move or damage, cooldown, no cross-world cheat; no
   combat-tag API exists, so none is enforced), boss arena info. **Public islands and visits are the island feature's**:
@@ -45,15 +45,9 @@ The player's guide through Skyblock and the only join router. Config: `menu.yml`
   `minion_(?!fuel_|upgrade_|skin_|enchanted_|super_)[a-z_]+_[0-9]+`, so Enchanted Cobblestone is not a minion; a bad
   regex is reported at load and the quest skipped). Placed blocks do not count for break quests. Rewards: coins
   (EconomyApi), skill XP (SkillsApi), optional items (Items lookups). `/quests` GUI, tracked quest on the sidebar.
-* **Fairy Souls**: glowing `ItemDisplay`s created per soul and shown only to players who have not found them
-  (`Player.showEntity` / `hideEntity`, spawned only near players, non persistent). Walk up to collect. 43 souls ship:
-  16 in the hub (plaza, plaza edge, ring road; coordinates derived from `island/HubPlan`, plaza surface y=100), 14 on
-  the overworld island, 8 on the Nether platform, 5 on the End platform (island souls are offsets from the platform
-  centre of the world named in `world:`; an `island` entry without `world` applies to any island world). A milestone
-  every 5 souls pays coins (250 + 50 per earlier milestone) and a permanent stat from an 8 step cycle
-  (`StatsApi.addModifier("fairy", ...)`, re-applied on join). The **Fairy Souls GUI** (slot 39 of the Skyblock Menu) shows found/total per zone with a progress bar, the next milestone and its reward, and a button that points
-  at the nearest uncollected soul (chat hint, compass target, particle trail). `/fairy` still prints the hint.
-  Admin souls: `/fairy admin add [id]` (kept in `menu/fairy_souls.json`).
+* **Fairy Souls**: removed (a borrowed mechanic). The `menu_fairy_*` tables, the `menu.fairy-souls.*` settings, `/fairy`, the
+  Wisp Guide pad and the `COLLECT_SOUL` quest type are gone; migration `V024__remove_fairy_souls.sql` drops them. An old
+  `fairy_souls` profile section is left in place and never read.
 * **Sidebar**: private per-player scoreboard, one entry per line, a line is rewritten only when its text changes,
   refreshed every second: island date and clock, location name (config zones by world and box, else island/owner),
   purse, island members online, tracked quest, server name (`sidebar.server-name`, default "Skyblock"), footer. Main
@@ -72,7 +66,6 @@ The player's guide through Skyblock and the only join router. Config: `menu.yml`
 | --- | --- | --- |
 | `/sbmenu` (`/skyblockmenu`), `/sbmenu reload` | `vampyuyu.sb.menu.use`, reload needs `vampyuyu.sb.menu.admin` | TRUE / OP |
 | `/quests [tutorial\|daily\|track <id>\|list]` | `vampyuyu.sb.menu.quests` | TRUE |
-| `/fairy`, `/fairy admin add [id]\|remove <id>\|list` | `vampyuyu.sb.menu.fairy`, admin needs `vampyuyu.sb.menu.admin` | TRUE / OP |
 | `/sbwarps` (`/skyblockwarps`) `[hub\|island\|nether\|end\|visit [player]\|public]` | `vampyuyu.sb.menu.warps` | TRUE |
 | `/sbsettings [sidebar\|quest-tracker\|sounds] [on\|off]` | `vampyuyu.sb.menu.settings` | TRUE |
 
@@ -99,15 +92,14 @@ Redis connection: `join.redis.*`, defaulting to the arena plugin's env (`ARENA_R
 
 `join.*` (`no-key: hub|stay`, default hub), `respawn.route` (`none|island|hub`, default none), `menu-item.*`,
 `commands.*` (door aliases, including `stats`, `baltop`, `skilltop`), `warps.*`, `sidebar.*` (title, server-name, footer,
-zones, default-zones), `sounds.*`, `fairy-souls.*` (view-distance, collect-radius, every, coins-per-milestone,
-coins-increase-per-milestone, stat-cycle, glow-color, fixed, island), `quests.*` (daily reset-time, time-zone, count,
+zones, default-zones), `sounds.*`, `quests.*` (daily reset-time, time-zone, count,
 bonus and streak, ignore reasons, pool of 25, tutorial).
 
 ## Data layout
 
 Profile sections (via `core.profiles()`): `menu` (settings, welcomed flag), `quests` (tutorial state, daily day key and
-progress, streak, tracked quest, completed-once ledger), `fairy_souls` (found ids, milestones paid).
-Files (via `core.store()`): `menu/fairy_souls.json` (admin souls). `menu/public_warps.json` of earlier builds is
+progress, streak, tracked quest, completed-once ledger).
+Files (via `core.store()`): `menu/public_warps.json` of earlier builds is
 ignored.
 
 ## API / events
@@ -146,12 +138,6 @@ Nothing blocking. Requests for the foundation owner or the other features:
 * The dungeon sidebar interplay was checked against `sb/dungeon`'s `Sidebar` by reading it (objective `dungeon`, `hide`
   gives back the board captured on entry), not by running both features together.
 * Redis `GETDEL` is exercised through a fake `HandoffSource`; the real Jedis path is untested against a live Redis.
-* Fairy soul coordinates were computed from `HubPlan` and `IslandTemplates` (radius 11.5, Nether/End platforms of
-  radius 15), not checked in game: some may sit inside a decoration or off an edge. Adjust with `fairy-souls.fixed` /
-  `island` in `menu.yml` or `/fairy admin`. Nether/End island souls assume `islandAt` returns the platform centre in the
-  Nether/End world.
-* Per-player soul visibility uses `showEntity`/`hideEntity` with `visibleByDefault=false`; behaviour on chunk reload
-  and across world changes is untested live.
 * Quest objectives that depend on other features (minion crafted, bazaar and auction opened, enchanting) rely on
   generic Bukkit events or command dispatch and will only progress once those features are live. The minion regex
   assumes the id scheme `minion_<type>_<tier>` of `sb/minions`.
@@ -163,4 +149,3 @@ Nothing blocking. Requests for the foundation owner or the other features:
   `plugins/VampyuyuSurvival/menu.yml` (or update those keys) when upgrading, otherwise most of these fixes do nothing there.
 * The sidebar yields to any foreign scoreboard. Only the arena plugin's Werewolf HUD sets one among the plugins on the
   survival server (read, not run), and it does so in arena games, not in Skyblock worlds.
-* The hub souls assume `HubManager` builds the plan at x=0, z=0 in `sb_hub` (it passes 0, hubY, 0 to the plan job).

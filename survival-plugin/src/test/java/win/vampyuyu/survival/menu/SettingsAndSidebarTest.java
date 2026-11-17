@@ -58,7 +58,6 @@ public class SettingsAndSidebarTest extends MenuTestBase {
         settings.toggle(player, Setting.SOUNDS);
         rt.prefs(player.getUniqueId()).welcomed = true;
         rt.quests(player.getUniqueId()).tracked = "break_wood";
-        rt.fairy(player.getUniqueId()).found.add("hub_1");
         core.profiles().playerQuit(player.getUniqueId());
         core.profiles().awaitWrites();
         core.profiles().playerJoined(player.getUniqueId(), player.getName());
@@ -68,7 +67,6 @@ public class SettingsAndSidebarTest extends MenuTestBase {
         assertTrue(data.questTracker);
         assertTrue(data.welcomed);
         assertEquals("break_wood", rt.quests(player.getUniqueId()).tracked);
-        assertTrue(rt.fairy(player.getUniqueId()).found.contains("hub_1"));
     }
 
     @Test

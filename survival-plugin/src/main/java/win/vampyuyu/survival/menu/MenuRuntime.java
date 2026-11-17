@@ -56,10 +56,6 @@ final class MenuRuntime {
         return core.profiles().section(player, "quests", QuestData.class, QuestData::new);
     }
 
-    FairyData fairy(UUID player) {
-        return core.profiles().section(player, "fairy_souls", FairyData.class, FairyData::new);
-    }
-
     void dirty(UUID player) {
         core.profiles().markDirty(player);
     }

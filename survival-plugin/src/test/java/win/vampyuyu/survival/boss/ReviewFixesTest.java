@@ -349,14 +349,14 @@ public class ReviewFixesTest {
         PlayerMock p = server.addPlayer();
         Location at = new Location(hub, -30, 101, 3);
         hub.getChunkAt(at).load();
-        hub.getChunkAt(new Location(hub, -34.5, 101, 0.5)).load();
+        hub.getChunkAt(new Location(hub, -26.5, 101, 0.5)).load();
         p.teleport(at);
         BossDefinition def = manager.config().definition("voidwyrm").orElseThrow();
         SummonListener listener = new SummonListener(plugin.core(), manager);
         String denial = listener.summon(p, def, EquipmentSlot.HAND);
         assertNull("the Rift altar accepts it: " + denial, denial);
         BossSession session = manager.active().iterator().next();
-        assertEquals(-34.5, session.anchor().getX(), 1e-9);
+        assertEquals(-26.5, session.anchor().getX(), 1e-9);
         assertEquals(0.5, session.anchor().getZ(), 1e-9);
         PlayerMock second = server.addPlayer();
         second.teleport(at);

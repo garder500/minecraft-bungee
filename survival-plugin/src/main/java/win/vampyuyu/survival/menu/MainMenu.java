@@ -17,11 +17,11 @@ import win.vampyuyu.survival.core.Msg;
 
 /** The Isles menu (the Skyblock menu): a constellation of buttons on the painted background, one per feature. */
 final class MainMenu {
-    /** Where the 17 buttons sit on the painted constellation (mirror of {@code layout.SB_MAIN}, same order as {@link #DOORS}). */
-    static final int[] SB_MAIN = {11, 13, 15, 19, 22, 25, 29, 31, 33, 37, 40, 43, 1, 7, 45, 49, 53};
+    /** Where the 16 buttons sit on the painted constellation (mirror of {@code layout.SB_MAIN}, same order as {@link #DOORS}). */
+    static final int[] SB_MAIN = {11, 13, 15, 19, 22, 25, 29, 31, 33, 37, 40, 43, 7, 45, 49, 53};
 
     /** Which menu or command a button leads to. */
-    private enum Target { QUESTS, COMMAND, WISPS, BOARDS, PROFILE, WARPS, SETTINGS }
+    private enum Target { QUESTS, COMMAND, BOARDS, PROFILE, WARPS, SETTINGS }
 
     /** One button: icon model of the pack, fallback material, name, description, action word and where it leads. */
     private record Door(Target target, Material icon, String model, String name, String entry, String about, String action) {}
@@ -30,7 +30,7 @@ final class MainMenu {
     private static final List<String> BOARD_ENTRIES = List.of("leaderboards", "baltop", "skilltop");
 
     /** The buttons in {@link #SB_MAIN} order: quests, skills, collections, forge, island, minions, exchange, market, bank,
-     * bosses, crypt, hunts, wisps, leaderboards, profile, warps, settings. */
+     * bosses, crypt, hunts, leaderboards, profile, warps, settings. */
     private static final List<Door> DOORS = List.of(
         new Door(Target.QUESTS, Material.WRITABLE_BOOK, "quests", "Quests", null, "Tutorial and daily quests.", "Open"),
         new Door(Target.COMMAND, Material.DIAMOND_SWORD, "skills", "Skills", "skills", "Eight skills with permanent stats.", "Open"),
@@ -44,7 +44,6 @@ final class MainMenu {
         new Door(Target.COMMAND, Material.WITHER_SKELETON_SKULL, "bosses", "Bosses", "boss", "Fight powerful bosses for loot.", "Open"),
         new Door(Target.COMMAND, Material.IRON_DOOR, "crypt", "Crypt Depths", "dungeon", "Enter the depths with a party.", "Open"),
         new Door(Target.COMMAND, Material.IRON_SWORD, "hunts", "Hunts", "slayer", "Hunt a personal boss for perks.", "Open"),
-        new Door(Target.WISPS, Material.PINK_DYE, "wisps", "Wisps", null, null, "Open"),
         new Door(Target.BOARDS, Material.GOLDEN_HELMET, "leaderboards", "Leaderboards", "leaderboards", "See who is on top.", "Open"),
         new Door(Target.PROFILE, Material.PLAYER_HEAD, null, "Profile", null, null, "Open"),
         new Door(Target.WARPS, Material.COMPASS, "warps", "Warps", null, "Travel to the hub, your island and more.", "Open"),
@@ -65,17 +64,15 @@ final class MainMenu {
     private final QuestsGui questsGui;
     private final WarpsGui warpsGui;
     private final SettingsGui settingsGui;
-    private final FairyGui fairyGui;
     private final LeaderboardsGui boardsGui;
 
     MainMenu(MenuRuntime rt, QuestService quests, QuestsGui questsGui, WarpsGui warpsGui, SettingsGui settingsGui,
-            FairyGui fairyGui, LeaderboardsGui boardsGui) {
+            LeaderboardsGui boardsGui) {
         this.rt = rt;
         this.quests = quests;
         this.questsGui = questsGui;
         this.warpsGui = warpsGui;
         this.settingsGui = settingsGui;
-        this.fairyGui = fairyGui;
         this.boardsGui = boardsGui;
     }
 
@@ -147,7 +144,6 @@ final class MainMenu {
     private void clickDoor(Player player, Door door, Gui.Click click) {
         switch (door.target()) {
             case QUESTS -> questsGui.open(player);
-            case WISPS -> fairyGui.open(player);
             case WARPS -> warpsGui.open(player);
             case SETTINGS -> settingsGui.open(player);
             case PROFILE -> openProfile(player);
@@ -187,11 +183,6 @@ final class MainMenu {
                 return Guis.menuButton(door.icon(), door.model(), "<gold>Quests",
                     "Tutorial " + Guis.progress(done, total) + " · streak "
                         + rt.engine().liveStreak(data, quests.today()), "Open");
-            }
-            case WISPS -> {
-                FairyData data = rt.fairy(player.getUniqueId());
-                return Guis.menuButton(door.icon(), door.model(), "<light_purple>Wisps",
-                    "Found " + Guis.progress(data.found.size(), fairyGui.total()), "Open");
             }
             case WARPS -> {
                 return Guis.menuButton(door.icon(), door.model(), "<aqua>Warps", door.about(), door.action());
