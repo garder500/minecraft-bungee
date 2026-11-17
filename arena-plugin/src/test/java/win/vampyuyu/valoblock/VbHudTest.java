@@ -225,4 +225,59 @@ public class VbHudTest {
     assertTrue(hud.isCleared(m));
     hud.render(m, 0, 0); // returns at the guard: nothing is queued (there is no server here, so any queueing would throw)
   }
+
+  // ------------------------------------------------------------------ the Rift Seed
+
+  @Test
+  public void theCarrierGetsTheSeedIconAndThePlantBarOnlyWhileHolding() {
+    var seed = new VbHudState.Seed(false, false, 0);
+    var g = VbHudState.glyphs(new VbHudState.Input(true, 100, 0, "cinder", new int[] {1, 0, 2, 0}, new int[] {1, 2, 2, 1}, -1, 25, 1, null, seed));
+    assertEquals("seed_on", find(g, "seed").sprite());
+    assertNull("no bar before the hold", find(g, "plant_bar"));
+    assertNull(find(g, "plant_track"));
+    g = VbHudState.glyphs(new VbHudState.Input(true, 100, 0, "cinder", new int[] {1, 0, 2, 0}, new int[] {1, 2, 2, 1}, -1, 25, 1, null, new VbHudState.Seed(true, true, 0.5)));
+    assertEquals("the icon pulses in a site", "seed_glow", find(g, "seed").sprite());
+    assertEquals("plant_track", find(g, "plant_track").sprite());
+    assertEquals(128, find(g, "plant_bar").param());
+    g = VbHudState.glyphs(new VbHudState.Input(true, 100, 0, "cinder", new int[] {1, 0, 2, 0}, new int[] {1, 2, 2, 1}, -1, 25, 1, null, new VbHudState.Seed(true, false, 1.0)));
+    assertEquals(255, find(g, "plant_bar").param());
+    assertNull("everyone else has none of it", find(VbHudState.glyphs(input(100, 0, new int[] {1, 0, 2, 0}, -1, null)), "seed"));
+    var dead = new VbHudState.Input(false, 0, 0, "cinder", null, null, -1, 0, 1, null, seed);
+    assertTrue("a dead player has no HUD", VbHudState.glyphs(dead).isEmpty());
+    VbGlyphs v = VbGlyphs.get();
+    for (String n : new String[] {"seed", "plant_track", "plant_bar"}) assertTrue(n, v.hasElement(n));
+    for (String n : new String[] {"seed_on", "seed_glow", "plant_track", "plant_bar"}) assertTrue(n, v.hasSprite(n));
+  }
+
+  @Test
+  public void theTopBarMarksTheCarrierForTeammatesOnly() {
+    VbMatch m = match();
+    m.advance();
+    m.advance();
+    UUID c = m.seedCarrier();
+    int mine = m.squadOf(c), theirs = 1 - mine;
+    String plain = json(VbHudService.heads(m, mine));
+    String mates = json(VbHudService.heads(m, mine, mine));
+    String enemies = json(VbHudService.heads(m, mine, theirs));
+    assertNotEquals("a teammate sees the badge on the carrier's head", plain, mates);
+    assertEquals("the other squad sees plain heads", plain, enemies);
+    assertEquals("the badge replaces the head, it does not add a glyph", count(plain, "vampyuyu:vbinline"), count(mates, "vampyuyu:vbinline"));
+    assertEquals("the carrier's own squad bar differs, the enemy squad's bar never does",
+        json(VbHudService.heads(m, theirs)), json(VbHudService.heads(m, theirs, mine)));
+    assertNotEquals(json(VbHudService.topLine(m, mine, VbPhase.COMBAT, 60)), json(VbHudService.topLine(m, theirs, VbPhase.COMBAT, 60)));
+    // once the carrier is gone the badge is too
+    m.damage(c, m.squad(theirs).get(0), 1000);
+    assertEquals(json(VbHudService.heads(m, mine, mine)), json(VbHudService.heads(m, mine)));
+  }
+
+  @Test
+  public void aSeedBadgeHeadExistsForEveryAgent() {
+    VbGlyphs g = VbGlyphs.get();
+    for (String id : VbData.agents().ids()) {
+      assertEquals("head_" + id + "_seed", VbHudService.headName(id, true, true, g));
+      assertEquals("head_" + id, VbHudService.headName(id, true, false, g));
+      assertEquals("a dead head wears no badge", "head_" + id + "_dead", VbHudService.headName(id, false, true, g));
+    }
+    assertEquals("head_none_seed", VbHudService.headName("", true, true, g));
+  }
 }

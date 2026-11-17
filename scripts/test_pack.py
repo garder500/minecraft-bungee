@@ -344,6 +344,29 @@ class ValoBlockPackTest(unittest.TestCase):
             aim = json.loads((self.base / f"models/item/valoblock/{name}_aim.json").read_text())["display"]["firstperson_righthand"]["translation"]
             self.assertNotEqual(hold, aim, f"{name}: aiming holds the gun differently")
 
+    def test_the_rift_seed_has_a_flat_sprite_a_3d_model_and_hud_pieces(self):
+        name = "rift_seed"
+        self.assertEqual(png_size(self.base / f"textures/item/valoblock/{name}.png"), (32, 32))
+        self.assertEqual(png_size(self.base / f"textures/item/valoblock/{name}_model.png"), (32, 32))
+        flat = json.loads((self.base / f"models/item/valoblock/{name}.json").read_text())
+        self.assertEqual(flat["textures"]["layer0"], f"vampyuyu:item/valoblock/{name}")
+        definition = json.loads((self.base / f"items/valoblock/{name}.json").read_text())
+        self.assertEqual(gui_model(definition), f"vampyuyu:item/valoblock/{name}", "the hotbar slot shows the flat sprite")
+        self.assertEqual(sorted(set(walk_models(definition["model"]))), [f"vampyuyu:item/valoblock/{name}", f"vampyuyu:item/valoblock/{name}_model"])
+        model = json.loads((self.base / f"models/item/valoblock/{name}_model.json").read_text())
+        self.assertGreaterEqual(len(model["elements"]), 16, "a hand-built seed, not a slab")
+        for key in ("thirdperson_righthand", "firstperson_righthand", "ground", "fixed", "head"):
+            self.assertIn(key, model["display"])
+        for el in model["elements"]:
+            self.assertEqual(set(el["faces"]), {"north", "east", "south", "west", "up", "down"})
+            for i in range(3):
+                self.assertTrue(0 <= el["from"][i] < el["to"][i] <= 16, el)
+        lines = open(ROOT / "arena-plugin/src/main/resources/valoblock/vb-hud-sprites.txt").read().split("\n")
+        names = {l.split(" ")[2] for l in lines if l}
+        for needle in ("seed_on", "seed_glow", "plant_track", "plant_bar", "seed", "head_cinder_seed", "head_none_seed"):
+            self.assertIn(needle, names)
+        self.assertEqual([e[0] for e in vb_layout.HUD_ELEMENTS][-3:], ["seed", "plant_track", "plant_bar"], "appended: older element ids keep their numbers")
+
     def test_shields_stay_flat(self):
         for w in (w for w in self.weapons if w["texture"] == "ward"):
             definition = json.loads((self.base / f"items/valoblock/{w['id']}.json").read_text())
@@ -482,6 +505,12 @@ class ValoBlockPackTest(unittest.TestCase):
                 self.assertEqual(size, (boxes["sh1"][4], boxes["sh1"][5]), name)
             elif name.startswith(("xh_", "hit_")):
                 self.assertEqual(size, (boxes["xh"][4], boxes["xh"][5]), name)
+            elif name in ("seed_on", "seed_glow"):
+                self.assertEqual(size, (boxes["seed"][4], boxes["seed"][5]), name)
+            elif name == "plant_track":
+                self.assertEqual(size, (boxes["plant_track"][4], boxes["plant_track"][5]), name)
+            elif name == "plant_bar":
+                self.assertEqual(size[1], boxes["plant_bar"][5])
             else:
                 self.fail("sprite without a rule: " + name)
         # every element of the HUD fits on a 640 x 360 GUI and the ones sharing a sprite family share a size

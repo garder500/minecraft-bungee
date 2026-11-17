@@ -79,9 +79,9 @@ const vec4 HUD_BOX[HUD_COUNT] = vec4[](
     vec4(-44.0, 64.0, 12.0, 17.0),
     vec4(-31.0, 64.0, 12.0, 17.0));
 
-const int VB_COUNT = 37;
-const int VB_ANCHOR[VB_COUNT] = int[](3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6);
-const int VB_STRETCH[VB_COUNT] = int[](0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+const int VB_COUNT = 40;
+const int VB_ANCHOR[VB_COUNT] = int[](3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 3, 6, 6);
+const int VB_STRETCH[VB_COUNT] = int[](0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
 const vec4 VB_BOX[VB_COUNT] = vec4[](
     vec4(4.0, -42.0, 88.0, 36.0),
     vec4(10.0, -21.0, 50.0, 4.0),
@@ -119,7 +119,10 @@ const vec4 VB_BOX[VB_COUNT] = vec4[](
     vec4(-45.0, -34.0, 6.0, 8.0),
     vec4(-38.0, -34.0, 6.0, 8.0),
     vec4(-10.0, -10.0, 21.0, 21.0),
-    vec4(-10.0, -10.0, 21.0, 21.0));
+    vec4(-10.0, -10.0, 21.0, 21.0),
+    vec4(94.0, -38.0, 16.0, 16.0),
+    vec4(-26.0, 22.0, 52.0, 7.0),
+    vec4(-24.0, 24.0, 48.0, 3.0));
 
 void main() {
     vec4 clip = ProjMat * ModelViewMat * vec4(Position, 1.0);
@@ -157,7 +160,7 @@ void main() {
         vec2 corner = vec2((k == 2 || k == 3) ? w : 0.0, (k == 1 || k == 2) ? box.w : 0.0);
         clip = ProjMat * ModelViewMat * vec4(vec2(ax, ay) + box.xy + corner, Position.z, 1.0);
         fx = 10;
-    } else if (rgb.r == 21 && rgb.g >= 39 && rgb.g <= 50) {
+    } else if (rgb.r == 21 && rgb.g >= 39 && rgb.g <= 51) {
         clip = vec4(2.0, 2.0, 2.0, 1.0); // the text shadow of a HUD glyph (colour / 4)
     } else if (rgb.r == 78 && rgb.g == 92 && rgb.b >= 1 && rgb.b <= 4) {
         fx = rgb.b;

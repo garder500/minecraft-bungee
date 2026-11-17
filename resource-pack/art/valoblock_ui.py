@@ -25,6 +25,7 @@ sys.path.insert(0, str(HERE.parent))
 import fx_shaders  # noqa: E402
 import layout  # noqa: E402
 import valoblock_items as vi  # noqa: E402
+import valoblock_seed as vs  # noqa: E402
 import vb_layout as vb  # noqa: E402
 
 PACK = vi.ROOT / "valoblock"
@@ -346,6 +347,11 @@ def hud_sprites():
     out += [("hp_bar", canvas(8, 4, col("5ad07a"))), ("hp_bar_low", canvas(8, 4, col("ff5a5a"))), ("sh_bar", canvas(8, 3, col("7fc8e8")))]
     out += [(f"xh_{i}", cross_sprite(i)) for i in range(4)]
     out += [(f"hit_{k}", hit_sprite(k)) for k in "whk"]
+    # The Rift Seed: the carrier's icon (two frames, it pulses in a site) and the planting track and fill (appended: older ids stay).
+    track = canvas(*vb.PLANT_TRACK)
+    frame(track, 0, 0, 52, 7, col("0b0d12", 217), col("3a1a6a"))
+    out += [("seed_on", vs.seed_pixels(16)), ("seed_glow", vs.seed_pixels(16, glow=True)), ("plant_track", track),
+            ("plant_bar", canvas(8, 3, col("ff4a8a")))]
     return out
 
 
@@ -390,6 +396,14 @@ def inline_sprites():
     for w in vi.weapons():
         out.append((f"gun_{w['id']}", vi.sprite(w["texture"], w["metal"], 1.0, 24)[7:17], 8))
     out.append(("skull", skull_sprite(), 7))
+    # A squad head with the seed badge in its corner: what a teammate sees on the Seed carrier (the enemy never does).
+    for a in agents():
+        head = head_sprite(a, "alive")
+        blit(head, vs.badge_pixels(), 5, 5)
+        out.append((f"head_{a['id']}_seed", head, 8))
+    head = head_sprite(None, "none")
+    blit(head, vs.badge_pixels(), 5, 5)
+    out.append(("head_none_seed", head, 8))
     return out
 
 

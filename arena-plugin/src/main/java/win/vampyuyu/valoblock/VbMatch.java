@@ -588,6 +588,13 @@ public final class VbMatch implements GamePreset {
     }
   }
 
+  /** The carrier drops the Seed with Q in the combat phase (it stays where they stand, a Seedbearer can pick it up). */
+  public synchronized boolean dropSeed(UUID player) {
+    if (phase != VbPhase.COMBAT || !player.equals(seedCarrier)) return false;
+    dropSeedIf(player);
+    return true;
+  }
+
   /** A living Seedbearer picks the dropped Seed up (before it is planted). */
   public synchronized boolean pickUpSeed(UUID player) {
     Member m = member(player);

@@ -136,6 +136,10 @@ sprite 134 xh_3
 sprite 135 hit_w
 sprite 136 hit_h
 sprite 137 hit_k
+sprite 138 seed_on
+sprite 139 seed_glow
+sprite 140 plant_track
+sprite 141 plant_bar
 element 0 hp_plate
 element 1 hp_bar
 element 2 sh_bar
@@ -173,6 +177,9 @@ element 33 rs2
 element 34 rs3
 element 35 xh
 element 36 hit
+element 37 seed
+element 38 plant_track
+element 39 plant_bar
 inline 0 head_none
 inline 1 head_cinder
 inline 2 head_cinder_dead
@@ -206,3 +213,12 @@ inline 29 gun_grinder
 inline 30 gun_light_ward
 inline 31 gun_heavy_ward
 inline 32 skull
+inline 33 head_cinder_seed
+inline 34 head_gale_seed
+inline 35 head_thorn_seed
+inline 36 head_rime_seed
+inline 37 head_vesper_seed
+inline 38 head_nacre_seed
+inline 39 head_sahrin_seed
+inline 40 head_murk_seed
+inline 41 head_none_seed
