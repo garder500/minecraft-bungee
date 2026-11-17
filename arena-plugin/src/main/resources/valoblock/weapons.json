@@ -485,7 +485,7 @@
     "drift": 0
    },
    "firstShotPerfect": false,
-   "note": "One body shot kills. Hold right-click to scope (x3.5, slowed), left-click to fire; unscoped shots are wild.",
+   "note": "One body shot kills. Hold right-click to aim, release to fire, F to cancel (x3.5, slowed); a quick tap fires wild.",
    "zoom": 3.5,
    "scopedSlow": 0.35
   },
