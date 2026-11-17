@@ -13,7 +13,7 @@ E2E_VIEW=<chunks> raises the server view distance and the client render distance
 map or its scenery stay empty at 4 (slower client).
 """
 import argparse, shlex, hashlib, http.server, json, os, pathlib, re, shutil, socket, struct, subprocess, sys
-import threading, time, urllib.request, uuid
+import math, threading, time, urllib.request, uuid
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -1324,6 +1324,234 @@ def valoblock_extras(ctx, rcon, map_id, failures):
     tp(sx, 65, sz, 180, 0)
 
 
+def valoblock_items(ctx, rcon, failures):
+    """--only items (Hourfall, the human is a god): what the player holds and wears. Round 1 combat: the hotbar with the
+    four ability items, the tooltip of one, an ability used (cooldown), the ultimate once the orbs filled it. Then rounds are
+    played (a bot squad wins, one then the other so the match does not end) until each of these has been seen: the Longwind
+    sniper scoped (the gun is not drawn), the Bronzite rifle aimed, the Seed on a teammate bot's back from behind (buy phase,
+    the bots stand still), the Seed carrier's HUD icon and hotbar item and the plant progress inside a site (rounds where
+    the human got the Seed: 1 in 5 per round, only while the human's squad is the Seedbearers, the first 6 rounds)."""
+    tools, shots, env = ctx["tools"], ctx["shots"], ctx["env"]
+    xdo = tools["xdotool"]
+    GUI, OX, OY = 2, 213, 120  # 854x480 game window centred in the 1280x720 Xvfb root: GUI scale 2
+    WANT = {"scope", "rifle", "back", "seed", "plant", "ult", "cooldown", "tooltip"}
+    SPAWN = (50.0, 65, 114.0)
+
+    def key(*k):
+        subprocess.run([xdo, *k], env=env)
+
+    def tp(x, y, z, yaw=0, pitch=0):
+        vb(rcon, f"debug tp E2EBot {x} {y} {z} {yaw} {pitch}")
+        time.sleep(1.2)
+
+    def inv():
+        return rcon.command("data get entity E2EBot Inventory")
+
+    def has(query):  # the whole Inventory dump is cut by RCON's 4 KB packets: ask for one thing
+        return "following entity data" in rcon.command("data get entity E2EBot " + query)
+
+    def carrying():
+        return has('Inventory[{id:"minecraft:echo_shard"}].id')
+
+    def ult_ready():
+        return "_ready" in rcon.command('data get entity E2EBot Inventory[{Slot:6b}].components."minecraft:item_model"')
+
+    def phase():
+        return re.search(r"Phase (\w+)", vb(rcon, "status")).group(1)
+
+    def wait_phase(name, seconds=40):
+        t0 = time.time()
+        while time.time() - t0 < seconds:
+            if phase() == name:
+                return True
+            time.sleep(0.5)
+        failures.append(f"items: the match never reached the {name} phase")
+        return False
+
+    def to_combat():
+        """Whatever the round is doing (the bots fight, a round can end by itself), get to a running combat phase."""
+        for _ in range(4):
+            ph = phase()
+            if ph in ("COMBAT", "PLANTED"):
+                return True
+            if ph == "BUY":
+                vb(rcon, "debug skip")
+                time.sleep(5)
+            else:
+                time.sleep(3)
+        return False
+
+    def next_buy(rnd):
+        """End the round (alternating winners: the match must not end) and wait for the next buy phase."""
+        if phase() in ("COMBAT", "PLANTED"):
+            vb(rcon, "debug win " + "ab"[rnd % 2])
+        return wait_phase("BUY")
+
+    def hotbar_tooltip(slot, name):  # inventory screen, mouse over hotbar slot (0-based)
+        key("key", "e")
+        time.sleep(1)
+        key("mousemove", str(OX + (125 + 8 + 18 * slot + 8) * GUI), str(OY + (37 + 142 + 8) * GUI))
+        time.sleep(1.2)
+        shot(tools, shots / name)
+        key("key", "Escape")
+        time.sleep(0.5)
+
+    def seed_back(tag):
+        """Buy phase: the Seed is on a bot's back (a display shown to the squad); stand 3 blocks behind that bot."""
+        out = rcon.command('data get entity @e[type=minecraft:item_display,nbt={item:{id:"minecraft:echo_shard"}},limit=1] Pos')
+        m = re.search(r"\[(-?[\d.]+)d, (-?[\d.]+)d, (-?[\d.]+)d\]", out)
+        say("seed back display: " + out.strip()[:200])
+        if not m:
+            return False
+        x, y, z = (float(v) for v in m.groups())
+        out = rcon.command(f"execute positioned {x} {y} {z} run data get entity @e[type=minecraft:mannequin,sort=nearest,limit=1] Pos")
+        b = re.search(r"\[(-?[\d.]+)d, (-?[\d.]+)d, (-?[\d.]+)d\]", out)
+        say("nearest bot: " + out.strip()[:200])
+        bx, bz = (float(b.group(1)), float(b.group(3))) if b else (x, z + 0.3)
+        dx, dz = x - bx, z - bz  # from the bot to its back
+        n = math.hypot(dx, dz) or 1.0
+        dx, dz = dx / n, dz / n
+        yaw = math.degrees(math.atan2(dx, -dz))  # looking at the bot from behind it
+        # The display sits behind the bot's server-side yaw; the mannequin's body may not agree, so shoot both sides.
+        for dist, name in ((3.0, "-display-side"), (2.0, "-display-side-close"), (-3.0, "-opposite-side")):
+            tp(round(bx + dx * dist, 2), 65, round(bz + dz * dist, 2), round((yaw + (180 if dist < 0 else 0)) % 360, 1), 6)
+            time.sleep(0.8)
+            shot(tools, shots / f"pt2-seed-back-{tag}{name}.png")
+        return True
+
+    def armory_buy(tab, card_slot, name, extra=()):
+        """Armory tab (column 0 row `tab`) then the card (slot = row * 9 + col), then the extra slots."""
+        vb(rcon, "debug armory E2EBot")
+        time.sleep(2)
+
+        def click(slot):
+            row, col = divmod(slot, 9)
+            key("mousemove", str(OX + (125 + 16 + 18 * col) * GUI), str(OY + (9 + 26 + 18 * row) * GUI))
+            time.sleep(0.4)
+            key("click", "1")
+            time.sleep(0.8)
+        if tab is not None:
+            click(tab * 9)
+            click(card_slot)
+        for slot in extra:
+            click(slot)
+        shot(tools, shots / f"pt2-armory-{name}.png")
+        key("key", "Escape")
+        time.sleep(1)
+
+    def orbs():
+        for ox, oz in ((30.0, 58.0), (90.0, 62.0)):
+            tp(ox, 65, oz, 0, 10)
+            time.sleep(0.8)
+
+    def ult_shots(done):
+        if "ult" in done or not ult_ready():
+            return
+        key("key", "7")
+        time.sleep(1)
+        shot(tools, shots / "pt2-ultimate-ready.png")
+        hotbar_tooltip(6, "pt2-ultimate-ready-tooltip.png")
+        done.add("ult")
+
+    def seed_shots(done):
+        """The human carries the Seed in a combat phase: HUD icon, hotbar item and tooltip, then the plant hold in site A."""
+        if "seed" not in done:
+            tp(*SPAWN, 180, 3)
+            key("key", "8")
+            time.sleep(1)
+            shot(tools, shots / "pt2-seed-carrier-hud.png")
+            hotbar_tooltip(7, "pt2-seed-tooltip.png")
+            done.add("seed")
+        if "plant" not in done and carrying():
+            key("key", "8")
+            tp(18.0, 65, 34.0, 180, 20)
+            key("mousemove", "427", "240")
+            subprocess.run([xdo, "mousedown", "3"], env=env)
+            for i in range(3):
+                time.sleep(1.0)
+                shot(tools, shots / f"pt2-plant-{i}.png")
+            say("plant status (held 3 s of 4): " + vb(rcon, "status"))
+            subprocess.run([xdo, "mouseup", "3"], env=env)
+            done.add("plant")
+
+    done = set()
+    rcon.command("gamemode adventure E2EBot")
+    say(vb(rcon, "debug god E2EBot on"))  # the bots would kill the human within seconds
+    # ---- round 1, combat: abilities
+    to_combat()
+    tp(*SPAWN, 180, 5)
+    key("key", "4")
+    time.sleep(1)
+    shot(tools, shots / "pt2-01-hotbar-abilities.png")
+    say("round 1: " + vb(rcon, "status") + (", the human carries the Seed" if carrying() else ""))
+    hotbar_tooltip(3, "pt2-02-ability-tooltip.png")
+    hotbar_tooltip(5, "pt2-02-ability-tooltip-signature.png")
+    hotbar_tooltip(6, "pt2-03-ultimate-tooltip-locked.png")
+    done.add("tooltip")
+    if to_combat():  # the signature ability has a free charge (4 and 5 are bought in the Armory)
+        key("key", "6")
+        time.sleep(0.4)
+        key("mousemove", "427", "240")
+        key("click", "3")
+        shot(tools, shots / "pt2-04-ability-cooldown-0.png")
+        shot(tools, shots / "pt2-04-ability-cooldown-1.png")
+        time.sleep(0.5)
+        shot(tools, shots / "pt2-04-ability-after.png")
+        done.add("cooldown")
+    if to_combat():
+        orbs()
+        shot(tools, shots / "pt2-05-after-orbs.png")
+        ult_shots(done)
+        if carrying():
+            seed_shots(done)
+
+    for rnd in range(2, 13):
+        if WANT <= done:
+            break
+        if not next_buy(rnd):
+            break
+        time.sleep(2)
+        rcon.command("gamemode adventure E2EBot")
+        vb(rcon, "debug god E2EBot on")  # the god flag is dropped with each round
+        mine = carrying()
+        say(f"round {rnd}: {vb(rcon, 'status')}; the human {'carries' if mine else 'does not carry'} the Seed; credits in the Armory title")
+        tp(*SPAWN, 180, 5)
+        if "scope" not in done:
+            armory_buy(4, 1, "longwind", extra=(42,))  # the Longwind sniper, then the first buyable ability
+        elif "rifle" not in done:
+            armory_buy(3, 1, "bronzite")
+        if not mine and "back" not in done and seed_back(f"r{rnd}"):
+            done.add("back")
+        tp(*SPAWN, 180, 5)
+        if not (WANT - done - {"back"}):
+            continue
+        vb(rcon, "debug skip")  # buy -> combat
+        time.sleep(8)
+        if not to_combat():
+            continue
+        tp(*SPAWN, 180, 3)
+        held = ("scope" not in done and "longwind") or ("rifle" not in done and "bronzite") or ""
+        if held and has('Inventory[{Slot:0b}]'):
+            key("key", "1")  # the primary
+            time.sleep(1)
+            shot(tools, shots / f"pt2-{held}-hip.png")
+            subprocess.run([xdo, "keydown", "shift"], env=env)
+            time.sleep(1.5)
+            shot(tools, shots / f"pt2-{held}-aimed.png")
+            subprocess.run([xdo, "keyup", "shift"], env=env)
+            done.add("scope" if held == "longwind" else "rifle")
+        if mine and to_combat():
+            seed_shots(done)
+        if "ult" not in done and to_combat():
+            orbs()
+            ult_shots(done)
+    say(f"items scenario done: {sorted(done)}")
+    for missing in sorted(WANT - done):
+        say("NOT captured: " + missing)
+    if phase() in ("COMBAT", "PLANTED", "BUY"):
+        tp(*SPAWN, 180, 0)
+
+
 def valoblock_overview(ctx, rcon, size=120):
     """Spectator shots from a high point (buy phase: nothing fights, no HUD)."""
     tools, shots = ctx["tools"], ctx["shots"]
@@ -1507,7 +1735,10 @@ def valoblock_scenario(ctx):
         time.sleep(1.5)
         shot(tools, shots / f"vb-15-bot-tag-{i}.png")
     valoblock_rewind(ctx, rcon, failures)
-    valoblock_extras(ctx, rcon, ctx.get("rules", "map=hourfall").split("=", 1)[-1] or "hourfall", failures)
+    if ctx.get("only") == "items":  # --only items: the gear of the match (scope, rifle, abilities, Seed) instead of the Realm tour
+        valoblock_items(ctx, rcon, failures)
+    else:
+        valoblock_extras(ctx, rcon, ctx.get("rules", "map=hourfall").split("=", 1)[-1] or "hourfall", failures)
     time.sleep(10)
     shot(tools, shots / "vb-05-combat-later.png")
     say("where: " + vb(rcon, "debug where E2EBot"))
@@ -4422,7 +4653,7 @@ def main():
             if needle in text:
                 failures.append(f"client log contains '{needle}'")
         ctx = dict(tools=tools, env=env, shots=shots, client_log=client_log, server=server,
-                   failures=failures, rules=args.rules)
+                   failures=failures, rules=args.rules, only=args.only)
         if args.scenario == "werewolf":
             werewolf_scenario(ctx)
         elif args.scenario == "roles":
