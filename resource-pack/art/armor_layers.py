@@ -54,13 +54,13 @@ SETS = {
         plate=rgb("#4a2a12 #7a4a1e #c98442 #f2c14e"), trim=trim4("#1c1a22 #3a3742 #6a6676"),
         glow=rgb("#1a8f9c #4af0ff #e6ffff"), motif=["dggd", "gbbg", "gbbg", "dggd"], motif_xy=(2, 3)),
     "ember": dict(  # Cracked Ashes: obsidian split by lava veins
-        plate=rgb("#120a16 #2a1a2e #4a3550 #7a5a82"), trim=trim4("#5a1a10 #c8461e #ff8a2a"),
+        plate=rgb("#1c1222 #4a3a58 #7a6288 #a890b4"), trim=trim4("#5a1a10 #c8461e #ff8a2a"),
         glow=rgb("#c8461e #ff8a2a #ffe08a"), motif=[".gb.", ".gb.", "gb..", "..bg", ".gb.", ".gb."], motif_xy=(2, 2)),
     "rime": dict(  # Frozen Heights: plates of ice, a stasis crystal
-        plate=rgb("#1f3557 #3b6fa8 #7fc8e8 #e6f7ff"), trim=trim4("#101e3a #1f3557 #5a86b8"),
+        plate=rgb("#1f3a66 #3f78b4 #7cc4e8 #dff4ff"), trim=trim4("#0e1c38 #24407a #9cd4f0"),
         glow=rgb("#7a68d8 #b6a8ff #f0ecff"), motif=[".gg.", "gbgg", "gggg", "gggg", ".gg."], motif_xy=(2, 3)),
     "void": dict(  # Ethereal Necropolis: dark ash plates, a rift that looks back
-        plate=rgb("#15121f #241f3a #4a4570 #9c95c8"), trim=trim4("#2e2a4a #6a6498 #9c95c8"),
+        plate=rgb("#2a2640 #4e4878 #7c74b0 #b8aef0"), trim=trim4("#6a5aa8 #b4a4f0 #e8e0ff"),
         glow=rgb("#b02a68 #ff4a8a #ffd6e8"), motif=[".dggd.", "dgbbgd", "dgbbgd", ".dggd."], motif_xy=(1, 3)),
     "starcore": dict(  # Astral Interiority star on Citadel gold
         plate=rgb("#5a3a12 #a8742a #f2c14e #fff1b0"), trim=trim4("#14403e #2a8a82 #3fb6a8"),
@@ -70,7 +70,7 @@ SETS = {
 for realm, trim, glow in (("cinder", "#5a1a10 #c8461e #ff8a2a", "#c8461e #ff8a2a #ffe08a"),
                           ("grove", "#2c3a1e #4f6b2a #8fb84a", "#8fb84a #d6f08a #f1e7c9"),
                           ("frost", "#1f3557 #3b6fa8 #7fc8e8", "#7a68d8 #b6a8ff #f0ecff")):
-    SETS[f"{realm}_starcore"] = dict(SETS["starcore"], trim=trim4(trim), glow=rgb(glow))
+    SETS[f"{realm}_starcore"] = dict(SETS["starcore"], trim=trim4(trim), glow=rgb(glow), realm=True)
 
 # face rectangles of the vanilla layout: (u, v, width, height, depth)
 BOXES = {"body": (16, 16, 8, 12, 4), "arm": (40, 16, 4, 12, 4), "leg": (0, 16, 4, 12, 4)}
@@ -103,8 +103,6 @@ class Grid:
             for i in range(w):
                 if j == h - 1 or i == w - 1:
                     c = t[0]
-                elif i == 0 and j == 0:
-                    c = t[3]
                 elif i == 0 or j == 0:
                     c = t[2]
                 else:
@@ -142,6 +140,8 @@ def chest_front(s, shift):
     g.bevel(0, 8, 3, 2, p)                       # lower plates
     g.bevel(5, 8, 3, 2, p)
     motif(g, {**s, "plate": p, "trim": t})
+    if s.get("realm"):
+        g.fill(0, 7, 8, 1, s["glow"][1])           # accent band across the chest
     g.bevel(0, 10, 8, 2, t)                      # belt
     g.set(3, 10, t[3])
     g.set(4, 10, t[2])
@@ -162,6 +162,8 @@ def chest_back(s, shift):
         g.set(3, y, t[3])
     g.bevel(0, 8, 3, 2, p)
     g.bevel(5, 8, 3, 2, p)
+    if s.get("realm"):
+        g.fill(0, 7, 8, 1, s["glow"][1])           # accent band across the chest
     g.bevel(0, 10, 8, 2, t)
     return g
 
@@ -177,14 +179,17 @@ def chest_side(s, shift):
 
 def arm(s, shift):
     p, t = shifted(s["plate"], shift), shifted(s["trim"], shift)
+    s = {**s}
     g = Grid(4, 12)
-    g.bevel(0, 0, 4, 4, p)                       # pauldron
+    g.bevel(0, 0, 4, 4, t if s.get("realm") else p)  # pauldron (Realm trim on the sidegrades)
     g.bevel(0, 4, 4, 1, t)                       # its trim lip
     g.fill(0, 5, 4, 3, p[0])                     # sleeve
     g.fill(0, 5, 1, 3, p[1])
     g.bevel(0, 8, 4, 4, p)                       # vambrace
     g.bevel(0, 8, 4, 1, t)
     g.bevel(0, 11, 4, 1, t)
+    if s.get("realm"):
+        g.fill(0, 6, 4, 1, shifted(s["glow"], 0)[1])   # accent band
     return g
 
 
@@ -192,7 +197,7 @@ def boot(s, shift, front):
     p, t = shifted(s["plate"], shift), shifted(s["trim"], shift)
     g = Grid(4, 5)                               # the last five rows of the leg
     g.bevel(0, 0, 4, 1, t)                       # cuff
-    g.bevel(0, 1, 4, 2, p)                       # greave
+    g.bevel(0, 1, 4, 2, t if s.get("realm") else p)  # greave (Realm trim on the sidegrades)
     g.bevel(0, 3, 4, 1, p)                       # boot
     if front:
         g.set(1, 3, p[3])                        # toe cap catches the light
@@ -207,6 +212,8 @@ def thigh(s, shift, front):
     if not front:
         g.fill(0, 2, 4, 1, p[0])                 # back lamellae
     g.bevel(0, 5, 4, 1, t)                       # lip
+    if s.get("realm"):
+        g.fill(0, 5, 4, 1, s["glow"][1])         # accent band on the sidegrades
     g.bevel(0, 6, 4, 2, t)                       # knee guard
     if front:
         g.set(1, 6, t[3])
@@ -356,8 +363,6 @@ def main():
             path.write_bytes(to_png(tex))
         asset = ASSETS / "equipment" / f"{name}.json"
         layers = {"humanoid": [{"texture": f"vampyuyu:{name}"}], "humanoid_leggings": [{"texture": f"vampyuyu:{name}"}]}
-        if name.endswith("starcore"):  # the wings layer of the Starcore chestplate
-            layers["wings"] = [{"texture": "vampyuyu:starcore_wings"}]
         write_json(asset, {"layers": layers})
     listed = ART / "imported.txt"
     have = set(listed.read_text().split()) if listed.exists() else set()

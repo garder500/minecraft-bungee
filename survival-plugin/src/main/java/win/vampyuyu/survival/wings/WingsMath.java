@@ -63,7 +63,7 @@ public final class WingsMath {
      * {max |x|, min y, max y, min behind, max behind}.
      */
     public static double[] envelope(WingsPose.Variant v) {
-        return v == WingsPose.Variant.SPREAD ? new double[] {1.35, -1.20, 0.20, 0.0, 0.14}
+        return v == WingsPose.Variant.SPREAD ? new double[] {1.35, -1.20, 0.20, 0.0, 0.50}
             : new double[] {0.60, -1.25, 0.20, 0.0, 0.14};
     }
 
