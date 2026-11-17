@@ -152,14 +152,14 @@ public class AgentKitTest {
   }
 
   @Test
-  public void boughtChargesSurviveForThoseWhoKeepTheirLoadoutOnly() {
+  public void boughtChargesSurviveUntilAPistolRound() {
     UUID a = UUID.randomUUID();
     VbMatch m = buyPhase(List.of(a, UUID.randomUUID()));
     AgentKit kit = new AgentKit(VbData.agents().get("murk"), ult);
     kit.buy(m, a, 4);
     kit.roundStart(true);
     assertEquals(1, kit.charges(4));
-    kit.roundStart(false); // died, or a pistol round
+    kit.roundStart(false); // a pistol round (match start, side switch): a death keeps them (VbMatch.keepsAbilities)
     assertEquals(0, kit.charges(4));
     assertEquals(1, kit.charges(6));
   }

@@ -55,7 +55,7 @@ public final class AgentKit {
     return ultPoints >= agent.ability(7).ultPoints();
   }
 
-  /** A new round: the signature refills, a point comes in, bought charges stay for those who keep their loadout. */
+  /** A new round: the signature refills, a point comes in; bought charges stay unless {@code keep} is false (pistol round). */
   public void roundStart(boolean keep) {
     if (!keep) {
       charges[4] = 0;

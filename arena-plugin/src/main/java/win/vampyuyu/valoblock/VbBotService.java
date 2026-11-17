@@ -137,7 +137,7 @@ public final class VbBotService implements BotService {
       if (b.loadout == null || !keep) b.loadout = Loadout.starting(VbData.weapons());
       else b.loadout.newBuyPhase();
       b.guns.clear();
-      if (b.kit != null) b.kit.roundStart(keep);
+      if (b.kit != null) b.kit.roundStart(m.keepsAbilities(id)); // abilities survive a death, unlike guns
       BotBuyer.Outcome o = BotBuyer.buy(m, id, b.loadout, cfg(), VbData.weapons());
       if (o.fullBuy() && b.kit != null) BotBuyer.buyAbilities(m, id, b.kit);
       place(b, m);

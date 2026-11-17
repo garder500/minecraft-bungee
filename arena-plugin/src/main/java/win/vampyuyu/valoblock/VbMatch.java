@@ -145,6 +145,11 @@ public final class VbMatch implements GamePreset {
     return member(id).survivedLast && !score.pistolRound(round);
   }
 
+  /** Bought ability charges not used survive a death; only a pistol round (match start, side switch) clears them. */
+  public synchronized boolean keepsAbilities(UUID id) {
+    return !score.pistolRound(round);
+  }
+
   public synchronized UUID seedCarrier() {
     return seedCarrier;
   }

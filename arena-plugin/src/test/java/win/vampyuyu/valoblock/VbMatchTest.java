@@ -368,6 +368,8 @@ public class VbMatchTest {
     assertEquals(2, m.round());
     assertTrue(m.keepsLoadout(survivor));
     assertFalse(m.keepsLoadout(dead));
+    assertTrue("unused bought abilities survive a death", m.keepsAbilities(dead));
+    assertTrue(m.keepsAbilities(survivor));
     assertEquals(50, m.shield(survivor));
     assertEquals(0, m.shield(dead));
     assertEquals("everyone respawns", 10, m.alive().size());
@@ -385,6 +387,7 @@ public class VbMatchTest {
     assertEquals(800, m.credits(p));
     assertEquals(0, m.lossStreak(1));
     assertFalse("pistol round: nothing is kept", m.keepsLoadout(p));
+    assertFalse("pistol round: bought abilities are cleared too", m.keepsAbilities(p));
     assertNotNull(m.seedCarrier());
     assertEquals(VbSide.SEEDBEARERS, m.side(m.seedCarrier()));
   }
