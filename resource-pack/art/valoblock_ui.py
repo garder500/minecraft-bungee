@@ -24,6 +24,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 import fx_shaders  # noqa: E402
 import layout  # noqa: E402
+import valoblock_ability_icons as icons  # noqa: E402
 import valoblock_items as vi  # noqa: E402
 import valoblock_seed as vs  # noqa: E402
 import vb_layout as vb  # noqa: E402
@@ -260,23 +261,9 @@ def menu_font():
 # ------------------------------------------------------------------ HUD sprites
 
 def agent_icon(agent, slot, on):
-    """16 x 16 ability icon: a disc, a diamond, a ring and a star for slots 4 to 7, in the agent's own colours."""
-    c = agent["colors"]
-    main, glow, dark = col(c["trim"] if slot != 7 else c["glow"]), col(c["glow"]), col("1a1c24")
-    if not on:
-        main, glow = col("5a5f6c"), col("7a7f8c")
-    img = canvas(16, 16)
-    for y in range(16):
-        for x in range(16):
-            dx, dy = abs(x - 7.5), abs(y - 7.5)
-            d = (dx * dx + dy * dy) ** 0.5
-            hit = {4: d <= 6.5, 5: dx + dy <= 7.5, 6: 4.2 <= d <= 6.8, 7: dx * dy <= 6.0 and dx + dy <= 8.5}[slot]
-            if hit:
-                img[y][x] = main
-            if hit and d <= 2.2:
-                img[y][x] = glow
-    outline(img, dark)
-    return img
+    """16 x 16 ability icon of the agent's slot 4-7 ability (valoblock_ability_icons.py, the same pixels as the hotbar item)."""
+    ab = next(x for x in agent["abilities"] if x["slot"] == slot)
+    return icons.icon(agent, ab["id"], slot, "on" if on else "off")
 
 
 def tile_sprite(slot, on):
