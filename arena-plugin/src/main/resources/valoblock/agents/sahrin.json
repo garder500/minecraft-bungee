@@ -1,0 +1,99 @@
+{
+  "id": "sahrin",
+  "name": "Sahrin",
+  "role": "Weaver",
+  "roleColor": "#8fd0a0",
+  "realm": "Citadel of Golden Sands",
+  "quote": "\"Time is a wall, if you stack it right.\"",
+  "menuColor": "#1e3024",
+  "colors": {
+    "torso": "#a8742a",
+    "trim": "#f2c14e",
+    "glow": "#3fb6a8",
+    "arm": "#e8dcc0",
+    "legs": "#5a3a12",
+    "boots": "#f2c14e",
+    "bg": "#2a2214"
+  },
+  "face": {
+    "palette": {
+      "h": "#e8dcc0",
+      "s": "#a8744a",
+      "w": "#fff1b0",
+      "e": "#3fb6a8",
+      "m": "#e8dcc0",
+      "j": "#3fb6a8"
+    },
+    "rows": [
+      "hhhhhhhh",
+      "hhhjhhhh",
+      "hssssssh",
+      "ssssssss",
+      "swessews",
+      "ssssssss",
+      "smmmmmms",
+      "smmmmmms"
+    ]
+  },
+  "skin": {
+    "value": "ewogICJ0aW1lc3RhbXAiIDogMTc5NDg3NDE4ODUwMiwKICAicHJvZmlsZUlkIiA6ICI4MjYxOGI1ZjhhMzA0Njg2YTkyMTM2ZDcxZTlhZDkyMSIsCiAgInByb2ZpbGVOYW1lIiA6ICIxZXRobyIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9kMjZkYmEwOTliN2U5NmM1Y2Q5ODJiYzhiMjQyMWVmZGQzZDk4MGYzZThkMTFhMzMxODkzZmE5YjdhZGUyNTg5IgogICAgfQogIH0KfQ==",
+    "signature": "mmvrlCdy3GTR7rfATcQBVfl6pMlCBYgvCixIUtLaVkgT2tK99hSLpNhHLMjZlJmOiJK66VzKwvcE+v1U6WdLAF7eK1WgiBHbIuUArsxN0PNPViJRGbWjijcrHTyqrxA7JpDs/3n2545kCkr84MCZR0Om2t9WD61Z3+PskaVjwk8pd0UqqicUyQr8LZTw7BVyk2JryaHhj5mmiqpm3Ptv+i+GTkc9S3zYybN4qL7ntavXlQMpKU9spejwZyyMTitL1mBqXqkSygVA8zjdY3sf8TtLVaP+c7TTReFql2Syo4RYXlVFDdnPNxM3crj6PZYr/+kFh4p8w2N0QqZQ3kJrUmhdOMyEU59mmxdbFvKZw6DNurGbuuEoCWEB+jwCDfJUVTW7N8vIMX1Lf+5tXhuOxBm/9QMr1TQ56JFlRT0pnv9EhwfeE+3s/CH0eW8WtUsgK4M2q471d/OYFoCb05muvJZH8QlHds+VMIY/9lSW7KSIGG58UOzFkBKL2GKmN/k3DzC6htTE2gd0BHc59udC5RX7nE07lV3Z22UWu8GxEDAIJQ8WWdMFWGOL3ZSip/pbdjKSZgo59DBT7oTQRKEItlNuiua0+IFsQTV50UK/pmwHszcr7LoDDRFwYbfcaVhYzIW7mbScDlTIRv7fjY5nzMNrDB8iMDm9GVhjw8RvJpU=",
+    "mineskin": "4bcff4a7994c4adcb797254632d7f5af"
+  },
+  "build": "Smoke = a sphere of block_display sand + upward particles. Rewind = stored location.",
+  "abilities": [
+    {
+      "slot": 4,
+      "id": "rewind",
+      "name": "Rewind",
+      "item": "RECOVERY_COMPASS",
+      "text": "Marks your position. Return to it any time in the next 8 s.",
+      "cost": 250,
+      "maxCharges": 1,
+      "num": {
+        "seconds": 8
+      }
+    },
+    {
+      "slot": 5,
+      "id": "hourglass_trap",
+      "name": "Hourglass Trap",
+      "item": "SAND",
+      "text": "Sand zone that slows and reveals whoever walks in.",
+      "cost": 200,
+      "maxCharges": 1,
+      "num": {
+        "radius": 3,
+        "seconds": 20,
+        "slowSeconds": 3,
+        "revealSeconds": 3
+      }
+    },
+    {
+      "slot": 6,
+      "id": "sand_veil",
+      "name": "Sand Veil",
+      "item": "SUSPICIOUS_SAND",
+      "text": "Thrown at range: a 15 s sand cloud that blocks sight. Grains rise upward.",
+      "charges": 2,
+      "rechargeKills": 0,
+      "num": {
+        "radius": 4,
+        "seconds": 15
+      }
+    },
+    {
+      "slot": 7,
+      "id": "time_tide",
+      "name": "Time Tide",
+      "item": "CLOCK",
+      "text": "Allies in a wide area: Speed I and reload x1.5 for 8 s.",
+      "ultPoints": 7,
+      "num": {
+        "radius": 12,
+        "seconds": 8,
+        "reloadFactor": 1.5
+      }
+    }
+  ]
+}

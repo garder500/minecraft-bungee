@@ -60,6 +60,7 @@ func main() {
 	}
 	app := panel.New(db, origin, controller, token)
 	app.PackFile = os.Getenv("MENU_PACK_FILE")
+	app.ValoBlockPackFile = os.Getenv("VALOBLOCK_PACK_FILE")
 	app.Skins = &panel.SkinStore{HTTP: &http.Client{Timeout: 10 * time.Second}}
 	app.Textures = &panel.TextureStore{Version: os.Getenv("MC_VERSION"), EULA: strings.EqualFold(os.Getenv("EULA"), "true"), CacheDir: filepath.Join(filepath.Dir(panel.DBPath()), "textures")}
 	go app.Textures.Ready(context.Background())

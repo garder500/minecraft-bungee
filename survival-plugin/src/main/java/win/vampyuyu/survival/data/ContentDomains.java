@@ -147,8 +147,6 @@ public final class ContentDomains {
         new Root("menu_default_zone", "world", null, List.of()),
         new Root("menu_zone", "id", null, List.of()),
         new Root("menu_sound", "event", null, List.of()),
-        new Root("menu_fairy_stat", "id", null, List.of()),
-        new Root("menu_fairy_soul", "id", null, List.of()),
         settings("menu")));
 
     public static final Domain ITEMS = new Domain("items", List.of(

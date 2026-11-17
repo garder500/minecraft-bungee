@@ -1,0 +1,101 @@
+{
+  "id": "murk",
+  "name": "Murk",
+  "role": "Weaver",
+  "roleColor": "#8fd0a0",
+  "realm": "Putrid Marshes",
+  "quote": "\"Breathe in. You will stop soon.\"",
+  "menuColor": "#1e3024",
+  "colors": {
+    "torso": "#4e5a22",
+    "trim": "#b04aa0",
+    "glow": "#c9d36a",
+    "arm": "#2a2a1a",
+    "legs": "#2a2a1a",
+    "boots": "#8a9a2e",
+    "bg": "#1e2014"
+  },
+  "face": {
+    "palette": {
+      "h": "#4e5a22",
+      "s": "#8a9a6a",
+      "w": "#c9d36a",
+      "e": "#b04aa0",
+      "m": "#2a2a1a",
+      "j": "#b04aa0"
+    },
+    "rows": [
+      "hhhhhhhh",
+      "hhhhhhhh",
+      "hssssssh",
+      "ssssssss",
+      "swessews",
+      "smmmmmms",
+      "smmjjmms",
+      "ssssssss"
+    ]
+  },
+  "skin": {
+    "value": "ewogICJ0aW1lc3RhbXAiIDogMTc5NDg3NDE3NjUwOSwKICAicHJvZmlsZUlkIiA6ICIxZmVjOTEzN2Q3ZTM0ODk3YTY5OTY0MGJkMTllMGM0MiIsCiAgInByb2ZpbGVOYW1lIiA6ICJzcGlmZnRvcGlhNiIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9iYjA4NTZiZDgxNjU5MmE1MjlhOWFmNzJmYWVmZDk2MjY4NTQ4MmVhOGMzYWE4NGJlYjQ5MjM3ZGQ4NTY3ZGQ0IgogICAgfQogIH0KfQ==",
+    "signature": "aQ8+cJ1yP0y/wJDd4JxUNzVh/1Xu1NXRt95EVFiqgVcZ1BtQshIx2QBlDNFPcSCyuJwz1y0mXPVpRKr6oPKBUJI8w6K1Ga3/PYsqkD8KVlawJJP1ymVIJThkEDDKq5zw2cTKQweNSd9RJzCF8PRY/RTC/dER3Iwbuxs37Gi3vwPK7ZsNG8xzBVxL2k6RJonk7Hz9KtLnIL0N7GhMTmihqCwoQznpsN3mRZ6farU9RZpg8l/goUNqoiQL4jGFTfYYtDXv38vD1HoYUaxfITiXsQcyyiAcfyZgnFxHM/RF7FsRhhGJnDT8TXsl1tdu94LBMwwxg5hxoICT2Li9rpoippdX7DgiRs1vuQD5pw1NSYPl2S0RsbyzGnT2kovF7ufhzuWmFlM87EoKjvBIJZ5LWdDhw+dZ0wWG3xcHH6I7O/p56H/VsyGxba5BfDS0nOrz14NndIfjsDEBXakyfKNqgl3WYupRTljzQLZnyguiIREMcxapu/fkOC2QbvJO+kPmyYBNcM12kE1ZXjtCMiqP6BrHPlC1JiqUvoo7J1+osDXy5CetzQVhfSOjyZfvmW8OFuZIEkR9nzvDdIg/A+Hvsvudues1bgaSqIrLG5jTGQOlejnSHPmMOhwftcshJqGq9hX21WmgzG6h9WzyU03vzMfshff60HRqIs6RDHHINRA=",
+    "mineskin": "c5c1dd9ad1d24994a76a97eb90ff22e2"
+  },
+  "build": "Gas = block_display green glass panes + particles. Wall line drawn from 2 placed emitters.",
+  "abilities": [
+    {
+      "slot": 4,
+      "id": "leech_pool",
+      "name": "Leech Pool",
+      "item": "SLIME_BALL",
+      "text": "Puddle: slows and drains 10 HP per second, never below 1.",
+      "cost": 150,
+      "maxCharges": 1,
+      "num": {
+        "radius": 3,
+        "seconds": 8,
+        "drain": 10
+      }
+    },
+    {
+      "slot": 5,
+      "id": "rot_cloud",
+      "name": "Rot Cloud",
+      "item": "FERMENTED_SPIDER_EYE",
+      "text": "Small poison cloud, 10 s. Blocks sight.",
+      "cost": 200,
+      "maxCharges": 1,
+      "num": {
+        "radius": 3.5,
+        "seconds": 10,
+        "dps": 6
+      }
+    },
+    {
+      "slot": 6,
+      "id": "miasma_wall",
+      "name": "Miasma Wall",
+      "item": "GREEN_STAINED_GLASS_PANE",
+      "text": "A long gas wall Murk switches on and off. Fuel refills between rounds.",
+      "charges": 1,
+      "rechargeKills": 0,
+      "num": {
+        "length": 8,
+        "fuelSeconds": 10,
+        "dps": 6
+      }
+    },
+    {
+      "slot": 7,
+      "id": "bog_tide",
+      "name": "Bog Tide",
+      "item": "MUD",
+      "text": "The marsh spreads in a cone: enemies inside are slowed and revealed to Murk.",
+      "ultPoints": 8,
+      "num": {
+        "range": 14,
+        "seconds": 8,
+        "angle": 60
+      }
+    }
+  ]
+}

@@ -115,7 +115,7 @@ final class ItemKeys {
         return create(key, 1).map(ItemStack::getMaxStackSize).orElse(64);
     }
 
-    /** Readable name for chat ("Enchanted Coal" / "Wheat"). */
+    /** Readable name for chat ("Compressed Coal" / "Wheat"). */
     String name(String key) {
         if (key == null) {
             return "?";

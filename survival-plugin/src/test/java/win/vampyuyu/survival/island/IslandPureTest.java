@@ -491,7 +491,7 @@ public class IslandPureTest {
         IslandConfig cfg = defaults();
         for (IslandConfig.TemplateCfg t : cfg.enabledTemplates()) {
             BlockPlan plan = IslandTemplates.overworld(t.id(), IslandTemplates.random(UUID.randomUUID()), t.chest(),
-                t.biome(), true);
+                t.biome());
             assertTrue(t.id() + " places blocks", plan.size() > 100);
             assertTrue(t.id() + " solid ground under the spawn", plan.solidAt(0, 0, 0));
             assertFalse(t.id() + " feet free", plan.solidAt(0, 1, 0));
@@ -502,8 +502,8 @@ public class IslandPureTest {
         }
         // deterministic for one island
         UUID id = UUID.randomUUID();
-        BlockPlan one = IslandTemplates.overworld("classic", IslandTemplates.random(id), List.of(), "", true);
-        BlockPlan two = IslandTemplates.overworld("classic", IslandTemplates.random(id), List.of(), "", true);
+        BlockPlan one = IslandTemplates.overworld("classic", IslandTemplates.random(id), List.of(), "");
+        BlockPlan two = IslandTemplates.overworld("classic", IslandTemplates.random(id), List.of(), "");
         assertEquals(one.blocks().keySet(), two.blocks().keySet());
     }
 
@@ -548,8 +548,9 @@ public class IslandPureTest {
             assertNotNull("anchor for pad " + pad.id(), full.anchor("pad:" + pad.id()));
             assertEquals(pad, HubPlan.pad(pad.id()));
         }
-        assertEquals(12, HubPlan.PADS.size());
-        for (String id : new String[] {"merchant", "archivist", "guard", "contract_hunter", "island_gate", "dungeon_gate", "rift_gate", "eight_docks"}) {
+        assertEquals(11, HubPlan.PADS.size());
+        assertNull("fairy souls are gone", HubPlan.pad("fairy_souls"));
+        for (String id : new String[] {"merchant", "archivist", "guard", "contract_hunter", "quest_master", "banker", "boss_arena", "island_gate", "dungeon_gate", "rift_gate", "eight_docks"}) {
             assertNotNull(id, HubPlan.pad(id));
         }
         for (HubNpcs.Role role : HubNpcs.ROLES) {

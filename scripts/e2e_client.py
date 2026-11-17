@@ -123,6 +123,7 @@ def stop_stale():
 ARENA_JAR = ROOT / "arena-plugin/target/nexus-arena-engine.jar"
 NETWORK_JAR = ROOT / "network-plugin/target/network-display.jar"
 SURVIVAL_JAR = ROOT / "survival-plugin/target/survival-plugin.jar"
+VALOBLOCK = False  # set by the valoblock scenario: the e2e arena is a ValoBlock arena
 WITH_SURVIVAL = False  # set by the back scenario: also load the survival plugin
 API_PORT = 8085
 API_TOKEN = "e2e-token-" + "x" * 30
@@ -145,6 +146,17 @@ ARENA = {
     "maxPlayers": 20, "discussionSeconds": 60, "voteSeconds": 30, "nightSeconds": 30,
     "werewolf": {"roles": {}, "cupidSeconds": 15, "witchSeconds": 15, "hunterSeconds": 15,
                  "ambienceEnabled": True},
+}
+
+
+# The valoblock scenario's arena: the lobby zone is the flat world, the match is played in the plugin's own vb_arena world.
+ARENA_VB = {
+    "id": "e2e", "name": "E2E ValoBlock", "worldName": "world", "preset": "valoblock",
+    "bounds": {"minX": -40, "minY": -64, "minZ": -40, "maxX": 40, "maxY": 320, "maxZ": 40},
+    "spawn": {"x": 0.5, "y": -60, "z": 0.5, "yaw": 0, "pitch": 0},
+    "allowedBreakBlocks": [], "allowedPlaceBlocks": [], "allowPvP": True, "allowChests": False,
+    "allowDoors": True, "gameMode": "ADVENTURE", "durationSeconds": 3600, "minPlayers": 1,
+    "maxPlayers": 10,
 }
 
 
@@ -174,11 +186,30 @@ def start_server(zip_path, sha1, plugin=False, pack_required=True):
         served = WORK / "pack" / "pack"
         served.mkdir(exist_ok=True)
         shutil.copy(zip_path, served / f"{sha1}.zip")
-        (data / "arenas" / "e2e.json").write_text(json.dumps(ARENA, indent=1))
+        # The second pack (guns, agents, scope): the plugin adds it over the menu pack when a player joins a ValoBlock arena.
+        valo_zip, valo_sha1 = build_pack.build(WORK / "pack", "valoblock")
+        shutil.copy(valo_zip, served / f"{valo_sha1}.zip")
+        (data / "arenas" / "e2e.json").write_text(json.dumps(ARENA_VB if VALOBLOCK else ARENA, indent=1))
         (server / "token").write_text(API_TOKEN)
-        env.update(ROLE_BRIDGE_TOKEN_FILE=str(server / "token"), SERVER_ID="survival",
+        if os.environ.get("E2E_QUICK_ACTIONS"):
+            # The ValoBlock Quick Actions datapack (the plugin writes it itself only on SERVER_ID=creative, and a datapack needs a
+            # restart): pre-write the same files so the first boot already has the dialog. Keep in step with VbQuickActions.java.
+            buttons = [("Shop", "Open the Armory (buy phase only)", "vb buy"), ("Agent", "Open the agent select (while agents are chosen)", "vb agent"),
+                       ("Map", "Open the tactical map for the ability in your hand", "vb tac"), ("Vote", "Reopen the map vote (while voting is open)", "vb vote")]
+            acts = ",".join('{"label":{"text":"%s"},"tooltip":{"text":"%s"},"width":120,"action":{"type":"minecraft:run_command","command":"%s"}}' % b for b in buttons)
+            dialog = ('{"type":"minecraft:multi_action","title":{"text":"ValoBlock"},"can_close_with_escape":true,'
+                      '"body":[{"type":"minecraft:plain_message","contents":{"text":"Quick actions for a ValoBlock match. Outside a match they only say so."}}],'
+                      '"columns":2,"actions":[' + acts + '],"exit_action":{"label":{"text":"Close"},"width":120}}')
+            dp = server / "world" / "datapacks" / "vampyuyu-valoblock-quick"
+            (dp / "data/vampyuyu/dialog").mkdir(parents=True)
+            (dp / "data/minecraft/tags/dialog").mkdir(parents=True)
+            (dp / "pack.mcmeta").write_text('{"pack":{"description":"ValoBlock quick actions","min_format":[82,0],"max_format":[1000,0]}}')
+            (dp / "data/vampyuyu/dialog/valoblock.json").write_text(dialog)
+            (dp / "data/minecraft/tags/dialog/quick_actions.json").write_text('{"values":["vampyuyu:valoblock"]}')
+        env.update(ROLE_BRIDGE_TOKEN_FILE=str(server / "token"), SERVER_ID=os.environ.get("E2E_SERVER_ID", "survival"),
                    MENU_PACK_BASE_URL=f"http://127.0.0.1:{HTTP_PORT}", MENU_PACK_REQUIRED="true" if pack_required else "false",
                    MENU_PACK_SHA1_FILE=str(WORK / "pack" / "vampyuyu-menus.sha1"),
+                   VALOBLOCK_PACK_SHA1_FILE=str(WORK / "pack" / "vampyuyu-valoblock.sha1"),
                    ROLE_BRIDGE_URL="http://127.0.0.1:9", ARENA_REDIS_HOST="127.0.0.1",
                    WEREWOLF_LOG_CONSOLE="false")
     log = open(server / "console.log", "w")
@@ -216,6 +247,11 @@ def prepare_client(tools):
     dst.mkdir()
     for name in ("instance.cfg", "mmc-pack.json"):
         shutil.copy(src / name, dst / name)
+    cfg = dst / "instance.cfg"
+    # A garbage-collected Java store path in the copied instance: point the copy at the JAVA25 one.
+    for path in re.findall(r"^JavaPath=(.*)$", cfg.read_text(), re.M):
+        if not pathlib.Path(path).exists():
+            cfg.write_text(cfg.read_text().replace("JavaPath=" + path, "JavaPath=" + java25()))
     game = dst / "minecraft"
     game.mkdir()
     (game / "options.txt").write_text("\n".join([
@@ -997,6 +1033,374 @@ def werewolf_scenario(ctx):
 
 
 
+def vb(rcon, command):
+    """A /vb command over RCON, colour codes stripped."""
+    return re.sub("\u00a7.", "", rcon.command("vb " + command)).strip()
+
+
+def valoblock_extras(ctx, rcon, map_id, failures):
+    """Combat-phase captures of the valoblock scenario: the held 3D gun (idle, firing, reloading), the combat HUD,
+    one Realm mechanic of the map (gate, root drop, wind pad) and an overview from a high point."""
+    tools, shots, env = ctx["tools"], ctx["shots"], ctx["env"]
+    xdo = tools["xdotool"]
+    cell = {"stormbreak": 5}.get(map_id, 4)
+
+    def at(col, row):  # cell centre in blocks (slot 0 of the vb_arena world)
+        return (col + 0.5) * cell, (row + 0.5) * cell
+
+    def tp(x, y, z, yaw=0, pitch=0):
+        say("tp: " + vb(rcon, f"debug tp E2EBot {x} {y} {z} {yaw} {pitch}"))
+        time.sleep(1)
+
+    def key(*k):
+        subprocess.run([xdo, *k], env=env)
+
+    say("inventory: " + rcon.command("data get entity E2EBot Inventory")[:900])
+    rcon.command("gamemode adventure E2EBot")
+    say(vb(rcon, "debug god E2EBot on"))  # the bots would kill the human within seconds
+    sx, sz = {"stormbreak": (62.5, 142.5)}.get(map_id, (50.0, 114.0))
+    # Realm mechanic
+    if map_id == "hourfall":
+        gates = [at(12, 11), at(17, 11), at(12, 18), at(17, 18)]
+        gx, gz = gates[0]
+        seen = set()
+        t0 = time.time()
+        tp(gx, 65, gz + 6, 180, 5)
+        # The Time Tide swaps every 30 s of the combat clock (server ticks), and a round is only about 90 s long: the loop may start
+        # anywhere in it, so it watches 100 s and ends early once both states of the north gate were seen. The two gates of a
+        # pair must always agree (a split pair means a hole in a wall or a gate that was held open), at every height of the wall.
+        while time.time() - t0 < 100 and len(seen) < 2:
+            states = ["AIR" if "AIR" in vb(rcon, f"debug block {int(x)} 66 {int(z)}") else "WALL" for x, z in gates]
+            say(f"t+{time.time() - t0:.0f}s gates (12,11) (17,11) (12,18) (17,18): {states} | {vb(rcon, 'status')[:70]} | {vb(rcon, 'debug where E2EBot')[:60]}")
+            for pair, (a_, b_) in enumerate([(0, 1), (2, 3)]):
+                if states[a_] != states[b_]:
+                    time.sleep(1)  # a swap may have landed between the two reads: read the pair again before blaming the map
+                    again = ["AIR" if "AIR" in vb(rcon, f"debug block {int(gates[g][0])} 66 {int(gates[g][1])}") else "WALL" for g in (a_, b_)]
+                    if again[0] == again[1]:
+                        continue
+                    heights = [["AIR" if "AIR" in vb(rcon, f"debug block {int(gates[g][0])} {y} {int(gates[g][1])}") else "WALL" for y in (65, 66, 67)] for g in (a_, b_)]
+                    failures.append(f"hourfall: the gates of the {'north' if pair == 0 else 'south'} pair disagree: {states}, heights 65-67 of each: {heights}")
+                    seen = {"open", "closed"}  # reported: stop watching
+                    break
+            if len(seen) == 2:
+                break
+            name = "open" if states[0] == "AIR" else "closed"
+            if name not in seen:
+                time.sleep(1.5)
+                shot(tools, shots / f"vb-20-gate-{name}.png")
+                seen.add(name)
+            time.sleep(2)
+        if len(seen) < 2:
+            failures.append(f"hourfall: the gate (12,11) was only seen {seen} in 100 s: {vb(rcon, 'status')}")
+    elif map_id == "rootvault":
+        rx, rz = at(8, 7)
+        tp(rx, 71.3, rz - 3, 0, 20)
+        shot(tools, shots / "vb-20-rootdrop-branch.png")  # on the canopy branch, before the hole
+        vb(rcon, f"debug tp E2EBot {rx} 71.3 {rz} 0 20")
+        t0 = time.time()
+        for i in range(8):
+            time.sleep(0.25)
+            say(f"drop t+{time.time() - t0:.1f}s: " + vb(rcon, "debug where E2EBot"))
+            if i == 0:
+                say("effects mid-fall: " + rcon.command("data get entity E2EBot active_effects").strip()[:300])
+            if i in (1, 3, 5):
+                shot(tools, shots / f"vb-20-rootdrop-{i}.png")
+        say("effects: " + rcon.command("data get entity E2EBot active_effects").strip()[:300])
+    elif map_id == "stormbreak":
+        px, pz = at(12, 4)
+        tp(px, 65, pz, 0, 20)
+        time.sleep(1)
+        shot(tools, shots / "vb-20-windpad-before.png")
+        subprocess.run([xdo, "keydown", "shift"], env=env)
+        for i in range(4):
+            time.sleep(0.6)
+            say(f"flight {i}: " + vb(rcon, "debug where E2EBot"))
+            shot(tools, shots / f"vb-20-windpad-{i}.png")
+        subprocess.run([xdo, "keyup", "shift"], env=env)
+    # Gun in first person: look at a wall at the spawn, hotbar slot 1 then 2.
+    for slot in ("1", "2", "3"):
+        tp(sx, 65, sz, 180, 0)
+        key("key", slot)
+        time.sleep(2)
+        shot(tools, shots / f"vb-10-gun-slot{slot}-idle.png")
+    tp(sx, 65, sz, 180, 0)
+    key("key", "2")
+    time.sleep(1)
+    key("mousemove", "427", "240")
+    key("click", "3")  # right-click: fire
+    shot(tools, shots / "vb-11-gun-firing.png")
+    time.sleep(0.4)
+    shot(tools, shots / "vb-11-gun-after-shot.png")
+    time.sleep(1)
+    key("key", "f")  # reload
+    time.sleep(0.5)
+    shot(tools, shots / "vb-12-gun-reloading.png")
+    time.sleep(3)
+    shot(tools, shots / "vb-13-hud-combat.png")
+    say("where: " + vb(rcon, "debug where E2EBot"))
+    # Overview in combat: spectator, high above the south half, looking north.
+    size = 150 if map_id == "stormbreak" else 120
+    m = size / 2
+    rcon.command("gamemode spectator E2EBot")
+    tp(m, size * 0.7, size - 6, 180, 40)
+    time.sleep(12)
+    shot(tools, shots / "vb-31-overview-combat.png")
+    tp(0, size * 0.7, m, -90, 45)
+    time.sleep(12)
+    shot(tools, shots / "vb-32-overview-side.png")
+    rcon.command("gamemode adventure E2EBot")
+    tp(sx, 65, sz, 180, 0)
+
+
+def valoblock_overview(ctx, rcon, size=120):
+    """Spectator shots from a high point (buy phase: nothing fights, no HUD)."""
+    tools, shots = ctx["tools"], ctx["shots"]
+
+    def tp(x, y, z, yaw, pitch):
+        say("tp: " + vb(rcon, f"debug tp E2EBot {x} {y} {z} {yaw} {pitch}"))
+
+    # Overview from a high point: spectator (no HUD), looking down at the middle of the map.
+    rcon.command("gamemode spectator E2EBot")
+    m = size / 2
+    tp(m, size * 0.7, 6, 0, 40)
+    time.sleep(12)  # the software client loads far chunks slowly
+    shot(tools, shots / "vb-30-overview-a.png")
+    rcon.command("gamemode adventure E2EBot")
+
+
+def valoblock_rewind(ctx, rcon, failures):
+    """Sahrin's Rewind with real clicks: the first right-click marks the position, a second one within 8 s must
+    teleport back (the owner's bug: the mark appeared but the return never happened)."""
+    tools, env = ctx["tools"], ctx["env"]
+    xdo = tools["xdotool"]
+    rcon.command("gamemode adventure E2EBot")
+    vb(rcon, "debug god E2EBot on")
+    if os.environ.get("E2E_VB_AGENT", "sahrin") == "murk":
+        return valoblock_wall(ctx, rcon, failures)
+
+    def where():
+        out = vb(rcon, "debug where E2EBot")
+        m = re.search(r"where (\S+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+)", out)
+        return (float(m.group(2)), float(m.group(3)), float(m.group(4))) if m else None
+
+    subprocess.run([xdo, "mousemove", "640", "360"], env=env)
+    subprocess.run([xdo, "key", "4"], env=env)
+
+    def trial(name, hold, wait, away_x):
+        say(f"{name}: charge " + vb(rcon, "debug charge E2EBot 4"))
+        vb(rcon, "debug tp E2EBot 50 65 114 180 0")
+        time.sleep(2)
+        start = where()
+        subprocess.run([xdo, "mousedown", "3"], env=env)  # mark (hold = seconds the button stays down)
+        time.sleep(hold)
+        subprocess.run([xdo, "mouseup", "3"], env=env)
+        time.sleep(wait)
+        vb(rcon, f"debug tp E2EBot {away_x} 65 114 180 0")
+        time.sleep(2)
+        away = where()
+        subprocess.run([xdo, "click", "3"], env=env)  # return
+        time.sleep(2)
+        back = where()
+        say(f"rewind {name}: start={start} away={away} after the second click={back}")
+        if not (start and back and abs(back[0] - start[0]) < 1.5 and abs(back[2] - start[2]) < 1.5):
+            failures.append(f"Rewind {name} did not bring the player back: start={start} away={away} back={back}")
+
+    trial("quick click", 0.05, 0.5, 60)
+    trial("click then 4 s", 0.05, 2, 62)
+    trial("slow click held 0.5 s", 0.5, 0.5, 64)
+
+
+def valoblock_wall(ctx, rcon, failures):
+    """Murk's Miasma Wall (signature, slot 6 = hotbar key 6): placed at two map spots, then a right-click switches it."""
+    xdo, env = ctx["tools"]["xdotool"], ctx["env"]
+    vb(rcon, "debug tp E2EBot 50 65 114 180 0")
+    time.sleep(2)
+    subprocess.run([xdo, "mousemove", "640", "360"], env=env)
+    subprocess.run([xdo, "key", "6"], env=env)
+    say("cast: " + vb(rcon, "debug cast E2EBot 6 46 110 54 110"))
+    time.sleep(1.5)
+    seen = [vb(rcon, "debug wall E2EBot")]
+    for name, hold in (("click", 0.05), ("click", 0.05), ("held 0.5 s", 0.5)):
+        time.sleep(1)
+        subprocess.run([xdo, "mousedown", "3"], env=env)
+        time.sleep(hold)
+        subprocess.run([xdo, "mouseup", "3"], env=env)
+        time.sleep(1)
+        seen.append(vb(rcon, "debug wall E2EBot"))
+        say(f"wall after {name}: {seen[-1]}")
+    say(f"wall states: {seen}")
+    if seen != ["wall on", "wall off", "wall on", "wall off"]:
+        failures.append(f"Miasma Wall did not switch exactly once per click: {seen}")
+
+
+def valoblock_scenario(ctx):
+    """A ValoBlock practice match on the Hourfall greybox: 1 human, 9 bots, driven by /vb debug commands.
+    Screenshots: agent select, buy phase, Armory, combat HUD, the next round after a death (respawn).
+    The checks use the server only; the screenshots must be looked at by a person."""
+    tools, shots, client_log, failures, server = (ctx[k] for k in
+                                                  ("tools", "shots", "client_log", "failures", "server"))
+    for _ in range(60):
+        try:
+            state = api("GET", "/arenas")
+            break
+        except Exception:
+            time.sleep(2)
+    else:
+        failures.append("the plugin's private API never answered")
+        return
+    if [a["config"]["id"] for a in state["arenas"]] != ["e2e"]:
+        failures.append(f"arena e2e not loaded: {state['arenas']}")
+        return
+    me = next(p["uuid"] for p in state["onlinePlayers"] if p["name"] == "E2EBot")
+    rcon = Rcon()
+    say("maps: " + vb(rcon, "map list").replace("\n", " | "))
+    # The next map is random (a vote) among the three themed maps: the default checks below are Hourfall's (spawn barrier row, corner
+    # wall, Time Tide gates), so Hourfall is pinned; --rules map=stormbreak plays another map and skips them.
+    say(vb(rcon, "map use " + (ctx["rules"].split("=", 1)[1] if ctx.get("rules", "").startswith("map=") else "hourfall")))
+    reloads = client_log.read_text(errors="replace").count("Reloading ResourceManager")
+    api("POST", "/arenas/action", {"action": "arena-join", "arenaId": "e2e", "uuid": me})
+    # Joining the arena adds the second pack (ValoBlock guns, agents, scope): accept its prompt, wait for the reload.
+    for _ in range(40):
+        if client_log.read_text(errors="replace").count("Reloading ResourceManager") > reloads:
+            break
+        subprocess.run([tools["xdotool"], "mousemove", "485", "445", "click", "1"], env=ctx["env"])
+        time.sleep(3)
+    else:
+        failures.append("the client never reloaded for the ValoBlock pack (second pack not offered or not accepted)")
+    time.sleep(4)
+    out = vb(rcon, "start")
+    say("vb start: " + out)
+    if "started" not in out:
+        failures.append("vb start: " + out)
+        return
+    time.sleep(8)
+    shot(tools, shots / "vb-01-agent-select.png")
+    say("where: " + vb(rcon, "debug where E2EBot"))
+    out = vb(rcon, "debug where E2EBot")
+    if "vb_arena" not in out:
+        failures.append("the human is not in the vb_arena world at the start: " + out)
+    # A known agent: the Rewind check needs Sahrin, the Miasma Wall check Murk (E2E_VB_AGENT=murk)
+    say("lock: " + vb(rcon, "debug agent E2EBot " + os.environ.get("E2E_VB_AGENT", "sahrin")))
+    vb(rcon, "debug skip")  # agent select -> buy (unlocked players get a random agent, bots fill)
+    time.sleep(6)
+    if os.environ.get("E2E_VB_AGENT", "sahrin") == "sahrin":
+        say("buy rewind: " + vb(rcon, "debug buy E2EBot 4"))
+    say("status: " + vb(rcon, "status"))
+    # Hourfall: the Seedbearer barrier is the row z 104-107, x 40-79 (the markers of the other maps differ).
+    if not ctx.get("rules"):
+        out = vb(rcon, "debug block 60 65 106")
+        say("barrier at the Seedbearer exit in the buy phase: " + out)
+        if "BARRIER" not in out:
+            failures.append("no spawn barrier in the buy phase: " + out)
+        out = vb(rcon, "debug block 0 65 0")
+        if out.split()[-1] in ("AIR", "STONE"):
+            failures.append("the corner cell of the greybox is not a wall: " + out)
+    shot(tools, shots / "vb-02-buy.png")
+    say(vb(rcon, "debug armory E2EBot"))
+    time.sleep(3)
+    shot(tools, shots / "vb-03-armory.png")
+    subprocess.run([tools["xdotool"], "key", "Escape"], env=ctx["env"])
+    time.sleep(1)
+    valoblock_overview(ctx, rcon, 150 if ctx.get("rules") == "map=stormbreak" else 120)
+    vb(rcon, "debug tp E2EBot %s 65 %s" % ((62.5, 142.5) if ctx.get("rules") == "map=stormbreak" else (50.0, 114.0)))
+    time.sleep(2)
+    vb(rcon, "debug skip")  # buy -> combat
+    time.sleep(8)
+    if not ctx.get("rules") and "BARRIER" in vb(rcon, "debug block 60 65 106"):
+        failures.append("the spawn barrier is still up in combat")
+    mannequins = rcon.command("execute if entity @e[type=minecraft:mannequin]")
+    say("bot bodies: " + mannequins.strip())
+    if "count: 9" not in mannequins.lower():
+        failures.append("expected 9 bot bodies (1 human, 5v5): " + mannequins.strip())
+    shot(tools, shots / "vb-04-combat.png")
+    # A notice must not touch the glyph HUD (it is a subtitle), and each bot carries one tag.
+    vb(rcon, "debug god E2EBot on")  # the bots would kill the human before the close-ups
+    rcon.command("gamemode adventure E2EBot")
+    say(vb(rcon, "debug notice E2EBot Ability not ready: 3 s"))
+    time.sleep(0.8)
+    shot(tools, shots / "vb-14-hud-notice.png")
+    say("tags: " + rcon.command("execute if entity @e[type=minecraft:text_display]").strip())
+    # Each bot up close: an ally shows one readable tag, an enemy none (the tags are per-viewer text displays).
+    say("tag visibility per bot:\n" + vb(rcon, "debug tags E2EBot"))
+    rcon.command("tag @e[type=minecraft:mannequin] remove tagshot")
+    for i in range(6):
+        pick = "@e[type=minecraft:mannequin,tag=!tagshot,limit=1,sort=nearest]"
+        bx = rcon.command(f"data get entity {pick} Pos").strip()
+        nums = [float(v) for v in re.findall(r"(-?[0-9.]+)d", bx)]
+        if len(nums) != 3:
+            break
+        say(f"bot {i}: {bx}")
+        rcon.command(f"tag {pick} add tagshot")
+        vb(rcon, f"debug tp E2EBot {nums[0]} {nums[1] + 0.2} {nums[2] + 2.5} 180 0")
+        time.sleep(1.5)
+        shot(tools, shots / f"vb-15-bot-tag-{i}.png")
+    valoblock_rewind(ctx, rcon, failures)
+    valoblock_extras(ctx, rcon, ctx.get("rules", "map=hourfall").split("=", 1)[-1] or "hourfall", failures)
+    time.sleep(10)
+    shot(tools, shots / "vb-05-combat-later.png")
+    say("where: " + vb(rcon, "debug where E2EBot"))
+    # Death and respawn: the human dies, the round ends, the next round puts them back on a spawn, alive.
+    vb(rcon, "debug kill E2EBot")
+    rcon.command("gamemode spectator E2EBot")  # what the engine / weapon service does to a dead player
+    time.sleep(2)
+    say("dead: " + vb(rcon, "debug where E2EBot"))
+    shot(tools, shots / "vb-06-dead.png")
+    vb(rcon, "debug win b")
+    time.sleep(1)
+    vb(rcon, "debug skip")  # round end -> next buy phase
+    for _ in range(8):  # the respawn (teleport, alive, gamemode) lands a little after the phase starts: poll instead of one fixed wait
+        time.sleep(2)
+        out = vb(rcon, "debug where E2EBot")
+        if "alive=true" in out and "mode=ADVENTURE" in out:
+            break
+    say("after the next round started: " + out)
+    if "alive=true" not in out or "mode=ADVENTURE" not in out or "hp=100" not in out or "vb_arena" not in out:
+        failures.append("the human was not respawned for the next round: " + out)
+    shot(tools, shots / "vb-07-next-round.png")
+    say(vb(rcon, "stop"))
+    for _ in range(40):
+        if api("GET", "/arenas")["arenas"][0]["phase"] == "WAITING":
+            break
+        time.sleep(1)
+    else:
+        failures.append("the arena did not return to WAITING after /vb stop")
+    time.sleep(8)
+    now = client_log.read_text(errors="replace").count("Reloading ResourceManager")
+    say(f"client resource reloads: before join {reloads}, after the stop {now}")
+    if now < reloads + 2:
+        failures.append("the client did not reload again after the stop (ValoBlock pack not removed?)")
+    out = rcon.command("execute if entity @e[type=minecraft:mannequin]")
+    if "passed" in out.lower():
+        failures.append("bot bodies are still in the world after the stop")
+    back = player_state(rcon)
+    dimension = rcon.command("data get entity E2EBot Dimension")
+    say(f"after the stop: {back} {dimension.strip()}")
+    if "vb_arena" in dimension:
+        failures.append("the human was not sent back out of vb_arena after the stop")
+    shot(tools, shots / "vb-08-after-stop.png")
+    console = (server / "console.log").read_text(errors="replace")
+    for line in console.splitlines():
+        if ("win.vampyuyu" in line or "NexusArena" in line) and (
+                "Exception" in line or "ERROR" in line or "SEVERE" in line):
+            failures.append("server: " + line.strip()[:200])
+    for needle in FATAL:
+        if needle in client_log.read_text(errors="replace"):
+            failures.append(f"client log contains '{needle}'")
+
+
+def hold_scenario(ctx):
+    """Screenshot tour: join, then keep the server and client alive (and the e2e lock) until .e2e/tour-stop exists.
+    A helper script drives them meanwhile (Rcon, xdotool, shot)."""
+    stop = WORK / "tour-stop"
+    stop.unlink(missing_ok=True)
+    (WORK / "tour-ready").write_text("ready")
+    say("hold: ready, waiting for " + str(stop))
+    deadline = time.time() + 4 * 3600
+    while not stop.exists() and time.time() < deadline:
+        time.sleep(2)
+    (WORK / "tour-ready").unlink(missing_ok=True)
+
+
 def dev_server():
     """Server only (arena + network jars, JDWP open): the target of scripts/hotswap.py. No client, no pack check."""
     import fcntl
@@ -1705,6 +2109,47 @@ def tools_scenario(ctx):
         failures.append(f"a Void Bow arrow dealt {dealt} (expected about 180, vanilla would be about 6-9)")
 
 
+def imported_scenario(ctx):
+    """The hand-imported items that became 3D: the five main swords, the five pickaxes and the five ores, each held
+    (first person), then in the inventory (the flat sprite) and in third person."""
+    tools, env, shots = (ctx[k] for k in ("tools", "env", "shots"))
+    xdo, rcon = tools["xdotool"], Rcon()
+    rcon.command("op E2EBot")
+    rcon.command("gamemode creative E2EBot")
+    groups = {
+        "sword": ["weapon/bronze_cleaver", "weapon/rimeblade", "weapon/ember_sword", "weapon/void_sword", "weapon/starcore_sword"],
+        "pick": [f"tool/{t}_pick" for t in ("bronze", "rime", "ember", "void", "starcore")],
+        "ore": ["ore/bronzite", "ore/frostium", "ore/sunstone", "ore/voidglass", "ore/starcore"],
+        # held blocks: the machines against a vanilla stone and furnace (a vanilla block is the size reference)
+        "machine": ["minecraft:stone", "forge/forge", "machine/solar_panel", "machine/miner_1", "minecraft:furnace"],
+    }
+    only = os.environ.get("E2E_GROUPS")
+    for group, models in groups.items():
+        if only and group not in only.split(","):
+            continue
+        rcon.command("clear E2EBot")
+        for i, m in enumerate(models):
+            if m.startswith("minecraft:"):
+                rcon.command(f"item replace entity E2EBot hotbar.{i} with {m}")
+            else:
+                rcon.command(f'item replace entity E2EBot hotbar.{i} with minecraft:iron_sword[item_model="vampyuyu:{m}"]')
+        time.sleep(3)
+        for i, m in enumerate(models):
+            subprocess.run([xdo, "key", str(i + 1)], env=env)
+            time.sleep(1.5)
+            shot(tools, shots / f"im-{group}-{i + 1}-{m.replace(":", "/").split("/")[-1]}.png")
+        subprocess.run([xdo, "key", "e"], env=env)
+        time.sleep(2)
+        shot(tools, shots / f"im-{group}-inventory.png")
+        subprocess.run([xdo, "key", "Escape"], env=env)
+        time.sleep(1)
+        subprocess.run([xdo, "key", "F5", "F5"], env=env)
+        time.sleep(2)
+        shot(tools, shots / f"im-{group}-third-person.png")
+        subprocess.run([xdo, "key", "F5"], env=env)
+        time.sleep(1)
+
+
 def swords_scenario(ctx):
     """The two weapons and the six skins as real 3D box models: each one held in first person, then the inventory."""
     tools, env, shots = (ctx[k] for k in ("tools", "env", "shots"))
@@ -1720,7 +2165,7 @@ def swords_scenario(ctx):
     for i, m in enumerate(models):
         subprocess.run([xdo, "key", str(i + 1)], env=env)
         time.sleep(1.5)
-        shot(tools, shots / f"sw-{i + 1}-{m.split('/')[1]}.png")
+        shot(tools, shots / f"sw-{i + 1}-{m.replace(":", "/").split("/")[-1]}.png")
     subprocess.run([xdo, "key", "e"], env=env)
     time.sleep(2)
     shot(tools, shots / "sw-9-inventory.png")
@@ -1788,6 +2233,164 @@ def swords_scenario(ctx):
         rcon.command("item replace entity E2EBot armor.legs with minecraft:air")
         rcon.command("item replace entity E2EBot armor.feet with minecraft:air")
         rcon.command("clear E2EBot")
+    subprocess.run([xdo, "key", "F1"], env=env)
+
+
+def armorwings_scenario(ctx):
+    """Every Skyblock armor set and every Wings tier worn, in third person (front, back, three-quarter side), the
+    Wings standing and gliding, plus a first-person shot with the Wings on. Shots: aw-*.png (armor) and ww-*.png."""
+    import math
+    tools, env, shots, failures = (ctx[k] for k in ("tools", "env", "shots", "failures"))
+    xdo, rcon = tools["xdotool"], Rcon()
+    state = {"view": 0}  # 0 first person, 1 behind, 2 front (F5 cycles 0 -> 1 -> 2 -> 0)
+
+    def view(want):
+        while state["view"] != want:
+            subprocess.run([xdo, "key", "F5"], env=env)
+            state["view"] = (state["view"] + 1) % 3
+            time.sleep(0.4)
+
+    def as_bot(text):
+        return rcon.command("execute as E2EBot at E2EBot run " + text)
+
+    def jump():  # a real key press lasting a few ticks (a bare "key" is too short for the client to see)
+        subprocess.run([xdo, "keydown", "space"], env=env)
+        time.sleep(0.2)
+        subprocess.run([xdo, "keyup", "space"], env=env)
+
+    def put(x, y, z, yaw, pitch=0):
+        as_bot(f"tp @s {x} {y} {z} {yaw} {pitch}")
+
+    rcon.command("op E2EBot")
+    rcon.command("gamemode survival E2EBot")
+    rcon.command("gamerule spawn_mobs false")
+    rcon.command("kill @e[type=slime]")
+    subprocess.run([xdo, "key", "slash"], env=env)
+    time.sleep(.5)
+    subprocess.run([xdo, "type", "--delay", "35", "menu skyblock"], env=env)
+    subprocess.run([xdo, "key", "Return"], env=env)
+    for _ in range(150):
+        if "sb_world" in rcon.command("data get entity E2EBot Dimension"):
+            break
+        time.sleep(1)
+    else:
+        failures.append("never reached sb_world")
+        return
+    time.sleep(8)
+    pos = player_state(rcon)["pos"]
+    cx, y, cz = math.floor(pos[0]) + 20, math.floor(pos[1]), math.floor(pos[2])
+    as_bot(f"fill {cx-12} {y-1} {cz-12} {cx+12} {y-1} {cz+12} smooth_sandstone")
+    as_bot(f"fill {cx-12} {y} {cz-12} {cx+12} {y+6} {cz+12} air")
+    rcon.command("time set noon")
+    rcon.command("weather clear")
+    rcon.command("clear E2EBot")
+    subprocess.run([xdo, "key", "F1"], env=env)  # no HUD, no chat
+    time.sleep(1)
+
+    def clear_worn():
+        for slot in ("head", "chest", "legs", "feet"):
+            rcon.command(f"item replace entity E2EBot armor.{slot} with minecraft:air")
+        rcon.command("clear E2EBot")
+
+    def three_views(prefix):
+        """Front, back, then the three-quarter side (the head turned ~70 degrees from the body)."""
+        put(cx + .5, y, cz + .5, 0)
+        time.sleep(2.5)
+        view(2)
+        time.sleep(1)
+        shot(tools, shots / f"{prefix}-front.png")
+        view(1)
+        time.sleep(1)
+        shot(tools, shots / f"{prefix}-back.png")
+        put(cx + .5, y, cz + .5, 70)
+        time.sleep(0.35)
+        shot(tools, shots / f"{prefix}-side.png")
+        put(cx + .5, y, cz + .5, 0)
+        time.sleep(1)
+
+    # 1. armor sets
+    only = os.environ.get("ARMORWINGS_ONLY", "")  # "armor" or "wings" to run half of it
+    for tier in () if only == "wings" else ("bronze", "ember", "rime", "void", "starcore", "cinder_starcore", "grove_starcore", "frost_starcore"):
+        clear_worn()
+        for slot in ("helmet", "chestplate", "leggings", "boots"):
+            rcon.command(f"sbgive {tier}_{slot} 1 E2EBot")
+        for source, target in ((0, "head"), (1, "chest"), (2, "legs"), (3, "feet")):
+            rcon.command(f"item replace entity E2EBot armor.{target} from entity E2EBot container.{source}")
+        for source in range(4):  # nothing left in the hand
+            rcon.command(f"item replace entity E2EBot container.{source} with minecraft:air")
+        for slot in ("head", "chest", "legs", "feet"):  # the RCON reply of a full inventory dump is cut, ask per slot
+            if "passed" not in rcon.command(f"execute if items entity E2EBot armor.{slot} *").lower():
+                failures.append(f"{tier}: nothing worn in armor.{slot}")
+        three_views(f"aw-{tier}")
+    clear_worn()
+
+    # 2. wings, one pair per tier (levels 1, 3, 5, 7, 9)
+    levels = [int(v) for v in os.environ.get("ARMORWINGS_LEVELS", "1,3,5,7,9").split(",")]
+    for tier, level in [((lv + 1) // 2, lv) for lv in ([] if only == "armor" else levels)]:
+        clear_worn()
+        say(rcon.command(f"wings give E2EBot {level}").strip())
+        time.sleep(1)
+        inv = rcon.command("data get entity E2EBot Inventory")
+        say(f"wings tier {tier}: inventory={inv.strip()[:300]}")
+        if "wings" not in inv.lower() and "elytra" not in inv.lower():
+            failures.append(f"no wings after /wings give level {level}")
+        say("equip: " + rcon.command("item replace entity E2EBot armor.chest from entity E2EBot container.0").strip()[:200])
+        time.sleep(1)
+        worn = rcon.command("execute if items entity E2EBot armor.chest minecraft:elytra").strip()
+        say("chest slot after the command: " + worn[:200] + " | slot 0: "
+            + rcon.command("execute if items entity E2EBot container.0 minecraft:elytra").strip()[:80])
+        if "passed" not in worn.lower():  # like a player: hold them and right-click
+            view(0)
+            subprocess.run([xdo, "key", "1"], env=env)
+            time.sleep(0.5)
+            subprocess.run([xdo, "click", "3"], env=env)
+            time.sleep(1)
+            worn = rcon.command("execute if items entity E2EBot armor.chest minecraft:elytra").strip()
+            say("chest slot after the right-click: " + worn[:200])
+        if "passed" not in worn.lower():
+            failures.append(f"tier {tier}: the Wings are not in the chest slot")
+        rcon.command("effect give E2EBot resistance 999 6 true")  # a failed glide must not end in a death screen
+        say("wings info: " + re.sub(r"§.", "", rcon.command("wings info E2EBot")).strip()[:600])
+        put(cx + .5, y, cz + .5, 0)
+        time.sleep(3)
+        if tier == 1:
+            view(0)
+            shot(tools, shots / "ww-first-person-standing.png")
+        three_views(f"ww-t{tier}-stand")
+        # gliding: drop from high above, press jump once in the air to open the wings
+        for name, yaw, vw in (("back", 0, 1), ("side", 70, 1), ("front", 0, 2)):
+            put(cx + .5, y + 90, cz + .5, 0, 8)
+            time.sleep(0.4)
+            view(vw)
+            if name == "side":
+                time.sleep(1.2)
+                put(cx + .5, y + 88, cz + .5, 0, 8)
+                time.sleep(0.8)
+            time.sleep(0.8)
+            jump()
+            time.sleep(1.5)
+            if name == "side":
+                as_bot("tp @s ~ ~ ~ 70 8")
+                time.sleep(0.3)
+            fall = rcon.command("data get entity E2EBot FallFlying").strip()
+            say(f"wings tier {tier} glide {name}: FallFlying -> {fall}")
+            if "1b" not in fall:
+                failures.append(f"tier {tier} {name}: the bot is not gliding ({fall})")
+            shot(tools, shots / f"ww-t{tier}-glide-{name}.png")
+            time.sleep(0.6)
+            shot(tools, shots / f"ww-t{tier}-glide-{name}-b.png")  # another flap phase
+        put(cx + .5, y, cz + .5, 0)
+        time.sleep(2)
+        if tier == 5:
+            put(cx + .5, y + 90, cz + .5, 0, 8)
+            time.sleep(1.2)
+            view(0)
+            jump()
+            time.sleep(1.5)
+            shot(tools, shots / "ww-first-person-glide.png")
+            put(cx + .5, y, cz + .5, 0)
+            time.sleep(2)
+    view(0)
     subprocess.run([xdo, "key", "F1"], env=env)
 
 
@@ -2260,7 +2863,7 @@ def bosses_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "dungeon", "start", "craft", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock", "vbhold", "sbhold", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -2268,8 +2871,9 @@ def main():
     args = ap.parse_args()
     if args.scenario == "dev":
         return dev_server()
-    global WITH_SURVIVAL
-    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "dungeon", "start", "craft")
+    global WITH_SURVIVAL, VALOBLOCK
+    VALOBLOCK = args.scenario in ("valoblock", "vbhold")
+    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "sbhold")
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
@@ -2292,7 +2896,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "dungeon", "start", "craft"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock", "vbhold", "sbhold"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -2323,7 +2927,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "dungeon", "start", "craft"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock", "vbhold", "sbhold"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -2360,6 +2964,8 @@ def main():
             back_scenario(ctx)
         elif args.scenario == "skyblock":
             skyblock_scenario(ctx)
+        elif args.scenario == "imported":
+            imported_scenario(ctx)
         elif args.scenario == "quarry":
             quarry_scenario(ctx)
         elif args.scenario == "progress":
@@ -2368,6 +2974,8 @@ def main():
             bosses_scenario(ctx)
         elif args.scenario == "swords":
             swords_scenario(ctx)
+        elif args.scenario == "armorwings":
+            armorwings_scenario(ctx)
         elif args.scenario == "tools":
             tools_scenario(ctx)
         elif args.scenario == "dungeon":
@@ -2376,6 +2984,10 @@ def main():
             start_scenario(ctx)
         elif args.scenario == "craft":
             craft_scenario(ctx)
+        elif args.scenario == "valoblock":
+            valoblock_scenario(ctx)
+        elif args.scenario in ("vbhold", "sbhold"):
+            hold_scenario(ctx)
         else:
             shader_scenario(ctx)
     finally:

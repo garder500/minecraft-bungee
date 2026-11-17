@@ -32,6 +32,7 @@ public final class FeatureManager {
                 continue;
             }
             Core.Mark mark = core.mark();
+            core.items().currentOwner(id);
             try {
                 feature.enable(core);
                 running.add(feature);
@@ -46,6 +47,7 @@ public final class FeatureManager {
                 log.log(Level.SEVERE, "Feature '" + id + "' failed to enable and was skipped", t);
             }
         }
+        core.items().currentOwner("core");
     }
 
     public void disableAll() {

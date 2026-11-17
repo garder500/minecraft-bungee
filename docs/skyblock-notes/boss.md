@@ -29,8 +29,8 @@ under `vampyuyu:boss/<id>`.
 * **Voidwyrm**: every participant with a damage share of at least 5 percent (`loot.wings-min-share`) gets
   `WingsApi.grantOnce(player, "boss:voidwyrm")`, a Wing Core, and the kill is announced. A participant who is offline at
   the kill gets the Wings, the combat XP, the kill count and the pity update at their next login (`BossData.pending*`).
-* **Slayers** (`/slayer`): Revenant Horror (zombies), Tarantula Broodfather (spiders), Sven Packmaster (wolves),
-  Voidgloom Seraph (endermen, End only), Demonlord Inferno (blazes, Nether only), tiers I-V. Pay coins, kill matching
+* **Slayers** (`/slayer`): The Unrotting (zombies), The Great Spinner (spiders), The Gaunt Alpha (wolves),
+  The Hollow Walker (endermen, End only), The Furnace Tender (blazes, Nether only), tiers I-V. Pay coins, kill matching
   mobs to fill the quest bar, then the personal boss spawns near you (only the owner can see and hurt it, one per owner).
   Death of the owner, leaving (quit, `/hub`), the time limit, or the boss vanishing (idle despawn, chunk unloaded)
   after the owner hurt it fails the quest (no refund). A boss that vanishes before any damage, a restart, a world unload
@@ -143,7 +143,7 @@ take the boss away while players walk to it.
 
 * `StatsApi` should keep (or accept) modifiers set with `addModifier(uuid, "slayer", ...)` for players who are online; perks are re-applied on join and after each slayer level up.
 * The altar follows the island feature's documented convention (`cellX * cell-size + 0.5`, `island-y + 1`); the hub spots
-  assume the island feature's hub (spawn pad at 0,14, plaza radius 26 around 0,0) and use `y: -999` offsets from the world
+  assume the island feature's hub (spawn pad at 0,14; the hub is now the Aethelgard fragment of `hub.md`, not a plaza) and use `y: -999` offsets from the world
   spawn. An `IslandApi.dragonAltar(...)` / hub pad accessor in `api/` would replace both conventions.
 * A failure callback for dungeons: only a kill is observable (`BossKillEvent`). A `BossEndEvent(bossId, reason, ledger)`
   in `api/event` would let the dungeon feature tell a wipe from a hang. Until then `crypt_lord` has radius 48, idle
@@ -193,7 +193,7 @@ take the boss away while players walk to it.
 * Slayer progress and summon-item mob drops ignore farmable sources (`SpawnSources`: spawners, spawn eggs, breeding,
   built golems/snowmen/withers, infection, cure, eggs, slime splits); mob drops never use snow golems, iron golems or
   withers. Not verified in game that Paper reports these reasons for every farm design.
-* Summon items of the Frost Revenant, Matriarch and Leviathan work only in `sb_world` (islands), not the hub, so nobody can
+* Summon items of the Boreal Watcher, Matriarch and Leviathan work only in `sb_world` (islands), not the hub, so nobody can
   lock pearls and building in the hub; edit `summon.worlds` to change it.
 * No custom sounds or translated names (pack rules): vanilla sounds only.
 * Slayers run only in island worlds (`sb_world`, `sb_nether`, `sb_end`); `sb_hub` was removed from `slayers.*.worlds` (design principle, docs/skyblock-design.md section 13). World boss spots stay on the hub plaza (special event).

@@ -1,0 +1,43 @@
+{
+  "_note": "Bot levels, buy rules and movement. reactionMs is from the design (Recruit 450, Veteran 300, Elite 200); every aimErrorDeg, recoilControl and number under move/combat is an invented starting value: tune here.",
+  "defaultLevel": "veteran",
+  "levels": {
+    "recruit": {"reactionMs": 450, "aimErrorDeg": 5.0, "recoilControl": 0.4},
+    "veteran": {"reactionMs": 300, "aimErrorDeg": 2.6, "recoilControl": 0.7},
+    "elite": {"reactionMs": 200, "aimErrorDeg": 1.2, "recoilControl": 0.9}
+  },
+  "buy": {
+    "fullBuyAt": 3900,
+    "primaryOrder": ["flux_rifle", "bronzite_carbine", "mistral", "gnat"],
+    "saveShieldMin": 1500
+  },
+  "move": {
+    "speed": 4.3,
+    "groupRadius": 7.0,
+    "stageTimeoutSeconds": 14,
+    "rotateCount": 2,
+    "gunfireSiteRadius": 30.0,
+    "pickupRadius": 1.6,
+    "sealRadius": 2.5
+  },
+  "combat": {
+    "sightRange": 70.0,
+    "ultRange": 12.0,
+    "ultMinEnemies": 2,
+    "ultDamage": 40,
+    "smokeSeconds": 8,
+    "smokeRadius": 3.5,
+    "flashRange": 14.0,
+    "flashSeconds": 1.6
+  },
+  "abilityKinds": {
+    "slag_pot": "none",
+    "rot_cloud": "smoke",
+    "ink_burst": "smoke",
+    "sand_veil": "smoke",
+    "miasma_wall": "smoke",
+    "bark_wall": "smoke",
+    "static_orb": "flash",
+    "judgment": "flash"
+  }
+}

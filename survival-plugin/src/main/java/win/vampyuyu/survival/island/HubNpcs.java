@@ -13,8 +13,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -44,14 +46,14 @@ public final class HubNpcs implements Listener {
         new Role("merchant", "Merchant", Villager.Profession.LIBRARIAN, Action.COMMAND, "shop"),
         new Role("archivist", "Archivist", Villager.Profession.CARTOGRAPHER, Action.COMMAND, "quests"),
         new Role("guard", "Guard", Villager.Profession.WEAPONSMITH, Action.SAY,
-            "Welcome to the Hub. Use /island to go back to your island and /hub to return here. "
-                + "The Crypt Depths are east, the Rift is west. The Archivist hands out Echo Keys."),
+            "Welcome to the Hub, survivor. Your island is a fragment of Aethelgard: /island takes you back to it, /hub brings you here. "
+                + "The Crypt Depths are east, the Rift is west. The Archivist keeps the Echo Keys."),
         new Role("contract_hunter", "Contract Hunter", Villager.Profession.FLETCHER, Action.COMMAND, "contracts"),
         new Role("island_gate", "Island Gatekeeper", Villager.Profession.NONE, Action.ISLAND, ""),
         new Role("dungeon_gate", "Dungeon Gatekeeper", Villager.Profession.NONE, Action.COMMAND, "dungeon"),
         new Role("rift_gate", "Rift Gatekeeper", Villager.Profession.NONE, Action.RIFT,
-            "The Rift is sealed. Only the bearer of an Echo Key may pass: the Archivist keeps one for survivors who "
-                + "wear the Bronze armor."));
+            "The Rift is sealed. It opens only for a key cut from a shard that remembers the sky: the Archivist keeps one for "
+                + "survivors who wear the Bronze armor."));
 
     /** The item that opens the Rift (summon item of the Echo of the Rift, see boss.sql). */
     public static final String ECHO_KEY = "echo_key";
@@ -61,6 +63,8 @@ public final class HubNpcs implements Listener {
     private final Core core;
     private final IslandService service;
     private final Map<String, UUID> live = new HashMap<>();
+    /** The name plate (a text display above the villager) by pad id: the vanilla plate does not show in the pack. */
+    private final Map<String, UUID> labels = new HashMap<>();
     private Scheduler.Handle task;
 
     public HubNpcs(Core core, IslandService service) {
@@ -103,8 +107,13 @@ public final class HubNpcs implements Listener {
             try {
                 Entity existing = live.containsKey(role.pad()) ? Bukkit.getEntity(live.get(role.pad())) : null;
                 if (existing != null && existing.isValid()) {
+                    Entity label = labels.containsKey(role.pad()) ? Bukkit.getEntity(labels.get(role.pad())) : null;
+                    if (label == null || !label.isValid()) {
+                        spawnLabel(role, existing.getLocation());
+                    }
                     continue;
                 }
+                despawn(role.pad());
                 live.remove(role.pad());
                 int cx = at.getBlockX() >> 4;
                 int cz = at.getBlockZ() >> 4;
@@ -122,7 +131,7 @@ public final class HubNpcs implements Listener {
             v.setPersistent(false);
             v.setInvulnerable(true);
             v.customName(Component.text(role.name(), NamedTextColor.GOLD));
-            v.setCustomNameVisible(true);
+            v.setCustomNameVisible(false); // replaced by the text display label (see spawnLabel)
             // island protection skips entities flagged like this (no "you cannot do that" on a click)
             v.setMetadata("NPC", new org.bukkit.metadata.FixedMetadataValue(core.getPlugin(), true));
             v.getPersistentDataContainer().set(TAG, PersistentDataType.STRING, role.pad());
@@ -135,6 +144,27 @@ public final class HubNpcs implements Listener {
             attempt(() -> v.setVillagerLevel(5));
         });
         live.put(role.pad(), npc.getUniqueId());
+        spawnLabel(role, at);
+    }
+
+    /** The visible name of an NPC: a billboard text display just above its head, the same on every pad. */
+    private void spawnLabel(Role role, Location at) {
+        UUID old = labels.remove(role.pad());
+        Entity previous = old == null ? null : Bukkit.getEntity(old);
+        if (previous != null) {
+            previous.remove();
+        }
+        Location above = at.clone().add(0, 2.35, 0);
+        TextDisplay label = at.getWorld().spawn(above, TextDisplay.class, t -> {
+            t.setPersistent(false);
+            t.text(Component.text(role.name(), NamedTextColor.GOLD));
+            t.setBillboard(Display.Billboard.CENTER);
+            t.setShadowed(true);
+            t.setSeeThrough(false);
+            t.setViewRange(1.5f);
+            t.getPersistentDataContainer().set(TAG, PersistentDataType.STRING, role.pad());
+        });
+        labels.put(role.pad(), label.getUniqueId());
     }
 
     private static void attempt(Runnable r) {
@@ -146,10 +176,11 @@ public final class HubNpcs implements Listener {
     }
 
     private void despawn(String pad) {
-        UUID id = live.remove(pad);
-        Entity e = id == null ? null : Bukkit.getEntity(id);
-        if (e != null) {
-            e.remove();
+        for (UUID id : new UUID[] {live.remove(pad), labels.remove(pad)}) {
+            Entity e = id == null ? null : Bukkit.getEntity(id);
+            if (e != null) {
+                e.remove();
+            }
         }
     }
 
@@ -163,7 +194,7 @@ public final class HubNpcs implements Listener {
     public void onEntitiesLoad(EntitiesLoadEvent event) {
         for (Entity e : event.getEntities()) {
             String pad = tagOf(e);
-            if (pad != null && !e.getUniqueId().equals(live.get(pad))) {
+            if (pad != null && !e.getUniqueId().equals(live.get(pad)) && !e.getUniqueId().equals(labels.get(pad))) {
                 e.remove();
             }
         }

@@ -1,0 +1,7 @@
+{
+  "map": "placeholder",
+  "sites": [
+    {"id": "A", "name": "Site A", "min": [-30, 60, 20], "max": [-20, 70, 30]},
+    {"id": "B", "name": "Site B", "min": [20, 60, 20], "max": [30, 70, 30]}
+  ]
+}

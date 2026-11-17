@@ -29,7 +29,7 @@ public class SurvivalPluginTest {
 
     @Test
     public void everyFeatureEnablesInOrder() {
-        assertEquals(List.of("utility", "island", "wings", "economy", "quarry", "classes", "trades", "gadgets", "boss", "resonance", "dungeon", "bastion", "realm", "ashes", "storm", "marsh", "depths", "promotion", "npc", "runes", "stations", "astral", "paragon", "breath", "hellgao", "menu", "movement"), plugin.features().enabledIds());
+        assertEquals(List.of("utility", "island", "wings", "economy", "quarry", "classes", "trades", "gadgets", "boss", "resonance", "dungeon", "bastion", "realm", "ashes", "storm", "marsh", "depths", "promotion", "npc", "runes", "stations", "astral", "paragon", "breath", "hellgao", "menu", "movement", "showcase"), plugin.features().enabledIds());
         assertTrue(plugin.features().failedIds().isEmpty());
         assertEquals(plugin.features().enabledIds(),
             SurvivalPlugin.featureList().stream().map(Feature::id).toList());
@@ -39,6 +39,23 @@ public class SurvivalPluginTest {
     public void backAndSbgiveAreRegistered() {
         assertNotNull(plugin.getCommand("back").getExecutor());
         assertNotNull(Bukkit.getCommandMap().getCommand("sbgive"));
+    }
+
+    @Test
+    public void sbshowcaseIsRegistered() {
+        assertNotNull(Bukkit.getCommandMap().getCommand("sbshowcase"));
+    }
+
+    @Test
+    public void showcaseLayoutHasOneFramePerRegisteredItem() {
+        var layout = win.vampyuyu.survival.showcase.ShowcaseFeature.layoutOf(plugin.core());
+        assertEquals(plugin.core().items().ids().size(), layout.frames().size());
+        assertEquals(plugin.core().items().ids().size(),
+            layout.frames().stream().map(f -> f.id()).distinct().count());
+        assertTrue(layout.blocks().size() >= 14);
+        System.out.println("SHOWCASE items=" + layout.frames().size() + " blocks=" + layout.blocks().size()
+            + " spins=" + layout.spins().size() + " sections=" + layout.sections().size() + " length=" + layout.length());
+        layout.sections().forEach(sec -> System.out.println("SHOWCASE section " + sec));
     }
 
     @Test

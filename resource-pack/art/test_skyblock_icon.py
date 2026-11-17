@@ -7,7 +7,7 @@ sys.path.insert(0, str(HERE))
 import skyblock_icon  # noqa: E402
 
 # sha256 of the 16x16 PNG; change it together with the drawing, on purpose.
-EXPECTED_SHA256 = "87fb1e2719c5cd046ac51dd29fd98bb620e1c94d9d54d9f48c75401a18b1c287"
+EXPECTED_SHA256 = "bc5cec64b8a2c507aa000434ca55acb50d2b875a0530c37ee011df0c6070c9fb"
 
 
 class SkyblockIconTest(unittest.TestCase):

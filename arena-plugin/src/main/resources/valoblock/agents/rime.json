@@ -1,0 +1,99 @@
+{
+  "id": "rime",
+  "name": "Rime",
+  "role": "Warden",
+  "roleColor": "#7fd8ff",
+  "realm": "Frozen Heights",
+  "quote": "\"Hold still. I will hold it for you.\"",
+  "menuColor": "#1e2e3a",
+  "colors": {
+    "torso": "#3b6fa8",
+    "trim": "#e6f7ff",
+    "glow": "#b6a8ff",
+    "arm": "#7fc8e8",
+    "legs": "#1f3557",
+    "boots": "#e6f7ff",
+    "bg": "#182436"
+  },
+  "face": {
+    "palette": {
+      "h": "#e6f7ff",
+      "s": "#e0c0b0",
+      "w": "#b6a8ff",
+      "e": "#b6a8ff",
+      "m": "#c09080",
+      "v": "#7fc8e8"
+    },
+    "rows": [
+      "hhhhhhhh",
+      "hhhhhhhh",
+      "hssssssh",
+      "ssssssss",
+      "svvvvvvs",
+      "ssssssss",
+      "ssmmmmss",
+      "ssssssss"
+    ]
+  },
+  "skin": {
+    "value": "ewogICJ0aW1lc3RhbXAiIDogMTc5NDg3NDE4NTg2OSwKICAicHJvZmlsZUlkIiA6ICJiODU0NWMxMDlhZjE0ZGRjYmY4ZjhmZjg4ZTU2NzI4OSIsCiAgInByb2ZpbGVOYW1lIiA6ICJQdGFrb3B5c2tDWiIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS83ZWQ1OTg2NDkzM2UzNDllMTg4NzY1MmRmNmQ2YWU1MTkxZTEwZWUxMmQwNzM3NDQzNGU5M2VjNDM3NTAyMWQ5IgogICAgfQogIH0KfQ==",
+    "signature": "GluH4s9htRAOMKtjlC9w3/SDcekEl8YQA8ZdouOfxrJ3WVPP1uRNnlXP0dTjWL+DdEPpQp7fUo71yLznQJBpc5dFVZ+oymRdVxJ7gO1YDN+uJAfEUXTsTLaTl/aEKHPaxiceFIkCVHdO594kCavbn3RXWWw+KlY1Gy8+8EkghUvl+PvefWZwUy0Ecq3d3kOyJtxQpwxV3MxTVr/j2HSYLQmgECZxFSN9oS4EkKjl7OjHCl3spdT9M6vC2POir4no3/J/k6pzU4I/dxnzber0vdtPAsyjZ0ofTu4s4IA08BWYdohdB3hwXoCS/LywvxkP2T7xYD7OuwXXDSegLKmDGD2X5WMEiqlir678vRaRMHCHKQnMkIGESONgexai9Nm3DIVkidR9dBV8mucLk+U5y0AVMaRdhi+gm/nxp4z0bjEUiEJoEO0ZHZFDblk1r5GodbF//3ctazCbwV4jRrn4UbQhvtoMqBfT2nkJooGPk94Y2/BG6hZnMV42JrnbPssM1Qylo9yzFXZYD7uyXMGXWdH/wOtfc3/IKrQ9N7gKgre/PxHu/R+JtDBcedIXoVquEUlw0Zst0WWDp6bP1bHdqjKdPoFJ67bCTR5s+WNfboakss2vZLcWXt+6Nza7fNqoJ/Y2lhHDKXIdKlUhPscAqFrWKwFaQ7uMTf7sUg9Z64M=",
+    "mineskin": "48fa41b2c65643098dfc9e6bf42a6cc7"
+  },
+  "build": "Pane = packed-ice blocks with a hit counter. Stasis = resistance 255 + no movement + a frost shell display.",
+  "abilities": [
+    {
+      "slot": 4,
+      "id": "frost_mine",
+      "name": "Frost Mine",
+      "item": "SNOWBALL",
+      "text": "Proximity mine: Slowness II for 4 s.",
+      "cost": 200,
+      "maxCharges": 1,
+      "num": {
+        "slowSeconds": 4,
+        "slowLevel": 1,
+        "triggerRadius": 2
+      }
+    },
+    {
+      "slot": 5,
+      "id": "stasis_pane",
+      "name": "Stasis Pane",
+      "item": "PACKED_ICE",
+      "text": "An ice pane that stops 3 bullets, then shatters.",
+      "cost": 300,
+      "maxCharges": 1,
+      "num": {
+        "hits": 3,
+        "width": 3,
+        "height": 3,
+        "seconds": 20
+      }
+    },
+    {
+      "slot": 6,
+      "id": "hold_moment",
+      "name": "Hold the Moment",
+      "item": "CLOCK",
+      "text": "Freeze yourself for 2 s: no damage taken, no action.",
+      "charges": 1,
+      "rechargeKills": 0,
+      "num": {
+        "seconds": 2
+      }
+    },
+    {
+      "slot": 7,
+      "id": "glacial_hour",
+      "name": "Glacial Hour",
+      "item": "BLUE_ICE",
+      "text": "A 12-block dome for 8 s: enemies inside are slowed and cannot reload.",
+      "ultPoints": 8,
+      "num": {
+        "radius": 12,
+        "seconds": 8
+      }
+    }
+  ]
+}

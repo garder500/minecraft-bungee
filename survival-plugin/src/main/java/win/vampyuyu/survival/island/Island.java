@@ -42,6 +42,11 @@ public final class Island {
     public boolean platformsReady;
     /** The island's End platform exists (islands made before the End came back get it at the next start). */
     public boolean endReady;
+    /**
+     * The vanilla End gate of early islands was removed (or never built). Absent in old data, so every old island
+     * is cleaned once; new and rebuilt islands start true.
+     */
+    public boolean gateCleaned;
     public long visits;
     public Warp warp;
     /**

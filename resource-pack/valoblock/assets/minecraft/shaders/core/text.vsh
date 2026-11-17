@@ -1,0 +1,194 @@
+#version 330
+#extension GL_ARB_separate_shader_objects : require
+
+#if !defined(IS_GUI) && !defined(IS_SEE_THROUGH)
+#include <minecraft:fog.glsl>
+#include <minecraft:sample_lightmap.glsl>
+#endif
+
+#include <minecraft:dynamictransforms.glsl>
+#include <minecraft:projection.glsl>
+
+layout(location = 0) in vec3 Position;
+layout(location = 1) in vec4 Color;
+layout(location = 2) in vec2 UV0;
+#if !defined(IS_GUI) && !defined(IS_SEE_THROUGH)
+layout(location = 3) in ivec2 UV2;
+#endif
+
+#if !defined(IS_GUI) && !defined(IS_SEE_THROUGH)
+uniform sampler2D Sampler2;
+layout(location = 0) out float sphericalVertexDistance;
+layout(location = 1) out float cylindricalVertexDistance;
+#endif
+
+layout(location = 2) out vec4 vertexColor;
+layout(location = 3) out vec2 texCoord0;
+layout(location = 4) flat out int fxId;
+layout(location = 5) out vec2 screenUv;
+
+const vec2 CORNERS[4] = vec2[](vec2(-1.0, 1.0), vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(1.0, 1.0));
+
+const int HUD_COUNT = 45;
+const int HUD_FILL = 4;
+const int HUD_ANCHOR[HUD_COUNT] = int[](0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+const vec4 HUD_BOX[HUD_COUNT] = vec4[](
+    vec4(-125.0, 4.0, 250.0, 44.0),
+    vec4(-115.0, 14.0, 24.0, 24.0),
+    vec4(-96.0, 32.0, 7.0, 9.0),
+    vec4(-81.0, 8.0, 136.0, 17.0),
+    vec4(-80.0, 32.0, 140.0, 4.0),
+    vec4(65.0, 8.0, 12.0, 17.0),
+    vec4(78.0, 8.0, 6.0, 17.0),
+    vec4(85.0, 8.0, 12.0, 17.0),
+    vec4(98.0, 8.0, 12.0, 17.0),
+    vec4(-134.0, -54.0, 128.0, 108.0),
+    vec4(-122.0, -42.0, 32.0, 32.0),
+    vec4(-80.0, -42.0, 68.0, 9.0),
+    vec4(-80.0, -30.0, 68.0, 9.0),
+    vec4(-84.0, 2.0, 12.0, 17.0),
+    vec4(-72.0, 2.0, 12.0, 17.0),
+    vec4(-60.0, 2.0, 8.0, 17.0),
+    vec4(-52.0, 2.0, 12.0, 17.0),
+    vec4(-40.0, 2.0, 12.0, 17.0),
+    vec4(-126.0, 24.0, 5.0, 8.0),
+    vec4(-121.0, 24.0, 5.0, 8.0),
+    vec4(-116.0, 24.0, 5.0, 8.0),
+    vec4(-111.0, 24.0, 5.0, 8.0),
+    vec4(-106.0, 24.0, 5.0, 8.0),
+    vec4(-101.0, 24.0, 5.0, 8.0),
+    vec4(-96.0, 24.0, 5.0, 8.0),
+    vec4(-91.0, 24.0, 5.0, 8.0),
+    vec4(-86.0, 24.0, 5.0, 8.0),
+    vec4(-81.0, 24.0, 5.0, 8.0),
+    vec4(-76.0, 24.0, 5.0, 8.0),
+    vec4(-71.0, 24.0, 5.0, 8.0),
+    vec4(-66.0, 24.0, 5.0, 8.0),
+    vec4(-61.0, 24.0, 5.0, 8.0),
+    vec4(-56.0, 24.0, 5.0, 8.0),
+    vec4(-51.0, 24.0, 5.0, 8.0),
+    vec4(-46.0, 24.0, 5.0, 8.0),
+    vec4(-41.0, 24.0, 5.0, 8.0),
+    vec4(-36.0, 24.0, 5.0, 8.0),
+    vec4(-31.0, 24.0, 5.0, 8.0),
+    vec4(-126.0, 38.0, 12.0, 12.0),
+    vec4(-112.0, 38.0, 12.0, 12.0),
+    vec4(-98.0, 38.0, 12.0, 12.0),
+    vec4(-84.0, 38.0, 12.0, 12.0),
+    vec4(-134.0, 58.0, 128.0, 30.0),
+    vec4(-44.0, 64.0, 12.0, 17.0),
+    vec4(-31.0, 64.0, 12.0, 17.0));
+
+const int VB_COUNT = 40;
+const int VB_ANCHOR[VB_COUNT] = int[](3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 3, 6, 6);
+const int VB_STRETCH[VB_COUNT] = int[](0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
+const vec4 VB_BOX[VB_COUNT] = vec4[](
+    vec4(4.0, -42.0, 88.0, 36.0),
+    vec4(10.0, -21.0, 50.0, 4.0),
+    vec4(10.0, -13.0, 50.0, 3.0),
+    vec4(10.0, -38.0, 11.0, 15.0),
+    vec4(22.0, -38.0, 11.0, 15.0),
+    vec4(34.0, -38.0, 11.0, 15.0),
+    vec4(64.0, -37.0, 6.0, 8.0),
+    vec4(71.0, -37.0, 6.0, 8.0),
+    vec4(78.0, -37.0, 6.0, 8.0),
+    vec4(-64.0, -72.0, 30.0, 38.0),
+    vec4(-32.0, -72.0, 30.0, 38.0),
+    vec4(0.0, -72.0, 30.0, 38.0),
+    vec4(32.0, -72.0, 30.0, 38.0),
+    vec4(-57.0, -68.0, 16.0, 16.0),
+    vec4(-25.0, -68.0, 16.0, 16.0),
+    vec4(7.0, -68.0, 16.0, 16.0),
+    vec4(39.0, -68.0, 16.0, 16.0),
+    vec4(-58.0, -48.0, 5.0, 3.0),
+    vec4(-51.0, -48.0, 5.0, 3.0),
+    vec4(-44.0, -48.0, 5.0, 3.0),
+    vec4(-26.0, -48.0, 5.0, 3.0),
+    vec4(-19.0, -48.0, 5.0, 3.0),
+    vec4(-12.0, -48.0, 5.0, 3.0),
+    vec4(6.0, -48.0, 5.0, 3.0),
+    vec4(13.0, -48.0, 5.0, 3.0),
+    vec4(20.0, -48.0, 5.0, 3.0),
+    vec4(38.0, -48.0, 5.0, 3.0),
+    vec4(45.0, -48.0, 5.0, 3.0),
+    vec4(52.0, -48.0, 5.0, 3.0),
+    vec4(-92.0, -42.0, 88.0, 36.0),
+    vec4(-84.0, -38.0, 11.0, 15.0),
+    vec4(-72.0, -38.0, 11.0, 15.0),
+    vec4(-52.0, -34.0, 6.0, 8.0),
+    vec4(-45.0, -34.0, 6.0, 8.0),
+    vec4(-38.0, -34.0, 6.0, 8.0),
+    vec4(-10.0, -10.0, 21.0, 21.0),
+    vec4(-10.0, -10.0, 21.0, 21.0),
+    vec4(94.0, -38.0, 16.0, 16.0),
+    vec4(-26.0, 22.0, 52.0, 7.0),
+    vec4(-24.0, 24.0, 48.0, 3.0));
+
+// 0 top left, 1 bottom left, 2 bottom right, 3 top right of a HUD glyph quad. Every glyph of a HUD run is followed by one that
+// takes its advance back (see hud_fonts: the sprites have a non-clear last column so the advance is exact), so each quad starts at
+// the pen, the middle of the GUI, and its bottom sits on the action bar's baseline (GUI height - 65).
+int vbCorner(vec2 gui) {
+    bool right = Position.x - gui.x * 0.5 > 2.0;
+    bool bottom = Position.y > gui.y - 66.5;
+    return right ? (bottom ? 2 : 3) : (bottom ? 1 : 0);
+}
+
+void main() {
+    vec4 clip = ProjMat * ModelViewMat * vec4(Position, 1.0);
+    int fx = 0;
+    vec2 uv = vec2(0.0);
+    ivec3 rgb = ivec3(round(Color.rgb * 255.0));
+    if (rgb.r >= 78 && rgb.r <= 81 && rgb.g >= 100 && rgb.g < 100 + HUD_COUNT) {
+        // A custom HUD glyph: move its quad to its element's box, in GUI pixels. The red channel
+        // picks the size: 78 follows the window, 79 full, 80 three quarters, 81 half.
+        int e = rgb.g - 100;
+        vec2 gui = vec2(2.0 / ProjMat[0][0], -2.0 / ProjMat[1][1]);
+        float fit = min(gui.x / 640.0, gui.y / 360.0);
+        float f = rgb.r == 79 ? 1.0 : rgb.r == 80 ? 0.75 : rgb.r == 81 ? 0.5 : (fit >= 0.9 ? 1.0 : fit >= 0.65 ? 0.75 : 0.5);
+        vec2 anchor = HUD_ANCHOR[e] == 0 ? vec2(floor(gui.x * 0.5), 0.0) : vec2(gui.x, floor(gui.y * 0.5));
+        // The role panel (right side) is drawn a little smaller than the top plate.
+        if (HUD_ANCHOR[e] == 1) f *= 1.0;
+        vec4 box = HUD_BOX[e];
+        float w = e == HUD_FILL ? max(1.0, floor(box.z * float(rgb.b) / 255.0 + 0.5)) : box.z;
+        int k = gl_VertexIndex % 4;
+        vec2 corner = vec2((k == 2 || k == 3) ? w : 0.0, (k == 1 || k == 2) ? box.w : 0.0);
+        vec2 px = anchor + floor((box.xy + corner) * f + 0.5);
+        clip = ProjMat * ModelViewMat * vec4(px, Position.z, 1.0);
+        fx = 10 + e;
+    } else if (rgb.r == 84 && rgb.g >= 160 && rgb.g < 160 + VB_COUNT) {
+        // A ValoBlock HUD glyph: the quad goes to its element's box in GUI pixels, counted from one of 7 anchors
+        // (0-2 top left, centre, right; 3-5 bottom; 6 screen centre). The blue channel stretches a bar.
+        int e = rgb.g - 160;
+        vec2 gui = vec2(2.0 / ProjMat[0][0], -2.0 / ProjMat[1][1]);
+        int a = VB_ANCHOR[e];
+        float ax = (a == 0 || a == 3) ? 0.0 : (a == 2 || a == 5) ? gui.x : floor(gui.x * 0.5);
+        float ay = a <= 2 ? 0.0 : a <= 5 ? gui.y : floor(gui.y * 0.5);
+        vec4 box = VB_BOX[e];
+        float w = VB_STRETCH[e] == 1 ? max(1.0, floor(box.z * float(rgb.b) / 255.0 + 0.5)) : box.z;
+        int k = vbCorner(gui);
+        vec2 corner = vec2((k == 2 || k == 3) ? w : 0.0, (k == 1 || k == 2) ? box.w : 0.0);
+        clip = ProjMat * ModelViewMat * vec4(vec2(ax, ay) + box.xy + corner, Position.z, 1.0);
+        fx = 10;
+    } else if (rgb.r == 21 && rgb.g >= 39 && rgb.g <= 51) {
+        clip = vec4(2.0, 2.0, 2.0, 1.0); // the text shadow of a HUD glyph (colour / 4)
+    } else if (rgb.r == 78 && rgb.g == 92 && rgb.b >= 1 && rgb.b <= 4) {
+        fx = rgb.b;
+        vec2 corner = CORNERS[gl_VertexIndex % 4];
+        uv = corner * 0.5 + 0.5;
+        clip = vec4(corner * clip.w, clip.z, clip.w);
+    } else if (rgb.r >= 19 && rgb.r <= 20 && ((rgb.g == 23 && rgb.b <= 1) || (rgb.g >= 25 && rgb.g <= 37))) {
+        clip = vec4(2.0, 2.0, 2.0, 1.0);
+    }
+    gl_Position = clip;
+    fxId = fx;
+    screenUv = uv;
+
+#if !defined(IS_GUI) && !defined(IS_SEE_THROUGH)
+    sphericalVertexDistance = fog_spherical_distance(Position);
+    cylindricalVertexDistance = fog_cylindrical_distance(Position);
+    vertexColor = Color * sample_lightmap(Sampler2, UV2);
+#else
+    vertexColor = Color;
+#endif
+    texCoord0 = UV0;
+}

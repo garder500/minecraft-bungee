@@ -42,6 +42,20 @@ public final class Items {
         if (defs.putIfAbsent(def.id(), def) != null) {
             throw new IllegalStateException("Duplicate custom item id: " + def.id());
         }
+        owners.putIfAbsent(def.id(), owner);
+    }
+
+    private final ConcurrentMap<String, String> owners = new ConcurrentHashMap<>();
+    private volatile String owner = "core";
+
+    /** Names who registers from now on (the feature being enabled); a re-registered id keeps its first owner. */
+    public void currentOwner(String name) {
+        this.owner = name == null || name.isBlank() ? "core" : name;
+    }
+
+    /** The feature that first registered {@code id} ("core" when unknown). */
+    public String ownerOf(String id) {
+        return owners.getOrDefault(id, "core");
     }
 
     /** Removes a definition (items already in the world keep their id but stop rendering). */

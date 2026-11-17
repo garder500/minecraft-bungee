@@ -6,7 +6,7 @@ ZIP ?=
 OUT ?=
 export COMPOSE SERVER WORLD ZIP OUT
 
-.PHONY: dev-server hotswap dev-stop hud-sheet export-all zip-all help status up stop configure export zip import restore inspect export-panel import-panel backup test-archives pack art test-pack e2e-pack plugin plugin-prod plugin-build plugin-test plugin-clear plugin-clear-prod plugin-status plugin-status-prod test-plugins reload-data reload-data-prod reload-data-clear reload-data-clear-prod
+.PHONY: pack-valoblock art-valoblock dev-server hotswap dev-stop hud-sheet export-all zip-all help status up stop configure export zip import restore inspect export-panel import-panel backup test-archives pack art test-pack e2e-pack plugin plugin-prod plugin-build plugin-test plugin-clear plugin-clear-prod plugin-status plugin-status-prod test-plugins reload-data reload-data-prod reload-data-clear reload-data-clear-prod
 help: ## Show operator commands
 	@python3 scripts/world_archive.py help
 status: ## Show container status
@@ -38,13 +38,18 @@ test-archives: ## Run isolated ZIP safety and restoration tests
 	@python3 -m unittest discover -s scripts -p 'test_world_archive.py' -v
 pack: ## Build the reproducible menu resource pack and print its SHA-1
 	@python3 scripts/build_pack.py
+pack-valoblock: ## Build the reproducible ValoBlock resource pack (resource-pack/dist/vampyuyu-valoblock.zip) and print its SHA-1
+	@python3 scripts/build_pack.py --pack valoblock
+art-valoblock: ## Regenerate the ValoBlock sprites, agent faces, ability icons, skins and outfits, 3D gun models and scope overlay, menu backgrounds, glyph HUD, shader and vanilla HUD blanks (stdlib only, deterministic)
+	@python3 resource-pack/art/valoblock_items.py && python3 resource-pack/art/valoblock_agents.py && python3 resource-pack/art/valoblock_ability_icons.py && python3 resource-pack/art/valoblock_skins.py && python3 resource-pack/art/valoblock_seed.py && python3 resource-pack/art/valoblock_ui.py
 art: ## Repaint pack textures from resource-pack/art/render.py (needs headless Chrome)
 	@python3 resource-pack/art/render.py
 e2e-pack: ## Boot a creative Paper 26.3 + headless 26.3 client and check the pack loads and renders (see scripts/e2e_client.py)
 	@python3 scripts/e2e_client.py
-test-pack: ## Validate the menu resource pack structure and reproducibility
+test-pack: ## Validate both resource packs (menus and ValoBlock): structure, models, reproducibility
 	@python3 scripts/test_pack.py
 	@python3 scripts/test_hud_sheet.py
+	@python3 scripts/test_valoblock_models.py
 	@python3 resource-pack/art/test_skyblock_icon.py
 hud-sheet: ## Render every HUD state to resource-pack/dist/hud-sheet/ (index.html is self-contained) [SCALE=2|3|4] [MODE=auto|large|medium|small]
 	@python3 resource-pack/art/hud_sheet.py --scale $(or $(SCALE),3) --mode $(or $(MODE),auto)

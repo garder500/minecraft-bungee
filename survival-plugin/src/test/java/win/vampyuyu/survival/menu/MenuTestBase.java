@@ -114,20 +114,6 @@ abstract class MenuTestBase {
         @Override public int maxLevel(Skill skill) { return 50; }
     }
 
-    static final class FakeStats implements StatsApi {
-        final Map<Stat, Double> modifiers = new EnumMap<>(Stat.class);
-        int recomputes;
-
-        @Override public double stat(Player player, Stat stat) { return stat.base() + modifiers.getOrDefault(stat, 0.0); }
-        @Override public void addModifier(UUID player, String source, Stat stat, double amount) {
-            if (source.equals("fairy")) { modifiers.put(stat, amount); }
-        }
-        @Override public void removeModifiers(UUID player, String source) {
-            if (source.equals("fairy")) { modifiers.clear(); }
-        }
-        @Override public void recompute(Player player) { recomputes++; }
-    }
-
     static final class FakeIslands implements IslandApi {
         final Map<UUID, IslandInfo> byPlayer = new HashMap<>();
         final List<String> teleports = new ArrayList<>();

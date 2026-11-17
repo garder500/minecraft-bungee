@@ -26,7 +26,7 @@ Instanced, procedurally generated dungeons ("the Catacombs") for parties of 1 to
 * **Rooms** (a grid of 32 block cells, code templates, no schematics): entrance (dais), mob rooms (waves, doors bar
   until cleared, some give a Wither Key), parkour trap rooms (stepping stones over the void, magma on deep floors), puzzle
   rooms, secret rooms behind a hidden lever, mini-boss rooms (Bone Warlord and adds), the blood room, fairy grotto
-  (heal and 2 minute buffs for the team), merchant room (Spirit Leaf, Healing Flask for coins), boss room.
+  (heal and 2 minute buffs for the team), merchant room (Recall Leaf, Healing Flask for coins), boss room.
 * **Puzzles**: Echo Levers (replay the lamp pattern), Pressure Plates (numbers written in different ways, in order),
   Crypt Tic-Tac-Toe (the crypt plays back, harder per floor), Three Weirdos (one tells the truth, wrong chests are
   traps), Boulder Path (push the boulder onto the gold block, reset button). Solving opens the caged reward chest.
@@ -51,7 +51,7 @@ Instanced, procedurally generated dungeons ("the Catacombs") for parties of 1 to
   previous floor" rule. `python3 scripts/e2e_client.py --scenario dungeon` uses them.
 * **Deaths**: lethal damage never kills. The first `rules.deaths-allowed` (3) deaths make a ghost (spectator, body
   marker). A ghost returns by itself after `ghost-seconds`, or a teammate sneaks next to the body for `revive-seconds`,
-  or a Spirit Leaf is used. The next death eliminates the player (spectator). Everybody eliminated or gone = failed.
+  or a Recall Leaf is used. The next death eliminates the player (spectator). Everybody eliminated or gone = failed.
   Nothing is dropped, ever. Falling into the void costs `rules.void-damage` and returns you to the last doorway.
 * **Rules**: no pearls, chorus fruit, elytra, flight, teleport commands (all commands outside
   `rules.allowed-commands` are refused, namespaced forms included), no block break or place, no fire spread, no
@@ -71,10 +71,10 @@ Instanced, procedurally generated dungeons ("the Catacombs") for parties of 1 to
   `catacombs.reward-percent-per-level` (1%) to the coins and Combat XP of every clear (the level the run started with).
   Shown in `/dungeon stats`, the floor menu and the end screen (level-up line). Only the XP is stored.
 * **Crypt Forge** (`/dungeon forge`, menu button, `/dungeon forge buy <trade>`): the sink for the dungeon materials.
-  Default trades (all in `dungeon.yml` `forge.trades`): Spirit Leaf (16 bone fragments + 4 crypt shards), 3 Healing
-  Flasks (12 bone fragments), Crypt Cache (12 crypt shards + 3 wither essence: 4 item rolls of the rank B table on the
-  highest floor you cleared), Spirit Cache (12 essence + 4 spirit dust: 5 rolls, rank S table), Dark Scroll (5 relics +
-  16 spirit dust), and two coin trades (64 bone fragments = 600 coins, 10 essence = 1500 coins; need the economy
+  Default trades (all in `dungeon.yml` `forge.trades`): Recall Leaf (16 bone fragments + 4 crypt shards), 3 Healing
+  Flasks (12 bone fragments), Crypt Cache (12 crypt shards + 3 Barrow Ash: 4 item rolls of the rank B table on the
+  highest floor you cleared), Mourning Cache (12 Barrow Ash + 4 Mourning Dust: 5 rolls, rank S table), Dark Scroll (5 relics +
+  16 Mourning Dust), and two coin trades (64 bone fragments = 600 coins, 10 Barrow Ash = 1500 coins; need the economy
   feature). A purchase checks everything, rolls, verifies the exact count, removes the payment and only then delivers
   (overflow goes to `/dungeon claim`): it cannot duplicate or lose items. Closed while you are in a run.
 * **Entrance hint**: standing within `entrance.radius` of the configured hub point shows a clickable

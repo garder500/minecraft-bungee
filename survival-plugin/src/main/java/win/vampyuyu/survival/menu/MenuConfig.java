@@ -11,8 +11,6 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import win.vampyuyu.survival.data.Settings;
 import win.vampyuyu.survival.core.SkyblockWorlds;
-import win.vampyuyu.survival.menu.SoulLogic.SoulDef;
-import win.vampyuyu.survival.menu.SoulLogic.StatStep;
 
 /**
  * Typed, immutable snapshot of the menu tuning ({@code menu.*} settings and the {@code menu_*} tables, see {@link MenuRepo}).
@@ -53,16 +51,6 @@ public final class MenuConfig {
 
     public final Map<String, String> sounds;
 
-    public final boolean fairyEnabled;
-    public final double fairyViewDistance;
-    public final double fairyCollectRadius;
-    public final int fairyEvery;
-    public final double fairyCoinsPerMilestone;
-    public final double fairyCoinsIncrease;
-    public final List<StatStep> fairyCycle;
-    public final String fairyGlow;
-    public final List<SoulDef> fairyFixed;
-    public final List<SoulDef> fairyIsland;
 
     public final boolean questsEnabled;
     public final QuestCatalog catalog;
@@ -133,16 +121,6 @@ public final class MenuConfig {
 
         sounds = Map.copyOf(rows.sounds());
 
-        fairyEnabled = c.getBoolean("fairy-souls.enabled", true);
-        fairyViewDistance = Math.max(8, c.getDouble("fairy-souls.view-distance", 40));
-        fairyCollectRadius = Math.max(0.5, c.getDouble("fairy-souls.collect-radius", 1.6));
-        fairyEvery = Math.max(0, c.getInt("fairy-souls.every", 5));
-        fairyCoinsPerMilestone = Math.max(0, c.getDouble("fairy-souls.coins-per-milestone", 250));
-        fairyCoinsIncrease = Math.max(0, c.getDouble("fairy-souls.coins-increase-per-milestone", 0));
-        fairyCycle = rows.fairyCycle();
-        fairyGlow = c.getString("fairy-souls.glow-color", "#ff7ad9");
-        fairyFixed = rows.fairyFixed();
-        fairyIsland = rows.fairyIsland();
 
         questsEnabled = c.getBoolean("quests.enabled", true);
         catalog = !questsEnabled ? QuestCatalog.empty() : stored;

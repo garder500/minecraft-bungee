@@ -1,0 +1,103 @@
+{
+  "id": "thorn",
+  "name": "Thorn",
+  "role": "Warden",
+  "roleColor": "#7fd8ff",
+  "realm": "Whispering Grove",
+  "quote": "\"Roots remember every footstep.\"",
+  "menuColor": "#1e2e3a",
+  "colors": {
+    "torso": "#6a4422",
+    "trim": "#8fb84a",
+    "glow": "#d6f08a",
+    "arm": "#4f6b2a",
+    "legs": "#3a2414",
+    "boots": "#2c3a1e",
+    "bg": "#1a2418"
+  },
+  "face": {
+    "palette": {
+      "h": "#4f6b2a",
+      "s": "#b88a62",
+      "w": "#f1e7c9",
+      "e": "#4f6b2a",
+      "m": "#8a5a3a",
+      "g": "#d6f08a"
+    },
+    "rows": [
+      "hhghhghh",
+      "hghhhhgh",
+      "hssssssh",
+      "ssssssss",
+      "swessews",
+      "ssssssss",
+      "ssmmmmss",
+      "ssssssss"
+    ]
+  },
+  "skin": {
+    "value": "ewogICJ0aW1lc3RhbXAiIDogMTc5NDg3NDE5MzE5NiwKICAicHJvZmlsZUlkIiA6ICJmNjhhMmE2NTNkNjU0NTQ1ODE0ZDg0OWI5NmU0MDllOSIsCiAgInByb2ZpbGVOYW1lIiA6ICJMdWdhdHR1IiwKICAic2lnbmF0dXJlUmVxdWlyZWQiIDogdHJ1ZSwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzJkZWQyM2FjNzg5NDJlZjI3YzM2NjU4ZDZjZTMzMGE2NTQzNDExMWIxZGM3ZDg0MDFmZmY4NTY5MzU0ZDg0ZCIKICAgIH0KICB9Cn0=",
+    "signature": "tAKBQd50hjd669ymeqxED7TAAMBEHQnB2Em+YcE+zc9YFYlQmD0MUOgii1gcIgJPGk0/0ePdtuLXtD67xD97yYUg7z5DU8xUDK2S3pm4rjzN5CNkywcjQhd7aKTZ9J5tJrKE8sli1jgGcKvKGqJwdqiwyzRLSMfUme5FFfz5RSxRdy0/b4VCKpJDEPKkXr3krvgiDgITb/1y9ND/UWRD9EyC4sfG+wP/j56WB36FEVtty15F1zY3cozFt+P5ScOoUk79feMMGFZwmg2Vf6Xq61qNws+H4FZdEXl9rCL1JXOYfQldFK8MJ3EAj7SS9otClE98v6tKJyjeg7Jh742WYFfikYsaCeXWlsURiWC5RiZ84sWOa8x3hR1T0Khk1hhznxzpvUFunwA8kmwWeO8Ieik+SkEQhJ3mOWH2DTeXunLQgg9L8MbZGWQGb2fqIuidtQAWEzatSH1JgRMqCzTf2FU5ZUDtOdZcRk/3hPiwQslWZwm26dd50owD1dcM7OSVJIoDx4bqrbzuKM7dH73sUKJkUFg9h2hEddW4JaRzlezjjcKjdwoa9Ci1/d2bxPOkS8LPM26yGB39ccnbZWxOvGFXnv/vkR2Hb1+MKA2rd+frcemWi1B+DMvDVwIT8cE0nnfrdwNTDlHAiOOQ76XA9T2pw7k8d4P9yMpF8bbqSmk=",
+    "mineskin": "53eca6b89ad542e6b90e8e6e3e97565c"
+  },
+  "build": "Wall = temporary log blocks with a hit counter. Vines = block_display carpets, never real blocks.",
+  "abilities": [
+    {
+      "slot": 4,
+      "id": "root_snare",
+      "name": "Root Snare",
+      "item": "STRING",
+      "text": "Hidden tripwire. The first enemy through is slowed and revealed.",
+      "cost": 200,
+      "maxCharges": 1,
+      "num": {
+        "slowSeconds": 3,
+        "revealSeconds": 3,
+        "triggerRadius": 1.5
+      }
+    },
+    {
+      "slot": 5,
+      "id": "spore_mend",
+      "name": "Spore Mend",
+      "item": "SPORE_BLOSSOM",
+      "text": "Spore zone: 40 HP over 4 s to anyone inside.",
+      "cost": 150,
+      "maxCharges": 1,
+      "num": {
+        "heal": 40,
+        "seconds": 4,
+        "radius": 3.5
+      }
+    },
+    {
+      "slot": 6,
+      "id": "bark_wall",
+      "name": "Bark Wall",
+      "item": "OAK_LOG",
+      "text": "A 5-wide wooden wall for 12 s. Breakable by gunfire.",
+      "charges": 1,
+      "rechargeKills": 0,
+      "num": {
+        "width": 5,
+        "height": 3,
+        "seconds": 12,
+        "hits": 12
+      }
+    },
+    {
+      "slot": 7,
+      "id": "overgrowth",
+      "name": "Overgrowth",
+      "item": "VINE",
+      "text": "Vines cover the site for 10 s. Enemies who touch them are slowed and revealed.",
+      "ultPoints": 7,
+      "num": {
+        "seconds": 10,
+        "radius": 7,
+        "slowSeconds": 2,
+        "revealSeconds": 2
+      }
+    }
+  ]
+}

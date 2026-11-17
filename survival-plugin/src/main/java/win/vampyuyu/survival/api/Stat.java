@@ -8,7 +8,7 @@ import net.kyori.adventure.text.format.TextColor;
  * ({@link #base()}) and the modifiers contributed through {@link StatsApi#addModifier}.
  *
  * <p>Names stored by older versions (Health, Strength, Crit Damage...) are still understood: {@link #resolve} maps
- * an old or a current name to the current stats, so data written before the rework (skills, wings, fairy souls, item
+ * an old or a current name to the current stats, so data written before the rework (skills, wings, item
  * bonuses) keeps working.
  */
 public enum Stat {

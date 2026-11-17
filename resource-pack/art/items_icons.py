@@ -8,6 +8,9 @@ Outputs (all paths contain the feature name, see docs/skyblock-design.md section
   pack/assets/vampyuyu/textures/item/items/<id>.png
   pack/assets/vampyuyu/models/item/items/<id>.json
   pack/assets/vampyuyu/items/items/<id>.json          -> item_model "vampyuyu:items/<id>"
+Style: the Skyblock lore sprites (docs/skyblock-notes/lore.md, lore_sprites.py): one Realm palette per item
+(shadow, base, light, highlight, glow), light from the top left, no anti-aliasing, the family silhouette stays and the
+glow pixels (one to four, see MOTIFS) mark the Realm motif.
 The id list must match survival-plugin ItemCatalog + the eight pet species (items.pet_<id> models).
 """
 import json
@@ -21,7 +24,7 @@ from imported import imported
 ART = pathlib.Path(__file__).resolve().parent
 PACK = ART.parent / "pack" / "assets" / "vampyuyu"
 W = 16
-OUTLINE = (0x15, 0x11, 0x1f, 255)
+OUTLINE = (0x14, 0x0f, 0x18, 255)  # the one outline colour of the lore sprites (#140F18)
 
 
 def rgb(text):
@@ -118,13 +121,93 @@ METAL = {
 }
 
 
-def pal(blade, grip="#7a4b24", gem="#ff5a5a", guard="#c9a13b"):
-    b = ramp(blade)
-    g = ramp(grip)
-    gd = ramp(guard)
-    ge = ramp(gem)
-    return {"a": b[1], "b": b[0], "c": b[2], "d": g[1], "e": g[0], "f": g[2], "g": ge[1], "h": ge[0], "i": gd[1],
-            "j": gd[0], "k": gd[2], "w": (255, 255, 255, 255)}
+# Realm palettes: shadow, base, light, highlight, glow (docs/skyblock-notes/lore.md, section 2).
+REALMS = {
+    "ashes": ("#120a16", "#2a1a2e", "#5a2a2a", "#c8461e", "#ff8a2a"),
+    "grove": ("#2c3a1e", "#4f6b2a", "#8fb84a", "#d6f08a", "#f1e7c9"),
+    "heights": ("#1f3557", "#3b6fa8", "#7fc8e8", "#e6f7ff", "#b6a8ff"),
+    "citadel": ("#5a3a12", "#a8742a", "#f2c14e", "#fff1b0", "#3fb6a8"),
+    "marsh": ("#2a2a1a", "#4e5a22", "#8a9a2e", "#c9d36a", "#b04aa0"),
+    "storm": ("#1e2440", "#3a4a8a", "#7a8ee0", "#f0f4ff", "#ffe94a"),
+    "depths": ("#0a1a2a", "#12405a", "#2a8a9a", "#bff0f0", "#ff6ab0"),
+    "necro": ("#241f3a", "#4a4570", "#9c95c8", "#e8e4ff", "#6affd8"),
+    "astral": ("#0e0a1a", "#3a1a6a", "#8a4aff", "#e0c8ff", "#ff4a8a"),
+    "flux": ("#4a2a12", "#7a4a1e", "#c98442", "#f2c14e", "#4af0ff"),
+}
+# The glow pixels that mark the Realm motif, in drawing order; an item takes the first N of them.
+MOTIFS = {
+    "ashes": [(0, 0), (1, 1), (-1, -1), (2, 1)],            # a jagged crack, brightest where it is widest
+    "grove": [(0, 0), (2, -1), (-2, 1), (1, 2)],            # drifting spores
+    "heights": [(0, 0), (1, 0), (-1, 0), (0, 1)],           # a single unblinking eye
+    "citadel": [(0, -1), (0, 1), (0, 0), (1, 0)],           # hourglass, turquoise inlay
+    "marsh": [(0, 0), (2, -1), (-1, 2), (2, 2)],            # bubbles in a bruise-purple core
+    "storm": [(0, -1), (-1, 0), (0, 1), (-1, 2)],           # a two-step zigzag bolt
+    "depths": [(0, 0), (1, 0), (0, 1), (1, 1)],             # pearl sheen
+    "necro": [(0, 0), (0, -1), (0, 1), (1, 0)],             # a soul flame
+    "astral": [(0, 0), (0, 1), (0, -1), (1, 0)],            # a rift that looks back
+    "flux": [(0, 0), (1, 0), (2, 0), (3, 0)],               # a Flux window
+}
+WHITE = (255, 255, 255, 255)
+
+
+def realm_colors(realm):
+    s, b, l, h, e = (rgb(c) for c in REALMS[realm])
+    return s, b, l, h, e
+
+
+def pal(realm):
+    """Letters of the shared item shapes: a body, b lit edge, c shaded edge, d/e/f grip, g/h gem, i/j/k guard."""
+    s, b, l, h, e = realm_colors(realm)
+    return {"a": l, "b": h, "c": b, "d": b, "e": l, "f": s, "g": e, "h": h, "i": b, "j": l, "k": s, "w": h}
+
+
+def stamp(img, realm, n, anchor):
+    """Paints the first n glow pixels of the Realm motif around the anchor (only on pixels the sprite already has)."""
+    e = rgb(REALMS[realm][4])
+    ax, ay = nearest(img, anchor)
+    for dx, dy in MOTIFS[realm][:n]:
+        if 0 <= ax + dx < W and 0 <= ay + dy < W and img.p[ay + dy][ax + dx] is not None:
+            img.set(ax + dx, ay + dy, e)
+
+
+def nearest(img, point):
+    x0, y0 = point
+    best = min(((x - x0) ** 2 + (y - y0) ** 2, y, x) for y in range(W) for x in range(W) if img.p[y][x] is not None)
+    return best[2], best[1]
+
+
+def find(rows, letters):
+    return [(x, y) for y, row in enumerate(rows) for x, ch in enumerate(row) if ch in letters]
+
+
+def centre(points):
+    return (round(sum(p[0] for p in points) / len(points)), round(sum(p[1] for p in points) / len(points)))
+
+
+def draw(rows, palette):
+    img = Img()
+    img.art(rows, palette)
+    return img
+
+
+def realm_item(rows, realm, n=1, anchor=None):
+    """Item of a shape in a Realm palette. A small gem ('g', up to 5 pixels) is the glow itself; a big one is lit stone
+    and the glow pixels of the motif sit in its middle. Without a gem the motif goes on the head of the tool."""
+    palette = pal(realm)
+    gems = find(rows, "g")
+    if len(gems) > 5:
+        palette["g"] = rgb(REALMS[realm][1])
+        palette["h"] = rgb(REALMS[realm][2])
+        point = anchor or centre(gems)
+    elif gems:
+        point = None
+    else:
+        body = find(rows, "a") or find(rows, "bdw")
+        point = anchor or centre(body)
+    img = draw(rows, palette)
+    if point is not None:
+        stamp(img, realm, n, point)
+    return img.outline()
 
 
 # --------------------------------------------------------------------------------------------- sprites
@@ -928,118 +1011,88 @@ PET_TURTLE = [
 ]
 
 
-def draw(rows, palette):
-    img = Img()
-    img.art(rows, palette)
+# --------------------------------------------------------------------------------------------- catalog
+# Armor sets, accessory families and pets each take the palette and motif of one Realm.
+SETS = {
+    "miner": "ashes", "lumberjack": "grove", "farmer": "citadel", "hunter": "marsh", "void_walker": "astral",
+    "frostborne": "heights",
+}
+FAMILIES = {
+    "speed": "storm", "strength": "ashes", "crit": "astral", "vitality": "grove", "guard": "heights",
+    "mind": "necro", "harvest": "citadel", "prospect": "marsh", "fortune": "depths",
+}
+TIER_SHAPE = [TALISMAN, CHARM, RING, ARTIFACT]
+PETS = {
+    "wolf": (PET_WOLF, "heights"), "rabbit": (PET_RABBIT, "grove"), "enderman": (PET_ENDERMAN, "astral"),
+    "phoenix": (PET_PHOENIX, "ashes"), "ender_dragon": (PET_DRAGON, "storm"), "tiger": (PET_TIGER, "citadel"),
+    "elephant": (PET_ELEPHANT, "necro"), "turtle": (PET_TURTLE, "depths"),
+}
+# (shape, realm, glow pixels) of every other item; the motif goes on the gem, else on the head of the tool.
+ITEMS = {
+    "rookie_sword": (SWORD, "ashes", 1), "warriors_blade": (SWORD, "citadel", 1), "leaping_sword": (SWORD, "storm", 2),
+    "frozen_scythe": (SCYTHE, "heights", 2), "void_blade": (SWORD, "astral", 2), "wither_blade": (SWORD, "necro", 2),
+    "ember_rod": (WAND, "ashes", 2), "healing_wand": (WAND, "grove", 2), "overflux_capacitor": (CRYSTAL, "flux", 3),
+    "staff_of_the_volcano": (STAFF, "ashes", 3), "hunters_shortbow": (BOW, "marsh", 1),
+    "voidpiercer_bow": (BOW, "astral", 2),
+    "treecapitator": (AXE, "grove", 2), "jungle_axe": (AXE, "marsh", 1), "diggers_shovel": (SHOVEL, "citadel", 1),
+    "miners_pickaxe": (PICKAXE, "ashes", 2), "miners_drill": (DRILL, "flux", 2), "titan_drill": (DRILL, "flux", 4),
+    "farmers_hoe": (HOE, "grove", 1), "harvest_hoe": (HOE, "citadel", 2), "rod_of_legends": (ROD, "depths", 3),
+    "grappling_hook": (HOOK, "storm", 1),
+    "wood_singularity": (LOG, "grove", 2), "stone_singularity": (BLOCK, "ashes", 2),
+    "hay_singularity": (BLOCK, "citadel", 2), "drill_fuel_cell": (LUMP, "flux", 2),
+    "drill_fuel_volta": (BLOCK, "flux", 3), "drill_fuel_oil": (BARREL, "marsh", 2), "warp_pearl": (PEARL, "astral", 2),
+    "reforge_stone_fabled": (SHARD, "citadel", 2), "reforge_stone_withered": (SHARD, "necro", 2),
+    "reforge_stone_ancient": (SHARD, "ashes", 2), "reforge_stone_refined": (SHARD, "heights", 2),
+    "enchanted_book": (BOOK, "astral", 3), "pet_egg": (EGG, "grove", 2), "pet_candy": (BERRY, "depths", 2),
+    "pet_tier_boost": (SHARD, "astral", 3), "pet_xp_share": (BOTTLE, "necro", 2), "pet_big_teeth": (BONE, "ashes", 1),
+    "pet_hardened_scales": (SCUTE, "marsh", 2), "pet_lucky_clover": (CLOVER, "grove", 2),
+    # imported sprites (imported.txt) keep their concept art, these are only drawn for the design check
+    "recombobulator": (STAR, "astral", 2), "hot_potato_book": (BOOK, "ashes", 2),
+}
+
+
+def armor(rows, realm, tier):
+    """Body in light, trim darker on tier 1 and bright on tier 2 and 3; the Realm motif has as many glow pixels as the tier."""
+    s, b, l, h, e = realm_colors(realm)
+    trim = b if tier == 1 else h
+    img = draw(rows, {"a": l, "b": h, "c": b, "h": trim, "g": trim, "d": s, "i": l, "k": s, "w": h})
+    points = find(rows, "g") or find(rows, "a")
+    stamp(img, realm, tier, centre(points))
     return img.outline()
 
 
-def metal_item(rows, metal, grip="#7a4b24", gem="#ff5a5a", guard="#c9a13b"):
-    return draw(rows, pal(METAL.get(metal, metal), grip, gem, guard))
+def accessory(rows, realm, tier):
+    """Frame in the Realm's light tones around a dark stone; the glow pixels grow from one to four with the tier."""
+    s, b, l, h, e = realm_colors(realm)
+    img = draw(rows, {"a": l, "b": h, "c": b, "g": s if realm != "ashes" else b, "h": b if realm != "ashes" else l, "w": h})
+    points = find(rows, "g")
+    stamp(img, realm, tier, centre(points))
+    return img.outline()
 
 
-# --------------------------------------------------------------------------------------------- catalog
-SETS = {
-    "miner": ("#9aa0aa", "#ff9a3a"),
-    "lumberjack": ("#8a5a2e", "#4fae4f"),
-    "farmer": ("#e8c545", "#6bbf4a"),
-    "hunter": ("#3f7a4a", "#e0453a"),
-    "void_walker": ("#5c3a9c", "#d36bff"),
-    "frostborne": ("#8fd8f5", "#ffffff"),
-}
-FAMILIES = {
-    "speed": "#ffffff", "strength": "#ff5a3a", "crit": "#6a8aff", "vitality": "#ff4a6a", "guard": "#a8b0b8",
-    "mind": "#39b8ff", "harvest": "#e8c545", "prospect": "#d8884a", "fortune": "#7be07b",
-}
-TIER_FRAME = ["#cfd3d9", "#55c868", "#4f6fe8", "#a74bd6"]
-TIER_SHAPE = [TALISMAN, CHARM, RING, ARTIFACT]
-PETS = {
-    "wolf": (PET_WOLF, "#b8bcc6", "#ffffff", "#2a2a35"),
-    "rabbit": (PET_RABBIT, "#e8d6b8", "#ff9aa8", "#2a2a35"),
-    "enderman": (PET_ENDERMAN, "#1c1624", "#d36bff", "#d36bff"),
-    "phoenix": (PET_PHOENIX, "#ff7a2a", "#ffd24a", "#ffd24a"),
-    "ender_dragon": (PET_DRAGON, "#2a2236", "#d36bff", "#7b3fd0"),
-    "tiger": (PET_TIGER, "#f2992e", "#ffffff", "#3a2a1a"),
-    "elephant": (PET_ELEPHANT, "#9ea3ad", "#ffffff", "#2a2a35"),
-    "turtle": (PET_TURTLE, "#4fae4f", "#9be07b", "#6a8a3a"),
-}
+def pet(rows, realm):
+    """Animal in the Realm palette; the glow pixel is its eye (or the middle of the body)."""
+    s, b, l, h, e = realm_colors(realm)
+    img = draw(rows, {"a": l, "b": h, "c": b, "g": h, "h": h, "i": b, "d": s, "k": OUTLINE, "w": h})
+    eyes = find(rows, "k")
+    stamp(img, realm, 1, eyes[0] if eyes else centre(find(rows, "a")))
+    return img.outline()
 
 
 def build():
     icons = {}
-    # weapons
-    icons["rookie_sword"] = metal_item(SWORD, "stone", gem="#cfd3d9")
-    icons["warriors_blade"] = metal_item(SWORD, "iron", gem="#55c868")
-    icons["leaping_sword"] = metal_item(SWORD, "gold", gem="#4de3e3")
-    icons["frozen_scythe"] = metal_item(SCYTHE, "ice", gem="#ffffff")
-    icons["void_blade"] = metal_item(SWORD, "void", grip="#2a1a40", gem="#d36bff", guard="#4a2a7a")
-    icons["wither_blade"] = metal_item(SWORD, "wither", grip="#1a1a22", gem="#ff5a3a", guard="#7a1a1a")
-    icons["ember_rod"] = metal_item(WAND, "ember", grip="#5a3a1a", gem="#ffb02a")
-    icons["healing_wand"] = metal_item(WAND, "#e8f0ff", grip="#d3a8ff", gem="#7be07b")
-    icons["overflux_capacitor"] = metal_item(CRYSTAL, "#2aa5c8", gem="#39e8ff")
-    icons["staff_of_the_volcano"] = metal_item(STAFF, "ember", grip="#3a2a20", gem="#ff7a2a")
-    icons["hunters_shortbow"] = metal_item(BOW, "wood", grip="#9b6b3a", gem="#cfd3d9")
-    icons["voidpiercer_bow"] = metal_item(BOW, "void", grip="#4a2a7a", gem="#d36bff")
-    # tools
-    icons["treecapitator"] = metal_item(AXE, "gold", grip="#6a4020")
-    icons["jungle_axe"] = metal_item(AXE, "iron", grip="#4a7a30")
-    icons["diggers_shovel"] = metal_item(SHOVEL, "iron", grip="#7a4b24")
-    icons["miners_pickaxe"] = metal_item(PICKAXE, "diamond", grip="#7a4b24")
-    icons["miners_drill"] = metal_item(DRILL, "#d3a24a", grip="#4a4a52", gem="#ff5a3a", guard="#8c8f96")
-    icons["titan_drill"] = metal_item(DRILL, "netherite", grip="#3a3a44", gem="#39e8ff", guard="#d3a24a")
-    icons["farmers_hoe"] = metal_item(HOE, "iron", grip="#7a4b24")
-    icons["harvest_hoe"] = metal_item(HOE, "diamond", grip="#6a4020")
-    icons["rod_of_legends"] = metal_item(ROD, "#ffd24a", grip="#6a4020", gem="#39e8ff")
-    icons["grappling_hook"] = metal_item(HOOK, "iron", grip="#9b6b3a", gem="#cfd3d9")
-    # armor
+    for name, (rows, realm, n) in ITEMS.items():
+        icons[name] = realm_item(rows, realm, n)
     slots = {"helmet": HELMET, "chestplate": CHEST, "leggings": LEGS, "boots": BOOTS}
-    for set_id, (main, trim) in SETS.items():
+    for set_id, realm in SETS.items():
         for slot, rows in slots.items():
             for tier in (1, 2, 3):
-                m = ramp(main)
-                t = ramp(trim)
-                if tier == 3:
-                    t = ramp("#ffd24a")
-                palette = {"a": m[1], "b": m[0], "c": m[2], "h": t[1] if tier > 1 else m[0], "g": t[0], "k": t[2],
-                           "d": t[2], "i": t[1], "w": (255, 255, 255, 255)}
-                img = draw(rows, palette)
-                if tier == 3:
-                    img.set(1, 1, rgb("#ffd24a"))
-                    img.set(14, 1, rgb("#ffd24a"))
-                icons[f"{set_id}_{slot}_t{tier}"] = img
-    # accessories
-    for family, gem in FAMILIES.items():
+                icons[f"{set_id}_{slot}_t{tier}"] = armor(rows, realm, tier)
+    for family, realm in FAMILIES.items():
         for tier in range(4):
-            f = ramp(TIER_FRAME[tier])
-            g = ramp(gem)
-            palette = {"a": f[1], "b": f[0], "c": f[2], "g": g[1], "h": g[0], "w": (255, 255, 255, 255)}
-            icons[f"acc_{family}_{tier + 1}"] = draw(TIER_SHAPE[tier], palette)
-    # utility
-    icons["recombobulator"] = metal_item(STAR, "#ff6bd6", gem="#ffffff")
-    icons["hot_potato_book"] = metal_item(BOOK, "#d99a3a", grip="#e8e0c8", gem="#ff5a3a", guard="#ffd24a")
-    icons["wood_singularity"] = metal_item(LOG, "#6a4b2a", grip="#b98a4a", gem="#6a4020")
-    icons["stone_singularity"] = metal_item(BLOCK, "#8c8f96", gem="#cfd3d9")
-    icons["hay_singularity"] = metal_item(BLOCK, "#e8c545", gem="#b9922a")
-    icons["drill_fuel_cell"] = metal_item(LUMP, "#2a2a35", gem="#8c8f96")
-    icons["drill_fuel_volta"] = metal_item(BLOCK, "#d63a3a", gem="#ff9a8a")
-    icons["drill_fuel_oil"] = metal_item(BARREL, "#2a2a35", gem="#a74bd6", guard="#8c8f96")
-    icons["warp_pearl"] = metal_item(PEARL, "#1f8a7a", gem="#39e8c8")
-    for stone, color in (("fabled", "#ffd24a"), ("withered", "#4a4350"), ("ancient", "#d3a24a"), ("refined", "#39e8ff")):
-        icons[f"reforge_stone_{stone}"] = metal_item(SHARD, color, gem=color)
-    icons["enchanted_book"] = metal_item(BOOK, "#6a3fb0", grip="#e8e0c8", gem="#d36bff", guard="#b892ff")
-    icons["pet_egg"] = metal_item(EGG, "#f0e8d0", gem="#7bb8ff")
-    icons["pet_candy"] = metal_item(BERRY, "#d63a6a", gem="#ff9ab0", grip="#4a7a30")
-    icons["pet_tier_boost"] = metal_item(SHARD, "#c06bff", gem="#c06bff")
-    icons["pet_xp_share"] = metal_item(BOTTLE, "#7be07b", grip="#9b6b3a", gem="#c0ffc0")
-    icons["pet_big_teeth"] = metal_item(BONE, "#f2f2e8")
-    icons["pet_hardened_scales"] = metal_item(SCUTE, "#4fae4f", gem="#9be07b")
-    icons["pet_lucky_clover"] = metal_item(CLOVER, "#3fc86a", grip="#2a7a30")
-    # pets
-    for pet, (rows, main, accent, dark) in PETS.items():
-        m, a, d = ramp(main), ramp(accent), ramp(dark)
-        palette = {"a": m[1], "b": m[0], "c": m[2], "g": a[1], "h": a[0], "i": a[1], "d": a[2], "k": d[1],
-                   "w": (255, 255, 255, 255)}
-        icons[f"pet_{pet}"] = draw(rows, palette)
+            icons[f"acc_{family}_{tier + 1}"] = accessory(TIER_SHAPE[tier], realm, tier + 1)
+    for name, (rows, realm) in PETS.items():
+        icons[f"pet_{name}"] = pet(rows, realm)
     return icons
 
 

@@ -19,7 +19,7 @@ final class SettingsGui {
             boolean get(MenuData d) { return d.questTracker; }
             void set(MenuData d, boolean v) { d.questTracker = v; }
         },
-        SOUNDS("Menu Sounds", Material.NOTE_BLOCK, "Play sounds for menus, quests and", "wisps.") {
+        SOUNDS("Menu Sounds", Material.NOTE_BLOCK, "Play sounds for menus and quests.", "") {
             boolean get(MenuData d) { return d.sounds; }
             void set(MenuData d, boolean v) { d.sounds = v; }
         };

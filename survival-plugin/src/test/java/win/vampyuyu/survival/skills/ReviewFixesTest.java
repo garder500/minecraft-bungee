@@ -140,7 +140,7 @@ public class ReviewFixesTest extends SkillsBase {
         ItemStack block = enchanted("enchanted_diamond_block", 1);
         String blockLore = block.lore().stream().map(c -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
             .plainText().serialize(c)).reduce("", (a, b) -> a + "\n" + b);
-        assertTrue(blockLore, blockLore.contains("5 slots x 16 Enchanted Diamond"));
+        assertTrue(blockLore, blockLore.contains("5 slots x 16 Compressed Diamond"));
     }
 
     private SkillRecipes recipes() {

@@ -10,12 +10,12 @@ import win.vampyuyu.survival.api.Realm;
 /**
  * The Quai des Huit (GDD 17.1), relative coordinates: a floating platform with a central beacon and eight Sky Gates
  * on a ring, one per Realm. The platform surface is y = 0, its centre (0, 0); {@link #CENTER_Z} is where it sits in
- * the hub world, north of it a bridge joins the south avenue of the hub plaza. The gates are built dark (black
- * glass); a lit gate is shown to its owner by client-side block changes (see {@link SkyGates}). Pure data.
+ * the hub world, north of it a bridge joins the south avenue of the hub plaza. The gates are built dark (tinted
+ * glass, near-black; plain black stained glass looks light blue against the sky); a lit gate is shown to its owner by client-side block changes (see {@link SkyGates}). Pure data.
  */
 public final class QuaiPlan {
     /** Bump when the layout changes so an existing Quai is rebuilt (the marker file stores it). */
-    public static final int VERSION = 1;
+    public static final int VERSION = 3;
     public static final int RADIUS = 22;
     /** Hub world Z of the platform centre: the hub border is +-100, the hub ring road ends at z = 44. */
     public static final int CENTER_Z = 72;
@@ -26,7 +26,7 @@ public final class QuaiPlan {
     public static final int SPAWN_Z = -(RADIUS - 3);
 
     /** The membrane is the dark glass pane of a gate that a lit gate recolours. */
-    public static final Material DARK_MEMBRANE = Material.BLACK_STAINED_GLASS;
+    public static final Material DARK_MEMBRANE = Material.TINTED_GLASS;
     public static final Material DARK_CROWN = Material.DEEPSLATE_TILES;
     public static final Material LIT_CROWN = Material.SEA_LANTERN;
 
@@ -239,11 +239,23 @@ public final class QuaiPlan {
     private static void bridge(BlockPlan plan) {
         for (int z = BRIDGE_FROM - 1; z <= -RADIUS + 3; z++) {
             for (int w = -2; w <= 2; w++) {
-                Material m = w == 0 ? Material.QUARTZ_BRICKS : Math.abs(w) == 2 ? Material.POLISHED_ANDESITE : Material.STONE_BRICKS;
+                // the end of the hub's processional: same road, same pale stone
+                Material m = Math.abs(w) <= 1 ? Material.QUARTZ_BRICKS : Material.POLISHED_DIORITE;
                 plan.set(w, 0, z, m);
                 plan.set(w, -1, z, Material.STONE_BRICKS);
             }
         }
+        // a ruined arch half way over the bridge: the left pillar whole, the right one broken, no lintel on that side
+        int az = BRIDGE_FROM + 4;
+        for (int sx : new int[] {-3, 3}) {
+            int top = sx < 0 ? 7 : 4;
+            plan.set(sx, 0, az, Material.SMOOTH_QUARTZ);
+            ShapeKit.column(plan, sx, 1, top, az, Material.QUARTZ_PILLAR);
+        }
+        for (int x = -3; x <= 0; x++) {
+            plan.set(x, 8, az, x == 0 ? Material.CHISELED_QUARTZ_BLOCK : Material.QUARTZ_BLOCK);
+        }
+        plan.set(-1, 7, az, Material.LANTERN, "hanging=true");
         for (int z = BRIDGE_FROM + 2; z < -RADIUS; z += 3) {
             for (int sx : new int[] {-3, 3}) {
                 plan.set(sx, 0, z, Material.POLISHED_BLACKSTONE_BRICKS);

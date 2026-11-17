@@ -15,6 +15,10 @@ import win.vampyuyu.survival.core.SkyblockWorlds;
 public final class HubManager {
     public static final String MARKER_FILE = "island/hub.json";
     private static final String HUB_LANE = "hub";
+    /** Square wiped on a plan change: x -45..45, z -49..41 (the old plans reached 44 in x and 44 in z). */
+    static final int WIPE_CENTER_X = 0;
+    static final int WIPE_CENTER_Z = -4;
+    static final int WIPE_RADIUS = 45;
 
     /** Persisted marker. */
     public static final class Marker {
@@ -62,7 +66,31 @@ public final class HubManager {
             return;
         }
         service.hubState(false, false);
-        buildPad(hub, 0, true);
+        if (needsWipe(marker, cfg.hubY, padPresent(hub))) {
+            wipeOldHub(hub);
+        } else {
+            buildPad(hub, 0, true);
+        }
+    }
+
+    /** True when something was built under an older (or unfinished) plan: its blocks would show through the new fragment. */
+    static boolean needsWipe(Marker marker, int hubY, boolean padPresent) {
+        return padPresent && !upToDate(marker, hubY);
+    }
+
+    /**
+     * Clears the square of the previous hub before the new plan goes in. The square stops at z = 41: the Quai bridge
+     * starts at z = 43 and must survive (the new plan clears the scraps of the old ring road beyond it itself).
+     */
+    private void wipeOldHub(World hub) {
+        service.logger().info("The hub layout changed (plan " + HubPlan.VERSION + "): clearing the old hub before the rebuild");
+        service.runner().submit(HUB_LANE, new WipeJob(core.getPlugin(), "hub (old plan)", hub, WIPE_CENTER_X, WIPE_CENTER_Z,
+            WIPE_RADIUS, cfg.chunkTimeoutTicks)).thenAccept(ok -> {
+                if (!ok) {
+                    service.logger().warning("The old hub could not be cleared completely; building the new one over it");
+                }
+                buildPad(hub, 0, true);
+            });
     }
 
     private void buildPad(World hub, int attempt, boolean thenFull) {

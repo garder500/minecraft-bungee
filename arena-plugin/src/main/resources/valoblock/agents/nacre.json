@@ -1,0 +1,99 @@
+{
+  "id": "nacre",
+  "name": "Nacre",
+  "role": "Seer",
+  "roleColor": "#c9a8ff",
+  "realm": "Abyssal Depths",
+  "quote": "\"Down there, you learn to listen.\"",
+  "menuColor": "#2a2240",
+  "colors": {
+    "torso": "#12405a",
+    "trim": "#c98442",
+    "glow": "#ff6ab0",
+    "arm": "#2a8a9a",
+    "legs": "#0a1a2a",
+    "boots": "#c98442",
+    "bg": "#0e2230"
+  },
+  "face": {
+    "palette": {
+      "h": "#c98442",
+      "s": "#8a6a5a",
+      "w": "#bff0f0",
+      "e": "#2a8a9a",
+      "m": "#5a4a4a",
+      "v": "#2a8a9a"
+    },
+    "rows": [
+      "hhhhhhhh",
+      "hhhhhhhh",
+      "hvvvvvvh",
+      "hvvvvvvh",
+      "hwevvweh",
+      "hvvvvvvh",
+      "ssmmmmss",
+      "ssssssss"
+    ]
+  },
+  "skin": {
+    "value": "ewogICJ0aW1lc3RhbXAiIDogMTc5NDg3NDE4MTE0MiwKICAicHJvZmlsZUlkIiA6ICI4MDQ2MzdjMTA1ZGY0MzM0ODE3YTNmMDcxMTMyOTYyMSIsCiAgInByb2ZpbGVOYW1lIiA6ICJQcmluY2VDUiIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9lMzA4OTIxYjA5MmU3NWMxZDZiYjRlMzFjOTZiODczNjJmOTFlNTI0NTRlNzU1NGVkYWNjMDJlNzVjODllZjA1IgogICAgfQogIH0KfQ==",
+    "signature": "u8MvXOs21sbLmFXDZ9gPKscnhxzgLoKJlm3m2VwoeywqQLktnRhaSl/jHoe/nJ8Z/nj74PzFf5rHHmom17l5oPcpCBwvkT9fwlzR0w4UOqhGJ0lR4wgd3Iv0ZYeocTCZI7wPO0MuGD+HPaNoyLFEjs1popuO/zOZncpYJmfoYv2s+3mS99BBmmU0BtsU11Fe+wDkR0mB+at+M9JwslE93MfebhKe+wQkHRQ/FOFv45EhoG1t2ErMfoFhk3sZsXWOWAVq3jQQaO50gU2Q27D95slXYZDMVZph9eqNbDhWcvJPIgsuwVqghy7omXItSiR1QWZ902oe3dnHcsmK/3J7e09lZ1NwXIH6dRhxCXzM41oNcuUXUS4yKfNBh6BBFZI2ayJEZCJVWwSVOaijGyhYnagkNsBM8eaSG8mqiglyaX0vrobWBiug1SbwZqKnOdwdkwUNba2ndkIuZnfvCRQg2QhCCBNr7EkQnRzaz1ceKYzgAlVXRQX0KmQOZSHbteCXjaUEYc9tCEa60U0MgMR0Inkx3I2/bZCWDk0qmjqIANYU9ZWBZXgYh0mnzAqoroWSdbR7NtsrDJXL2msuDkTN1dWFtSHg2S4i1N82UD4yZacWfnl9oSZJ3GIMoUxyNFcSjv3NGmI4GKUTo9VNqjF3OUHqzmhkM653SgXcczOWyjU=",
+    "mineskin": "757b49e26534468db3d77ead13a502e1"
+  },
+  "build": "Sonar = expanding particle ring + glow. Undertow pulls with an impulse towards the centre.",
+  "abilities": [
+    {
+      "slot": 4,
+      "id": "ink_burst",
+      "name": "Ink Burst",
+      "item": "INK_SAC",
+      "text": "Short black cloud that blinds and muffles footsteps inside it.",
+      "cost": 150,
+      "maxCharges": 1,
+      "num": {
+        "radius": 3.5,
+        "seconds": 6
+      }
+    },
+    {
+      "slot": 5,
+      "id": "pressure_bubble",
+      "name": "Pressure Bubble",
+      "item": "NAUTILUS_SHELL",
+      "text": "A dome that pushes players out for 4 s. Good for breaking a seal.",
+      "cost": 250,
+      "maxCharges": 1,
+      "num": {
+        "radius": 5,
+        "seconds": 4,
+        "push": 0.5
+      }
+    },
+    {
+      "slot": 6,
+      "id": "sonar_pearl",
+      "name": "Sonar Pearl",
+      "item": "ENDER_PEARL",
+      "text": "Thrown pearl. One sonar ring reveals enemies within 12 blocks.",
+      "charges": 1,
+      "rechargeKills": 0,
+      "num": {
+        "radius": 12,
+        "glowSeconds": 2
+      }
+    },
+    {
+      "slot": 7,
+      "id": "undertow",
+      "name": "Undertow",
+      "item": "PRISMARINE_SHARD",
+      "text": "8 s field that drags enemies toward its centre.",
+      "ultPoints": 7,
+      "num": {
+        "seconds": 8,
+        "radius": 10,
+        "pull": 0.22
+      }
+    }
+  ]
+}

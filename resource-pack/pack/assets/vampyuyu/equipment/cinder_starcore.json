@@ -1,0 +1,14 @@
+{
+ "layers": {
+  "humanoid": [
+   {
+    "texture": "vampyuyu:cinder_starcore"
+   }
+  ],
+  "humanoid_leggings": [
+   {
+    "texture": "vampyuyu:cinder_starcore"
+   }
+  ]
+ }
+}

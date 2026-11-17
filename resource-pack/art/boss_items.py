@@ -101,6 +101,67 @@ class Canvas:
                 + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b""))
 
 
+# ---------------------------------------------------------------- Realm palettes (lore bible, section 2)
+# shadow, base, light, highlight, glow. The glow is the only saturated colour of a sprite and marks the Realm motif.
+REALMS = {
+    "ashes": ("#120a16", "#2a1a2e", "#5a2a2a", "#c8461e", "#ff8a2a"),
+    "grove": ("#2c3a1e", "#4f6b2a", "#8fb84a", "#d6f08a", "#f1e7c9"),
+    "frost": ("#1f3557", "#3b6fa8", "#7fc8e8", "#e6f7ff", "#b6a8ff"),
+    "citadel": ("#5a3a12", "#a8742a", "#f2c14e", "#fff1b0", "#3fb6a8"),
+    "marsh": ("#2a2a1a", "#4e5a22", "#8a9a2e", "#c9d36a", "#b04aa0"),
+    "storm": ("#1e2440", "#3a4a8a", "#7a8ee0", "#f0f4ff", "#ffe94a"),
+    "depths": ("#0a1a2a", "#12405a", "#2a8a9a", "#bff0f0", "#ff6ab0"),
+    "necro": ("#241f3a", "#4a4570", "#9c95c8", "#e8e4ff", "#6affd8"),
+    "astral": ("#0e0a1a", "#3a1a6a", "#8a4aff", "#e0c8ff", "#ff4a8a"),
+    "flux": ("#4a2a12", "#7a4a1e", "#c98442", "#f2c14e", "#4af0ff"),
+}
+LORE_OUT = (0x14, 0x0F, 0x18, 255)
+BASE = (170, 170, 170)      # sentinel body colour of the painters: its shades pick the palette step
+ACCENT = (255, 0, 255)      # sentinel accent colour: becomes the Realm glow
+
+
+def realm_rgb(realm):
+    return [tuple(int(h[i:i + 2], 16) for i in (1, 3, 5)) + (255,) for h in REALMS[realm]]
+
+
+def lore_step(lum, cuts):
+    for i, cut in enumerate(cuts):
+        if lum < cut:
+            return i
+    return len(cuts)
+
+
+LIFT = {"ashes": 1}   # the Ashes shadow is almost the outline colour: its sprites use steps 2..4 of the ramp
+
+
+def requant(c, realm, cuts=(145, 190, 232), glow_chroma=90):
+    """Maps every pixel of a finished (outlined) canvas onto the Realm palette: light steps by luminance, saturated
+    bright pixels become the glow, the outline becomes #140F18. No anti-aliasing, no colour outside the palette."""
+    ramp = realm_rgb(realm)
+    for y in range(16):
+        for x in range(16):
+            px = c.p[y][x]
+            if px is None:
+                continue
+            if tuple(px[:3]) == OUT[:3] or tuple(px[:3]) == LORE_OUT[:3]:
+                c.p[y][x] = LORE_OUT
+                continue
+            r, g, bl = px[:3]
+            lum = 0.3 * r + 0.59 * g + 0.11 * bl
+            if max(r, g, bl) - min(r, g, bl) >= glow_chroma:
+                c.p[y][x] = ramp[4] if max(r, g, bl) >= 200 else ramp[2]
+            else:
+                c.p[y][x] = ramp[min(3, lore_step(lum, cuts) + LIFT.get(realm, 0))]
+
+
+def lore_icon(painter, realm):
+    c = Canvas()
+    painter(c, BASE, ACCENT)
+    c.outline()
+    requant(c, realm)
+    return c
+
+
 # ---------------------------------------------------------------- shape helpers
 
 def circle(cx, cy, r):
@@ -347,6 +408,27 @@ def sigil(c, rgb, accent):
     sparkle(c, 5, 3, accent)
 
 
+def key(c, rgb, accent):
+    # a ring bow, a long shaft and two teeth
+    c.fill_shape(circle(5, 5, 3.6), rgb)
+    c.fill_shape(circle(5, 5, 1.4), accent, light=1.3, dark=1.0)
+    c.line(7, 7, 13, 13, shade(rgb, 1.1))
+    c.line(8, 7, 14, 13, shade(rgb, 0.85))
+    c.line(11, 14, 14, 11, shade(rgb, 1.0))
+    c.line(9, 12, 11, 10, shade(accent, 1.2))
+    sparkle(c, 3, 3, accent)
+
+
+def lens(c, rgb, accent):
+    # a round lens in a rim, with a handle
+    c.fill_shape(circle(7, 7, 6.0), shade(rgb, 0.8)[:3])
+    c.fill_shape(circle(7, 7, 4.3), accent, light=1.2, dark=0.8)
+    c.fill_shape(circle(7, 7, 2.0), shade(rgb, 0.5)[:3], light=1.0, dark=0.8)
+    c.line(11, 11, 14, 14, shade(rgb, 1.0))
+    c.line(12, 11, 14, 13, shade(rgb, 0.8))
+    sparkle(c, 5, 5, accent)
+
+
 def wing_core(c, rgb, accent):
     orb(c, rgb, accent, core=mix(rgb, (255, 255, 255), 0.5))
     # little wing marks
@@ -370,14 +452,6 @@ ICONS = {
     "wing_core": (wing_core, (0xB8, 0x6B, 0xFF), MYTHIC),
     "voidwyrm_scale": (scale, (0x4A, 0x1E, 0x8C), EPIC),
     "void_fang": (fang, (0xD8, 0xC8, 0xFF), LEGENDARY),
-    "lava_core": (orb, (0xB8, 0x24, 0x08), (0xFF, 0xC8, 0x30)),
-    "mycelial_core": (orb, (0x2E, 0x7A, 0x3C), (0xD8, 0xFF, 0x7A)),
-    "judge_core": (orb, (0x4A, 0x2E, 0x8C), (0xD8, 0xC8, 0xFF)),
-    "judge_seal": (sigil, (0x3C, 0x28, 0x5A), (0xB8, 0x6B, 0xFF)),
-    "frost_core": (orb, (0x2A, 0x6E, 0xB8), (0xE0, 0xF8, 0xFF)),
-    "thunder_core": (orb, (0x2A, 0x6F, 0xB8), (0xFF, 0xF0, 0x6A)),
-    "tempest_key": (sigil, (0x3A, 0x9F, 0xD8), (0xFF, 0xF0, 0x6A)),
-    "interpulse_key": (sigil, (0x12, 0x0A, 0x24), (0xFF, 0x4F, 0xD8)),
     "warden_heart": (heart, (0xC8, 0x30, 0x10), (0xFF, 0xA0, 0x30)),
     "ember_blade": (sword, (0xFF, 0x7A, 0x1E), (0xFF, 0xD0, 0x40)),
     "frost_shard": (shard, (0x8A, 0xD8, 0xFF), (0xFF, 0xFF, 0xFF)),
@@ -399,19 +473,45 @@ ICONS = {
     "null_sphere": (pearl, (0x2C, 0x8A, 0x78), (0x7A, 0xF0, 0xD8)),
     "void_conduit": (conduit, (0x3A, 0x1E, 0x7A), (0xC8, 0x7A, 0xFF)),
     "demon_ember": (flame, (0xFF, 0x7A, 0x1E), (0xFF, 0xE0, 0x60)),
-    "pharaoh_scarab": (charm, (0xD8, 0xA8, 0x20), (0x2E, 0x9A, 0xE8)),
-    "temporal_core": (orb, (0xC8, 0x8A, 0x10), (0xFF, 0xF0, 0x80)),
-    "pharaoh_linen": (web, (0xE8, 0xDC, 0xB8), (0xC8, 0xA2, 0x4A)),
     "demon_core": (orb, (0x8A, 0x10, 0x10), (0xFF, 0x60, 0x20)),
+    # the four boss items that had no icon (they showed the missing-texture checker)
+    "echo_key": (key, (0x8A, 0x9C, 0xB8), (0x7A, 0xE8, 0xFF)),
+    "devourer_sigil": (sigil, (0x1E, 0x10, 0x3A), (0xFF, 0x7A, 0x30)),
+    "singularity_relic": (orb, (0x14, 0x0C, 0x28), (0xC8, 0x7A, 0xFF)),
+    "horizon_lens": (lens, (0x3A, 0x2A, 0x5A), (0xFF, 0xB0, 0x40)),
+    # the Abyssal Depths guardian core (Realm 7 palette 2a8a9a / ff6ab0): found by test ShowcaseModelsTest
+    "leviathan_core": (orb, (0x2A, 0x8A, 0x9A), (0xFF, 0x6A, 0xB0)),
 }
 
 
+# Sprites ported pixel by pixel from the approved design (lore_sprites.py); they carry their own outline.
+LORE = ["lava_core", "mycelial_core", "frost_core", "temporal_core", "judge_core", "thunder_core", "pharaoh_scarab",
+        "judge_seal", "tempest_key", "interpulse_key", "pharaoh_linen"]
+
+
+REALM_OF = {
+    "void_sigil": "astral", "magma_core": "ashes", "frost_heart": "frost", "matriarch_egg": "grove",
+    "leviathan_scale": "depths", "wing_core": "storm", "voidwyrm_scale": "astral", "void_fang": "astral",
+    "warden_heart": "ashes", "ember_blade": "ashes", "frost_shard": "frost", "glacial_edge": "frost",
+    "matriarch_silk": "grove", "venom_dagger": "grove", "leviathan_tooth": "depths", "tidal_trident": "depths",
+    "lord_bone": "necro", "necro_scepter": "necro", "colossus_core": "ashes", "roc_feather": "storm",
+    "revenant_flesh": "marsh", "revenant_catalyst": "marsh", "tarantula_web": "grove", "tarantula_charm": "necro",
+    "ravager_tooth": "citadel", "ravager_pelt": "citadel", "null_sphere": "astral", "void_conduit": "astral",
+    "demon_ember": "ashes", "demon_core": "ashes",
+    "echo_key": "astral", "devourer_sigil": "astral", "singularity_relic": "astral", "horizon_lens": "astral",
+    "leviathan_core": "depths",
+}
+
+
+def all_ids():
+    return list(ICONS) + LORE
+
+
 def draw(item_id):
-    painter, rgb, accent = ICONS[item_id]
-    c = Canvas()
-    painter(c, rgb, accent)
-    c.outline()
-    return c
+    if item_id in LORE:
+        import lore_sprites
+        return lore_sprites.draw(item_id)
+    return lore_icon(ICONS[item_id][0], REALM_OF[item_id])
 
 
 def write_json(path, data):
@@ -422,7 +522,7 @@ def write_json(path, data):
 def sheet(path):
     scale_up = 10
     cols = 6
-    ids = list(ICONS)
+    ids = all_ids()
     rows = (len(ids) + cols - 1) // cols
     w, h = cols * 18 * scale_up, rows * 18 * scale_up
     drawn = {i: draw(i).p for i in ids}
@@ -450,7 +550,7 @@ def sheet(path):
 def main():
     tex = PACK / "textures" / "item" / "boss"
     tex.mkdir(parents=True, exist_ok=True)
-    for item_id in ICONS:
+    for item_id in all_ids():
         (tex / f"{item_id}.png").write_bytes(draw(item_id).png())
         write_json(PACK / "models" / "item" / "boss" / f"{item_id}.json",
                    {"parent": "minecraft:item/generated", "textures": {"layer0": f"vampyuyu:item/boss/{item_id}"}})
@@ -458,7 +558,7 @@ def main():
                    {"model": {"type": "minecraft:model", "model": f"vampyuyu:item/boss/{item_id}"}})
     if "--sheet" in sys.argv:
         sheet(sys.argv[sys.argv.index("--sheet") + 1])
-    print(f"wrote {len(ICONS)} boss icons")
+    print(f"wrote {len(all_ids())} boss icons")
 
 
 if __name__ == "__main__":

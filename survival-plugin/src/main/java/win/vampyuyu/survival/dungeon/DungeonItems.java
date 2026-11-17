@@ -36,19 +36,19 @@ public final class DungeonItems {
         reg(core, CustomItemDef.builder(CRYPT_SHARD, "Crypt Shard", Rarity.UNCOMMON, Material.PRISMARINE_SHARD)
             .itemModel(model(CRYPT_SHARD)).type("MATERIAL")
             .lore("<gray>A cold shard that hums with", "<gray>the memory of the dead.").build());
-        reg(core, CustomItemDef.builder(WITHER_ESSENCE, "Wither Essence", Rarity.RARE, Material.BLACK_DYE)
+        reg(core, CustomItemDef.builder(WITHER_ESSENCE, "Barrow Ash", Rarity.RARE, Material.BLACK_DYE)
             .itemModel(model(WITHER_ESSENCE)).type("MATERIAL")
-            .lore("<gray>Condensed wither magic.", "<dark_gray>Found from floor 2 on.").build());
-        reg(core, CustomItemDef.builder(SPIRIT_DUST, "Spirit Dust", Rarity.EPIC, Material.GLOWSTONE_DUST)
+            .lore("<gray>Ash from the oldest graves.", "<dark_gray>Found from floor 2 on.").build());
+        reg(core, CustomItemDef.builder(SPIRIT_DUST, "Mourning Dust", Rarity.EPIC, Material.GLOWSTONE_DUST)
             .itemModel(model(SPIRIT_DUST)).type("MATERIAL")
-            .lore("<gray>Dust of a restless ghost.", "<dark_gray>Found from floor 4 on, rank A or better.").build());
+            .lore("<gray>Dust of a ghost that cannot rest.", "<dark_gray>Found from floor 4 on, rank A or better.").build());
         reg(core, CustomItemDef.builder(RELIC, "Ancient Relic", Rarity.LEGENDARY, Material.ECHO_SHARD)
             .itemModel(model(RELIC)).type("MATERIAL").glint(true)
             .lore("<gray>A relic of the first crypt kings.", "<dark_gray>Found from floor 5 on, rank S or better.").build());
         reg(core, CustomItemDef.builder(DARK_SCROLL, "Dark Scroll", Rarity.MYTHIC, Material.PAPER)
             .itemModel(model(DARK_SCROLL)).type("MATERIAL").glint(true)
             .lore("<gray>Written in a language no one", "<gray>alive can read.", "<dark_gray>Floor 7, rank S+.").build());
-        reg(core, CustomItemDef.builder(SPIRIT_LEAF, "Spirit Leaf", Rarity.RARE, Material.FERN)
+        reg(core, CustomItemDef.builder(SPIRIT_LEAF, "Recall Leaf", Rarity.RARE, Material.FERN)
             .itemModel(model(SPIRIT_LEAF)).type("CONSUMABLE")
             .lore("<gray>Right-click in a dungeon to", "<green>instantly revive a ghost<gray> of your party.",
                 "<dark_gray>Sold by the Crypt Merchant.").build());

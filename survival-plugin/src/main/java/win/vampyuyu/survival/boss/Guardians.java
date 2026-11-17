@@ -10,7 +10,7 @@ import org.jspecify.annotations.Nullable;
 import win.vampyuyu.survival.data.Settings;
 
 /**
- * The Guardians of the Realms (GDD 12.2): bosses of the table that keep a Cosmic Sarcophagus, with what is specific to
+ * The Guardians of the Realms (GDD 12.2): bosses of the table that keep a Sarcophagus, with what is specific to
  * them on top of the generic boss rules: a local resource every participant gets, a first-clear bonus, a component with
  * a hard pity (GDD 15.2) and a few spoken lines. Read from the {@code boss.guardian.*} setting rows.
  */

@@ -1,0 +1,101 @@
+{
+  "id": "gale",
+  "name": "Gale",
+  "role": "Vanguard",
+  "roleColor": "#ff7a59",
+  "realm": "Tempestuous Archipelago",
+  "quote": "\"The wind always finds a door. I just follow it.\"",
+  "menuColor": "#3a2420",
+  "colors": {
+    "torso": "#3a4a8a",
+    "trim": "#ffe94a",
+    "glow": "#f0f4ff",
+    "arm": "#7a8ee0",
+    "legs": "#1e2440",
+    "boots": "#ffe94a",
+    "bg": "#1a1e30"
+  },
+  "face": {
+    "palette": {
+      "h": "#3a4a8a",
+      "s": "#d8a888",
+      "w": "#f0f4ff",
+      "e": "#3a4a8a",
+      "m": "#a8786a",
+      "v": "#ffe94a"
+    },
+    "rows": [
+      "hhhhhhvv",
+      "hhhhhhhh",
+      "hssssssh",
+      "vvvvvvvv",
+      "swessews",
+      "ssssssss",
+      "ssmmmmss",
+      "ssssssss"
+    ]
+  },
+  "skin": {
+    "value": "ewogICJ0aW1lc3RhbXAiIDogMTc5NDg3NDE3MjI2NSwKICAicHJvZmlsZUlkIiA6ICJjNTI3ZWI1ZTQ1MDE0NTRkYWQwMjhmM2Q0M2ZkZGViNiIsCiAgInByb2ZpbGVOYW1lIiA6ICJDYWxsQmFkIiwKICAic2lnbmF0dXJlUmVxdWlyZWQiIDogdHJ1ZSwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzc4NzM5ZGNhZWRlZTkyMTMyZDE4OTE3N2FiYTlmMGRmZWU2YjlmYmRjYTBmODIzOTRiYzYxNmNlOTk5OWQzYzAiCiAgICB9CiAgfQp9",
+    "signature": "AYK4qQZIDP6RxlHX4LEtBoa0PwC7/Bx9P7zhE8HekLKjFPk5b0M3DMkXJtRfZONdSaGP2wNxMzWG/8VvcFK133tiEnzDsUJgRiPZyBiqJH/HeG3C6dSyeuxxslLxPBXKBZebTi6mVRUOjqlZxFsY3CXKp/fXqF5tcyWWHWplmp6mKsH6FVFu8+0RkAkhbv5y27pjBdd1ax4EWhNt/T6q0m27V2swTtXMP+naMR1eWYNc4K0R7V7vO7S8vpVSo2cRFcNjikqZbQlcGQJvPUKvGegqEGvdc3ZYd6kFCrirDqEldbNmleiO4k/6yIRRbwcP9HTkK2bt3l56H8jF+BBalEsAFjGxcitYhQEwJi2WayCsDAcsN9KiPPt4gPjPJ+wDsic0a5JXNnOP1Kse6cElEN9mvIB/jRiYhKqPw5Rcdrbq2vw1rwGrx90Cpnf4Xw/1TIQ3Qzd7ZcGZGjsSDAUqt/WztmLyft87c69lg8t4Iz01SNTmN9eNAwuylx1Dq/BXtI3FUYnqMka3S2U+5l6DJYnNOCEHeIxHKmdmd1QPrs3oFqJB/THMC58n60zn8ZVAn58i746bt9hwPeUBzveXeM7peusUoSfO2MoL9wcqanqESH5OJxK+NG0HfKF+MVXja8JgjWu6iaYaY5L3Zta59HNZ20IkLRNeibedvhfCVCs=",
+    "mineskin": "29325a5ddeb74d648280cf6e82f8663d"
+  },
+  "build": "Wind Pad reuses the movement toolkit launch zone. Lightning = visual-only bolt + scripted damage.",
+  "abilities": [
+    {
+      "slot": 4,
+      "id": "wind_pad",
+      "name": "Wind Pad",
+      "item": "FEATHER",
+      "text": "Places an Archipelago wind pad: anyone who steps on it is launched. 20 s.",
+      "cost": 150,
+      "maxCharges": 1,
+      "num": {
+        "seconds": 20,
+        "launch": 1.4
+      }
+    },
+    {
+      "slot": 5,
+      "id": "static_orb",
+      "name": "Static Orb",
+      "item": "HEART_OF_THE_SEA",
+      "text": "Bouncing orb. On its second bounce it flashes everyone facing it.",
+      "cost": 250,
+      "maxCharges": 1,
+      "num": {
+        "bounces": 2,
+        "blindSeconds": 1.5,
+        "range": 24
+      }
+    },
+    {
+      "slot": 6,
+      "id": "charged_slide",
+      "name": "Charged Slide",
+      "item": "LIGHTNING_ROD",
+      "text": "Low slide under fire; reload is instant during it. Recharges after 2 kills.",
+      "charges": 1,
+      "rechargeKills": 2,
+      "num": {
+        "seconds": 1.5,
+        "power": 1.1
+      }
+    },
+    {
+      "slot": 7,
+      "id": "storm_call",
+      "name": "Storm Call",
+      "item": "TRIDENT",
+      "text": "Marks 3 spots. Lightning hits each after 1.5 s for 90 damage.",
+      "ultPoints": 8,
+      "num": {
+        "spots": 3,
+        "delaySeconds": 1.5,
+        "damage": 90,
+        "radius": 3,
+        "range": 30
+      }
+    }
+  ]
+}

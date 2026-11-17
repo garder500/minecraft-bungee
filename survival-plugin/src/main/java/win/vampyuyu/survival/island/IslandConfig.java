@@ -43,7 +43,6 @@ public final class IslandConfig {
     public final List<ItemSpec> starterRepeat;
     public final List<ItemSpec> netherChest;
     public final List<ItemSpec> endChest;
-    public final boolean endGateLit;
     public final boolean trustedContainers;
     public final long messageCooldownMs;
     public final Map<IslandFlag, Boolean> flagDefaults = new EnumMap<>(IslandFlag.class);
@@ -109,7 +108,6 @@ public final class IslandConfig {
         this.starterRepeat = items(rows.chest("starter-repeat"), log);
         this.netherChest = items(rows.chest("nether"), log);
         this.endChest = items(rows.chest("end"), log);
-        this.endGateLit = c.getBoolean("platforms.end-gate-lit", true);
         this.trustedContainers = c.getBoolean("protection.trusted-containers", false);
         this.messageCooldownMs = Math.max(0, c.getLong("protection.message-cooldown-ms", 1500));
         for (IslandFlag flag : IslandFlag.values()) {

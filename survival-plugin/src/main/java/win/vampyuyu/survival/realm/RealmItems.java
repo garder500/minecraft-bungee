@@ -23,35 +23,35 @@ final class RealmItems {
     static void register(Items items) {
         items.register(CustomItemDef.builder(CINDERHEART, "Cinderheart", Rarity.EPIC, Material.MAGMA_CREAM)
             .itemModel("vampyuyu:ore/cinderheart").type("GEM").glint(true).pdc("realm_resource", 1L)
-            .lore("<gray>A heart of cooled obsidian that still burns.", "<gray>Found only in the <gold>Cracked Ashes<gray>.",
+            .lore("<gray>A heart of the Ashes.", "<gray>Warm long after it stops beating.", "<gray>Found only in the <gold>Cracked Ashes<gray>.",
                 "<dark_gray>Runecraft: makes the Scorch rune.").build());
         items.register(CustomItemDef.builder(HEARTWOOD, "Heartwood", Rarity.EPIC, Material.DARK_OAK_LOG)
             .itemModel("vampyuyu:ore/heartwood").type("GEM").glint(true).pdc("realm_resource", 1L)
-            .lore("<gray>Living wood that murmurs when held.", "<gray>Found only in the <green>Whispering Grove<gray>.",
+            .lore("<gray>Wood that remembers being alive.", "<gray>It murmurs when held.", "<gray>Found only in the <green>Whispering Grove<gray>.",
                 "<dark_gray>Runecraft: makes the Verdant rune.").build());
         items.register(CustomItemDef.builder(SOUL_ASH, "Soul Ash", Rarity.EPIC, Material.SOUL_SAND)
             .itemModel("vampyuyu:ore/soul_ash").type("GEM").glint(true).pdc("realm_resource", 1L)
-            .lore("<gray>What is left of a memory once it is let go.", "<gray>Found only in the <dark_purple>Ethereal Necropolis<gray>.",
+            .lore("<gray>What a name leaves behind when it is forgotten.", "<gray>Found only in the <dark_purple>Ethereal Necropolis<gray>.",
                 "<dark_gray>Forge: makes the Memory Module.").build());
         items.register(CustomItemDef.builder(STASIS_CRYSTAL, "Stasis Crystal", Rarity.EPIC, Material.AMETHYST_SHARD)
             .itemModel("vampyuyu:ore/stasis_crystal").type("GEM").glint(true).pdc("realm_resource", 1L)
-            .lore("<gray>A crystal that holds a moment still.", "<gray>Found only in the <aqua>Frozen Heights<gray>.",
+            .lore("<gray>A moment, held.", "<gray>Do not drop it.", "<gray>Found only in the <aqua>Frozen Heights<gray>.",
                 "<dark_gray>Runecraft: makes the Stasis rune.").build());
         items.register(CustomItemDef.builder(ROT_RESIN, "Rot Resin", Rarity.EPIC, Material.HONEYCOMB)
             .itemModel("vampyuyu:ore/rot_resin").type("GEM").glint(true).pdc("realm_resource", 1L)
-            .lore("<gray>Sap of a tree the Devourer left to rot.", "<gray>Found only in the <dark_green>Putrid Marshes<gray>.",
+            .lore("<gray>Sticky. Reusable. Nothing is wasted.", "<gray>Found only in the <dark_green>Putrid Marshes<gray>.",
                 "<dark_gray>Forge: Recycler Module.").build());
         items.register(CustomItemDef.builder(CHRONO_SAND, "Chrono Sand", Rarity.EPIC, Material.GLOWSTONE_DUST)
             .itemModel("vampyuyu:ore/chrono_sand").type("GEM").glint(true).pdc("realm_resource", 1L)
-            .lore("<gray>Dust that falls upward and remembers the hour.", "<gray>Found only in the <yellow>Citadel of Golden Sands<gray>.",
+            .lore("<gray>One grain is one hour.", "<gray>Not yours.", "<gray>Found only in the <yellow>Citadel of Golden Sands<gray>.",
                 "<dark_gray>Forges the Chrono Module and the Sandglass.").build());
         items.register(CustomItemDef.builder(PRESSURE_PEARL, "Pressure Pearl", Rarity.EPIC, Material.HEART_OF_THE_SEA)
             .itemModel("vampyuyu:ore/pressure_pearl").type("GEM").glint(true).pdc("realm_resource", 1L)
-            .lore("<gray>A pearl that holds the weight of an ocean.", "<gray>Found only in the <dark_aqua>Abyssal Depths<gray>, by fishing.",
+            .lore("<gray>It was pulled down for a very long time.", "<gray>Found only in the <dark_aqua>Abyssal Depths<gray>, by fishing.",
                 "<dark_gray>Restarts the pumps. Forges the Tide Module.").build());
         items.register(CustomItemDef.builder(THUNDER_QUARTZ, "Thunder Quartz", Rarity.EPIC, Material.QUARTZ)
             .itemModel("vampyuyu:ore/thunder_quartz").type("GEM").glint(true).pdc("realm_resource", 1L)
-            .lore("<gray>Quartz that still crackles with the last storm.", "<gray>Found only in the <aqua>Tempestuous Archipelago<gray>.",
+            .lore("<gray>Hums before the sky does.", "<gray>Found only in the <aqua>Tempestuous Archipelago<gray>.",
                 "<dark_gray>Burns in a Lightning Rod. Forges its Bastion key.").build());
     }
 }

@@ -214,7 +214,7 @@ public class CommandsAndMenusTest extends SkillsBase {
         assertTrue(tierLore, tierLore.contains("Unlocked"));
         ItemStack tier4 = detail.getInventory().getItem(detail.innerSlots()[3]);
         String lore4 = tier4.lore().stream().map(CommandsAndMenusTest::plain).reduce("", (a, b) -> a + "\n" + b);
-        assertTrue(lore4, lore4.contains("Recipe: Enchanted Cobblestone"));
+        assertTrue(lore4, lore4.contains("Recipe: Compressed Cobblestone"));
         assertTrue(lore4, lore4.contains("Locked"));
     }
 

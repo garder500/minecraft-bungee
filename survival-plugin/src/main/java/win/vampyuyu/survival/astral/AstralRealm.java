@@ -612,7 +612,7 @@ public final class AstralRealm implements Listener, AstralApi {
             Component.text("The Paragon is open to you", NamedTextColor.GRAY)));
         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 0.8f);
         core.msg().info(player, "From the Throne you see the Devourer's whole hunger, and what it was holding back."
-            + " You absorb a drop of divine aether. The Devourer cannot be killed: it breathes for the world. Learn to breathe with it.");
+            + " You take in a drop of its aether. The Devourer cannot be killed: it breathes for the world. Learn to breathe with it.");
         pay(player, coins, "realm:astral:throne");
         core.service(ParagonApi.class).ifPresent(paragon -> paragon.markAstralCleared(id));
     }

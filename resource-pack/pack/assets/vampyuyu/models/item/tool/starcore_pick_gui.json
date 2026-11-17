@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "vampyuyu:item/tool/starcore_pick_gui"
+  }
+}
