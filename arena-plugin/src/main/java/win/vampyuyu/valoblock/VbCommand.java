@@ -118,8 +118,9 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
         case "reload" -> {
           VbData.reload(); // validated as a whole: a broken file throws and the old data stays
           plugin.arenas.reload();
+          String wiped = plugin.valoblock.map instanceof VbMapService ms ? "; " + ms.wipeIdle("reload") : "";
           var files = VbData.overrides();
-          say(sender, "ValoBlock data reloaded" + (files.isEmpty() ? "" : " (overrides: " + String.join(", ", files) + ")"));
+          say(sender, "ValoBlock data reloaded" + wiped + (files.isEmpty() ? "" : " (overrides: " + String.join(", ", files) + ")"));
         }
         case "level" -> {
           if (args.length >= 2) plugin.valoblock.bots.level(args[1]); // validated: unknown level throws

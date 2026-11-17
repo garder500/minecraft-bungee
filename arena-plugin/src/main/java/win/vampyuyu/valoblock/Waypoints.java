@@ -198,6 +198,13 @@ public final class Waypoints {
     for (String id : sites.keySet()) if (boxes.stream().noneMatch(b -> b.id().equals(id))) throw new IllegalArgumentException("map.json: siteData for unknown site " + id);
     Waypoints w = new Waypoints(j.has("map") ? j.get("map").getAsString() : "", Collections.unmodifiableMap(nodes), links, spawns, Collections.unmodifiableMap(sites));
     // Every spawn must reach every site's stage, plant and anchors, or a bot would stand still forever.
+    String lost = w.unreachable();
+    if (lost != null) throw new IllegalArgumentException("map.json: " + lost);
+    return w;
+  }
+
+  /** The first target (stage, plant, anchor of a site) a spawn cannot reach, as a sentence, or null when all are reachable. */
+  String unreachable() {
     for (VbSide side : VbSide.values())
       for (SiteInfo s : sites.values()) {
         List<String> wanted = new ArrayList<>(s.anchors());
@@ -205,9 +212,37 @@ public final class Waypoints {
         wanted.add(s.plant());
         for (String spawn : spawns.get(side))
           for (String target : wanted)
-            if (w.path(spawn, target).isEmpty()) throw new IllegalArgumentException("map.json: " + target + " cannot be reached from spawn " + spawn);
+            if (path(spawn, target, Set.of()).isEmpty()) return target + " cannot be reached from spawn " + spawn;
       }
-    return w;
+    return null;
+  }
+
+  /** Every link once, as {a, b}. */
+  public synchronized List<String[]> linkList() {
+    List<String[]> out = new ArrayList<>();
+    for (var e : links.entrySet()) for (String v : e.getValue()) if (e.getKey().compareTo(v) < 0) out.add(new String[] {e.getKey(), v});
+    out.sort(Comparator.comparing((String[] l) -> l[0]).thenComparing(l -> l[1]));
+    return out;
+  }
+
+  /**
+   * Drops the links the test calls blocked (a wall in the real world between the two nodes), one at a time, but never one whose loss would
+   * leave a spawn unable to reach a site (it is kept and reported). Returns one line per decision.
+   */
+  public synchronized List<String> pruneLinks(java.util.function.Predicate<String[]> blockedLink) {
+    List<String> report = new ArrayList<>();
+    for (String[] l : linkList()) {
+      if (!blockedLink.test(l)) continue;
+      links.get(l[0]).remove(l[1]);
+      links.get(l[1]).remove(l[0]);
+      String lost = unreachable();
+      if (lost != null) {
+        links.get(l[0]).add(l[1]);
+        links.get(l[1]).add(l[0]);
+        report.add("kept " + l[0] + " - " + l[1] + " (blocked, but dropping it: " + lost + ")");
+      } else report.add("dropped " + l[0] + " - " + l[1]);
+    }
+    return report;
   }
 
   private static String text(JsonObject o, String key) {
