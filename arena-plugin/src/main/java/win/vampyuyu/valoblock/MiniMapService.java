@@ -183,7 +183,7 @@ public final class MiniMapService implements Listener {
     meta.setMapView(e.view);
     meta.setScaling(false);
     meta.displayName(Component.text("Minimap", NamedTextColor.WHITE).decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
-    meta.lore(List.of(Component.text("You, your squad and the Rift Seed.", NamedTextColor.GRAY), Component.text("Enemies show while they are revealed.", NamedTextColor.GRAY)));
+    { List<Component> lore = new java.util.ArrayList<>(); TipWrap.add(lore, "You, your squad and the Rift Seed.", AgentText.GRAY); TipWrap.add(lore, "Enemies show while they are revealed.", AgentText.GRAY); meta.lore(lore); }
     meta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
     meta.getPersistentDataContainer().set(TAG, PersistentDataType.BYTE, (byte) 1);
     it.setItemMeta(meta);

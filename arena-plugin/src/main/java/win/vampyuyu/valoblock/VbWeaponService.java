@@ -583,6 +583,13 @@ public final class VbWeaponService implements WeaponService, Listener {
     ItemStack it = e.getItem();
     if (!WeaponItems.isVb(it)) return;
     boolean right = e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK;
+    // A Sealer next to the planted Seed and looking at it: right-click seals, it never fires, scopes or opens anything.
+    if (right && plugin.valoblock.seeds != null && plugin.valoblock.seeds.claimsRightClick(m, p)) {
+      e.setCancelled(true);
+      e.setUseItemInHand(Event.Result.DENY);
+      e.setUseInteractedBlock(Event.Result.DENY);
+      return;
+    }
     boolean armory = WeaponItems.isArmory(it);
     String wid = armory ? null : WeaponItems.id(it);
     VbWeapon w = wid == null ? null : VbData.weapons().get(wid);

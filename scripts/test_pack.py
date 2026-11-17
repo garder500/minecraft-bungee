@@ -515,9 +515,10 @@ class ValoBlockPackTest(unittest.TestCase):
         self.assertEqual(list(vb_layout.VOTE_BASES[1:]), [vb_layout.VOTE_BASES[1] + 0x100 * k for k in range(len(vb_layout.TAC_MAPS))])
         self.assertEqual(sorted(vb_layout.VOTE_REALM), sorted(vb_layout.TAC_MAPS))
         vote_java = self.java("MapVoteMenu.java")
+        self.assertIn(f"FIRST_ROW = {vb_layout.VOTE_ROW},", vote_java, "the tiles of the window and of its background share a row")
         for mid, colour in vb_layout.VOTE_REALM.items():
             self.assertIn(f'"{mid}", "#{colour}"', vote_java, mid)
-        for sprite in ("tac_dim", "tac_mark", "tac_pick"):
+        for sprite in ("tac_dim", "tac_far", "tac_mark", "tac_pick"):
             self.assertTrue((VALO / f"assets/vampyuyu/items/valoblock/{sprite}.json").is_file(), sprite)
             self.assertEqual(png_size(VALO / f"assets/vampyuyu/textures/item/valoblock/{sprite}.png"), (16, 16))
         # the title text lands where a window title starts: x = 8

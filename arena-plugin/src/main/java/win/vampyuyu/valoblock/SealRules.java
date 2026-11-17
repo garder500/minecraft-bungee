@@ -18,6 +18,14 @@ final class SealRules {
     return c.side() == VbSide.SEALERS && c.alive() && c.holding() && !c.scoped() && c.distance() <= RANGE && c.angle() <= MAX_ANGLE;
   }
 
+  /**
+   * Whether a right-click belongs to the seal and never to the held weapon or item: the Seed is planted, and a living Sealer is in
+   * seal range and looking at it (the scope is not an excuse: a click that would raise it seals instead).
+   */
+  static boolean claimsRightClick(boolean seedPlanted, VbSide side, boolean alive, double distance, double angle) {
+    return seedPlanted && side == VbSide.SEALERS && alive && distance <= RANGE && angle <= MAX_ANGLE;
+  }
+
   /** A Sealer close enough to be told how to seal (no aim or hold needed). */
   static boolean inReach(VbSide side, boolean alive, double distance) {
     return side == VbSide.SEALERS && alive && distance <= RANGE;

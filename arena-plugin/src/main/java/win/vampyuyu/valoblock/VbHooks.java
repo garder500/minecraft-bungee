@@ -78,6 +78,7 @@ final class VbHooks implements GameHooks {
       // Bots fill the empty seats after the select: a practice match, no rewards (EventRewards reads this).
       if (!s.practice && m.hasBots()) s.practice = true;
       module.hud.render(m, now, s.phaseEndsAt);
+      module.tags.sync(module, m, now);
     }
     return false;
   }
@@ -90,6 +91,7 @@ final class VbHooks implements GameHooks {
   public java.util.concurrent.CompletableFuture<Void> concluding(ArenaSession s, String reason) {
     if (s.game instanceof VbMatch m) {
       module.hud.clear(m);
+      module.tags.end(m);
       module.agents.matchEnded(m);
       for (java.util.UUID id : m.participants()) {
         if (module.menus != null) module.menus.forget(id);
@@ -115,6 +117,7 @@ final class VbHooks implements GameHooks {
     if (module.votes != null) module.votes.left(s, p);
     if (s.game instanceof VbMatch m) {
       m.remove(id);
+      module.tags.left(m, p);
       module.hud.left(m, id);
     }
     module.weapons.clear(id);

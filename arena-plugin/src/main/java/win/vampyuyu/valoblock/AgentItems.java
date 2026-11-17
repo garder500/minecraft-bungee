@@ -29,7 +29,7 @@ public final class AgentItems {
     ItemMeta meta = it.getItemMeta();
     meta.displayName(WeaponItems.text(lines.get(0).text(), lines.get(0).color()));
     List<Component> lore = new ArrayList<>();
-    for (AgentText.Line l : lines.subList(1, lines.size())) lore.add(WeaponItems.text(l.text(), l.color()));
+    for (AgentText.Line l : lines.subList(1, lines.size())) TipWrap.add(lore, l.text(), l.color());
     meta.lore(lore);
     meta.setItemModel(model(sprite));
     meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
@@ -56,7 +56,7 @@ public final class AgentItems {
     ItemMeta meta = it.getItemMeta();
     meta.displayName(WeaponItems.text(st.title(), st.titleColor()));
     List<Component> lore = new ArrayList<>();
-    for (AgentText.Line l : st.lore()) lore.add(WeaponItems.text(l.text(), l.color()));
+    for (AgentText.Line l : st.lore()) TipWrap.add(lore, l.text(), l.color());
     meta.lore(lore);
     meta.setItemModel(model(st.model()));
     UseCooldownComponent cd = meta.getUseCooldown();

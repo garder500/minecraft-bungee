@@ -456,7 +456,7 @@ public final class WerewolfGame implements GamePreset {
   }
 
   public synchronized Set<UUID> alive() {
-    return Set.copyOf(alive);
+    return Collections.unmodifiableSet(new LinkedHashSet<>(alive));
   }
 
   public synchronized String winner() {
@@ -509,7 +509,7 @@ public final class WerewolfGame implements GamePreset {
     if (!tallyVisible(viewer)) return Map.of();
     Map<UUID, Integer> totals = new HashMap<>();
     ballots.values().forEach(p -> totals.merge(p, 1, Integer::sum));
-    return Map.copyOf(totals);
+    return Collections.unmodifiableMap(new LinkedHashMap<>(totals));
   }
 
   private static String loveNotice(UUID partner) {
@@ -1829,19 +1829,21 @@ public final class WerewolfGame implements GamePreset {
 
   /** Participants entitled to private phase instructions; the pending hunter may be dead. */
   public synchronized Set<UUID> actors() {
+    // Insertion-ordered (never Set.copyOf, whose iteration order changes with every JVM): the
+    // bots walk this set and draw from their Random in that order, so games must replay.
     if (phase == Phase.HUNTER_SHOT) {
       UUID hunter = hunters.peekFirst();
       return hunter == null ? Set.of() : Set.of(hunter);
     }
     if (phase == Phase.FINISHED) return Set.of();
     if (phase == Phase.DEFENSE) return nominee == null ? Set.of() : Set.of(nominee);
-    if (phase == Phase.TRIAL) return Set.copyOf(jurors());
+    if (phase == Phase.TRIAL) return Collections.unmodifiableSet(new LinkedHashSet<>(jurors()));
     if (phase == Phase.DISCUSSION || phase == Phase.DAY_VOTE || phase == Phase.ELECTION) {
-      Set<UUID> day = new HashSet<>(alive);
+      Set<UUID> day = new LinkedHashSet<>(alive);
       day.removeAll(exiled);
-      return Set.copyOf(day);
+      return Collections.unmodifiableSet(day);
     }
-    return Set.copyOf(callActors(phase));
+    return Collections.unmodifiableSet(new LinkedHashSet<>(callActors(phase)));
   }
 
   /** Nights so far: night N is followed by day N. */

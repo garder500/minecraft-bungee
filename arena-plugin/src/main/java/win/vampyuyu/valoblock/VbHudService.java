@@ -22,7 +22,7 @@ import win.vampyuyu.arena.NexusArenaEngine;
  */
 public final class VbHudService implements VbHud {
   static final TextColor ALLY = TextColor.color(0xff9a7a), ENEMY = TextColor.color(0x7fd8ff);
-  static final long FEED_MS = 4000, NOTICE_MS = 2000, FRAME_MS = 200, RESEND_MS = 2000;
+  static final long FEED_MS = 4000, FRAME_MS = 200, RESEND_MS = 2000;
   static final int FEED_LINES = 3;
   static final long HIT_MS = 700, HEAD_MS = 1000;
 
@@ -34,8 +34,6 @@ public final class VbHudService implements VbHud {
     String lastFeedKey = "";
     String lastAction = "";
     long lastActionAt;
-    Component notice;
-    long noticeUntil;
     String hit; // "w", "h" or "k" while the hit marker shows
     long hitUntil;
     double lastX, lastZ;
@@ -75,10 +73,8 @@ public final class VbHudService implements VbHud {
 
   @Override
   public void notice(Player p, Component text) {
-    Viewer v = viewers.computeIfAbsent(p.getUniqueId(), k -> new Viewer());
-    v.notice = text;
-    v.noticeUntil = System.currentTimeMillis() + NOTICE_MS;
-    v.lastAction = ""; // draw it at the next frame
+    // Never in the action bar: the glyph run there is moved by the shader and any text next to it garbles it.
+    onServer(() -> p.showTitle(VbNotice.title(text)));
   }
 
   @Override
@@ -281,13 +277,9 @@ public final class VbHudService implements VbHud {
   private void action(Player p, Viewer v, VbMatch m, UUID id, VbPhase phase, long wall) {
     var input = input(m, id, p, v, wall);
     var glyphs = VbHudState.glyphs(input);
-    boolean notice = v.notice != null && wall < v.noticeUntil;
-    if (!notice) v.notice = null;
-    Component c = VbGlyphs.get().glyphs(glyphs);
-    if (notice) c = c.append(v.notice);
-    else if (!input.alive()) c = Component.text("Eliminated: spectating", NamedTextColor.GRAY);
+    Component c = input.alive() ? VbGlyphs.get().glyphs(glyphs) : VbNotice.eliminated();
     // The colours carry the element and the bar width, so the key is the glyph list itself, not its text.
-    String key = glyphs + "|" + (notice ? PlainTextComponentSerializer.plainText().serialize(v.notice) : input.alive() ? "" : "dead");
+    String key = glyphs + "|" + (input.alive() ? "" : "dead");
     if (key.equals(v.lastAction) && wall - v.lastActionAt < RESEND_MS) return;
     v.lastAction = key;
     v.lastActionAt = wall;

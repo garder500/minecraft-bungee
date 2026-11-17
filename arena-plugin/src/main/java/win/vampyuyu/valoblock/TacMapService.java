@@ -154,11 +154,11 @@ public final class TacMapService implements Listener {
           List<AgentText.Line> lines = new ArrayList<>();
           lines.add(new AgentText.Line(ok ? "Zoom in here" : "Out of reach", ok ? AgentText.GOLD : AgentText.GRAY));
           for (String f : TacGrid.features(map, zone)) lines.add(new AgentText.Line(f, AgentText.GRAY));
-          it = ok ? AgentItems.cell("blank", lines, action, false) : AgentItems.cell("tac_dim", lines, "none", false);
+          it = ok ? AgentItems.cell("blank", lines, action, false) : AgentItems.cell("tac_far", lines, "none", false);
         } else {
           double[] pick = TacGrid.pick(map, s.zone, gx, gy, REACH_CELLS);
-          if (pick == null) it = cell("tac_dim", "none", new AgentText.Line("Nothing to stand on", AgentText.GRAY));
-          else if (!TacTargeting.inRange(range, px, pz, pick[0], pick[1])) it = cell("tac_dim", "none", new AgentText.Line("Out of range", AgentText.RED), new AgentText.Line("At most " + (int) range + " blocks from you", AgentText.GRAY));
+          if (pick == null) it = cell("tac_far", "none", new AgentText.Line("Nothing to stand on", AgentText.GRAY));
+          else if (!TacTargeting.inRange(range, px, pz, pick[0], pick[1])) it = cell("tac_far", "none", new AgentText.Line("Out of range", AgentText.RED), new AgentText.Line("At most " + (int) range + " blocks from you", AgentText.GRAY));
           else it = cell("blank", action, new AgentText.Line("Place here", AgentText.GOLD));
         }
         inv.setItem(TacGrid.slot(gx, gy), it);
