@@ -6,10 +6,19 @@
 Writes, under resource-pack/pack/assets/vampyuyu/:
   textures/item/wings/wings.png, wings_tier2..5.png   16x16 item icons of the five tiers
   textures/item/wings/core_1..5.png                   16x16 Wing Core icons
-  textures/entity/equipment/wings/wings_tier1..5.png  64x32 elytra-layout wing textures (layer type "wings")
+  textures/entity/equipment/wings/wings_tier1..5.png  64x32 FULLY TRANSPARENT elytra-layer textures (see below)
   textures/entity/equipment/humanoid/wings_torso.png  64x32 humanoid-layer harness (layer type "humanoid")
   equipment/wings.json, wings_tier1..5.json           equipment assets (asset id vampyuyu:wings, vampyuyu:wings_tierN)
   items/wings/*.json, models/item/wings/*.json        item definitions (item model vampyuyu:wings/<name>)
+
+Worn look (the real 3D model, shown by the plugin as an ItemDisplay on the wearer's back):
+  textures/item/wings/worn_tier1..5.png               16x16 feather strips (one 2 px column pair per feather)
+  models/item/wings/worn_tierN_folded.json / _spread.json   feather-by-feather 3D wings, pivot = shoulder blades
+  items/wings/worn_tierN_folded.json / _spread.json   item definitions (item model vampyuyu:wings/worn_tierN_<state>)
+The elytra equipment layer is a fully transparent texture: the vanilla geometry never shows, flight is untouched.
+Model space: the pivot (8, 8, 8) is the middle of the shoulder blades, +x = the wing side, the wing plane is
+x/y and the feathers lie behind the body on +z (the item display renderer turns the model half a turn, so
+model +z ends up behind the player: see docs/skyblock-notes/wings.md).
 
 Elytra UV layout (64x32): the visible wing is the 10x20 face at x36..46, y2..22 (the model mirrors it for
 the second wing); the inner face is x24..34, y2..22. Everything inside x22..46, y0..22 is painted.
@@ -210,6 +219,116 @@ def icon_core(tier):
     return {k: v for k, v in px.items() if 0 <= k[0] < 16 and 0 <= k[1] < 16}
 
 
+# ---- worn 3D model ----------------------------------------------------------------------------------------
+FEATHERS = 6
+# per feather: (length in px, angle from straight down in degrees, spread / folded). 90 = horizontal.
+# Spread never goes above the horizontal (angle <= 90) so no feather ever rises above the shoulder plane.
+SPREAD_ANGLES = (90, 80, 68, 56, 44, 32)
+FOLDED_ANGLES = (22, 17, 12, 8, 4, 0)
+LENGTHS_SPREAD = (14, 18, 19, 18, 16, 13)
+LENGTHS_FOLDED = (14, 17, 19, 18, 16, 13)
+FEATHER_W = 3.0
+FEATHER_T = 0.6
+ROOT_X = 10.0   # the wing root sits 2 px beside the spine
+# Envelope (blocks, relative to the shoulder pivot, x outward, y up, behind = +): the plugin's WingsMath.ENVELOPE
+# must contain every vertex; the generator asserts it.
+ENVELOPE = {"folded": (0.60, -1.25, 0.20, 0.0, 0.14), "spread": (1.35, -1.20, 0.20, 0.0, 0.14)}
+# (max |x|, min y, max y, min behind, max behind)
+
+
+def worn_texture(tier):
+    """16x16: feather k is the 2 px column pair x=2k..2k+1, light at the root down to the glowing tip."""
+    light, mid, dark, outline, glow = TIERS[tier]
+    px = {}
+    for k in range(FEATHERS):
+        for y in range(16):
+            t = y / 15.0
+            c = mix(light, mid, t * 1.5) if t < 0.66 else mix(mid, dark, (t - 0.66) / 0.34)
+            if y >= 14:
+                c = mix(c, glow, 0.85)
+            if y == 0:
+                c = mix(dark, outline, 0.3)
+            for x in (2 * k, 2 * k + 1):
+                col = mix(c, outline, 0.5) if x == 2 * k + 1 else c  # one darker rib per feather
+                px[(x, y)] = col + (255,)
+    px[(14, 0)] = outline + (255,)   # edge pixel for the thin sides
+    px[(14, 1)] = outline + (255,)
+    px[(15, 0)] = glow + (255,)      # the Realm gem on the back plate
+    px[(15, 1)] = mix(glow, TIERS[tier][0], 0.5) + (255,)
+    return px
+
+
+def _corners(x0, x1, y0, y1, ox, oy, theta):
+    import math
+    c, s_ = math.cos(math.radians(theta)), math.sin(math.radians(theta))
+    out = []
+    for x in (x0, x1):
+        for y in (y0, y1):
+            dx, dy = x - ox, y - oy
+            out.append((ox + dx * c - dy * s_, oy + dx * s_ + dy * c))
+    return out
+
+
+def worn_model(tier, state):
+    """The wings as feather boxes plus a back plate. Returns (model dict, vertices in px relative to the pivot)."""
+    angles = SPREAD_ANGLES if state == "spread" else FOLDED_ANGLES
+    lengths = LENGTHS_SPREAD if state == "spread" else LENGTHS_FOLDED
+    elements, verts = [], []
+    z0 = 8.0
+    for side in (1, -1):                       # +1 the +x wing, -1 its mirror
+        for k, (a, ln) in enumerate(zip(angles, lengths)):
+            z = z0 + 0.2 + (k % 2) * FEATHER_T  # alternate layers: no z-fighting between neighbours
+            ry = 8.0 + 0.0
+            if a >= 67.5:                      # horizontal base box, tilted by a - 90
+                base = (ROOT_X, ROOT_X + ln, ry - FEATHER_W / 2, ry + FEATHER_W / 2)
+                theta = a - 90.0
+                rot_face = 90
+            else:                              # vertical base box (hangs down), tilted outward by a
+                base = (ROOT_X - FEATHER_W / 2, ROOT_X + FEATHER_W / 2, ry - ln, ry)
+                theta = float(a)
+                rot_face = 0
+            x0, x1, y0, y1 = base
+            # rotation is about the root (ROOT_X, ry)
+            if side == -1:                     # mirror x about the pivot x = 8
+                x0, x1 = 16 - x1, 16 - x0
+                ox, th = 16 - ROOT_X, -theta
+            else:
+                ox, th = ROOT_X, theta
+            u = (2 * k, 0, 2 * k + 2, 16)
+            face = {"uv": list(u), "texture": "#f", "rotation": rot_face}
+            side_face = {"uv": [14, 0, 15, 2], "texture": "#f"}
+            el = {"from": [x0, y0, z], "to": [x1, y1, z + FEATHER_T],
+                  "faces": {"north": dict(face), "south": dict(face), "up": dict(side_face), "down": dict(side_face),
+                            "east": dict(side_face), "west": dict(side_face)}}
+            if abs(th) > 1e-6:
+                el["rotation"] = {"angle": round(th, 3), "axis": "z", "origin": [ox, ry, z]}
+            elements.append(el)
+            for (vx, vy) in _corners(x0, x1, y0, y1, ox, ry, th):
+                for vz in (z, z + FEATHER_T):
+                    verts.append((vx - 8, vy - 8, vz - 8))
+    plate = {"from": [5.5, 3.0, z0], "to": [10.5, 10.0, z0 + 1.0],
+             "faces": {f: {"uv": [14, 0, 15, 1], "texture": "#f"} for f in ("north", "south", "up", "down", "east", "west")}}
+    plate["faces"]["south"] = {"uv": [15, 0, 16, 2], "texture": "#f"}
+    elements.append(plate)
+    for vx in (5.5, 10.5):
+        for vy in (3.0, 10.0):
+            for vz in (z0, z0 + 1.0):
+                verts.append((vx - 8, vy - 8, vz - 8))
+    model = {"credit": "generated by art/wings_art.py", "textures": {"f": f"vampyuyu:item/wings/worn_tier{tier}",
+                                                                    "particle": f"vampyuyu:item/wings/worn_tier{tier}"},
+             "elements": elements}
+    return model, verts
+
+
+def check_envelope(state, verts):
+    """Every vertex (px relative to the pivot) lies inside the plugin's safety envelope, in blocks."""
+    mx, ymin, ymax, bmin, bmax = ENVELOPE[state]
+    for (x, y, z) in verts:
+        assert abs(x) / 16 <= mx + 1e-6, (state, "x", x)
+        assert ymin <= y / 16 <= ymax + 1e-6, (state, "y", y)
+        assert bmin - 1e-6 <= z / 16 <= bmax + 1e-6, (state, "behind", z)
+
+
 def write_json(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2) + "\n")
@@ -228,8 +347,15 @@ def build(preview=None):
     for tier, name in names.items():
         png(ASSETS / "textures" / "item" / "wings" / f"{name}.png", 16, 16, icon_wings(tier))
         item_files(name)
-        png(ASSETS / "textures" / "entity" / "equipment" / "wings" / f"wings_tier{tier}.png", 64, 32,
-            wings_texture(tier))
+        # the worn look is the 3D display: the elytra layer stays fully transparent (flight is untouched)
+        png(ASSETS / "textures" / "entity" / "equipment" / "wings" / f"wings_tier{tier}.png", 64, 32, {})
+        png(ASSETS / "textures" / "item" / "wings" / f"worn_tier{tier}.png", 16, 16, worn_texture(tier))
+        for state in ("folded", "spread"):
+            model, verts = worn_model(tier, state)
+            check_envelope(state, verts)
+            write_json(ASSETS / "models" / "item" / "wings" / f"worn_tier{tier}_{state}.json", model)
+            write_json(ASSETS / "items" / "wings" / f"worn_tier{tier}_{state}.json",
+                       {"model": {"type": "minecraft:model", "model": f"vampyuyu:item/wings/worn_tier{tier}_{state}"}})
         write_json(ASSETS / "equipment" / f"wings_tier{tier}.json", {"layers": {
             "humanoid": [{"texture": "vampyuyu:wings_torso"}],
             "wings": [{"texture": f"vampyuyu:wings_tier{tier}"}]}})

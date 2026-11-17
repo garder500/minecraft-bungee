@@ -1,0 +1,19 @@
+{
+ "layers": {
+  "humanoid": [
+   {
+    "texture": "vampyuyu:grove_starcore"
+   }
+  ],
+  "humanoid_leggings": [
+   {
+    "texture": "vampyuyu:grove_starcore"
+   }
+  ],
+  "wings": [
+   {
+    "texture": "vampyuyu:starcore_wings"
+   }
+  ]
+ }
+}
