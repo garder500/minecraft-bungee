@@ -33,6 +33,11 @@ public interface AgentService {
     return "Agent select is not available";
   }
 
+  /** Opens the tactical map for the ability in hand; null when done, else the short message for the player. */
+  default String openTacticalMap(org.bukkit.entity.Player p, VbMatch match) {
+    return VbQuickActions.MAP_HINT;
+  }
+
   /** A kill: ultimate points and signature recharge for the killer. */
   default void killed(VbMatch match, UUID victim, UUID killer) {}
 

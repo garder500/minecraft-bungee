@@ -59,6 +59,15 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
     }
   }
 
+  /** /vb tac (Quick Actions "Map"): the tactical map for the held ability, else a short hint. */
+  private void tac(CommandSender sender) {
+    if (!(sender instanceof Player p)) throw new IllegalArgumentException("Only a player can use this");
+    ArenaSession s = plugin.arenas.session(p.getUniqueId());
+    if (s == null || !(s.game instanceof VbMatch m)) throw new IllegalArgumentException("You are not in a ValoBlock match");
+    String why = plugin.valoblock.agents.openTacticalMap(p, m);
+    if (why != null) throw new IllegalArgumentException(why);
+  }
+
   /** /vb vote: any player waiting in a ValoBlock lobby reopens the map vote (no permission needed). */
   private void vote(CommandSender sender) {
     if (!(sender instanceof Player p)) throw new IllegalArgumentException("Only a player can use this");
@@ -78,6 +87,10 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
       }
       if (args.length >= 1 && (args[0].equalsIgnoreCase("agent") || args[0].equalsIgnoreCase("buy"))) {
         reopen(sender, args[0].equalsIgnoreCase("agent"));
+        return true;
+      }
+      if (args.length >= 1 && args[0].equalsIgnoreCase("tac")) {
+        tac(sender);
         return true;
       }
       if (!sender.hasPermission("nexusarena.admin"))

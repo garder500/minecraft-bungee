@@ -241,3 +241,14 @@ its cause, the hunter's shot, departures, the winner and the final roles, and th
 The panel lists the logs under **Arenas › Game logs** and downloads them; a running game's log
 downloads as far as it is written. The arena API serves them at `GET /arenas/logs` and
 `GET /arenas/logs/<name>`.
+
+## ValoBlock Quick Actions (open the shop with a key)
+
+The server cannot read arbitrary keys, but the vanilla client has a "Quick Actions" key (default G, rebindable in
+Controls, for example to B) that opens the dialogs in the data tag `minecraft:quick_actions`. Dialogs are static data, so
+at start the plugin writes a small datapack, `world/datapacks/vampyuyu-valoblock-quick/` (`VbQuickActions`), on the
+creative server only (`SERVER_ID=creative`; Skyblock and the lobby never get it). It is idempotent (files rewritten only
+when different). The first time, and after a change, restart the server so the world loads it (the log says so).
+The dialog has four buttons that run `/vb buy` (Shop), `/vb agent`, `/vb tac` (tactical map for the held ability, else a
+hint to use the minimap) and `/vb vote`. The commands do the per-player checks; outside a match they answer "You are not
+in a ValoBlock match".

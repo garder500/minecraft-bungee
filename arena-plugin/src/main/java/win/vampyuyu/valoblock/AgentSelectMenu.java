@@ -99,6 +99,7 @@ public final class AgentSelectMenu implements InventoryHolder {
       String footer = taken ? "Taken by a teammate" : mine.locked ? "" : "Click to select, then Lock in.";
       List<AgentText.Line> lines = new ArrayList<>(AgentText.tooltip(a, footer));
       if (taken) lines.set(lines.size() - 1, new AgentText.Line(footer, AgentText.RED));
+      else if (!footer.isEmpty()) lines.add(lines.size() - 1, new AgentText.Line(VbQuickActions.TIP, AgentText.GRAY));
       ItemStack head = AgentItems.cell(sprite, lines, taken ? "none" : "pick:" + a.id(), ring);
       inv.setItem(VbSelectLayout.head(i), head);
       inv.setItem(VbSelectLayout.twin(i), twin(head));
