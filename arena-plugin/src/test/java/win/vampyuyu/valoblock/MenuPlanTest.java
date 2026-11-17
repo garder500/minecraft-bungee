@@ -12,7 +12,7 @@ class MenuPlanTest {
   private final MenuPlan plan = new MenuPlan();
 
   private static View v(VbPhase ph, int round, boolean locked, boolean alive, boolean pack, Menu open, boolean busy) {
-    return new View(ph, round, locked, alive, pack, open, busy);
+    return new View(ph, round, locked, alive, pack, open, busy, 0);
   }
 
   private static View sel(boolean locked, boolean pack, Menu open, boolean busy) {
@@ -104,5 +104,43 @@ class MenuPlanTest {
     assertFalse(t.press(p, 1500), "a third press starts over");
     assertFalse(t.press(p, 2100));
     assertTrue(t.press(p, 2600));
+  }
+
+  private static View lobby(int ballot, boolean pack, Menu open, boolean busy) {
+    return new View(VbPhase.QUEUE, 0, false, true, pack, open, busy, ballot);
+  }
+
+  @Test
+  void voteOpensForAHumanInAWaitingLobbyOncePerBallot() {
+    assertEquals(Menu.NONE, plan.decide(p, lobby(0, true, Menu.NONE, false)), "no ballot open");
+    assertEquals(Menu.VOTE, plan.decide(p, lobby(1, true, Menu.NONE, false)));
+    plan.opened(p, lobby(1, true, Menu.NONE, false));
+    assertEquals(Menu.NONE, plan.decide(p, lobby(1, true, Menu.NONE, false)), "closed by hand: it stays closed (/vb vote reopens it)");
+    assertEquals(Menu.VOTE, plan.decide(p, lobby(2, true, Menu.NONE, false)), "the next match has a new ballot");
+  }
+
+  @Test
+  void voteWaitsForThePackAndNeverOpensOverAnotherWindow() {
+    assertEquals(Menu.NONE, plan.decide(p, lobby(1, false, Menu.NONE, false)), "pack not loaded yet");
+    assertEquals(Menu.NONE, plan.decide(p, lobby(1, true, Menu.NONE, true)), "a foreign window is open");
+    assertEquals(Menu.NONE, plan.decide(p, lobby(1, true, Menu.ARMORY, false)), "never over another ValoBlock menu");
+    assertEquals(Menu.NONE, plan.decide(p, lobby(1, true, Menu.SELECT, false)));
+    assertEquals(Menu.VOTE, plan.decide(p, lobby(1, true, Menu.NONE, false)));
+  }
+
+  @Test
+  void voteOpenedByHandCountsAsOfferedAndRejoinOffersItAgain() {
+    assertEquals(Menu.NONE, plan.decide(p, lobby(1, true, Menu.VOTE, false)));
+    assertEquals(Menu.NONE, plan.decide(p, lobby(1, true, Menu.NONE, false)));
+    plan.forget(p);
+    assertEquals(Menu.VOTE, plan.decide(p, lobby(1, true, Menu.NONE, false)));
+  }
+
+  @Test
+  void voteClosesWhenTheBallotClosesAndWhenTheMatchStarts() {
+    assertFalse(MenuPlan.mustClose(lobby(1, true, Menu.VOTE, false)));
+    assertTrue(MenuPlan.mustClose(lobby(0, true, Menu.VOTE, false)), "the ballot closed");
+    assertTrue(MenuPlan.mustClose(sel(false, true, Menu.VOTE, false)), "the match began: the agent select takes over");
+    assertEquals(Menu.SELECT, plan.decide(p, sel(false, true, Menu.NONE, false)));
   }
 }

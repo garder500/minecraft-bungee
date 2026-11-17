@@ -81,7 +81,11 @@ public class SafeSpawnTest {
 
   @Test
   public void startStopAndStatusAreTheOnlyAdminCommandsInsideAnArena() {
-    for (String ok : new String[] {"start", "stop", "status", "help"}) assertTrue(ok, VbCommand.allowedInsideArena(ok));
-    for (String no : new String[] {"reload", "debug", "map", "use", "level", ""}) assertFalse(no, VbCommand.allowedInsideArena(no));
+    for (String ok : new String[] {"start", "stop", "status", "help"}) assertTrue(ok, VbCommand.allowedInsideArena(new String[] {ok}));
+    // /vb map use <id> forces the map of the next match (admins, inside the arena); the editor stays locked (preview teleports, marks build)
+    assertTrue(VbCommand.allowedInsideArena(new String[] {"map", "use", "rootvault"}));
+    assertTrue(VbCommand.allowedInsideArena(new String[] {"map", "list"}));
+    for (String no : new String[] {"reload", "debug", "map", "use", "level", ""}) assertFalse(no, VbCommand.allowedInsideArena(new String[] {no}));
+    for (String no : new String[] {"preview", "mark", "save", "discard"}) assertFalse(no, VbCommand.allowedInsideArena(new String[] {"map", no}));
   }
 }

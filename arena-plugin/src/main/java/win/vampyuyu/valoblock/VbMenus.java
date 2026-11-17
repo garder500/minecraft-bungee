@@ -50,15 +50,41 @@ final class VbMenus implements Listener {
     UUID id = p.getUniqueId();
     if (!p.isOnline() || !m.participants().contains(id) || m.hasLeft(id) || m.isBot(id)) return null;
     Inventory top = p.getOpenInventory().getTopInventory();
-    MenuPlan.Menu open = AgentSelectMenu.isMenu(top) ? MenuPlan.Menu.SELECT : ArmoryMenu.isMenu(top) ? MenuPlan.Menu.ARMORY : MenuPlan.Menu.NONE;
+    MenuPlan.Menu open = openMenu(top);
     boolean busy = open == MenuPlan.Menu.NONE && top.getType() != InventoryType.CRAFTING;
-    return new MenuPlan.View(m.vbPhase(), m.round(), !m.agent(id).isEmpty(), m.alive().contains(id), packReady(p), open, busy);
+    return new MenuPlan.View(m.vbPhase(), m.round(), !m.agent(id).isEmpty(), m.alive().contains(id), packReady(p), open, busy, 0);
+  }
+
+  private static MenuPlan.Menu openMenu(Inventory top) {
+    return AgentSelectMenu.isMenu(top) ? MenuPlan.Menu.SELECT
+        : ArmoryMenu.isMenu(top) ? MenuPlan.Menu.ARMORY
+        : MapVoteMenu.isMenu(top) ? MenuPlan.Menu.VOTE
+        : MenuPlan.Menu.NONE;
+  }
+
+  /** The waiting lobby of a ValoBlock arena this human is in (no match yet), or null. */
+  private ArenaSession lobbyOf(Player p) {
+    ArenaSession s = plugin.arenas.session(p.getUniqueId());
+    return VbMapVoteService.waiting(s) && VbMapVoteService.human(s, p.getUniqueId()) ? s : null;
+  }
+
+  /** What this human sees in the lobby: the map vote, once a ballot is open. Null when they are not in a waiting ValoBlock lobby. */
+  MenuPlan.View lobbyView(Player p, ArenaSession s) {
+    VbMapVoteService votes = plugin.valoblock.votes;
+    if (votes == null || !p.isOnline() || !VbMapVoteService.waiting(s) || !VbMapVoteService.human(s, p.getUniqueId())) return null;
+    Inventory top = p.getOpenInventory().getTopInventory();
+    MenuPlan.Menu open = openMenu(top);
+    boolean busy = open == MenuPlan.Menu.NONE && top.getType() != InventoryType.CRAFTING;
+    return new MenuPlan.View(VbPhase.QUEUE, 0, false, true, packReady(p), open, busy, votes.ballot(s).ballot());
   }
 
   private void look() {
     for (Player p : Bukkit.getOnlinePlayers()) {
       VbMatch m = matchOf(p);
-      if (m == null) continue;
+      if (m == null) {
+        lobbyLook(p);
+        continue;
+      }
       MenuPlan.View v = view(p, m);
       if (v == null) continue;
       if (MenuPlan.mustClose(v)) {
@@ -69,6 +95,20 @@ final class VbMenus implements Listener {
     }
   }
 
+  /** A human waiting in the lobby: the vote ballot opens for the lobby cycle and the window is offered (once) after the pack is loaded. */
+  private void lobbyLook(Player p) {
+    ArenaSession s = lobbyOf(p);
+    if (s == null || plugin.valoblock.votes == null) return;
+    plugin.valoblock.votes.ensureOpen(s);
+    MenuPlan.View v = lobbyView(p, s);
+    if (v == null) return;
+    if (MenuPlan.mustClose(v)) {
+      p.closeInventory();
+      return;
+    }
+    if (plan.decide(p.getUniqueId(), v) != MenuPlan.Menu.NONE) later(p);
+  }
+
   /** Opens on the next tick, looking again first: the phase, the pack or another window may have changed. */
   private void later(Player p) {
     UUID id = p.getUniqueId();
@@ -77,10 +117,18 @@ final class VbMenus implements Listener {
       pending.remove(id);
       Player now = Bukkit.getPlayer(id);
       VbMatch m = now == null ? null : matchOf(now);
-      MenuPlan.View v = m == null ? null : view(now, m);
+      if (m == null) {
+        ArenaSession lobby = now == null ? null : lobbyOf(now);
+        MenuPlan.View lv = lobby == null ? null : lobbyView(now, lobby);
+        if (lv == null || plan.decide(id, lv) != MenuPlan.Menu.VOTE) return;
+        plan.opened(id, lv);
+        plugin.valoblock.votes.open(now, lobby);
+        return;
+      }
+      MenuPlan.View v = view(now, m);
       if (v == null) return;
       MenuPlan.Menu menu = plan.decide(id, v);
-      if (menu == MenuPlan.Menu.NONE) return;
+      if (menu == MenuPlan.Menu.NONE || menu == MenuPlan.Menu.VOTE) return;
       plan.opened(id, v);
       if (menu == MenuPlan.Menu.SELECT) agents.openSelect(now, m);
       else plugin.valoblock.weapons.openArmory(now, m);

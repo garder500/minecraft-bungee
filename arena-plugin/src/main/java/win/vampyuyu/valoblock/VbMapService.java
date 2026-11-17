@@ -51,7 +51,8 @@ public final class VbMapService implements MapService {
   private final NexusArenaEngine plugin;
   private final Map<String, Instance> instances = new ConcurrentHashMap<>();
   private final BitSet used = new BitSet();
-  private volatile String selected = VbData.MAP_IDS.get(0);
+  /** The map an administrator forced for the next match (/vb map use), or null: the players' vote decides. Used up by one match. */
+  private volatile String forced;
   private volatile World world;
   final VbRealmService realm;
   private final Map<String, org.bukkit.block.data.BlockData> dataCache = new ConcurrentHashMap<>();
@@ -74,13 +75,27 @@ public final class VbMapService implements MapService {
     });
   }
 
+  /** The map forced for the next match, or null when the vote (or chance) decides. */
   public String selected() {
-    return selected;
+    return forced;
   }
 
+  /** Forces the map of the next match: it overrides the vote. */
   public void select(String id) {
     if (!VbData.maps().containsKey(id)) throw new IllegalArgumentException("Unknown map " + id + " (" + String.join(", ", VbData.maps().keySet()) + ")");
-    selected = id;
+    forced = id;
+  }
+
+  /** The map of a match that starts now: the forced one (used up), else the vote of the lobby, else chance. Announced to the humans. */
+  private VbMap choose(ArenaSession s) {
+    String force = forced;
+    forced = null;
+    VbMapVoteService votes = plugin.valoblock.votes;
+    MapVote.Result r = votes != null ? votes.resolve(s, force) : new MapVote(VbData.MAP_IDS).resolve(new Random(), force);
+    VbMap map = VbData.maps().get(r.map());
+    if (map == null) throw new IllegalStateException("Unknown map " + r.map());
+    if (votes != null) onServer(() -> votes.announce(s, map, r));
+    return map;
   }
 
   void onServer(Runnable r) {
@@ -157,7 +172,7 @@ public final class VbMapService implements MapService {
     if (old != null) clear(old);
     String err = Bukkit.isPrimaryThread() ? createWorld() : world() == null ? "The ValoBlock world does not exist yet" : null;
     if (err != null) throw new IllegalStateException(err);
-    VbMap map = VbData.maps().get(selected);
+    VbMap map = choose(s);
     Instance in = new Instance(s.config.id(), allocate(), map);
     instances.put(s.config.id(), in);
     onServer(() -> build(in));

@@ -10,7 +10,7 @@ import win.vampyuyu.arena.NexusArenaEngine;
 
 /** /vb: operate ValoBlock arenas (start, stop, status, reload) and drive tests (debug). Admin only. */
 public final class VbCommand implements CommandExecutor, TabCompleter {
-  private static final List<String> SUBS = List.of("help", "agent", "buy", "use", "start", "stop", "status", "reload", "level", "map", "debug");
+  private static final List<String> SUBS = List.of("help", "agent", "buy", "vote", "use", "start", "stop", "status", "reload", "level", "map", "debug");
   private static final List<String> DEBUG = List.of("skip", "state", "win", "kill", "plant", "seal", "armory", "block", "where", "tp", "god");
 
   private final NexusArenaEngine plugin;
@@ -21,7 +21,9 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
   }
 
   /** Subcommands an admin may run while inside an arena (to run the match they are playing in); the rest stays locked. */
-  static boolean allowedInsideArena(String sub) {
+  static boolean allowedInsideArena(String[] args) {
+    String sub = args.length == 0 ? "help" : args[0].toLowerCase(Locale.ROOT);
+    if (sub.equals("map")) return args.length >= 2 && (args[1].equalsIgnoreCase("use") || args[1].equalsIgnoreCase("list")); // not the editor (preview teleports, marks build)
     return sub.equals("start") || sub.equals("stop") || sub.equals("status") || sub.equals("help");
   }
 
@@ -57,9 +59,23 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
     }
   }
 
+  /** /vb vote: any player waiting in a ValoBlock lobby reopens the map vote (no permission needed). */
+  private void vote(CommandSender sender) {
+    if (!(sender instanceof Player p)) throw new IllegalArgumentException("Only a player can use this");
+    ArenaSession s = plugin.arenas.session(p.getUniqueId());
+    if (s == null || !s.config.preset().equals(VbPreset.ID)) throw new IllegalArgumentException("You are not in a ValoBlock lobby");
+    VbMapVoteService votes = plugin.valoblock.votes;
+    String why = votes == null ? "The map vote is not running" : votes.open(p, s);
+    if (why != null) throw new IllegalArgumentException(why);
+  }
+
   @Override
   public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
     try {
+      if (args.length >= 1 && args[0].equalsIgnoreCase("vote")) {
+        vote(sender);
+        return true;
+      }
       if (args.length >= 1 && (args[0].equalsIgnoreCase("agent") || args[0].equalsIgnoreCase("buy"))) {
         reopen(sender, args[0].equalsIgnoreCase("agent"));
         return true;
@@ -67,7 +83,7 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
       if (!sender.hasPermission("nexusarena.admin"))
         throw new IllegalArgumentException("Arena administrator permission required");
       String sub = args.length == 0 ? "help" : args[0].toLowerCase(Locale.ROOT);
-      if (sender instanceof Player p && plugin.arenas.locked(p.getUniqueId()) && !allowedInsideArena(sub))
+      if (sender instanceof Player p && plugin.arenas.locked(p.getUniqueId()) && !allowedInsideArena(args))
         throw new IllegalArgumentException("Administrator access outside an arena required");
       switch (sub) {
         case "use" -> {
@@ -101,7 +117,7 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
         default -> {
           for (String line :
               List.of(
-                  "/vb use <arena> · start · stop · status · reload · level [recruit|veteran|elite]",
+                  "/vb use <arena> · start · stop · status · reload · vote (reopen the map vote) · level [recruit|veteran|elite]",
                   "/vb map [list | use <id> | preview <id> | mark ... | save | discard]  (map editor, see /vb map help)",
                   "/vb debug skip | state | win <a|b> | kill <player> | plant <a|b> | seal"))
             say(sender, line);
@@ -128,14 +144,15 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
     String sub = args.length < 2 ? "list" : args[1].toLowerCase(Locale.ROOT);
     switch (sub) {
       case "list" -> {
-        say(sender, "Next match map: " + maps().selected());
+        String forced = maps().selected();
+        say(sender, forced == null ? "Next match map: decided by the players' vote (random when nobody votes)" : "Next match map: " + forced + " (forced, overrides the vote)");
         for (VbMap m : VbData.maps().values())
           say(sender, " " + m.id() + " · " + m.name() + " · " + m.realm() + " · " + m.width() + "x" + m.depth() + " blocks, " + m.cell() + " per cell");
       }
       case "use" -> {
         if (args.length < 3) throw new IllegalArgumentException("Usage: /vb map use <id>");
         maps().select(args[2].toLowerCase(Locale.ROOT));
-        say(sender, "The next match is played on " + maps().selected());
+        say(sender, "The next match is played on " + maps().selected() + " (forced: it overrides the vote and applies to one match)");
       }
       case "preview" -> {
         if (!(sender instanceof Player p)) throw new IllegalArgumentException("Only a player can preview a map");

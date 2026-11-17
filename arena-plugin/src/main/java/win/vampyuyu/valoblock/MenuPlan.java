@@ -7,14 +7,15 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Who gets a ValoBlock menu opened for them, and when. Pure: the service reads a {@link View} of the player and does what this
  * says. The agent select cannot be dismissed: it is reopened whenever it is missing until the player locks in or the phase ends.
- * The Armory is offered once per buy phase: a player who closes it keeps it closed until the next buy phase, and a player who left
+ * The map vote is offered once per ballot (a lobby cycle), the same way. The Armory is offered once per buy phase: a player who closes it keeps it closed until the next buy phase, and a player who left
  * and came back (forget) is offered it again.
  */
 final class MenuPlan {
   enum Menu {
     NONE,
     SELECT,
-    ARMORY
+    ARMORY,
+    VOTE
   }
 
   /**
@@ -27,14 +28,16 @@ final class MenuPlan {
    * @param packReady the ValoBlock pack is loaded (or there is none): nothing opens before it, or the client drops the menu
    * @param open the ValoBlock menu the player has open now
    * @param busy another window (a chest, anything that is not their own inventory nor a ValoBlock menu) is open
+   * @param ballot the open map vote of the lobby (QUEUE phase, no match yet): its generation, or 0 when no vote is open
    */
-  record View(VbPhase phase, int round, boolean locked, boolean alive, boolean packReady, Menu open, boolean busy) {}
+  record View(VbPhase phase, int round, boolean locked, boolean alive, boolean packReady, Menu open, boolean busy, int ballot) {}
 
   private final Map<UUID, String> served = new ConcurrentHashMap<>();
 
   /** The menu this phase calls for, whatever is open. */
   static Menu wanted(View v) {
     return switch (v.phase()) {
+      case QUEUE -> v.ballot() > 0 ? Menu.VOTE : Menu.NONE;
       case AGENT_SELECT -> v.locked() ? Menu.NONE : Menu.SELECT;
       case BUY -> v.alive() ? Menu.ARMORY : Menu.NONE;
       default -> Menu.NONE;
@@ -42,19 +45,19 @@ final class MenuPlan {
   }
 
   private static String key(View v) {
-    return "buy:" + v.round();
+    return v.phase() == VbPhase.QUEUE ? "vote:" + v.ballot() : "buy:" + v.round();
   }
 
   /**
    * The menu to open for this player now, or NONE. Nothing is offered while the pack is not loaded or another window is open (it
    * is tried again at the next look, which is also what stops a loop against a menu another plugin forces open). The select is
-   * offered every time it is missing; the Armory once per buy phase (one the player opened by hand counts as offered).
+   * offered every time it is missing; the Armory once per buy phase and the vote once per ballot (one the player opened by hand counts as offered).
    */
   Menu decide(UUID id, View v) {
     Menu want = wanted(v);
     if (want == Menu.NONE) return Menu.NONE;
     if (v.open() == want) {
-      if (want == Menu.ARMORY) served.put(id, key(v));
+      if (want != Menu.SELECT) served.put(id, key(v));
       return Menu.NONE;
     }
     if (!v.packReady() || v.open() != Menu.NONE || v.busy()) return Menu.NONE;
@@ -64,7 +67,7 @@ final class MenuPlan {
 
   /** The menu was opened by the service. */
   void opened(UUID id, View v) {
-    if (wanted(v) == Menu.ARMORY) served.put(id, key(v));
+    if (wanted(v) == Menu.ARMORY || wanted(v) == Menu.VOTE) served.put(id, key(v));
   }
 
   /** The menu the player has open is out of date (a buy window in combat, a select window once locked in): close it. */

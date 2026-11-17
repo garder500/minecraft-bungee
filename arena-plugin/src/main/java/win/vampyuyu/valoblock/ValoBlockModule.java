@@ -17,6 +17,8 @@ public final class ValoBlockModule {
   public volatile AgentService agents = AgentService.NOOP;
   /** Automatic opening of the select and the Armory (set with the agents service). */
   volatile VbMenus menus;
+  /** The map vote of the lobby (null until the maps are enabled). */
+  volatile VbMapVoteService votes;
   public volatile BotService bots = BotService.NOOP;
   public volatile MapService map = MapService.NOOP;
   public volatile VbHud hud = VbHud.NOOP;
@@ -135,6 +137,9 @@ public final class ValoBlockModule {
     VbMapService service = new VbMapService(plugin);
     service.start();
     map = service;
+    VbMapVoteService vote = new VbMapVoteService(plugin);
+    vote.start();
+    votes = vote;
     MiniMapService mini = new MiniMapService(plugin);
     mini.start();
     minimap = mini;
