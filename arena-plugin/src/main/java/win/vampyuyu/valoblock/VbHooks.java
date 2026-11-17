@@ -20,7 +20,8 @@ final class VbHooks implements GameHooks {
   @Override
   public boolean ownsInventory(ArenaSession s, org.bukkit.inventory.Inventory inventory) {
     var holder = inventory.getHolder();
-    return holder instanceof AgentSelectMenu || holder instanceof ArmoryMenu;
+    // Every ValoBlock window must be listed: the arena cancels the opening of any other inventory.
+    return holder instanceof AgentSelectMenu || holder instanceof ArmoryMenu || holder instanceof TacMapService.Menu;
   }
 
   /** Players reopen their menus by command (/vb agent, /vb buy). */
