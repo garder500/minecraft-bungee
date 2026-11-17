@@ -19,7 +19,7 @@ import win.vampyuyu.arena.ArenaSession;
 public final class MapVoteMenu implements InventoryHolder {
   /** The Realm colour of each map (the tooltip name; the frame in the pack uses the same, vb_layout.VOTE_REALM). */
   static final Map<String, String> REALM = Map.of("hourfall", "#d9b23c", "rootvault", "#46b866", "stormbreak", "#4aa3d8");
-  static final int FIRST_ROW = 1, TILE_COLS = 3, TILE_ROWS = 3;
+  static final int FIRST_ROW = 2, TILE_COLS = 3, TILE_ROWS = 3;
 
   final ArenaSession session;
   Inventory inventory;
@@ -50,6 +50,11 @@ public final class MapVoteMenu implements InventoryHolder {
     int row = slot / 9, col = slot % 9;
     if (row < FIRST_ROW || row >= FIRST_ROW + TILE_ROWS || col >= TILE_COLS * maps) return -1;
     return col / TILE_COLS;
+  }
+
+  /** The slot under the middle of tile {@code k}: its vote count as a stack. */
+  static int tallySlot(int k) {
+    return (FIRST_ROW + TILE_ROWS) * 9 + TILE_COLS * k + TILE_COLS / 2;
   }
 
   /** The tooltip of one map tile (pure). {@code mine}: the player voted for it; {@code leading}: it is ahead (or tied for it). */
@@ -84,6 +89,12 @@ public final class MapVoteMenu implements InventoryHolder {
       for (int r = 0; r < TILE_ROWS; r++)
         for (int c = 0; c < TILE_COLS; c++)
           holder.inventory.setItem((FIRST_ROW + r) * 9 + TILE_COLS * k + c, AgentItems.cell("blank", lines, "vote:" + id, id.equals(mine)));
+      int votes = counts.getOrDefault(id, 0);
+      if (votes > 0) { // the tally row under the tile: one ballot per vote (the stack count is the number)
+        ItemStack tally = AgentItems.cell("tac_mark", lines, "vote:" + id, id.equals(mine));
+        tally.setAmount(Math.min(64, votes));
+        holder.inventory.setItem(tallySlot(k), tally);
+      }
     }
     return holder.inventory;
   }

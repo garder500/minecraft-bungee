@@ -129,10 +129,11 @@ class MapVoteTest {
     assertTrue(all.contains(map.name()) && all.contains(map.realm()) && all.contains(map.width() + " x " + map.depth()));
     assertTrue(all.contains("Time Tide") && all.contains("Votes: 2 (leading)") && all.contains("Click to vote"));
     assertTrue(MapVoteMenu.tooltip(map, 1, true, false).stream().anyMatch(l -> l.text().startsWith("Your vote")));
-    assertEquals(0, MapVoteMenu.mapAt(9, 3));
-    assertEquals(1, MapVoteMenu.mapAt(3 * 9 + 4, 3));
-    assertEquals(2, MapVoteMenu.mapAt(2 * 9 + 8, 3));
+    assertEquals(0, MapVoteMenu.mapAt(2 * 9, 3));
+    assertEquals(1, MapVoteMenu.mapAt(4 * 9 + 4, 3));
+    assertEquals(2, MapVoteMenu.mapAt(3 * 9 + 8, 3));
     assertEquals(-1, MapVoteMenu.mapAt(4, 3), "the title row");
-    assertEquals(-1, MapVoteMenu.mapAt(4 * 9, 3), "under the tiles");
+    assertEquals(-1, MapVoteMenu.mapAt(9, 3), "above the tiles");
+    assertEquals(-1, MapVoteMenu.mapAt(5 * 9, 3), "under the tiles");
   }
 }

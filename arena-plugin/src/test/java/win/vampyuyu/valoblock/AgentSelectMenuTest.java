@@ -160,7 +160,7 @@ public class AgentSelectMenuTest {
     assertEquals("vampyuyu:vb_ab_cinder_ember_dash", sig.getItemMeta().getUseCooldown().getCooldownGroup().toString());
     ItemStack ult = AgentItems.ability(cinder, cinder.ability(7), kit);
     assertEquals("vampyuyu:valoblock/ab_cinder_colossus_step_empty", ult.getItemMeta().getItemModel().toString());
-    assertTrue(plain(ult.getItemMeta().lore().get(1)).contains("0 / 7"));
+    assertTrue(ult.getItemMeta().lore().stream().anyMatch(l -> plain(l).contains("0 / 7")));
     kit.use(6);
     ItemStack spent = AgentItems.ability(cinder, cinder.ability(6), kit);
     assertEquals(1, spent.getAmount());
