@@ -14,25 +14,32 @@ CATEGORIES = []
 
 
 def cat(cid, name, blurb, main, unlock, icon):
-    """Main path categories are one chain; the others open all at once after their unlock quest."""
+    """Every category opens all its quests at once after its unlock quest (the main path categories unlock each
+    other). Inside a category a quest only waits for a real prerequisite: the earlier quest of the same objective (64
+    cobblestone, then 128 more) or what it names with after= (an item an earlier quest gives, a realm to enter first)."""
     c = {"id": cid, "name": name, "blurb": blurb, "main": main, "unlock": unlock, "icon": icon, "quests": []}
     CATEGORIES.append(c)
     return c
 
 
-def q(c, name, desc, typ, target, amount, icon, coins, items=None, label=None, qid=None, lore=None):
+def q(c, name, desc, typ, target, amount, icon, coins, items=None, label=None, qid=None, lore=None, after=None, proves=None):
     """qid: a fixed id for a quest added after the plan shipped (players' progress is stored by id, so the numbered
     ids q001... of the original plan must never shift: new quests get a named id instead of a number).
-    lore: one line of Aethelgard story (GDD v3.1, chapters 2, 4.1 and 13) shown before the instruction."""
+    lore: one line of Aethelgard story (GDD v3.1, chapters 2, 4.1 and 13) shown before the instruction.
+    after: names of earlier quests of the same category (or labels of any quest) this one really needs.
+    proves: names of quests of the same category (or labels) that completing this one proves done (a built generator
+    proves its ring): they complete too, even if they were skipped."""
     if lore:
         desc = f"{lore} {desc}"
     c["quests"].append(dict(name=name, desc=desc, type=typ, target=target, amount=amount, icon=icon, coins=coins,
-                            items=items or {}, label=label, qid=qid))
+                            items=items or {}, label=label, qid=qid,
+                            after=[after] if isinstance(after, str) else list(after or []),
+                            proves=[proves] if isinstance(proves, str) else list(proves or [])))
 
 
 def retired(c):
     """A numbered quest taken out of the plan: its number stays used, so the later ids do not shift and it is never reused."""
-    c["quests"].append(dict(retired=True, qid=None, label=None))
+    c["quests"].append(dict(retired=True, qid=None, label=None, after=[], proves=[]))
 
 
 def craft(c, name, what, mat, amount, icon, coins, **kw):
@@ -100,31 +107,31 @@ brk(c, "First Tree", "8 logs", "LOGS", 8, "OAK_LOG", 20, lore="Your fragment is 
 craft(c, "Planks", "4 planks", "PLANKS", 4, "OAK_PLANKS", 20)
 craft(c, "Workbench", "a crafting table", "CRAFTING_TABLE", 1, "CRAFTING_TABLE", 20, lore="Survivors have always built before they understood.")
 craft(c, "Sticks", "4 sticks", "STICK", 4, "STICK", 20)
-craft(c, "Wooden Pickaxe", "a wooden pickaxe", "WOODEN_PICKAXE", 1, "WOODEN_PICKAXE", 20)
+craft(c, "Wooden Pickaxe", "a wooden pickaxe", "WOODEN_PICKAXE", 1, "WOODEN_PICKAXE", 20, proves=['Planks', 'Workbench', 'Sticks'])
 ev(c, "Pebbles", "Right-click the ground of your island with an empty hand to pick up 9 Stone Pebbles.", "pebble", 9, "FLINT", 30, lore="The stone of Aethelgard is scarce here: the Devourer left only dust and pebbles.")
 craft(c, "First Cobblestone", "a cobblestone from 9 pebbles", "COBBLESTONE", 1, "COBBLESTONE", 20)
-craft(c, "Stone Pickaxe", "a stone pickaxe", "STONE_PICKAXE", 1, "STONE_PICKAXE", 30)
-craft(c, "Wooden Sword", "a wooden sword", "WOODEN_SWORD", 1, "WOODEN_SWORD", 20)
+craft(c, "Stone Pickaxe", "a stone pickaxe", "STONE_PICKAXE", 1, "STONE_PICKAXE", 30, proves=['Workbench', 'Sticks'])
+craft(c, "Wooden Sword", "a wooden sword", "WOODEN_SWORD", 1, "WOODEN_SWORD", 20, proves=['Planks', 'Workbench', 'Sticks'])
 q(c, "Plant a Sapling", "Plant a sapling.", "PLACE_BLOCK", "SAPLINGS", 1, "OAK_SAPLING", 20)
 brk(c, "First Harvest", "8 fully grown crops", "CROPS", 8, "WHEAT", 30)
 craft(c, "Bread", "bread", "BREAD", 1, "BREAD", 20)
-craft(c, "The Fountain", "a Fountain from 4 cobblestone and 4 logs", "custom:fountain", 1, "SMOOTH_STONE", 100, label="fountain_craft", lore="An old memory stirs in the rock: the Call. You remember how to shape a Fountain.")
-ev(c, "Place the Fountain", "Place your Fountain on your island. It makes a cobblestone above itself every 2 seconds.", "machine_placed:fountain", 1, "SMOOTH_STONE", 50)
+craft(c, "The Fountain", "a Fountain from 4 cobblestone and 4 logs", "custom:fountain", 1, "SMOOTH_STONE", 100, label="fountain_craft", lore="An old memory stirs in the rock: the Call. You remember how to shape a Fountain.", proves=['Pebbles', 'First Cobblestone'])
+ev(c, "Place the Fountain", "Place your Fountain on your island. It makes a cobblestone above itself every 2 seconds.", "machine_placed:fountain", 1, "SMOOTH_STONE", 50, proves=['The Fountain'])
 brk(c, "Fountain Cobble", "64 cobblestone", "COBBLESTONE", 64, "COBBLESTONE", 50)
 brk(c, "Fountain Cobble II", "128 more cobblestone", "COBBLESTONE", 128, "COBBLESTONE", 80)
 
 c = cat("generator", "The First Real Generator", "The Devourer's stasis fields still hold your fragment. The Spring Stone and a ring of stone bricks turn your Fountain into a generator. A wrong ring never costs you anything.", True, "fountain_craft", "STONE_BRICKS")
 cmd(c, "Read the Plan", "Read the generator plan with /guide.", "guide", "WRITABLE_BOOK", 20, items={"spring_stone": 1}, label="read_plan")
-ev(c, "Spring Stone", "Place the Spring Stone on the south side of your Fountain's ring.", "machine_placed:spring_stone", 1, "PRISMARINE_BRICKS", 40)
+ev(c, "Spring Stone", "Place the Spring Stone on the south side of your Fountain's ring.", "machine_placed:spring_stone", 1, "PRISMARINE_BRICKS", 40, after='Read the Plan')
 obtain(c, "Stone Bricks", "Get 16 stone bricks: craft them from stone, or use a stonecutter.", "STONE_BRICKS", 16, "STONE_BRICKS", 30)
 q(c, "The Ring", "Place 7 stone bricks around your Fountain (the Spring Stone takes the south side).", "PLACE_BLOCK", "STONE_BRICKS", 7, "STONE_BRICKS", 60)
-ev(c, "Stone Generator", "Complete the ring: your Fountain becomes a Stone generator (right-click it to check what is missing).", "generator_built:stone", 1, "FURNACE", 120, label="stone_gen", lore="The ring closes and the fragment breathes again.")
-brk(c, "Mine the Generator", "64 cobblestone from it", "COBBLESTONE", 64, "IRON_PICKAXE", 50)
+ev(c, "Stone Generator", "Complete the ring: your Fountain becomes a Stone generator (right-click it to check what is missing).", "generator_built:stone", 1, "FURNACE", 120, label="stone_gen", lore="The ring closes and the fragment breathes again.", proves=['Spring Stone', 'The Ring'])
+brk(c, "Mine the Generator", "64 cobblestone from it", "COBBLESTONE", 64, "IRON_PICKAXE", 50, after='Stone Generator')
 ore(c, "Iron Nugget", "your first iron nugget", "iron_nugget", 1, "IRON_NUGGET", 30)
-ore(c, "Nugget Stash", "9 iron nuggets", "iron_nugget", 9, "IRON_NUGGET", 50)
-craft(c, "Iron Ingot", "an iron ingot", "IRON_INGOT", 1, "IRON_INGOT", 50)
+ore(c, "Nugget Stash", "9 iron nuggets", "iron_nugget", 9, "IRON_NUGGET", 50, proves=['Iron Nugget'])
+craft(c, "Iron Ingot", "an iron ingot", "IRON_INGOT", 1, "IRON_INGOT", 50, proves=['Iron Nugget'])
 craft(c, "First Bucket", "a bucket", "BUCKET", 1, "BUCKET", 80)
-ev(c, "Bottomless Water", "Fill your bucket from the Spring Stone.", "spring_filled", 1, "WATER_BUCKET", 50)
+ev(c, "Bottomless Water", "Fill your bucket from the Spring Stone.", "spring_filled", 1, "WATER_BUCKET", 50, proves=['Spring Stone', 'First Bucket'])
 ore(c, "Copper", "16 raw copper", "copper", 16, "RAW_COPPER", 50)
 ore(c, "Coal", "16 coal", "coal", 16, "COAL", 50)
 ore(c, "Gold", "a gold nugget", "gold_nugget", 1, "GOLD_NUGGET", 60)
@@ -141,15 +148,15 @@ earn(c, "First Sales", 200, "GOLD_NUGGET", 60)
 cmd(c, "Dune Plan", "Read the plans of the other generators with /guide.", "guide", "WRITABLE_BOOK", 30, label="dune_plan")
 craft(c, "Sandstone", "16 sandstone", "SANDSTONE", 16, "SANDSTONE", 40)
 q(c, "Dune Ring", "Place 7 sandstone blocks around a second Fountain (a Spring Stone on the south side).", "PLACE_BLOCK", "SANDSTONE", 7, "SANDSTONE", 80)
-ev(c, "Dune Generator", "Complete the sandstone ring: a Dune generator makes sand, gravel and red sand.", "generator_built:dunes", 1, "SAND", 150, label="dune_gen")
+ev(c, "Dune Generator", "Complete the sandstone ring: a Dune generator makes sand, gravel and red sand.", "generator_built:dunes", 1, "SAND", 150, label="dune_gen", proves=['Dune Ring'])
 brk(c, "Sand", "64 sand", "SAND", 64, "SAND", 60)
 brk(c, "Gravel", "64 gravel", "GRAVEL", 64, "GRAVEL", 60)
 brk(c, "Red Sand", "16 red sand", "RED_SAND", 16, "RED_SAND", 40)
 obtain(c, "Glass", "Smelt 8 glass: put sand in a furnace and take the glass out.", "GLASS", 8, "GLASS", 50)
 craft(c, "Concrete", "8 concrete powder", "WHITE_CONCRETE_POWDER", 8, "WHITE_CONCRETE_POWDER", 60)
-obtain(c, "More Glass", "Smelt 16 more glass (stained glass counts too).", "GLASSES", 16, "GLASS", 60)
+obtain(c, "More Glass", "Smelt 16 more glass (stained glass counts too).", "GLASSES", 16, "GLASS", 60, after='Glass')
 q(c, "Frost Ring", "Place 7 glass blocks around a third Fountain (a Spring Stone on the south side).", "PLACE_BLOCK", "GLASS", 7, "GLASS", 100)
-ev(c, "Frost Generator", "Complete the glass ring: a Frost generator makes snow blocks, packed ice and Frostium.", "generator_built:frost", 1, "PACKED_ICE", 200, label="frost_gen")
+ev(c, "Frost Generator", "Complete the glass ring: a Frost generator makes snow blocks, packed ice and Frostium.", "generator_built:frost", 1, "PACKED_ICE", 200, label="frost_gen", proves=['Frost Ring'])
 brk(c, "Snow", "32 snow blocks", "SNOW_BLOCK", 32, "SNOW_BLOCK", 60)
 brk(c, "Ice", "16 packed ice", "PACKED_ICE", 16, "PACKED_ICE", 80)
 ore(c, "Frostium", "your first Frostium", "frostium", 1, "PRISMARINE_CRYSTALS", 100)
@@ -159,18 +166,18 @@ ev(c, "More Fountains", "Place 3 more Fountains.", "machine_placed:fountain", 3,
 
 c = cat("tiers", "Raise the Generators", "The Forge, the cores, tiers I to IV. The crystallised memories of Aethelgard answer your hammer, and progress speeds up.", True, "bronzite_1", "AMETHYST_SHARD")
 ev(c, "The Forge", "Craft a Forge with a blast furnace, 4 iron ingots and 4 coal, then place it.", "forge_placed", 1, "BLAST_FURNACE", 100, label="forge_placed", lore="The Forge is the heart of every survivor camp: it turns raw memory into tools.")
-cmd(c, "Open the Forge", "Open the Forge menu with /forge.", "forge", "BLAST_FURNACE", 30)
+cmd(c, "Open the Forge", "Open the Forge menu with /forge.", "forge", "BLAST_FURNACE", 30, after='The Forge')
 forge(c, "First Forging", "bronze_core", 1, "AMETHYST_SHARD", 80)
-q(c, "Raise the Generator", "Reach generator tier II: forge a Bronze Core and right-click it on your island.", "GENERATOR_TIER", "", 2, "AMETHYST_SHARD", 150, label="tier2")
-brk(c, "Tier II Mining", "500 more cobblestone", "COBBLESTONE", 500, "COBBLESTONE", 150)
+q(c, "Raise the Generator", "Reach generator tier II: forge a Bronze Core and right-click it on your island.", "GENERATOR_TIER", "", 2, "AMETHYST_SHARD", 150, label="tier2", proves=['First Forging'])
+brk(c, "Tier II Mining", "500 more cobblestone", "COBBLESTONE", 500, "COBBLESTONE", 150, after='Raise the Generator')
 ore(c, "Bronzite Hoard", "12 Bronzite", "bronzite", 12, "RAW_COPPER", 150)
 ore(c, "Diamond", "a diamond", "diamond", 1, "DIAMOND", 200)
-forge(c, "Ember Core", "ember_core", 1, "FIRE_CHARGE", 250)
-q(c, "Tier III", "Reach generator tier III: forge an Ember Core and right-click it on your island.", "GENERATOR_TIER", "", 3, "FIRE_CHARGE", 400, items={"endless_bucket": 1}, label="tier3")
+forge(c, "Ember Core", "ember_core", 1, "FIRE_CHARGE", 250, after='Raise the Generator')
+q(c, "Tier III", "Reach generator tier III: forge an Ember Core and right-click it on your island.", "GENERATOR_TIER", "", 3, "FIRE_CHARGE", 400, items={"endless_bucket": 1}, label="tier3", proves=['Ember Core'])
 ore(c, "Ancient Debris", "ancient debris", "ancient_debris", 1, "ANCIENT_DEBRIS", 400)
 brk(c, "Mine 2,000", "2,000 cobblestone", "COBBLESTONE", 2000, "COBBLESTONE", 300)
-forge(c, "Void Lens", "void_lens", 1, "ENDER_EYE", 500)
-q(c, "The Void Lens", "Reach generator tier IV: right-click the Void Lens on your island. It also opens your End (/island end).", "GENERATOR_TIER", "", 4, "ENDER_EYE", 800, label="tier4", lore="Through the lens you glimpse the gap the Devourer tore in the sky: the Rift.")
+forge(c, "Void Lens", "void_lens", 1, "ENDER_EYE", 500, after='Tier III')
+q(c, "The Void Lens", "Reach generator tier IV: right-click the Void Lens on your island. It also opens your End (/island end).", "GENERATOR_TIER", "", 4, "ENDER_EYE", 800, label="tier4", lore="Through the lens you glimpse the gap the Devourer tore in the sky: the Rift.", proves=['Void Lens'])
 ore(c, "Voidglass", "a Voidglass", "voidglass", 1, "ECHO_SHARD", 500)
 ore(c, "Starcore", "a Starcore Shard", "starcore", 1, "NETHER_STAR", 800)
 brk(c, "Mine 5,000", "5,000 cobblestone", "COBBLESTONE", 5000, "COBBLESTONE", 500)
@@ -183,20 +190,20 @@ ev(c, "The Archivist", "Click the Archivist on the Hub plaza: she keeps the key 
    items={"echo_key": 1}, qid="hub_archivist", lore="The Archivist has kept a key cut from a shard that still remembers the sky.")
 ev(c, "The Merchant", "Click the Merchant on the Hub plaza to learn how the market works.", "hub_npc:merchant", 1, "EMERALD", 80, qid="hub_merchant")
 earn(c, "Market Lesson", 300, "GOLD_NUGGET", 150, qid="hub_market_lesson")
-ev(c, "Enter the Rift", "Carry your Echo Key to the Rift arch, west of the Hub plaza, and click the Rift Gatekeeper.", "rift_enter", 1, "CRYING_OBSIDIAN", 250, qid="rift_enter")
+ev(c, "Enter the Rift", "Carry your Echo Key to the Rift arch, west of the Hub plaza, and click the Rift Gatekeeper.", "rift_enter", 1, "CRYING_OBSIDIAN", 250, qid="rift_enter", after='The Archivist', proves=['The Island Gate', 'The Archivist'])
 q(c, "Defeat the Echo of the Rift", "Right-click the Echo Key on the Rift altar, then defeat the Echo of the Rift. It drops the Wing Core that grants your Wings and lights the road to the Quai des Huit.", "BOSS_KILL", "voidwyrm", 1, "DRAGON_HEAD", 1500, qid="echo_defeat", label="voidwyrm_1",
-  lore="The first Echo of the Devourer screams in the sky. End it, and the Eight Realms can be reached.")
+  lore="The first Echo of the Devourer screams in the sky. End it, and the Eight Realms can be reached.", after='Enter the Rift', proves=['Enter the Rift'])
 
 c = cat("nether", "The Nether and the Ember", "Your fragment has a slag-red twin. Through a portal wait the Ember generator, quartz and soul sand.", True, "tier2", "NETHERRACK")
 cmd(c, "Nether Plan", "Read the Nether plan with /guide.", "guide", "WRITABLE_BOOK", 50, label="nether_plan")
 craft(c, "Flint and Steel", "flint and steel", "FLINT_AND_STEEL", 1, "FLINT_AND_STEEL", 80)
 q(c, "Light a Portal", "Place 10 obsidian.", "PLACE_BLOCK", "OBSIDIAN", 10, "OBSIDIAN", 100)
-q(c, "Enter the Nether", "Enter your Nether.", "VISIT_WORLD", "nether", 1, "NETHERRACK", 150)
+q(c, "Enter the Nether", "Enter your Nether.", "VISIT_WORLD", "nether", 1, "NETHERRACK", 150, proves=['Light a Portal'])
 brk(c, "Netherrack", "64 netherrack", "NETHERRACK", 64, "NETHERRACK", 100)
 craft(c, "Nether Bricks", "16 nether bricks", "NETHER_BRICKS", 16, "NETHER_BRICKS", 100)
 q(c, "Magma Block", "Craft a magma block from 4 netherrack and 1 coal.", "CRAFT_ITEM", "MAGMA_BLOCK", 1, "MAGMA_BLOCK", 100)
 q(c, "Ember Ring", "Place 7 nether bricks around a Fountain (a magma block on the south side).", "PLACE_BLOCK", "NETHER_BRICKS", 7, "NETHER_BRICKS", 150)
-ev(c, "Ember Generator", "Complete the ring with a magma block on the south side: an Ember generator makes netherrack and soul sand.", "generator_built:ember", 1, "MAGMA_BLOCK", 300, label="ember_gen")
+ev(c, "Ember Generator", "Complete the ring with a magma block on the south side: an Ember generator makes netherrack and soul sand.", "generator_built:ember", 1, "MAGMA_BLOCK", 300, label="ember_gen", proves=['Ember Ring'])
 craft(c, "Quartz Block", "a quartz block from 4 nether quartz (from the Ember generator or the market)", "QUARTZ_BLOCK", 1, "QUARTZ", 120)
 brk(c, "Soul Sand", "32 soul sand", "SOUL_SAND", 32, "SOUL_SAND", 120)
 ore(c, "Ember Sunstone", "a Sunstone", "sunstone", 1, "GLOWSTONE_DUST", 200)
@@ -423,44 +430,44 @@ kill(c, "Zombie Siege", "200 zombies", "ZOMBIE", 200, "ROTTEN_FLESH", 400)
 
 c = cat("grove", "The Whispering Grove", "Realm 2. Roots as wide as towers, spores that glow, islands that live. The Mycelial Queen keeps the living codes of the old world.", True, "voidwyrm_1", "MOSS_BLOCK")
 ev(c, "Through the Green Gate", "Light the Sky Gate of the Whispering Grove (defeat the Lava Colossus) and step through it at the Quai des Huit (/quai).", "grove_enter", 1, "LIME_STAINED_GLASS", 300, label="grove_1", lore="Beyond the second Gate the air is thick with light. The Grove remembers how to grow.", qid="grove_01")
-brk(c, "Mossy Footing", "32 moss blocks", "MOSS_BLOCK", 32, "MOSS_BLOCK", 100, qid="grove_02")
-brk(c, "First Grove Harvest", "16 fully grown crops", "CROPS", 16, "WHEAT", 150, qid="grove_03")
-ev(c, "Breathe the Spores", "Harvest grown crops in the Grove until you earn the Respiration affinity (40 harvests): the spore haze no longer touches you.", "grove_affinity:1", 1, "SPORE_BLOSSOM", 400, label="grove_resp", qid="grove_04")
-q(c, "Planting the Roots", "Plant 32 saplings.", "PLACE_BLOCK", "SAPLINGS", 32, "MANGROVE_PROPAGULE", 200, qid="grove_05")
-brk(c, "Heartwood", "64 mangrove logs, the living wood of the Grove", "MANGROVE_LOG", 64, "MANGROVE_LOG", 300, qid="grove_06")
-craft(c, "Tame the Green", "a composter", "COMPOSTER", 1, "COMPOSTER", 150, qid="grove_07")
-ev(c, "Let It Grow", "Keep harvesting in the Grove until you earn the Growth affinity (200 harvests): bone meal grows a crop one more stage, anywhere.", "grove_affinity:2", 1, "BONE_MEAL", 1200, label="grove_growth", qid="grove_08")
-q(c, "Wake the Mycelial Queen", "Defeat the Mycelial Queen, Guardian of the Grove.", "BOSS_KILL", "sylvan_matriarch", 1, "SPIDER_EYE", 2500, label="grove_queen", qid="grove_09")
+brk(c, "Mossy Footing", "32 moss blocks", "MOSS_BLOCK", 32, "MOSS_BLOCK", 100, qid="grove_02", after='Through the Green Gate')
+brk(c, "First Grove Harvest", "16 fully grown crops", "CROPS", 16, "WHEAT", 150, qid="grove_03", after='Through the Green Gate')
+ev(c, "Breathe the Spores", "Harvest grown crops in the Grove until you earn the Respiration affinity (40 harvests): the spore haze no longer touches you.", "grove_affinity:1", 1, "SPORE_BLOSSOM", 400, label="grove_resp", qid="grove_04", after='Through the Green Gate')
+q(c, "Planting the Roots", "Plant 32 saplings.", "PLACE_BLOCK", "SAPLINGS", 32, "MANGROVE_PROPAGULE", 200, qid="grove_05", after='Through the Green Gate')
+brk(c, "Heartwood", "64 mangrove logs, the living wood of the Grove", "MANGROVE_LOG", 64, "MANGROVE_LOG", 300, qid="grove_06", after='Through the Green Gate')
+craft(c, "Tame the Green", "a composter", "COMPOSTER", 1, "COMPOSTER", 150, qid="grove_07", after='Through the Green Gate')
+ev(c, "Let It Grow", "Keep harvesting in the Grove until you earn the Growth affinity (200 harvests): bone meal grows a crop one more stage, anywhere.", "grove_affinity:2", 1, "BONE_MEAL", 1200, label="grove_growth", qid="grove_08", after='Breathe the Spores', proves=['Breathe the Spores'])
+q(c, "Wake the Mycelial Queen", "Defeat the Mycelial Queen, Guardian of the Grove.", "BOSS_KILL", "sylvan_matriarch", 1, "SPIDER_EYE", 2500, label="grove_queen", qid="grove_09", after='Through the Green Gate', proves=['Through the Green Gate'])
 
 c = cat("heights", "The Frozen Heights", "Realm 3. Cities stopped in the ice, a cold that is the absence of motion, a sky that is almost within reach. The Boreal Watcher holds the world still.", True, "grove_queen", "BLUE_ICE")
 ev(c, "Through the Frozen Gate", "Light the Sky Gate of the Frozen Heights (defeat the Mycelial Queen) and step through it at the Quai des Huit (/quai).", "heights_enter", 1, "LIGHT_BLUE_STAINED_GLASS", 300, label="heights_1", lore="Beyond the third Gate nothing moves unless you make it. The Heights keep time in their ice.", qid="heights_01")
-brk(c, "Cutting Ice", "32 packed ice", "PACKED_ICE", 32, "PACKED_ICE", 100, qid="heights_02")
-brk(c, "Blue Cut", "16 blue ice", "BLUE_ICE", 16, "BLUE_ICE", 150, qid="heights_03")
-ev(c, "Warmth", "Cut ice in the Heights until you earn the Warmth affinity (40 blocks): the cold no longer bites you.", "heights_affinity:1", 1, "CAMPFIRE", 400, label="heights_warmth", qid="heights_04")
-brk(c, "Crystal Spires", "8 amethyst clusters, the crystals of the Heights", "AMETHYST_CLUSTER", 8, "AMETHYST_CLUSTER", 300, qid="heights_05")
-craft(c, "Cold Storage", "a blast furnace", "BLAST_FURNACE", 1, "BLAST_FURNACE", 200, qid="heights_06")
-q(c, "Stray Hunt", "Defeat 20 strays.", "KILL_MOB", "STRAY", 20, "ARROW", 250, qid="heights_07")
-ev(c, "Stasis", "Keep cutting ice in the Heights until you earn the Stasis affinity (200 blocks): sneak in the air to slow your fall, anywhere in the Heights.", "heights_affinity:2", 1, "FEATHER", 1200, label="heights_stasis", qid="heights_08")
-q(c, "Wake the Boreal Watcher", "Defeat the Boreal Watcher, Guardian of the Heights.", "BOSS_KILL", "frost_revenant", 1, "BLUE_ICE", 2500, label="heights_watcher", qid="heights_09")
+brk(c, "Cutting Ice", "32 packed ice", "PACKED_ICE", 32, "PACKED_ICE", 100, qid="heights_02", after='Through the Frozen Gate')
+brk(c, "Blue Cut", "16 blue ice", "BLUE_ICE", 16, "BLUE_ICE", 150, qid="heights_03", after='Through the Frozen Gate')
+ev(c, "Warmth", "Cut ice in the Heights until you earn the Warmth affinity (40 blocks): the cold no longer bites you.", "heights_affinity:1", 1, "CAMPFIRE", 400, label="heights_warmth", qid="heights_04", after='Through the Frozen Gate')
+brk(c, "Crystal Spires", "8 amethyst clusters, the crystals of the Heights", "AMETHYST_CLUSTER", 8, "AMETHYST_CLUSTER", 300, qid="heights_05", after='Through the Frozen Gate')
+craft(c, "Cold Storage", "a blast furnace", "BLAST_FURNACE", 1, "BLAST_FURNACE", 200, qid="heights_06", after='Through the Frozen Gate')
+q(c, "Stray Hunt", "Defeat 20 strays.", "KILL_MOB", "STRAY", 20, "ARROW", 250, qid="heights_07", after='Through the Frozen Gate')
+ev(c, "Stasis", "Keep cutting ice in the Heights until you earn the Stasis affinity (200 blocks): sneak in the air to slow your fall, anywhere in the Heights.", "heights_affinity:2", 1, "FEATHER", 1200, label="heights_stasis", qid="heights_08", after='Warmth', proves=['Warmth'])
+q(c, "Wake the Boreal Watcher", "Defeat the Boreal Watcher, Guardian of the Heights.", "BOSS_KILL", "frost_revenant", 1, "BLUE_ICE", 2500, label="heights_watcher", qid="heights_09", after='Through the Frozen Gate', proves=['Through the Frozen Gate'])
 
 c = cat("marsh", "The Putrid Marshes", "Realm 5. Everything the Devourer threw away ends up here, and the Marsh keeps it. The Mire Abomination digests what the world discards.", True, "grove_queen", "MUD_BRICKS")
 ev(c, "Through the Brown Gate", "Light the Sky Gate of the Putrid Marshes (defeat the Mycelial Queen) and step through it at the Quai des Huit (/quai).", "marsh_enter", 1, "BROWN_STAINED_GLASS", 300, label="marsh_1", lore="The fifth Gate smells of wet earth and old meals. Nothing here is ever really gone.", qid="marsh_01")
-brk(c, "Muddy Roots", "32 muddy mangrove roots, where Rot Resin oozes", "MUDDY_MANGROVE_ROOTS", 32, "MUDDY_MANGROVE_ROOTS", 100, qid="marsh_02")
-ev(c, "Feed the Vat", "Right-click a Rot Vat with expired items (rotten flesh, spider eyes, bones...) to salvage them.", "marsh_salvage", 1, "CAULDRON", 150, label="marsh_vat", qid="marsh_03")
-ev(c, "Filtered Air", "Salvage until you earn the Filtered affinity (40 points): the miasma no longer weakens you.", "marsh_purify:1", 1, "GLASS_BOTTLE", 400, label="marsh_filtered", qid="marsh_04")
-brk(c, "Slime Heaps", "16 slime blocks from the Landfill and the Weeping Mangrove", "SLIME_BLOCK", 16, "SLIME_BLOCK", 150, qid="marsh_05")
-ev(c, "Reclaimer", "Keep salvaging until you earn the Reclaimer affinity (200 points): a Vat needs fewer items for each Rot Resin roll.", "marsh_purify:2", 1, "COMPOSTER", 1200, label="marsh_reclaimer", qid="marsh_06")
-q(c, "Digest the Digester", "Defeat the Mire Abomination, Guardian of the Marshes.", "BOSS_KILL", "mire_abomination", 1, "SLIME_BALL", 2500, label="marsh_abomination", qid="marsh_07")
+brk(c, "Muddy Roots", "32 muddy mangrove roots, where Rot Resin oozes", "MUDDY_MANGROVE_ROOTS", 32, "MUDDY_MANGROVE_ROOTS", 100, qid="marsh_02", after='Through the Brown Gate')
+ev(c, "Feed the Vat", "Right-click a Rot Vat with expired items (rotten flesh, spider eyes, bones...) to salvage them.", "marsh_salvage", 1, "CAULDRON", 150, label="marsh_vat", qid="marsh_03", after='Through the Brown Gate')
+ev(c, "Filtered Air", "Salvage until you earn the Filtered affinity (40 points): the miasma no longer weakens you.", "marsh_purify:1", 1, "GLASS_BOTTLE", 400, label="marsh_filtered", qid="marsh_04", after='Feed the Vat')
+brk(c, "Slime Heaps", "16 slime blocks from the Landfill and the Weeping Mangrove", "SLIME_BLOCK", 16, "SLIME_BLOCK", 150, qid="marsh_05", after='Through the Brown Gate')
+ev(c, "Reclaimer", "Keep salvaging until you earn the Reclaimer affinity (200 points): a Vat needs fewer items for each Rot Resin roll.", "marsh_purify:2", 1, "COMPOSTER", 1200, label="marsh_reclaimer", qid="marsh_06", after='Filtered Air', proves=['Filtered Air'])
+q(c, "Digest the Digester", "Defeat the Mire Abomination, Guardian of the Marshes.", "BOSS_KILL", "mire_abomination", 1, "SLIME_BALL", 2500, label="marsh_abomination", qid="marsh_07", after='Through the Brown Gate', proves=['Through the Brown Gate'])
 
 c = cat("citadel", "The Citadel of Golden Sands", "Realm 4. Rivers of gold dust that flow upward, an hourglass the size of a tower. The Temporal Pharaoh counts the hours the Devourer stole.", True, "grove_queen", "CLOCK")
 ev(c, "Through the Golden Gate", "Light the Sky Gate of the Citadel of Golden Sands (defeat the Mycelial Queen) and step through it at the Quai des Huit (/quai).", "citadel_enter", 1, "YELLOW_STAINED_GLASS", 300, label="citadel_1", lore="Beyond the fourth Gate the hours do not agree with each other. The Citadel counts them all.", qid="citadel_01")
-brk(c, "Dunes of the Citadel", "64 sandstone blocks", "SANDSTONE", 64, "SANDSTONE", 150, qid="citadel_02")
-ev(c, "Time Surges", "Be in the Citadel when the Time Tide surges: you move faster, and Chrono Modules run fast.", "citadel_tide:surge", 1, "CLOCK", 400, label="citadel_surge", qid="citadel_03")
-ev(c, "Time Stalls", "Be in the Citadel when the Time Tide stalls: you move slower, and Chrono Modules bank the lost cycles.", "citadel_tide:stall", 1, "COBWEB", 400, label="citadel_stall", qid="citadel_04")
+brk(c, "Dunes of the Citadel", "64 sandstone blocks", "SANDSTONE", 64, "SANDSTONE", 150, qid="citadel_02", after='Through the Golden Gate')
+ev(c, "Time Surges", "Be in the Citadel when the Time Tide surges: you move faster, and Chrono Modules run fast.", "citadel_tide:surge", 1, "CLOCK", 400, label="citadel_surge", qid="citadel_03", after='Through the Golden Gate')
+ev(c, "Time Stalls", "Be in the Citadel when the Time Tide stalls: you move slower, and Chrono Modules bank the lost cycles.", "citadel_tide:stall", 1, "COBWEB", 400, label="citadel_stall", qid="citadel_04", after='Through the Golden Gate')
 obtain(c, "Gold of the Sands", "Collect 16 gold ingots to forge the Chrono Module and the Sandglass.", "GOLD_INGOT", 16, "GOLD_INGOT", 300, qid="citadel_05")
-forge(c, "Turn the Sandglass", "sandglass", 1, "CLOCK", 600, qid="citadel_06")
-forge(c, "A Module That Remembers", "chrono_module", 1, "CLOCK", 900, label="citadel_module", qid="citadel_07")
-q(c, "Wake the Temporal Pharaoh", "Defeat the Temporal Pharaoh, Guardian of the Citadel.", "BOSS_KILL", "temporal_pharaoh", 1, "GOLD_BLOCK", 2500, label="citadel_pharaoh", qid="citadel_08")
+forge(c, "Turn the Sandglass", "sandglass", 1, "CLOCK", 600, qid="citadel_06", after='Through the Golden Gate')
+forge(c, "A Module That Remembers", "chrono_module", 1, "CLOCK", 900, label="citadel_module", qid="citadel_07", after='Through the Golden Gate')
+q(c, "Wake the Temporal Pharaoh", "Defeat the Temporal Pharaoh, Guardian of the Citadel.", "BOSS_KILL", "temporal_pharaoh", 1, "GOLD_BLOCK", 2500, label="citadel_pharaoh", qid="citadel_08", after='Through the Golden Gate', proves=['Through the Golden Gate'])
 
 
 def main():
@@ -476,6 +483,7 @@ def main():
             if item["label"]:
                 ids[item["label"]] = item["id"]
         category["quests"] = [item for item in category["quests"] if not item.get("retired")]
+    names = {c["id"]: {item["name"]: item["id"] for item in c["quests"]} for c in CATEGORIES}
     rows = []
     for pos, category in enumerate(CATEGORIES):
         unlock = ids.get(category["unlock"]) if category["unlock"] else ""
@@ -485,10 +493,21 @@ def main():
     pos = 0
     for category in CATEGORIES:
         unlock = ids.get(category["unlock"]) if category["unlock"] else None
-        previous = None
+        by_name = {}
+        last_of = {}  # (type, target) -> the latest quest of that objective in the category
         for item in category["quests"]:
-            requires = [previous] if previous and category["main"] else ([unlock] if unlock else [])
-            previous = item["id"]
+            requires = [unlock] if unlock else []
+            same = last_of.get((item["type"], item["target"])) if category["main"] else None
+            if same:
+                requires.append(same)
+            for ref in item["after"]:
+                req = by_name.get(ref) or ids.get(ref)
+                if not req:
+                    raise SystemExit(f"{item['name']}: after={ref!r} is no earlier quest of '{category['id']}' nor a label")
+                if req not in requires:
+                    requires.append(req)
+            by_name[item["name"]] = item["id"]
+            last_of[(item["type"], item["target"])] = item["id"]
             rows.append(insert("quest", {"id": item["id"], "pool": "plan", "position": pos, "category": category["id"],
                                          "name": item["name"], "description": item["desc"], "type": item["type"],
                                          "target": item["target"] or "", "amount": item["amount"], "icon": item["icon"],
@@ -496,11 +515,16 @@ def main():
             pos += 1
             for i, req in enumerate(requires):
                 rows.append(insert("quest_requirement", {"quest_id": item["id"], "position": i, "requires": req}))
+            for i, ref in enumerate(item["proves"]):
+                proven = names[category["id"]].get(ref) or ids.get(ref)
+                if not proven:
+                    raise SystemExit(f"{item['name']}: proves={ref!r} is no quest of '{category['id']}' nor a label")
+                rows.append(insert("quest_proof", {"quest_id": item["id"], "position": i, "proves": proven}))
             for key, amount in item["items"].items():
                 rows.append(insert("quest_reward_item", {"quest_id": item["id"], "item": key, "amount": amount}))
     out = write("quests", ["Generated by scripts/gen_quests.py from docs/skyblock-notes/progression.md. Edit the script, not this file.",
-                           "Main path categories are chains (each quest needs the one before it); the others open all their",
-                           "quests after the unlock quest."], rows)
+                           "Every category opens its quests after its unlock quest; inside it a quest only needs the earlier",
+                           "quest of the same objective and the prerequisites the script names (after=)."], rows)
     print(f"wrote {n} quests in {len(CATEGORIES)} categories to {out}")
 
 

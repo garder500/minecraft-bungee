@@ -70,14 +70,44 @@ public class QuestEngineTest {
     }
 
     @Test
-    public void lockedQuestsDoNotProgressUntilTheirPrerequisiteIsDone() {
+    public void anActionDoneEarlyCountsAndCompletesWhenTheQuestUnlocks() {
         QuestData d = new QuestData();
         assertEquals(List.of("island"), engine.activeTutorial(d).stream().map(QuestDef::id).toList());
         assertTrue(engine.apply(d, ev(QuestType.BREAK_BLOCK, "OAK_LOG", 5)).isEmpty());
-        assertFalse(d.progress.containsKey("wood"));
+        assertEquals("counted while locked", 3, d.progress.get("wood").intValue());
+        assertTrue(engine.apply(d, ev(QuestType.CRAFT_ITEM, "CRAFTING_TABLE", 1)).isEmpty());
         List<Completion> done = engine.apply(d, ev(QuestType.ISLAND_CREATE, "ANY", 1));
-        assertEquals(List.of("island"), done.stream().map(c -> c.def().id()).toList());
-        assertEquals(List.of("wood", "mining3"), engine.activeTutorial(d).stream().map(QuestDef::id).toList());
+        assertEquals("the island unlocks wood, already full, which unlocks the bench, already done",
+            List.of("island", "wood", "bench"), done.stream().map(c -> c.def().id()).toList());
+    }
+
+    @Test
+    public void theNextQuestOfASeriesWaitsForTheFirstAndBackfillSharesTheCount() {
+        QuestCatalog chain;
+        try (Db db = Db.memory()) {
+            quest(db, "c64", "plan", 0, "Cobble", "BREAK_BLOCK", "COBBLESTONE", 64, 0);
+            quest(db, "c128", "plan", 1, "More Cobble", "BREAK_BLOCK", "COBBLESTONE", 128, 0, "c64");
+            quest(db, "gate", "plan", 2, "Gate", "EVENT", "gate", 1, 0);
+            quest(db, "c500", "plan", 3, "Gated Cobble", "BREAK_BLOCK", "COBBLESTONE", 500, 0, "gate");
+            chain = QuestRepo.load(db);
+        }
+        QuestEngine e = new QuestEngine(chain);
+        QuestData live = new QuestData();
+        e.apply(live, ev(QuestType.BREAK_BLOCK, "COBBLESTONE", 70));
+        assertTrue(live.completed.contains("c64"));
+        assertEquals("128 more starts after the 64", 0, live.progress.getOrDefault("c128", 0).intValue());
+        assertEquals("a quest behind another objective counts at once", 70, live.progress.get("c500").intValue());
+
+        QuestData old = new QuestData();
+        List<Completion> done = e.backfill(old, def -> def.type() == QuestType.BREAK_BLOCK ? java.util.OptionalInt.of(100) : java.util.OptionalInt.empty(),
+            QuestEngine.Scope.ALL);
+        assertEquals(List.of("c64"), done.stream().map(c -> c.def().id()).toList());
+        assertEquals("the rest of the 100 goes to the next of the series", 36, old.progress.get("c128").intValue());
+        assertEquals(100, old.progress.get("c500").intValue());
+        assertTrue("never lowers progress", e.backfill(old, def -> java.util.OptionalInt.of(0), QuestEngine.Scope.ALL).isEmpty());
+        assertEquals(36, old.progress.get("c128").intValue());
+        e.apply(old, ev(QuestType.BREAK_BLOCK, "COBBLESTONE", 400));
+        assertEquals(List.of("c500"), e.apply(old, ev(QuestType.EVENT, "gate", 1)).stream().skip(1).map(c -> c.def().id()).toList());
     }
 
     @Test
@@ -208,5 +238,22 @@ public class QuestEngineTest {
         for (QuestDef def : engine.dailyQuests(d)) {
             d.dailyDone.add(def.id());
         }
+    }
+
+    @Test
+    public void aProofCompletesAnEventQuestEvenWhileLocked() {
+        QuestCatalog chain;
+        try (Db db = Db.memory()) {
+            quest(db, "pick", "plan", 0, "Pickaxe", "CRAFT_ITEM", "WOODEN_PICKAXE", 1, 0);
+            quest(db, "pebbles", "plan", 1, "Pebbles", "EVENT", "pebble", 9, 0, "pick");
+            chain = QuestRepo.load(db);
+        }
+        QuestEngine e = new QuestEngine(chain);
+        QuestData d = new QuestData();
+        assertTrue("locked: kept full, not completed yet", e.prove(d, "pebble", QuestEngine.Scope.ALL).isEmpty());
+        assertEquals(9, d.progress.get("pebbles").intValue());
+        List<Completion> done = e.apply(d, ev(QuestType.CRAFT_ITEM, "WOODEN_PICKAXE", 1));
+        assertEquals(List.of("pick", "pebbles"), done.stream().map(c -> c.def().id()).toList());
+        assertTrue("never twice", e.prove(d, "pebble", QuestEngine.Scope.ALL).isEmpty());
     }
 }

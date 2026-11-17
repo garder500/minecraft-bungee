@@ -45,6 +45,20 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
         return active() ? rt.engine().forgeLock(rt.quests(player), item).map(QuestDef::name) : Optional.empty();
     }
 
+    @Override
+    public void recheck(UUID player) {
+        Player online = org.bukkit.Bukkit.getPlayer(player);
+        if (online != null) {
+            sync(online);
+        }
+    }
+
+    /** What other features prove (see {@link QuestEngine#prove}): a Fountain made proves the pebbles. */
+    private boolean fountainMade(Player player) {
+        return rt.core.service(win.vampyuyu.survival.api.GeneratorApi.class)
+            .map(api -> api.fountainMade(player.getUniqueId())).orElse(false);
+    }
+
     /** How many items the player could hand in to an active ore quest right now. */
     int handInAvailable(Player player, QuestDef def) {
         QuestData data = rt.quests(player.getUniqueId());
@@ -120,26 +134,137 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
         }
         QuestData data = rt.quests(player.getUniqueId());
         QuestEngine engine = rt.engine();
+        boolean backfill = !data.statsBackfilled && data.planMigrated; // a record from before early actions counted
+        if (!data.statsBackfilled) {
+            data.statsBackfilled = true;
+            rt.dirty(player.getUniqueId());
+        }
         migrate(player, data);
+        boolean fountain = fountainMade(player);
         boolean changed = engine.ensureDay(data, today(), rt.config().dailyCount);
         Optional<IslandInfo> island = sharedIsland(player);
         QuestEngine.Scope scope = QuestEngine.Scope.ALL;
+        List<Completion> backfilled = new ArrayList<>();
         if (island.isPresent()) {
             scope = QuestEngine.Scope.PERSONAL;
             IslandInfo info = island.get();
             IslandQuests shared = islandRecord(info);
+            List<Completion> islandDone = new ArrayList<>();
+            if (backfill) {
+                islandDone.addAll(engine.backfill(shared.quests, def -> lifetimeShared(player, info.owner(), shared, def),
+                    QuestEngine.Scope.ISLAND));
+                islandStore.markDirty(info.id());
+            }
+            if (fountain) {
+                islandDone.addAll(engine.prove(shared.quests, "pebble", QuestEngine.Scope.ISLAND));
+                islandStore.markDirty(info.id());
+            }
             changed |= mirror(player, data, shared);
             welcome(player, info, shared);
-            List<Completion> islandDone = engine.sync(shared.quests, def -> probeShared(player, shared, def),
-                QuestEngine.Scope.ISLAND);
+            islandDone.addAll(engine.sync(shared.quests, def -> probeShared(player, shared, def),
+                QuestEngine.Scope.ISLAND));
             if (!islandDone.isEmpty()) {
                 completeIsland(info, shared, islandDone);
             }
             settleOwed(player, info, shared);
         }
-        List<Completion> done = new ArrayList<>(engine.sync(data, def -> probe(player, def), scope));
+        if (backfill) {
+            UUID owner = rt.islands().flatMap(api -> api.islandOf(player.getUniqueId())).map(IslandInfo::owner).orElse(null);
+            backfilled.addAll(engine.backfill(data, def -> lifetime(player, owner, def), scope));
+        }
+        if (fountain) {
+            backfilled.addAll(engine.prove(data, "pebble", scope));
+        }
+        List<Completion> done = new ArrayList<>(backfilled);
+        done.addAll(engine.sync(data, def -> probe(player, def), scope));
         finish(player, data, done, changed || !done.isEmpty(), scope);
         flushPending(player);
+    }
+
+    /** {@link #lifetime} for an island quest; remembers it as the player's contribution, like the live events. */
+    private OptionalInt lifetimeShared(Player player, UUID owner, IslandQuests shared, QuestDef def) {
+        OptionalInt value = lifetime(player, owner, def);
+        if (value.isPresent() && value.getAsInt() > 0 && !shared.quests.completed.contains(def.id())) {
+            credit(shared, def, player.getUniqueId(), Math.min(value.getAsInt(), def.amount()));
+        }
+        return value;
+    }
+
+    /**
+     * What the player did for a quest's objective over their whole time on this server, from the vanilla statistics:
+     * crafted, mined and placed blocks, mobs killed, fish caught, items enchanted. A placed block also counts for a quest
+     * that asks to craft or obtain it (the best of the two counts, not their sum), and the machines standing on the
+     * island ({@code islandOwner}'s) count for "place a machine" quests. Empty for what neither knows (ores, other
+     * events, the Forge...). Used once, to credit what was done before early actions counted.
+     */
+    OptionalInt lifetime(Player player, UUID islandOwner, QuestDef def) {
+        String target = def.target();
+        if (def.type() == QuestType.EVENT) {
+            if (islandOwner == null || !target.startsWith("machine_placed:")) {
+                return OptionalInt.empty();
+            }
+            String item = target.substring("machine_placed:".length());
+            return rt.core.service(win.vampyuyu.survival.api.MachineCountApi.class)
+                .map(api -> OptionalInt.of(api.machines(islandOwner, item))).orElse(OptionalInt.empty());
+        }
+        if (target.regionMatches(true, 0, "custom:", 0, 7)) {
+            return OptionalInt.empty();
+        }
+        if (def.type() == QuestType.CRAFT_ITEM || def.type() == QuestType.OBTAIN_ITEM) {
+            long made = statSum(player, def.type() == QuestType.CRAFT_ITEM ? QuestType.CRAFT_ITEM : null, target);
+            long placed = statSum(player, QuestType.PLACE_BLOCK, target);
+            return OptionalInt.of((int) Math.min(Integer.MAX_VALUE, Math.max(made, placed)));
+        }
+        long total = 0;
+        switch (def.type()) {
+            case BREAK_BLOCK, PLACE_BLOCK -> total = statSum(player, def.type(), target);
+            case KILL_MOB -> {
+                for (org.bukkit.entity.EntityType type : org.bukkit.entity.EntityType.values()) {
+                    if (type.isAlive() && QuestMatcher.matches(target, type.name())) {
+                        try {
+                            total += player.getStatistic(org.bukkit.Statistic.KILL_ENTITY, type);
+                        } catch (IllegalArgumentException | UnsupportedOperationException e) {
+                            // not a valid entity for this statistic
+                        }
+                    }
+                }
+            }
+            case FISH -> total = player.getStatistic(org.bukkit.Statistic.FISH_CAUGHT);
+            case ENCHANT_ITEM -> total = player.getStatistic(org.bukkit.Statistic.ITEM_ENCHANTED);
+            default -> {
+                return OptionalInt.empty();
+            }
+        }
+        return OptionalInt.of((int) Math.min(Integer.MAX_VALUE, total));
+    }
+
+    /**
+     * A material statistic summed over the materials a target accepts: CRAFT_ITEM crafted, BREAK_BLOCK mined,
+     * PLACE_BLOCK placed (block items used), {@code null} picked up and crafted (for "obtain" quests).
+     */
+    private static long statSum(Player player, QuestType kind, String target) {
+        long total = 0;
+        for (org.bukkit.Material m : org.bukkit.Material.values()) {
+            boolean block = kind == QuestType.BREAK_BLOCK || kind == QuestType.PLACE_BLOCK;
+            if (m.isLegacy() || block && !m.isBlock() || kind != QuestType.BREAK_BLOCK && !m.isItem()
+                    || !QuestMatcher.matches(target, m.name())) {
+                continue;
+            }
+            java.util.List<org.bukkit.Statistic> stats = switch (kind == null ? QuestType.OBTAIN_ITEM : kind) {
+                case CRAFT_ITEM -> java.util.List.of(org.bukkit.Statistic.CRAFT_ITEM);
+                case BREAK_BLOCK -> java.util.List.of(org.bukkit.Statistic.MINE_BLOCK);
+                case PLACE_BLOCK -> java.util.List.of(org.bukkit.Statistic.USE_ITEM);
+                default -> java.util.List.of(org.bukkit.Statistic.PICKUP, org.bukkit.Statistic.CRAFT_ITEM);
+            };
+            for (org.bukkit.Statistic stat : stats) {
+                try {
+                    total += player.getStatistic(stat, m);
+                } catch (IllegalArgumentException | UnsupportedOperationException e) {
+                    // not a valid material for this statistic
+                }
+            }
+        }
+        return total;
     }
 
     /**
@@ -428,6 +553,28 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
         info.members().forEach(id -> shared.known.add(id.toString()));
         islandStore.markDirty(info.id());
         return shared;
+    }
+
+    /**
+     * An island reset starts its quests over: the shared record (main chain, contributions, rewards already settled) is
+     * replaced by an empty one, keeping only who it has seen (no second arrival kit), so it is not rebuilt from the
+     * members' copies. Each member's copy of the main chain is cleared too: at once for those online, at their next
+     * sync for the others (the mirror follows the empty record).
+     */
+    void islandReset(UUID island, java.util.Set<UUID> members) {
+        IslandQuests fresh = new IslandQuests();
+        if (islandStore.exists(island)) {
+            fresh.known.addAll(islandStore.get(island).known);
+        }
+        members.forEach(id -> fresh.known.add(id.toString()));
+        islandStore.replace(island, fresh);
+        lastShare.remove(island);
+        for (UUID id : members) {
+            Player member = org.bukkit.Bukkit.getPlayer(id);
+            if (member != null) {
+                mirror(member, rt.quests(id), fresh);
+            }
+        }
     }
 
     /** Copies the island's state of the main chain into a member's own data. True when something changed. */

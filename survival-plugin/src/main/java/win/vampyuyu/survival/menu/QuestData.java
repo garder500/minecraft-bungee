@@ -17,6 +17,11 @@ public final class QuestData {
     public Map<String, Integer> forged = new HashMap<>();
     /** True once the player's older progress was carried over into the quest plan (see QuestService#migrate). */
     public boolean planMigrated;
+    /**
+     * True once what the player did before quests counted early actions was credited from their statistics (see
+     * QuestService#backfill). Fresh records (a new player, a reset island) start true: nothing to credit.
+     */
+    public boolean statsBackfilled;
     /** Quest the sidebar tracks: a tutorial id, {@code daily:<id>}, or empty for "first active". */
     public String tracked = "";
 

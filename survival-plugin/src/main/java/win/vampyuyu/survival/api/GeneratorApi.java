@@ -10,6 +10,11 @@ public interface GeneratorApi {
     /** Generator blocks the player has broken so far (a player who started before the quest plan keeps this). */
     long blocksMined(UUID player);
 
+    /** True once the player crafted a Fountain (it needs cobblestone from pebbles, so it proves the pebbles). */
+    default boolean fountainMade(UUID player) {
+        return false;
+    }
+
     /** How many of an ore's item the player carries (ore ids as in the {@code ORE_FOUND} quests). */
     int oreHeld(Player player, String ore);
 

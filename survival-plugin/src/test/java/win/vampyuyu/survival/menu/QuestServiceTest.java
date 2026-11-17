@@ -281,4 +281,42 @@ public class QuestServiceTest extends MenuTestBase {
         }
         assertFalse(QuestMatcher.matches("custom:re:minion_(", "CUSTOM:minion_x_1"));
     }
+
+    @Test
+    public void anOlderRecordIsCreditedOnceFromThePlayersStatistics() {
+        player.setStatistic(org.bukkit.Statistic.MINE_BLOCK, Material.OAK_LOG, 5);
+        player.setStatistic(org.bukkit.Statistic.MINE_BLOCK, Material.BIRCH_LOG, 3);
+        data().planMigrated = true; // a record from before early actions counted
+        giveIslandAndSync();
+        assertTrue("8 logs mined before: the wood quest is done", data().completed.contains("break_wood"));
+        assertTrue(data().statsBackfilled);
+    }
+
+    @Test
+    public void aFreshRecordIsNotCreditedFromStatistics() {
+        // a new player, or an island reset: the lifetime statistics must not complete the new quests
+        player.setStatistic(org.bukkit.Statistic.MINE_BLOCK, Material.OAK_LOG, 50);
+        giveIslandAndSync();
+        assertFalse(data().completed.contains("break_wood"));
+        assertTrue("marked, so it never runs later", data().statsBackfilled);
+        quests.sync(player);
+        assertFalse(data().completed.contains("break_wood"));
+    }
+
+    @Test
+    public void lifetimeCountsPlacedBlocksForCraftQuestsAndTheIslandsMachines() {
+        core.replace(win.vampyuyu.survival.api.MachineCountApi.class, (owner, item) -> item.equals("fountain") ? 2 : 0);
+        QuestDef table = new QuestDef("table", "Table", "", QuestType.CRAFT_ITEM, "CRAFTING_TABLE", 1, Material.PAPER,
+            List.of(), QuestDef.Rewards.NONE);
+        QuestDef fountains = new QuestDef("fountains", "Fountains", "", QuestType.EVENT, "machine_placed:fountain", 3,
+            Material.PAPER, List.of(), QuestDef.Rewards.NONE);
+        player.setStatistic(org.bukkit.Statistic.USE_ITEM, Material.CRAFTING_TABLE, 1);
+        assertEquals("placed, never crafted here: still proves it", 1,
+            quests.lifetime(player, player.getUniqueId(), table).getAsInt());
+        player.setStatistic(org.bukkit.Statistic.CRAFT_ITEM, Material.CRAFTING_TABLE, 3);
+        assertEquals("the best of crafted and placed, not the sum", 3,
+            quests.lifetime(player, player.getUniqueId(), table).getAsInt());
+        assertEquals(2, quests.lifetime(player, player.getUniqueId(), fountains).getAsInt());
+        assertTrue("no island, no machines", quests.lifetime(player, null, fountains).isEmpty());
+    }
 }

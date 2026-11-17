@@ -33,6 +33,11 @@ public final class QuestRepo {
                 rs -> new String[] {rs.getString(1), rs.getString(2)})) {
             requires.computeIfAbsent(r[0], k -> new ArrayList<>()).add(r[1]);
         }
+        Map<String, List<String>> proves = new HashMap<>();
+        for (String[] r : Db.query(c, "SELECT quest_id, proves FROM quest_proof ORDER BY quest_id, position",
+                rs -> new String[] {rs.getString(1), rs.getString(2)})) {
+            proves.computeIfAbsent(r[0], k -> new ArrayList<>()).add(r[1]);
+        }
         Map<String, Map<String, Double>> xp = new HashMap<>();
         for (Object[] r : Db.query(c, "SELECT quest_id, skill, amount FROM quest_reward_xp ORDER BY quest_id, skill",
                 rs -> new Object[] {rs.getString(1), rs.getString(2), rs.getDouble(3)})) {
@@ -53,7 +58,7 @@ public final class QuestRepo {
                     QuestDef def = new QuestDef(id, rs.getString(4), rs.getString(5), type, rs.getString(7), rs.getInt(8),
                         material(rs.getString(9)), requires.getOrDefault(id, List.of()),
                         new QuestDef.Rewards(rs.getDouble(10), xp.getOrDefault(id, Map.of()), items.getOrDefault(id, Map.of())),
-                        rs.getString(3));
+                        rs.getString(3), proves.getOrDefault(id, List.of()));
                     (rs.getString(2).equals("daily") ? daily : plan).put(id, def);
                 } catch (IllegalArgumentException e) {
                     problems.add("quest '" + id + "': " + e.getMessage());

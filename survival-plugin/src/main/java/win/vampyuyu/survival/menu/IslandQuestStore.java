@@ -33,6 +33,12 @@ final class IslandQuestStore {
         return cache.containsKey(island) || store.exists(path(island));
     }
 
+    /** Puts a fresh record in place of the island's (written at the next flush). */
+    void replace(UUID island, IslandQuests fresh) {
+        cache.put(island, fresh);
+        dirty.add(island);
+    }
+
     void markDirty(UUID island) {
         dirty.add(island);
     }

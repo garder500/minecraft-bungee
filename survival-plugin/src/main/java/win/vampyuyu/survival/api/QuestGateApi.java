@@ -7,4 +7,8 @@ import java.util.UUID;
 public interface QuestGateApi {
     /** The name of the quest a Forge recipe waits for, empty when the player may forge {@code item}. */
     Optional<String> forgeLock(UUID player, String item);
+
+    /** Something the quests read from other features changed (a Fountain was crafted): re-check the player's quests now. */
+    default void recheck(UUID player) {
+    }
 }

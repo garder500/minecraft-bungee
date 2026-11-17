@@ -1126,6 +1126,9 @@ public final class IslandService implements IslandApi, IslandAltarApi, IslandUpg
         int gen = ++island.generation; // drops every callback of the island's earlier builds, platform jobs and scans
         core.modes().resetSkyblockState(player);
         resetIslandProgress(id);
+        // the island keeps its id: its shared quests would come back without this (QuestService drops them)
+        Bukkit.getPluginManager().callEvent(new win.vampyuyu.survival.api.event.IslandResetEvent(island.id,
+            island.coop()));
         core.modes().awaitIsland(player);
         island.state(Island.State.RESETTING);
         island.lastResetAt = now();

@@ -17,7 +17,7 @@ import win.vampyuyu.survival.api.event.QuarryProgressEvent;
 import win.vampyuyu.survival.quarry.EnergyNetwork.Pos;
 
 /** Runs the machines once per second: networks, fuel, batteries, and the miners breaking generator blocks. */
-final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
+final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi, win.vampyuyu.survival.api.MachineCountApi {
     private static final BlockFace[] SIDES = {BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH,
         BlockFace.EAST, BlockFace.WEST};
     private static final int SAVE_EVERY = 30;
@@ -661,5 +661,10 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi {
                 }
             }
         }
+    }
+
+    @Override
+    public int machines(java.util.UUID islandOwner, String itemId) {
+        return store.count(islandOwner.toString(), itemId);
     }
 }

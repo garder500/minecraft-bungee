@@ -4,7 +4,8 @@ Decisions (user, 2026-10-31). Source plan page: 266 quests in 14 categories (6 m
 
 ## Start of the game
 - **Pebbles**: right-click the ground of your island (empty hand or a stick) gives a Stone Pebble. 600 ms cooldown,
-  200 per day, and no more once the player has made a Fountain. 9 pebbles craft 1 cobblestone (ExactChoice, so plain
+  200 per day, and no more once the player has made a Fountain. A Fountain is made from pebble cobblestone, so
+  crafting one (or having one at the next join) completes the Pebbles quest (`QuestEngine.prove`). 9 pebbles craft 1 cobblestone (ExactChoice, so plain
   flint never works).
 - **Fountain**: crafted from 4 cobblestone + 4 logs (no bucket: a vanilla bucket needs iron, which only generators give).
   A placed Fountain makes one cobblestone per second in the block above it, marked as generator cobble, so the ore
@@ -24,7 +25,22 @@ missing and on which side. `/guide` shows the blueprints.
 Tiers I to IV (Bronze Core, Ember Core, Void Lens, Starcore) change the ore tables (stone generator and the old water + lava generator); the tier stays on the player. The Frost ring is glass, the Ember heat cell is crafted from netherrack and coal, more Spring Stones from stone bricks around a water bucket.
 
 ## Quests
-Categories carry an unlock requirement. The main path is ordered; the rest is parallel. Quests use the existing types
+Categories carry an unlock requirement: the main path categories open one after the other, the rest is parallel.
+Inside a category every quest is open at once (user decision, 2026-11-17: an action done "too early" must count and
+never lock a quest). A quest only waits for a real prerequisite: the earlier quest of the same objective in a main
+category (64 cobblestone, then 128 more) or what `gen_quests.py` names with `after=` (the Spring Stone from Read the
+Plan, the Archivist's key before the Rift, a realm's gate before its quests, tier II before the Ember Core). An event
+never also counts for the quest it unlocks.
+A locked quest already counts what the player does (unless its own prerequisite takes the same action first) and
+completes the moment it unlocks (user decision, 2026-11-17). Records from before that change are credited once, at the
+next join, from the vanilla statistics (crafted, mined, placed, killed, fish, enchants; `QuestService.lifetime`): a
+series shares the count in order (100 cobblestone = the 64 done, 36 of the "128 more"). Fresh records (new player, reset
+island) are marked done without credit, so lifetime statistics never complete a restarted island.
+Proofs (`proves=` in `gen_quests.py`, table `quest_proof`, migration V025): completing a quest completes the ones it
+proves, even skipped or for older records (a built generator proves its ring, a placed Fountain proves the crafted one,
+the crafted Fountain proves Pebbles and the first cobblestone, the wooden pickaxe proves planks, table and sticks, a
+realm's Guardian proves its gate...). A placed block also counts for a quest that asks to craft or obtain it, and the
+one-time credit takes the best of crafted and placed, plus the machines standing on the island for "place" quests. Quests use the existing types
 plus `EVENT` (a keyed event fired by a feature). A test loads the real config and checks counts, rewards, requires.
 
 ## Admin reset

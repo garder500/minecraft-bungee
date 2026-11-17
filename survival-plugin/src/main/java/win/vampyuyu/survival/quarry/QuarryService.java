@@ -60,6 +60,11 @@ public final class QuarryService implements win.vampyuyu.survival.api.EndAccessA
     }
 
     @Override
+    public boolean fountainMade(UUID player) {
+        return data(player).fountainMade;
+    }
+
+    @Override
     public int tier(UUID owner) {
         return Math.max(1, Math.min(data(owner).generatorTier, config.tiers));
     }

@@ -10,7 +10,8 @@ public final class ContentDomains {
     public static final Domain QUESTS = new Domain("quests", List.of(
         new Root("quest_category", "id", null, List.of()),
         new Root("quest", "id", "pool = 'plan'", List.of(new Child("quest_requirement", "quest_id"),
-            new Child("quest_reward_xp", "quest_id"), new Child("quest_reward_item", "quest_id")))));
+            new Child("quest_proof", "quest_id"), new Child("quest_reward_xp", "quest_id"),
+            new Child("quest_reward_item", "quest_id")))));
 
     public static final Domain QUESTS_DAILY = new Domain("quests_daily", List.of(
         new Root("quest", "id", "pool = 'daily'", List.of(new Child("quest_requirement", "quest_id"),

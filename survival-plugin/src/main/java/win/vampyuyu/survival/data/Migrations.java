@@ -32,7 +32,8 @@ public final class Migrations {
         "V021__realm_checks",
         "V022__npc_memory",
         "V023__paragon",
-        "V024__remove_fairy_souls");
+        "V024__remove_fairy_souls",
+        "V025__quest_proofs");
 
     private Migrations() {}
 

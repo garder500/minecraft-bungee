@@ -6,7 +6,7 @@ import org.bukkit.Material;
 
 /** One quest of the plan or the daily pool. Immutable. */
 public record QuestDef(String id, String name, String description, QuestType type, String target, int amount,
-        Material icon, List<String> requires, Rewards rewards, String category) {
+        Material icon, List<String> requires, Rewards rewards, String category, List<String> proves) {
 
     /** Skill experience / items / coins paid on completion. */
     public record Rewards(double coins, Map<String, Double> skillXp, Map<String, Integer> items) {
@@ -23,6 +23,7 @@ public record QuestDef(String id, String name, String description, QuestType typ
     }
 
     public QuestDef {
+        proves = proves == null ? List.of() : List.copyOf(proves);
         if (!id.matches("[a-z0-9_]+")) {
             throw new IllegalArgumentException("Bad quest id '" + id + "' (use a-z, 0-9, _)");
         }
@@ -39,5 +40,11 @@ public record QuestDef(String id, String name, String description, QuestType typ
     public QuestDef(String id, String name, String description, QuestType type, String target, int amount,
             Material icon, List<String> requires, Rewards rewards) {
         this(id, name, description, type, target, amount, icon, requires, rewards, "");
+    }
+
+    /** Without proofs (quests that prove no other quest). */
+    public QuestDef(String id, String name, String description, QuestType type, String target, int amount,
+            Material icon, List<String> requires, Rewards rewards, String category) {
+        this(id, name, description, type, target, amount, icon, requires, rewards, category, List.of());
     }
 }

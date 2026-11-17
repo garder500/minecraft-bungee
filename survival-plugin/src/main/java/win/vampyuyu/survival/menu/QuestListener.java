@@ -53,6 +53,11 @@ final class QuestListener implements Listener {
     // ---------------------------------------------------------------- the Quarry
 
     @EventHandler(priority = EventPriority.MONITOR)
+    public void onIslandReset(win.vampyuyu.survival.api.event.IslandResetEvent event) {
+        quests.islandReset(event.getIslandId(), event.getMembers());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onQuarry(QuarryProgressEvent event) {
         QuestType type;
         try {

@@ -13,8 +13,9 @@ import java.util.function.Function;
  * The quest state machine, free of Bukkit so it can be tested. It only edits a {@link QuestData}; paying rewards,
  * messages and persistence are the caller's job ({@link QuestService}).
  *
- * <p>Tutorial quest states: LOCKED (a prerequisite is not completed) -> ACTIVE (progress counts) -> COMPLETED. Progress
- * of a locked or completed quest never changes, and a quest completes exactly once: it is recorded as completed
+ * <p>Tutorial quest states: LOCKED (a prerequisite is not completed) -> ACTIVE -> COMPLETED. A locked quest already
+ * counts what the player does (unless its own prerequisite takes the same action first) and completes the moment it
+ * unlocks; a completed quest never changes, and a quest completes exactly once: it is recorded as completed
  * before the caller pays, so a reward cannot be paid twice. Daily quests: ACTIVE while listed for the current day
  * and not done; the all-dailies bonus and the streak are paid once per day.
  */
@@ -121,6 +122,23 @@ public final class QuestEngine {
         return Optional.empty();
     }
 
+    /**
+     * Marks the plan's {@code EVENT} quests keyed {@code subject} as done in full: something else proves them (a crafted
+     * Fountain proves the pebbles it was made from). A locked one keeps its full progress and completes when it unlocks.
+     */
+    public List<Completion> prove(QuestData data, String subject, Scope scope) {
+        boolean changed = false;
+        for (QuestDef def : catalog.tutorial()) {
+            if (inScope(def, scope) && def.type() == QuestType.EVENT && !data.completed.contains(def.id())
+                    && QuestMatcher.matches(def.target(), subject)
+                    && data.progress.getOrDefault(def.id(), 0) < def.amount()) {
+                data.progress.put(def.id(), def.amount());
+                changed = true;
+            }
+        }
+        return changed ? settle(data, scope) : List.of();
+    }
+
     // ---------------------------------------------------------------- progress
 
     /**
@@ -179,16 +197,129 @@ public final class QuestEngine {
         return apply(data, event, Scope.ALL);
     }
 
-    /** The active quests of a scope the event would advance, as {@link #apply} would (before it is applied). */
+    /**
+     * The quests of a scope the event advances, as {@link #apply} would (before it is applied): the active ones, and the
+     * locked ones too (an action done early counts, and the quest completes as soon as it unlocks), except a locked quest
+     * whose unfinished prerequisites take the same event first (the "128 more" after the first 64).
+     */
     public List<QuestDef> matching(QuestData data, Event event, Scope scope) {
         List<QuestDef> out = new ArrayList<>();
         for (QuestDef def : catalog.tutorial()) {
-            if (inScope(def, scope) && def.type() == event.type() && isActive(data, def)
-                    && QuestMatcher.matches(def.target(), event.subject())) {
+            if (!inScope(def, scope) || !counts(def.type(), event.type()) || data.completed.contains(def.id())
+                    || !QuestMatcher.matches(def.target(), event.subject())) {
+                continue;
+            }
+            // absolute quests (levels, tiers) are re-read when they unlock: no early count for them
+            if (isActive(data, def) || !def.type().absolute() && !waitsForSame(data, def, event, new HashSet<>())) {
                 out.add(def);
             }
         }
         return out;
+    }
+
+    /**
+     * True when an event of {@code event} type advances a plan quest of {@code quest} type: the same type, or a placed
+     * block for a quest that asks to craft or obtain it (the player holds one, so they made or got it).
+     */
+    static boolean counts(QuestType quest, QuestType event) {
+        return quest == event
+            || event == QuestType.PLACE_BLOCK && (quest == QuestType.CRAFT_ITEM || quest == QuestType.OBTAIN_ITEM);
+    }
+
+    /** True when an unfinished prerequisite of def (at any depth) is advanced by the same event. */
+    private boolean waitsForSame(QuestData data, QuestDef def, Event event, Set<String> seen) {
+        for (String req : def.requires()) {
+            if (data.completed.contains(req) || !seen.add(req)) {
+                continue;
+            }
+            Optional<QuestDef> before = catalog.tutorialQuest(req);
+            if (before.isPresent() && (counts(before.get().type(), event.type())
+                    && QuestMatcher.matches(before.get().target(), event.subject())
+                    || waitsForSame(data, before.get(), event, seen))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Completes the active quests whose progress is already full (counted while they were locked), repeating while a
+     * completion unlocks another one.
+     */
+    public List<Completion> settle(QuestData data, Scope scope) {
+        List<Completion> done = new ArrayList<>();
+        boolean again = true;
+        while (again) {
+            again = false;
+            applyProofs(data, scope);
+            for (QuestDef def : catalog.tutorial()) {
+                if (inScope(def, scope) && isActive(data, def) && !def.type().absolute()
+                        && data.progress.getOrDefault(def.id(), 0) >= def.amount()) {
+                    data.progress.remove(def.id());
+                    data.completed.add(def.id());
+                    done.add(new Completion(def, false));
+                    again = true;
+                }
+            }
+        }
+        return done;
+    }
+
+    /**
+     * A completed quest proves the ones it names (a built Stone generator proves its ring): they get their full progress
+     * and complete as soon as they are unlocked. Absolute quests are left to their own probe.
+     */
+    private void applyProofs(QuestData data, Scope scope) {
+        for (QuestDef def : catalog.tutorial()) {
+            if (def.proves().isEmpty() || !data.completed.contains(def.id())) {
+                continue;
+            }
+            for (String id : def.proves()) {
+                catalog.tutorialQuest(id).ifPresent(proven -> {
+                    if (inScope(proven, scope) && !proven.type().absolute() && !data.completed.contains(proven.id())
+                            && data.progress.getOrDefault(proven.id(), 0) < proven.amount()) {
+                        data.progress.put(proven.id(), proven.amount());
+                    }
+                });
+            }
+        }
+    }
+
+    /**
+     * Credits what a player did before the quests counted it ({@code lifetime}: their whole count for a quest's
+     * objective, empty when unknown). A series of the same objective (64 cobblestone, then 128 more) shares the count
+     * in order: the first quest takes what it needs, the next one the rest. Progress only goes up; the quests already
+     * full and unlocked complete (see {@link #settle}).
+     */
+    public List<Completion> backfill(QuestData data, Function<QuestDef, OptionalInt> lifetime, Scope scope) {
+        java.util.Map<String, Long> leftover = new java.util.HashMap<>();
+        for (QuestDef def : catalog.tutorial()) {
+            if (!inScope(def, scope) || def.type().absolute()) {
+                continue;
+            }
+            Optional<QuestDef> previous = def.requires().stream().map(catalog::tutorialQuest).flatMap(Optional::stream)
+                .filter(p -> p.type() == def.type() && p.target().equals(def.target())).findFirst();
+            long remaining;
+            if (previous.isPresent() && leftover.containsKey(previous.get().id())) {
+                remaining = leftover.get(previous.get().id());
+            } else {
+                OptionalInt total = lifetime.apply(def);
+                if (total.isEmpty()) {
+                    continue;
+                }
+                remaining = Math.max(0, total.getAsInt());
+            }
+            if (data.completed.contains(def.id())) {
+                leftover.put(def.id(), Math.max(0, remaining - def.amount()));
+                continue;
+            }
+            int give = (int) Math.min(def.amount(), remaining);
+            if (give > data.progress.getOrDefault(def.id(), 0)) {
+                data.progress.put(def.id(), give);
+            }
+            leftover.put(def.id(), remaining - give);
+        }
+        return settle(data, scope);
     }
 
     /** Like {@link #apply(QuestData, Event)} for one scope; the dailies belong to {@link Scope#PERSONAL} (and ALL). */
@@ -197,15 +328,16 @@ public final class QuestEngine {
         if (event.type() == QuestType.FORGE_ITEM) {
             data.forged.merge(event.subject(), Math.max(0, event.value()), Integer::sum);
         }
-        for (QuestDef def : catalog.tutorial()) {
-            if (inScope(def, scope) && def.type() == event.type() && isActive(data, def) && QuestMatcher.matches(def.target(), event.subject())) {
-                if (bump(data.progress, def, event)) {
-                    data.progress.remove(def.id());
-                    data.completed.add(def.id());
-                    done.add(new Completion(def, false));
-                }
+        // the quests active before the event: one it unlocks (the next of a series) does not take the same event
+        for (QuestDef def : matching(data, event, scope)) {
+            boolean unlocked = isActive(data, def);
+            if (bump(data.progress, def, event) && unlocked) {
+                data.progress.remove(def.id());
+                data.completed.add(def.id());
+                done.add(new Completion(def, false));
             }
         }
+        done.addAll(settle(data, scope)); // what this unlocked, proved, or a catch-up just before it opened
         for (QuestDef def : scope == Scope.ISLAND ? List.<QuestDef>of() : dailyQuests(data)) {
             if (def.type() == event.type() && !data.dailyDone.contains(def.id())
                     && QuestMatcher.matches(def.target(), event.subject())) {
@@ -244,6 +376,7 @@ public final class QuestEngine {
         List<Completion> all = new ArrayList<>();
         for (int round = 0; round < 64; round++) { // a chain can unlock a chain; bounded against cycles
             List<Completion> found = creditForged(data, probe, scope);
+            found.addAll(settle(data, scope)); // quests that unlocked with their progress already counted
             List<QuestDef> candidates = new ArrayList<>(activeTutorial(data, scope));
             if (scope != Scope.ISLAND) {
                 candidates.addAll(dailyQuests(data).stream().filter(d -> !data.dailyDone.contains(d.id())).toList());

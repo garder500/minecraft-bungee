@@ -59,7 +59,7 @@ public class DataAdminTest {
             assertEquals("bool", main.get("kind"));
             Map<String, Object> pool = cols.stream().filter(c -> c.get("name").equals("pool")).findFirst().orElseThrow();
             assertEquals(List.of("plan", "daily"), pool.get("choices"));
-            assertEquals(3, list(schema.get("children")).size());
+            assertEquals(4, list(schema.get("children")).size());
             assertEquals("quest_id", list(schema.get("children")).get(0).get("fk"));
             assertEquals("origin", schema.get("originColumn"));
             assertThrows(DataAdmin.Invalid.class, () -> admin.schema("quests", "nope"));

@@ -102,11 +102,19 @@ public class QuestFlowTest {
     }
 
     @Test
-    public void aBuiltFrostRingCatchesUpAStuckChain() {
+    public void theFrostGeneratorNeedsNoEarlierGlassQuest() {
         QuestData data = upTo("q045");
-        var done = engine.catchUp(data, new QuestEngine.Event(QuestType.EVENT, "generator_built:frost", 1));
-        assertEquals(List.of("q046", "q047", "q048", "q049", "q050"), done.stream().map(c -> c.def().id()).toList());
-        assertTrue(engine.isActive(data, engine.catalog().tutorialQuest("q051").orElseThrow()));
+        assertTrue("nothing is locked: no catch-up needed", engine.catchUp(data,
+            new QuestEngine.Event(QuestType.EVENT, "generator_built:frost", 1)).isEmpty());
+        assertEquals("the generator proves its ring", List.of("q050", "q049"),
+            apply(data, QuestType.EVENT, "generator_built:frost", 1));
+    }
+
+    @Test
+    public void anEventDoesNotAlsoCountForTheQuestItUnlocks() {
+        QuestData data = upTo("q045");
+        assertEquals(List.of("q046"), apply(data, QuestType.OBTAIN_ITEM, "GLASS", 8));
+        assertEquals("More Glass starts at zero", 0, engine.progress(data, engine.catalog().tutorialQuest("q048").orElseThrow(), false));
     }
 
     @Test
@@ -116,5 +124,48 @@ public class QuestFlowTest {
         assertFalse(data.completed.contains("q050"));
         assertTrue("ordinary progress never skips", engine.catchUp(upTo("q045"),
             new QuestEngine.Event(QuestType.OBTAIN_ITEM, "GLASS", 64)).isEmpty());
+    }
+
+    @Test
+    public void theStartQuestsCanBeDoneInAnyOrder() {
+        // the reported lock: the Fountain made before the pebbles left Pebbles behind for good
+        QuestData data = new QuestData();
+        assertEquals("the Fountain proves the pebbles and the first cobblestone", List.of("q013", "q006", "q007"),
+            apply(data, QuestType.CRAFT_ITEM, "custom:fountain", 1));
+        assertEquals(List.of("q014"), apply(data, QuestType.EVENT, "machine_placed:fountain", 1));
+        assertTrue("nothing left to prove", engine.prove(data, "pebble", QuestEngine.Scope.ALL).isEmpty());
+        assertEquals("the pickaxe proves the planks, the table and the sticks", List.of("q005", "q002", "q003", "q004"),
+            apply(data, QuestType.CRAFT_ITEM, "WOODEN_PICKAXE", 1));
+    }
+
+    @Test
+    public void aRealPrerequisiteStillHolds() {
+        QuestData data = upTo("q016");
+        QuestDef spring = engine.catalog().tutorialQuest("q018").orElseThrow();
+        assertFalse("the Spring Stone comes from Read the Plan", engine.isActive(data, spring));
+        assertTrue("128 more cobblestone waits for the first 64",
+            !engine.isActive(new QuestData(), engine.catalog().tutorialQuest("q016").orElseThrow()));
+        QuestDef echo = engine.catalog().tutorialQuest("rift_enter").orElseThrow();
+        assertTrue("the Rift needs the Archivist's key", echo.requires().contains("hub_archivist"));
+    }
+
+    @Test
+    public void aBuiltGeneratorProvesItsRingAndSpringStone() {
+        QuestData data = upTo("q016");
+        // the player skipped the Spring Stone and ring quests, then built the generator
+        List<String> done = apply(data, QuestType.EVENT, "generator_built:stone", 1);
+        assertTrue(done.toString(), done.containsAll(List.of("q021", "q020")));
+        assertFalse("the Spring Stone still waits for Read the Plan", data.completed.contains("q018"));
+        assertTrue(apply(data, QuestType.COMMAND, "guide", 1).containsAll(List.of("q017", "q018")));
+    }
+
+    @Test
+    public void placingACraftedBlockCountsForItsCraftQuest() {
+        QuestData data = new QuestData();
+        assertTrue(apply(data, QuestType.PLACE_BLOCK, "CRAFTING_TABLE", 1).contains("q003"));
+        QuestData placedFountain = new QuestData();
+        List<String> done = apply(placedFountain, QuestType.EVENT, "machine_placed:fountain", 1);
+        assertTrue("a placed Fountain proves the craft and the pebbles: " + done,
+            done.containsAll(List.of("q014", "q013", "q006", "q007")));
     }
 }

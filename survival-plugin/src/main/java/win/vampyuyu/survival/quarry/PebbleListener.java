@@ -101,6 +101,8 @@ final class PebbleListener implements Listener {
                 && core.items().idOf(event.getRecipe().getResult()).map(QuarryItems.FOUNTAIN::equals).orElse(false)) {
             quarry.data(player.getUniqueId()).fountainMade = true;
             core.profiles().markDirty(player.getUniqueId());
+            // the Fountain proves the pebbles: the Pebbles quest completes even if it was skipped
+            core.service(win.vampyuyu.survival.api.QuestGateApi.class).ifPresent(gate -> gate.recheck(player.getUniqueId()));
         }
     }
 }

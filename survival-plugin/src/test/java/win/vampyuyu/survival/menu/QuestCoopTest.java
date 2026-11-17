@@ -190,4 +190,25 @@ public class QuestCoopTest extends MenuTestBase {
         quests.flush();
         assertTrue(core.store().exists("islandquests/" + island.id() + ".json"));
     }
+
+    @Test
+    public void anIslandResetStartsTheSharedQuestsOver() {
+        quests.record(alice, QuestType.BREAK_BLOCK, "OAK_LOG", 20);
+        quests.record(bob, QuestType.BREAK_BLOCK, "STONE", 2);
+        assertTrue(data(bob).completed.contains("logs"));
+        // what IslandService does on /island reset: the owner's own sections go, then the event
+        core.listen(new QuestListener(rt, quests));
+        core.profiles().removeSections(alice.getUniqueId(), "quests", "quarry");
+        org.bukkit.Bukkit.getPluginManager().callEvent(new win.vampyuyu.survival.api.event.IslandResetEvent(island.id(),
+            island.members()));
+        quests.sync(alice);
+        quests.sync(bob);
+        assertTrue(quests.islandRecord(island).quests.completed.isEmpty());
+        assertTrue(quests.islandRecord(island).quests.progress.isEmpty());
+        assertFalse("not rebuilt from the members' old copies", data(alice).completed.contains("logs"));
+        assertFalse(data(bob).completed.contains("logs"));
+        assertFalse(data(bob).progress.containsKey("stone"));
+        quests.record(alice, QuestType.BREAK_BLOCK, "OAK_LOG", 20);
+        assertTrue("the chain is played again", data(alice).completed.contains("logs"));
+    }
 }
