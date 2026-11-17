@@ -140,7 +140,11 @@
     "\uf086": -22,
     "\uf087": -22,
     "\uf088": -22,
-    "\uf089": -22
+    "\uf089": -22,
+    "\uf08a": -17,
+    "\uf08b": -17,
+    "\uf08c": -53,
+    "\uf08d": -9
    }
   },
   {
@@ -1383,6 +1387,42 @@
    "height": 21,
    "chars": [
     "\ue089"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_seed_on.png",
+   "ascent": 16,
+   "height": 16,
+   "chars": [
+    "\ue08a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_seed_glow.png",
+   "ascent": 16,
+   "height": 16,
+   "chars": [
+    "\ue08b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_plant_track.png",
+   "ascent": 7,
+   "height": 7,
+   "chars": [
+    "\ue08c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_plant_bar.png",
+   "ascent": 3,
+   "height": 3,
+   "chars": [
+    "\ue08d"
    ]
   }
  ]

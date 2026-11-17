@@ -296,6 +296,87 @@
    "chars": [
     "\ue020"
    ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_cinder_seed.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue021"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_gale_seed.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue022"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_thorn_seed.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue023"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_rime_seed.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue024"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_vesper_seed.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue025"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_nacre_seed.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue026"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_sahrin_seed.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue027"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_murk_seed.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue028"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbinline_head_none_seed.png",
+   "ascent": 8,
+   "height": 10,
+   "chars": [
+    "\ue029"
+   ]
   }
  ]
 }

@@ -56,6 +56,29 @@ def main():
                     u0, v0, u1, v1 = f["uv"]
                     if not (0 <= u0 < u1 <= 16 and 0 <= v0 < v1 <= 16):
                         errors.append(f"{name}_{state}: bad uv {f['uv']}")
+    # The Rift Seed (rift_seed_model: not a *_3d gun): same floor under the darkest pixel, every box has six textured faces.
+    seed = PACK / "models/item/valoblock/rift_seed_model.json"
+    if not seed.exists():
+        errors.append("rift_seed: model missing")
+    else:
+        w, h, px = read_png(PACK / "textures/item/valoblock/rift_seed_model.png")
+        if (w, h) != (32, 32):
+            errors.append(f"rift_seed: atlas is {w}x{h}, expected 32x32")
+        for y, row in enumerate(px):
+            for x, (r, g, b, a) in enumerate(row):
+                if 0.2126 * r + 0.7152 * g + 0.0722 * b < MIN_LUM:
+                    errors.append(f"rift_seed: atlas pixel {x},{y} darker than 25% grey {(r, g, b)}")
+                    break
+        data = json.loads(seed.read_text())
+        if len(data["elements"]) < 16:
+            errors.append(f"rift_seed: only {len(data['elements'])} parts")
+        for el in data["elements"]:
+            if set(el["faces"]) != {"north", "east", "south", "west", "up", "down"}:
+                errors.append("rift_seed: element with missing faces")
+            for f in el["faces"].values():
+                u0, v0, u1, v1 = f["uv"]
+                if not (0 <= u0 < u1 <= 16 and 0 <= v0 < v1 <= 16):
+                    errors.append(f"rift_seed: bad uv {f['uv']}")
     for e in errors[:30]:
         print("FAIL", e)
     print(f"valoblock models: {len(models)} weapons checked, {len(errors)} problems")

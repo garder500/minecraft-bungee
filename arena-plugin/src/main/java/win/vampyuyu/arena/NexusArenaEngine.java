@@ -121,6 +121,7 @@ public final class NexusArenaEngine extends JavaPlugin {
       valoblock.enableMaps();
       valoblock.enableHud();
       valoblock.enableBots();
+      valoblock.enableSeeds();
       valoblock.enablePack();
       getCommand("arena")
           .setTabCompleter(
