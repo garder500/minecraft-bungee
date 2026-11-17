@@ -55,6 +55,8 @@ final class AbilityEnv {
   final List<Ghost> ghosts = new ArrayList<>();
   /** Murk's gas wall by owner, to switch on and off. */
   final java.util.Map<UUID, Runnable> walls = new java.util.concurrent.ConcurrentHashMap<>();
+  /** Whether each owner's gas wall is switched on (for /vb debug wall). */
+  final java.util.Map<UUID, Boolean> wallOn = new java.util.concurrent.ConcurrentHashMap<>();
   /** Something a player placed that stays a while (a smoke, a wall, a field): shown on the tactical map. */
   record Placed(UUID owner, String ability, Location where) {}
 

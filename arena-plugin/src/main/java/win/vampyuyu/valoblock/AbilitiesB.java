@@ -462,14 +462,19 @@ final class AbilitiesB {
       for (Location l : points) shown.add(e.block(f, l.clone(), Material.LIME_STAINED_GLASS, sx, 3f, sz));
     };
     build.run();
+    e.wallOn.put(c.id(), true);
     e.track(c, centre, f);
     e.walls.put(c.id(), () -> {
       if (fuel[0] <= 0) return;
       on[0] = !on[0];
+      e.wallOn.put(c.id(), on[0]);
       for (var d : shown) d.setVisibleByDefault(on[0]);
       e.sound(centre, on[0] ? "block.fire.ambient" : "block.fire.extinguish", 0.8f, 0.6f);
     });
-    f.onEnd(() -> e.walls.remove(c.id()));
+    f.onEnd(() -> {
+      e.walls.remove(c.id());
+      e.wallOn.remove(c.id());
+    });
     return true;
   }
 

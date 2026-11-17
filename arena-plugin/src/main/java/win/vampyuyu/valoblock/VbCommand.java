@@ -11,7 +11,7 @@ import win.vampyuyu.arena.NexusArenaEngine;
 /** /vb: operate ValoBlock arenas (start, stop, status, reload) and drive tests (debug). Admin only. */
 public final class VbCommand implements CommandExecutor, TabCompleter {
   private static final List<String> SUBS = List.of("help", "agent", "buy", "vote", "use", "start", "stop", "status", "reload", "level", "map", "debug");
-  private static final List<String> DEBUG = List.of("skip", "state", "win", "kill", "plant", "seal", "armory", "block", "where", "tp", "god");
+  private static final List<String> DEBUG = List.of("skip", "state", "win", "kill", "plant", "seal", "armory", "block", "where", "tp", "god", "agent", "buy", "charge", "cast", "wall");
 
   private final NexusArenaEngine plugin;
   private final Map<String, String> selected = new HashMap<>();
@@ -308,6 +308,53 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
         p.teleportAsync(new org.bukkit.Location(w, Double.parseDouble(args[3]), Double.parseDouble(args[4]), Double.parseDouble(args[5]), yaw, pitch))
             .whenComplete((ok, err) -> plugin.arenas.allowTeleport(p.getUniqueId(), false));
         say(sender, "tp " + p.getName() + " queued");
+      }
+      case "agent" -> {
+        // /vb debug agent <player> <id>: locks the agent in (agent select only), like the Lock in button.
+        if (args.length < 4) throw new IllegalArgumentException("Usage: /vb debug agent <player> <agentId>");
+        Player p = plugin.getServer().getPlayerExact(args[2]);
+        if (p == null) throw new IllegalArgumentException("Nobody called " + args[2] + " is online");
+        m.lockAgent(p.getUniqueId(), args[3]);
+        say(sender, "locked " + args[3] + " for " + p.getName());
+      }
+      case "buy" -> {
+        // /vb debug buy <player> <slot>: buys one charge of an ability (buy phase only).
+        if (args.length < 4 || !(plugin.valoblock.agents instanceof VbAgentService svc)) throw new IllegalArgumentException("Usage: /vb debug buy <player> <slot>");
+        Player p = plugin.getServer().getPlayerExact(args[2]);
+        if (p == null) throw new IllegalArgumentException("Nobody called " + args[2] + " is online");
+        AgentKit kit = svc.kit(p.getUniqueId());
+        if (kit == null) throw new IllegalArgumentException("No agent locked in");
+        say(sender, "buy: " + kit.buy(m, p.getUniqueId(), Integer.parseInt(args[3])));
+        svc.giveItems(p, kit);
+      }
+      case "charge" -> {
+        // /vb debug charge <player> <slot>: gives one free charge back, in any phase.
+        if (args.length < 4 || !(plugin.valoblock.agents instanceof VbAgentService svc)) throw new IllegalArgumentException("Usage: /vb debug charge <player> <slot>");
+        Player p = plugin.getServer().getPlayerExact(args[2]);
+        AgentKit kit = p == null ? null : svc.kit(p.getUniqueId());
+        if (kit == null) throw new IllegalArgumentException("No such player or no agent locked in");
+        kit.refund(Integer.parseInt(args[3]));
+        svc.giveItems(p, kit);
+        say(sender, "charges " + kit.charges(Integer.parseInt(args[3])));
+      }
+      case "cast" -> {
+        // /vb debug cast <player> <slot> [x1 z1 x2 z2]: the tactical map's last step (an ability placed at map spots, charge spent).
+        if (args.length < 4 || !(plugin.valoblock.agents instanceof VbAgentService svc)) throw new IllegalArgumentException("Usage: /vb debug cast <player> <slot> [x1 z1 x2 z2]");
+        Player p = plugin.getServer().getPlayerExact(args[2]);
+        var w = plugin.valoblock.map.world();
+        if (p == null || w == null) throw new IllegalArgumentException("No such player or the ValoBlock world is not loaded");
+        List<org.bukkit.Location> spots = new ArrayList<>();
+        for (int i = 4; i + 1 < args.length; i += 2) spots.add(new org.bukkit.Location(w, Double.parseDouble(args[i]), p.getLocation().getY(), Double.parseDouble(args[i + 1])));
+        svc.useAt(p, m, Integer.parseInt(args[3]), spots);
+        say(sender, "cast queued");
+      }
+      case "wall" -> {
+        // /vb debug wall <player>: whether the player's Miasma Wall is on, off, or not placed.
+        if (args.length < 3 || !(plugin.valoblock.agents instanceof VbAgentService svc)) throw new IllegalArgumentException("Usage: /vb debug wall <player>");
+        Player p = plugin.getServer().getPlayerExact(args[2]);
+        if (p == null) throw new IllegalArgumentException("Nobody called " + args[2] + " is online");
+        Boolean on = svc.wallOn(p.getUniqueId());
+        say(sender, "wall " + (on == null ? "none" : on ? "on" : "off"));
       }
       case "where" -> {
         Player p = args.length >= 3 ? plugin.getServer().getPlayerExact(args[2]) : sender instanceof Player self ? self : null;

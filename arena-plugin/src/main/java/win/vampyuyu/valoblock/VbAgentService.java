@@ -39,13 +39,12 @@ import win.vampyuyu.valoblock.AgentSelectMenu.State;
  */
 public final class VbAgentService implements AgentService, Listener {
   static final int ARMORY_A = VbArmoryLayout.ABILITY[0], ARMORY_B = VbArmoryLayout.ABILITY[1]; // abilities 4 and 5 in the Armory window
-  private static final long COOLDOWN_MS = 350;
 
   private final NexusArenaEngine plugin;
   private final AbilityEnv env;
   private final Map<UUID, AgentKit> kits = new ConcurrentHashMap<>();
   private final Map<UUID, State> states = new ConcurrentHashMap<>();
-  private final Map<UUID, Long> lastUse = new HashMap<>();
+  private final PressGate presses = new PressGate();
   private int ticks;
 
   public VbAgentService(NexusArenaEngine plugin) {
@@ -104,6 +103,11 @@ public final class VbAgentService implements AgentService, Listener {
     return kits.get(id);
   }
 
+  /** Whether the player's Miasma Wall is on (null: none placed). */
+  Boolean wallOn(UUID id) {
+    return env.wallOn.get(id);
+  }
+
   State state(UUID id) {
     return states.computeIfAbsent(id, k -> new State());
   }
@@ -153,7 +157,7 @@ public final class VbAgentService implements AgentService, Listener {
     sync(() -> {
       kits.remove(player);
       states.remove(player);
-      lastUse.remove(player);
+      presses.forget(player);
       env.frozen.remove(player);
       env.marks.remove(player);
       Player p = Bukkit.getPlayer(player);
@@ -349,11 +353,9 @@ public final class VbAgentService implements AgentService, Listener {
   private void use(Player p, VbMatch m, int slot, List<Location> spots) {
     AgentKit kit = kits.get(p.getUniqueId());
     if (kit == null) return;
-    long now = System.currentTimeMillis();
-    if (spots == null) {
-      if (now - lastUse.getOrDefault(p.getUniqueId(), 0L) < COOLDOWN_MS) return;
-      lastUse.put(p.getUniqueId(), now);
-    }
+    // A click on the item only: a held button repeats the use packet every 200 ms and must not count as new clicks
+    // (it marked Rewind and, 400 ms later, already returned to the mark).
+    if (spots == null && presses.accept(p.getUniqueId(), System.currentTimeMillis()) != PressGate.Verdict.PRESS) return;
     VbPhase phase = m.vbPhase();
     if ((phase != VbPhase.COMBAT && phase != VbPhase.PLANTED) || !m.alive().contains(p.getUniqueId())) {
       plugin.valoblock.hud.notice(p, Component.text("Abilities work during combat", NamedTextColor.GRAY));
