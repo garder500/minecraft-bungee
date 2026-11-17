@@ -36,9 +36,9 @@
     ]
   },
   "skin": {
-    "value": "",
-    "signature": "",
-    "_todo": "TODO: paste a signed textures property (value + signature from a skin signing service). Empty = the skin swap is skipped."
+    "value": "ewogICJ0aW1lc3RhbXAiIDogMTc5NDg3NDE3MjI2NSwKICAicHJvZmlsZUlkIiA6ICJjNTI3ZWI1ZTQ1MDE0NTRkYWQwMjhmM2Q0M2ZkZGViNiIsCiAgInByb2ZpbGVOYW1lIiA6ICJDYWxsQmFkIiwKICAic2lnbmF0dXJlUmVxdWlyZWQiIDogdHJ1ZSwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzc4NzM5ZGNhZWRlZTkyMTMyZDE4OTE3N2FiYTlmMGRmZWU2YjlmYmRjYTBmODIzOTRiYzYxNmNlOTk5OWQzYzAiCiAgICB9CiAgfQp9",
+    "signature": "AYK4qQZIDP6RxlHX4LEtBoa0PwC7/Bx9P7zhE8HekLKjFPk5b0M3DMkXJtRfZONdSaGP2wNxMzWG/8VvcFK133tiEnzDsUJgRiPZyBiqJH/HeG3C6dSyeuxxslLxPBXKBZebTi6mVRUOjqlZxFsY3CXKp/fXqF5tcyWWHWplmp6mKsH6FVFu8+0RkAkhbv5y27pjBdd1ax4EWhNt/T6q0m27V2swTtXMP+naMR1eWYNc4K0R7V7vO7S8vpVSo2cRFcNjikqZbQlcGQJvPUKvGegqEGvdc3ZYd6kFCrirDqEldbNmleiO4k/6yIRRbwcP9HTkK2bt3l56H8jF+BBalEsAFjGxcitYhQEwJi2WayCsDAcsN9KiPPt4gPjPJ+wDsic0a5JXNnOP1Kse6cElEN9mvIB/jRiYhKqPw5Rcdrbq2vw1rwGrx90Cpnf4Xw/1TIQ3Qzd7ZcGZGjsSDAUqt/WztmLyft87c69lg8t4Iz01SNTmN9eNAwuylx1Dq/BXtI3FUYnqMka3S2U+5l6DJYnNOCEHeIxHKmdmd1QPrs3oFqJB/THMC58n60zn8ZVAn58i746bt9hwPeUBzveXeM7peusUoSfO2MoL9wcqanqESH5OJxK+NG0HfKF+MVXja8JgjWu6iaYaY5L3Zta59HNZ20IkLRNeibedvhfCVCs=",
+    "mineskin": "29325a5ddeb74d648280cf6e82f8663d"
   },
   "build": "Wind Pad reuses the movement toolkit launch zone. Lightning = visual-only bolt + scripted damage.",
   "abilities": [

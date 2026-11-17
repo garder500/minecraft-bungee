@@ -35,9 +35,9 @@
     ]
   },
   "skin": {
-    "value": "",
-    "signature": "",
-    "_todo": "TODO: paste a signed textures property (value + signature from a skin signing service). Empty = the skin swap is skipped."
+    "value": "ewogICJ0aW1lc3RhbXAiIDogMTc5NDg3NDE2NzEzMiwKICAicHJvZmlsZUlkIiA6ICIwOGJjNjM4MWRmODA0YWZlOWQ3NDljY2M4M2Q5YTczMSIsCiAgInByb2ZpbGVOYW1lIiA6ICJSYWluYm93QWNlRHJhZ29uIiwKICAic2lnbmF0dXJlUmVxdWlyZWQiIDogdHJ1ZSwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzk2NjdkYzhjOGQ4MmIyMjQ0MTYyNjBjYjMzYWI4MjJkYWRjMDZlYjk5NTRlM2UxMThiZmU5MjE2NTk4MGU1YTEiCiAgICB9CiAgfQp9",
+    "signature": "ybTGzVRh5FDB4x7MDA7F4RjLwDHnpLeCa0gOmmoOcjkMS9ni7cGJGWy0D2+5v9fDZkXcwNX9XVYswkDtFZBSnPbRen2iPwqPDU93YNZZRMSjjnASpj/cPiad3tyOpb4o5kG4UMq8vqr/lN7YUohO2P+qCxn0uHXfUHYAEDiPzk0LJQ52m98OcBgZwL9qXmLfR4hxpgJZXBzPin7ej9Bl3oELdl6ogIjYrWbI9OykzwYivx4AC52NTepMJhUylywfdzMuaqqLnx47Qfz9IyG43dY+vO8JN3in4WFjspEAuSrD2tevP2jvVuQclwQQnhBYap04gtIb6d+Y4E1xsBEjWQ1QAMbcesxTISw7gKiAM4WdwYCtbvJHTXEBtcLdqFuuLH1OcNDyloXRW3zUEyAWrOeSXBSk4EgOjyQjCDaQdx+i9XGQicKbWI6fCScrCREiJjB1LPV/c7wibYpbcxFMXznDVY/AKdHFd2GUDWCFdY/zL+hPg3eAv2kdS/mFs1oFLuWUA2vwFKYH3f8CfvyMAmVnrrrXscg2IWk5eMt4fBcfpvwLCBmIHUlm1pYP7ecNhc2Vl6m60jiHexjHaSlQd425Osp8ezamu7+MTgU1oEPvzfLD16SDEIpzjlpL9QegFmSHHxNHALCT6Za6F8fgDhskBq+UYuOnAGeIaBlIICI=",
+    "mineskin": "6bbb555c1ca34ddca42d74987f315003"
   },
   "build": "Magma pool = temporary magma blocks + fire particles, restored after 6 s. Dash = velocity impulse.",
   "abilities": [

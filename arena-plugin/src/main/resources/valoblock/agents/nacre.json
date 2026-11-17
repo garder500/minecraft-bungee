@@ -36,9 +36,9 @@
     ]
   },
   "skin": {
-    "value": "",
-    "signature": "",
-    "_todo": "TODO: paste a signed textures property (value + signature from a skin signing service). Empty = the skin swap is skipped."
+    "value": "ewogICJ0aW1lc3RhbXAiIDogMTc5NDg3NDE4MTE0MiwKICAicHJvZmlsZUlkIiA6ICI4MDQ2MzdjMTA1ZGY0MzM0ODE3YTNmMDcxMTMyOTYyMSIsCiAgInByb2ZpbGVOYW1lIiA6ICJQcmluY2VDUiIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9lMzA4OTIxYjA5MmU3NWMxZDZiYjRlMzFjOTZiODczNjJmOTFlNTI0NTRlNzU1NGVkYWNjMDJlNzVjODllZjA1IgogICAgfQogIH0KfQ==",
+    "signature": "u8MvXOs21sbLmFXDZ9gPKscnhxzgLoKJlm3m2VwoeywqQLktnRhaSl/jHoe/nJ8Z/nj74PzFf5rHHmom17l5oPcpCBwvkT9fwlzR0w4UOqhGJ0lR4wgd3Iv0ZYeocTCZI7wPO0MuGD+HPaNoyLFEjs1popuO/zOZncpYJmfoYv2s+3mS99BBmmU0BtsU11Fe+wDkR0mB+at+M9JwslE93MfebhKe+wQkHRQ/FOFv45EhoG1t2ErMfoFhk3sZsXWOWAVq3jQQaO50gU2Q27D95slXYZDMVZph9eqNbDhWcvJPIgsuwVqghy7omXItSiR1QWZ902oe3dnHcsmK/3J7e09lZ1NwXIH6dRhxCXzM41oNcuUXUS4yKfNBh6BBFZI2ayJEZCJVWwSVOaijGyhYnagkNsBM8eaSG8mqiglyaX0vrobWBiug1SbwZqKnOdwdkwUNba2ndkIuZnfvCRQg2QhCCBNr7EkQnRzaz1ceKYzgAlVXRQX0KmQOZSHbteCXjaUEYc9tCEa60U0MgMR0Inkx3I2/bZCWDk0qmjqIANYU9ZWBZXgYh0mnzAqoroWSdbR7NtsrDJXL2msuDkTN1dWFtSHg2S4i1N82UD4yZacWfnl9oSZJ3GIMoUxyNFcSjv3NGmI4GKUTo9VNqjF3OUHqzmhkM653SgXcczOWyjU=",
+    "mineskin": "757b49e26534468db3d77ead13a502e1"
   },
   "build": "Sonar = expanding particle ring + glow. Undertow pulls with an impulse towards the centre.",
   "abilities": [

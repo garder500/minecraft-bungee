@@ -36,9 +36,9 @@
     ]
   },
   "skin": {
-    "value": "",
-    "signature": "",
-    "_todo": "TODO: paste a signed textures property (value + signature from a skin signing service). Empty = the skin swap is skipped."
+    "value": "ewogICJ0aW1lc3RhbXAiIDogMTc5NDg3NDE5MzE5NiwKICAicHJvZmlsZUlkIiA6ICJmNjhhMmE2NTNkNjU0NTQ1ODE0ZDg0OWI5NmU0MDllOSIsCiAgInByb2ZpbGVOYW1lIiA6ICJMdWdhdHR1IiwKICAic2lnbmF0dXJlUmVxdWlyZWQiIDogdHJ1ZSwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzJkZWQyM2FjNzg5NDJlZjI3YzM2NjU4ZDZjZTMzMGE2NTQzNDExMWIxZGM3ZDg0MDFmZmY4NTY5MzU0ZDg0ZCIKICAgIH0KICB9Cn0=",
+    "signature": "tAKBQd50hjd669ymeqxED7TAAMBEHQnB2Em+YcE+zc9YFYlQmD0MUOgii1gcIgJPGk0/0ePdtuLXtD67xD97yYUg7z5DU8xUDK2S3pm4rjzN5CNkywcjQhd7aKTZ9J5tJrKE8sli1jgGcKvKGqJwdqiwyzRLSMfUme5FFfz5RSxRdy0/b4VCKpJDEPKkXr3krvgiDgITb/1y9ND/UWRD9EyC4sfG+wP/j56WB36FEVtty15F1zY3cozFt+P5ScOoUk79feMMGFZwmg2Vf6Xq61qNws+H4FZdEXl9rCL1JXOYfQldFK8MJ3EAj7SS9otClE98v6tKJyjeg7Jh742WYFfikYsaCeXWlsURiWC5RiZ84sWOa8x3hR1T0Khk1hhznxzpvUFunwA8kmwWeO8Ieik+SkEQhJ3mOWH2DTeXunLQgg9L8MbZGWQGb2fqIuidtQAWEzatSH1JgRMqCzTf2FU5ZUDtOdZcRk/3hPiwQslWZwm26dd50owD1dcM7OSVJIoDx4bqrbzuKM7dH73sUKJkUFg9h2hEddW4JaRzlezjjcKjdwoa9Ci1/d2bxPOkS8LPM26yGB39ccnbZWxOvGFXnv/vkR2Hb1+MKA2rd+frcemWi1B+DMvDVwIT8cE0nnfrdwNTDlHAiOOQ76XA9T2pw7k8d4P9yMpF8bbqSmk=",
+    "mineskin": "53eca6b89ad542e6b90e8e6e3e97565c"
   },
   "build": "Wall = temporary log blocks with a hit counter. Vines = block_display carpets, never real blocks.",
   "abilities": [
