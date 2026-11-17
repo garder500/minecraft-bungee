@@ -90,9 +90,16 @@ public final class GunState {
   /**
    * One poll of the trigger. {@code click} is a fresh right-click, {@code held} that the button is
    * still down. Returns true when a shot leaves the barrel now (one per call: call again for a
-   * burst or when behind). An empty magazine starts the reload.
+   * burst or when behind). The shot that empties the magazine starts the reload at once (a scoped sniper
+   * never sends another trigger poll while empty), and so does a pull on an empty magazine.
    */
   public boolean poll(long now, boolean click, boolean held) {
+    boolean fired = trigger(now, click, held);
+    if (fired && mag <= 0) startReload(now); // also ends a burst cut short by the empty magazine
+    return fired;
+  }
+
+  private boolean trigger(long now, boolean click, boolean held) {
     tick(now);
     if (reloadEnd != 0 || w.magazine() <= 0) return false;
     if (burstLeft > 0) {

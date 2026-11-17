@@ -267,6 +267,8 @@ public final class VbWeaponService implements WeaponService, Listener {
       applyMods(p.getUniqueId(), gs, now);
       gs.tick(now);
       boolean reloading = gs.reloading();
+      // Every reload start (F, the shot that empties the magazine, an empty sniper) and end is heard here, once.
+      if (!g.wasReloading && reloading) p.playSound(p.getLocation(), "item.crossbow.loading_start", SoundCategory.PLAYERS, 0.8f, 1.0f);
       if (g.wasReloading && !reloading) p.playSound(p.getLocation(), "item.crossbow.loading_end", SoundCategory.PLAYERS, 0.8f, 1.3f);
       g.wasReloading = reloading;
       applyZoom(p, w, ZoomModifier.wanted(w, p.isSneaking(), reloading, fighting(m), m.alive().contains(p.getUniqueId())));
@@ -598,9 +600,12 @@ public final class VbWeaponService implements WeaponService, Listener {
     if (action == ScopeInput.Action.SCOPE) {
       // Right-click on a spyglass sniper: the vanilla use starts (zoom and overlay), so the event is NOT cancelled. Not while the magazine is out.
       Gear sg = gear(p.getUniqueId());
-      if (sg.gun(w).reloading()) {
+      GunState sgs = sg.gun(w);
+      if (sgs.reloading() || sgs.magazine() <= 0) {
         e.setCancelled(true);
         e.setUseItemInHand(Event.Result.DENY);
+        // An empty sniper does not scope: the right-click reloads it instead.
+        if (!sgs.reloading()) startReload(p, w, sgs);
       } else {
         sg.scopeCancelled = false;
         sg.scopeForced = false;
@@ -647,6 +652,7 @@ public final class VbWeaponService implements WeaponService, Listener {
     if (r == ScopeInput.Release.NONE) return;
     if (ScopeInput.dryClick(gs.magazine())) {
       p.playSound(p.getLocation(), "block.dispenser.fail", SoundCategory.PLAYERS, 0.6f, 1.6f);
+      startReload(p, w, gs); // the dry click, then the magazine comes out
       return;
     }
     applyMods(p.getUniqueId(), gs, now);
@@ -699,12 +705,16 @@ public final class VbWeaponService implements WeaponService, Listener {
       p.clearActiveItem();
       return;
     }
-    GunState gs = gear(p.getUniqueId()).gun(w);
-    applyMods(p.getUniqueId(), gs, System.currentTimeMillis());
-    if (!plugin.valoblock.agents.frozen(p.getUniqueId()) && gs.startReload(System.currentTimeMillis())) {
-      p.playSound(p.getLocation(), "item.crossbow.loading_start", SoundCategory.PLAYERS, 0.8f, 1.0f);
-      refreshStack(p, w, gs);
-    }
+    startReload(p, w, gear(p.getUniqueId()).gun(w));
+  }
+
+  /** Starts a reload (F, an empty sniper's right-click or release); the per-tick task plays its sound. False when none starts. */
+  private boolean startReload(Player p, VbWeapon w, GunState gs) {
+    long now = System.currentTimeMillis();
+    applyMods(p.getUniqueId(), gs, now);
+    if (plugin.valoblock.agents.frozen(p.getUniqueId()) || !gs.startReload(now)) return false;
+    refreshStack(p, w, gs);
+    return true;
   }
 
   @EventHandler
