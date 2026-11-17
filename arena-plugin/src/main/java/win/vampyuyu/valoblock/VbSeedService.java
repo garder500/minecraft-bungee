@@ -8,6 +8,13 @@ import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.block.Block;
+import org.bukkit.block.data.type.Light;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.SoundCategory;
 import org.bukkit.World;
 import org.bukkit.entity.Display;
@@ -68,6 +75,33 @@ public final class VbSeedService implements Listener {
     }
   }
 
+  /** The planted Seed in the world: a big glowing spinning model, a marker, a light, a beam and a ticking fuse. Everything carries {@link #TAG}. */
+  private static final class Planted {
+    final ItemDisplay item;
+    final TextDisplay marker;
+    final Location at;
+    final long since;
+    final Block light;
+    long nextTick, nextBeam, nextPulse;
+    boolean big;
+    float yaw;
+
+    Planted(ItemDisplay item, TextDisplay marker, Location at, long since, Block light) {
+      this.item = item;
+      this.marker = marker;
+      this.at = at;
+      this.since = since;
+      this.light = light;
+    }
+
+    void remove() {
+      for (Display d : new Display[] {item, marker}) if (d != null && d.isValid()) d.remove();
+      if (light != null && light.getType() == Material.LIGHT) light.setType(Material.AIR, false);
+    }
+  }
+
+  static final String TAG = "vb_planted_seed";
+
   /** What one running match holds. */
   private static final class Track {
     final SeedTracker tracker = new SeedTracker();
@@ -80,12 +114,18 @@ public final class VbSeedService implements Listener {
     final Set<UUID> inSite = new HashSet<>();
     long lastSound;
     long spin;
+    Planted planted;
+    UUID sealer; // the human who holds the seal this tick
+    boolean sealCalled; // we told the match something last tick (so a release is reported once)
+    long lastSealSound, lastSealTick;
+    final Set<UUID> inReach = new HashSet<>();
     boolean cleared; // clear() ran and nothing came since: the per-tick calls between rounds do nothing
   }
 
   private final NexusArenaEngine plugin;
   private final Map<VbMatch, Track> tracks = new IdentityHashMap<>();
   private final Map<UUID, Long> lastRight = new HashMap<>();
+  private final Map<UUID, Long> lastRaw = new HashMap<>();
 
   public VbSeedService(NexusArenaEngine plugin) {
     this.plugin = plugin;
@@ -94,6 +134,19 @@ public final class VbSeedService implements Listener {
   public void start() {
     Bukkit.getPluginManager().registerEvents(this, plugin);
     Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1, 1);
+    Bukkit.getScheduler().runTask(plugin, VbSeedService::purgeLeftovers);
+  }
+
+  /** Removes every tagged planted-Seed display left in any world (a crash, a reload). */
+  static void purgeLeftovers() {
+    for (World w : Bukkit.getWorlds())
+      for (Display d : w.getEntitiesByClass(Display.class)) if (d.getScoreboardTags().contains(TAG)) d.remove();
+  }
+
+  /** True while this human holds the seal of the planted Seed (the HUD draws the seal bar). */
+  boolean sealing(VbMatch m, UUID id) {
+    Track t = tracks.get(m);
+    return t != null && id.equals(t.sealer) && m.vbPhase() == VbPhase.PLANTED;
   }
 
   /** Where the Seed lies dropped in this match, or null (carried, planted, or none). */
@@ -116,6 +169,21 @@ public final class VbSeedService implements Listener {
     if (matchOf(e.getPlayer().getUniqueId()) == null) return;
     e.setCancelled(true);
     if (e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK) lastRight.put(e.getPlayer().getUniqueId(), System.currentTimeMillis());
+  }
+
+  /**
+   * Any right-click of a player of a match, read first and even when the arena protection cancelled it (it cancels interacts and
+   * entity interacts): this is what a Sealer holds to seal.
+   */
+  @EventHandler(priority = EventPriority.LOWEST)
+  public void rawRight(PlayerInteractEvent e) {
+    if (e.getHand() != EquipmentSlot.HAND || (e.getAction() != Action.RIGHT_CLICK_AIR && e.getAction() != Action.RIGHT_CLICK_BLOCK)) return;
+    if (matchOf(e.getPlayer().getUniqueId()) != null) lastRaw.put(e.getPlayer().getUniqueId(), System.currentTimeMillis());
+  }
+
+  @EventHandler(priority = EventPriority.LOWEST)
+  public void rawRightEntity(PlayerInteractEntityEvent e) {
+    if (e.getHand() == EquipmentSlot.HAND && matchOf(e.getPlayer().getUniqueId()) != null) lastRaw.put(e.getPlayer().getUniqueId(), System.currentTimeMillis());
   }
 
   /** Q with the Seed in hand drops it where the carrier stands; any other Q of a Seed carrier is the weapon service's. */
@@ -200,6 +268,8 @@ public final class VbSeedService implements Listener {
     }
     items(m, carrier);
     if (carrier != null && !m.isBot(carrier)) plant(m, t, carrier, now);
+    if (phase == VbPhase.PLANTED) planted(m, t, now);
+    else removePlanted(t);
     if (t.drop != null) dropFollows(m, t, now);
     if (t.back == null) t.backShown.clear();
   }
@@ -315,21 +385,24 @@ public final class VbSeedService implements Listener {
 
   /** Everything this match put in the world or in an inventory goes (round over, arena gone). */
   private void clear(VbMatch m, Track t) {
-    if (t.back == null && t.drop == null && t.inSite.isEmpty() && t.tracker.last() == null && t.cleared) return;
+    if (t.back == null && t.drop == null && t.planted == null && t.inSite.isEmpty() && t.inReach.isEmpty() && t.tracker.last() == null && t.cleared) return;
     t.cleared = true;
     removeBack(t);
     removeDrop(t);
+    removePlanted(t);
     t.inSite.clear();
     for (UUID id : m.participants()) {
       Player p = m.isBot(id) ? null : Bukkit.getPlayer(id);
       if (p != null) strip(p.getInventory(), -1);
       lastRight.remove(id);
+      lastRaw.remove(id);
     }
   }
 
   void shutdown() {
     for (var e : tracks.entrySet()) clear(e.getKey(), e.getValue());
     tracks.clear();
+    purgeLeftovers();
   }
 
   // ------------------------------------------------------------------ items
@@ -375,6 +448,144 @@ public final class VbSeedService implements Listener {
     if (done) {
       p.playSound(l, "block.end_portal.spawn", SoundCategory.PLAYERS, 0.6f, 1.6f);
       plugin.valoblock.hud.notice(p, Component.text("Rift Seed planted", PINK));
+    }
+  }
+
+  // ------------------------------------------------------------------ the planted Seed
+
+  private void removePlanted(Track t) {
+    if (t.planted != null) t.planted.remove();
+    t.planted = null;
+    t.sealer = null;
+    t.sealCalled = false;
+    t.inReach.clear();
+  }
+
+  private void planted(VbMatch m, Track t, long now) {
+    if (t.planted == null || !t.planted.item.isValid()) {
+      if (t.planted != null) t.planted.remove();
+      t.planted = spawnPlanted(m, t, now);
+      if (t.planted == null) return;
+    }
+    Planted pl = t.planted;
+    World w = pl.at.getWorld();
+    // the model: spin, and swell and shrink once a second (interpolated)
+    pl.yaw += 6;
+    Location spot = pl.at.clone().add(0, 0.9 + 0.1 * Math.sin(now / 350.0), 0);
+    spot.setYaw(pl.yaw);
+    pl.item.teleport(spot);
+    if (now >= pl.nextPulse) {
+      pl.nextPulse = now + 1000;
+      pl.big = !pl.big;
+      float sc = pl.big ? 1.9f : 1.6f;
+      pl.item.setInterpolationDelay(0);
+      pl.item.setInterpolationDuration(20);
+      pl.item.setTransformation(new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(sc, sc, sc), new AxisAngle4f()));
+    }
+    if (pl.marker.isValid()) pl.marker.teleport(pl.at.clone().add(0, 2.2 + 0.12 * Math.sin(now / 300.0), 0));
+    w.spawnParticle(Particle.DUST, spot, 2, 0.25, 0.3, 0.25, 0, new Particle.DustOptions(Color.fromRGB(0xff4a8a), 1.2f), true);
+    if (now >= pl.nextBeam) {
+      pl.nextBeam = now + 1000;
+      Particle.DustOptions beam = new Particle.DustOptions(Color.fromRGB(0xe0c8ff), 1.4f);
+      for (double y = 0; y < 36; y += 0.75) w.spawnParticle(Particle.DUST, pl.at.clone().add(0, y, 0), 1, 0, 0, 0, 0, beam, true);
+    }
+    // the fuse ticks faster as it runs out
+    double fuse = m.rules().fuseSeconds();
+    double elapsed = (now - pl.since) / 1000.0;
+    if (now >= pl.nextTick) {
+      pl.nextTick = now + (long) (SealRules.tickInterval(elapsed, fuse) * 1000);
+      w.playSound(pl.at, "block.note_block.hat", SoundCategory.PLAYERS, 1.2f, (float) (1.0 + Math.min(1, elapsed / fuse)));
+    }
+    sealing(m, t, pl, now);
+  }
+
+  private Planted spawnPlanted(VbMatch m, Track t, long now) {
+    World w = worldOf(t, m);
+    Location at = null;
+    if (w != null && t.lastPos != null) at = ground(new Location(w, t.lastPos[0], t.lastPos[1], t.lastPos[2]));
+    else if (w != null && m.plantedSite() != null) {
+      VbSite s = m.plantedSite();
+      at = new Location(w, (s.min()[0] + s.max()[0]) / 2, s.min()[1], (s.min()[2] + s.max()[2]) / 2);
+    }
+    if (at == null) return null;
+    final Location base = at.clone().add(0, 0.9, 0);
+    ItemDisplay item = w.spawn(base, ItemDisplay.class, d -> {
+      style(d, 1.6f);
+      d.setViewRange(8f);
+      d.setGlowing(true);
+      d.setGlowColorOverride(Color.fromRGB(0xff4a8a));
+      d.setBrightness(new Display.Brightness(15, 15));
+      d.addScoreboardTag(TAG);
+    });
+    TextDisplay marker = w.spawn(at.clone().add(0, 2.2, 0), TextDisplay.class, d -> {
+      d.setPersistent(false);
+      d.text(Component.text("\u25bc", PINK));
+      d.setBillboard(Display.Billboard.CENTER);
+      d.setSeeThrough(true);
+      d.setShadowed(true);
+      d.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
+      d.setViewRange(8f);
+      d.setTransformation(new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(2.2f, 2.2f, 2.2f), new AxisAngle4f()));
+      d.addScoreboardTag(TAG);
+    });
+    Block lb = at.clone().add(0, 0.5, 0).getBlock();
+    Block light = null;
+    if (lb.getType().isAir()) {
+      Light data = (Light) Material.LIGHT.createBlockData();
+      data.setLevel(12);
+      lb.setBlockData(data, false);
+      light = lb;
+    }
+    w.playSound(at, "block.end_portal.spawn", SoundCategory.PLAYERS, 1.0f, 1.4f);
+    Planted pl = new Planted(item, marker, at, now, light);
+    pl.nextTick = now + 500;
+    return pl;
+  }
+
+  /** The seal: a living Sealer close to the Seed and looking at it who holds right-click; one at a time. */
+  private void sealing(VbMatch m, Track t, Planted pl, long now) {
+    List<SealRules.Candidate> cands = new ArrayList<>();
+    Map<UUID, Player> players = new HashMap<>();
+    Location target = pl.at.clone().add(0, 0.9, 0);
+    for (UUID id : m.participants()) {
+      if (m.isBot(id) || m.hasLeft(id)) continue;
+      Player p = Bukkit.getPlayer(id);
+      if (p == null || p.getWorld() != pl.at.getWorld()) continue;
+      boolean alive = m.alive().contains(id);
+      VbSide side = m.side(id);
+      double dist = p.getLocation().distance(pl.at);
+      if (SealRules.inReach(side, alive, dist)) {
+        if (t.inReach.add(id)) plugin.valoblock.hud.notice(p, Component.text("Hold right-click on the Seed to seal it", PINK));
+      } else t.inReach.remove(id);
+      Location eye = p.getEyeLocation();
+      var dir = eye.getDirection();
+      double angle = SealRules.angle(dir.getX(), dir.getY(), dir.getZ(), target.getX() - eye.getX(), target.getY() - eye.getY(), target.getZ() - eye.getZ());
+      boolean scoped = WeaponItems.holdScoped(p) || WeaponItems.isScope(p.getInventory().getHelmet());
+      boolean holding = now - lastRaw.getOrDefault(id, 0L) < HOLD_MS;
+      cands.add(new SealRules.Candidate(id, side, alive, dist, angle, scoped, holding));
+      players.put(id, p);
+    }
+    UUID holder = SealRules.pick(t.sealer, cands);
+    t.sealer = holder;
+    // Only talk to the match when a human holds (or just let go): a bot's own hold must not be reset by us every tick.
+    if (holder == null && !t.sealCalled) return;
+    double dt = t.lastSealTick == 0 ? 0.05 : Math.min(0.1, (now - t.lastSealTick) / 1000.0);
+    t.lastSealTick = now;
+    t.sealCalled = holder != null;
+    boolean done = m.holdSeal(holder, dt);
+    if (holder == null) {
+      t.lastSealTick = 0;
+      return;
+    }
+    Player p = players.get(holder);
+    p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 6, 3, false, false, false));
+    if (done) {
+      pl.at.getWorld().playSound(pl.at, "block.beacon.deactivate", SoundCategory.PLAYERS, 1.2f, 1.4f);
+      plugin.valoblock.hud.notice(p, Component.text("Rift Seed sealed", PINK));
+    } else if (now - t.lastSealSound > 350) {
+      t.lastSealSound = now;
+      double f = m.sealProgress() / Math.max(0.1, m.rules().sealSeconds());
+      pl.at.getWorld().playSound(pl.at, "block.amethyst_block.resonate", SoundCategory.PLAYERS, 1.0f, (float) (0.5 + 1.5 * Math.min(1, f)));
     }
   }
 

@@ -229,6 +229,13 @@ public class VbHudTest {
   // ------------------------------------------------------------------ the Rift Seed
 
   @Test
+  public void aSealerGetsTheBarWithoutTheSeedIcon() {
+    var g = VbHudState.glyphs(new VbHudState.Input(true, 100, 0, "cinder", new int[] {1, 0, 2, 0}, new int[] {1, 2, 2, 1}, -1, 25, 1, null, VbHudState.Seed.sealing(0.5)));
+    assertNull(find(g, "seed"));
+    assertEquals(128, find(g, "plant_bar").param());
+  }
+
+  @Test
   public void theCarrierGetsTheSeedIconAndThePlantBarOnlyWhileHolding() {
     var seed = new VbHudState.Seed(false, false, 0);
     var g = VbHudState.glyphs(new VbHudState.Input(true, 100, 0, "cinder", new int[] {1, 0, 2, 0}, new int[] {1, 2, 2, 1}, -1, 25, 1, null, seed));

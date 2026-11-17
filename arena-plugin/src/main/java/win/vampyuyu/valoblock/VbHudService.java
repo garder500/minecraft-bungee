@@ -269,7 +269,13 @@ public final class VbHudService implements VbHud {
     return new VbHudState.Input(m.alive().contains(id), m.health(id), m.shield(id), agent == null || agent.isEmpty() ? null : agent,
         plugin.valoblock.agents.charges(id), plugin.valoblock.agents.maxCharges(id), ammo == null ? -1 : ammo[0], ammo == null ? 0 : ammo[1],
         VbHudState.crosshair(WeaponItems.isScope(p.getInventory().getHelmet()) || WeaponItems.holdScoped(p), VbHudState.spreadLevel(p.isSneaking(), wall - v.movedAt < 300, !p.isOnGround())), hit,
-        SeedSight.hud(m, id, SeedSight.siteAt(VbData.sites(), loc.getX(), loc.getY(), loc.getZ()) != null, wall));
+        sealOrSeed(m, id, loc, wall));
+  }
+
+  private VbHudState.Seed sealOrSeed(VbMatch m, UUID id, org.bukkit.Location loc, long wall) {
+    if (plugin.valoblock.seeds != null && plugin.valoblock.seeds.sealing(m, id))
+      return VbHudState.Seed.sealing(Math.max(0.01, Math.min(1, m.sealProgress() / Math.max(0.001, m.rules().sealSeconds()))));
+    return SeedSight.hud(m, id, SeedSight.siteAt(VbData.sites(), loc.getX(), loc.getY(), loc.getZ()) != null, wall);
   }
 
   private void action(Player p, Viewer v, VbMatch m, UUID id, VbPhase phase, long wall) {

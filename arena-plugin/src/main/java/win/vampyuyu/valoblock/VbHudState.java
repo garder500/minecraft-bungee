@@ -28,7 +28,16 @@ public final class VbHudState {
    * What the carrier of the Rift Seed sees: an icon next to the health that pulses (two frames) while standing in a site, and
    * the planting bar under the crosshair ({@code plant} 0 to 1, drawn only above 0). Null for everyone else.
    */
-  public record Seed(boolean inSite, boolean pulse, double plant) {}
+  public record Seed(boolean inSite, boolean pulse, double plant, boolean icon) {
+    public Seed(boolean inSite, boolean pulse, double plant) {
+      this(inSite, pulse, plant, true);
+    }
+
+    /** A Sealer's seal bar: the bar alone, no carried-Seed icon. */
+    public static Seed sealing(double fraction) {
+      return new Seed(false, false, fraction, false);
+    }
+  }
 
   /** The pulse of the Seed icon in a site: one frame for this long, then the other. */
   public static final long PULSE_MS = 400;
@@ -119,7 +128,7 @@ public final class VbHudState {
     }
     // Next to the health: the Rift Seed icon, and the planting bar under the crosshair while the carrier holds.
     if (in.seed() != null) {
-      out.add(new Glyph("seed", in.seed().pulse() ? "seed_glow" : "seed_on", 0));
+      if (in.seed().icon()) out.add(new Glyph("seed", in.seed().pulse() ? "seed_glow" : "seed_on", 0));
       if (in.seed().plant() > 0) {
         out.add(new Glyph("plant_track", "plant_track", 0));
         out.add(new Glyph("plant_bar", "plant_bar", Math.max(1, (int) Math.round(Math.min(1.0, in.seed().plant()) * 255))));
