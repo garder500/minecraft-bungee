@@ -42,6 +42,22 @@ public final class VbPreset implements ArenaPreset {
     return 1;
   }
 
+  /** What {@link #validate} demands, so /arena create valoblock works as is. */
+  @Override
+  public int defaultMaxPlayers() {
+    return VbData.rules().teamSize() * 2;
+  }
+
+  @Override
+  public boolean defaultAllowPvP() {
+    return true;
+  }
+
+  @Override
+  public int defaultDurationSeconds() {
+    return 3600;
+  }
+
   public GameHooks hooks() {
     return hooks;
   }

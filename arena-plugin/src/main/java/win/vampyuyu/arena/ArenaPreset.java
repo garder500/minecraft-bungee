@@ -65,4 +65,19 @@ public interface ArenaPreset {
   default int defaultMinPlayers() {
     return 1;
   }
+
+  /** The largest player count a new arena of this game starts with. */
+  default int defaultMaxPlayers() {
+    return 16;
+  }
+
+  /** Whether players may hurt each other in a new arena of this game. */
+  default boolean defaultAllowPvP() {
+    return false;
+  }
+
+  /** The time limit (seconds) a new arena of this game starts with. */
+  default int defaultDurationSeconds() {
+    return 900;
+  }
 }

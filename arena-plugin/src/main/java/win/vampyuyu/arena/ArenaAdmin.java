@@ -244,13 +244,13 @@ public final class ArenaAdmin implements Listener {
             new ArenaConfig.Spawn(l.getX(), l.getY(), l.getZ(), l.getYaw(), l.getPitch()),
             Set.of(),
             Set.of(),
-            false,
+            game.defaultAllowPvP(),
             false,
             false,
             GameMode.ADVENTURE,
-            900,
+            game.defaultDurationSeconds(),
             game.defaultMinPlayers(),
-            16,
+            game.defaultMaxPlayers(),
             null,
             new ArenaConfig.Options(game.defaultOptions()));
     confirm(
