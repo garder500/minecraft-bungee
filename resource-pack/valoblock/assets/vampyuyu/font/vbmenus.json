@@ -8,7 +8,9 @@
     "\ue002": -1,
     "\ue010": -167,
     "\ue011": -51,
-    "\ue012": -169
+    "\ue012": -169,
+    "\ue013": -134,
+    "\ue014": -126
    }
   },
   {
@@ -441,6 +443,924 @@
    "height": 37,
    "chars": [
     "\ue217"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_00.png",
+   "ascent": 13,
+   "height": 37,
+   "chars": [
+    "\ue400"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_01.png",
+   "ascent": 13,
+   "height": 37,
+   "chars": [
+    "\ue401"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_02.png",
+   "ascent": 13,
+   "height": 37,
+   "chars": [
+    "\ue402"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_03.png",
+   "ascent": 13,
+   "height": 37,
+   "chars": [
+    "\ue403"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_10.png",
+   "ascent": -24,
+   "height": 37,
+   "chars": [
+    "\ue404"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_11.png",
+   "ascent": -24,
+   "height": 37,
+   "chars": [
+    "\ue405"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_12.png",
+   "ascent": -24,
+   "height": 37,
+   "chars": [
+    "\ue406"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_13.png",
+   "ascent": -24,
+   "height": 37,
+   "chars": [
+    "\ue407"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_20.png",
+   "ascent": -61,
+   "height": 37,
+   "chars": [
+    "\ue408"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_21.png",
+   "ascent": -61,
+   "height": 37,
+   "chars": [
+    "\ue409"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_22.png",
+   "ascent": -61,
+   "height": 37,
+   "chars": [
+    "\ue40a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_23.png",
+   "ascent": -61,
+   "height": 37,
+   "chars": [
+    "\ue40b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_30.png",
+   "ascent": -98,
+   "height": 37,
+   "chars": [
+    "\ue40c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_31.png",
+   "ascent": -98,
+   "height": 37,
+   "chars": [
+    "\ue40d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_32.png",
+   "ascent": -98,
+   "height": 37,
+   "chars": [
+    "\ue40e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_33.png",
+   "ascent": -98,
+   "height": 37,
+   "chars": [
+    "\ue40f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_40.png",
+   "ascent": -135,
+   "height": 37,
+   "chars": [
+    "\ue410"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_41.png",
+   "ascent": -135,
+   "height": 37,
+   "chars": [
+    "\ue411"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_42.png",
+   "ascent": -135,
+   "height": 37,
+   "chars": [
+    "\ue412"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_43.png",
+   "ascent": -135,
+   "height": 37,
+   "chars": [
+    "\ue413"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_50.png",
+   "ascent": -172,
+   "height": 37,
+   "chars": [
+    "\ue414"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_51.png",
+   "ascent": -172,
+   "height": 37,
+   "chars": [
+    "\ue415"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_52.png",
+   "ascent": -172,
+   "height": 37,
+   "chars": [
+    "\ue416"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vb_tacmap_53.png",
+   "ascent": -172,
+   "height": 37,
+   "chars": [
+    "\ue417"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue500"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z0.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue600"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z1.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue601"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z2.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue602"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z3.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue603"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z4.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue604"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z5.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue605"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z6.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue606"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z7.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue607"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z8.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue608"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z9.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue609"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z10.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue60a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z11.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue60b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z12.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue60c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z13.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue60d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z14.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue60e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z15.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue60f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z16.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue610"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z17.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue611"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z18.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue612"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z19.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue613"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z20.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue614"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z21.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue615"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z22.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue616"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z23.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue617"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_hourfall_z24.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue618"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue501"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z0.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue619"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z1.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue61a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z2.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue61b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z3.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue61c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z4.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue61d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z5.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue61e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z6.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue61f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z7.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue620"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z8.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue621"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z9.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue622"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z10.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue623"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z11.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue624"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z12.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue625"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z13.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue626"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z14.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue627"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z15.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue628"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z16.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue629"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z17.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue62a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z18.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue62b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z19.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue62c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z20.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue62d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z21.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue62e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z22.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue62f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z23.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue630"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_rootvault_z24.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue631"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue502"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z0.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue632"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z1.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue633"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z2.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue634"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z3.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue635"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z4.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue636"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z5.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue637"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z6.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue638"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z7.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue639"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z8.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue63a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z9.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue63b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z10.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue63c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z11.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue63d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z12.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue63e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z13.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue63f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z14.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue640"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z15.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue641"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z16.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue642"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z17.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue643"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z18.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue644"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z19.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue645"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z20.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue646"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z21.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue647"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z22.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue648"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z23.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue649"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/tac/vb_tac_stormbreak_z24.png",
+   "ascent": -4,
+   "height": 90,
+   "chars": [
+    "\ue64a"
    ]
   },
   {

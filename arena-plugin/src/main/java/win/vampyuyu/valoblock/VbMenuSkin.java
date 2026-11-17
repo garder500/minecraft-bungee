@@ -17,6 +17,9 @@ public final class VbMenuSkin {
   public static final char SHIFT_BACK = '\uE000', ROW_BACK = '\uE001', SEAM = '\uE002';
   public static final char TO_PORTRAIT = '\uE010', FROM_PORTRAIT = '\uE011', TO_TEXT = '\uE012';
   public static final int PORTRAIT_W = 48, PORTRAIT_X = 10, TEXT_X = 8;
+  /** The tactical map: one shared chrome, then one plan glyph over it (the whole map, or a zone zoomed), see vb_layout.py. */
+  public static final char TAC_CHROME = '\uE400', TAC_PLAN = '\uE500', TAC_ZONE = '\uE600', TO_PLAN = '\uE013', FROM_PLAN = '\uE014';
+  public static final int PLAN_X = 43, PLAN_W = 90;
 
   /** The advance of each space glyph, as the font declares it (a test compares these with the pack). */
   public static int advance(char space) {
@@ -27,6 +30,8 @@ public final class VbMenuSkin {
       case TO_PORTRAIT -> PORTRAIT_X - ROW_WIDTH;
       case FROM_PORTRAIT -> TEXT_X - (PORTRAIT_X + PORTRAIT_W + 1);
       case TO_TEXT -> TEXT_X - ROW_WIDTH;
+      case TO_PLAN -> PLAN_X - ROW_WIDTH;
+      case FROM_PLAN -> TEXT_X - (PLAN_X + PLAN_W + 1);
       default -> throw new IllegalArgumentException("not a space glyph");
     };
   }
@@ -49,13 +54,34 @@ public final class VbMenuSkin {
 
   /** The cursor position (GUI px from the window's left edge; the title origin is x = 8) after the glyph run: the title text starts here. */
   public static int cursorAfter(char base, char portrait) {
+    return cursorAfter(glyphs(base, portrait), portrait);
+  }
+
+  /** The same for any run: {@code wide} is the one glyph that is not a tile (the portrait or the plan). */
+  public static int cursorAfter(String run, char wide) {
     int x = TEXT_X; // a window title starts at x = 8
-    for (char c : glyphs(base, portrait).toCharArray()) {
-      boolean space = c == SHIFT_BACK || c == ROW_BACK || c == SEAM || c == TO_PORTRAIT || c == FROM_PORTRAIT || c == TO_TEXT;
+    for (char c : run.toCharArray()) {
+      boolean space = c == SHIFT_BACK || c == ROW_BACK || c == SEAM || c == TO_PORTRAIT || c == FROM_PORTRAIT || c == TO_TEXT || c == TO_PLAN || c == FROM_PLAN;
       if (space) x += advance(c);
-      else x += (c == portrait ? PORTRAIT_W : TILE_W) + 1; // every bitmap glyph advances its width + 1
+      else x += (c == wide ? (wide >= TAC_PLAN ? PLAN_W : PORTRAIT_W) : TILE_W) + 1; // every bitmap glyph advances its width + 1
     }
     return x;
+  }
+
+  /** The glyph of the plan image over the chrome: the whole map of map number {@code map} ({@code zone} below 0), or one of its 25 zones. */
+  public static char planGlyph(int map, int zone) {
+    return zone < 0 ? (char) (TAC_PLAN + map) : (char) (TAC_ZONE + map * 25 + zone);
+  }
+
+  /** The tile run of the tactical map's chrome, then the plan glyph, then the cursor back at the title origin. */
+  public static String tacGlyphs(char plan) {
+    String chrome = glyphs(TAC_CHROME, (char) 0);
+    return chrome.substring(0, chrome.length() - 1) + TO_PLAN + plan + FROM_PLAN;
+  }
+
+  /** The tactical map window: the whole map (zone below 0) or a zone of it, and the title words (the ability, which spot, the charges). */
+  public static Component tacMap(int map, int zone, String title) {
+    return compose(tacGlyphs(planGlyph(map, zone)), title);
   }
 
   /** The agent select window: the background, the picked agent's portrait (or the silhouette) and the title. */

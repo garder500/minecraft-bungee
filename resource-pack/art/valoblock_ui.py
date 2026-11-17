@@ -248,6 +248,8 @@ def menu_font():
     providers = [{"type": "space", "advances": {chr(k): v for k, v in vb.ADVANCES.items()}}]
     providers += cut_background("vb_select", vb.SELECT_BASE, select_background())
     providers += cut_background("vb_armory", vb.ARMORY_BASE, armory_background())
+    import valoblock_tacmap as tac
+    providers += tac.providers(sys.modules[__name__])
     figures = [(vb.PORTRAIT_BASE + i, a) for i, a in enumerate(agents())] + [(vb.PORTRAIT_NONE, None)]
     for code, a in figures:
         name = f"vb_portrait_{a['id'] if a else 'none'}"
@@ -505,7 +507,8 @@ def items():
             item(tag, {"parent": "minecraft:item/generated", "textures": {"layer0": f"vampyuyu:item/valoblock/{tag}"}})
             n += 1
     write_json(NS / "items/valoblock/blank.json", {"model": {"type": "minecraft:empty"}})
-    return n
+    import valoblock_tacmap as tac
+    return n + tac.items(sys.modules[__name__])
 
 
 def main():

@@ -20,6 +20,9 @@ public final class ValoBlockModule {
   public volatile BotService bots = BotService.NOOP;
   public volatile MapService map = MapService.NOOP;
   public volatile VbHud hud = VbHud.NOOP;
+  /** The tactical map menu (null until the agents are enabled) and the minimap items (null until the maps are enabled). */
+  volatile TacMapService tacmap;
+  volatile MiniMapService minimap;
   /** The Rift Seed service (null until enabled). */
   volatile VbSeedService seeds;
   /** The ValoBlock resource pack (null when not configured). */
@@ -132,6 +135,9 @@ public final class ValoBlockModule {
     VbMapService service = new VbMapService(plugin);
     service.start();
     map = service;
+    MiniMapService mini = new MiniMapService(plugin);
+    mini.start();
+    minimap = mini;
   }
 
   /** The HUD: boss bars for the score and the kill feed, the action bar for the player's own state. */
@@ -165,6 +171,7 @@ public final class ValoBlockModule {
   public void shutdown() {
     if (seeds != null) seeds.shutdown();
     if (bots instanceof VbBotService s) s.shutdown();
+    if (minimap != null) minimap.shutdown();
     if (map instanceof VbMapService s) s.shutdown();
     if (agents instanceof VbAgentService s) s.shutdown();
   }

@@ -96,6 +96,12 @@ public final class VbSeedService implements Listener {
     Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1, 1);
   }
 
+  /** Where the Seed lies dropped in this match, or null (carried, planted, or none). */
+  Location droppedAt(VbMatch m) {
+    Track t = tracks.get(m);
+    return t == null || t.drop == null ? null : t.drop.at.clone();
+  }
+
   private VbMatch matchOf(UUID id) {
     ArenaSession s = plugin.arenas.session(id);
     return s != null && s.game instanceof VbMatch m ? m : null;

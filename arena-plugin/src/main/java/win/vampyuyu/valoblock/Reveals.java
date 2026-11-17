@@ -71,6 +71,13 @@ final class Reveals {
     }
   }
 
+  /** The players and bodies currently revealed to this viewer (the minimap shows exactly these enemies). */
+  Set<UUID> visibleTo(UUID viewer) {
+    Set<UUID> out = new HashSet<>();
+    for (R r : active.values()) if (r.until > now && r.viewers.contains(viewer) && !r.target.equals(viewer)) out.add(r.target);
+    return out;
+  }
+
   int count() {
     return active.size();
   }

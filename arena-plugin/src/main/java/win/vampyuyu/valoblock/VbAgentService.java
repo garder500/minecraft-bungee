@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.SoundCategory;
 import org.bukkit.block.Block;
@@ -58,6 +59,9 @@ public final class VbAgentService implements AgentService, Listener {
     Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1, 1);
     plugin.valoblock.menus = new VbMenus(plugin, this);
     plugin.valoblock.menus.start();
+    TacMapService tac = new TacMapService(plugin, this);
+    tac.start();
+    plugin.valoblock.tacmap = tac;
     for (Player p : Bukkit.getOnlinePlayers()) {
       if (matchOf(p.getUniqueId()) != null) continue;
       SkinSwap.restore(p);
@@ -324,11 +328,22 @@ public final class VbAgentService implements AgentService, Listener {
   }
 
   private void use(Player p, VbMatch m, int slot) {
+    use(p, m, slot, null);
+  }
+
+  /** The spots picked on the tactical map land: the same checks as a click on the item, then the ability is placed there and the charge is spent. */
+  void useAt(Player p, VbMatch m, int slot, List<Location> spots) {
+    if (p.isOnline() && matchOf(p.getUniqueId()) == m) use(p, m, slot, spots);
+  }
+
+  private void use(Player p, VbMatch m, int slot, List<Location> spots) {
     AgentKit kit = kits.get(p.getUniqueId());
     if (kit == null) return;
     long now = System.currentTimeMillis();
-    if (now - lastUse.getOrDefault(p.getUniqueId(), 0L) < COOLDOWN_MS) return;
-    lastUse.put(p.getUniqueId(), now);
+    if (spots == null) {
+      if (now - lastUse.getOrDefault(p.getUniqueId(), 0L) < COOLDOWN_MS) return;
+      lastUse.put(p.getUniqueId(), now);
+    }
     VbPhase phase = m.vbPhase();
     if ((phase != VbPhase.COMBAT && phase != VbPhase.PLANTED) || !m.alive().contains(p.getUniqueId())) {
       plugin.valoblock.hud.notice(p, Component.text("Abilities work during combat", NamedTextColor.GRAY));
@@ -337,9 +352,9 @@ public final class VbAgentService implements AgentService, Listener {
     if (env.frozen.contains(p.getUniqueId())) return;
     VbAbility ab = kit.agent().ability(slot);
     if (ab == null) return;
-    Ctx c = new Ctx(p, m, kit.agent(), ab, env);
+    Ctx c = spots == null ? new Ctx(p, m, kit.agent(), ab, env) : new Ctx(p, m, kit.agent(), ab, env, spots);
     try {
-      if (AbilitiesB.reuse(c)) {
+      if (spots == null && AbilitiesB.reuse(c)) {
         giveItems(p, kit);
         return;
       }
@@ -349,6 +364,9 @@ public final class VbAgentService implements AgentService, Listener {
         p.playSound(p.getLocation(), "block.note_block.bass", SoundCategory.PLAYERS, 0.8f, 0.7f);
         return;
       }
+      // Placed at a distance: the tactical map opens and nothing is spent until the last spot is picked (Esc keeps the charge).
+      TacMapService tac = plugin.valoblock.tacmap;
+      if (spots == null && tac != null && TacTargeting.of(ab.id()) != null && (tac.open(p.getUniqueId()) || tac.open(p, m, slot, ab))) return;
       kit.use(slot);
       boolean ok = AbilitiesA.cast(c) || AbilitiesB.cast(c);
       if (!ok) {

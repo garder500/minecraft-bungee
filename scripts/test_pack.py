@@ -464,9 +464,11 @@ class ValoBlockPackTest(unittest.TestCase):
         for const, value in (("SELECT", vb_layout.SELECT_BASE), ("ARMORY", vb_layout.ARMORY_BASE), ("PORTRAIT_BASE", vb_layout.PORTRAIT_BASE),
                              ("PORTRAIT_NONE", vb_layout.PORTRAIT_NONE), ("SHIFT_BACK", vb_layout.SHIFT_BACK), ("ROW_BACK", vb_layout.ROW_BACK),
                              ("SEAM", vb_layout.SEAM), ("TO_PORTRAIT", vb_layout.TO_PORTRAIT), ("FROM_PORTRAIT", vb_layout.FROM_PORTRAIT),
-                             ("TO_TEXT", vb_layout.TO_TEXT)):
+                             ("TO_TEXT", vb_layout.TO_TEXT), ("TAC_CHROME", vb_layout.TAC_CHROME_BASE), ("TAC_PLAN", vb_layout.TAC_PLAN_BASE),
+                             ("TAC_ZONE", vb_layout.TAC_ZONE_BASE), ("TO_PLAN", vb_layout.TO_PLAN), ("FROM_PLAN", vb_layout.FROM_PLAN)):
             self.assertIn(f"{const} = '" + chr(92) + f"u{value:04X}'", code, const)
         self.assertIn(f"PORTRAIT_W = {vb_layout.PORTRAIT_W}, PORTRAIT_X = {vb_layout.PORTRAIT_X}, TEXT_X = {vb_layout.TEXT_X}", code)
+        self.assertIn(f"PLAN_X = {vb_layout.TAC_PLAN_X}, PLAN_W = {vb_layout.TAC_PLAN_PX}", code)
         tiles = {}
         for p in font["providers"]:
             if p["type"] != "bitmap":
@@ -475,7 +477,7 @@ class ValoBlockPackTest(unittest.TestCase):
             self.assertLessEqual(max(width, height), 256, p["file"])
             tiles[ord(p["chars"][0])] = (p, width, height)
         th = layout.tile_height(vb_layout.GUI_H, vb_layout.ROWS)
-        for base in (vb_layout.SELECT_BASE, vb_layout.ARMORY_BASE):
+        for base in (vb_layout.SELECT_BASE, vb_layout.ARMORY_BASE, vb_layout.TAC_CHROME_BASE):
             for r in range(vb_layout.ROWS):
                 for c in range(layout.COLS):
                     provider, width, height = tiles[base + r * layout.COLS + c]
@@ -489,6 +491,28 @@ class ValoBlockPackTest(unittest.TestCase):
             self.assertEqual(provider["height"], vb_layout.PORTRAIT_H)
             self.assertEqual(provider["ascent"], layout.ASCENT - vb_layout.PORTRAIT_Y)
         self.assertIn(vb_layout.PORTRAIT_NONE, tiles)
+        # the tactical map: one plan glyph per map and one per zone, 90 x 90 px = 1 texture px per GUI px, over the chest's 5 x 5 middle slots
+        ids = (ROOT / "arena-plugin/src/main/java/win/vampyuyu/valoblock/VbData.java").read_text().split("MAP_IDS = List.of(")[1].split(")")[0]
+        maps = [m for m in re.findall(r'"(\w+)"', ids)]
+        self.assertEqual(maps, list(vb_layout.TAC_MAPS))
+        n = vb_layout.TAC_GRID * vb_layout.TAC_GRID
+        for mi, mid in enumerate(vb_layout.TAC_MAPS):
+            plan = json.loads((ROOT / f"arena-plugin/src/main/resources/valoblock/maps/{mid}.json").read_text())["plan"]
+            self.assertEqual((len(plan), len(plan[0])), (30, 30), mid)  # 3 px a cell, 6 x 6 cells a zone: the art assumes it
+            for code in [vb_layout.TAC_PLAN_BASE + mi] + [vb_layout.TAC_ZONE_BASE + mi * n + k for k in range(n)]:
+                provider, width, height = tiles[code]
+                self.assertEqual((width, height, provider["height"]), (vb_layout.TAC_PLAN_PX, vb_layout.TAC_PLAN_PX, vb_layout.TAC_PLAN_PX))
+                self.assertEqual(provider["ascent"], layout.ASCENT - vb_layout.TAC_PLAN_Y)
+        self.assertLess(vb_layout.TAC_ZONE_BASE + len(vb_layout.TAC_MAPS) * n, vb_layout.TAC_ZONE_BASE + 0x100)
+        for code in (vb_layout.TO_PLAN, vb_layout.FROM_PLAN):
+            self.assertIn(code, vb_layout.ADVANCES)
+        x = 8 + vb_layout.ADVANCES[vb_layout.SHIFT_BACK] + vb_layout.ROW_W + vb_layout.ADVANCES[vb_layout.TO_PLAN]
+        self.assertEqual(x, vb_layout.TAC_PLAN_X)
+        x += vb_layout.TAC_PLAN_PX + 1 + vb_layout.ADVANCES[vb_layout.FROM_PLAN]
+        self.assertEqual(x, vb_layout.TEXT_X)
+        for sprite in ("tac_dim", "tac_mark", "tac_pick"):
+            self.assertTrue((VALO / f"assets/vampyuyu/items/valoblock/{sprite}.json").is_file(), sprite)
+            self.assertEqual(png_size(VALO / f"assets/vampyuyu/textures/item/valoblock/{sprite}.png"), (16, 16))
         # the title text lands where a window title starts: x = 8
         x = 8 + vb_layout.ADVANCES[vb_layout.SHIFT_BACK] + vb_layout.ROW_W + vb_layout.ADVANCES[vb_layout.TO_PORTRAIT]
         self.assertEqual(x, vb_layout.PORTRAIT_X)
