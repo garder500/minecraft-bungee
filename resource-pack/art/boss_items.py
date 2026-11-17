@@ -408,6 +408,27 @@ def sigil(c, rgb, accent):
     sparkle(c, 5, 3, accent)
 
 
+def key(c, rgb, accent):
+    # a ring bow, a long shaft and two teeth
+    c.fill_shape(circle(5, 5, 3.6), rgb)
+    c.fill_shape(circle(5, 5, 1.4), accent, light=1.3, dark=1.0)
+    c.line(7, 7, 13, 13, shade(rgb, 1.1))
+    c.line(8, 7, 14, 13, shade(rgb, 0.85))
+    c.line(11, 14, 14, 11, shade(rgb, 1.0))
+    c.line(9, 12, 11, 10, shade(accent, 1.2))
+    sparkle(c, 3, 3, accent)
+
+
+def lens(c, rgb, accent):
+    # a round lens in a rim, with a handle
+    c.fill_shape(circle(7, 7, 6.0), shade(rgb, 0.8)[:3])
+    c.fill_shape(circle(7, 7, 4.3), accent, light=1.2, dark=0.8)
+    c.fill_shape(circle(7, 7, 2.0), shade(rgb, 0.5)[:3], light=1.0, dark=0.8)
+    c.line(11, 11, 14, 14, shade(rgb, 1.0))
+    c.line(12, 11, 14, 13, shade(rgb, 0.8))
+    sparkle(c, 5, 5, accent)
+
+
 def wing_core(c, rgb, accent):
     orb(c, rgb, accent, core=mix(rgb, (255, 255, 255), 0.5))
     # little wing marks
@@ -453,6 +474,11 @@ ICONS = {
     "void_conduit": (conduit, (0x3A, 0x1E, 0x7A), (0xC8, 0x7A, 0xFF)),
     "demon_ember": (flame, (0xFF, 0x7A, 0x1E), (0xFF, 0xE0, 0x60)),
     "demon_core": (orb, (0x8A, 0x10, 0x10), (0xFF, 0x60, 0x20)),
+    # the four boss items that had no icon (they showed the missing-texture checker)
+    "echo_key": (key, (0x8A, 0x9C, 0xB8), (0x7A, 0xE8, 0xFF)),
+    "devourer_sigil": (sigil, (0x1E, 0x10, 0x3A), (0xFF, 0x7A, 0x30)),
+    "singularity_relic": (orb, (0x14, 0x0C, 0x28), (0xC8, 0x7A, 0xFF)),
+    "horizon_lens": (lens, (0x3A, 0x2A, 0x5A), (0xFF, 0xB0, 0x40)),
 }
 
 
@@ -470,6 +496,7 @@ REALM_OF = {
     "revenant_flesh": "marsh", "revenant_catalyst": "marsh", "tarantula_web": "grove", "tarantula_charm": "necro",
     "ravager_tooth": "citadel", "ravager_pelt": "citadel", "null_sphere": "astral", "void_conduit": "astral",
     "demon_ember": "ashes", "demon_core": "ashes",
+    "echo_key": "astral", "devourer_sigil": "astral", "singularity_relic": "astral", "horizon_lens": "astral",
 }
 
 

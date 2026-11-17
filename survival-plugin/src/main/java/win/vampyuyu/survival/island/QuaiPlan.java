@@ -10,12 +10,12 @@ import win.vampyuyu.survival.api.Realm;
 /**
  * The Quai des Huit (GDD 17.1), relative coordinates: a floating platform with a central beacon and eight Sky Gates
  * on a ring, one per Realm. The platform surface is y = 0, its centre (0, 0); {@link #CENTER_Z} is where it sits in
- * the hub world, north of it a bridge joins the south avenue of the hub plaza. The gates are built dark (black
- * glass); a lit gate is shown to its owner by client-side block changes (see {@link SkyGates}). Pure data.
+ * the hub world, north of it a bridge joins the south avenue of the hub plaza. The gates are built dark (tinted
+ * glass, near-black; plain black stained glass looks light blue against the sky); a lit gate is shown to its owner by client-side block changes (see {@link SkyGates}). Pure data.
  */
 public final class QuaiPlan {
     /** Bump when the layout changes so an existing Quai is rebuilt (the marker file stores it). */
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
     public static final int RADIUS = 22;
     /** Hub world Z of the platform centre: the hub border is +-100, the hub ring road ends at z = 44. */
     public static final int CENTER_Z = 72;
@@ -26,7 +26,7 @@ public final class QuaiPlan {
     public static final int SPAWN_Z = -(RADIUS - 3);
 
     /** The membrane is the dark glass pane of a gate that a lit gate recolours. */
-    public static final Material DARK_MEMBRANE = Material.BLACK_STAINED_GLASS;
+    public static final Material DARK_MEMBRANE = Material.TINTED_GLASS;
     public static final Material DARK_CROWN = Material.DEEPSLATE_TILES;
     public static final Material LIT_CROWN = Material.SEA_LANTERN;
 

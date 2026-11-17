@@ -111,6 +111,9 @@ public class ShowcaseLayoutTest {
         BlockPlan plan = layout.plan();
         assertEquals(Material.SEA_LANTERN, plan.get(1, 0, 1));
         assertEquals(Material.BLACK_CONCRETE, plan.get(5, 4, -1));
+        // closed roof over the whole hall
+        assertEquals(Material.BLACK_CONCRETE, plan.get(5, ShowcaseLayout.WALL_HEIGHT + 1, 5));
+        assertEquals(Material.SEA_LANTERN, plan.get(1, ShowcaseLayout.WALL_HEIGHT + 1, 1));
         assertEquals(Material.POLISHED_BLACKSTONE, plan.get(ShowcaseLayout.FIRST_X, 1, ShowcaseLayout.BLOCK_Z));
         assertEquals(layout.signs().size(), plan.signs().size());
         assertEquals(layout.sections().size() + layout.blocks().size() + layout.spins().size(), layout.signs().size());
