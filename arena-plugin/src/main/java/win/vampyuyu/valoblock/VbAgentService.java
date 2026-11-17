@@ -56,6 +56,8 @@ public final class VbAgentService implements AgentService, Listener {
   public void start() {
     Bukkit.getPluginManager().registerEvents(this, plugin);
     Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1, 1);
+    plugin.valoblock.menus = new VbMenus(plugin, this);
+    plugin.valoblock.menus.start();
     for (Player p : Bukkit.getOnlinePlayers()) {
       if (matchOf(p.getUniqueId()) != null) continue;
       SkinSwap.restore(p);
@@ -264,7 +266,6 @@ public final class VbAgentService implements AgentService, Listener {
       if (AgentSelectMenu.isMenu(top)) {
         AgentSelectMenu.fill(top, m, p.getUniqueId(), this::state);
       } else if (!st.locked) {
-        if (!st.dismissed && top.getType() == org.bukkit.event.inventory.InventoryType.CRAFTING) p.openInventory(AgentSelectMenu.build(m, p, this::state));
         if (p.getInventory().getItem(4) == null) p.getInventory().setItem(4, AgentItems.selectItem());
       }
     }
@@ -306,13 +307,20 @@ public final class VbAgentService implements AgentService, Listener {
     boolean right = e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK;
     if (!right) return;
     if (reopen) {
-      if (m.vbPhase() == VbPhase.AGENT_SELECT) {
-        state(p.getUniqueId()).dismissed = false;
-        p.openInventory(AgentSelectMenu.build(m, p, this::state));
-      }
+      openSelect(p, m);
       return;
     }
     use(p, m, slot);
+  }
+
+  /** Opens the select window (it also comes back by itself, see VbMenus). */
+  @Override
+  public String openSelect(Player p, VbMatch m) {
+    if (m.vbPhase() != VbPhase.AGENT_SELECT) return "Agent select is over";
+    if (state(p.getUniqueId()).locked || !m.agent(p.getUniqueId()).isEmpty()) return "You already locked in an agent";
+    state(p.getUniqueId()).dismissed = false;
+    p.openInventory(AgentSelectMenu.build(m, p, this::state));
+    return null;
   }
 
   private void use(Player p, VbMatch m, int slot) {

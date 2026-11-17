@@ -15,6 +15,8 @@ public final class ValoBlockModule {
   // Replaced by their real implementations in later slices.
   public volatile WeaponService weapons = WeaponService.NOOP;
   public volatile AgentService agents = AgentService.NOOP;
+  /** Automatic opening of the select and the Armory (set with the agents service). */
+  volatile VbMenus menus;
   public volatile BotService bots = BotService.NOOP;
   public volatile MapService map = MapService.NOOP;
   public volatile VbHud hud = VbHud.NOOP;
@@ -69,6 +71,8 @@ public final class ValoBlockModule {
       public void phaseChanged(VbMatch m, VbPhase from, VbPhase to) {
         map.phaseChanged(m, from, to);
         agents.phaseChanged(m, from, to);
+        VbMenus mn = menus;
+        if (mn != null) mn.phaseChanged(m);
         bots.phaseChanged(m, from, to);
       }
 

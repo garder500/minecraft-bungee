@@ -70,7 +70,7 @@ public final class AgentItems {
 
   /** Hotbar item that reopens the agent select menu while it is still open. */
   public static ItemStack selectItem() {
-    ItemStack it = cell("lock_in", List.of(new AgentText.Line("Agent select", AgentText.GREEN), new AgentText.Line("Right-click to open the menu", AgentText.GRAY)), "reopen", false);
+    ItemStack it = cell("lock_in", List.of(new AgentText.Line("Choose your agent", AgentText.GREEN), new AgentText.Line("Right-click to open the menu", AgentText.GRAY)), "reopen", false);
     it.setType(Material.NETHER_STAR);
     return it;
   }

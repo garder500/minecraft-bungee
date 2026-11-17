@@ -588,6 +588,11 @@ public final class VbWeaponService implements WeaponService, Listener {
     VbMatch m = matchOf(p.getUniqueId());
     if (m == null) return;
     e.setCancelled(true);
+    VbMenus menus = plugin.valoblock.menus;
+    if (m.vbPhase() == VbPhase.BUY && menus != null && menus.swapTap.press(p.getUniqueId(), System.currentTimeMillis())) {
+      if (m.alive().contains(p.getUniqueId()) && !AgentSelectMenu.isMenu(p.getOpenInventory().getTopInventory())) openArmory(p, m);
+      return;
+    }
     VbWeapon w = held(p);
     if (w == null || !w.isGun()) return;
     GunState gs = gear(p.getUniqueId()).gun(w);

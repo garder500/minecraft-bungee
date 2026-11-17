@@ -10,7 +10,7 @@ import win.vampyuyu.arena.NexusArenaEngine;
 
 /** /vb: operate ValoBlock arenas (start, stop, status, reload) and drive tests (debug). Admin only. */
 public final class VbCommand implements CommandExecutor, TabCompleter {
-  private static final List<String> SUBS = List.of("help", "use", "start", "stop", "status", "reload", "level", "map", "debug");
+  private static final List<String> SUBS = List.of("help", "agent", "buy", "use", "start", "stop", "status", "reload", "level", "map", "debug");
   private static final List<String> DEBUG = List.of("skip", "state", "win", "kill", "plant", "seal", "armory", "block", "where", "tp", "god");
 
   private final NexusArenaEngine plugin;
@@ -44,9 +44,26 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
     return m;
   }
 
+  /** /vb agent and /vb buy: any player in a match reopens their window (no permission needed). */
+  private void reopen(CommandSender sender, boolean agent) {
+    if (!(sender instanceof Player p)) throw new IllegalArgumentException("Only a player can use this");
+    ArenaSession s = plugin.arenas.session(p.getUniqueId());
+    if (s == null || !(s.game instanceof VbMatch m)) throw new IllegalArgumentException("You are not in a ValoBlock match");
+    if (agent) {
+      String why = plugin.valoblock.agents.openSelect(p, m);
+      if (why != null) throw new IllegalArgumentException(why);
+    } else {
+      plugin.valoblock.weapons.openArmory(p, m); // says by itself when it is not the buy phase
+    }
+  }
+
   @Override
   public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
     try {
+      if (args.length >= 1 && (args[0].equalsIgnoreCase("agent") || args[0].equalsIgnoreCase("buy"))) {
+        reopen(sender, args[0].equalsIgnoreCase("agent"));
+        return true;
+      }
       if (!sender.hasPermission("nexusarena.admin"))
         throw new IllegalArgumentException("Arena administrator permission required");
       String sub = args.length == 0 ? "help" : args[0].toLowerCase(Locale.ROOT);

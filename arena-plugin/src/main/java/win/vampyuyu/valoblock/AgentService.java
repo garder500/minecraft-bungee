@@ -28,6 +28,11 @@ public interface AgentService {
 
   default void phaseChanged(VbMatch match, VbPhase from, VbPhase to) {}
 
+  /** Opens the agent select window now; null when done, else the reason it cannot be (shown to the player). */
+  default String openSelect(org.bukkit.entity.Player p, VbMatch match) {
+    return "Agent select is not available";
+  }
+
   /** A kill: ultimate points and signature recharge for the killer. */
   default void killed(VbMatch match, UUID victim, UUID killer) {}
 
