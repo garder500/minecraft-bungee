@@ -97,6 +97,7 @@ public final class ValoBlockModule {
         hud.killed(m, victim, killer, weapon);
         agents.killed(m, victim, killer);
         bots.killed(m, victim, killer);
+        spectate(m, victim);
       }
 
       @Override
@@ -111,7 +112,7 @@ public final class ValoBlockModule {
           if (m.isBot(id)) bots.roundStarted(m, id, m.keepsLoadout(id));
           else map.teleportToSpawn(id, m.side(id));
           weapons.roundStarted(m, id, m.keepsLoadout(id));
-          agents.roundStarted(m, id, m.keepsLoadout(id));
+          agents.roundStarted(m, id, m.keepsAbilities(id));
         }
       }
     };
@@ -195,5 +196,27 @@ public final class ValoBlockModule {
     VbCommand vb = new VbCommand(plugin);
     Objects.requireNonNull(plugin.getCommand("vb")).setExecutor(vb);
     Objects.requireNonNull(plugin.getCommand("vb")).setTabCompleter(vb);
+  }
+
+  /**
+   * Every death of a human (gun, knife, ability, the sea, an admin kill) ends in spectator mode here, once: before,
+   * only the gun and knife paths did it, so a player drowned on Stormbreak stayed in the water in adventure mode. A
+   * body below the map floor (the sea, the void) is lifted above it so the spectator sees the round.
+   */
+  private void spectate(VbMatch m, UUID victim) {
+    if (m.isBot(victim)) return;
+    Runnable apply = () -> {
+      org.bukkit.entity.Player p = org.bukkit.Bukkit.getPlayer(victim);
+      // Late (async kill): the round or the match may have moved on, never spectate a living or restored player.
+      if (p == null || m.alive().contains(victim) || m.hasLeft(victim) || m.vbPhase() == VbPhase.END) return;
+      p.setGameMode(org.bukkit.GameMode.SPECTATOR);
+      org.bukkit.Location at = p.getLocation();
+      if (at.getY() < VbMapService.FEET_Y) {
+        at.setY(VbMapService.FEET_Y + 8);
+        p.teleport(at);
+      }
+    };
+    if (org.bukkit.Bukkit.isPrimaryThread()) apply.run();
+    else org.bukkit.Bukkit.getScheduler().runTask(plugin, apply);
   }
 }
