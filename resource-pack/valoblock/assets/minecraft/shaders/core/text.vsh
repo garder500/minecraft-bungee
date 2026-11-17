@@ -124,6 +124,15 @@ const vec4 VB_BOX[VB_COUNT] = vec4[](
     vec4(-26.0, 22.0, 52.0, 7.0),
     vec4(-24.0, 24.0, 48.0, 3.0));
 
+// 0 top left, 1 bottom left, 2 bottom right, 3 top right of a HUD glyph quad. Every glyph of a HUD run is followed by one that
+// takes its advance back (see hud_fonts: the sprites have a non-clear last column so the advance is exact), so each quad starts at
+// the pen, the middle of the GUI, and its bottom sits on the action bar's baseline (GUI height - 65).
+int vbCorner(vec2 gui) {
+    bool right = Position.x - gui.x * 0.5 > 2.0;
+    bool bottom = Position.y > gui.y - 66.5;
+    return right ? (bottom ? 2 : 3) : (bottom ? 1 : 0);
+}
+
 void main() {
     vec4 clip = ProjMat * ModelViewMat * vec4(Position, 1.0);
     int fx = 0;
@@ -156,7 +165,7 @@ void main() {
         float ay = a <= 2 ? 0.0 : a <= 5 ? gui.y : floor(gui.y * 0.5);
         vec4 box = VB_BOX[e];
         float w = VB_STRETCH[e] == 1 ? max(1.0, floor(box.z * float(rgb.b) / 255.0 + 0.5)) : box.z;
-        int k = gl_VertexIndex % 4;
+        int k = vbCorner(gui);
         vec2 corner = vec2((k == 2 || k == 3) ? w : 0.0, (k == 1 || k == 2) ? box.w : 0.0);
         clip = ProjMat * ModelViewMat * vec4(vec2(ax, ay) + box.xy + corner, Position.z, 1.0);
         fx = 10;

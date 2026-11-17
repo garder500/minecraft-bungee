@@ -402,6 +402,11 @@ def hud_fonts():
     shader = hud_sprites()
     providers, negs, lines = [], {}, []
     for i, (name, rows) in enumerate(shader):
+        rows = [list(r) for r in rows]
+        # The font drops a clear last column from the advance; the glyph that takes the advance back assumes the full width, so
+        # a run would drift off the middle of the GUI. A pixel of alpha 1 (the shader discards below 0.1) keeps the column.
+        if all(px[3] == 0 for r in rows for px in r[-1:]):
+            rows[0][-1] = (0, 0, 0, 1)
         write_png(TEXTURES / f"vbhud_{name}.png", rows)
         w, h = len(rows[0]), len(rows)
         providers.append({"type": "bitmap", "file": f"vampyuyu:font/vbhud_{name}.png", "ascent": h, "height": h, "chars": [chr(vb.SPRITE_BASE + i)]})
@@ -425,13 +430,29 @@ def hud_fonts():
 
 # ------------------------------------------------------------------ shader
 
+# Which corner of its glyph quad a vertex is. NOT gl_VertexIndex % 4: the GUI draws share one vertex buffer and a draw starts
+# wherever the previous draw ended (in vertices, of a different vertex format), so after a spyglass scope, a tooltip... the
+# index is rotated and every glyph came out turned ('100' read 'H00'). The corner is read from where the quad was laid out.
+VB_CORNER = """// 0 top left, 1 bottom left, 2 bottom right, 3 top right of a HUD glyph quad. Every glyph of a HUD run is followed by one that
+// takes its advance back (see hud_fonts: the sprites have a non-clear last column so the advance is exact), so each quad starts at
+// the pen, the middle of the GUI, and its bottom sits on the action bar's baseline (GUI height - 65).
+int vbCorner(vec2 gui) {
+    bool right = Position.x - gui.x * 0.5 > 2.0;
+    bool bottom = Position.y > gui.y - 66.5;
+    return right ? (bottom ? 2 : 3) : (bottom ? 1 : 0);
+}
+
+"""
+
+
 def shader_sources():
     """The base pack's text shader with a second HUD branch: red 84, green 160 + element, blue the bar width."""
     anchors = ", ".join(str(e[1]) for e in vb.HUD_ELEMENTS)
     boxes = ",\n    ".join(f"vec4({e[2]}.0, {e[3]}.0, {e[4]}.0, {e[5]}.0)" for e in vb.HUD_ELEMENTS)
     stretch = ", ".join(str(e[6]) for e in vb.HUD_ELEMENTS)
     table = (f"const int VB_COUNT = {vb.HUD_COUNT};\nconst int VB_ANCHOR[VB_COUNT] = int[]({anchors});\n"
-             f"const int VB_STRETCH[VB_COUNT] = int[]({stretch});\nconst vec4 VB_BOX[VB_COUNT] = vec4[](\n    {boxes});\n\n")
+             f"const int VB_STRETCH[VB_COUNT] = int[]({stretch});\nconst vec4 VB_BOX[VB_COUNT] = vec4[](\n    {boxes});\n\n"
+             + VB_CORNER)
     branch = f"""    }} else if (rgb.r == {vb.HUD_R} && rgb.g >= {vb.HUD_ID_BASE} && rgb.g < {vb.HUD_ID_BASE} + VB_COUNT) {{
         // A ValoBlock HUD glyph: the quad goes to its element's box in GUI pixels, counted from one of 7 anchors
         // (0-2 top left, centre, right; 3-5 bottom; 6 screen centre). The blue channel stretches a bar.
@@ -442,7 +463,7 @@ def shader_sources():
         float ay = a <= 2 ? 0.0 : a <= 5 ? gui.y : floor(gui.y * 0.5);
         vec4 box = VB_BOX[e];
         float w = VB_STRETCH[e] == 1 ? max(1.0, floor(box.z * float(rgb.b) / 255.0 + 0.5)) : box.z;
-        int k = gl_VertexIndex % 4;
+        int k = vbCorner(gui);
         vec2 corner = vec2((k == 2 || k == 3) ? w : 0.0, (k == 1 || k == 2) ? box.w : 0.0);
         clip = ProjMat * ModelViewMat * vec4(vec2(ax, ay) + box.xy + corner, Position.z, 1.0);
         fx = 10;
