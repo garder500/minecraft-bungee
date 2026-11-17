@@ -36,6 +36,10 @@ public final class VbMapService implements MapService {
     volatile boolean barriersUp;
     /** Everything the themed build placed (set by {@link #build}); clearing sets the same blocks to air. */
     volatile VbCanvas canvas;
+    /** Completes (server thread) when the slot has been wiped and the map built: nothing may be put on the map before. */
+    final java.util.concurrent.CompletableFuture<Void> ready = new java.util.concurrent.CompletableFuture<>();
+    /** The match is over: a build still waiting for the wipe is skipped. */
+    volatile boolean released;
 
     Instance(String arena, int slot, VbMap map) {
       this.arena = arena;
@@ -56,9 +60,13 @@ public final class VbMapService implements MapService {
   private volatile World world;
   final VbRealmService realm;
   private final Map<String, org.bukkit.block.data.BlockData> dataCache = new ConcurrentHashMap<>();
+  private final VbSlotWiper wiper;
+  final VbDirtySlots dirty;
 
   public VbMapService(NexusArenaEngine plugin) {
     this.plugin = plugin;
+    this.wiper = new VbSlotWiper(plugin);
+    this.dirty = new VbDirtySlots(plugin.getDataFolder().toPath().resolve("valoblock-dirty-slots.txt"));
     this.realm = new VbRealmService(plugin, this);
   }
 
@@ -71,8 +79,64 @@ public final class VbMapService implements MapService {
       if (plugin.arenas.all().stream().anyMatch(a -> a.config.preset().equals(VbPreset.ID))) {
         String err = createWorld();
         if (err != null) plugin.getLogger().warning("ValoBlock: " + err);
+        else wipeIdle("start");
       }
     });
+  }
+
+  /** The volume a slot can touch: the largest map footprint, the build height range and a margin. */
+  VbSlots.Box slotBox(int slot) {
+    int[] f = VbSlots.footprint(VbData.maps().values());
+    VbMap any = VbData.maps().values().iterator().next();
+    return VbSlots.box(slot, SPACING, FEET_Y, f[0], f[1], any.lowestY(), any.highestY());
+  }
+
+  private boolean matchRunning() {
+    for (ArenaSession s : plugin.arenas.all()) if (s.config.preset().equals(VbPreset.ID) && s.game != null) return true;
+    for (String k : instances.keySet()) if (!k.equals("preview")) return true;
+    return false;
+  }
+
+  private void markDirty(int slot, boolean on) {
+    try {
+      if (on) dirty.mark(slot);
+      else dirty.clear(slot);
+    } catch (RuntimeException e) {
+      plugin.getLogger().warning("ValoBlock: could not write the dirty-slot file (" + e + ")");
+    }
+  }
+
+  /**
+   * Wipes every slot that has blocks (the dirty ones, then a scan of all the slots) when no match is running. Used at start and on
+   * /vb reload. Returns a message for the operator.
+   */
+  public String wipeIdle(String why) {
+    World w = world();
+    if (w == null) return "no ValoBlock world yet";
+    if (matchRunning()) return "a match is running: nothing wiped";
+    List<VbSlots.Box> boxes = new ArrayList<>();
+    List<Integer> slots = new ArrayList<>();
+    boolean previewUp = instances.containsKey("preview");
+    for (int slot = 0; slot <= PREVIEW_SLOT; slot++) {
+      if (slot == PREVIEW_SLOT && previewUp) continue;
+      slots.add(slot);
+    }
+    List<Integer> found = new ArrayList<>();
+    for (int slot : slots) {
+      VbSlots.Box b = slotBox(slot);
+      if (dirty.isDirty(slot) || !VbSlotWiper.withData(w, List.of(b)).isEmpty()) {
+        boxes.add(b);
+        found.add(slot);
+      }
+    }
+    if (found.isEmpty()) return "no slot has blocks";
+    for (int slot : found) markDirty(slot, true);
+    plugin.getLogger().info("ValoBlock: wiping slots " + found + " (" + why + ")");
+    wiper.wipe(w, boxes).whenComplete((v, e) -> {
+      if (e != null) plugin.getLogger().warning("ValoBlock: wipe failed (" + e + "); the slots stay marked dirty");
+      else for (int slot : found) markDirty(slot, false);
+    });
+    return "wiping " + found.size() + " slot(s)";
   }
 
   /** The map forced for the next match, or null when the vote (or chance) decides. */
@@ -175,7 +239,32 @@ public final class VbMapService implements MapService {
     VbMap map = choose(s);
     Instance in = new Instance(s.config.id(), allocate(), map);
     instances.put(s.config.id(), in);
-    onServer(() -> build(in));
+    onServer(() -> beginBuild(in));
+  }
+
+  /** Marks the slot dirty, wipes its whole volume (chunk by chunk), then builds the map; {@code ready} completes at the end. */
+  private void beginBuild(Instance in) {
+    World w = world();
+    if (w == null) {
+      in.ready.complete(null);
+      return;
+    }
+    markDirty(in.slot, true);
+    wiper.wipe(w, List.of(slotBox(in.slot))).whenComplete((v, e) -> onServer(() -> {
+      try {
+        if (e != null) plugin.getLogger().warning("ValoBlock: wiping slot " + in.slot + " failed (" + e + ")");
+        if (!in.released) build(in);
+      } catch (Throwable t) {
+        plugin.getLogger().warning("ValoBlock: building slot " + in.slot + " failed (" + t + ")");
+      } finally {
+        in.ready.complete(null);
+      }
+    }));
+  }
+
+  /** Runs on the server thread once the map of the instance stands. */
+  private void whenReady(Instance in, Runnable r) {
+    in.ready.thenRun(() -> onServer(r));
   }
 
   /** Keeps the map's chunks loaded and ticking for the match: bots far from every human must still live. */
@@ -223,16 +312,23 @@ public final class VbMapService implements MapService {
 
   private void clear(Instance in) {
     World w = world();
-    synchronized (this) {
-      used.clear(in.slot);
-    }
+    in.released = true;
     clearOrbs(in);
-    if (w == null) return;
-    int ox = in.ox();
-    onServer(() -> {
+    if (w == null) {
+      synchronized (this) {
+        used.clear(in.slot);
+      }
+      return;
+    }
+    // After the build (it may still be waiting for the wipe): the slot is free again only once its blocks are gone.
+    whenReady(in, () -> {
       realm.stopNow(in); // gates open, effects off: the Realm rules never outlive the match
       erase(in, w);
       tickets(in, false);
+      markDirty(in.slot, false);
+      synchronized (this) {
+        used.clear(in.slot);
+      }
     });
   }
 
@@ -241,8 +337,34 @@ public final class VbMapService implements MapService {
     Instance in = instances.get(s.config.id());
     if (in == null) return;
     in.match = match;
-    VbData.activate(in.map.sites(in.ox(), FEET_Y, 0), in.map.waypoints(in.ox(), FEET_Y, 0));
+    Waypoints graph = in.map.waypoints(in.ox(), FEET_Y, 0);
+    VbData.activate(in.map.sites(in.ox(), FEET_Y, 0), graph);
+    whenReady(in, () -> validateLinks(in, graph));
+    // teleportToSpawn waits for the wipe and the build: nobody is sent to a map that is not there yet
     for (UUID id : match.participants()) if (!match.isBot(id)) teleportToSpawn(id, match.side(id));
+  }
+
+  /** Once the map stands: drops the graph links whose straight line crosses real solid blocks (bots walk lines, not paths). */
+  private void validateLinks(Instance in, Waypoints graph) {
+    World w = world();
+    if (w == null || in.released) return;
+    int ox = in.ox();
+    LinkCheck.Solid solid = (x, y, z) -> {
+      var b = w.getBlockAt(ox + x, FEET_Y + y, z);
+      return !b.isPassable() && !org.bukkit.Tag.CLIMBABLE.isTagged(b.getType());
+    };
+    // Node coordinates of the graph are absolute: bring them back to the map's frame for the probe.
+    List<String> report = graph.pruneLinks(l -> {
+      Waypoints.Node a = graph.node(l[0]), b = graph.node(l[1]);
+      return LinkCheck.blocked(shifted(a, ox), shifted(b, ox), solid);
+    });
+    long dropped = report.stream().filter(r -> r.startsWith("dropped")).count();
+    plugin.getLogger().info("ValoBlock: " + in.map.id() + " link check: " + dropped + " link(s) crossing real blocks dropped");
+    for (String r : report) if (r.startsWith("kept")) plugin.getLogger().warning("ValoBlock: " + r);
+  }
+
+  private static Waypoints.Node shifted(Waypoints.Node n, int ox) {
+    return new Waypoints.Node(n.id(), n.x() - ox, n.y() - FEET_Y, n.z());
   }
 
   @Override
@@ -291,7 +413,7 @@ public final class VbMapService implements MapService {
     double[] at = in.map.spawn(side, index, in.ox() + 0.0, FEET_Y, 0);
     float yaw = side == VbSide.SEEDBEARERS ? 180f : 0f; // Seedbearers spawn at the south edge, Sealers at the north
     GameMode mode = s.config.gameMode();
-    onServer(() -> {
+    whenReady(in, () -> {
       Player p = Bukkit.getPlayer(player);
       World w = world();
       if (p == null || w == null) return;
@@ -346,6 +468,7 @@ public final class VbMapService implements MapService {
         e.setGlowColorOverride(Color.fromRGB(0xc9a8ff));
         e.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
         e.setPersistent(false);
+        e.addScoreboardTag(VbSlotWiper.TAG);
       });
       synchronized (in.orbs) {
         in.orbs.add(d);
@@ -407,7 +530,9 @@ public final class VbMapService implements MapService {
     }
     Instance in = new Instance("preview", PREVIEW_SLOT, map);
     instances.put("preview", in);
+    markDirty(PREVIEW_SLOT, true);
     build(in);
+    in.ready.complete(null);
     double[] at = map.spawn(VbSide.SEEDBEARERS, 0, in.ox(), FEET_Y, 0);
     return new Location(world(), at[0], at[1], at[2], 180f, 0f);
   }
@@ -417,6 +542,7 @@ public final class VbMapService implements MapService {
     if (w == null) return;
     erase(in, w);
     tickets(in, false);
+    markDirty(in.slot, false);
   }
 
   /** The preview's map and where a player stands in it (relative coordinates), or null when not in the preview. */
@@ -435,6 +561,7 @@ public final class VbMapService implements MapService {
   public void shutdown() {
     realm.stopAll();
     for (Instance in : instances.values()) {
+      markDirty(in.slot, true); // stopped with the map standing: the next start wipes it
       clearOrbs(in);
       tickets(in, false);
     }
