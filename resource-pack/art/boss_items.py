@@ -479,6 +479,8 @@ ICONS = {
     "devourer_sigil": (sigil, (0x1E, 0x10, 0x3A), (0xFF, 0x7A, 0x30)),
     "singularity_relic": (orb, (0x14, 0x0C, 0x28), (0xC8, 0x7A, 0xFF)),
     "horizon_lens": (lens, (0x3A, 0x2A, 0x5A), (0xFF, 0xB0, 0x40)),
+    # the Abyssal Depths guardian core (Realm 7 palette 2a8a9a / ff6ab0): found by test ShowcaseModelsTest
+    "leviathan_core": (orb, (0x2A, 0x8A, 0x9A), (0xFF, 0x6A, 0xB0)),
 }
 
 
@@ -497,6 +499,7 @@ REALM_OF = {
     "ravager_tooth": "citadel", "ravager_pelt": "citadel", "null_sphere": "astral", "void_conduit": "astral",
     "demon_ember": "ashes", "demon_core": "ashes",
     "echo_key": "astral", "devourer_sigil": "astral", "singularity_relic": "astral", "horizon_lens": "astral",
+    "leviathan_core": "depths",
 }
 
 
