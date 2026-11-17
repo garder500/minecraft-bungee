@@ -183,8 +183,7 @@ public final class VbBotService implements BotService {
       mq.setImmovable(true);
       mq.setCollidable(false);
       mq.setDescription(Component.empty());
-      mq.customName(Component.text(name));
-      mq.setCustomNameVisible(false); // the tag is a TextDisplay (BotTag): a name tag would show through walls
+      // No custom name at all: vanilla shows a named entity's name tag whenever the crosshair is on it, through walls. The tag is a TextDisplay (BotTag).
       if (agent != null) mq.setProfile(skinProfile(agent));
     });
   }

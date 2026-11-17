@@ -1214,11 +1214,14 @@ def valoblock_scenario(ctx):
         failures.append("expected 9 bot bodies (1 human, 5v5): " + mannequins.strip())
     shot(tools, shots / "vb-04-combat.png")
     # A notice must not touch the glyph HUD (it is a subtitle), and each bot carries one tag.
+    vb(rcon, "debug god E2EBot on")  # the bots would kill the human before the close-ups
+    rcon.command("gamemode adventure E2EBot")
     say(vb(rcon, "debug notice E2EBot Ability not ready: 3 s"))
     time.sleep(0.8)
     shot(tools, shots / "vb-14-hud-notice.png")
     say("tags: " + rcon.command("execute if entity @e[type=minecraft:text_display]").strip())
     # Each bot up close: an ally shows one readable tag, an enemy none (the tags are per-viewer text displays).
+    say("tag visibility per bot:\n" + vb(rcon, "debug tags E2EBot"))
     rcon.command("tag @e[type=minecraft:mannequin] remove tagshot")
     for i in range(6):
         pick = "@e[type=minecraft:mannequin,tag=!tagshot,limit=1,sort=nearest]"

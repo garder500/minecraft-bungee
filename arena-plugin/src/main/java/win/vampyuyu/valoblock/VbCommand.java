@@ -11,7 +11,7 @@ import win.vampyuyu.arena.NexusArenaEngine;
 /** /vb: operate ValoBlock arenas (start, stop, status, reload) and drive tests (debug). Admin only. */
 public final class VbCommand implements CommandExecutor, TabCompleter {
   private static final List<String> SUBS = List.of("help", "agent", "buy", "vote", "use", "start", "stop", "status", "reload", "level", "map", "debug");
-  private static final List<String> DEBUG = List.of("skip", "state", "win", "kill", "plant", "seal", "armory", "block", "where", "tp", "god", "notice");
+  private static final List<String> DEBUG = List.of("skip", "state", "win", "kill", "plant", "seal", "armory", "block", "where", "tp", "god", "notice", "tags");
 
   private final NexusArenaEngine plugin;
   private final Map<String, String> selected = new HashMap<>();
@@ -295,6 +295,18 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
         boolean on = args.length < 4 || !args[3].equalsIgnoreCase("off");
         m.setInvulnerable(p.getUniqueId(), on);
         say(sender, "god " + p.getName() + " " + (on ? "on" : "off"));
+      }
+      case "tags" -> {
+        // /vb debug tags <player>: for each bot, its squad, its position and whether the player's client is shown its tag.
+        if (args.length < 3) throw new IllegalArgumentException("Usage: /vb debug tags <player>");
+        Player p = plugin.getServer().getPlayerExact(args[2]);
+        if (p == null) throw new IllegalArgumentException("Nobody called " + args[2] + " is online");
+        say(sender, "viewer squad " + m.squadOf(p.getUniqueId()) + " board=" + (p.getScoreboard() != plugin.getServer().getScoreboardManager().getMainScoreboard() ? "match" : "main"));
+        for (java.util.UUID id : m.bots()) {
+          var tag = plugin.valoblock.bots.tag(id);
+          var body = plugin.valoblock.bots.body(id);
+          say(sender, plugin.valoblock.bots.name(id) + " squad " + m.squadOf(id) + " at " + (body == null ? "-" : body.getLocation().getBlockX() + "," + body.getLocation().getBlockZ()) + " tagSeen=" + (tag != null && p.canSee(tag)));
+        }
       }
       case "notice" -> {
         // /vb debug notice <player> <text...>: shows a HUD notice (screenshots of the HUD while a message is up).

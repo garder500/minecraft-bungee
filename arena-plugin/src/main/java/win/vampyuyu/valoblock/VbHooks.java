@@ -91,7 +91,7 @@ final class VbHooks implements GameHooks {
   public java.util.concurrent.CompletableFuture<Void> concluding(ArenaSession s, String reason) {
     if (s.game instanceof VbMatch m) {
       module.hud.clear(m);
-      module.tags.end(m);
+      module.tags.end(module, m);
       module.agents.matchEnded(m);
       for (java.util.UUID id : m.participants()) {
         if (module.menus != null) module.menus.forget(id);
@@ -117,7 +117,7 @@ final class VbHooks implements GameHooks {
     if (module.votes != null) module.votes.left(s, p);
     if (s.game instanceof VbMatch m) {
       m.remove(id);
-      module.tags.left(m, p);
+      module.tags.left(module, m, p);
       module.hud.left(m, id);
     }
     module.weapons.clear(id);
