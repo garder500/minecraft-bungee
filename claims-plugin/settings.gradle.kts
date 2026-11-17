@@ -5,4 +5,13 @@
  * For more detailed information on multi-project builds, please refer to https://docs.gradle.org/8.9/userguide/multi_project_builds.html in the Gradle documentation.
  */
 
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        // The Shadow plugin's own dependencies (log4j, commons-io, jdependency...) are on Maven Central only:
+        // the plugin portal stopped mirroring the recent versions, so a build with an empty Gradle cache failed.
+        mavenCentral()
+    }
+}
+
 rootProject.name = "SimpleClaimSystem"
