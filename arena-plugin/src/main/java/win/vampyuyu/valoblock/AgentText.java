@@ -31,17 +31,9 @@ public final class AgentText {
     return l;
   }
 
-  /** Tooltip of an ability item on the hotbar. */
+  /** Tooltip lines of an ability item on the hotbar (see {@link AbilityItemState#lines}). */
   public static List<Line> abilityLines(VbAgent a, VbAbility ab, AgentKit kit) {
-    List<Line> l = new ArrayList<>();
-    l.add(new Line(ab.text(), GRAY));
-    switch (ab.kind()) {
-      case BUY -> l.add(new Line("Charges: " + kit.charges(ab.slot()) + " / " + ab.maxCharges() + " · bought in the Armory for " + ab.cost(), GOLD));
-      case SIGNATURE -> l.add(new Line("Free · charges: " + kit.charges(6) + " / " + ab.charges() + (ab.rechargeKills() > 0 ? " · +1 every " + ab.rechargeKills() + " kills" : ""), a.trim()));
-      case ULTIMATE -> l.add(new Line("Ultimate: " + kit.ultPoints() + " / " + ab.ultPoints() + " pts", GOLD));
-    }
-    l.add(new Line("Right-click to use", YELLOW));
-    return l;
+    return AbilityItemState.lines(a, ab, kit);
   }
 
   /** The Lock in button's tooltip. */

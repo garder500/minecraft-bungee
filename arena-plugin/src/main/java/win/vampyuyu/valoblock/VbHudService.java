@@ -14,7 +14,8 @@ import win.vampyuyu.arena.NexusArenaEngine;
 /**
  * The ValoBlock HUD (design VB-UI2): agent heads, score and the clock on top as a boss bar (a pink fuse bar once the Seed is
  * planted), the last kills under it for 4 s with weapon icons, and the glyph HUD in the action bar: big health and shield,
- * four ability tiles with charge pips, the magazine, the crosshair and the hit marker, all drawn by the ValoBlock pack's core
+ * four ability tiles with charge pips, the magazine, the crosshair and the hit marker (and, for the Rift Seed carrier only, the
+ * Seed icon and the planting bar), all drawn by the ValoBlock pack's core
  * shader ({@link VbGlyphs}, {@link VbHudState}); the pack also hides the vanilla hearts, hunger, armour and XP bar. It is
  * the only writer of the action bar of a ValoBlock player (other code calls {@link #notice}); the bar is resent only when
  * it changes or every 2 s so it does not fade.
@@ -145,11 +146,22 @@ public final class VbHudService implements VbHud {
 
   /** One head glyph per squad member: their agent (a crossed-out face once dead), a grey blank until they locked one in. */
   static Component heads(VbMatch m, int squad) {
+    return heads(m, squad, -1);
+  }
+
+  /** The heads of a squad as seen by a viewer of squad {@code viewerSquad}: the Seed carrier wears the badge for their own squad only. */
+  static Component heads(VbMatch m, int squad, int viewerSquad) {
     VbGlyphs g = VbGlyphs.get();
     Component out = Component.empty();
     Set<UUID> alive = m.alive();
-    for (UUID id : m.squad(squad)) out = out.append(g.inline(headName(m.agent(id), alive.contains(id), g)));
+    for (UUID id : m.squad(squad)) out = out.append(g.inline(headName(m.agent(id), alive.contains(id), SeedSight.badgeOnHead(m, viewerSquad, id), g)));
     return out;
+  }
+
+  /** The head with the seed badge in its corner (a carrier is alive by definition). */
+  static String headName(String agent, boolean alive, boolean seed, VbGlyphs g) {
+    String plain = headName(agent, alive, g);
+    return seed && alive && g.hasInline(plain + "_seed") ? plain + "_seed" : plain;
   }
 
   /** The inline sprite of a squad member: head_<agent>, head_<agent>_dead or head_none. */
@@ -171,12 +183,12 @@ public final class VbHudService implements VbHud {
     };
     Component time = phase == VbPhase.END ? Component.empty() : Component.text(clock(left) + " ", phase == VbPhase.PLANTED ? NamedTextColor.LIGHT_PURPLE : NamedTextColor.WHITE);
     return Component.empty()
-        .append(heads(m, mine))
+        .append(heads(m, mine, mine))
         .append(Component.text("  " + m.score().wins(mine) + "  ", ALLY))
         .append(time)
         .append(Component.text("· " + label, NamedTextColor.GRAY))
         .append(Component.text("  " + m.score().wins(theirs) + "  ", ENEMY))
-        .append(heads(m, theirs));
+        .append(heads(m, theirs, mine));
   }
 
   private void top(Player p, Viewer v, VbMatch m, int mine, VbPhase phase, long left, double fraction) {
@@ -256,7 +268,8 @@ public final class VbHudService implements VbHud {
     String hit = v.hit != null && wall < v.hitUntil ? v.hit : null;
     return new VbHudState.Input(m.alive().contains(id), m.health(id), m.shield(id), agent == null || agent.isEmpty() ? null : agent,
         plugin.valoblock.agents.charges(id), plugin.valoblock.agents.maxCharges(id), ammo == null ? -1 : ammo[0], ammo == null ? 0 : ammo[1],
-        VbHudState.spreadLevel(p.isSneaking(), wall - v.movedAt < 300, !p.isOnGround()), hit);
+        VbHudState.crosshair(WeaponItems.isScope(p.getInventory().getHelmet()), VbHudState.spreadLevel(p.isSneaking(), wall - v.movedAt < 300, !p.isOnGround())), hit,
+        SeedSight.hud(m, id, SeedSight.siteAt(VbData.sites(), loc.getX(), loc.getY(), loc.getZ()) != null, wall));
   }
 
   private void action(Player p, Viewer v, VbMatch m, UUID id, VbPhase phase, long wall) {

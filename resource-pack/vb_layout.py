@@ -60,10 +60,14 @@ HUD_ELEMENTS = (
     + [(f"am{i + 1}", BR, -84 + 12 * i, -38, 11, 15, 0) for i in range(2)]
     + [(f"rs{i + 1}", BR, -52 + 7 * i, -34, 6, 8, 0) for i in range(3)]
     + [("xh", CE, -10, -10, 21, 21, 0), ("hit", CE, -10, -10, 21, 21, 0)]
+    # The Rift Seed (appended: the ids of the elements above keep their numbers). The icon sits right of the health plate and only
+    # the carrier gets it; the planting bar (a track and a stretched fill) sits under the crosshair while the carrier holds.
+    + [("seed", BL, 94, -38, 16, 16, 0), ("plant_track", CE, -26, 22, 52, 7, 0), ("plant_bar", CE, -24, 24, 48, 3, 1)]
 )
 HUD_COUNT = len(HUD_ELEMENTS)
 BIG, SMALL = (11, 15), (6, 8)
 TILE, ICON, PIP, PLATE, CROSS = (30, 38), (16, 16), (5, 3), (88, 36), (21, 21)
+SEED, PLANT_TRACK = (16, 16), (52, 7)
 HEAD = 10             # inline agent head, px
 
 # Vanilla HUD sprites the pack hides: (path under textures/gui/sprites/, width, height)

@@ -20,6 +20,8 @@ public final class ValoBlockModule {
   public volatile BotService bots = BotService.NOOP;
   public volatile MapService map = MapService.NOOP;
   public volatile VbHud hud = VbHud.NOOP;
+  /** The Rift Seed service (null until enabled). */
+  volatile VbSeedService seeds;
   /** The ValoBlock resource pack (null when not configured). */
   public volatile VbPack pack;
 
@@ -138,6 +140,14 @@ public final class ValoBlockModule {
     hud = new VbHudService(plugin);
   }
 
+  /** The Rift Seed: its item, the plant hold, the back display and the dropped Seed (listener and per-tick task). */
+  public void enableSeeds() {
+    if (refuse()) return;
+    VbSeedService service = new VbSeedService(plugin);
+    service.start();
+    seeds = service;
+  }
+
   /** The bots: bodies and brains that fill empty seats (server-thread task). */
   public void enableBots() {
     if (refuse()) return;
@@ -153,6 +163,7 @@ public final class ValoBlockModule {
 
   /** Plugin disable: skins and temporary blocks back, bot bodies gone. */
   public void shutdown() {
+    if (seeds != null) seeds.shutdown();
     if (bots instanceof VbBotService s) s.shutdown();
     if (map instanceof VbMapService s) s.shutdown();
     if (agents instanceof VbAgentService s) s.shutdown();

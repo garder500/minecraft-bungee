@@ -43,6 +43,12 @@
       "type": "minecraft:model",
       "model": "vampyuyu:item/valoblock/pip_aim"
      }
+    },
+    {
+     "when": "scope",
+     "model": {
+      "type": "minecraft:empty"
+     }
     }
    ],
    "fallback": {

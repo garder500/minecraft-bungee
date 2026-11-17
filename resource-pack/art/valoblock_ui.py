@@ -24,7 +24,9 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 import fx_shaders  # noqa: E402
 import layout  # noqa: E402
+import valoblock_ability_icons as icons  # noqa: E402
 import valoblock_items as vi  # noqa: E402
+import valoblock_seed as vs  # noqa: E402
 import vb_layout as vb  # noqa: E402
 
 PACK = vi.ROOT / "valoblock"
@@ -259,23 +261,9 @@ def menu_font():
 # ------------------------------------------------------------------ HUD sprites
 
 def agent_icon(agent, slot, on):
-    """16 x 16 ability icon: a disc, a diamond, a ring and a star for slots 4 to 7, in the agent's own colours."""
-    c = agent["colors"]
-    main, glow, dark = col(c["trim"] if slot != 7 else c["glow"]), col(c["glow"]), col("1a1c24")
-    if not on:
-        main, glow = col("5a5f6c"), col("7a7f8c")
-    img = canvas(16, 16)
-    for y in range(16):
-        for x in range(16):
-            dx, dy = abs(x - 7.5), abs(y - 7.5)
-            d = (dx * dx + dy * dy) ** 0.5
-            hit = {4: d <= 6.5, 5: dx + dy <= 7.5, 6: 4.2 <= d <= 6.8, 7: dx * dy <= 6.0 and dx + dy <= 8.5}[slot]
-            if hit:
-                img[y][x] = main
-            if hit and d <= 2.2:
-                img[y][x] = glow
-    outline(img, dark)
-    return img
+    """16 x 16 ability icon of the agent's slot 4-7 ability (valoblock_ability_icons.py, the same pixels as the hotbar item)."""
+    ab = next(x for x in agent["abilities"] if x["slot"] == slot)
+    return icons.icon(agent, ab["id"], slot, "on" if on else "off")
 
 
 def tile_sprite(slot, on):
@@ -346,6 +334,11 @@ def hud_sprites():
     out += [("hp_bar", canvas(8, 4, col("5ad07a"))), ("hp_bar_low", canvas(8, 4, col("ff5a5a"))), ("sh_bar", canvas(8, 3, col("7fc8e8")))]
     out += [(f"xh_{i}", cross_sprite(i)) for i in range(4)]
     out += [(f"hit_{k}", hit_sprite(k)) for k in "whk"]
+    # The Rift Seed: the carrier's icon (two frames, it pulses in a site) and the planting track and fill (appended: older ids stay).
+    track = canvas(*vb.PLANT_TRACK)
+    frame(track, 0, 0, 52, 7, col("0b0d12", 217), col("3a1a6a"))
+    out += [("seed_on", vs.seed_pixels(16)), ("seed_glow", vs.seed_pixels(16, glow=True)), ("plant_track", track),
+            ("plant_bar", canvas(8, 3, col("ff4a8a")))]
     return out
 
 
@@ -390,6 +383,14 @@ def inline_sprites():
     for w in vi.weapons():
         out.append((f"gun_{w['id']}", vi.sprite(w["texture"], w["metal"], 1.0, 24)[7:17], 8))
     out.append(("skull", skull_sprite(), 7))
+    # A squad head with the seed badge in its corner: what a teammate sees on the Seed carrier (the enemy never does).
+    for a in agents():
+        head = head_sprite(a, "alive")
+        blit(head, vs.badge_pixels(), 5, 5)
+        out.append((f"head_{a['id']}_seed", head, 8))
+    head = head_sprite(None, "none")
+    blit(head, vs.badge_pixels(), 5, 5)
+    out.append(("head_none_seed", head, 8))
     return out
 
 

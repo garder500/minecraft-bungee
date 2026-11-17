@@ -18,7 +18,20 @@ public final class VbHudState {
    * {@code ammo} is -1 when the hand holds no gun; {@code spread} is 0 (sneaking), 1 (still), 2 (moving), 3 (airborne);
    * {@code hit} is null, "w" (hit), "h" (head shot) or "k" (kill).
    */
-  public record Input(boolean alive, int health, int shield, String agent, int[] charges, int[] maxCharges, int ammo, int magazine, int spread, String hit) {}
+  public record Input(boolean alive, int health, int shield, String agent, int[] charges, int[] maxCharges, int ammo, int magazine, int spread, String hit, Seed seed) {
+    public Input(boolean alive, int health, int shield, String agent, int[] charges, int[] maxCharges, int ammo, int magazine, int spread, String hit) {
+      this(alive, health, shield, agent, charges, maxCharges, ammo, magazine, spread, hit, null);
+    }
+  }
+
+  /**
+   * What the carrier of the Rift Seed sees: an icon next to the health that pulses (two frames) while standing in a site, and
+   * the planting bar under the crosshair ({@code plant} 0 to 1, drawn only above 0). Null for everyone else.
+   */
+  public record Seed(boolean inSite, boolean pulse, double plant) {}
+
+  /** The pulse of the Seed icon in a site: one frame for this long, then the other. */
+  public static final long PULSE_MS = 400;
 
   private VbHudState() {}
 
@@ -53,6 +66,11 @@ public final class VbHudState {
   /** The crosshair level from what the player is doing. */
   public static int spreadLevel(boolean sneaking, boolean moving, boolean airborne) {
     return airborne ? 3 : sneaking ? 0 : moving ? 2 : 1;
+  }
+
+  /** The spread level to draw, or -1 (no crosshair glyph at all) while a scope overlay is up: the scope has its own reticle. */
+  public static int crosshair(boolean scoped, int spread) {
+    return scoped ? -1 : spread;
   }
 
   /** Ability slots 4 to 7 as (max charges) for the pips: buyable abilities carry up to maxCharges, the signature its own, the ultimate 1. */
@@ -99,8 +117,16 @@ public final class VbHudState {
       number(out, "am", empty ? "bd_r_" : "bd_w_", in.ammo(), 2);
       number(out, "rs", "sd_g_", in.magazine(), 3);
     }
+    // Next to the health: the Rift Seed icon, and the planting bar under the crosshair while the carrier holds.
+    if (in.seed() != null) {
+      out.add(new Glyph("seed", in.seed().pulse() ? "seed_glow" : "seed_on", 0));
+      if (in.seed().plant() > 0) {
+        out.add(new Glyph("plant_track", "plant_track", 0));
+        out.add(new Glyph("plant_bar", "plant_bar", Math.max(1, (int) Math.round(Math.min(1.0, in.seed().plant()) * 255))));
+      }
+    }
     // The middle: crosshair, then the hit marker on top.
-    out.add(new Glyph("xh", "xh_" + Math.max(0, Math.min(3, in.spread())), 0));
+    if (in.spread() >= 0) out.add(new Glyph("xh", "xh_" + Math.min(3, in.spread()), 0));
     if (in.hit() != null) out.add(new Glyph("hit", "hit_" + in.hit(), 0));
     return out;
   }

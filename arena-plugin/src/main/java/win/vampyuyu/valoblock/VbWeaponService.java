@@ -266,7 +266,7 @@ public final class VbWeaponService implements WeaponService, Listener {
    */
   private void look(Player p, Gear g, VbWeapon w, GunState gs, long now) {
     boolean sneaking = p.isSneaking();
-    String want = GunVisual.state(gs.reloading(), gs.sinceShot(now), sneaking, now < g.inspectUntil);
+    String want = GunVisual.state(gs.reloading(), gs.sinceShot(now), sneaking, now < g.inspectUntil, w.zoom());
     if (!want.equals(g.look)) {
       g.look = want;
       WeaponItems.setState(p.getInventory().getItemInMainHand(), want);

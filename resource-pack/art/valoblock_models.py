@@ -331,7 +331,7 @@ def display(fp_t, fp_r, tp_t=(0, 2.5, 1.5), tp_r=(0, -90, 0)):
 
 HIP = display((1.0, 0.0, -6.0), (0, -90, 0))
 # Aim: sights under the crosshair (about 9 units left of the hand origin, 5 up).
-AIM = display((-8.0, 5.0, -6.0), (0, -90, 0), tp_t=(0, 3.2, 2.0))
+AIM = display((-8.0, 3.0, -6.0), (0, -90, 0), tp_t=(0, 3.2, 2.0))
 # Reload: the gun tilts muzzle-up and comes toward the middle so the magazine drop is visible.
 RELOAD = display((-1.0, 1.5, -5.0), (0, -90, 28), tp_r=(0, -90, 20))
 # Inspect: the gun turns to show its side for a second after a swap.
@@ -391,7 +391,8 @@ def definition(name):
             "cases": [{"when": "fire", "model": ref(f"{name}_fire")},
                       {"when": "reload", "model": ref(f"{name}_reload")},
                       {"when": "inspect", "model": ref(f"{name}_inspect")},
-                      {"when": "aim", "model": ref(f"{name}_aim")}],
+                      {"when": "aim", "model": ref(f"{name}_aim")},
+                      {"when": "scope", "model": {"type": "minecraft:empty"}}],  # scoped sniper: nothing in view
             "fallback": ref(f"{name}_3d")}}}
 
 
@@ -419,6 +420,9 @@ def write_weapon(w):
     tex.write_bytes(bs.png(atlas(w["metal"], sum(ord(c) * (i + 1) for i, c in enumerate(name)))))
 
 
+RANGE_MARKS = (22, 40, 58)   # rows below the centre, one pixel high
+
+
 def scope_overlay(width=512, height=288):
     """Full-screen scope: black outside a circle, thin crosshair, a ring. 16:9 because the overlay is stretched."""
     cx, cy, rad = width / 2, height / 2, height * 0.46
@@ -431,11 +435,13 @@ def scope_overlay(width=512, height=288):
             px = (0, 0, 0, 255)
             if r < rad:
                 px = (0, 0, 0, 0)
-                if (abs(dx) < 0.6 or abs(dy) < 0.6) and r > 6:
-                    px = (8, 10, 14, 235)                              # crosshair lines (hollow at the centre)
-                elif abs(r - (rad - 3)) < 1.5:
-                    px = (8, 10, 14, 255)                              # rim of the tube
-                elif r < 2.2:
+                if (abs(dx) < 0.5 or abs(dy) < 0.5) and r > 6:
+                    px = (8, 10, 14, 225)                              # 1 px crosshair lines (hollow at the centre)
+                elif abs(dx) < 3 and (y - height // 2) in RANGE_MARKS:
+                    px = (8, 10, 14, 200)                              # 1 px range marks below the centre
+                elif abs(r - (rad - 3)) < 0.8:
+                    px = (8, 10, 14, 255)                              # thin rim of the tube
+                elif r < 1.6:
                     px = (74, 240, 255, 255)                           # cyan dot
             row.append(px)
         rows.append(row)
