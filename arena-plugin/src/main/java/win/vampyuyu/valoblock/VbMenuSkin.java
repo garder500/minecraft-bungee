@@ -20,6 +20,8 @@ public final class VbMenuSkin {
   /** The tactical map: one shared chrome, then one plan glyph over it (the whole map, or a zone zoomed), see vb_layout.py. */
   public static final char TAC_CHROME = '\uE400', TAC_PLAN = '\uE500', TAC_ZONE = '\uE600', TO_PLAN = '\uE013', FROM_PLAN = '\uE014';
   public static final int PLAN_X = 43, PLAN_W = 90;
+  /** The map vote: a background with the three maps baked in, then the same with a gold ring round map 0, 1 or 2 (VOTE_MAP + 0x100 * map). */
+  public static final char VOTE_NONE = '\uE700', VOTE_MAP = '\uE800';
 
   /** The advance of each space glyph, as the font declares it (a test compares these with the pack). */
   public static int advance(char space) {
@@ -88,6 +90,11 @@ public final class VbMenuSkin {
   public static Component select(int portraitIndex, String title) {
     char portrait = portraitIndex < 0 ? PORTRAIT_NONE : (char) (PORTRAIT_BASE + portraitIndex);
     return compose(glyphs(SELECT, portrait), title);
+  }
+
+  /** The map vote window: {@code picked} is the map index the player voted for, or -1 for none. */
+  public static Component vote(int picked, String title) {
+    return compose(glyphs(picked < 0 ? VOTE_NONE : (char) (VOTE_MAP + 0x100 * picked), (char) 0), title);
   }
 
   public static Component armory(String title) {

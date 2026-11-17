@@ -62,4 +62,16 @@ public class VbMenuSkinTest {
     assertEquals(VbMenuSkin.FONT, ((TextComponent) title.children().get(0)).font());
     assertEquals("Sand Veil  x2", ((TextComponent) title.children().get(1)).content());
   }
+
+  @Test
+  public void theVoteWindowIsAFullBackgroundPerChoiceThenTheTitle() {
+    for (int picked = -1; picked < 3; picked++) {
+      Component title = VbMenuSkin.vote(picked, "Vote for the next map");
+      String run = ((TextComponent) title.children().get(0)).content();
+      char base = picked < 0 ? VbMenuSkin.VOTE_NONE : (char) (VbMenuSkin.VOTE_MAP + 0x100 * picked);
+      assertEquals(VbMenuSkin.TEXT_X, VbMenuSkin.cursorAfter(run, (char) 0));
+      assertEquals(24, run.chars().filter(c -> c >= base && c < base + 24).count());
+      assertEquals(VbMenuSkin.FONT, ((TextComponent) title.children().get(0)).font());
+    }
+  }
 }

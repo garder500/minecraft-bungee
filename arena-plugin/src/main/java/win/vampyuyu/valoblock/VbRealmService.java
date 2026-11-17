@@ -98,13 +98,18 @@ final class VbRealmService {
     for (VbMapService.Instance in : new ArrayList<>(states.keySet())) stopNow(in);
   }
 
-  private void announce(State s) {
-    String text = switch (s.realm) {
+  /** The Realm mechanic of a map in one line (the match announcement and the vote tooltip). */
+  static String mechanic(String mapId) {
+    return switch (mapId) {
       case "hourfall" -> "Time Tide: the gates swap every 30 s, a bell rings 3 s before.";
       case "rootvault" -> "Roots: step off a canopy branch into a root hole to drop into a site. There is no way back up.";
       case "stormbreak" -> "Crouch on a wind pad to ride the wind. The sea is deadly; a gust blows every 45 s.";
       default -> null;
     };
+  }
+
+  private void announce(State s) {
+    String text = mechanic(s.realm);
     if (text == null) return;
     for (Player p : humans(s)) plugin.valoblock.hud.notice(p, Component.text(text, NamedTextColor.GOLD));
   }

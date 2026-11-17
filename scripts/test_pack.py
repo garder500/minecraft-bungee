@@ -465,7 +465,8 @@ class ValoBlockPackTest(unittest.TestCase):
                              ("PORTRAIT_NONE", vb_layout.PORTRAIT_NONE), ("SHIFT_BACK", vb_layout.SHIFT_BACK), ("ROW_BACK", vb_layout.ROW_BACK),
                              ("SEAM", vb_layout.SEAM), ("TO_PORTRAIT", vb_layout.TO_PORTRAIT), ("FROM_PORTRAIT", vb_layout.FROM_PORTRAIT),
                              ("TO_TEXT", vb_layout.TO_TEXT), ("TAC_CHROME", vb_layout.TAC_CHROME_BASE), ("TAC_PLAN", vb_layout.TAC_PLAN_BASE),
-                             ("TAC_ZONE", vb_layout.TAC_ZONE_BASE), ("TO_PLAN", vb_layout.TO_PLAN), ("FROM_PLAN", vb_layout.FROM_PLAN)):
+                             ("TAC_ZONE", vb_layout.TAC_ZONE_BASE), ("TO_PLAN", vb_layout.TO_PLAN), ("FROM_PLAN", vb_layout.FROM_PLAN),
+                             ("VOTE_NONE", vb_layout.VOTE_BASES[0]), ("VOTE_MAP", vb_layout.VOTE_BASES[1])):
             self.assertIn(f"{const} = '" + chr(92) + f"u{value:04X}'", code, const)
         self.assertIn(f"PORTRAIT_W = {vb_layout.PORTRAIT_W}, PORTRAIT_X = {vb_layout.PORTRAIT_X}, TEXT_X = {vb_layout.TEXT_X}", code)
         self.assertIn(f"PLAN_X = {vb_layout.TAC_PLAN_X}, PLAN_W = {vb_layout.TAC_PLAN_PX}", code)
@@ -477,7 +478,7 @@ class ValoBlockPackTest(unittest.TestCase):
             self.assertLessEqual(max(width, height), 256, p["file"])
             tiles[ord(p["chars"][0])] = (p, width, height)
         th = layout.tile_height(vb_layout.GUI_H, vb_layout.ROWS)
-        for base in (vb_layout.SELECT_BASE, vb_layout.ARMORY_BASE, vb_layout.TAC_CHROME_BASE):
+        for base in (vb_layout.SELECT_BASE, vb_layout.ARMORY_BASE, vb_layout.TAC_CHROME_BASE, *vb_layout.VOTE_BASES):
             for r in range(vb_layout.ROWS):
                 for c in range(layout.COLS):
                     provider, width, height = tiles[base + r * layout.COLS + c]
@@ -510,6 +511,12 @@ class ValoBlockPackTest(unittest.TestCase):
         self.assertEqual(x, vb_layout.TAC_PLAN_X)
         x += vb_layout.TAC_PLAN_PX + 1 + vb_layout.ADVANCES[vb_layout.FROM_PLAN]
         self.assertEqual(x, vb_layout.TEXT_X)
+        # the vote: the picked backgrounds are VOTE_MAP + 0x100 * map (VbMenuSkin#vote), the Realm colours match the tooltips
+        self.assertEqual(list(vb_layout.VOTE_BASES[1:]), [vb_layout.VOTE_BASES[1] + 0x100 * k for k in range(len(vb_layout.TAC_MAPS))])
+        self.assertEqual(sorted(vb_layout.VOTE_REALM), sorted(vb_layout.TAC_MAPS))
+        vote_java = self.java("MapVoteMenu.java")
+        for mid, colour in vb_layout.VOTE_REALM.items():
+            self.assertIn(f'"{mid}", "#{colour}"', vote_java, mid)
         for sprite in ("tac_dim", "tac_mark", "tac_pick"):
             self.assertTrue((VALO / f"assets/vampyuyu/items/valoblock/{sprite}.json").is_file(), sprite)
             self.assertEqual(png_size(VALO / f"assets/vampyuyu/textures/item/valoblock/{sprite}.png"), (16, 16))

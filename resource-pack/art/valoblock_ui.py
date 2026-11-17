@@ -250,6 +250,8 @@ def menu_font():
     providers += cut_background("vb_armory", vb.ARMORY_BASE, armory_background())
     import valoblock_tacmap as tac
     providers += tac.providers(sys.modules[__name__])
+    import valoblock_vote as vote
+    providers += vote.providers(sys.modules[__name__])
     figures = [(vb.PORTRAIT_BASE + i, a) for i, a in enumerate(agents())] + [(vb.PORTRAIT_NONE, None)]
     for code, a in figures:
         name = f"vb_portrait_{a['id'] if a else 'none'}"

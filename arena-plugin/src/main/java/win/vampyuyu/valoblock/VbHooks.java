@@ -21,14 +21,16 @@ final class VbHooks implements GameHooks {
   public boolean ownsInventory(ArenaSession s, org.bukkit.inventory.Inventory inventory) {
     var holder = inventory.getHolder();
     // Every ValoBlock window must be listed: the arena cancels the opening of any other inventory.
-    return holder instanceof AgentSelectMenu || holder instanceof ArmoryMenu || holder instanceof TacMapService.Menu;
+    return holder instanceof AgentSelectMenu || holder instanceof ArmoryMenu || holder instanceof TacMapService.Menu
+        || holder instanceof MapVoteMenu;
   }
 
   /** Players reopen their menus by command (/vb agent, /vb buy). */
   @Override
   public boolean allowsCommand(String command) {
     // Everyone: reopen their menus. Admins (VbCommand checks the permission): run the match they are playing in.
-    return command.equals("/vb agent") || command.equals("/vb buy")
+    return command.equals("/vb agent") || command.equals("/vb buy") || command.equals("/vb vote")
+        || command.equals("/vb map use") || command.startsWith("/vb map use ") // an admin forces the map for the next match (the vote is for everyone)
         || command.equals("/vb start") || command.equals("/vb stop") || command.equals("/vb status");
   }
 
@@ -110,6 +112,7 @@ final class VbHooks implements GameHooks {
   public void onLeave(ArenaSession s, org.bukkit.entity.Player p) {
     java.util.UUID id = p.getUniqueId();
     if (module.menus != null) module.menus.forget(id);
+    if (module.votes != null) module.votes.left(s, p);
     if (s.game instanceof VbMatch m) {
       m.remove(id);
       module.hud.left(m, id);
@@ -122,6 +125,7 @@ final class VbHooks implements GameHooks {
 
   @Override
   public void onStop(ArenaSession s, Throwable error) {
+    if (module.votes != null) module.votes.release(s);
     module.map.release(s);
   }
 }
