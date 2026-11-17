@@ -105,6 +105,11 @@ public final class VbPack implements Listener {
     }
   }
 
+  /** The player holds the ValoBlock pack and the client confirmed it loaded (menus only open after this). */
+  public boolean loaded(UUID player) {
+    return tracker.loaded(player);
+  }
+
   public boolean holds(UUID player) {
     return tracker.holds(player);
   }

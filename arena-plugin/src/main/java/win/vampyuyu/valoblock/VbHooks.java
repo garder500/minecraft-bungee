@@ -23,6 +23,12 @@ final class VbHooks implements GameHooks {
     return holder instanceof AgentSelectMenu || holder instanceof ArmoryMenu;
   }
 
+  /** Players reopen their menus by command (/vb agent, /vb buy). */
+  @Override
+  public boolean allowsCommand(String command) {
+    return command.equals("/vb agent") || command.equals("/vb buy");
+  }
+
   /** The HUD shows the phase and the result; the engine's chat lines talk about the compass (Werewolf). */
   @Override
   public boolean announcesInChat() {
@@ -42,6 +48,7 @@ final class VbHooks implements GameHooks {
   @Override
   public void onJoin(ArenaSession s, org.bukkit.entity.Player p) {
     VbPack pack = module.pack;
+    if (module.menus != null) module.menus.forget(p.getUniqueId()); // a join or rejoin is offered the menu again
     if (pack != null) pack.sendSoon(p);
     // The lobby spawn may sit inside blocks (a map built over it): lift the player to the nearest safe spot.
     org.bukkit.Location here = p.getLocation();
@@ -80,6 +87,7 @@ final class VbHooks implements GameHooks {
       module.hud.clear(m);
       module.agents.matchEnded(m);
       for (java.util.UUID id : m.participants()) {
+        if (module.menus != null) module.menus.forget(id);
         module.weapons.clear(id);
         module.agents.restore(id);
       }
@@ -98,6 +106,7 @@ final class VbHooks implements GameHooks {
   @Override
   public void onLeave(ArenaSession s, org.bukkit.entity.Player p) {
     java.util.UUID id = p.getUniqueId();
+    if (module.menus != null) module.menus.forget(id);
     if (s.game instanceof VbMatch m) {
       m.remove(id);
       module.hud.left(m, id);
