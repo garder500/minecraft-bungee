@@ -36,7 +36,21 @@ public final class VbNameTags {
     return viewerSquad == bodySquad;
   }
 
-  public synchronized void sync(ValoBlockModule module, VbMatch m, long now) {
+  private final java.util.concurrent.atomic.AtomicLong queuedAt = new java.util.concurrent.atomic.AtomicLong();
+
+  /** Called by the game clock (not the server thread): scoreboards and entity visibility are changed on the server thread. */
+  public void sync(ValoBlockModule module, VbMatch m, long now) {
+    if (Bukkit.isPrimaryThread()) {
+      syncNow(module, m);
+      return;
+    }
+    long wall = System.currentTimeMillis();
+    long last = queuedAt.get();
+    if (wall - last < EVERY_MS || !queuedAt.compareAndSet(last, wall)) return;
+    Bukkit.getScheduler().runTask(module.plugin, () -> syncNow(module, m));
+  }
+
+  private synchronized void syncNow(ValoBlockModule module, VbMatch m) {
     long wall = System.currentTimeMillis();
     Board b = boards.get(m);
     if (b != null && wall - b.last < EVERY_MS) return;
@@ -86,7 +100,12 @@ public final class VbNameTags {
   }
 
   /** One player leaves the match: their old scoreboard comes back. */
-  public synchronized void left(VbMatch m, Player p) {
+  public void left(ValoBlockModule module, VbMatch m, Player p) {
+    if (!Bukkit.isPrimaryThread()) Bukkit.getScheduler().runTask(module.plugin, () -> left(module, m, p));
+    else leftNow(m, p);
+  }
+
+  private synchronized void leftNow(VbMatch m, Player p) {
     Board b = boards.get(m);
     if (b == null) return;
     for (Team t : b.teams) t.removeEntry(p.getName());
@@ -95,7 +114,12 @@ public final class VbNameTags {
   }
 
   /** The match is over: every player gets their scoreboard back, the teams go. */
-  public synchronized void end(VbMatch m) {
+  public void end(ValoBlockModule module, VbMatch m) {
+    if (!Bukkit.isPrimaryThread()) Bukkit.getScheduler().runTask(module.plugin, () -> endNow(m));
+    else endNow(m);
+  }
+
+  private synchronized void endNow(VbMatch m) {
     Board b = boards.remove(m);
     if (b == null) return;
     for (Map.Entry<UUID, Scoreboard> e : b.previous.entrySet()) {
