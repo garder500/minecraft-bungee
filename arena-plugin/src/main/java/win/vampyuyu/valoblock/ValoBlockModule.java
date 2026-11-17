@@ -170,6 +170,7 @@ public final class ValoBlockModule {
   /** The second resource pack: offered on match join, taken back on leave (null when not configured). */
   public void enablePack() {
     pack = VbPack.load(plugin);
+    VbQuickActions.install(plugin, plugin.serverId);
   }
 
   /** Plugin disable: skins and temporary blocks back, bot bodies gone. */

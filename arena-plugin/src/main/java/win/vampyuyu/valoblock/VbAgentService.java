@@ -327,6 +327,16 @@ public final class VbAgentService implements AgentService, Listener {
     return null;
   }
 
+  @Override
+  public String openTacticalMap(Player p, VbMatch m) {
+    int slot = AgentItems.slotOf(p.getInventory().getItemInMainHand());
+    AgentKit kit = kits.get(p.getUniqueId());
+    VbAbility ab = kit == null || slot < 0 ? null : kit.agent().ability(slot);
+    if (ab == null || TacTargeting.of(ab.id()) == null) return VbQuickActions.MAP_HINT;
+    use(p, m, slot);
+    return null;
+  }
+
   private void use(Player p, VbMatch m, int slot) {
     use(p, m, slot, null);
   }

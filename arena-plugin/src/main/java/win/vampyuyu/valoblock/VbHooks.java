@@ -25,11 +25,11 @@ final class VbHooks implements GameHooks {
         || holder instanceof MapVoteMenu;
   }
 
-  /** Players reopen their menus by command (/vb agent, /vb buy). */
+  /** Players reopen their menus by command (/vb agent, /vb buy, /vb tac, Quick Actions key). */
   @Override
   public boolean allowsCommand(String command) {
     // Everyone: reopen their menus. Admins (VbCommand checks the permission): run the match they are playing in.
-    return command.equals("/vb agent") || command.equals("/vb buy") || command.equals("/vb vote")
+    return command.equals("/vb agent") || command.equals("/vb buy") || command.equals("/vb vote") || command.equals("/vb tac")
         || command.equals("/vb map use") || command.startsWith("/vb map use ") // an admin forces the map for the next match (the vote is for everyone)
         || command.equals("/vb start") || command.equals("/vb stop") || command.equals("/vb status");
   }

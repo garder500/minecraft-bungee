@@ -55,7 +55,7 @@ public final class ArmoryMenu implements InventoryHolder {
       String name = VbArmoryLayout.TABS[i];
       int count = VbArmoryLayout.weaponsOf(i, VbData.weapons().all()).size();
       String sprite = "tab_" + name.toLowerCase(java.util.Locale.ROOT) + (i == tab ? "_sel" : "");
-      inv.setItem(VbArmoryLayout.tab(i), AgentItems.cell(sprite, List.of(new AgentText.Line(name, i == tab ? AgentText.GOLD : "#eef0f4"), new AgentText.Line(count + (count == 1 ? " weapon" : " weapons"), AgentText.GRAY)), "tab:" + i, false));
+      inv.setItem(VbArmoryLayout.tab(i), AgentItems.cell(sprite, List.of(new AgentText.Line(name, i == tab ? AgentText.GOLD : "#eef0f4"), new AgentText.Line(count + (count == 1 ? " weapon" : " weapons"), AgentText.GRAY), new AgentText.Line(VbQuickActions.TIP, AgentText.GRAY)), "tab:" + i, false));
     }
     List<VbWeapon> cards = VbArmoryLayout.weaponsOf(tab, VbData.weapons().all());
     for (int i = 0; i < cards.size(); i++) place(inv, VbArmoryLayout.cardSlots(i), cards.get(i), m, loadout, id);
