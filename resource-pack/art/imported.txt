@@ -24,7 +24,10 @@ armor/void_helmet
 armor/void_helmet_3d
 armor/void_leggings
 equipment/bronze
+equipment/cinder_starcore
 equipment/ember
+equipment/frost_starcore
+equipment/grove_starcore
 equipment/rime
 equipment/starcore
 equipment/starcore_asset

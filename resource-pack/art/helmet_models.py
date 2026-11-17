@@ -25,14 +25,15 @@ def _h(hexes):
     return tuple(tuple(int(h[i:i + 2], 16) for i in (1, 3, 5)) for h in hexes.split())
 
 
-# Realm palettes (shadow, base, light, highlight, glow) from the lore bible: bronze = Citadel of Golden Sands,
-# rime = Frozen Heights, ember = Cracked Ashes, void = Ethereal Necropolis, starcore = the Astral Interiority.
+# Realm palettes (shadow, base, light, highlight, glow), the same as the worn armour (armor_layers.py): bronze = Flux
+# machinery, rime = Frozen Heights, ember = Cracked Ashes obsidian, void = Ethereal Necropolis with a pink rift eye,
+# starcore = Citadel gold with a turquoise star.
 REALM = {
-    "bronze": _h("#5a3a12 #a8742a #f2c14e #fff1b0 #3fb6a8"),
+    "bronze": _h("#4a2a12 #7a4a1e #c98442 #f2c14e #4af0ff"),
     "rime": _h("#1f3557 #3b6fa8 #7fc8e8 #e6f7ff #b6a8ff"),
-    "ember": _h("#120a16 #5a2a2a #c8461e #ff8a2a #ffd36a"),
-    "void": _h("#241f3a #4a4570 #9c95c8 #e8e4ff #6affd8"),
-    "starcore": _h("#0e0a1a #3a1a6a #8a4aff #e0c8ff #ff4a8a"),
+    "ember": _h("#120a16 #2a1a2e #4a3550 #ff8a2a #ffd36a"),
+    "void": _h("#15121f #241f3a #4a4570 #9c95c8 #ff4a8a"),
+    "starcore": _h("#5a3a12 #a8742a #f2c14e #fff1b0 #3fb6a8"),
 }
 OUTLINE = (20, 15, 24)
 # glow pixels of the Realm motif on the plate: ashes crack, frost eye, sand clock, soul flame, singularity spark
