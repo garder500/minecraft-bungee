@@ -26,7 +26,9 @@ final class VbHooks implements GameHooks {
   /** Players reopen their menus by command (/vb agent, /vb buy). */
   @Override
   public boolean allowsCommand(String command) {
-    return command.equals("/vb agent") || command.equals("/vb buy");
+    // Everyone: reopen their menus. Admins (VbCommand checks the permission): run the match they are playing in.
+    return command.equals("/vb agent") || command.equals("/vb buy")
+        || command.equals("/vb start") || command.equals("/vb stop") || command.equals("/vb status");
   }
 
   /** The HUD shows the phase and the result; the engine's chat lines talk about the compass (Werewolf). */
