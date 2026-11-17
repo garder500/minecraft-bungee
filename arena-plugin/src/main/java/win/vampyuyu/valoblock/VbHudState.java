@@ -55,6 +55,11 @@ public final class VbHudState {
     return airborne ? 3 : sneaking ? 0 : moving ? 2 : 1;
   }
 
+  /** The spread level to draw, or -1 (no crosshair glyph at all) while a scope overlay is up: the scope has its own reticle. */
+  public static int crosshair(boolean scoped, int spread) {
+    return scoped ? -1 : spread;
+  }
+
   /** Ability slots 4 to 7 as (max charges) for the pips: buyable abilities carry up to maxCharges, the signature its own, the ultimate 1. */
   public static int maxCharges(VbAbility ab) {
     return switch (ab.kind()) {
@@ -100,7 +105,7 @@ public final class VbHudState {
       number(out, "rs", "sd_g_", in.magazine(), 3);
     }
     // The middle: crosshair, then the hit marker on top.
-    out.add(new Glyph("xh", "xh_" + Math.max(0, Math.min(3, in.spread())), 0));
+    if (in.spread() >= 0) out.add(new Glyph("xh", "xh_" + Math.min(3, in.spread()), 0));
     if (in.hit() != null) out.add(new Glyph("hit", "hit_" + in.hit(), 0));
     return out;
   }

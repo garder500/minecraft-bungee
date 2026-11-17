@@ -43,6 +43,12 @@
       "type": "minecraft:model",
       "model": "vampyuyu:item/valoblock/bronzite_carbine_aim"
      }
+    },
+    {
+     "when": "scope",
+     "model": {
+      "type": "minecraft:empty"
+     }
     }
    ],
    "fallback": {
