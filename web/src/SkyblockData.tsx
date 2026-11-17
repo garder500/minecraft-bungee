@@ -170,11 +170,16 @@ function Field({
 
 export function SkyblockData({
   csrf,
-  onError,
+  onError: report,
 }: {
   csrf: string;
   onError: (error: unknown) => void;
 }) {
+  // The shell passes a new callback on every render (its server list refreshes every 5 s): a stable wrapper keeps
+  // the effects below from reloading the table, clearing the rows and closing the editor each time.
+  const reportRef = useRef(report);
+  reportRef.current = report;
+  const onError = useCallback((e: unknown) => reportRef.current(e), []);
   const confirm = useConfirm();
   const [server, setServer] = useState<(typeof SERVERS)[number]>("survival");
   const [tab, setTab] = useState<"data" | "audit">("data");
