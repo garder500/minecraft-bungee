@@ -275,7 +275,7 @@ final class AbilitiesB {
     Effects.Fx field = e.fx.add(c.m(), c.id(), c.ticks("seconds", 8), age -> {
       if (age % 2 == 0) {
         AbilityEnv.ring(centre, r * (1 - (age % 40) / 40.0), Particle.BUBBLE, 24);
-        centre.getWorld().spawnParticle(Particle.SQUID_INK, centre, 4, 0.3, 0.3, 0.3, 0.01);
+        centre.getWorld().spawnParticle(Particle.SQUID_INK, centre, 4, 0.3, 0.3, 0.3, 0.01, null, true);
       }
       for (LivingEntity v : e.enemies(c.m(), c.id())) {
         Location l = v.getLocation().add(0, 1, 0);
@@ -336,8 +336,8 @@ final class AbilitiesB {
       Location centre = land.clone();
       double r = c.n("radius", 4);
       Effects.Fx f = e.fx.add(c.m(), c.id(), c.ticks("seconds", 15), age -> {
-        if (age % 4 == 0) centre.getWorld().spawnParticle(Particle.CLOUD, centre.clone().add(0, 0.3, 0), 0, 0, 1, 0, 0.08); // grains rise upward
-        if (age % 6 == 0) centre.getWorld().spawnParticle(Particle.DUST, centre.clone().add(0, r / 2, 0), 10, r / 2, r / 2, r / 2, 0, new Particle.DustOptions(Color.fromRGB(0xD8B868), 1.4f));
+        if (age % 4 == 0) centre.getWorld().spawnParticle(Particle.CLOUD, centre.clone().add(0, 0.3, 0), 0, 0, 1, 0, 0.08, null, true); // grains rise upward
+        if (age % 6 == 0) centre.getWorld().spawnParticle(Particle.DUST, centre.clone().add(0, r / 2, 0), 10, r / 2, r / 2, r / 2, 0, new Particle.DustOptions(Color.fromRGB(0xD8B868), 1.4f), true);
         return true;
       });
       e.cloud(f, centre, Material.SAND, r);
@@ -395,7 +395,7 @@ final class AbilitiesB {
       Location centre = land.clone();
       double r = c.n("radius", 3.5);
       Effects.Fx f = e.fx.add(c.m(), c.id(), c.ticks("seconds", 10), age -> {
-        if (age % 4 == 0) centre.getWorld().spawnParticle(Particle.DUST, centre.clone().add(0, r / 2, 0), 8, r / 2, r / 2, r / 2, 0, new Particle.DustOptions(Color.fromRGB(0x6A8A2A), 1.5f));
+        if (age % 4 == 0) centre.getWorld().spawnParticle(Particle.DUST, centre.clone().add(0, r / 2, 0), 8, r / 2, r / 2, r / 2, 0, new Particle.DustOptions(Color.fromRGB(0x6A8A2A), 1.5f), true);
         if (age % 20 == 0)
           for (LivingEntity v : e.enemies(c.m(), c.id()))
             if (v.getLocation().add(0, 1, 0).distance(centre.clone().add(0, r / 2, 0)) <= r) e.combat.drain(c.m(), v, (int) c.n("dps", 6));
