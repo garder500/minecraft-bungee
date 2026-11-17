@@ -158,3 +158,21 @@ but these tickets are required at integration:
   with a shulker view, number-key/off-hand swaps and the drag guard are untested; bundles/shulkers are found by the scan.
 * A dropped item that falls into the void or is `/kill`ed is lost; `/wings claim` is the recovery path.
 * Energy refill uses the client's on-ground flag.
+
+## Worn look: the 3D display (not the elytra layer)
+
+The elytra equipment layer (`equipment/wings*.json`, `textures/entity/equipment/wings/*.png`) is a fully transparent
+texture: flight mechanics are untouched, only the look moved. While the Wings are worn, `WingsDisplay` keeps one
+tagged `ItemDisplay` per wearer, mounted on the player as a passenger and showing `vampyuyu:wings/worn_tierN_<folded|spread>`
+(feather-by-feather boxes from `resource-pack/art/wings_art.py`, pivot = shoulder blades).
+
+- States (`WingsPose`): folded standing, spread when gliding or flying, spread and flapping while gliding (the flap
+  scales the span through an interpolated transformation, one flip every 12 ticks). Gliding and swimming lean the display
+  about the feet like the client leans the body (`WingsMath.translation`).
+- Bookkeeping (`WingsRig`): one display per wearer, nothing is sent while the look is unchanged, removed on unequip,
+  quit, world change, death, spectator, invisibility, `vanished` metadata and plugin disable; leftovers (PDC
+  `vampyuyu:sb_wings_display`, scoreboard tag `vampyuyu_wings_display`) are purged at start.
+- First person: the pivot sits 0.22 behind the body axis, so the wings are behind the camera. Looking steeply down the
+  lowest feathers would enter the view cone, so the display is hidden from its own wearer from 20 degrees of downward pitch
+  (back at 14). `WingsMath.inView` and `WingsPoseTest` check this; the model envelope is asserted by the art script.
+- The item display renderer turns the model half a turn, so model +z is behind the player. Unverified until the real client run.

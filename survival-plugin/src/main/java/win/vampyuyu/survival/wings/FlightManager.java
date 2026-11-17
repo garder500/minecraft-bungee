@@ -108,11 +108,18 @@ public final class FlightManager implements Listener {
     private final Map<UUID, Long> noFallUntil = new HashMap<>();
     private Scheduler.Handle task;
     private long ticks;
+    private final WingsDisplay display;
 
     public FlightManager(Core core, WingsService service, WingsSettings settings) {
         this.core = core;
         this.service = service;
         this.settings = settings;
+        this.display = new WingsDisplay(core);
+    }
+
+    /** The worn 3D look (a listener, registered by the feature). */
+    public WingsDisplay display() {
+        return display;
     }
 
     void settings(WingsSettings settings) {
@@ -120,11 +127,13 @@ public final class FlightManager implements Listener {
     }
 
     public void start() {
+        display.purgeLeftovers();
         task = core.scheduler().repeating(20, TICK_PERIOD, this::tick);
     }
 
     /** Stops the task and restores every player we touched (plugin disable). */
     public void shutdown() {
+        display.shutdown();
         if (task != null) {
             task.cancel();
             task = null;
@@ -233,6 +242,7 @@ public final class FlightManager implements Listener {
         State st = states.get(id);
         int level = service.wornLevel(p);
         if (level == 0) {
+            display.detach(id);
             if (st != null) {
                 if (st.ownsFlight) {
                     stop(p, st, WingsSettings.Reason.UNEQUIP, now);
@@ -316,6 +326,12 @@ public final class FlightManager implements Listener {
                 && noGroundBelow(p);
         }
         updateBar(p, st, verdict, now);
+        try {
+            display.tick(p, level, flying, now);
+        } catch (RuntimeException e) {
+            display.detach(id);
+            core.debug("Wings display tick failed for " + p.getName() + ": " + e);
+        }
     }
 
     private static boolean glideRefused(FlightRules.Verdict v) {
