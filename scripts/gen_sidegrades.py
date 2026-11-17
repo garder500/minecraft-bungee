@@ -15,8 +15,7 @@ STARCORE = {  # slot: (might, ward, vitality)
     "helmet": (16, 69, 82), "chestplate": (25, 104, 123), "leggings": (21, 86, 103), "boots": (14, 61, 72)}
 MATERIAL = {"helmet": "NETHERITE_HELMET", "chestplate": "NETHERITE_CHESTPLATE", "leggings": "NETHERITE_LEGGINGS",
             "boots": "NETHERITE_BOOTS"}
-EQUIP = {"helmet": ("HEAD", None), "chestplate": ("CHEST", "vampyuyu:starcore"), "leggings": ("LEGS", "vampyuyu:starcore"),
-         "boots": ("FEET", "vampyuyu:starcore")}
+EQUIP = {"helmet": ("HEAD", None), "chestplate": ("CHEST", True), "leggings": ("LEGS", True), "boots": ("FEET", True)}
 # the Starcore pieces' own rows, to copy the durability
 SETS = {
     "cinder_starcore": dict(
@@ -66,7 +65,7 @@ def items():
             slot_eq, asset = EQUIP[slot]
             id_ = f"{name}_{slot}"
             title = f"{s['title']} {slot.capitalize()}"
-            asset_sql = "NULL" if asset is None else f"'{asset}'"
+            asset_sql = "NULL" if asset is None else f"'vampyuyu:{name}'"
             out.append(f"INSERT INTO item_def (id, owner, position, name, rarity, material, item_model, type_label, damage, unbreakable, "
                        f"hide_flags, glint, max_stack, equip_slot, equip_asset, element, tier) VALUES ('{id_}', 'quarry', {s['position'] + n}, "
                        f"'{title}', 'MYTHIC', '{MATERIAL[slot]}', 'vampyuyu:armor/starcore_{slot}', '{slot.upper()}', NULL, 0, 1, 0, NULL, "
