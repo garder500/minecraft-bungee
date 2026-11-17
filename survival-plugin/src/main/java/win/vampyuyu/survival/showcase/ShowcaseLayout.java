@@ -180,7 +180,7 @@ public final class ShowcaseLayout {
         return clean.isEmpty() ? clean : Character.toUpperCase(clean.charAt(0)) + clean.substring(1).toLowerCase(Locale.ROOT);
     }
 
-    /** The static blocks: floor with a sea lantern grid, walls, end wall, pedestals and every sign. */
+    /** The static blocks: floor with a sea lantern grid, walls, end wall, roof, pedestals and every sign. */
     public BlockPlan plan() {
         BlockPlan plan = new BlockPlan();
         for (int x = 0; x <= length; x++) {
@@ -191,6 +191,12 @@ public final class ShowcaseLayout {
         plan.fill(-1, 0, -1, length + 1, WALL_HEIGHT, -1, Material.BLACK_CONCRETE);
         plan.fill(-1, 0, WIDTH, length + 1, WALL_HEIGHT, WIDTH, Material.BLACK_CONCRETE);
         plan.fill(length + 1, 0, 0, length + 1, WALL_HEIGHT, WIDTH - 1, Material.BLACK_CONCRETE);
+        // closed roof (a lantern grid like the floor) so the hall is no longer open to the sky
+        for (int x = -1; x <= length + 1; x++) {
+            for (int z = -1; z <= WIDTH; z++) {
+                plan.set(x, WALL_HEIGHT + 1, z, x % 3 == 1 && z % 3 == 1 ? Material.SEA_LANTERN : Material.BLACK_CONCRETE);
+            }
+        }
         for (BlockSlot slot : blocks) {
             plan.set(slot.x(), 1, slot.z(), Material.POLISHED_BLACKSTONE);
             plan.set(slot.x(), slot.y(), slot.z(), slot.entry().hitbox());
