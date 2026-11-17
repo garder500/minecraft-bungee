@@ -1254,8 +1254,9 @@ def valoblock_scenario(ctx):
     me = next(p["uuid"] for p in state["onlinePlayers"] if p["name"] == "E2EBot")
     rcon = Rcon()
     say("maps: " + vb(rcon, "map list").replace("\n", " | "))
-    if ctx.get("rules", "").startswith("map="):  # --rules map=stormbreak plays another map
-        say(vb(rcon, "map use " + ctx["rules"].split("=", 1)[1]))
+    # The next map is random (a vote) among the three themed maps: the default checks below are Hourfall's (spawn barrier row, corner
+    # wall, Time Tide gates), so Hourfall is pinned; --rules map=stormbreak plays another map and skips them.
+    say(vb(rcon, "map use " + (ctx["rules"].split("=", 1)[1] if ctx.get("rules", "").startswith("map=") else "hourfall")))
     reloads = client_log.read_text(errors="replace").count("Reloading ResourceManager")
     api("POST", "/arenas/action", {"action": "arena-join", "arenaId": "e2e", "uuid": me})
     # Joining the arena adds the second pack (ValoBlock guns, agents, scope): accept its prompt, wait for the reload.
