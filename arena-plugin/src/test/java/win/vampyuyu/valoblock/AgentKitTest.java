@@ -24,7 +24,7 @@ public class AgentKitTest {
       assertEquals(VbAbility.Kind.BUY, a.ability(5).kind());
       assertEquals(VbAbility.Kind.SIGNATURE, a.ability(6).kind());
       assertEquals(VbAbility.Kind.ULTIMATE, a.ability(7).kind());
-      assertFalse("skins are TODO", a.hasSkin());
+      assertTrue(a.name() + " ships a signed skin (scripts/sign_skins.py)", a.hasSkin());
     }
     VbAgent cinder = VbData.agents().get("cinder");
     assertEquals("Slag Pot", cinder.ability(4).name());
