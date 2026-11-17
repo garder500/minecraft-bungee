@@ -12,34 +12,35 @@ import win.vampyuyu.survival.wings.WingsPose.Stance;
 import win.vampyuyu.survival.wings.WingsPose.Variant;
 
 public class WingsRigTest {
-    /** Records calls like the entity side would. */
+    /** Records calls like the entity side would: one entity per (owner, side). */
     static final class Fake implements WingsRig.Backend {
-        final Set<UUID> live = new HashSet<>();
+        final Set<String> live = new HashSet<>();
         final List<String> log = new ArrayList<>();
         boolean failSpawn;
+        boolean failRightSpawn;
         int lastTicks;
 
-        public boolean spawn(UUID o, WingsRig.Desired d) {
+        public boolean spawn(UUID o, WingsPose.Side s, WingsRig.Desired d) {
             log.add("spawn");
-            if (failSpawn) {
+            if (failSpawn || failRightSpawn && s == WingsPose.Side.RIGHT) {
                 return false;
             }
-            live.add(o);
+            live.add(o + "/" + s);
             return true;
         }
 
-        public void update(UUID o, WingsRig.Desired p, WingsRig.Desired n, int ticks) {
+        public void update(UUID o, WingsPose.Side s, WingsRig.Desired p, WingsRig.Desired n, int ticks) {
             log.add("update");
             lastTicks = ticks;
         }
 
-        public void remove(UUID o) {
+        public void remove(UUID o, WingsPose.Side s) {
             log.add("remove");
-            live.remove(o);
+            live.remove(o + "/" + s);
         }
 
-        public boolean alive(UUID o) {
-            return live.contains(o);
+        public boolean alive(UUID o, WingsPose.Side s) {
+            return live.contains(o + "/" + s);
         }
     }
 
@@ -58,8 +59,8 @@ public class WingsRigTest {
         assertFalse(rig.sync(a, d(Variant.FOLDED, 0, 10, 0, false)));
         assertEquals(1, rig.spawns());
         assertEquals(0, rig.updates());
-        assertEquals(List.of("spawn"), f.log);
-        assertEquals(1, f.live.size());
+        assertEquals(List.of("spawn", "spawn"), f.log);  // the pair: left and right
+        assertEquals(2, f.live.size());
     }
 
     @Test
@@ -73,7 +74,8 @@ public class WingsRigTest {
         assertTrue(rig.sync(a, d(Variant.SPREAD, 0, 20, 0, false)));
         assertEquals(1, rig.spawns());
         assertEquals(2, rig.updates());
-        assertEquals(1, f.live.size());
+        assertEquals(2, f.live.size());  // still one pair, every update touched both wings
+        assertEquals(4, f.log.stream().filter("update"::equals).count());
     }
 
     @Test
@@ -100,7 +102,7 @@ public class WingsRigTest {
         assertFalse(rig.sync(a, null));
         assertFalse(rig.detach(a));
         assertEquals(0, f.live.size());
-        assertEquals(1, f.log.stream().filter("remove"::equals).count());
+        assertEquals(2, f.log.stream().filter("remove"::equals).count());  // both wings, once
     }
 
     @Test
@@ -112,8 +114,32 @@ public class WingsRigTest {
         f.live.clear();  // chunk unloaded, dismounted, killed...
         assertTrue(rig.sync(a, d(Variant.FOLDED, 0, 0, 0, false)));
         assertEquals(2, rig.spawns());
-        assertEquals(1, f.live.size());
+        assertEquals(2, f.live.size());
         assertTrue(rig.attached(a));
+    }
+
+    @Test
+    public void oneLostWingReplacesTheWholePair() {
+        Fake f = new Fake();
+        WingsRig rig = new WingsRig(f);
+        UUID a = UUID.randomUUID();
+        rig.sync(a, d(Variant.SPREAD, 0, 0, 90, false));
+        f.live.remove(a + "/" + WingsPose.Side.RIGHT);  // one of the two was killed
+        assertTrue(rig.sync(a, d(Variant.SPREAD, 0, 0, 90, false)));
+        assertEquals(2, rig.spawns());
+        assertEquals(2, f.live.size());
+        assertEquals(Set.of(a + "/LEFT", a + "/RIGHT"), f.live);
+    }
+
+    @Test
+    public void aFailedSecondWingLeavesNoLoneWing() {
+        Fake f = new Fake();
+        f.failRightSpawn = true;
+        WingsRig rig = new WingsRig(f);
+        UUID a = UUID.randomUUID();
+        assertFalse(rig.sync(a, d(Variant.SPREAD, 0, 0, 90, false)));
+        assertFalse(rig.attached(a));
+        assertTrue("the left wing is removed again", f.live.isEmpty());
     }
 
     @Test
@@ -134,7 +160,7 @@ public class WingsRigTest {
         for (int i = 0; i < 5; i++) {
             rig.sync(UUID.randomUUID(), d(Variant.FOLDED, 0, i, 0, false));
         }
-        assertEquals(5, f.live.size());
+        assertEquals(10, f.live.size());
         rig.detachAll();
         assertEquals(0, f.live.size());
         assertTrue(rig.owners().isEmpty());

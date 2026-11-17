@@ -162,17 +162,35 @@ but these tickets are required at integration:
 ## Worn look: the 3D display (not the elytra layer)
 
 The elytra equipment layer (`equipment/wings*.json`, `textures/entity/equipment/wings/*.png`) is a fully transparent
-texture: flight mechanics are untouched, only the look moved. While the Wings are worn, `WingsDisplay` keeps one
-tagged `ItemDisplay` per wearer, mounted on the player as a passenger and showing `vampyuyu:wings/worn_tierN_<folded|spread>`
-(feather-by-feather boxes from `resource-pack/art/wings_art.py`, pivot = shoulder blades).
+texture: flight mechanics are untouched, only the look moved. While the Wings are worn, `WingsDisplay` keeps a PAIR of
+tagged `ItemDisplay`s per wearer (one per wing, `WingsPose.Side` LEFT and RIGHT), mounted on the player as passengers and
+showing `vampyuyu:wings/worn_tierN_<folded|spread>_<left|right>` (one model per wing, from `resource-pack/art/wings_art.py`).
 
-- States (`WingsPose`): folded standing, spread when gliding or flying, spread and flapping while gliding (the flap
-  scales the span through an interpolated transformation, one flip every 12 ticks). Gliding and swimming lean the display
-  about the feet like the client leans the body (`WingsMath.translation`).
-- Bookkeeping (`WingsRig`): one display per wearer, nothing is sent while the look is unchanged, removed on unequip,
-  quit, world change, death, spectator, invisibility, `vanished` metadata and plugin disable; leftovers (PDC
-  `vampyuyu:sb_wings_display`, scoreboard tag `vampyuyu_wings_display`) are purged at start.
-- First person: the pivot sits 0.22 behind the body axis, so the wings are behind the camera. Looking steeply down the
-  lowest feathers would enter the view cone, so the display is hidden from its own wearer from 20 degrees of downward pitch
-  (back at 14). `WingsMath.inView` and `WingsPoseTest` check this; the model envelope is asserted by the art script.
-- The item display renderer turns the model half a turn, so model +z is behind the player. Unverified until the real client run.
+- States (`WingsPose`): folded standing, spread when gliding or flying, spread and flapping while gliding. Gliding and
+  swimming lean the pair about the feet like the client leans the body (display left rotation, `WingsMath.translation`).
+- Spread wings: each model has its root at the model centre, which is the display pivot, and the display sits at the
+  shoulder, 0.3 block each side of the spine (`WingsMath.ROOT_X`). The dihedral, sweep and flap are the display's RIGHT
+  rotation (`WingsMath.wingRotation`, applied about the wing's own root, before the lean) and are interpolated by the
+  client: the tip turns toward -z (behind the body, UP while gliding) by `DIHEDRAL_OPEN` 38 / `DIHEDRAL_DRAWN` 16 degrees
+  (flap, one flip every 12 ticks, both wings together) or `DIHEDRAL_HELD` 22 (flying upright), and toward the feet
+  (backwards while gliding) by `SWEEP_GLIDE` 20 degrees. The two sides mirror each other. The wing itself is built flat
+  with four rows of overlapping feather panes tilted back, so it has area from below, behind and the side.
+- Folded wings: still modelled about the spine (no root offset, no rotation); each model is one half, with half the back
+  plate. Folded wings are a pair too, so a variant change is an item swap on the same two entities.
+- Bookkeeping (`WingsRig`): one pair per wearer; `Backend` spawn/update/remove/alive are per side. A failed second spawn
+  removes the first (no lone wing), one dead wing replaces both, nothing is sent while the look is unchanged. Removed on
+  unequip, quit, world change, death, spectator, invisibility, `vanished` metadata and plugin disable; leftovers (PDC
+  `vampyuyu:sb_wings_display`, scoreboard tag `vampyuyu_wings_display`) are purged at start (both entities carry the tags).
+- First person, standing: the pivot sits 0.22 behind the body axis, so the wings are behind the camera. Looking steeply
+  down the lowest feathers would enter the view cone, so BOTH displays are hidden from their own wearer from 20 degrees
+  of downward pitch (back at 14, `WingsMath.hideFromOwner`); that also hides them in F5 for that moment.
+- First person, gliding (checked on a real client): the camera stays near the player's position, which is the FEET end
+  of the leaned body, so the shoulders (and the wings) are 1.35 blocks in front of it and the wings fill the lower sides
+  of the view. The roots are 0.3 off the spine so the middle of the screen stays open above the V apex. Hiding the pair
+  while gliding (`WingsMath.HIDE_OWN_WHILE_GLIDING`, now false) clears the view but `Player#hideEntity` also removes the
+  wings from the wearer's F5 view (tried: the wearer then sees no wings at all), so it stays off. `WingsMath.inView`
+  (corners turned by the wing rotation) and `WingsPoseTest` check the standing case; the model envelope is asserted by
+  the art script.
+- The item display renderer turns the model half a turn about y before the transformation, so model +x is the wearer's
+  right, model +z is behind. Model `_left` therefore reaches toward model -x. Everything in `WingsMath` is in the display
+  frame (x = wearer's left, z forward).
