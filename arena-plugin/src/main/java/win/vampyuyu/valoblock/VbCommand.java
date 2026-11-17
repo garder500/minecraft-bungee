@@ -11,7 +11,7 @@ import win.vampyuyu.arena.NexusArenaEngine;
 /** /vb: operate ValoBlock arenas (start, stop, status, reload) and drive tests (debug). Admin only. */
 public final class VbCommand implements CommandExecutor, TabCompleter {
   private static final List<String> SUBS = List.of("help", "agent", "buy", "vote", "use", "start", "stop", "status", "reload", "level", "map", "debug");
-  private static final List<String> DEBUG = List.of("skip", "state", "win", "kill", "plant", "seal", "armory", "block", "where", "tp", "god");
+  private static final List<String> DEBUG = List.of("skip", "state", "win", "kill", "plant", "seal", "armory", "block", "where", "tp", "god", "notice");
 
   private final NexusArenaEngine plugin;
   private final Map<String, String> selected = new HashMap<>();
@@ -295,6 +295,14 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
         boolean on = args.length < 4 || !args[3].equalsIgnoreCase("off");
         m.setInvulnerable(p.getUniqueId(), on);
         say(sender, "god " + p.getName() + " " + (on ? "on" : "off"));
+      }
+      case "notice" -> {
+        // /vb debug notice <player> <text...>: shows a HUD notice (screenshots of the HUD while a message is up).
+        if (args.length < 4) throw new IllegalArgumentException("Usage: /vb debug notice <player> <text>");
+        Player p = plugin.getServer().getPlayerExact(args[2]);
+        if (p == null) throw new IllegalArgumentException("Nobody called " + args[2] + " is online");
+        plugin.valoblock.hud.notice(p, net.kyori.adventure.text.Component.text(String.join(" ", java.util.Arrays.copyOfRange(args, 3, args.length)), net.kyori.adventure.text.format.NamedTextColor.GOLD));
+        say(sender, "notice sent");
       }
       case "tp" -> {
         // /vb debug tp <player> <x> <y> <z> [yaw pitch]: x and z are blocks of the map (slot 0); the engine cancels arena teleports unless allowed.

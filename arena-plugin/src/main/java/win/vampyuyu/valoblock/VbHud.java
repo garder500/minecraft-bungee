@@ -25,8 +25,8 @@ public interface VbHud {
   /** A kill for the feed. {@code killer} is null for a death without a killer. */
   default void killed(VbMatch match, UUID victim, UUID killer, String weapon) {}
 
-  /** A short message for one player (replaces the action bar for 2 s). */
+  /** A short message for one player (a subtitle, never the action bar). */
   default void notice(Player player, Component text) {
-    player.sendActionBar(text);
+    player.showTitle(VbNotice.title(text));
   }
 }
