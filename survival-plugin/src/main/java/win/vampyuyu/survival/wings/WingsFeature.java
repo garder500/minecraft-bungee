@@ -48,6 +48,7 @@ public final class WingsFeature implements Feature {
                 .register();
 
             core.listen(flight);
+            core.listen(flight.display());
             core.listen(guard);
             flight.start();
             core.register(WingsApi.class, service);  // last: other features may use it from now on
