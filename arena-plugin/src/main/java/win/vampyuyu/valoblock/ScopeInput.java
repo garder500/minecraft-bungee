@@ -48,7 +48,7 @@ final class ScopeInput {
     if (armory) return click == Click.RIGHT ? Action.OPEN_ARMORY : Action.NONE;
     if (w == null) return Action.NONE;
     if (w.isGun()) {
-      if (holdScope(w)) return click == Click.LEFT ? Action.FIRE : Action.SCOPE;
+      if (holdScope(w)) return click == Click.LEFT ? Action.NONE : Action.SCOPE;
       return click == Click.RIGHT ? Action.FIRE : Action.NONE;
     }
     if (w.slot() == VbWeapon.Slot.MELEE) return click == Click.LEFT ? Action.STAB : Action.NONE;
@@ -67,8 +67,35 @@ final class ScopeInput {
     return holdScope(w) && !scoped ? Math.max(base, UNSCOPED_SPREAD) : base;
   }
 
+  /** Shortest time (ms) the scope must be held for a release to be an accurate scoped shot. */
+  static final long SCOPE_MS = 300;
+
+  /** What releasing right-click does. */
+  enum Release {
+    /** Fire with the scoped cone. */
+    SCOPED,
+    /** Fire with the unscoped spread penalty. */
+    UNSCOPED,
+    /** Nothing: cancelled (F, slot change) or dropped by the game (reload, death, round end). */
+    NONE
+  }
+
+  /**
+   * The release of a held scope. {@code ticksHeld} is the time the button was down (50 ms per tick); a forced drop
+   * (reload, death, round end, weapon gone) and a cancel never fire.
+   */
+  static Release release(int ticksHeld, boolean cancelled, boolean forcedDrop) {
+    if (cancelled || forcedDrop) return Release.NONE;
+    return ticksHeld * 50L >= SCOPE_MS ? Release.SCOPED : Release.UNSCOPED;
+  }
+
+  /** The release shot is blocked (and plays the dry click) when the magazine is empty. */
+  static boolean dryClick(int rounds) {
+    return rounds <= 0;
+  }
+
   /** The control hint of the tooltip. */
   static String hint(VbWeapon w) {
-    return holdScope(w) ? "Hold right-click to scope, left-click to fire" : "Right-click fire";
+    return holdScope(w) ? "Hold right-click to aim, release to fire, F to cancel" : "Right-click fire";
   }
 }

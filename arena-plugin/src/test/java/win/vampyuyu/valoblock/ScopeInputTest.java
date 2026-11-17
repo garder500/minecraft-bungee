@@ -13,12 +13,12 @@ public class ScopeInputTest {
   }
 
   @Test
-  public void theWatchersEyeIsASpyglassThatScopesOnRightAndFiresOnLeft() {
+  public void theWatchersEyeIsASpyglassThatScopesOnRightAndLeftDoesNothing() {
     VbWeapon eye = w("watchers_eye");
     assertEquals("SPYGLASS", eye.baseItem());
     assertTrue(ScopeInput.holdScope(eye));
     assertEquals(Action.SCOPE, ScopeInput.action(eye, false, Click.RIGHT));
-    assertEquals(Action.FIRE, ScopeInput.action(eye, false, Click.LEFT));
+    assertEquals(Action.NONE, ScopeInput.action(eye, false, Click.LEFT));
   }
 
   @Test
@@ -73,7 +73,7 @@ public class ScopeInputTest {
 
   @Test
   public void theHintsNameTheControls() {
-    assertEquals("Hold right-click to scope, left-click to fire", ScopeInput.hint(w("watchers_eye")));
+    assertEquals("Hold right-click to aim, release to fire, F to cancel", ScopeInput.hint(w("watchers_eye")));
     assertEquals("Right-click fire", ScopeInput.hint(w("pip")));
   }
 
@@ -112,5 +112,40 @@ public class ScopeInputTest {
     assertEquals(-ZoomModifier.MAX_SLOW, ZoomModifier.amount(10.0), 1e-9);
     assertTrue(ZoomModifier.amount(1.2) > -0.2);
     assertEquals(0, ZoomModifier.amount(1.0), 0);
+  }
+
+  @Test
+  public void releasingAfterTheScopeTimeIsAccurateAndAQuickTapIsPenalised() {
+    assertEquals(ScopeInput.Release.SCOPED, ScopeInput.release(6, false, false)); // 0.3 s
+    assertEquals(ScopeInput.Release.SCOPED, ScopeInput.release(40, false, false));
+    assertEquals(ScopeInput.Release.UNSCOPED, ScopeInput.release(5, false, false));
+    assertEquals(ScopeInput.Release.UNSCOPED, ScopeInput.release(0, false, false));
+    VbWeapon eye = w("watchers_eye");
+    assertEquals(0.6, ScopeInput.spread(eye, 0.6, true), 1e-9);
+    assertEquals(ScopeInput.UNSCOPED_SPREAD, ScopeInput.spread(eye, 0.6, false), 1e-9);
+  }
+
+  @Test
+  public void cancelAndForcedDropsNeverFire() {
+    for (int t : new int[] {0, 5, 6, 100}) {
+      assertEquals(ScopeInput.Release.NONE, ScopeInput.release(t, true, false)); // F or slot change
+      assertEquals(ScopeInput.Release.NONE, ScopeInput.release(t, false, true)); // reload, death, round end
+      assertEquals(ScopeInput.Release.NONE, ScopeInput.release(t, true, true));
+    }
+  }
+
+  @Test
+  public void anEmptyMagazineIsADryClick() {
+    assertTrue(ScopeInput.dryClick(0));
+    assertFalse(ScopeInput.dryClick(1));
+  }
+
+  @Test
+  public void aReleaseShotRespectsTheBoltCooldown() {
+    VbWeapon eye = w("watchers_eye");
+    GunState gs = new GunState(eye);
+    assertTrue(gs.poll(10_000, true, false)); // first release fires
+    assertFalse(gs.poll(10_050, true, false)); // the bolt is not cycled yet
+    assertTrue(gs.poll(10_000 + (long) (eye.interval() * 1000) + 10, true, false));
   }
 }

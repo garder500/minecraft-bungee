@@ -72,6 +72,9 @@ public final class VbWeaponService implements WeaponService, Listener {
     String shownId = "";
     String look = ""; // the custom_model_data state last written on the held stack
     boolean scoped;
+    boolean scopeCancelled; // F or a slot change while the scope is up: the release fires nothing
+    boolean scopeForced; // the scope was dropped by the game (reload): the release fires nothing
+    Boolean releaseScoped; // set while a release shot is taken: the cone it uses
     long inspectUntil; // end of the inspect pose of the gun just drawn (ms)
 
     GunState gun(VbWeapon w) {
@@ -267,7 +270,10 @@ public final class VbWeaponService implements WeaponService, Listener {
       if (g.wasReloading && !reloading) p.playSound(p.getLocation(), "item.crossbow.loading_end", SoundCategory.PLAYERS, 0.8f, 1.3f);
       g.wasReloading = reloading;
       applyZoom(p, w, ZoomModifier.wanted(w, p.isSneaking(), reloading, fighting(m), m.alive().contains(p.getUniqueId())));
-      if (reloading && ScopeInput.holdScope(w) && usingMain(p)) p.clearActiveItem(); // the spyglass drops while the magazine is out
+      if (reloading && ScopeInput.holdScope(w) && usingMain(p)) {
+        g.scopeForced = true;
+        p.clearActiveItem();
+      } // the spyglass drops while the magazine is out
       pump(p, m, g, w, gs, now, false);
       refreshStack(p, w, gs);
       look(p, g, w, gs, now);
@@ -343,7 +349,7 @@ public final class VbWeaponService implements WeaponService, Listener {
     double[] aim = {look.getX(), look.getY(), look.getZ()};
     int shot = gs.lastShotIndex();
     boolean moving = moving(g, now);
-    double spread = ScopeInput.spread(w, GunMath.spread(w, p.isSneaking(), moving, !p.isOnGround(), shot), ScopeInput.scoped(w, p.isSneaking(), usingMain(p), false));
+    double spread = ScopeInput.spread(w, GunMath.spread(w, p.isSneaking(), moving, !p.isOnGround(), shot), g.releaseScoped != null ? g.releaseScoped : ScopeInput.scoped(w, p.isSneaking(), usingMain(p), false));
     World world = p.getWorld();
     long rewind = Math.min(PositionHistory.MAX_REWIND_MS, Math.max(0, p.getPing()));
     Map<UUID, int[]> damage = new HashMap<>(); // victim -> {total, head pellets}
@@ -588,6 +594,9 @@ public final class VbWeaponService implements WeaponService, Listener {
       if (sg.gun(w).reloading()) {
         e.setCancelled(true);
         e.setUseItemInHand(Event.Result.DENY);
+      } else {
+        sg.scopeCancelled = false;
+        sg.scopeForced = false;
       }
       return;
     }
@@ -607,6 +616,40 @@ public final class VbWeaponService implements WeaponService, Listener {
       case STAB -> knife(p, m, g, w);
       default -> {}
     }
+  }
+
+  /** Releasing right-click on the Watcher's Eye fires it (the stop-using-item event, like a bow). */
+  @EventHandler(priority = EventPriority.HIGH)
+  public void release(io.papermc.paper.event.player.PlayerStopUsingItemEvent e) {
+    Player p = e.getPlayer();
+    VbMatch m = matchOf(p.getUniqueId());
+    if (m == null) return;
+    ItemStack it = e.getItem();
+    String wid = WeaponItems.id(it);
+    VbWeapon w = wid == null ? null : VbData.weapons().get(wid);
+    if (!WeaponItems.isVb(it) || !ScopeInput.holdScope(w) || !w.isGun()) return;
+    Gear g = gear(p.getUniqueId());
+    boolean cancelled = g.scopeCancelled, forced = g.scopeForced;
+    g.scopeCancelled = false;
+    g.scopeForced = false;
+    GunState gs = g.gun(w);
+    long now = System.currentTimeMillis();
+    boolean live = fighting(m) && m.alive().contains(p.getUniqueId()) && !plugin.valoblock.agents.frozen(p.getUniqueId());
+    boolean heldNow = w == held(p);
+    ScopeInput.Release r = ScopeInput.release(e.getTicksHeldFor(), cancelled, forced || gs.reloading() || !live || !heldNow);
+    if (r == ScopeInput.Release.NONE) return;
+    if (ScopeInput.dryClick(gs.magazine())) {
+      p.playSound(p.getLocation(), "block.dispenser.fail", SoundCategory.PLAYERS, 0.6f, 1.6f);
+      return;
+    }
+    applyMods(p.getUniqueId(), gs, now);
+    g.releaseScoped = r == ScopeInput.Release.SCOPED;
+    try {
+      pump(p, m, g, w, gs, now, true); // the usual fire-rate/bolt cooldown applies
+    } finally {
+      g.releaseScoped = null;
+    }
+    refreshStack(p, w, gs);
   }
 
   /** A left-click on a player with the knife arrives as damage, not as an interact. */
@@ -644,6 +687,11 @@ public final class VbWeaponService implements WeaponService, Listener {
     }
     VbWeapon w = held(p);
     if (w == null || !w.isGun()) return;
+    if (ScopeInput.holdScope(w) && usingMain(p)) { // F while the scope is up only cancels the shot
+      gear(p.getUniqueId()).scopeCancelled = true;
+      p.clearActiveItem();
+      return;
+    }
     GunState gs = gear(p.getUniqueId()).gun(w);
     applyMods(p.getUniqueId(), gs, System.currentTimeMillis());
     if (!plugin.valoblock.agents.frozen(p.getUniqueId()) && gs.startReload(System.currentTimeMillis())) {
@@ -657,6 +705,7 @@ public final class VbWeaponService implements WeaponService, Listener {
     Player p = e.getPlayer();
     if (matchOf(p.getUniqueId()) == null) return;
     removeZoom(p); // the weapon in hand changes: no sneak zoom carried over
+    if (usingMain(p)) gear(p.getUniqueId()).scopeCancelled = true; // a slot change cancels a scoped shot
     gear(p.getUniqueId()).inspectUntil = System.currentTimeMillis() + GunVisual.INSPECT_MS; // the gun drawn next shows its inspect pose
     VbWeapon w = held(p); // the gun being put away: a reload in progress is lost
     if (w != null && w.isGun()) {
