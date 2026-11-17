@@ -30,9 +30,9 @@ TAC_GRID = 5                                    # zones across and down; fine sl
 TAC_PLAN_X, TAC_PLAN_Y, TAC_PLAN_PX = 43, 17, 90
 TO_PLAN, FROM_PLAN = 0xE013, 0xE014
 # Map vote (MapVoteMenu.java): four full 4 x 6 backgrounds, the three maps' plan thumbnails in realm-coloured frames baked in; the 2nd to 4th
-# add a gold frame round map 0, 1 or 2 (the voter's choice), the 1st has none. Tile k is 3 x 3 slots at column 3 * k, row 1 (VOTE_ROW).
+# add a gold frame round map 0, 1 or 2 (the voter's choice), the 1st has none. Tile k is 3 x 3 slots at column 3 * k, row 2 (VOTE_ROW), centred between the title and the bottom edge.
 VOTE_BASES = (0xE700, 0xE800, 0xE900, 0xEA00)
-VOTE_COLS, VOTE_ROWS, VOTE_ROW = 3, 3, 1
+VOTE_COLS, VOTE_ROWS, VOTE_ROW = 3, 3, 2
 VOTE_THUMB = 45                                 # px: the 90 px tactical plan halved
 VOTE_REALM = {"hourfall": "d9b23c", "rootvault": "46b866", "stormbreak": "4aa3d8"}   # the Realm colour of each map's frame (= MapVoteMenu.REALM)
 VOTE_PICK = "ffe94a"

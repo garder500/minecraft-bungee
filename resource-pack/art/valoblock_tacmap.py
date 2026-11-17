@@ -30,6 +30,7 @@ def col(hex6, a=255):
     return (r, g, b, a)
 
 
+FLOOR_EDGE = col("3b4254")
 FLOOR, FLOOR2, WALL, WALL_HI, WALL_LO = col("2b303c"), col("262a35"), col("8d95a8"), col("aab2c4"), col("636b7d")
 HIGH, HIGH_HI = col("4a5573"), col("7d89b0")
 SITE, SITE_HI = col("a63fc0"), col("e6a0f5")
@@ -75,6 +76,8 @@ def cell_pixel(ch, ox, oy, ppc, cx, cy):
         return CRATE if not edge else col("a07c48")
     if ch == "g":
         return FOLIAGE if (ox + oy + cx + cy) % 3 else col("3f8a50")
+    if ppc >= 8 and (ox in (0, ppc - 1) or oy in (0, ppc - 1)):
+        return FLOOR_EDGE   # zoomed in: every floor cell gets a faint outline, so an open zone still reads as a plan
     return FLOOR if (cx + cy) % 2 == 0 else FLOOR2
 
 
@@ -191,6 +194,16 @@ def sprite_dim():
     return canvas(16, 16, col("05060a", 170))
 
 
+def sprite_far():
+    """Laid over a plan cell that is out of reach: thin dark diagonal hatching, so the drawing under it stays readable."""
+    img = canvas(16, 16)
+    for a in range(16):
+        for b in range(16):
+            if (a + b) % 4 == 0:
+                img[b][a] = col("05060a", 150)
+    return img
+
+
 def sprite_mark():
     """A smoke the player already placed: a pale ring with a dot."""
     img = canvas(16, 16)
@@ -213,7 +226,7 @@ def sprite_pick():
     return img
 
 
-SPRITES = {"tac_dim": sprite_dim, "tac_mark": sprite_mark, "tac_pick": sprite_pick}
+SPRITES = {"tac_dim": sprite_dim, "tac_far": sprite_far, "tac_mark": sprite_mark, "tac_pick": sprite_pick}
 
 
 def write_png(path, rows):

@@ -35,7 +35,7 @@ public final class SeedItems {
     ItemMeta meta = it.getItemMeta();
     List<WeaponText.Line> lines = tooltip();
     meta.displayName(WeaponItems.text(lines.get(0).text(), lines.get(0).color()));
-    meta.lore(lines.subList(1, lines.size()).stream().map(l -> (Component) WeaponItems.text(l.text(), l.color())).toList());
+    { List<Component> lore = new java.util.ArrayList<>(); for (WeaponText.Line l : lines.subList(1, lines.size())) TipWrap.add(lore, l.text(), l.color()); meta.lore(lore); }
     meta.setItemModel(MODEL);
     meta.setMaxStackSize(1);
     meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);

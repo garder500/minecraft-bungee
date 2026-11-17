@@ -49,14 +49,14 @@ public final class WeaponItems {
     pdc.set(ID, PersistentDataType.STRING, w.id());
     if (w.isGun()) pdc.set(MAG, PersistentDataType.INTEGER, mag);
     List<Component> lore = new ArrayList<>();
-    lore.add(text(w.kind(), WeaponText.GRAY));
+    TipWrap.add(lore, w.kind(), WeaponText.GRAY);
     if (w.isGun()) {
       if (ScopeInput.holdScope(w)) {
-        lore.add(text(ScopeInput.hint(w), WeaponText.GRAY));
-        lore.add(text("F reload · Q drop", WeaponText.GRAY));
-      } else lore.add(text(ScopeInput.hint(w) + " · F reload · Q drop", WeaponText.GRAY));
+        TipWrap.add(lore, ScopeInput.hint(w), WeaponText.GRAY);
+        TipWrap.add(lore, "F reload · Q drop", WeaponText.GRAY);
+      } else TipWrap.add(lore, ScopeInput.hint(w) + " · F reload · Q drop", WeaponText.GRAY);
     }
-    else if (!w.isShield()) lore.add(text("Left-click to stab", WeaponText.GRAY));
+    else if (!w.isShield()) TipWrap.add(lore, "Left-click to stab", WeaponText.GRAY);
     meta.lore(lore);
     it.setItemMeta(meta);
     if (ScopeInput.holdScope(w) && w.scopedSlow() > 0) { // the walking speed while the spyglass is up: no sprint, the design's factor
@@ -136,7 +136,7 @@ public final class WeaponItems {
     List<WeaponText.Line> lines = WeaponText.tooltip(w, display, missing);
     meta.displayName(text(lines.get(0).text(), lines.get(0).color()));
     List<Component> lore = new ArrayList<>();
-    for (WeaponText.Line l : lines.subList(1, lines.size())) lore.add(text(l.text(), l.color()));
+    for (WeaponText.Line l : lines.subList(1, lines.size())) TipWrap.add(lore, l.text(), l.color());
     meta.lore(lore);
     meta.setItemModel(art ? cardModel(w, display) : AgentItems.model("blank"));
     meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
@@ -168,7 +168,7 @@ public final class WeaponItems {
     ItemStack it = new ItemStack(Material.CHEST);
     ItemMeta meta = it.getItemMeta();
     meta.displayName(text("Armory", WeaponText.GOLD));
-    meta.lore(List.of(text("Right-click in the buy phase to open", WeaponText.GRAY)));
+    { List<Component> l = new ArrayList<>(); TipWrap.add(l, "Right-click in the buy phase to open", WeaponText.GRAY); meta.lore(l); }
     meta.getPersistentDataContainer().set(ARMORY, PersistentDataType.BYTE, (byte) 1);
     it.setItemMeta(meta);
     return it;
