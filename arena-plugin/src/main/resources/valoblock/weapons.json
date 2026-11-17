@@ -456,7 +456,7 @@
    "metalName": "Frostium + Stasis Crystal",
    "texture": "sniper",
    "slot": "primary",
-   "base": "STICK",
+   "base": "SPYGLASS",
    "menu": [
     1,
     6
@@ -485,7 +485,7 @@
     "drift": 0
    },
    "firstShotPerfect": false,
-   "note": "One body shot kills. Zoom x3.5; the user is slowed while scoped.",
+   "note": "One body shot kills. Hold right-click to scope (x3.5, slowed), left-click to fire; unscoped shots are wild.",
    "zoom": 3.5,
    "scopedSlow": 0.35
   },

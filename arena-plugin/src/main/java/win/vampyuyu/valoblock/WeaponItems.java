@@ -50,10 +50,20 @@ public final class WeaponItems {
     if (w.isGun()) pdc.set(MAG, PersistentDataType.INTEGER, mag);
     List<Component> lore = new ArrayList<>();
     lore.add(text(w.kind(), WeaponText.GRAY));
-    if (w.isGun()) lore.add(text("Right-click fire · F reload · Q drop", WeaponText.GRAY));
+    if (w.isGun()) {
+      if (ScopeInput.holdScope(w)) {
+        lore.add(text(ScopeInput.hint(w), WeaponText.GRAY));
+        lore.add(text("F reload · Q drop", WeaponText.GRAY));
+      } else lore.add(text(ScopeInput.hint(w) + " · F reload · Q drop", WeaponText.GRAY));
+    }
     else if (!w.isShield()) lore.add(text("Left-click to stab", WeaponText.GRAY));
     meta.lore(lore);
     it.setItemMeta(meta);
+    if (ScopeInput.holdScope(w) && w.scopedSlow() > 0) { // the walking speed while the spyglass is up: no sprint, the design's factor
+      it.setData(
+          io.papermc.paper.datacomponent.DataComponentTypes.USE_EFFECTS,
+          io.papermc.paper.datacomponent.item.UseEffects.useEffects().canSprint(false).interactVibrations(false).speedMultiplier((float) w.scopedSlow()).build());
+    }
     it.setAmount(w.isGun() ? Math.max(1, Math.min(99, mag)) : 1);
     return it;
   }
@@ -93,6 +103,13 @@ public final class WeaponItems {
     meta.getPersistentDataContainer().set(SCOPE, PersistentDataType.BYTE, (byte) 1);
     it.setItemMeta(meta);
     return it;
+  }
+
+  /** True while the player holds right-click with a hold-scope weapon (the client shows the spyglass overlay). */
+  public static boolean holdScoped(org.bukkit.entity.Player p) {
+    if (!p.hasActiveItem() || p.getActiveItemHand() != org.bukkit.inventory.EquipmentSlot.HAND) return false;
+    String id = id(p.getInventory().getItemInMainHand());
+    return id != null && ScopeInput.holdScope(VbData.weapons().get(id));
   }
 
   public static boolean isScope(ItemStack it) {

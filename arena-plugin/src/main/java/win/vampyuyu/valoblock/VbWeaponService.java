@@ -17,7 +17,11 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.SoundCategory;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -79,6 +83,8 @@ public final class VbWeaponService implements WeaponService, Listener {
   private final Map<UUID, Gear> gear = new ConcurrentHashMap<>();
   private final Set<Item> drops = new HashSet<>();
   private final Random random = new Random();
+  private final ZoomModifier zoomMods = new ZoomModifier();
+  private static final NamespacedKey ZOOM_KEY = new NamespacedKey("vampyuyu", "vb_zoom");
   private final Map<UUID, double[]> reloadMods = new ConcurrentHashMap<>(); // {factor, until ms}
 
   public VbWeaponService(NexusArenaEngine plugin) {
@@ -193,10 +199,12 @@ public final class VbWeaponService implements WeaponService, Listener {
         () -> {
           reloadMods.remove(player);
           gear.remove(player);
+          zoomMods.update(player, false);
           for (Item d : drops) d.remove();
           drops.clear();
           Player p = Bukkit.getPlayer(player);
           if (p == null) return;
+          removeZoom(p);
           PlayerInventory inv = p.getInventory();
           for (int i = 0; i < inv.getSize(); i++) if (WeaponItems.isVb(inv.getItem(i))) inv.setItem(i, null);
           if (WeaponItems.isVb(inv.getChestplate())) inv.setChestplate(null);
@@ -219,6 +227,8 @@ public final class VbWeaponService implements WeaponService, Listener {
     g.shownId = "";
     g.look = "";
     g.scoped = false;
+    zoomMods.update(p.getUniqueId(), false);
+    removeZoom(p);
     if (WeaponItems.isScope(inv.getHelmet())) inv.setHelmet(null);
     plugin.valoblock.agents.dressed(p);
   }
@@ -246,13 +256,18 @@ public final class VbWeaponService implements WeaponService, Listener {
         g.shownId = id;
         p.setWalkSpeed(w != null && w.speed() > 1 ? (float) Math.min(1.0, 0.2 * w.speed()) : 0.2f);
       }
-      if (w == null || !w.isGun()) continue;
+      if (w == null || !w.isGun()) {
+        applyZoom(p, null, false);
+        continue;
+      }
       GunState gs = g.gun(w);
       applyMods(p.getUniqueId(), gs, now);
       gs.tick(now);
       boolean reloading = gs.reloading();
       if (g.wasReloading && !reloading) p.playSound(p.getLocation(), "item.crossbow.loading_end", SoundCategory.PLAYERS, 0.8f, 1.3f);
       g.wasReloading = reloading;
+      applyZoom(p, w, ZoomModifier.wanted(w, p.isSneaking(), reloading, fighting(m), m.alive().contains(p.getUniqueId())));
+      if (reloading && ScopeInput.holdScope(w) && usingMain(p)) p.clearActiveItem(); // the spyglass drops while the magazine is out
       pump(p, m, g, w, gs, now, false);
       refreshStack(p, w, gs);
       look(p, g, w, gs, now);
@@ -266,12 +281,35 @@ public final class VbWeaponService implements WeaponService, Listener {
    */
   private void look(Player p, Gear g, VbWeapon w, GunState gs, long now) {
     boolean sneaking = p.isSneaking();
-    String want = GunVisual.state(gs.reloading(), gs.sinceShot(now), sneaking, now < g.inspectUntil, w.zoom());
+    boolean scoped = ScopeInput.scoped(w, sneaking, usingMain(p), gs.reloading());
+    // A hold scope aims with the held button, not with sneaking: the scoped look hides the gun, the sneak pose is not used.
+    String want = GunVisual.state(gs.reloading(), gs.sinceShot(now), ScopeInput.holdScope(w) ? scoped : sneaking, now < g.inspectUntil, w.zoom());
     if (!want.equals(g.look)) {
       g.look = want;
       WeaponItems.setState(p.getInventory().getItemInMainHand(), want);
     }
-    setScope(p, g, GunVisual.scoped(w.zoom(), sneaking, gs.reloading()));
+    setScope(p, g, scoped && !ScopeInput.holdScope(w)); // the helmet overlay is only for the sneak zoom: a spyglass draws its own
+  }
+
+  /** The player is using (right-click held) the item in the main hand. */
+  private static boolean usingMain(Player p) {
+    return p.hasActiveItem() && p.getActiveItemHand() == EquipmentSlot.HAND;
+  }
+
+  /** Adds or removes the zoom modifier as the bookkeeping says: one modifier at most, whatever the call order. */
+  private void applyZoom(Player p, VbWeapon w, boolean wanted) {
+    ZoomModifier.Op op = zoomMods.update(p.getUniqueId(), wanted);
+    if (op == ZoomModifier.Op.NONE) return;
+    AttributeInstance speed = p.getAttribute(Attribute.MOVEMENT_SPEED);
+    if (speed == null) return;
+    speed.removeModifier(ZOOM_KEY);
+    if (op == ZoomModifier.Op.ADD && w != null) speed.addTransientModifier(new AttributeModifier(ZOOM_KEY, ZoomModifier.amount(w.zoom()), AttributeModifier.Operation.MULTIPLY_SCALAR_1));
+  }
+
+  private void removeZoom(Player p) {
+    zoomMods.update(p.getUniqueId(), false);
+    AttributeInstance speed = p.getAttribute(Attribute.MOVEMENT_SPEED);
+    if (speed != null) speed.removeModifier(ZOOM_KEY);
   }
 
   private void setScope(Player p, Gear g, boolean on) {
@@ -305,7 +343,7 @@ public final class VbWeaponService implements WeaponService, Listener {
     double[] aim = {look.getX(), look.getY(), look.getZ()};
     int shot = gs.lastShotIndex();
     boolean moving = moving(g, now);
-    double spread = GunMath.spread(w, p.isSneaking(), moving, !p.isOnGround(), shot);
+    double spread = ScopeInput.spread(w, GunMath.spread(w, p.isSneaking(), moving, !p.isOnGround(), shot), ScopeInput.scoped(w, p.isSneaking(), usingMain(p), false));
     World world = p.getWorld();
     long rewind = Math.min(PositionHistory.MAX_REWIND_MS, Math.max(0, p.getPing()));
     Map<UUID, int[]> damage = new HashMap<>(); // victim -> {total, head pellets}
@@ -538,25 +576,36 @@ public final class VbWeaponService implements WeaponService, Listener {
     if (m == null) return;
     ItemStack it = e.getItem();
     if (!WeaponItems.isVb(it)) return;
-    e.setCancelled(true);
-    e.setUseItemInHand(Event.Result.DENY);
-    e.setUseInteractedBlock(Event.Result.DENY);
     boolean right = e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK;
-    if (WeaponItems.isArmory(it)) {
-      if (right) openArmory(p, m);
+    boolean armory = WeaponItems.isArmory(it);
+    String wid = armory ? null : WeaponItems.id(it);
+    VbWeapon w = wid == null ? null : VbData.weapons().get(wid);
+    ScopeInput.Action action = ScopeInput.action(w, armory, right ? ScopeInput.Click.RIGHT : ScopeInput.Click.LEFT);
+    e.setUseInteractedBlock(Event.Result.DENY);
+    if (action == ScopeInput.Action.SCOPE) {
+      // Right-click on a spyglass sniper: the vanilla use starts (zoom and overlay), so the event is NOT cancelled. Not while the magazine is out.
+      Gear sg = gear(p.getUniqueId());
+      if (sg.gun(w).reloading()) {
+        e.setCancelled(true);
+        e.setUseItemInHand(Event.Result.DENY);
+      }
       return;
     }
-    VbWeapon w = VbData.weapons().get(WeaponItems.id(it));
-    if (w == null) return;
+    e.setCancelled(true);
+    e.setUseItemInHand(Event.Result.DENY);
+    if (w == null && !armory) return;
     Gear g = gear(p.getUniqueId());
     long now = System.currentTimeMillis();
-    if (right && w.isGun()) {
-      g.lastRight = now;
-      applyMods(p.getUniqueId(), g.gun(w), now);
-      pump(p, m, g, w, g.gun(w), now, true);
-      refreshStack(p, w, g.gun(w));
-    } else if (!right && w.slot() == VbWeapon.Slot.MELEE) {
-      knife(p, m, g, w);
+    switch (action) {
+      case OPEN_ARMORY -> openArmory(p, m);
+      case FIRE -> {
+        if (right) g.lastRight = now; // a held button repeats: only the guns fired with right-click
+        applyMods(p.getUniqueId(), g.gun(w), now);
+        pump(p, m, g, w, g.gun(w), now, true);
+        refreshStack(p, w, g.gun(w));
+      }
+      case STAB -> knife(p, m, g, w);
+      default -> {}
     }
   }
 
@@ -607,6 +656,7 @@ public final class VbWeaponService implements WeaponService, Listener {
   public void heldChange(PlayerItemHeldEvent e) {
     Player p = e.getPlayer();
     if (matchOf(p.getUniqueId()) == null) return;
+    removeZoom(p); // the weapon in hand changes: no sneak zoom carried over
     gear(p.getUniqueId()).inspectUntil = System.currentTimeMillis() + GunVisual.INSPECT_MS; // the gun drawn next shows its inspect pose
     VbWeapon w = held(p); // the gun being put away: a reload in progress is lost
     if (w != null && w.isGun()) {
