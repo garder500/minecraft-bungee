@@ -43,6 +43,11 @@ if [[ "$compose" == compose.local.yaml ]]; then
   printf '\nWARNING: these plugin overrides still replace the freshly built jars:\n%s\nRun make plugin-clear to use the image jars.\n\n' "$active" >&2
  fi
  docker compose -f "$compose" up -d --build
+ # The warning above scrolls away behind the build output, and the containers just restarted ON the
+ # overrides (infra/start.sh copies them over the image jars): repeat it once the build is done.
+ if [[ -n $active ]]; then
+  printf '\nWARNING: the containers just started run these OVERRIDE jars, not the jars of the images built above:\n%s\nRun make plugin-clear (restarts them) to run the image jars.\n' "$active" >&2
+ fi
 else
  docker compose -f "$compose" pull
  docker compose -f "$compose" up -d
