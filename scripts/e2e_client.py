@@ -1213,6 +1213,24 @@ def valoblock_scenario(ctx):
     if "count: 9" not in mannequins.lower():
         failures.append("expected 9 bot bodies (1 human, 5v5): " + mannequins.strip())
     shot(tools, shots / "vb-04-combat.png")
+    # A notice must not touch the glyph HUD (it is a subtitle), and each bot carries one tag.
+    say(vb(rcon, "debug notice E2EBot Ability not ready: 3 s"))
+    time.sleep(0.8)
+    shot(tools, shots / "vb-14-hud-notice.png")
+    say("tags: " + rcon.command("execute if entity @e[type=minecraft:text_display]").strip())
+    # Each bot up close: an ally shows one readable tag, an enemy none (the tags are per-viewer text displays).
+    rcon.command("tag @e[type=minecraft:mannequin] remove tagshot")
+    for i in range(6):
+        pick = "@e[type=minecraft:mannequin,tag=!tagshot,limit=1,sort=nearest]"
+        bx = rcon.command(f"data get entity {pick} Pos").strip()
+        nums = [float(v) for v in re.findall(r"(-?[0-9.]+)d", bx)]
+        if len(nums) != 3:
+            break
+        say(f"bot {i}: {bx}")
+        rcon.command(f"tag {pick} add tagshot")
+        vb(rcon, f"debug tp E2EBot {nums[0]} {nums[1] + 0.2} {nums[2] + 2.5} 180 0")
+        time.sleep(1.5)
+        shot(tools, shots / f"vb-15-bot-tag-{i}.png")
     valoblock_extras(ctx, rcon, ctx.get("rules", "map=hourfall").split("=", 1)[-1] or "hourfall", failures)
     time.sleep(10)
     shot(tools, shots / "vb-05-combat-later.png")

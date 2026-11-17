@@ -15,6 +15,8 @@ import org.bukkit.SoundCategory;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Mannequin;
+import org.bukkit.entity.TextDisplay;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
@@ -33,6 +35,7 @@ public final class VbBotService implements BotService {
     final VbMatch match;
     BotBrain brain;
     Mannequin body;
+    TextDisplay tag; // the one readable name above the body
     Loadout loadout;
     final Map<String, GunState> guns = new HashMap<>();
     AgentKit kit;
@@ -166,7 +169,8 @@ public final class VbBotService implements BotService {
       removeBody(b);
       b.body = spawnBody(world, node, name(b.id), VbData.agents().get(m.agent(b.id)));
       bodies.put(b.body.getUniqueId(), b.id);
-    } else b.body.teleport(new Location(world, node.x(), node.y(), node.z()));
+    } else move(b, new Location(world, node.x(), node.y(), node.z()));
+    placeTag(b);
     equip(b);
   }
 
@@ -180,7 +184,7 @@ public final class VbBotService implements BotService {
       mq.setCollidable(false);
       mq.setDescription(Component.empty());
       mq.customName(Component.text(name));
-      mq.setCustomNameVisible(true);
+      mq.setCustomNameVisible(false); // the tag is a TextDisplay (BotTag): a name tag would show through walls
       if (agent != null) mq.setProfile(skinProfile(agent));
     });
   }
@@ -226,7 +230,36 @@ public final class VbBotService implements BotService {
     if (b != null) sync(() -> removeBody(b));
   }
 
+  private void move(Bot b, Location to) {
+    b.body.teleport(to);
+    if (b.tag != null && b.tag.isValid()) b.tag.teleport(to.clone().add(0, BotTag.HEIGHT, 0));
+  }
+
+  /** Makes (or moves) the tag of the body: one per bot, depth tested, coloured by team. */
+  private void placeTag(Bot b) {
+    if (b.body == null) return;
+    Location at = b.body.getLocation().add(0, BotTag.HEIGHT, 0);
+    if (b.tag != null && b.tag.isValid()) {
+      b.tag.teleport(at);
+      return;
+    }
+    Component text = BotTag.text(name(b.id), b.match.squadOf(b.id));
+    b.tag = b.body.getWorld().spawn(at, TextDisplay.class, d -> {
+      d.setPersistent(false);
+      d.setVisibleByDefault(false); // shown to the allies only (VbNameTags)
+      d.text(text);
+      d.setBillboard(Display.Billboard.CENTER);
+      d.setSeeThrough(false);
+      d.setShadowed(false);
+      d.setViewRange(0.6f);
+    });
+  }
+
   private void removeBody(Bot b) {
+    if (b.tag != null) {
+      b.tag.remove();
+      b.tag = null;
+    }
     if (b.body != null) {
       bodies.remove(b.body.getUniqueId());
       b.body.remove();
@@ -269,6 +302,12 @@ public final class VbBotService implements BotService {
     if (b == null || b.body == null || b.brain == null || !b.match.alive().contains(id)) return null;
     BotMover mv = b.brain.mover();
     return new double[] {mv.x(), mv.y(), mv.z(), 0, mv.yaw()};
+  }
+
+  @Override
+  public org.bukkit.entity.Entity tag(UUID id) {
+    Bot b = bots.get(id);
+    return b == null || b.tag == null || !b.tag.isValid() ? null : b.tag;
   }
 
   @Override
@@ -437,7 +476,7 @@ public final class VbBotService implements BotService {
       if (side == VbSide.SEALERS) botSealer = true;
       BotMover mv = b.brain.mover();
       Location to = new Location(world, mv.x(), mv.y(), mv.z(), (float) act.yaw, (float) act.pitch);
-      b.body.teleport(to);
+      move(b, to);
       if (act.holdPlant && b.id.equals(carrier)) {
         plantHolder = b.id;
         plantBox = siteBox(r.attack[squad].site());

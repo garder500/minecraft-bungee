@@ -22,6 +22,8 @@ public final class ValoBlockModule {
   public volatile BotService bots = BotService.NOOP;
   public volatile MapService map = MapService.NOOP;
   public volatile VbHud hud = VbHud.NOOP;
+  /** Name tags: allies only (a scoreboard team per squad for players, per-viewer displays for bots). */
+  public final VbNameTags tags = new VbNameTags();
   /** The tactical map menu (null until the agents are enabled) and the minimap items (null until the maps are enabled). */
   volatile TacMapService tacmap;
   volatile MiniMapService minimap;

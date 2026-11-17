@@ -10,6 +10,11 @@ public interface BotService {
     return "[BOT] " + bot.toString().substring(0, 4);
   }
 
+  /** The name tag entity of a bot body (null when it has none). */
+  default org.bukkit.entity.Entity tag(UUID bot) {
+    return null;
+  }
+
   default void spawn(VbMatch match, UUID bot, VbSide side) {}
 
   default void remove(UUID bot) {}
