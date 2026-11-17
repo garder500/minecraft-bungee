@@ -42,6 +42,11 @@ if [[ "$compose" == compose.local.yaml ]]; then
  if [[ -n $active ]]; then
   printf '\nWARNING: these plugin overrides still replace the freshly built jars:\n%s\nRun make plugin-clear to use the image jars.\n\n' "$active" >&2
  fi
+ # The servers announce the pack their image builds from the sources; the panel serves resource-pack/dist/.
+ # A dist/ ZIP older than the sources gives clients a 404 ("pack failed to download"): rebuild both
+ # (reproducible, under a second; an unchanged pack is left untouched).
+ python3 scripts/build_pack.py
+ python3 scripts/build_pack.py --pack valoblock
  docker compose -f "$compose" up -d --build
  # The warning above scrolls away behind the build output, and the containers just restarted ON the
  # overrides (infra/start.sh copies them over the image jars): repeat it once the build is done.

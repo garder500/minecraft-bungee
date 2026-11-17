@@ -22,16 +22,23 @@ def build(out_dir, pack="menus"):
     out = pathlib.Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     target = out / f"{name}.zip"
+    # Written next to the target then renamed: the panel serving dist/ never reads a half-written ZIP.
+    partial = out / f".{name}.zip.partial"
     files = sorted(p for p in source.rglob("*") if p.is_file())
     if not any(p.name == "pack.mcmeta" for p in files):
         sys.exit("pack.mcmeta missing")
-    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+    with zipfile.ZipFile(partial, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for path in files:
             info = zipfile.ZipInfo(path.relative_to(source).as_posix(), (2024, 1, 1, 0, 0, 0))
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o644 << 16
             z.writestr(info, path.read_bytes())
-    digest = hashlib.sha1(target.read_bytes()).hexdigest()
+    digest = hashlib.sha1(partial.read_bytes()).hexdigest()
+    old = target.read_bytes() if target.is_file() else None
+    if old is not None and hashlib.sha1(old).hexdigest() == digest:
+        partial.unlink()  # unchanged: keep the file (and its mtime) the panel already serves
+    else:
+        partial.replace(target)
     (out / f"{name}.sha1").write_text(digest + "\n")
     return target, digest
 
