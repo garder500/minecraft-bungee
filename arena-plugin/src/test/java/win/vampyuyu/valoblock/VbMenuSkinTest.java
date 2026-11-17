@@ -40,4 +40,26 @@ public class VbMenuSkinTest {
     assertTrue(VbMenuSkin.select(-1, "").children().get(0) instanceof TextComponent t && t.content().indexOf(VbMenuSkin.PORTRAIT_NONE) > 0);
     assertEquals("Choose your agent", ((TextComponent) title.children().get(1)).content());
   }
+
+  @Test
+  public void theTacticalMapIsTheSharedChromeThenOnePlanGlyphThenTheTitle() {
+    for (int zone : new int[] {-1, 0, 12, 24}) {
+      char plan = VbMenuSkin.planGlyph(2, zone);
+      String run = VbMenuSkin.tacGlyphs(plan);
+      assertEquals(VbMenuSkin.TEXT_X, VbMenuSkin.cursorAfter(run, plan));
+      assertEquals(VbMenuSkin.FROM_PLAN, run.charAt(run.length() - 1));
+      assertEquals(plan, run.charAt(run.length() - 2));
+      assertEquals(VbMenuSkin.TO_PLAN, run.charAt(run.length() - 3));
+      long tiles = run.chars().filter(c -> c >= VbMenuSkin.TAC_CHROME && c < VbMenuSkin.TAC_CHROME + 24).count();
+      assertEquals(24, tiles);
+    }
+    assertEquals('\uE502', VbMenuSkin.planGlyph(2, -1));
+    assertEquals('\uE600', VbMenuSkin.planGlyph(0, 0));
+    assertEquals('\uE64A', VbMenuSkin.planGlyph(2, 24));
+    assertEquals(VbMenuSkin.PLAN_X - VbMenuSkin.ROW_WIDTH, VbMenuSkin.advance(VbMenuSkin.TO_PLAN));
+    assertEquals(VbMenuSkin.TEXT_X - (VbMenuSkin.PLAN_X + VbMenuSkin.PLAN_W + 1), VbMenuSkin.advance(VbMenuSkin.FROM_PLAN));
+    Component title = VbMenuSkin.tacMap(0, -1, "Sand Veil  x2");
+    assertEquals(VbMenuSkin.FONT, ((TextComponent) title.children().get(0)).font());
+    assertEquals("Sand Veil  x2", ((TextComponent) title.children().get(1)).content());
+  }
 }

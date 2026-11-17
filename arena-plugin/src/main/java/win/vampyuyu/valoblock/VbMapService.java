@@ -248,6 +248,15 @@ public final class VbMapService implements MapService {
     return x >= -2 && x <= in.map.width() + 2 && where.getZ() >= -2 && where.getZ() <= in.map.depth() + 2;
   }
 
+  /** Where a match is built: its map and the x of its min corner (z and the floor level are {@code 0} and {@link #FEET_Y}). */
+  record Stage(VbMap map, int ox) {}
+
+  /** The stage of a running match, or null (not built yet, or already released). */
+  Stage stageOf(VbMatch m) {
+    Instance in = instanceOf(m);
+    return in == null ? null : new Stage(in.map, in.ox());
+  }
+
   private Instance instanceOf(VbMatch m) {
     for (Instance in : instances.values()) if (in.match == m) return in;
     return null;

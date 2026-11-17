@@ -269,9 +269,10 @@ final class AbilitiesB {
   /** A field that drags enemies to its centre (the pull is an impulse, never damage). */
   private static boolean undertow(Ctx c) {
     AbilityEnv e = c.env();
-    Location centre = e.aim(c.p(), 14).add(0, 1, 0);
+    Location picked = c.spot(0); // chosen on the tactical map
+    Location centre = picked != null ? picked.add(0, 1, 0) : e.aim(c.p(), 14).add(0, 1, 0);
     double r = c.n("radius", 10), max = Math.min(0.35, c.n("pull", 0.22));
-    e.fx.add(c.m(), c.id(), c.ticks("seconds", 8), age -> {
+    Effects.Fx field = e.fx.add(c.m(), c.id(), c.ticks("seconds", 8), age -> {
       if (age % 2 == 0) {
         AbilityEnv.ring(centre, r * (1 - (age % 40) / 40.0), Particle.BUBBLE, 24);
         centre.getWorld().spawnParticle(Particle.SQUID_INK, centre, 4, 0.3, 0.3, 0.3, 0.01);
@@ -286,6 +287,7 @@ final class AbilitiesB {
       }
       return true;
     });
+    e.track(c, centre, field);
     e.sound(centre, "entity.guardian.attack", 0.8f, 0.5f);
     return true;
   }
@@ -339,6 +341,7 @@ final class AbilitiesB {
         return true;
       });
       e.cloud(f, centre, Material.SAND, r);
+      e.track(c, centre, f);
       e.sound(centre, "block.sand.break", 1f, 0.6f);
     });
     return true;
@@ -399,6 +402,7 @@ final class AbilitiesB {
         return true;
       });
       e.cloud(f, centre, Material.LIME_STAINED_GLASS, r);
+      e.track(c, centre, f);
       e.sound(centre, "entity.splash_potion.break", 1f, 0.6f);
     });
     return true;
@@ -408,14 +412,32 @@ final class AbilitiesB {
   private static boolean miasmaWall(Ctx c) {
     AbilityEnv e = c.env();
     Player p = c.p();
-    Location centre = e.floor(e.aim(p, 10).add(0, 0.5, 0));
-    Vector look = flat(p);
-    Vector along = new Vector(-look.getZ(), 0, look.getX());
-    int length = (int) Math.min(12, c.n("length", 8));
+    Location endA = c.spot(0), endB = c.spot(1);
+    Location centre;
+    Vector along;
+    List<Location> points = new ArrayList<>();
+    if (endA != null && endB != null) { // both ends picked on the tactical map: the wall runs between them (cut short at the longest wall)
+      Vector run = endB.toVector().subtract(endA.toVector()).setY(0);
+      double dist = Math.min(run.length(), TacTargeting.MAX_WALL);
+      along = run.lengthSquared() < 1e-6 ? new Vector(1, 0, 0) : run.normalize();
+      int n = Math.max(2, (int) Math.floor(dist) + 1);
+      for (int i = 0; i < n; i++) {
+        double t = dist * i / (n - 1);
+        Location at = endA.clone().add(along.clone().multiply(t));
+        at.setY(endA.getY() + (endB.getY() - endA.getY()) * (dist < 1e-6 ? 0 : t / run.length()));
+        points.add(e.floor(at.add(0, 1.5, 0)));
+      }
+      centre = points.get(points.size() / 2);
+    } else {
+      centre = e.floor(e.aim(p, 10).add(0, 0.5, 0));
+      Vector look = flat(p);
+      along = new Vector(-look.getZ(), 0, look.getX());
+      int length = (int) Math.min(12, c.n("length", 8));
+      for (int i = 0; i < length; i++) points.add(centre.clone().add(along.clone().multiply(i - (length - 1) / 2.0)));
+    }
+    float sx = (float) (0.35 + 0.75 * Math.abs(along.getX())), sz = (float) (0.35 + 0.75 * Math.abs(along.getZ()));
     int[] fuel = {c.ticks("fuelSeconds", 10)};
     boolean[] on = {true};
-    List<Location> points = new ArrayList<>();
-    for (int i = 0; i < length; i++) points.add(centre.clone().add(along.clone().multiply(i - (length - 1) / 2.0)));
     Effects.Fx f = e.fx.add(c.m(), c.id(), 20 * 120, age -> {
       if (!on[0]) return true;
       if (--fuel[0] <= 0) {
@@ -437,9 +459,10 @@ final class AbilitiesB {
     });
     List<org.bukkit.entity.BlockDisplay> shown = new ArrayList<>();
     Runnable build = () -> {
-      for (Location l : points) shown.add(e.block(f, l.clone(), Material.LIME_STAINED_GLASS, 1.1f, 3f, 0.35f));
+      for (Location l : points) shown.add(e.block(f, l.clone(), Material.LIME_STAINED_GLASS, sx, 3f, sz));
     };
     build.run();
+    e.track(c, centre, f);
     e.walls.put(c.id(), () -> {
       if (fuel[0] <= 0) return;
       on[0] = !on[0];

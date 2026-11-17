@@ -195,12 +195,15 @@ final class AbilitiesA {
     AbilityEnv e = c.env();
     double range = c.n("range", 30);
     List<Location> spots = new ArrayList<>();
-    List<LivingEntity> near = new ArrayList<>(e.enemies(c.m(), c.id()));
-    near.removeIf(v -> v.getLocation().distance(c.p().getLocation()) > range);
-    near.sort((a, b) -> Double.compare(a.getLocation().distanceSquared(c.p().getLocation()), b.getLocation().distanceSquared(c.p().getLocation())));
-    for (LivingEntity v : near) if (spots.size() < (int) c.n("spots", 3)) spots.add(v.getLocation().clone());
-    Location aim = e.aim(c.p(), range);
-    for (int i = spots.size(); i < (int) c.n("spots", 3); i++) spots.add(aim.clone().add((i - 1) * 2.5, 0, (i % 2) * 2.0));
+    for (Location picked : c.spots()) if (spots.size() < (int) c.n("spots", 3)) spots.add(picked.clone()); // chosen on the tactical map
+    if (spots.isEmpty()) {
+      List<LivingEntity> near = new ArrayList<>(e.enemies(c.m(), c.id()));
+      near.removeIf(v -> v.getLocation().distance(c.p().getLocation()) > range);
+      near.sort((a, b) -> Double.compare(a.getLocation().distanceSquared(c.p().getLocation()), b.getLocation().distanceSquared(c.p().getLocation())));
+      for (LivingEntity v : near) if (spots.size() < (int) c.n("spots", 3)) spots.add(v.getLocation().clone());
+      Location aim = e.aim(c.p(), range);
+      for (int i = spots.size(); i < (int) c.n("spots", 3); i++) spots.add(aim.clone().add((i - 1) * 2.5, 0, (i % 2) * 2.0));
+    }
     e.fx.add(c.m(), c.id(), c.ticks("delaySeconds", 1.5), age -> {
       for (Location s : spots) if (age % 3 == 0) AbilityEnv.ring(s.clone().add(0, 0.1, 0), c.n("radius", 3), Particle.ELECTRIC_SPARK, 14);
       return true;

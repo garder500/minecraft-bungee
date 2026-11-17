@@ -20,6 +20,15 @@ TEXT_X = 8                                      # where the dynamic title text s
 SHIFT_BACK, ROW_BACK, SEAM = 0xE000, 0xE001, 0xE002
 TO_PORTRAIT, FROM_PORTRAIT, TO_TEXT = 0xE010, 0xE011, 0xE012
 ROW_W = layout.COLS * (layout.TILE_W + 1) + (layout.COLS - 1) * -1   # 177: where the cursor is after a tile row
+# Tactical map (TacMapMenu.java, TacGrid.java): one shared 4 x 6 chrome, then ONE plan glyph drawn over it (the portrait technique):
+# the whole map (TAC_PLAN_BASE + map index) or a zoomed zone (TAC_ZONE_BASE + map * 25 + zone, zone = row * 5 + col). The 30 x 30 plan is
+# square, so it takes the 5 x 5 middle slots of the chest (90 GUI px, 1 texture px per GUI px); the side columns and the bottom row are
+# controls. A zone is a 6 x 6 cell block shown at 15 px per cell, with the fine grid of 5 x 5 slots over it (1.2 cells a slot).
+TAC_CHROME_BASE, TAC_PLAN_BASE, TAC_ZONE_BASE = 0xE400, 0xE500, 0xE600
+TAC_MAPS = ("hourfall", "rootvault", "stormbreak")   # = VbData.MAP_IDS
+TAC_GRID = 5                                    # zones across and down; fine slots across and down
+TAC_PLAN_X, TAC_PLAN_Y, TAC_PLAN_PX = 43, 17, 90
+TO_PLAN, FROM_PLAN = 0xE013, 0xE014
 ADVANCES = {
     SHIFT_BACK: -8,
     ROW_BACK: -ROW_W,
@@ -27,6 +36,8 @@ ADVANCES = {
     TO_PORTRAIT: PORTRAIT_X - ROW_W,
     FROM_PORTRAIT: TEXT_X - (PORTRAIT_X + PORTRAIT_W + 1),
     TO_TEXT: TEXT_X - ROW_W,
+    TO_PLAN: TAC_PLAN_X - ROW_W,
+    FROM_PLAN: TEXT_X - (TAC_PLAN_X + TAC_PLAN_PX + 1),
 }
 
 def slot_xy(col, row):

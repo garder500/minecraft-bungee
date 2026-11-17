@@ -55,7 +55,25 @@ final class AbilityEnv {
   final List<Ghost> ghosts = new ArrayList<>();
   /** Murk's gas wall by owner, to switch on and off. */
   final java.util.Map<UUID, Runnable> walls = new java.util.concurrent.ConcurrentHashMap<>();
+  /** Something a player placed that stays a while (a smoke, a wall, a field): shown on the tactical map. */
+  record Placed(UUID owner, String ability, Location where) {}
+
+  final List<Placed> placed = new ArrayList<>();
   int now;
+
+  /** Lists a placed thing until its effect ends. */
+  void track(Ctx c, Location where, Effects.Fx f) {
+    Placed p = new Placed(c.id(), c.ab().id(), where.clone());
+    placed.add(p);
+    f.onEnd(() -> placed.remove(p));
+  }
+
+  /** What this player has placed that is still there. */
+  List<Placed> placedBy(UUID owner) {
+    List<Placed> out = new ArrayList<>();
+    for (Placed p : placed) if (p.owner().equals(owner)) out.add(p);
+    return out;
+  }
 
   AbilityEnv(NexusArenaEngine plugin) {
     this.plugin = plugin;
@@ -65,7 +83,17 @@ final class AbilityEnv {
   }
 
   /** One use of an ability: who, in which match, which agent and ability. */
-  record Ctx(Player p, VbMatch m, VbAgent agent, VbAbility ab, AbilityEnv env) {
+  record Ctx(Player p, VbMatch m, VbAgent agent, VbAbility ab, AbilityEnv env, List<Location> spots) {
+    /** A use with no spots picked: the ability aims or throws in the world. */
+    Ctx(Player p, VbMatch m, VbAgent agent, VbAbility ab, AbilityEnv env) {
+      this(p, m, agent, ab, env, List.of());
+    }
+
+    /** The spot number {@code i} picked on the tactical map, or null when the ability is thrown or aimed. */
+    Location spot(int i) {
+      return i < spots.size() ? spots.get(i).clone() : null;
+    }
+
     double n(String key, double def) {
       return ab.num(key, def);
     }
@@ -223,6 +251,11 @@ final class AbilityEnv {
 
   /** A thrown item that flies, bounces and calls back: {@code impacts} blocks hit and it is over. */
   void ball(Ctx c, Material item, int impacts, Consumer<Location> bounce, Consumer<Location> end) {
+    Location picked = c.spot(0); // chosen on the tactical map: it lands there, nothing is thrown
+    if (picked != null) {
+      end.accept(picked);
+      return;
+    }
     Player p = c.p();
     World w = p.getWorld();
     Location eye = p.getEyeLocation();
