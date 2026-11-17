@@ -36,9 +36,9 @@
     ]
   },
   "skin": {
-    "value": "",
-    "signature": "",
-    "_todo": "TODO: paste a signed textures property (value + signature from a skin signing service). Empty = the skin swap is skipped."
+    "value": "ewogICJ0aW1lc3RhbXAiIDogMTc5NDg3NDE4ODUwMiwKICAicHJvZmlsZUlkIiA6ICI4MjYxOGI1ZjhhMzA0Njg2YTkyMTM2ZDcxZTlhZDkyMSIsCiAgInByb2ZpbGVOYW1lIiA6ICIxZXRobyIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9kMjZkYmEwOTliN2U5NmM1Y2Q5ODJiYzhiMjQyMWVmZGQzZDk4MGYzZThkMTFhMzMxODkzZmE5YjdhZGUyNTg5IgogICAgfQogIH0KfQ==",
+    "signature": "mmvrlCdy3GTR7rfATcQBVfl6pMlCBYgvCixIUtLaVkgT2tK99hSLpNhHLMjZlJmOiJK66VzKwvcE+v1U6WdLAF7eK1WgiBHbIuUArsxN0PNPViJRGbWjijcrHTyqrxA7JpDs/3n2545kCkr84MCZR0Om2t9WD61Z3+PskaVjwk8pd0UqqicUyQr8LZTw7BVyk2JryaHhj5mmiqpm3Ptv+i+GTkc9S3zYybN4qL7ntavXlQMpKU9spejwZyyMTitL1mBqXqkSygVA8zjdY3sf8TtLVaP+c7TTReFql2Syo4RYXlVFDdnPNxM3crj6PZYr/+kFh4p8w2N0QqZQ3kJrUmhdOMyEU59mmxdbFvKZw6DNurGbuuEoCWEB+jwCDfJUVTW7N8vIMX1Lf+5tXhuOxBm/9QMr1TQ56JFlRT0pnv9EhwfeE+3s/CH0eW8WtUsgK4M2q471d/OYFoCb05muvJZH8QlHds+VMIY/9lSW7KSIGG58UOzFkBKL2GKmN/k3DzC6htTE2gd0BHc59udC5RX7nE07lV3Z22UWu8GxEDAIJQ8WWdMFWGOL3ZSip/pbdjKSZgo59DBT7oTQRKEItlNuiua0+IFsQTV50UK/pmwHszcr7LoDDRFwYbfcaVhYzIW7mbScDlTIRv7fjY5nzMNrDB8iMDm9GVhjw8RvJpU=",
+    "mineskin": "4bcff4a7994c4adcb797254632d7f5af"
   },
   "build": "Smoke = a sphere of block_display sand + upward particles. Rewind = stored location.",
   "abilities": [

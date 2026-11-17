@@ -35,9 +35,9 @@
     ]
   },
   "skin": {
-    "value": "",
-    "signature": "",
-    "_todo": "TODO: paste a signed textures property (value + signature from a skin signing service). Empty = the skin swap is skipped."
+    "value": "ewogICJ0aW1lc3RhbXAiIDogMTc5NDg3NDE2MDAyNSwKICAicHJvZmlsZUlkIiA6ICI0ZmNlNWJhYjJmMjI0MTdjYTk1YWVlYzA4OTRhMTY3OSIsCiAgInByb2ZpbGVOYW1lIiA6ICJWYWF0d2FzdGFibGV0IiwKICAic2lnbmF0dXJlUmVxdWlyZWQiIDogdHJ1ZSwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzM4YjlhOTIxNjZjMGRkM2IyMzY2ZWMxNzMxNWIyZmMzM2E5NDAyYTkyODM2ZDVjNDgzN2VlNDBjYTczMDI5MTgiCiAgICB9CiAgfQp9",
+    "signature": "B8vNqDYafML+DAqzk0aTunae8lNYuyNSWEH5fspdxd8VGN+h02SZdb3Hv387U0i6gaMr7OR1Y+z5biILzbQCwaz8gxGA+TpXfC7du7trsgiFWPiJbQTMgqZEgOCAwcYV2XEyd9zYI2NZAZM6ZqpTzKqGrMKYou3GgJnZukO9OihTRkU9b6xUIQ2sTnvUWejG6uE7XbmH5ICyPqAMxMrhowJikxYdaLV3jdNVDpiSbKOpaXF4mVH52TcXZkAsJQdtPl89OMcAykPh1lUk30OOjiQ+CRzvl10qB39q4LwmhW1Tdr09AsStOecdqm6kMhVr7OtPwrZbW5qalcq/Zxy5GZaDOSpPgiDFvru/s3UoyGxPmDnbwsTayNGSPEot9MvLgb466/1D4HjlNCmDgut5g5aQ6R3bVl4Oebpb0Wr/870uL0i+pgJvok0i1e2ScdlaijKYz2Z5bLgVYSgBUFsX4QsgUBloGicij9d9m0u14mTAJGevY4YMJHYwOJPQxbFPr+fVQX5wZ0qdWvjjV8+/yagcv+vNgeohE6QxJjxN1rILzSR9nbbnjVDE2E0P9xuQchDU4RQKA9Z9Quh4TBbGvwV1uX4hIgTC7v5jjAPsZf4wne1ygyu0DL22r1lqN4nzUbld6j96krT+iYEmL2rjXSMqMgBESI9hRDo2ZGEQGy0=",
+    "mineskin": "9728a748c7674fb1bf910eae2758c12c"
   },
   "build": "Glow = per-viewer glowing (the VoteMarks technique from Werewolf). Echo = a mannequin with the agent skin.",
   "abilities": [

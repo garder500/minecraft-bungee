@@ -36,9 +36,9 @@
     ]
   },
   "skin": {
-    "value": "",
-    "signature": "",
-    "_todo": "TODO: paste a signed textures property (value + signature from a skin signing service). Empty = the skin swap is skipped."
+    "value": "ewogICJ0aW1lc3RhbXAiIDogMTc5NDg3NDE3NjUwOSwKICAicHJvZmlsZUlkIiA6ICIxZmVjOTEzN2Q3ZTM0ODk3YTY5OTY0MGJkMTllMGM0MiIsCiAgInByb2ZpbGVOYW1lIiA6ICJzcGlmZnRvcGlhNiIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9iYjA4NTZiZDgxNjU5MmE1MjlhOWFmNzJmYWVmZDk2MjY4NTQ4MmVhOGMzYWE4NGJlYjQ5MjM3ZGQ4NTY3ZGQ0IgogICAgfQogIH0KfQ==",
+    "signature": "aQ8+cJ1yP0y/wJDd4JxUNzVh/1Xu1NXRt95EVFiqgVcZ1BtQshIx2QBlDNFPcSCyuJwz1y0mXPVpRKr6oPKBUJI8w6K1Ga3/PYsqkD8KVlawJJP1ymVIJThkEDDKq5zw2cTKQweNSd9RJzCF8PRY/RTC/dER3Iwbuxs37Gi3vwPK7ZsNG8xzBVxL2k6RJonk7Hz9KtLnIL0N7GhMTmihqCwoQznpsN3mRZ6farU9RZpg8l/goUNqoiQL4jGFTfYYtDXv38vD1HoYUaxfITiXsQcyyiAcfyZgnFxHM/RF7FsRhhGJnDT8TXsl1tdu94LBMwwxg5hxoICT2Li9rpoippdX7DgiRs1vuQD5pw1NSYPl2S0RsbyzGnT2kovF7ufhzuWmFlM87EoKjvBIJZ5LWdDhw+dZ0wWG3xcHH6I7O/p56H/VsyGxba5BfDS0nOrz14NndIfjsDEBXakyfKNqgl3WYupRTljzQLZnyguiIREMcxapu/fkOC2QbvJO+kPmyYBNcM12kE1ZXjtCMiqP6BrHPlC1JiqUvoo7J1+osDXy5CetzQVhfSOjyZfvmW8OFuZIEkR9nzvDdIg/A+Hvsvudues1bgaSqIrLG5jTGQOlejnSHPmMOhwftcshJqGq9hX21WmgzG6h9WzyU03vzMfshff60HRqIs6RDHHINRA=",
+    "mineskin": "c5c1dd9ad1d24994a76a97eb90ff22e2"
   },
   "build": "Gas = block_display green glass panes + particles. Wall line drawn from 2 placed emitters.",
   "abilities": [
