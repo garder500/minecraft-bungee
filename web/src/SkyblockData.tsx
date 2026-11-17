@@ -227,6 +227,7 @@ export function SkyblockData({
     if (!domain || !table) return;
     let live = true;
     setSchema(null);
+    setPage(null); // the previous table's rows must not be drawn with the next table's (still loading) schema
     setEditor(null);
     setOffset(0);
     api<Schema>(`${base(server)}/${domain}/${table}`)
@@ -537,8 +538,8 @@ export function SkyblockData({
                   </tr>
                 </thead>
                 <tbody>
-                  {page?.rows.map((r) => {
-                    const key = String(r[schema!.key]);
+                  {schema && page?.rows.map((r) => {
+                    const key = String(r[schema.key]);
                     const modified = schema?.originColumn && r[schema.originColumn] === "panel";
                     return (
                       <tr key={key}>
