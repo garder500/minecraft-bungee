@@ -1,5 +1,6 @@
 package win.vampyuyu.survival.wings;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -28,8 +29,9 @@ import org.joml.Vector3f;
 import win.vampyuyu.survival.core.Core;
 
 /**
- * The worn look of the Wings: one {@code ItemDisplay} per wearer, mounted on the player as a passenger and showing the
- * pack's 3D wing model (folded, spread, or spread and flapping while gliding). The elytra equipment layer is
+ * The worn look of the Wings: a pair of {@code ItemDisplay}s per wearer (left and right wing, each its own model), mounted on
+ * the player as passengers and showing the pack's 3D wing models (folded, or spread with a dihedral and flapping about
+ * each wing's own root while gliding). The elytra equipment layer is
  * transparent, this is what the other players and the wearer see.
  *
  * <p>Entities are tagged (PDC {@link #TAG} and a scoreboard tag), not persistent, removed on unequip, quit, world
@@ -46,7 +48,7 @@ public final class WingsDisplay implements Listener, WingsRig.Backend {
 
     private final Core core;
     private final WingsRig rig = new WingsRig(this);
-    private final Map<UUID, ItemDisplay> displays = new HashMap<>();
+    private final Map<UUID, EnumMap<WingsPose.Side, ItemDisplay>> displays = new HashMap<>();
     private final Map<UUID, Long> retryAt = new HashMap<>();
     private boolean failedOnce;
 
@@ -77,11 +79,11 @@ public final class WingsDisplay implements Listener, WingsRig.Backend {
     /** Drops every display (plugin disable). */
     public void shutdown() {
         rig.detachAll();
-        displays.values().forEach(d -> {
+        displays.values().forEach(pair -> pair.values().forEach(d -> {
             if (d.isValid()) {
                 d.remove();
             }
-        });
+        }));
         displays.clear();
         retryAt.clear();
     }
@@ -108,11 +110,7 @@ public final class WingsDisplay implements Listener, WingsRig.Backend {
         double pitch = loc.getPitch();
         double lean = WingsMath.lean(look.stance(), pitch);
         WingsRig.Desired before = rig.current(id);
-        boolean hide = before != null && before.hideFromOwner()
-            ? pitch > WingsMath.SHOW_PITCH : pitch > WingsMath.HIDE_PITCH;
-        if (look.stance() == WingsPose.Stance.LEANED) {
-            hide = false;
-        }
+        boolean hide = WingsMath.hideFromOwner(look.stance(), pitch, before != null && before.hideFromOwner());
         int phase = look.flap() ? WingsPose.FlapCycle.phase(Bukkit.getCurrentTick()) : 0;
         WingsRig.Desired want = new WingsRig.Desired(WingsSettings.tierOf(level), look.variant(), phase, look.flap(),
             look.stance(), Math.round(bodyYaw(p)), Math.round((float) lean / 2f) * 2, hide);
@@ -137,10 +135,11 @@ public final class WingsDisplay implements Listener, WingsRig.Backend {
 
     // ---------------------------------------------------------------- backend
 
-    static ItemStack stack(int tier, WingsPose.Variant variant) {
+    static ItemStack stack(int tier, WingsPose.Variant variant, WingsPose.Side side) {
         ItemStack stack = new ItemStack(Material.PAPER);
         ItemMeta meta = stack.getItemMeta();
-        NamespacedKey model = NamespacedKey.fromString("vampyuyu:wings/worn_tier" + tier + "_" + variant.key());
+        NamespacedKey model = NamespacedKey.fromString(
+            "vampyuyu:wings/worn_tier" + tier + "_" + variant.key() + "_" + side.key());
         if (model != null) {
             meta.setItemModel(model);
         }
@@ -148,14 +147,15 @@ public final class WingsDisplay implements Listener, WingsRig.Backend {
         return stack;
     }
 
-    private static Transformation transform(WingsRig.Desired d) {
-        Vector3f t = WingsMath.translation(d.stance(), d.lean());
-        Quaternionf left = WingsMath.leanRotation(d.lean());
-        return new Transformation(t, left, WingsMath.flapScale(d.flap() ? d.flapPhase() : 0), new Quaternionf());
+    /** Each wing turns about its own root (right rotation), the whole pair leans like the body (left rotation). */
+    private static Transformation transform(WingsRig.Desired d, WingsPose.Side side) {
+        Vector3f t = WingsMath.translation(d.stance(), d.lean(), d.variant(), side);
+        Quaternionf wing = WingsMath.wingRotation(side, d.variant(), d.stance(), d.flap(), d.flapPhase());
+        return new Transformation(t, WingsMath.leanRotation(d.lean()), new Vector3f(1f, 1f, 1f), wing);
     }
 
     @Override
-    public boolean spawn(UUID owner, WingsRig.Desired d) {
+    public boolean spawn(UUID owner, WingsPose.Side side, WingsRig.Desired d) {
         Player p = Bukkit.getPlayer(owner);
         if (p == null || !p.isOnline()) {
             return false;
@@ -167,20 +167,20 @@ public final class WingsDisplay implements Listener, WingsRig.Backend {
                 e.setPersistent(false);
                 e.setInvulnerable(true);
                 e.setGravity(false);
-                e.setItemStack(stack(d.tier(), d.variant()));
+                e.setItemStack(stack(d.tier(), d.variant(), side));
                 e.setBillboard(Display.Billboard.FIXED);
                 e.setTeleportDuration(WingsRig.FAST);
                 e.setInterpolationDelay(0);
                 e.setInterpolationDuration(0);
                 e.setViewRange(1.0f);
                 e.setRotation(d.yaw(), 0);
-                e.setTransformation(transform(d));
+                e.setTransformation(transform(d, side));
             });
             if (!p.addPassenger(display)) {
                 display.remove();
                 return false;
             }
-            displays.put(owner, display);
+            displays.computeIfAbsent(owner, k -> new EnumMap<>(WingsPose.Side.class)).put(side, display);
             if (d.hideFromOwner()) {
                 p.hideEntity(core.getPlugin(), display);
             }
@@ -195,21 +195,21 @@ public final class WingsDisplay implements Listener, WingsRig.Backend {
     }
 
     @Override
-    public void update(UUID owner, WingsRig.Desired prev, WingsRig.Desired next, int ticks) {
-        ItemDisplay display = displays.get(owner);
+    public void update(UUID owner, WingsPose.Side side, WingsRig.Desired prev, WingsRig.Desired next, int ticks) {
+        ItemDisplay display = display(owner, side);
         Player p = Bukkit.getPlayer(owner);
         if (display == null || p == null) {
             return;
         }
         if (prev.tier() != next.tier() || prev.variant() != next.variant()) {
-            display.setItemStack(stack(next.tier(), next.variant()));
+            display.setItemStack(stack(next.tier(), next.variant(), side));
         }
         if (prev.yaw() != next.yaw()) {
             display.setRotation(next.yaw(), 0);
         }
         display.setInterpolationDelay(0);
         display.setInterpolationDuration(ticks);
-        display.setTransformation(transform(next));
+        display.setTransformation(transform(next, side));
         if (prev.hideFromOwner() != next.hideFromOwner()) {
             if (next.hideFromOwner()) {
                 p.hideEntity(core.getPlugin(), display);
@@ -220,18 +220,30 @@ public final class WingsDisplay implements Listener, WingsRig.Backend {
     }
 
     @Override
-    public void remove(UUID owner) {
-        ItemDisplay display = displays.remove(owner);
+    public void remove(UUID owner, WingsPose.Side side) {
+        EnumMap<WingsPose.Side, ItemDisplay> pair = displays.get(owner);
+        if (pair == null) {
+            return;
+        }
+        ItemDisplay display = pair.remove(side);
         if (display != null) {
             display.remove();
+        }
+        if (pair.isEmpty()) {
+            displays.remove(owner);
         }
     }
 
     @Override
-    public boolean alive(UUID owner) {
-        ItemDisplay display = displays.get(owner);
+    public boolean alive(UUID owner, WingsPose.Side side) {
+        ItemDisplay display = display(owner, side);
         Player p = Bukkit.getPlayer(owner);
         return display != null && p != null && display.isValid() && display.getVehicle() == p;
+    }
+
+    private ItemDisplay display(UUID owner, WingsPose.Side side) {
+        EnumMap<WingsPose.Side, ItemDisplay> pair = displays.get(owner);
+        return pair == null ? null : pair.get(side);
     }
 
     // ---------------------------------------------------------------- events

@@ -254,17 +254,18 @@ def main():
             stale = helm / old.name.replace("_front", f"_{kind}")
             if stale.exists():
                 stale.unlink()
-    tex = PACK / "textures/entity/equipment/wings/starcore_wings.png"
-    tex.parent.mkdir(parents=True, exist_ok=True)
-    tex.write_bytes(wings())
+    # the old starcore "wings" equipment layer is gone: the real wings are the separate Wings item
+    stale = PACK / "textures/entity/equipment/wings/starcore_wings.png"
+    if stale.exists():
+        stale.unlink()
     asset = PACK / "equipment/starcore.json"
     data = json.loads(asset.read_text())
-    data["layers"]["wings"] = [{"texture": "vampyuyu:starcore_wings"}]
+    data["layers"].pop("wings", None)
     asset.write_text(json.dumps(data, indent=1) + "\n")
     listed = ART / "imported.txt"
     have = set(listed.read_text().split()) if listed.exists() else set()
     listed.write_text("\n".join(sorted(have | {f"armor/{t}_helmet_3d" for t in TIERS})) + "\n")
-    print("wrote 5 sculpted helmet models and the starcore wings")
+    print("wrote 5 sculpted helmet models")
 
 
 if __name__ == "__main__":

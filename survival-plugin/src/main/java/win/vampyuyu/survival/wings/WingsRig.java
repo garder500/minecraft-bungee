@@ -8,7 +8,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Bookkeeping of the worn Wings displays: at most one per wearer, created when the wearer needs one, updated only when
+ * Bookkeeping of the worn Wings displays: exactly one pair (left and right wing) per wearer, created when the wearer needs one, updated only when
  * what it shows has changed, removed on every exit path. The entity work is behind {@link Backend} so the logic is
  * testable without a server.
  */
@@ -21,19 +21,19 @@ public final class WingsRig {
         }
     }
 
-    /** The entity side. */
+    /** The entity side: every wearer has a pair of displays, one per {@link WingsPose.Side}. */
     public interface Backend {
-        /** Creates and mounts the display. False when it could not be created. */
-        boolean spawn(UUID owner, Desired desired);
+        /** Creates and mounts the display of one wing. False when it could not be created. */
+        boolean spawn(UUID owner, WingsPose.Side side, Desired desired);
 
-        /** Applies the difference between two looks. {@code ticks} is the interpolation length. */
-        void update(UUID owner, Desired previous, Desired next, int ticks);
+        /** Applies the difference between two looks to one wing. {@code ticks} is the interpolation length. */
+        void update(UUID owner, WingsPose.Side side, Desired previous, Desired next, int ticks);
 
-        /** Removes the display (also when it is already gone). */
-        void remove(UUID owner);
+        /** Removes the display of one wing (also when it is already gone). */
+        void remove(UUID owner, WingsPose.Side side);
 
-        /** False when the entity died, was unloaded or got dismounted: it is respawned. */
-        boolean alive(UUID owner);
+        /** False when the entity died, was unloaded or got dismounted. */
+        boolean alive(UUID owner, WingsPose.Side side);
     }
 
     public static final int FAST = 2;
@@ -54,25 +54,30 @@ public final class WingsRig {
             return detach(owner);
         }
         Desired now = shown.get(owner);
-        if (now != null && !backend.alive(owner)) {
-            backend.remove(owner);
+        if (now != null && !pairAlive(owner)) {
+            removePair(owner);  // one wing lost: both are replaced, never a lone wing
             shown.remove(owner);
             now = null;
         }
         if (now == null) {
-            if (backend.spawn(owner, want)) {
-                shown.put(owner, want);
-                spawns++;
-                return true;
+            for (WingsPose.Side side : WingsPose.Side.values()) {
+                if (!backend.spawn(owner, side, want)) {
+                    removePair(owner);  // nothing half attached
+                    return false;
+                }
             }
-            return false;
+            shown.put(owner, want);
+            spawns++;
+            return true;
         }
         if (now.equals(want)) {
             return false;  // standing still: nothing is sent
         }
         boolean flapOnly = now.sameLook(want) && now.yaw() == want.yaw() && now.lean() == want.lean()
             && now.flapPhase() != want.flapPhase();
-        backend.update(owner, now, want, flapOnly ? SLOW : FAST);
+        for (WingsPose.Side side : WingsPose.Side.values()) {
+            backend.update(owner, side, now, want, flapOnly ? SLOW : FAST);
+        }
         shown.put(owner, want);
         updates++;
         return true;
@@ -83,8 +88,23 @@ public final class WingsRig {
         if (shown.remove(owner) == null) {
             return false;
         }
-        backend.remove(owner);
+        removePair(owner);
         return true;
+    }
+
+    private boolean pairAlive(UUID owner) {
+        for (WingsPose.Side side : WingsPose.Side.values()) {
+            if (!backend.alive(owner, side)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void removePair(UUID owner) {
+        for (WingsPose.Side side : WingsPose.Side.values()) {
+            backend.remove(owner, side);
+        }
     }
 
     /** Removes every display (plugin disable). */

@@ -16,6 +16,26 @@ public final class WingsPose {
         }
     }
 
+    /** The two wings: each one is its own display and model ({@code worn_tierN_<variant>_<side>}). */
+    public enum Side {
+        LEFT(1), RIGHT(-1);
+
+        private final int sign;
+
+        Side(int sign) {
+            this.sign = sign;
+        }
+
+        /** +1 for the wearer's left (display frame +x), -1 for the right. */
+        public int sign() {
+            return sign;
+        }
+
+        public String key() {
+            return name().toLowerCase(java.util.Locale.ROOT);
+        }
+    }
+
     /** Body posture, it decides where the display is anchored on the player. */
     public enum Stance { STAND, SNEAK, LEANED }
 

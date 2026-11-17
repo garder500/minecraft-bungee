@@ -2098,6 +2098,164 @@ def swords_scenario(ctx):
     subprocess.run([xdo, "key", "F1"], env=env)
 
 
+def armorwings_scenario(ctx):
+    """Every Skyblock armor set and every Wings tier worn, in third person (front, back, three-quarter side), the
+    Wings standing and gliding, plus a first-person shot with the Wings on. Shots: aw-*.png (armor) and ww-*.png."""
+    import math
+    tools, env, shots, failures = (ctx[k] for k in ("tools", "env", "shots", "failures"))
+    xdo, rcon = tools["xdotool"], Rcon()
+    state = {"view": 0}  # 0 first person, 1 behind, 2 front (F5 cycles 0 -> 1 -> 2 -> 0)
+
+    def view(want):
+        while state["view"] != want:
+            subprocess.run([xdo, "key", "F5"], env=env)
+            state["view"] = (state["view"] + 1) % 3
+            time.sleep(0.4)
+
+    def as_bot(text):
+        return rcon.command("execute as E2EBot at E2EBot run " + text)
+
+    def jump():  # a real key press lasting a few ticks (a bare "key" is too short for the client to see)
+        subprocess.run([xdo, "keydown", "space"], env=env)
+        time.sleep(0.2)
+        subprocess.run([xdo, "keyup", "space"], env=env)
+
+    def put(x, y, z, yaw, pitch=0):
+        as_bot(f"tp @s {x} {y} {z} {yaw} {pitch}")
+
+    rcon.command("op E2EBot")
+    rcon.command("gamemode survival E2EBot")
+    rcon.command("gamerule spawn_mobs false")
+    rcon.command("kill @e[type=slime]")
+    subprocess.run([xdo, "key", "slash"], env=env)
+    time.sleep(.5)
+    subprocess.run([xdo, "type", "--delay", "35", "menu skyblock"], env=env)
+    subprocess.run([xdo, "key", "Return"], env=env)
+    for _ in range(150):
+        if "sb_world" in rcon.command("data get entity E2EBot Dimension"):
+            break
+        time.sleep(1)
+    else:
+        failures.append("never reached sb_world")
+        return
+    time.sleep(8)
+    pos = player_state(rcon)["pos"]
+    cx, y, cz = math.floor(pos[0]) + 20, math.floor(pos[1]), math.floor(pos[2])
+    as_bot(f"fill {cx-12} {y-1} {cz-12} {cx+12} {y-1} {cz+12} smooth_sandstone")
+    as_bot(f"fill {cx-12} {y} {cz-12} {cx+12} {y+6} {cz+12} air")
+    rcon.command("time set noon")
+    rcon.command("weather clear")
+    rcon.command("clear E2EBot")
+    subprocess.run([xdo, "key", "F1"], env=env)  # no HUD, no chat
+    time.sleep(1)
+
+    def clear_worn():
+        for slot in ("head", "chest", "legs", "feet"):
+            rcon.command(f"item replace entity E2EBot armor.{slot} with minecraft:air")
+        rcon.command("clear E2EBot")
+
+    def three_views(prefix):
+        """Front, back, then the three-quarter side (the head turned ~70 degrees from the body)."""
+        put(cx + .5, y, cz + .5, 0)
+        time.sleep(2.5)
+        view(2)
+        time.sleep(1)
+        shot(tools, shots / f"{prefix}-front.png")
+        view(1)
+        time.sleep(1)
+        shot(tools, shots / f"{prefix}-back.png")
+        put(cx + .5, y, cz + .5, 70)
+        time.sleep(0.35)
+        shot(tools, shots / f"{prefix}-side.png")
+        put(cx + .5, y, cz + .5, 0)
+        time.sleep(1)
+
+    # 1. armor sets
+    only = os.environ.get("ARMORWINGS_ONLY", "")  # "armor" or "wings" to run half of it
+    for tier in () if only == "wings" else ("bronze", "ember", "rime", "void", "starcore", "cinder_starcore", "grove_starcore", "frost_starcore"):
+        clear_worn()
+        for slot in ("helmet", "chestplate", "leggings", "boots"):
+            rcon.command(f"sbgive {tier}_{slot} 1 E2EBot")
+        for source, target in ((0, "head"), (1, "chest"), (2, "legs"), (3, "feet")):
+            rcon.command(f"item replace entity E2EBot armor.{target} from entity E2EBot container.{source}")
+        for source in range(4):  # nothing left in the hand
+            rcon.command(f"item replace entity E2EBot container.{source} with minecraft:air")
+        for slot in ("head", "chest", "legs", "feet"):  # the RCON reply of a full inventory dump is cut, ask per slot
+            if "passed" not in rcon.command(f"execute if items entity E2EBot armor.{slot} *").lower():
+                failures.append(f"{tier}: nothing worn in armor.{slot}")
+        three_views(f"aw-{tier}")
+    clear_worn()
+
+    # 2. wings, one pair per tier (levels 1, 3, 5, 7, 9)
+    levels = [int(v) for v in os.environ.get("ARMORWINGS_LEVELS", "1,3,5,7,9").split(",")]
+    for tier, level in [((lv + 1) // 2, lv) for lv in ([] if only == "armor" else levels)]:
+        clear_worn()
+        say(rcon.command(f"wings give E2EBot {level}").strip())
+        time.sleep(1)
+        inv = rcon.command("data get entity E2EBot Inventory")
+        say(f"wings tier {tier}: inventory={inv.strip()[:300]}")
+        if "wings" not in inv.lower() and "elytra" not in inv.lower():
+            failures.append(f"no wings after /wings give level {level}")
+        say("equip: " + rcon.command("item replace entity E2EBot armor.chest from entity E2EBot container.0").strip()[:200])
+        time.sleep(1)
+        worn = rcon.command("execute if items entity E2EBot armor.chest minecraft:elytra").strip()
+        say("chest slot after the command: " + worn[:200] + " | slot 0: "
+            + rcon.command("execute if items entity E2EBot container.0 minecraft:elytra").strip()[:80])
+        if "passed" not in worn.lower():  # like a player: hold them and right-click
+            view(0)
+            subprocess.run([xdo, "key", "1"], env=env)
+            time.sleep(0.5)
+            subprocess.run([xdo, "click", "3"], env=env)
+            time.sleep(1)
+            worn = rcon.command("execute if items entity E2EBot armor.chest minecraft:elytra").strip()
+            say("chest slot after the right-click: " + worn[:200])
+        if "passed" not in worn.lower():
+            failures.append(f"tier {tier}: the Wings are not in the chest slot")
+        rcon.command("effect give E2EBot resistance 999 6 true")  # a failed glide must not end in a death screen
+        say("wings info: " + re.sub(r"§.", "", rcon.command("wings info E2EBot")).strip()[:600])
+        put(cx + .5, y, cz + .5, 0)
+        time.sleep(3)
+        if tier == 1:
+            view(0)
+            shot(tools, shots / "ww-first-person-standing.png")
+        three_views(f"ww-t{tier}-stand")
+        # gliding: drop from high above, press jump once in the air to open the wings
+        for name, yaw, vw in (("back", 0, 1), ("side", 70, 1), ("front", 0, 2)):
+            put(cx + .5, y + 90, cz + .5, 0, 8)
+            time.sleep(0.4)
+            view(vw)
+            if name == "side":
+                time.sleep(1.2)
+                put(cx + .5, y + 88, cz + .5, 0, 8)
+                time.sleep(0.8)
+            time.sleep(0.8)
+            jump()
+            time.sleep(1.5)
+            if name == "side":
+                as_bot("tp @s ~ ~ ~ 70 8")
+                time.sleep(0.3)
+            fall = rcon.command("data get entity E2EBot FallFlying").strip()
+            say(f"wings tier {tier} glide {name}: FallFlying -> {fall}")
+            if "1b" not in fall:
+                failures.append(f"tier {tier} {name}: the bot is not gliding ({fall})")
+            shot(tools, shots / f"ww-t{tier}-glide-{name}.png")
+            time.sleep(0.6)
+            shot(tools, shots / f"ww-t{tier}-glide-{name}-b.png")  # another flap phase
+        put(cx + .5, y, cz + .5, 0)
+        time.sleep(2)
+        if tier == 5:
+            put(cx + .5, y + 90, cz + .5, 0, 8)
+            time.sleep(1.2)
+            view(0)
+            jump()
+            time.sleep(1.5)
+            shot(tools, shots / "ww-first-person-glide.png")
+            put(cx + .5, y, cz + .5, 0)
+            time.sleep(2)
+    view(0)
+    subprocess.run([xdo, "key", "F1"], env=env)
+
+
 def start_scenario(ctx):
     """The start of the game with a real client: pebbles from the ground, the Fountain, a stone ring that makes it a
     generator, a Spring Stone, cables on redstone, and the quest menus."""
@@ -2567,7 +2725,7 @@ def bosses_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "imported", "dungeon", "start", "craft", "valoblock", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -2577,7 +2735,7 @@ def main():
         return dev_server()
     global WITH_SURVIVAL, VALOBLOCK
     VALOBLOCK = args.scenario == "valoblock"
-    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "imported", "dungeon", "start", "craft")
+    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft")
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
@@ -2600,7 +2758,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "imported", "dungeon", "start", "craft", "valoblock"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -2631,7 +2789,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "tools", "imported", "dungeon", "start", "craft", "valoblock"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -2678,6 +2836,8 @@ def main():
             bosses_scenario(ctx)
         elif args.scenario == "swords":
             swords_scenario(ctx)
+        elif args.scenario == "armorwings":
+            armorwings_scenario(ctx)
         elif args.scenario == "tools":
             tools_scenario(ctx)
         elif args.scenario == "dungeon":
