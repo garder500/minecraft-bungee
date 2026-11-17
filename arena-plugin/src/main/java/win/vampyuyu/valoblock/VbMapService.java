@@ -1,6 +1,7 @@
 package win.vampyuyu.valoblock;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.*;
 import org.bukkit.entity.ItemDisplay;
@@ -251,15 +252,98 @@ public final class VbMapService implements MapService {
     }
     markDirty(in.slot, true);
     wiper.wipe(w, List.of(slotBox(in.slot))).whenComplete((v, e) -> onServer(() -> {
-      try {
-        if (e != null) plugin.getLogger().warning("ValoBlock: wiping slot " + in.slot + " failed (" + e + ")");
-        if (!in.released) build(in);
-      } catch (Throwable t) {
-        plugin.getLogger().warning("ValoBlock: building slot " + in.slot + " failed (" + t + ")");
-      } finally {
+      if (e != null) plugin.getLogger().warning("ValoBlock: wiping slot " + in.slot + " failed (" + e + ")");
+      if (in.released) {
         in.ready.complete(null);
+        return;
       }
+      CompletableFuture<Void> built;
+      try {
+        built = buildAsync(in);
+      } catch (Throwable t) {
+        built = CompletableFuture.failedFuture(t);
+      }
+      built.whenComplete((v2, t) -> onServer(() -> {
+        if (t != null) plugin.getLogger().warning("ValoBlock: building slot " + in.slot + " failed (" + t + ")");
+        in.ready.complete(null);
+      }));
     }));
+  }
+
+  /** Blocks of a match build placed per tick: a whole map in one tick held the server thread for seconds. */
+  static final int BLOCKS_PER_TICK = 30_000;
+
+  /** The themed build of a map, computed once off the server thread (the builders are pure and deterministic). */
+  private final Map<VbMap, CompletableFuture<VbCanvas>> canvases = Collections.synchronizedMap(new WeakHashMap<>());
+
+  private CompletableFuture<VbCanvas> canvasOf(VbMap map) {
+    CompletableFuture<VbCanvas> f = canvases.computeIfAbsent(map, m -> CompletableFuture.supplyAsync(() -> VbThemes.canvas(m)));
+    f.whenComplete((c, e) -> {
+      if (e != null) canvases.remove(map, f); // a failed build is tried again by the next match
+    });
+    return f;
+  }
+
+  /** Every chunk a map covers (one past each edge), the same set the tickets hold. */
+  private void forEachChunk(Instance in, java.util.function.BiConsumer<Integer, Integer> each) {
+    int ox = in.ox();
+    for (int cx = Math.floorDiv(ox - 1, 16); cx <= Math.floorDiv(ox + in.map.width() + 1, 16); cx++)
+      for (int cz = Math.floorDiv(-1, 16); cz <= Math.floorDiv(in.map.depth() + 1, 16); cz++) each.accept(cx, cz);
+  }
+
+  /**
+   * A match build that never holds the server thread: the chunks are loaded (generated on a fresh world) in the
+   * background, the canvas is computed off-thread, then the blocks go down {@link #BLOCKS_PER_TICK} per tick.
+   * Before, a fresh ValoBlock world generated every chunk synchronously and the watchdog fired.
+   */
+  private CompletableFuture<Void> buildAsync(Instance in) {
+    World w = world();
+    if (w == null) return CompletableFuture.completedFuture(null);
+    List<CompletableFuture<Chunk>> chunks = new ArrayList<>();
+    forEachChunk(in, (cx, cz) -> chunks.add(w.getChunkAtAsync(cx, cz)));
+    CompletableFuture<VbCanvas> canvas = canvasOf(in.map);
+    return CompletableFuture.allOf(chunks.toArray(CompletableFuture[]::new)).thenCombine(canvas, (v, c) -> c).thenCompose(c -> {
+      CompletableFuture<Void> done = new CompletableFuture<>();
+      onServer(() -> {
+        if (in.released) {
+          done.complete(null);
+          return;
+        }
+        tickets(in, true); // the chunks are loaded: no synchronous load here any more
+        in.canvas = c;
+        place(w, in, c, done);
+      });
+      return done;
+    });
+  }
+
+  private record Placed(int x, int y, int z, String data) {}
+
+  private void place(World w, Instance in, VbCanvas canvas, CompletableFuture<Void> done) {
+    List<Placed> todo = new ArrayList<>(canvas.size());
+    canvas.emit((x, y, z, d) -> todo.add(new Placed(x, y, z, d)));
+    int ox = in.ox();
+    new org.bukkit.scheduler.BukkitRunnable() {
+      int next;
+
+      @Override
+      public void run() {
+        try {
+          int end = Math.min(todo.size(), next + BLOCKS_PER_TICK);
+          for (; next < end; next++) {
+            Placed b = todo.get(next);
+            w.getBlockAt(ox + b.x(), FEET_Y + b.y(), b.z()).setBlockData(blockData(b.data()), false);
+          }
+          if (next >= todo.size()) {
+            cancel();
+            done.complete(null);
+          }
+        } catch (Throwable t) {
+          cancel();
+          done.completeExceptionally(t);
+        }
+      }
+    }.runTaskTimer(plugin, 0, 1);
   }
 
   /** Runs on the server thread once the map of the instance stands. */
@@ -271,22 +355,10 @@ public final class VbMapService implements MapService {
   private void tickets(Instance in, boolean on) {
     World w = world();
     if (w == null) return;
-    int ox = in.ox();
-    for (int cx = Math.floorDiv(ox - 1, 16); cx <= Math.floorDiv(ox + in.map.width() + 1, 16); cx++)
-      for (int cz = Math.floorDiv(-1, 16); cz <= Math.floorDiv(in.map.depth() + 1, 16); cz++) {
-        if (on) w.addPluginChunkTicket(cx, cz, plugin);
-        else w.removePluginChunkTicket(cx, cz, plugin);
-      }
-  }
-
-  private void build(Instance in) {
-    World w = world();
-    if (w == null) return;
-    tickets(in, true);
-    int ox = in.ox();
-    VbCanvas canvas = VbThemes.canvas(in.map);
-    in.canvas = canvas;
-    canvas.emit((x, y, z, d) -> w.getBlockAt(ox + x, FEET_Y + y, z).setBlockData(blockData(d), false));
+    forEachChunk(in, (cx, cz) -> {
+      if (on) w.addPluginChunkTicket(cx, cz, plugin);
+      else w.removePluginChunkTicket(cx, cz, plugin);
+    });
   }
 
   /** The block data of a canvas string (cached); an unknown block becomes stone and is logged once. */
@@ -518,8 +590,8 @@ public final class VbMapService implements MapService {
 
   // ------------------------------------------------------------------ editor
 
-  /** Builds a map at the preview slot and returns where its origin is (x of the min corner). Server thread. */
-  public Location preview(String mapId) {
+  /** Builds a map at the preview slot (in the background) and completes with the Seedbearer spawn. Server thread. */
+  public CompletableFuture<Location> preview(String mapId) {
     String err = createWorld();
     if (err != null) throw new IllegalStateException(err);
     VbMap map = VbData.maps().get(mapId);
@@ -531,10 +603,11 @@ public final class VbMapService implements MapService {
     Instance in = new Instance("preview", PREVIEW_SLOT, map);
     instances.put("preview", in);
     markDirty(PREVIEW_SLOT, true);
-    build(in);
-    in.ready.complete(null);
-    double[] at = map.spawn(VbSide.SEEDBEARERS, 0, in.ox(), FEET_Y, 0);
-    return new Location(world(), at[0], at[1], at[2], 180f, 0f);
+    return buildAsync(in).thenApply(v -> {
+      in.ready.complete(null);
+      double[] at = map.spawn(VbSide.SEEDBEARERS, 0, in.ox(), FEET_Y, 0);
+      return new Location(world(), at[0], at[1], at[2], 180f, 0f);
+    });
   }
 
   private void in_clear(Instance in) {

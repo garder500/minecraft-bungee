@@ -3,6 +3,7 @@ package win.vampyuyu.valoblock;
 import java.util.*;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import win.vampyuyu.arena.ArenaSession;
@@ -169,13 +170,24 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
         say(sender, "The next match is played on " + maps().selected() + " (forced: it overrides the vote and applies to one match)");
       }
       case "preview" -> {
-        if (!(sender instanceof Player p)) throw new IllegalArgumentException("Only a player can preview a map");
         if (args.length < 3) throw new IllegalArgumentException("Usage: /vb map preview <id>");
         String id = args[2].toLowerCase(Locale.ROOT);
-        var at = maps().preview(id);
-        editors.put(sender.getName(), new VbMapEditor(VbData.maps().get(id).source()));
-        p.teleport(at);
-        say(sender, "Preview of " + id + " built; you are on the Seedbearer spawn. Place markers with /vb map mark, then /vb map save.");
+        long t0 = System.currentTimeMillis();
+        // Built in the background (a fresh world generates its chunks first): the server keeps running meanwhile.
+        say(sender, "Building the preview of " + id + "...");
+        var built = maps().preview(id);
+        if (sender instanceof Player p) editors.put(sender.getName(), new VbMapEditor(VbData.maps().get(id).source()));
+        built.whenComplete((at, e) -> Bukkit.getScheduler().runTask(plugin, () -> {
+          if (e != null) {
+            say(sender, "Preview of " + id + " failed: " + NexusArenaEngine.reason(e));
+            return;
+          }
+          long ms = System.currentTimeMillis() - t0;
+          if (sender instanceof Player p && p.isOnline()) {
+            p.teleport(at);
+            say(sender, "Preview of " + id + " built in " + ms + " ms; you are on the Seedbearer spawn. Place markers with /vb map mark, then /vb map save.");
+          } else say(sender, "Preview of " + id + " built in " + ms + " ms (console: no teleport)");
+        }));
       }
       case "mark" -> mark(sender, args);
       case "save" -> {
