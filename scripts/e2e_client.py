@@ -1066,9 +1066,24 @@ def valoblock_extras(ctx, rcon, map_id, failures):
         seen = set()
         t0 = time.time()
         tp(gx, 65, gz + 6, 180, 5)
-        while time.time() - t0 < 75 and len(seen) < 2:  # the Time Tide swaps every 30 s: one shot per state
+        # The Time Tide swaps every 30 s of the combat clock (server ticks), and a round is only about 90 s long: the loop may start
+        # anywhere in it, so it watches 100 s and ends early once both states of the north gate were seen. The two gates of a
+        # pair must always agree (a split pair means a hole in a wall or a gate that was held open), at every height of the wall.
+        while time.time() - t0 < 100 and len(seen) < 2:
             states = ["AIR" if "AIR" in vb(rcon, f"debug block {int(x)} 66 {int(z)}") else "WALL" for x, z in gates]
-            say(f"t+{time.time() - t0:.0f}s gates (12,11) (17,11) (12,18) (17,18): {states}")
+            say(f"t+{time.time() - t0:.0f}s gates (12,11) (17,11) (12,18) (17,18): {states} | {vb(rcon, 'status')[:70]} | {vb(rcon, 'debug where E2EBot')[:60]}")
+            for pair, (a_, b_) in enumerate([(0, 1), (2, 3)]):
+                if states[a_] != states[b_]:
+                    time.sleep(1)  # a swap may have landed between the two reads: read the pair again before blaming the map
+                    again = ["AIR" if "AIR" in vb(rcon, f"debug block {int(gates[g][0])} 66 {int(gates[g][1])}") else "WALL" for g in (a_, b_)]
+                    if again[0] == again[1]:
+                        continue
+                    heights = [["AIR" if "AIR" in vb(rcon, f"debug block {int(gates[g][0])} {y} {int(gates[g][1])}") else "WALL" for y in (65, 66, 67)] for g in (a_, b_)]
+                    failures.append(f"hourfall: the gates of the {'north' if pair == 0 else 'south'} pair disagree: {states}, heights 65-67 of each: {heights}")
+                    seen = {"open", "closed"}  # reported: stop watching
+                    break
+            if len(seen) == 2:
+                break
             name = "open" if states[0] == "AIR" else "closed"
             if name not in seen:
                 time.sleep(1.5)
@@ -1076,7 +1091,7 @@ def valoblock_extras(ctx, rcon, map_id, failures):
                 seen.add(name)
             time.sleep(2)
         if len(seen) < 2:
-            failures.append(f"hourfall: the gate (12,11) was only seen {seen} in 75 s")
+            failures.append(f"hourfall: the gate (12,11) was only seen {seen} in 100 s: {vb(rcon, 'status')}")
     elif map_id == "rootvault":
         rx, rz = at(8, 7)
         tp(rx, 71.3, rz - 3, 0, 20)
@@ -1332,8 +1347,11 @@ def valoblock_scenario(ctx):
     vb(rcon, "debug win b")
     time.sleep(1)
     vb(rcon, "debug skip")  # round end -> next buy phase
-    time.sleep(5)
-    out = vb(rcon, "debug where E2EBot")
+    for _ in range(8):  # the respawn (teleport, alive, gamemode) lands a little after the phase starts: poll instead of one fixed wait
+        time.sleep(2)
+        out = vb(rcon, "debug where E2EBot")
+        if "alive=true" in out and "mode=ADVENTURE" in out:
+            break
     say("after the next round started: " + out)
     if "alive=true" not in out or "mode=ADVENTURE" not in out or "hp=100" not in out or "vb_arena" not in out:
         failures.append("the human was not respawned for the next round: " + out)

@@ -240,15 +240,39 @@ final class AbilityEnv {
     return d;
   }
 
-  /** A cloud: block_displays scattered in a sphere (they stand for the smoke; sight is blocked by what the eye sees, not by the server). */
+  /**
+   * A cloud: a round ball of the design radius made of block_display puffs (cubes turned at random). The outer shell is
+   * a Fibonacci sphere of puffs a bit smaller than the gaps between them, and a few big puffs fill the core, so it reads
+   * as a round smoke from every side (and from inside) instead of a column. The ball is centred half a radius above the
+   * ground, the part under the floor is moved up. They all go with the effect.
+   */
   void cloud(Effects.Fx f, Location centre, Material m, double radius) {
-    int n = (int) Math.min(26, 8 + radius * 4);
-    float size = (float) Math.max(1.0, radius * 0.7);
-    for (int i = 0; i < n; i++) {
-      double a = random.nextDouble() * Math.PI * 2, b = Math.acos(2 * random.nextDouble() - 1), r = radius * 0.55 * Math.cbrt(random.nextDouble());
-      Location at = centre.clone().add(r * Math.sin(b) * Math.cos(a), radius * 0.5 + r * Math.cos(b) * 0.6, r * Math.sin(b) * Math.sin(a));
-      block(f, at.subtract(0, size / 2, 0), m, size, size, size);
+    for (double[] pf : puffs(radius)) {
+      Location at = centre.clone().add(pf[0], pf[1], pf[2]);
+      BlockDisplay d = block(f, at, m, (float) pf[3], (float) pf[3], (float) pf[3]);
+      Vector3f scale = new Vector3f((float) pf[3]);
+      // a cube turned about its own centre: translation = -(rotated half diagonal)
+      org.joml.Quaternionf q = new org.joml.Quaternionf().rotateYXZ((float) (random.nextDouble() * Math.PI), (float) (random.nextDouble() * Math.PI), (float) (random.nextDouble() * Math.PI));
+      Vector3f half = new Vector3f(-0.5f, -0.5f, -0.5f).mul(scale).rotate(q);
+      d.setTransformation(new Transformation(half, q, scale, new org.joml.Quaternionf()));
     }
+  }
+
+  /** Puffs of a cloud as {dx, dy, dz, size} from its ground point: a shell, a core, nothing under the floor. Pure. */
+  static List<double[]> puffs(double radius) {
+    List<double[]> out = new ArrayList<>();
+    double cy = radius * 0.6; // ball centre above the ground
+    int shell = (int) Math.min(56, Math.max(18, Math.round(radius * radius * 3.4)));
+    double golden = Math.PI * (3 - Math.sqrt(5)), rs = radius * 0.75, size = Math.max(0.7, radius * 0.38);
+    for (int i = 0; i < shell; i++) {
+      double y = 1 - 2 * (i + 0.5) / shell, rr = Math.sqrt(1 - y * y), a = golden * i;
+      double sz = size * (0.8 + 0.4 * ((i * 7) % 5) / 4.0), py = cy + y * rs;
+      if (py - sz / 2 < 0) py = sz / 2; // not under the floor
+      out.add(new double[] {Math.cos(a) * rr * rs, py, Math.sin(a) * rr * rs, sz});
+    }
+    double core = Math.max(1.0, radius * 1.1);
+    out.add(new double[] {0, Math.max(cy, core / 2), 0, core});
+    return out;
   }
 
   /** A thrown item that flies, bounces and calls back: {@code impacts} blocks hit and it is over. */
