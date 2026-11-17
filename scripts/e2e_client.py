@@ -191,7 +191,22 @@ def start_server(zip_path, sha1, plugin=False, pack_required=True):
         shutil.copy(valo_zip, served / f"{valo_sha1}.zip")
         (data / "arenas" / "e2e.json").write_text(json.dumps(ARENA_VB if VALOBLOCK else ARENA, indent=1))
         (server / "token").write_text(API_TOKEN)
-        env.update(ROLE_BRIDGE_TOKEN_FILE=str(server / "token"), SERVER_ID="survival",
+        if os.environ.get("E2E_QUICK_ACTIONS"):
+            # The ValoBlock Quick Actions datapack (the plugin writes it itself only on SERVER_ID=creative, and a datapack needs a
+            # restart): pre-write the same files so the first boot already has the dialog. Keep in step with VbQuickActions.java.
+            buttons = [("Shop", "Open the Armory (buy phase only)", "vb buy"), ("Agent", "Open the agent select (while agents are chosen)", "vb agent"),
+                       ("Map", "Open the tactical map for the ability in your hand", "vb tac"), ("Vote", "Reopen the map vote (while voting is open)", "vb vote")]
+            acts = ",".join('{"label":{"text":"%s"},"tooltip":{"text":"%s"},"width":120,"action":{"type":"minecraft:run_command","command":"%s"}}' % b for b in buttons)
+            dialog = ('{"type":"minecraft:multi_action","title":{"text":"ValoBlock"},"can_close_with_escape":true,'
+                      '"body":[{"type":"minecraft:plain_message","contents":{"text":"Quick actions for a ValoBlock match. Outside a match they only say so."}}],'
+                      '"columns":2,"actions":[' + acts + '],"exit_action":{"label":{"text":"Close"},"width":120}}')
+            dp = server / "world" / "datapacks" / "vampyuyu-valoblock-quick"
+            (dp / "data/vampyuyu/dialog").mkdir(parents=True)
+            (dp / "data/minecraft/tags/dialog").mkdir(parents=True)
+            (dp / "pack.mcmeta").write_text('{"pack":{"description":"ValoBlock quick actions","min_format":[82,0],"max_format":[1000,0]}}')
+            (dp / "data/vampyuyu/dialog/valoblock.json").write_text(dialog)
+            (dp / "data/minecraft/tags/dialog/quick_actions.json").write_text('{"values":["vampyuyu:valoblock"]}')
+        env.update(ROLE_BRIDGE_TOKEN_FILE=str(server / "token"), SERVER_ID=os.environ.get("E2E_SERVER_ID", "survival"),
                    MENU_PACK_BASE_URL=f"http://127.0.0.1:{HTTP_PORT}", MENU_PACK_REQUIRED="true" if pack_required else "false",
                    MENU_PACK_SHA1_FILE=str(WORK / "pack" / "vampyuyu-menus.sha1"),
                    VALOBLOCK_PACK_SHA1_FILE=str(WORK / "pack" / "vampyuyu-valoblock.sha1"),
@@ -1279,6 +1294,19 @@ def valoblock_scenario(ctx):
     for needle in FATAL:
         if needle in client_log.read_text(errors="replace"):
             failures.append(f"client log contains '{needle}'")
+
+
+def hold_scenario(ctx):
+    """Screenshot tour: join, then keep the server and client alive (and the e2e lock) until .e2e/tour-stop exists.
+    A helper script drives them meanwhile (Rcon, xdotool, shot)."""
+    stop = WORK / "tour-stop"
+    stop.unlink(missing_ok=True)
+    (WORK / "tour-ready").write_text("ready")
+    say("hold: ready, waiting for " + str(stop))
+    deadline = time.time() + 4 * 3600
+    while not stop.exists() and time.time() < deadline:
+        time.sleep(2)
+    (WORK / "tour-ready").unlink(missing_ok=True)
 
 
 def dev_server():
@@ -2743,7 +2771,7 @@ def bosses_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock", "vbhold", "sbhold", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -2752,8 +2780,8 @@ def main():
     if args.scenario == "dev":
         return dev_server()
     global WITH_SURVIVAL, VALOBLOCK
-    VALOBLOCK = args.scenario == "valoblock"
-    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft")
+    VALOBLOCK = args.scenario in ("valoblock", "vbhold")
+    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "sbhold")
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
@@ -2776,7 +2804,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock", "vbhold", "sbhold"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -2807,7 +2835,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock", "vbhold", "sbhold"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -2866,6 +2894,8 @@ def main():
             craft_scenario(ctx)
         elif args.scenario == "valoblock":
             valoblock_scenario(ctx)
+        elif args.scenario in ("vbhold", "sbhold"):
+            hold_scenario(ctx)
         else:
             shader_scenario(ctx)
     finally:
