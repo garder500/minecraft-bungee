@@ -93,4 +93,24 @@ public class SealRulesTest {
     assertEquals(VbPhase.PLANTED, m.vbPhase());
     return m;
   }
+
+  @Test
+  public void rightClickBelongsToTheSealOverTheWeapon() {
+    assertTrue(SealRules.claimsRightClick(true, VbSide.SEALERS, true, 2.0, 20));
+    assertTrue("a scoped-in sniper click seals too", SealRules.claimsRightClick(true, VbSide.SEALERS, true, 2.5, 35));
+    assertFalse("seed not planted", SealRules.claimsRightClick(false, VbSide.SEALERS, true, 1, 0));
+    assertFalse("seedbearer fires", SealRules.claimsRightClick(true, VbSide.SEEDBEARERS, true, 1, 0));
+    assertFalse("dead", SealRules.claimsRightClick(true, VbSide.SEALERS, false, 1, 0));
+    assertFalse("too far: the gun fires", SealRules.claimsRightClick(true, VbSide.SEALERS, true, 3.0, 0));
+    assertFalse("looking elsewhere: the gun fires", SealRules.claimsRightClick(true, VbSide.SEALERS, true, 1, 60));
+  }
+
+  @Test
+  public void claimedClickAndSealAgree() {
+    // whenever the click is claimed and the player holds, the seal accepts them (so a claimed click is never lost)
+    UUID a = UUID.randomUUID();
+    for (double d : new double[] {0.5, 2.5}) for (double ang : new double[] {0, 35})
+      if (SealRules.claimsRightClick(true, VbSide.SEALERS, true, d, ang))
+        assertTrue(SealRules.mayHold(c(a, VbSide.SEALERS, true, d, ang, false, true)));
+  }
 }

@@ -18,6 +18,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.SoundCategory;
 import org.bukkit.World;
 import org.bukkit.entity.Display;
+import org.bukkit.entity.Interaction;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
@@ -82,6 +83,7 @@ public final class VbSeedService implements Listener {
     final Location at;
     final long since;
     final Block light;
+    Interaction hit; // invisible hitbox around the Seed: a right-click with an empty hand reaches the server through it
     long nextTick, nextBeam, nextPulse;
     boolean big;
     float yaw;
@@ -96,6 +98,7 @@ public final class VbSeedService implements Listener {
 
     void remove() {
       for (Display d : new Display[] {item, marker}) if (d != null && d.isValid()) d.remove();
+      if (hit != null && hit.isValid()) hit.remove();
       if (light != null && light.getType() == Material.LIGHT) light.setType(Material.AIR, false);
     }
   }
@@ -140,13 +143,31 @@ public final class VbSeedService implements Listener {
   /** Removes every tagged planted-Seed display left in any world (a crash, a reload). */
   static void purgeLeftovers() {
     for (World w : Bukkit.getWorlds())
+    {
       for (Display d : w.getEntitiesByClass(Display.class)) if (d.getScoreboardTags().contains(TAG)) d.remove();
+      for (Interaction d : w.getEntitiesByClass(Interaction.class)) if (d.getScoreboardTags().contains(TAG)) d.remove();
+    }
   }
 
   /** True while this human holds the seal of the planted Seed (the HUD draws the seal bar). */
   boolean sealing(VbMatch m, UUID id) {
     Track t = tracks.get(m);
     return t != null && id.equals(t.sealer) && m.vbPhase() == VbPhase.PLANTED;
+  }
+
+  /**
+   * Whether a right-click of this player belongs to the seal (the Seed is planted and a living Sealer in range looks at it): the
+   * weapon and item services leave such a click alone. See {@link SealRules#claimsRightClick}.
+   */
+  boolean claimsRightClick(VbMatch m, Player p) {
+    Track t = tracks.get(m);
+    if (t == null || t.planted == null || m.vbPhase() != VbPhase.PLANTED || p.getWorld() != t.planted.at.getWorld()) return false;
+    UUID id = p.getUniqueId();
+    Location eye = p.getEyeLocation();
+    var dir = eye.getDirection();
+    Location target = t.planted.at.clone().add(0, 0.9, 0);
+    double angle = SealRules.angle(dir.getX(), dir.getY(), dir.getZ(), target.getX() - eye.getX(), target.getY() - eye.getY(), target.getZ() - eye.getZ());
+    return SealRules.claimsRightClick(true, m.side(id), m.alive().contains(id), p.getLocation().distance(t.planted.at), angle);
   }
 
   /** Where the Seed lies dropped in this match, or null (carried, planted, or none). */
@@ -538,6 +559,13 @@ public final class VbSeedService implements Listener {
     }
     w.playSound(at, "block.end_portal.spawn", SoundCategory.PLAYERS, 1.0f, 1.4f);
     Planted pl = new Planted(item, marker, at, now, light);
+    pl.hit = w.spawn(at.clone(), Interaction.class, d -> {
+      d.setPersistent(false);
+      d.setInteractionWidth(2.0f);
+      d.setInteractionHeight(2.0f);
+      d.setResponsive(false);
+      d.addScoreboardTag(TAG);
+    });
     pl.nextTick = now + 500;
     return pl;
   }

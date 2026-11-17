@@ -343,7 +343,15 @@ public final class VbAgentService implements AgentService, Listener {
 
   /** The spots picked on the tactical map land: the same checks as a click on the item, then the ability is placed there and the charge is spent. */
   void useAt(Player p, VbMatch m, int slot, List<Location> spots) {
-    if (p.isOnline() && matchOf(p.getUniqueId()) == m) use(p, m, slot, spots);
+    if (!p.isOnline() || matchOf(p.getUniqueId()) != m) return;
+    // Every spot is placed in the world the caster fights in (a spot built from another world would put the effect where nobody looks).
+    List<Location> here = new java.util.ArrayList<>();
+    for (Location l : spots) {
+      Location x = l.clone();
+      x.setWorld(p.getWorld());
+      here.add(x);
+    }
+    use(p, m, slot, here);
   }
 
   private void use(Player p, VbMatch m, int slot, List<Location> spots) {

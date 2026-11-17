@@ -231,7 +231,7 @@ final class AbilityEnv {
       e.setInvulnerable(true);
       e.setGravity(false);
       e.setBrightness(new Display.Brightness(12, 12));
-      e.setViewRange(1.2f);
+      e.setViewRange(3f); // far placements (tactical map) must still be seen from where the caster stands
       e.setTransformation(new Transformation(new Vector3f(-sx / 2, 0, -sz / 2), new AxisAngle4f(), new Vector3f(sx, sy, sz), new AxisAngle4f()));
     });
     f.onEnd(d::remove);
@@ -302,7 +302,7 @@ final class AbilityEnv {
 
   /** Spawns particles for the whole circle. */
   static void ring(Location c, double r, Particle particle, int points) {
-    circle(c, r, points, l -> c.getWorld().spawnParticle(particle, l, 1, 0, 0, 0, 0));
+    circle(c, r, points, l -> c.getWorld().spawnParticle(particle, l, 1, 0, 0, 0, 0, null, true));
   }
 
   void sound(Location at, String key, float vol, float pitch) {
