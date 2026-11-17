@@ -82,7 +82,7 @@ test_plugin() {
  cache=${XDG_CACHE_HOME:-$HOME/.cache}/vampyuyu
  mkdir -p "$cache/m2"
  docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e MAVEN_CONFIG=/tmp/.m2 \
-  -v "$PWD/$dir:/build" -v "$cache/m2:/m2" -w /build "$(image_of maven:3-eclipse-temurin-25)" \
+  -v "$PWD/$dir:/build" -v "$PWD/resource-pack:/resource-pack:ro" -v "$cache/m2:/m2" -w /build "$(image_of maven:3-eclipse-temurin-25)" \
   mvn --batch-mode --quiet -Dmaven.repo.local=/m2 ${pattern:+-Dtest=$pattern -Dsurefire.failIfNoSpecifiedTests=false} test
 }
 

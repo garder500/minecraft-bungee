@@ -129,6 +129,15 @@ public class WingsPoseTest {
         if (!java.nio.file.Files.isDirectory(models)) {
             return;  // run from another working directory: the pack test covers it
         }
+        org.mockbukkit.mockbukkit.MockBukkit.mock();  // building an ItemStack needs the registries
+        try {
+            checkWingModels(models);
+        } finally {
+            org.mockbukkit.mockbukkit.MockBukkit.unmock();
+        }
+    }
+
+    private static void checkWingModels(java.nio.file.Path models) {
         for (int tier = 1; tier <= 5; tier++) {
             for (Variant v : Variant.values()) {
                 for (WingsPose.Side side : WingsPose.Side.values()) {
