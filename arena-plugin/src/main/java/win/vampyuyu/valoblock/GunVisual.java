@@ -12,6 +12,8 @@ final class GunVisual {
   static final String RELOAD = "reload";
   static final String AIM = "aim";
   static final String INSPECT = "inspect";
+  /** A scoped sniper holds nothing in view: the pack maps this look to an empty model, only the scope overlay shows. */
+  static final String SCOPE = "scope";
   /** The inspect pose after a weapon swap lasts one second. */
   static final long INSPECT_MS = 1000;
   static final String NONE = "";
@@ -30,6 +32,15 @@ final class GunVisual {
     if (inspecting) return INSPECT;
     if (sneaking) return AIM;
     return NONE;
+  }
+
+  /**
+   * Same, for a weapon of this zoom: while its scope is up (see {@link #scoped}) the gun is not drawn, whatever the
+   * flash or the inspect pose, so it never blocks the target. Reload still wins (the scope drops while reloading).
+   */
+  static String state(boolean reloading, long sinceShotMs, boolean sneaking, boolean inspecting, double zoom) {
+    if (scoped(zoom, sneaking, reloading)) return SCOPE;
+    return state(reloading, sinceShotMs, sneaking, inspecting);
   }
 
   /** A sniper scope shows while aiming with a weapon that zooms. */

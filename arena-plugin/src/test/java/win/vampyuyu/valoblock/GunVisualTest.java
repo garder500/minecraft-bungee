@@ -23,6 +23,16 @@ public class GunVisualTest {
   }
 
   @Test
+  public void aScopedSniperDrawsNoGunWhateverTheOtherStates() {
+    assertEquals("scope", GunVisual.state(false, Long.MAX_VALUE / 2, true, false, 3.5));
+    assertEquals("scope", GunVisual.state(false, 0, true, true, 2.0)); // the flash and the inspect pose hide too
+    assertEquals("reload", GunVisual.state(true, 0, true, false, 3.5)); // reloading drops the scope
+    assertEquals("aim", GunVisual.state(false, 500, true, false, 1.0)); // a rifle keeps its aiming pose
+    assertEquals("", GunVisual.state(false, 500, false, false, 3.5));   // not sneaking: plain hold
+    assertEquals("fire", GunVisual.state(false, 0, false, false, 3.5));
+  }
+
+  @Test
   public void aGunNeverFiredIsNotFlashing() {
     assertEquals("", GunVisual.state(false, Long.MAX_VALUE / 2, false));
     assertEquals("aim", GunVisual.state(false, Long.MAX_VALUE / 2, true));

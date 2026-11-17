@@ -167,6 +167,8 @@ public class VbHudTest {
 
   @Test
   public void crosshairFollowsWhatThePlayerDoesAndTheHitMarkerSitsOnTop() {
+    assertEquals(-1, VbHudState.crosshair(true, 1));
+    assertEquals(2, VbHudState.crosshair(false, 2));
     assertEquals(0, VbHudState.spreadLevel(true, false, false));
     assertEquals(1, VbHudState.spreadLevel(false, false, false));
     assertEquals(2, VbHudState.spreadLevel(false, true, false));

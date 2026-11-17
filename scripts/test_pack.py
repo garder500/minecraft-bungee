@@ -321,7 +321,7 @@ class ValoBlockPackTest(unittest.TestCase):
             node = definition["model"]["cases"] and definition["model"]["fallback"]
             self.assertEqual(node["property"], "minecraft:custom_model_data")
             self.assertEqual(node["index"], 0)
-            self.assertEqual([c["when"] for c in node["cases"]], ["fire", "reload", "inspect", "aim"])
+            self.assertEqual([c["when"] for c in node["cases"]], ["fire", "reload", "inspect", "aim", "scope"])
             self.assertEqual(
                 sorted(set(walk_models(definition["model"]))),
                 sorted({f"vampyuyu:item/valoblock/{n}" for n in (name, f"{name}_3d", f"{name}_fire", f"{name}_reload", f"{name}_inspect", f"{name}_aim")}))

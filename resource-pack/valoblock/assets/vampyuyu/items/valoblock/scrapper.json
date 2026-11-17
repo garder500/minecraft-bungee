@@ -43,6 +43,12 @@
       "type": "minecraft:model",
       "model": "vampyuyu:item/valoblock/scrapper_aim"
      }
+    },
+    {
+     "when": "scope",
+     "model": {
+      "type": "minecraft:empty"
+     }
     }
    ],
    "fallback": {
