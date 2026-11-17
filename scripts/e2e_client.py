@@ -1153,6 +1153,71 @@ def valoblock_overview(ctx, rcon, size=120):
     rcon.command("gamemode adventure E2EBot")
 
 
+def valoblock_rewind(ctx, rcon, failures):
+    """Sahrin's Rewind with real clicks: the first right-click marks the position, a second one within 8 s must
+    teleport back (the owner's bug: the mark appeared but the return never happened)."""
+    tools, env = ctx["tools"], ctx["env"]
+    xdo = tools["xdotool"]
+    rcon.command("gamemode adventure E2EBot")
+    vb(rcon, "debug god E2EBot on")
+    if os.environ.get("E2E_VB_AGENT", "sahrin") == "murk":
+        return valoblock_wall(ctx, rcon, failures)
+
+    def where():
+        out = vb(rcon, "debug where E2EBot")
+        m = re.search(r"where (\S+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+)", out)
+        return (float(m.group(2)), float(m.group(3)), float(m.group(4))) if m else None
+
+    subprocess.run([xdo, "mousemove", "640", "360"], env=env)
+    subprocess.run([xdo, "key", "4"], env=env)
+
+    def trial(name, hold, wait, away_x):
+        say(f"{name}: charge " + vb(rcon, "debug charge E2EBot 4"))
+        vb(rcon, "debug tp E2EBot 50 65 114 180 0")
+        time.sleep(2)
+        start = where()
+        subprocess.run([xdo, "mousedown", "3"], env=env)  # mark (hold = seconds the button stays down)
+        time.sleep(hold)
+        subprocess.run([xdo, "mouseup", "3"], env=env)
+        time.sleep(wait)
+        vb(rcon, f"debug tp E2EBot {away_x} 65 114 180 0")
+        time.sleep(2)
+        away = where()
+        subprocess.run([xdo, "click", "3"], env=env)  # return
+        time.sleep(2)
+        back = where()
+        say(f"rewind {name}: start={start} away={away} after the second click={back}")
+        if not (start and back and abs(back[0] - start[0]) < 1.5 and abs(back[2] - start[2]) < 1.5):
+            failures.append(f"Rewind {name} did not bring the player back: start={start} away={away} back={back}")
+
+    trial("quick click", 0.05, 0.5, 60)
+    trial("click then 4 s", 0.05, 2, 62)
+    trial("slow click held 0.5 s", 0.5, 0.5, 64)
+
+
+def valoblock_wall(ctx, rcon, failures):
+    """Murk's Miasma Wall (signature, slot 6 = hotbar key 6): placed at two map spots, then a right-click switches it."""
+    xdo, env = ctx["tools"]["xdotool"], ctx["env"]
+    vb(rcon, "debug tp E2EBot 50 65 114 180 0")
+    time.sleep(2)
+    subprocess.run([xdo, "mousemove", "640", "360"], env=env)
+    subprocess.run([xdo, "key", "6"], env=env)
+    say("cast: " + vb(rcon, "debug cast E2EBot 6 46 110 54 110"))
+    time.sleep(1.5)
+    seen = [vb(rcon, "debug wall E2EBot")]
+    for name, hold in (("click", 0.05), ("click", 0.05), ("held 0.5 s", 0.5)):
+        time.sleep(1)
+        subprocess.run([xdo, "mousedown", "3"], env=env)
+        time.sleep(hold)
+        subprocess.run([xdo, "mouseup", "3"], env=env)
+        time.sleep(1)
+        seen.append(vb(rcon, "debug wall E2EBot"))
+        say(f"wall after {name}: {seen[-1]}")
+    say(f"wall states: {seen}")
+    if seen != ["wall on", "wall off", "wall on", "wall off"]:
+        failures.append(f"Miasma Wall did not switch exactly once per click: {seen}")
+
+
 def valoblock_scenario(ctx):
     """A ValoBlock practice match on the Hourfall greybox: 1 human, 9 bots, driven by /vb debug commands.
     Screenshots: agent select, buy phase, Armory, combat HUD, the next round after a death (respawn).
@@ -1198,8 +1263,12 @@ def valoblock_scenario(ctx):
     out = vb(rcon, "debug where E2EBot")
     if "vb_arena" not in out:
         failures.append("the human is not in the vb_arena world at the start: " + out)
+    # A known agent: the Rewind check needs Sahrin, the Miasma Wall check Murk (E2E_VB_AGENT=murk)
+    say("lock: " + vb(rcon, "debug agent E2EBot " + os.environ.get("E2E_VB_AGENT", "sahrin")))
     vb(rcon, "debug skip")  # agent select -> buy (unlocked players get a random agent, bots fill)
     time.sleep(6)
+    if os.environ.get("E2E_VB_AGENT", "sahrin") == "sahrin":
+        say("buy rewind: " + vb(rcon, "debug buy E2EBot 4"))
     say("status: " + vb(rcon, "status"))
     # Hourfall: the Seedbearer barrier is the row z 104-107, x 40-79 (the markers of the other maps differ).
     if not ctx.get("rules"):
@@ -1249,6 +1318,7 @@ def valoblock_scenario(ctx):
         vb(rcon, f"debug tp E2EBot {nums[0]} {nums[1] + 0.2} {nums[2] + 2.5} 180 0")
         time.sleep(1.5)
         shot(tools, shots / f"vb-15-bot-tag-{i}.png")
+    valoblock_rewind(ctx, rcon, failures)
     valoblock_extras(ctx, rcon, ctx.get("rules", "map=hourfall").split("=", 1)[-1] or "hourfall", failures)
     time.sleep(10)
     shot(tools, shots / "vb-05-combat-later.png")
