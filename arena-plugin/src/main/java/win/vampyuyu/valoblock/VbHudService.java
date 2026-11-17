@@ -268,7 +268,7 @@ public final class VbHudService implements VbHud {
     String hit = v.hit != null && wall < v.hitUntil ? v.hit : null;
     return new VbHudState.Input(m.alive().contains(id), m.health(id), m.shield(id), agent == null || agent.isEmpty() ? null : agent,
         plugin.valoblock.agents.charges(id), plugin.valoblock.agents.maxCharges(id), ammo == null ? -1 : ammo[0], ammo == null ? 0 : ammo[1],
-        VbHudState.crosshair(WeaponItems.isScope(p.getInventory().getHelmet()), VbHudState.spreadLevel(p.isSneaking(), wall - v.movedAt < 300, !p.isOnGround())), hit,
+        VbHudState.crosshair(WeaponItems.isScope(p.getInventory().getHelmet()) || WeaponItems.holdScoped(p), VbHudState.spreadLevel(p.isSneaking(), wall - v.movedAt < 300, !p.isOnGround())), hit,
         SeedSight.hud(m, id, SeedSight.siteAt(VbData.sites(), loc.getX(), loc.getY(), loc.getZ()) != null, wall));
   }
 

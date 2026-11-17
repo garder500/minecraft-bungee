@@ -25,7 +25,9 @@ Per weapon (shields stay flat sprites, written by valoblock_items.py), under the
   items/valoblock/<id>.json                select on display_context: gui -> flat sprite (the hotbar, the Armory),
                                            anything else -> select on custom_model_data string 0
                                            ("fire" | "reload" | "aim" | "inspect"), fallback the held model
-and the sniper scope overlay textures/misc/scope.png (equippable camera_overlay, see VbWeaponService).
+and the sniper scope overlay textures/misc/scope.png (equippable camera_overlay, see VbWeaponService), plus the same
+reticle as a square, assets/minecraft/textures/misc/spyglass_scope.png: the Watcher's Eye is a spyglass, so the client
+draws that vanilla overlay while it is held up (this pack only, Skyblock spyglasses keep the vanilla one).
 """
 import json
 import pathlib
@@ -423,9 +425,10 @@ def write_weapon(w):
 RANGE_MARKS = (22, 40, 58)   # rows below the centre, one pixel high
 
 
-def scope_overlay(width=512, height=288):
+def scope_overlay(width=512, height=288, radius=0.46, cross=False):
     """Full-screen scope: black outside a circle, thin crosshair, a ring. 16:9 because the overlay is stretched."""
-    cx, cy, rad = width / 2, height / 2, height * 0.46
+    cx, cy, rad = width / 2, height / 2, height * radius
+    marks = tuple(round(m * height / 288) for m in RANGE_MARKS)
     rows = []
     for y in range(height):
         row = []
@@ -435,9 +438,9 @@ def scope_overlay(width=512, height=288):
             px = (0, 0, 0, 255)
             if r < rad:
                 px = (0, 0, 0, 0)
-                if (abs(dx) < 0.5 or abs(dy) < 0.5) and r > 6:
+                if ((x == width // 2 or y == height // 2) if cross else (abs(dx) < 0.5 or abs(dy) < 0.5)) and r > 6:
                     px = (8, 10, 14, 225)                              # 1 px crosshair lines (hollow at the centre)
-                elif abs(dx) < 3 and (y - height // 2) in RANGE_MARKS:
+                elif abs(dx) < 3 and (y - height // 2) in marks:
                     px = (8, 10, 14, 200)                              # 1 px range marks below the centre
                 elif abs(r - (rad - 3)) < 0.8:
                     px = (8, 10, 14, 255)                              # thin rim of the tube
@@ -458,6 +461,10 @@ def main():
     out = PACK / "textures/misc/scope.png"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_bytes(vi.png(scope_overlay()))
+    # Vanilla draws the spyglass overlay as a square scaled up to 1.125 x the window height: a 512 square, circle a bit smaller.
+    spy = PACK.parent / "minecraft" / "textures" / "misc" / "spyglass_scope.png"
+    spy.parent.mkdir(parents=True, exist_ok=True)
+    spy.write_bytes(vi.png(scope_overlay(512, 512, 0.44, cross=True)))
     print(f"wrote {n} 3D weapons and the scope overlay under {PACK}")
 
 

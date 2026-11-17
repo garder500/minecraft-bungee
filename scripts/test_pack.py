@@ -400,6 +400,15 @@ class ValoBlockPackTest(unittest.TestCase):
         code = (ROOT / "arena-plugin/src/main/java/win/vampyuyu/valoblock/WeaponItems.java").read_text()
         self.assertIn('new NamespacedKey("vampyuyu", "misc/scope")', code)  # textures/misc/scope.png of this pack
 
+    def test_spyglass_overlay_is_square_and_only_in_the_valoblock_pack(self):
+        spy = ROOT / "resource-pack/valoblock/assets/minecraft/textures/misc/spyglass_scope.png"
+        w, h = png_size(spy)
+        self.assertEqual(w, h, "vanilla draws the spyglass overlay as a square")
+        self.assertFalse((ROOT / "resource-pack/assets/minecraft/textures/misc/spyglass_scope.png").exists(), "the base pack keeps the vanilla spyglass")
+        weapons = json.loads((ROOT / "arena-plugin/src/main/resources/valoblock/weapons.json").read_text())["weapons"]
+        eye = next(x for x in weapons if x["id"] == "watchers_eye")
+        self.assertEqual(eye["base"], "SPYGLASS", "the client zooms only for the spyglass item")
+
     def test_agent_menu_sprites_exist_for_every_agent(self):
         agents = ROOT / "arena-plugin/src/main/resources/valoblock/agents"
         index = json.loads((agents / "index.json").read_text())
