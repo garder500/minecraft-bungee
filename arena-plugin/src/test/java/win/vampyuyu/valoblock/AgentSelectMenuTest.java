@@ -155,11 +155,16 @@ public class AgentSelectMenuTest {
     ItemStack sig = AgentItems.ability(cinder, cinder.ability(6), kit);
     assertEquals(6, AgentItems.slotOf(sig));
     assertEquals(1, sig.getAmount());
-    assertEquals("[6] Ember Dash", plain(sig.getItemMeta().displayName()));
+    assertEquals("Ember Dash", plain(sig.getItemMeta().displayName()));
+    assertEquals("vampyuyu:valoblock/ab_cinder_ember_dash", sig.getItemMeta().getItemModel().toString());
+    assertEquals("vampyuyu:vb_ab_cinder_ember_dash", sig.getItemMeta().getUseCooldown().getCooldownGroup().toString());
     ItemStack ult = AgentItems.ability(cinder, cinder.ability(7), kit);
-    assertTrue(plain(ult.getItemMeta().displayName()).endsWith("(not ready)"));
-    assertTrue(plain(ult.getItemMeta().lore().get(1)).contains("0 / 7 pts"));
+    assertEquals("vampyuyu:valoblock/ab_cinder_colossus_step_empty", ult.getItemMeta().getItemModel().toString());
+    assertTrue(plain(ult.getItemMeta().lore().get(1)).contains("0 / 7"));
     kit.use(6);
-    assertTrue(plain(AgentItems.ability(cinder, cinder.ability(6), kit).getItemMeta().displayName()).endsWith("(not ready)"));
+    ItemStack spent = AgentItems.ability(cinder, cinder.ability(6), kit);
+    assertEquals(1, spent.getAmount());
+    assertEquals(6, AgentItems.slotOf(spent)); // an empty item stays in its slot, still an ability
+    assertEquals("vampyuyu:valoblock/ab_cinder_ember_dash_empty", spent.getItemMeta().getItemModel().toString());
   }
 }

@@ -312,6 +312,29 @@ class ValoBlockPackTest(unittest.TestCase):
                 definition = json.loads((self.base / f"items/valoblock/{name}.json").read_text())
                 self.assertEqual(gui_model(definition), f"vampyuyu:item/valoblock/{name}", "the GUI shows the flat sprite")
 
+    def test_every_ability_has_its_own_icon_item_with_empty_and_ready_variants(self):
+        agents = ROOT / "arena-plugin/src/main/resources/valoblock/agents"
+        seen = set()
+        for f in sorted(agents.glob("*.json")):
+            if f.name == "index.json":
+                continue
+            a = json.loads(f.read_text())
+            for ab in a["abilities"]:
+                base = f"ab_{a['id']}_{ab['id']}"
+                names = [base, base + "_empty"] + ([base + "_ready"] if ab["slot"] == 7 else [])
+                for name in names:
+                    self.assertEqual(png_size(self.base / f"textures/item/valoblock/{name}.png"), (16, 16), name)
+                    model = json.loads((self.base / f"models/item/valoblock/{name}.json").read_text())
+                    self.assertEqual(model["textures"]["layer0"], f"vampyuyu:item/valoblock/{name}")
+                    definition = json.loads((self.base / f"items/valoblock/{name}.json").read_text())
+                    self.assertEqual(definition["model"]["model"], f"vampyuyu:item/valoblock/{name}")
+                self.assertNotEqual((self.base / f"textures/item/valoblock/{base}.png").read_bytes(),
+                                    (self.base / f"textures/item/valoblock/{base}_empty.png").read_bytes())
+                seen.add(base)
+        self.assertEqual(len(seen), 32)
+        pngs = {(self.base / f"textures/item/valoblock/{n}.png").read_bytes() for n in seen}
+        self.assertEqual(len(pngs), 32, "every ability has a different icon")
+
     def test_every_gun_and_the_knife_has_3d_models_for_each_state(self):
         guns = [w for w in self.weapons if w["texture"] != "ward"]
         self.assertGreaterEqual(len(guns), 13)

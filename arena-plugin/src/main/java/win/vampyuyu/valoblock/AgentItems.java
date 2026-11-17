@@ -5,9 +5,11 @@ import java.util.List;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.UseCooldownComponent;
 import org.bukkit.persistence.PersistentDataType;
 
 /** ItemStacks of the agents slice: menu entries, ability items, the "agent select" reopener. */
@@ -43,22 +45,34 @@ public final class AgentItems {
     return it.getItemMeta().getPersistentDataContainer().get(ACTION, PersistentDataType.STRING);
   }
 
-  /** An ability on the hotbar: its vanilla icon, the stack size is the charges (1 at least). */
+  /**
+   * An ability on the hotbar: the pack's own icon for it (item model from {@link AbilityItemState}), named after the ability, the
+   * stack size is the charges left, a dimmed icon when none is left, a lit one for a charged ultimate. The item carries a
+   * use_cooldown component with its own group, so {@link #cooldown} can show the vanilla cooldown overlay on it.
+   */
   public static ItemStack ability(VbAgent a, VbAbility ab, AgentKit kit) {
-    Material mat = Material.matchMaterial(ab.item());
-    ItemStack it = new ItemStack(mat == null ? Material.STICK : mat);
+    AbilityItemState st = AbilityItemState.of(a, ab, kit);
+    ItemStack it = new ItemStack(Material.PAPER);
     ItemMeta meta = it.getItemMeta();
-    boolean ready = kit.canUse(ab.slot()) == AgentKit.Result.OK;
-    meta.displayName(WeaponItems.text("[" + ab.slot() + "] " + ab.name() + (ready ? "" : " (not ready)"), ready ? a.trim() : "#777777"));
+    meta.displayName(WeaponItems.text(st.title(), st.titleColor()));
     List<Component> lore = new ArrayList<>();
-    for (AgentText.Line l : AgentText.abilityLines(a, ab, kit)) lore.add(WeaponItems.text(l.text(), l.color()));
+    for (AgentText.Line l : st.lore()) lore.add(WeaponItems.text(l.text(), l.color()));
     meta.lore(lore);
+    meta.setItemModel(model(st.model()));
+    UseCooldownComponent cd = meta.getUseCooldown();
+    cd.setCooldownSeconds(1f);
+    cd.setCooldownGroup(new NamespacedKey("vampyuyu", st.cooldownGroup()));
+    meta.setUseCooldown(cd);
     meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
-    if (ab.kind() == VbAbility.Kind.ULTIMATE && ready) meta.setEnchantmentGlintOverride(true);
     meta.getPersistentDataContainer().set(ABILITY, PersistentDataType.INTEGER, ab.slot());
     it.setItemMeta(meta);
-    it.setAmount(Math.max(1, Math.min(ab.kind() == VbAbility.Kind.ULTIMATE ? 1 : 99, kit.charges(ab.slot()))));
+    it.setAmount(st.count());
     return it;
+  }
+
+  /** Shows the vanilla cooldown overlay on the ability's hotbar item (its group, whatever its icon variant). */
+  public static void cooldown(Player p, VbAgent a, VbAbility ab, int ticks) {
+    p.setCooldown(new NamespacedKey("vampyuyu", AbilityItemState.cooldownGroup(a.id(), ab.id())), ticks);
   }
 
   /** The slot of an ability item, or -1. */

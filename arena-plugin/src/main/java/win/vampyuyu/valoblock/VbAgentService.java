@@ -360,6 +360,7 @@ public final class VbAgentService implements AgentService, Listener {
       plugin.getLogger().warning("ValoBlock ability " + ab.id() + " failed: " + ex);
     }
     giveItems(p, kit);
+    AgentItems.cooldown(p, kit.agent(), ab, AbilityItemState.GAP_TICKS);
   }
 
   // ------------------------------------------------------------------ the select menu
