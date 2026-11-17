@@ -13,31 +13,38 @@ import (
 const maxPackBytes = 32 << 20
 
 type packCache struct {
-	mu     sync.Mutex
-	data   []byte
-	digest string
+	mu      sync.Mutex
+	data    []byte
+	digest  string
+	modTime time.Time
+	size    int64
 }
 
-// loadPack reads the menu pack on first success; a missing file is retried so the panel can start before the ZIP exists.
+// loadPack reads the menu pack; a missing file is retried so the panel can start before the ZIP exists.
 func (s *Server) loadPack() ([]byte, string) { return s.pack.load(s.PackFile) }
 
-// load reads one pack file into the cache; it stays empty (and is retried) while the file is missing or too big.
+// load returns the pack file's bytes and SHA-1. The file is read again when its size or modification time changes, so
+// a rebuilt pack (make pack, make pack-valoblock) is served by its new hash without restarting the panel. While the
+// file is missing, unreadable or too big, the last good copy keeps being served (nil before the first good read).
 func (c *packCache) load(path string) ([]byte, string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.data != nil || path == "" {
-		return c.data, c.digest
+	if path == "" {
+		return nil, ""
 	}
 	info, e := os.Stat(path)
 	if e != nil || !info.Mode().IsRegular() || info.Size() > maxPackBytes {
-		return nil, ""
+		return c.data, c.digest
+	}
+	if c.data != nil && info.Size() == c.size && info.ModTime().Equal(c.modTime) {
+		return c.data, c.digest
 	}
 	b, e := os.ReadFile(path)
-	if e != nil {
-		return nil, ""
+	if e != nil || int64(len(b)) > maxPackBytes {
+		return c.data, c.digest
 	}
 	sum := sha1.Sum(b)
-	c.data, c.digest = b, hex.EncodeToString(sum[:])
+	c.data, c.digest, c.modTime, c.size = b, hex.EncodeToString(sum[:]), info.ModTime(), info.Size()
 	return c.data, c.digest
 }
 
