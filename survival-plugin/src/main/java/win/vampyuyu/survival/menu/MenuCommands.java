@@ -1,5 +1,6 @@
 package win.vampyuyu.survival.menu;
 
+import win.vampyuyu.survival.core.PlayerLang;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -113,12 +114,12 @@ final class MenuCommands {
                 rt.core.msg().info(player, "Tutorial: " + engine.completedCount(data) + "/" + engine.catalog().tutorial().size()
                     + " done. Streak: " + engine.liveStreak(data, this.quests.today()) + ".");
                 for (QuestDef def : engine.activeTutorial(data)) {
-                    rt.core.msg().info(player, "  " + def.name() + " (" + engine.progress(data, def, false) + "/" + def.amount()
+                    rt.core.msg().info(player, "  " + engine.catalog().name(def, PlayerLang.of(player)) + " (" + engine.progress(data, def, false) + "/" + def.amount()
                         + ") [" + def.id() + "]");
                 }
                 for (QuestDef def : engine.dailyQuests(data)) {
                     if (!data.dailyDone.contains(def.id())) {
-                        rt.core.msg().info(player, "  Daily: " + def.name() + " (" + engine.progress(data, def, true) + "/"
+                        rt.core.msg().info(player, "  Daily: " + engine.catalog().name(def, PlayerLang.of(player)) + " (" + engine.progress(data, def, true) + "/"
                             + def.amount() + ") [daily:" + def.id() + "]");
                     }
                 }

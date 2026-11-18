@@ -1,5 +1,6 @@
 package win.vampyuyu.survival.menu;
 
+import win.vampyuyu.survival.core.PlayerLang;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,7 +43,8 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
 
     @Override
     public Optional<String> forgeLock(UUID player, String item) {
-        return active() ? rt.engine().forgeLock(rt.quests(player), item).map(QuestDef::name) : Optional.empty();
+        return active() ? rt.engine().forgeLock(rt.quests(player), item)
+            .map(def -> rt.engine().catalog().name(def, PlayerLang.of(org.bukkit.Bukkit.getPlayer(player)))) : Optional.empty();
     }
 
     @Override
@@ -482,10 +484,11 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
     }
 
     private void announce(Player player, QuestDef def, boolean daily, List<String> rewards) {
+        String lang = PlayerLang.of(player);
         Component header = Component.text(daily ? "DAILY QUEST COMPLETE" : "QUEST COMPLETE", NamedTextColor.GREEN,
             TextDecoration.BOLD);
         player.sendMessage(Component.empty());
-        player.sendMessage(header.append(Component.text("  " + def.name(), NamedTextColor.YELLOW)
+        player.sendMessage(header.append(Component.text("  " + rt.engine().catalog().name(def, lang), NamedTextColor.YELLOW)
             .decoration(TextDecoration.BOLD, false)));
         if (!rewards.isEmpty()) {
             player.sendMessage(Msg.component("<gray>Rewards: " + String.join("<gray>, ", rewards)));
@@ -494,12 +497,12 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
             QuestData data = rt.quests(player.getUniqueId());
             List<QuestDef> next = rt.engine().activeTutorial(data);
             if (!next.isEmpty()) {
-                player.sendMessage(Msg.component("<gray>Next: <yellow>" + escape(next.get(0).name())
-                    + " <dark_gray>- " + escape(next.get(0).description())));
+                player.sendMessage(Msg.component("<gray>Next: <yellow>" + escape(rt.engine().catalog().name(next.get(0), lang))
+                    + " <dark_gray>- " + escape(rt.engine().catalog().description(next.get(0), lang))));
             }
         }
         player.showTitle(Title.title(Component.text(daily ? "Daily Quest" : "Quest Complete", NamedTextColor.GREEN),
-            Component.text(def.name(), NamedTextColor.YELLOW),
+            Component.text(rt.engine().catalog().name(def, lang), NamedTextColor.YELLOW),
             Title.Times.times(java.time.Duration.ofMillis(200), java.time.Duration.ofMillis(1500),
                 java.time.Duration.ofMillis(400))));
         rt.play(player, "quest-complete");
@@ -715,7 +718,7 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
                         shared.owed.computeIfAbsent(id.toString(), k -> new java.util.LinkedHashSet<>()).add(def.id());
                     }
                 } else if (member != null) {
-                    rt.core.msg().mini(member, "<green><bold>ISLAND QUEST DONE</bold> <yellow>" + escape(def.name()));
+                    rt.core.msg().mini(member, "<green><bold>ISLAND QUEST DONE</bold> <yellow>" + escape(rt.engine().catalog().name(def, PlayerLang.of(member))));
                 }
             }
         }

@@ -1,0 +1,1574 @@
+{
+ "cat:start": {
+  "name": "Das Erwachen",
+  "description": "Du erwachst auf einem treibenden Fragment von Aethelgard, vom Weltenfresser aus der Welt gerissen. Lerne zu überleben, sammle Kiesel und baue deine Fountain."
+ },
+ "cat:generator": {
+  "name": "Der erste echte Generator",
+  "description": "Die Stasefelder des Fressers halten dein Fragment noch fest. Der Spring Stone und ein Ring aus Steinziegeln machen aus deiner Fountain einen Generator. Ein falscher Ring kostet dich nie etwas."
+ },
+ "cat:variety": {
+  "name": "Verschiedene Generatoren",
+  "description": "Dünen für Sand und Kies, Frost für Eis und Frostium. Andere Überlebende folgen dem Ruf: Der Markt öffnet."
+ },
+ "cat:tiers": {
+  "name": "Die Generatoren aufwerten",
+  "description": "Die Forge, die Kerne, Stufen I bis IV. Die kristallisierten Erinnerungen Aethelgards antworten auf deinen Hammer, und der Fortschritt beschleunigt sich."
+ },
+ "cat:rift": {
+  "name": "Der Hub und der Riss",
+  "description": "Mit der Bronzerüstung auf dem Rücken zeigt dir der Ruf den Weg von der Insel: der Hub, seine Bewohner und der Riss, in dem das erste Echo wartet."
+ },
+ "cat:nether": {
+  "name": "Der Nether und die Glut",
+  "description": "Dein Fragment hat einen schlackenroten Zwilling. Hinter einem Portal warten der Ember-Generator, Quarz und Seelensand."
+ },
+ "cat:end": {
+  "name": "Das Ende und die Leere",
+  "description": "Die Void Lens öffnet /island end. Das Echo des Risses spukt in der Leere."
+ },
+ "cat:farm": {
+  "name": "Landwirtschaft und Essen",
+  "description": "Ruhige Arbeit für ein Fragment, das wieder lernt, Dinge wachsen zu lassen. Spiel sie neben den Generatoren."
+ },
+ "cat:forging": {
+  "name": "Schmiede und Ausrüstung",
+  "description": "Alles, was die Forge herstellt, von den Bronzewerkzeugen bis zu den Bastionsschlüsseln."
+ },
+ "cat:machines": {
+  "name": "Maschinen und Energie",
+  "description": "Kohle, Kabel auf Redstone, Batterien, Solarpaneele und dann Miner, die den Generator für dich abbauen."
+ },
+ "cat:market": {
+  "name": "Markt und Wirtschaft",
+  "description": "Verkaufe, kaufe und versteigere. Der Markt verkauft oder kauft die seltensten Dinge nie."
+ },
+ "cat:dungeons": {
+  "name": "Verliese",
+  "description": "Räume und Geheimnisse unter dem Hub. Die Etagen 6 und 7 bergen die Wing Cores."
+ },
+ "cat:bosses": {
+  "name": "Die Bosse",
+  "description": "Die Wächter halten die Gesetze des Fressers aufrecht, und das Echo des Risses ist sein abgerissener Hunger. Jeder hat seine eigene Silhouette und seine leuchtende Schwachstelle."
+ },
+ "cat:mastery": {
+  "name": "Meisterschaft",
+  "description": "Lange Ziele für Überlebende, die schon alles geschafft haben."
+ },
+ "cat:challenges": {
+  "name": "Herausforderungen",
+  "description": "Lange Tage einfacher Arbeit: größere Zahlen, jede nur einmal."
+ },
+ "cat:grove": {
+  "name": "Der Flüsterhain",
+  "description": "Reich 2. Wurzeln so breit wie Türme, leuchtende Sporen, lebendige Inseln. Die Myzel-Königin hütet die lebenden Codes der alten Welt."
+ },
+ "cat:heights": {
+  "name": "Die Gefrorenen Höhen",
+  "description": "Reich 3. Städte, im Eis erstarrt, eine Kälte, die die Abwesenheit von Bewegung ist, ein Himmel fast in Reichweite. Der Boreale Wächter hält die Welt still."
+ },
+ "cat:marsh": {
+  "name": "Die Fauligen Sümpfe",
+  "description": "Reich 5. Alles, was der Fresser weggeworfen hat, landet hier, und der Sumpf bewahrt es. Die Morastabscheulichkeit verdaut, was die Welt verwirft."
+ },
+ "cat:citadel": {
+  "name": "Die Zitadelle der Goldenen Sande",
+  "description": "Reich 4. Flüsse aus Goldstaub, die aufwärts fließen, eine Sanduhr so groß wie ein Turm. Der Zeitpharao zählt die Stunden, die der Fresser gestohlen hat."
+ },
+ "q001": {
+  "name": "Erster Baum",
+  "description": "Dein Fragment ist still, doch ein einsamer Baum steht noch. Sein Holz ist das Erste, was die Welt dir zurückgibt. Baue 8 Baumstämme ab."
+ },
+ "q002": {
+  "name": "Bretter",
+  "description": "Stelle 4 Bretter her."
+ },
+ "q003": {
+  "name": "Werkbank",
+  "description": "Überlebende haben immer gebaut, bevor sie verstanden. Stelle eine Werkbank her."
+ },
+ "q004": {
+  "name": "Stöcke",
+  "description": "Stelle 4 Stöcke her."
+ },
+ "q005": {
+  "name": "Holzspitzhacke",
+  "description": "Stelle eine Holzspitzhacke her."
+ },
+ "q006": {
+  "name": "Kiesel",
+  "description": "Der Stein Aethelgards ist hier knapp: Der Fresser hat nur Staub und Kiesel zurückgelassen. Rechtsklicke mit leerer Hand auf den Boden deiner Insel, um 9 Stone Pebbles aufzuheben."
+ },
+ "q007": {
+  "name": "Erster Bruchstein",
+  "description": "Stelle einen Bruchstein aus 9 Kieseln her."
+ },
+ "q008": {
+  "name": "Steinspitzhacke",
+  "description": "Stelle eine Steinspitzhacke her."
+ },
+ "q009": {
+  "name": "Holzschwert",
+  "description": "Stelle ein Holzschwert her."
+ },
+ "q010": {
+  "name": "Setzling pflanzen",
+  "description": "Pflanze einen Setzling."
+ },
+ "q011": {
+  "name": "Erste Ernte",
+  "description": "Baue 8 ausgewachsene Feldfrüchte ab."
+ },
+ "q012": {
+  "name": "Brot",
+  "description": "Stelle Brot her."
+ },
+ "q013": {
+  "name": "Die Fountain",
+  "description": "Eine alte Erinnerung regt sich im Fels: der Ruf. Du erinnerst dich, wie man eine Fountain formt. Stelle eine Fountain aus 4 Bruchsteinen und 4 Baumstämmen her."
+ },
+ "q014": {
+  "name": "Die Fountain aufstellen",
+  "description": "Stelle deine Fountain auf deiner Insel auf. Sie erzeugt alle 2 Sekunden einen Bruchstein über sich."
+ },
+ "q015": {
+  "name": "Bruchstein der Fountain",
+  "description": "Baue 64 Bruchsteine ab."
+ },
+ "q016": {
+  "name": "Bruchstein der Fountain II",
+  "description": "Baue 128 weitere Bruchsteine ab."
+ },
+ "q017": {
+  "name": "Den Plan lesen",
+  "description": "Lies den Generatorplan mit /guide."
+ },
+ "q018": {
+  "name": "Spring Stone",
+  "description": "Setze den Spring Stone an die Südseite des Rings deiner Fountain."
+ },
+ "q019": {
+  "name": "Steinziegel",
+  "description": "Besorge 16 Steinziegel: Stelle sie aus Stein her oder nutze eine Steinsäge."
+ },
+ "q020": {
+  "name": "Der Ring",
+  "description": "Setze 7 Steinziegel um deine Fountain (der Spring Stone nimmt die Südseite)."
+ },
+ "q021": {
+  "name": "Steingenerator",
+  "description": "Der Ring schließt sich, und das Fragment atmet wieder. Vervollständige den Ring: Deine Fountain wird zum Steingenerator (Rechtsklick darauf zeigt, was fehlt)."
+ },
+ "q022": {
+  "name": "Den Generator abbauen",
+  "description": "Baue 64 Bruchsteine daraus ab."
+ },
+ "q023": {
+  "name": "Eisennugget",
+  "description": "Finde deinen ersten Eisennugget in deinem Generator."
+ },
+ "q024": {
+  "name": "Nugget-Vorrat",
+  "description": "Finde 9 Eisennuggets in deinem Generator."
+ },
+ "q025": {
+  "name": "Eisenbarren",
+  "description": "Stelle einen Eisenbarren her."
+ },
+ "q026": {
+  "name": "Erster Eimer",
+  "description": "Stelle einen Eimer her."
+ },
+ "q027": {
+  "name": "Bodenloses Wasser",
+  "description": "Fülle deinen Eimer am Spring Stone."
+ },
+ "q028": {
+  "name": "Kupfer",
+  "description": "Finde 16 rohe Kupfer in deinem Generator."
+ },
+ "q029": {
+  "name": "Kohle",
+  "description": "Finde 16 Kohle in deinem Generator."
+ },
+ "q030": {
+  "name": "Gold",
+  "description": "Finde einen Goldnugget in deinem Generator."
+ },
+ "q031": {
+  "name": "Bronzezeit",
+  "description": "Bronzit, das erste Metall, das der Ruf die Überlebenden lehrte. Deine Reise jenseits der Insel beginnt. Finde dein erstes Bronzit in deinem Generator."
+ },
+ "q032": {
+  "name": "250 abbauen",
+  "description": "Baue 250 Bruchsteine ab."
+ },
+ "q033": {
+  "name": "500 abbauen",
+  "description": "Baue 500 Bruchsteine ab."
+ },
+ "q034": {
+  "name": "Schmelzer",
+  "description": "Stelle einen Ofen her."
+ },
+ "q035": {
+  "name": "Lagerung",
+  "description": "Stelle zwei Truhen her."
+ },
+ "q036": {
+  "name": "Eisenspitzhacke",
+  "description": "Stelle eine Eisenspitzhacke her."
+ },
+ "q037": {
+  "name": "Den Markt besuchen",
+  "description": "Öffne den Markt mit /market."
+ },
+ "q038": {
+  "name": "Erste Verkäufe",
+  "description": "Verdiene 200 Münzen."
+ },
+ "q039": {
+  "name": "Dünenplan",
+  "description": "Lies die Pläne der anderen Generatoren mit /guide."
+ },
+ "q040": {
+  "name": "Sandstein",
+  "description": "Stelle 16 Sandstein her."
+ },
+ "q041": {
+  "name": "Dünenring",
+  "description": "Setze 7 Sandsteinblöcke um eine zweite Fountain (ein Spring Stone an der Südseite)."
+ },
+ "q042": {
+  "name": "Dünengenerator",
+  "description": "Vervollständige den Sandsteinring: Ein Dune-Generator erzeugt Sand, Kies und roten Sand."
+ },
+ "q043": {
+  "name": "Sand",
+  "description": "Baue 64 Sand ab."
+ },
+ "q044": {
+  "name": "Kies",
+  "description": "Baue 64 Kies ab."
+ },
+ "q045": {
+  "name": "Roter Sand",
+  "description": "Baue 16 roten Sand ab."
+ },
+ "q046": {
+  "name": "Glas",
+  "description": "Schmelze 8 Glas: Lege Sand in einen Ofen und nimm das Glas heraus."
+ },
+ "q047": {
+  "name": "Beton",
+  "description": "Stelle 8 Betonpulver her."
+ },
+ "q048": {
+  "name": "Mehr Glas",
+  "description": "Schmelze 16 weitere Glas (gefärbtes Glas zählt auch)."
+ },
+ "q049": {
+  "name": "Frostring",
+  "description": "Setze 7 Glasblöcke um eine dritte Fountain (ein Spring Stone an der Südseite)."
+ },
+ "q050": {
+  "name": "Frostgenerator",
+  "description": "Vervollständige den Glasring: Ein Frost-Generator erzeugt Schneeblöcke, Packeis und Frostium."
+ },
+ "q051": {
+  "name": "Schnee",
+  "description": "Baue 32 Schneeblöcke ab."
+ },
+ "q052": {
+  "name": "Eis",
+  "description": "Baue 16 Packeis ab."
+ },
+ "q053": {
+  "name": "Frostium",
+  "description": "Finde dein erstes Frostium in den Blöcken deines Frost-Generators."
+ },
+ "q054": {
+  "name": "Frostium-Ausbeute",
+  "description": "Finde 8 Frostium in den Blöcken deines Frost-Generators."
+ },
+ "q055": {
+  "name": "Zweite Quelle",
+  "description": "Setze 2 weitere Spring Stones."
+ },
+ "q056": {
+  "name": "Mehr Fountains",
+  "description": "Setze 3 weitere Fountains."
+ },
+ "q057": {
+  "name": "Die Forge",
+  "description": "Die Forge ist das Herz jedes Lagers von Überlebenden: Sie macht aus roher Erinnerung Werkzeuge. Stelle eine Forge mit einem Schmelzofen, 4 Eisenbarren und 4 Kohle her und stelle sie auf."
+ },
+ "q058": {
+  "name": "Die Forge öffnen",
+  "description": "Öffne das Menü der Forge mit /forge."
+ },
+ "q059": {
+  "name": "Erstes Schmieden",
+  "description": "Hole einen Bronze Core aus der Forge (/forge)."
+ },
+ "q060": {
+  "name": "Den Generator aufwerten",
+  "description": "Erreiche Generatorstufe II: Schmiede einen Bronze Core und rechtsklicke damit auf deiner Insel."
+ },
+ "q061": {
+  "name": "Abbau auf Stufe II",
+  "description": "Baue 500 weitere Bruchsteine ab."
+ },
+ "q062": {
+  "name": "Bronzit-Schatz",
+  "description": "Finde 12 Bronzit in deinem Generator."
+ },
+ "q063": {
+  "name": "Diamant",
+  "description": "Finde einen Diamanten in deinem Generator."
+ },
+ "q064": {
+  "name": "Ember Core",
+  "description": "Hole einen Ember Core aus der Forge (/forge)."
+ },
+ "q065": {
+  "name": "Stufe III",
+  "description": "Erreiche Generatorstufe III: Schmiede einen Ember Core und rechtsklicke damit auf deiner Insel."
+ },
+ "q066": {
+  "name": "Antike Trümmer",
+  "description": "Finde antike Trümmer in deinem Generator."
+ },
+ "q067": {
+  "name": "2.000 abbauen",
+  "description": "Baue 2.000 Bruchsteine ab."
+ },
+ "q068": {
+  "name": "Void Lens",
+  "description": "Hole eine Void Lens aus der Forge (/forge)."
+ },
+ "q069": {
+  "name": "Die Void Lens",
+  "description": "Durch die Linse erhaschst du einen Blick auf die Lücke, die der Fresser in den Himmel gerissen hat: den Riss. Erreiche Generatorstufe IV: Rechtsklicke die Void Lens auf deiner Insel. Sie öffnet auch dein Ende (/island end)."
+ },
+ "q070": {
+  "name": "Voidglass",
+  "description": "Finde ein Voidglass in deinem Generator."
+ },
+ "q071": {
+  "name": "Starcore",
+  "description": "Finde einen Starcore Shard in deinem Generator."
+ },
+ "q072": {
+  "name": "5.000 abbauen",
+  "description": "Baue 5.000 Bruchsteine ab."
+ },
+ "hub_gate": {
+  "name": "Das Inseltor",
+  "description": "Mit Bronze auf dem Rücken spürst du, wie sich das Fragment lockert. Hinter dem Tor gibt es andere Überlebende. Reise mit /hub zum Hub (und nutze /island, um zurückzukehren)."
+ },
+ "hub_guard": {
+  "name": "Der Wächter",
+  "description": "Klicke auf dem Hub-Platz den Wächter an und hör zu."
+ },
+ "hub_archivist": {
+  "name": "Die Archivarin",
+  "description": "Die Archivarin hat einen Schlüssel aufbewahrt, geschnitten aus einem Splitter, der sich noch an den Himmel erinnert. Klicke auf dem Hub-Platz die Archivarin an: Sie hütet den Schlüssel zum Riss."
+ },
+ "hub_merchant": {
+  "name": "Der Händler",
+  "description": "Klicke auf dem Hub-Platz den Händler an, um zu erfahren, wie der Markt funktioniert."
+ },
+ "hub_market_lesson": {
+  "name": "Marktlektion",
+  "description": "Verdiene 300 Münzen."
+ },
+ "rift_enter": {
+  "name": "In den Riss eintreten",
+  "description": "Bring deinen Echo Key zum Rissbogen westlich des Hub-Platzes und klicke den Rissbewacher an."
+ },
+ "echo_defeat": {
+  "name": "Das Echo des Risses besiegen",
+  "description": "Das erste Echo des Fressers schreit am Himmel. Beende es, und die Acht Reiche werden erreichbar. Rechtsklicke den Echo Key auf dem Rissaltar und besiege dann das Echo des Risses. Es lässt den Wing Core fallen, der dir deine Flügel verleiht und den Weg zum Quai des Huit erleuchtet."
+ },
+ "q073": {
+  "name": "Netherplan",
+  "description": "Lies den Netherplan mit /guide."
+ },
+ "q074": {
+  "name": "Feuerzeug",
+  "description": "Stelle ein Feuerzeug her."
+ },
+ "q075": {
+  "name": "Ein Portal entzünden",
+  "description": "Setze 10 Obsidian."
+ },
+ "q076": {
+  "name": "In den Nether eintreten",
+  "description": "Betritt deinen Nether."
+ },
+ "q077": {
+  "name": "Netherrack",
+  "description": "Baue 64 Netherrack ab."
+ },
+ "q078": {
+  "name": "Netherziegel",
+  "description": "Stelle 16 Netherziegel her."
+ },
+ "q079": {
+  "name": "Magmablock",
+  "description": "Stelle einen Magmablock aus 4 Netherrack und 1 Kohle her."
+ },
+ "q080": {
+  "name": "Glutring",
+  "description": "Setze 7 Netherziegel um eine Fountain (ein Magmablock an der Südseite)."
+ },
+ "q081": {
+  "name": "Glutgenerator",
+  "description": "Vervollständige den Ring mit einem Magmablock an der Südseite: Ein Ember-Generator erzeugt Netherrack und Seelensand."
+ },
+ "q082": {
+  "name": "Quarzblock",
+  "description": "Stelle einen Quarzblock aus 4 Netherquarz her (vom Ember-Generator oder vom Markt)."
+ },
+ "q083": {
+  "name": "Seelensand",
+  "description": "Baue 32 Seelensand ab."
+ },
+ "q084": {
+  "name": "Ember Sunstone",
+  "description": "Finde einen Sunstone in den Blöcken deines Ember-Generators."
+ },
+ "q085": {
+  "name": "Warzen",
+  "description": "Baue 16 Netherwarzen ab."
+ },
+ "q086": {
+  "name": "Magmawürfel",
+  "description": "Besiege 10 Magmawürfel (der Ember Spawn des Lavakolosses)."
+ },
+ "q087": {
+  "name": "Piglin-Jäger",
+  "description": "Besiege 20 Zombifizierte Piglins."
+ },
+ "q088": {
+  "name": "Netherrack-Gräber",
+  "description": "Baue 256 Netherrack ab."
+ },
+ "q089": {
+  "name": "Seelen-Gräber",
+  "description": "Baue 128 Seelensand ab."
+ },
+ "q090": {
+  "name": "1.000 Netherrack abbauen",
+  "description": "Baue 1.000 Netherrack ab."
+ },
+ "q091": {
+  "name": "Das Ende betreten",
+  "description": "Betritt dein Ende mit /island end (benötigt die Void Lens)."
+ },
+ "q092": {
+  "name": "Endstein",
+  "description": "Baue 64 Endstein ab."
+ },
+ "q093": {
+  "name": "Leeremilben",
+  "description": "Besiege 15 Endermiten (die Void Mites des Echos des Risses)."
+ },
+ "q094": {
+  "name": "Endziegel",
+  "description": "Stelle 16 Endsteinziegel her."
+ },
+ "q095": {
+  "name": "Void Sigil",
+  "description": "Hole ein Void Sigil aus der Forge (/forge)."
+ },
+ "q097": {
+  "name": "Das Echo des Risses, nochmal",
+  "description": "Besiege das Echo des Risses 3-mal."
+ },
+ "q098": {
+  "name": "Meister des Echos des Risses",
+  "description": "Besiege das Echo des Risses 10-mal."
+ },
+ "q099": {
+  "name": "Hacke",
+  "description": "Stelle eine Holzhacke her."
+ },
+ "q100": {
+  "name": "Den Boden bestellen",
+  "description": "Pflanze 16 Feldfrüchte oder Samen."
+ },
+ "q101": {
+  "name": "Weizen",
+  "description": "Baue 32 Weizen ab."
+ },
+ "q102": {
+  "name": "Karotten",
+  "description": "Baue 16 Karotten ab."
+ },
+ "q103": {
+  "name": "Kartoffeln",
+  "description": "Baue 16 Kartoffeln ab."
+ },
+ "q104": {
+  "name": "Brotlaibe",
+  "description": "Stelle 8 Brote her."
+ },
+ "q105": {
+  "name": "Einen Wald pflanzen",
+  "description": "Pflanze 8 Setzlinge."
+ },
+ "q106": {
+  "name": "Bauholz",
+  "description": "Baue 64 Baumstämme ab."
+ },
+ "q107": {
+  "name": "Laubbläser",
+  "description": "Baue 64 Eichenlaub ab."
+ },
+ "q108": {
+  "name": "Heuballen",
+  "description": "Stelle einen Heuballen her."
+ },
+ "q109": {
+  "name": "Zuckerrohr",
+  "description": "Baue 32 Zuckerrohr ab."
+ },
+ "q110": {
+  "name": "Goldene Karotte",
+  "description": "Stelle eine goldene Karotte aus Goldnuggets und einer Karotte her."
+ },
+ "q111": {
+  "name": "Melonen",
+  "description": "Baue 16 Melonen ab."
+ },
+ "q112": {
+  "name": "Kürbisse",
+  "description": "Baue 8 Kürbisse ab."
+ },
+ "q113": {
+  "name": "Ackerparzelle",
+  "description": "Pflanze 64 Feldfrüchte oder Samen."
+ },
+ "q114": {
+  "name": "256 ernten",
+  "description": "Baue 256 Feldfrüchte ab."
+ },
+ "q115": {
+  "name": "Komposter",
+  "description": "Stelle einen Komposter her."
+ },
+ "q116": {
+  "name": "Goldener Apfel",
+  "description": "Stelle einen goldenen Apfel her."
+ },
+ "q117": {
+  "name": "1.000 ernten",
+  "description": "Baue 1.000 Feldfrüchte ab."
+ },
+ "q118": {
+  "name": "Angler",
+  "description": "Fange 20 Fische."
+ },
+ "q145": {
+  "name": "Bronze Armor",
+  "description": "Trage ein vollständiges Bronzerüstungsset: Helm, Brustplatte, Beinschutz und Stiefel."
+ },
+ "q150": {
+  "name": "Rime Armor",
+  "description": "Trage ein vollständiges Raureifrüstungsset: Helm, Brustplatte, Beinschutz und Stiefel."
+ },
+ "q155": {
+  "name": "Ember Armor",
+  "description": "Trage ein vollständiges Glutrüstungsset: Helm, Brustplatte, Beinschutz und Stiefel."
+ },
+ "q160": {
+  "name": "Void Armor",
+  "description": "Trage ein vollständiges Leerenrüstungsset: Helm, Brustplatte, Beinschutz und Stiefel."
+ },
+ "q165": {
+  "name": "Starcore Armor",
+  "description": "Trage ein vollständiges Starcore-Rüstungsset: Helm, Brustplatte, Beinschutz und Stiefel."
+ },
+ "forge_cable_drum": {
+  "name": "Kabeltrommel",
+  "description": "Hole in der Forge (/forge): 32× Copper Cable."
+ },
+ "forge_power_plant": {
+  "name": "Kraftwerk",
+  "description": "Hole in der Forge (/forge): 3× Coal Generator."
+ },
+ "forge_deep_miners": {
+  "name": "Tiefenminer",
+  "description": "Hole in der Forge (/forge): 3× Miner II."
+ },
+ "q137": {
+  "name": "Void Lenses",
+  "description": "Hole in der Forge (/forge): 2× Void Lens."
+ },
+ "q138": {
+  "name": "Solarfarm",
+  "description": "Hole in der Forge (/forge): 5× Solar Panel."
+ },
+ "q139": {
+  "name": "Miner bei der Arbeit",
+  "description": "Hole in der Forge (/forge): 3× Miner I."
+ },
+ "q140": {
+  "name": "Batteriebank",
+  "description": "Hole in der Forge (/forge): 5× Battery."
+ },
+ "q246": {
+  "name": "Schlüssel für eine Gruppe",
+  "description": "Hole in der Forge (/forge): 2× Ashes Bastion Key."
+ },
+ "q172": {
+  "name": "Kohlekraft",
+  "description": "Stelle einen Coal Generator auf."
+ },
+ "q173": {
+  "name": "Kabel",
+  "description": "Verlege 8 Copper Cables."
+ },
+ "q174": {
+  "name": "Speichern",
+  "description": "Stelle eine Battery auf."
+ },
+ "q175": {
+  "name": "Sonnenlicht",
+  "description": "Stelle ein Solar Panel unter freiem Himmel auf."
+ },
+ "q176": {
+  "name": "Miner I",
+  "description": "Stelle einen Miner I neben deinen Generator."
+ },
+ "q177": {
+  "name": "Miner II",
+  "description": "Stelle einen Miner II auf."
+ },
+ "q178": {
+  "name": "Zwei Batterien",
+  "description": "Stelle 3 weitere Batteries auf."
+ },
+ "q179": {
+  "name": "Ein echtes Netz",
+  "description": "Verlege 20 weitere Copper Cables."
+ },
+ "q180": {
+  "name": "Solarfarm",
+  "description": "Stelle 4 weitere Solar Panels auf."
+ },
+ "q181": {
+  "name": "Mehr Miner",
+  "description": "Stelle 3 weitere Miner I auf."
+ },
+ "q182": {
+  "name": "Abbautrupp",
+  "description": "Stelle 3 weitere Miner II auf."
+ },
+ "q183": {
+  "name": "Kohlekraftwerk",
+  "description": "Stelle 3 weitere Coal Generators auf."
+ },
+ "q184": {
+  "name": "100 per Maschine",
+  "description": "Lass deine Miner 100 Generatorblöcke abbauen."
+ },
+ "q185": {
+  "name": "500 per Maschine",
+  "description": "Lass deine Miner 500 Generatorblöcke abbauen."
+ },
+ "q186": {
+  "name": "2.000 per Maschine",
+  "description": "Lass deine Miner 2.000 Generatorblöcke abbauen."
+ },
+ "q187": {
+  "name": "5.000 per Maschine",
+  "description": "Lass deine Miner 5.000 Generatorblöcke abbauen."
+ },
+ "q188": {
+  "name": "20.000 per Maschine",
+  "description": "Lass deine Miner 20.000 Generatorblöcke abbauen."
+ },
+ "q189": {
+  "name": "Maschinenpark",
+  "description": "Stelle 10 weitere Maschinen beliebiger Art auf."
+ },
+ "q190": {
+  "name": "Trichter",
+  "description": "Stelle einen Trichter her."
+ },
+ "q191": {
+  "name": "Hebel",
+  "description": "Stelle einen Hebel her."
+ },
+ "q192": {
+  "name": "Im Drift Market stöbern",
+  "description": "Öffne den Drift Market mit /ah."
+ },
+ "q193": {
+  "name": "Taschengeld",
+  "description": "Verdiene 500 Münzen."
+ },
+ "q194": {
+  "name": "Händler",
+  "description": "Verdiene 2.000 Münzen."
+ },
+ "q195": {
+  "name": "Kaufmann",
+  "description": "Verdiene 5.000 Münzen."
+ },
+ "q196": {
+  "name": "Zwischenhändler",
+  "description": "Verdiene 10.000 Münzen."
+ },
+ "q197": {
+  "name": "Großhändler",
+  "description": "Verdiene 25.000 Münzen."
+ },
+ "q198": {
+  "name": "Tycoon",
+  "description": "Verdiene 100.000 Münzen."
+ },
+ "q199": {
+  "name": "Magnat",
+  "description": "Verdiene 500.000 Münzen."
+ },
+ "q200": {
+  "name": "Millionär",
+  "description": "Verdiene 1.000.000 Münzen."
+ },
+ "q201": {
+  "name": "Geldbeutel prüfen",
+  "description": "Prüfe dein Guthaben mit /balance."
+ },
+ "q202": {
+  "name": "Einem Freund zahlen",
+  "description": "Zahle jemandem mit /pay."
+ },
+ "q203": {
+  "name": "Bankbesuch",
+  "description": "Öffne deine Bank mit /bank."
+ },
+ "q204": {
+  "name": "Top-Spieler",
+  "description": "Öffne die Guthaben-Rangliste mit /baltop."
+ },
+ "q205": {
+  "name": "Stetes Einkommen",
+  "description": "Verdiene 50.000 Münzen."
+ },
+ "q206": {
+  "name": "Großer Ausgeber",
+  "description": "Verdiene 250.000 Münzen."
+ },
+ "q207": {
+  "name": "Verkaufsrausch",
+  "description": "Verdiene 1.500 weitere Münzen."
+ },
+ "q208": {
+  "name": "Verkaufsrausch II",
+  "description": "Verdiene 15.000 weitere Münzen."
+ },
+ "q209": {
+  "name": "Verkaufsrausch III",
+  "description": "Verdiene 75.000 weitere Münzen."
+ },
+ "q210": {
+  "name": "Verkaufsrausch IV",
+  "description": "Verdiene 150.000 weitere Münzen."
+ },
+ "q211": {
+  "name": "Das Verlies finden",
+  "description": "Öffne das Verliesmenü mit /dungeon."
+ },
+ "q212": {
+  "name": "Erster Abschluss",
+  "description": "Schließe eine Verlies-Etage ab."
+ },
+ "q213": {
+  "name": "Etage 1",
+  "description": "Schließe Etage 1 ab."
+ },
+ "q214": {
+  "name": "Etage 2",
+  "description": "Schließe Etage 2 ab."
+ },
+ "q215": {
+  "name": "Etage 3",
+  "description": "Schließe Etage 3 ab."
+ },
+ "q216": {
+  "name": "Etage 4",
+  "description": "Schließe Etage 4 ab."
+ },
+ "q217": {
+  "name": "Etage 5",
+  "description": "Schließe Etage 5 ab."
+ },
+ "q218": {
+  "name": "Etage 6",
+  "description": "Schließe Etage 6 ab."
+ },
+ "q219": {
+  "name": "Etage 7",
+  "description": "Schließe Etage 7 ab."
+ },
+ "q220": {
+  "name": "Makellos",
+  "description": "Schließe eine Etage ab, ohne zu sterben."
+ },
+ "q221": {
+  "name": "Teamlauf",
+  "description": "Schließe eine Etage mit einer Gruppe ab."
+ },
+ "q222": {
+  "name": "Stammgast",
+  "description": "Schließe 5 Etagen ab."
+ },
+ "q223": {
+  "name": "Veteran",
+  "description": "Schließe 15 Etagen ab."
+ },
+ "q224": {
+  "name": "Verlies-Meister",
+  "description": "Schließe 30 Etagen ab."
+ },
+ "q225": {
+  "name": "Makellos ×5",
+  "description": "Schließe 5 Etagen ab, ohne zu sterben."
+ },
+ "q226": {
+  "name": "Gruppe ×5",
+  "description": "Schließe 5 Etagen mit einer Gruppe ab."
+ },
+ "q227": {
+  "name": "Zombies",
+  "description": "Besiege 50 Zombies."
+ },
+ "q228": {
+  "name": "Skelette",
+  "description": "Besiege 50 Skelette."
+ },
+ "q229": {
+  "name": "Spinnen",
+  "description": "Besiege 30 Spinnen."
+ },
+ "q230": {
+  "name": "Creeper",
+  "description": "Besiege 20 Creeper."
+ },
+ "q231": {
+  "name": "Lava Colossus",
+  "description": "Besiege den Lava Colossus."
+ },
+ "q232": {
+  "name": "Boreal Watcher",
+  "description": "Besiege den Boreal Watcher."
+ },
+ "q233": {
+  "name": "Mycelial Queen",
+  "description": "Besiege die Mycelial Queen."
+ },
+ "q234": {
+  "name": "Chained Leviathan",
+  "description": "Besiege den Chained Leviathan."
+ },
+ "q235": {
+  "name": "Beliebiger Boss ×3",
+  "description": "Besiege 3 Bosse."
+ },
+ "q236": {
+  "name": "Beliebiger Boss ×10",
+  "description": "Besiege 10 Bosse."
+ },
+ "q237": {
+  "name": "Beliebiger Boss ×25",
+  "description": "Besiege 25 Bosse."
+ },
+ "q238": {
+  "name": "Lava Colossus ×3",
+  "description": "Besiege den Lava Colossus 3-mal."
+ },
+ "q239": {
+  "name": "Boreal Watcher ×3",
+  "description": "Besiege den Boreal Watcher 3-mal."
+ },
+ "q240": {
+  "name": "Mycelial Queen ×3",
+  "description": "Besiege die Mycelial Queen 3-mal."
+ },
+ "q241": {
+  "name": "Chained Leviathan ×3",
+  "description": "Besiege den Chained Leviathan 3-mal."
+ },
+ "q242": {
+  "name": "Crypt Lord",
+  "description": "Besiege den Crypt Lord, den Boss der Verlies-Etagen (/dungeon)."
+ },
+ "q243": {
+  "name": "Crypt Lord ×3",
+  "description": "Besiege den Crypt Lord 3-mal."
+ },
+ "q244": {
+  "name": "Beliebiger Boss ×50",
+  "description": "Besiege 50 Bosse."
+ },
+ "q245": {
+  "name": "Beliebiger Boss ×100",
+  "description": "Besiege 100 Bosse."
+ },
+ "q247": {
+  "name": "Quest-Anfänger",
+  "description": "Schließe 10 weitere Quests ab."
+ },
+ "q248": {
+  "name": "Quest-Jäger",
+  "description": "Schließe 25 weitere Quests ab."
+ },
+ "q249": {
+  "name": "Quest-Meister",
+  "description": "Schließe 50 weitere Quests ab."
+ },
+ "q250": {
+  "name": "Quest-Legende",
+  "description": "Schließe 100 weitere Quests ab."
+ },
+ "q251": {
+  "name": "Steinbrecher",
+  "description": "Baue 10.000 Blöcke beliebiger Art ab."
+ },
+ "q252": {
+  "name": "Steinbruch-Titan",
+  "description": "Baue 50.000 Blöcke beliebiger Art ab."
+ },
+ "q253": {
+  "name": "Erzjäger",
+  "description": "Baue 250 Erzblöcke ab."
+ },
+ "q254": {
+  "name": "Feldjäger",
+  "description": "Besiege 200 Mobs beliebiger Art."
+ },
+ "q255": {
+  "name": "Feldjäger II",
+  "description": "Besiege 1.000 Mobs beliebiger Art."
+ },
+ "q256": {
+  "name": "Bronzit 50",
+  "description": "Finde 50 Bronzit in deinem Generator."
+ },
+ "q257": {
+  "name": "Frostium 25",
+  "description": "Finde 25 Frostium in den Blöcken deines Frost-Generators."
+ },
+ "q258": {
+  "name": "Sunstone 10",
+  "description": "Finde 10 Sunstone in den Blöcken deines Ember-Generators."
+ },
+ "q259": {
+  "name": "Diamanten 20",
+  "description": "Finde 20 Diamanten in deinem Generator."
+ },
+ "q260": {
+  "name": "Trümmer 5",
+  "description": "Finde 5 antike Trümmer in deinem Generator."
+ },
+ "q261": {
+  "name": "Voidglass 3",
+  "description": "Finde 3 Voidglass in deinem Generator."
+ },
+ "q262": {
+  "name": "Starcore 2",
+  "description": "Finde 2 Starcore Shards in deinem Generator."
+ },
+ "q263": {
+  "name": "Etage 7 nochmal",
+  "description": "Schließe Etage 7 dreimal mehr ab."
+ },
+ "q264": {
+  "name": "Generatoren überall",
+  "description": "Vervollständige 3 weitere Generatorringe beliebiger Art (jeder Ring zählt einmal)."
+ },
+ "q265": {
+  "name": "Tagesminer",
+  "description": "Baue 200 Blöcke ab."
+ },
+ "q266": {
+  "name": "Tagesholzfäller",
+  "description": "Baue 100 Baumstämme ab."
+ },
+ "q267": {
+  "name": "Tagesbauer",
+  "description": "Baue 100 Feldfrüchte ab."
+ },
+ "q268": {
+  "name": "Tagesjäger",
+  "description": "Besiege 40 Mobs."
+ },
+ "q269": {
+  "name": "Tageshandwerker",
+  "description": "Stelle 20 Bretter her."
+ },
+ "q270": {
+  "name": "Tagesverdiener",
+  "description": "Verdiene 1.000 Münzen."
+ },
+ "q271": {
+  "name": "Wochenminer",
+  "description": "Baue 2.000 Blöcke ab."
+ },
+ "q272": {
+  "name": "Wochenjäger",
+  "description": "Besiege 3 Bosse."
+ },
+ "q273": {
+  "name": "Wochenplünderer",
+  "description": "Schließe 3 Verlies-Etagen ab."
+ },
+ "q274": {
+  "name": "Wochenverdiener",
+  "description": "Verdiene 5.000 Münzen."
+ },
+ "q275": {
+  "name": "Wochengräber",
+  "description": "Baue 3.000 Blöcke ab."
+ },
+ "q276": {
+  "name": "Stunde der Macht",
+  "description": "Baue 1.000 Blöcke ab."
+ },
+ "q277": {
+  "name": "Hundert Besiegte",
+  "description": "Besiege 100 Mobs."
+ },
+ "q278": {
+  "name": "Holzbaron",
+  "description": "Baue 1.000 Baumstämme ab."
+ },
+ "q279": {
+  "name": "Ackerbaron",
+  "description": "Baue 1.000 Feldfrüchte ab."
+ },
+ "q280": {
+  "name": "Hundert Bretter",
+  "description": "Stelle 100 Bretter her."
+ },
+ "q281": {
+  "name": "Eisenwerk",
+  "description": "Besorge 16 Eisenbarren: Schmelze sie oder stelle sie aus Nuggets her."
+ },
+ "q282": {
+  "name": "Diamantwerk",
+  "description": "Stelle eine Diamantspitzhacke her."
+ },
+ "q283": {
+  "name": "Angeltag",
+  "description": "Fange 50 Fische."
+ },
+ "q284": {
+  "name": "Angelwoche",
+  "description": "Fange 250 Fische."
+ },
+ "q285": {
+  "name": "Gräber",
+  "description": "Baue 5.000 Blöcke ab."
+ },
+ "q286": {
+  "name": "Zombiewelle",
+  "description": "Besiege 100 Zombies."
+ },
+ "q287": {
+  "name": "Skelettwelle",
+  "description": "Besiege 100 Skelette."
+ },
+ "q288": {
+  "name": "Spinnenwelle",
+  "description": "Besiege 60 Spinnen."
+ },
+ "q289": {
+  "name": "Creeperwelle",
+  "description": "Besiege 40 Creeper."
+ },
+ "q290": {
+  "name": "Endermitenwelle",
+  "description": "Besiege 40 Endermiten."
+ },
+ "q291": {
+  "name": "Zombiebelagerung",
+  "description": "Besiege 200 Zombies."
+ },
+ "grove_01": {
+  "name": "Durch das Grüne Tor",
+  "description": "Hinter dem zweiten Tor ist die Luft schwer vom Licht. Der Hain erinnert sich, wie man wächst. Entzünde das Sky Gate des Flüsterhains (besiege den Lava Colossus) und tritt am Quai des Huit (/quai) hindurch."
+ },
+ "grove_02": {
+  "name": "Moosiger Grund",
+  "description": "Baue 32 Moosblöcke ab."
+ },
+ "grove_03": {
+  "name": "Erste Ernte im Hain",
+  "description": "Baue 16 ausgewachsene Feldfrüchte ab."
+ },
+ "grove_04": {
+  "name": "Die Sporen atmen",
+  "description": "Ernte ausgewachsene Feldfrüchte im Hain, bis du die Affinität Atmung erhältst (40 Ernten): Der Sporendunst berührt dich nicht mehr."
+ },
+ "grove_05": {
+  "name": "Die Wurzeln pflanzen",
+  "description": "Pflanze 32 Setzlinge."
+ },
+ "grove_06": {
+  "name": "Kernholz",
+  "description": "Baue 64 Mangrovenstämme ab, das lebende Holz des Hains."
+ },
+ "grove_07": {
+  "name": "Das Grün zähmen",
+  "description": "Stelle einen Komposter her."
+ },
+ "grove_08": {
+  "name": "Lass es wachsen",
+  "description": "Ernte weiter im Hain, bis du die Affinität Wachstum erhältst (200 Ernten): Knochenmehl lässt eine Pflanze überall eine Stufe weiter wachsen."
+ },
+ "grove_09": {
+  "name": "Die Mycelial Queen wecken",
+  "description": "Besiege die Mycelial Queen, Wächterin des Hains."
+ },
+ "heights_01": {
+  "name": "Durch das Gefrorene Tor",
+  "description": "Hinter dem dritten Tor bewegt sich nichts, wenn du es nicht bewegst. Die Höhen bewahren die Zeit in ihrem Eis. Entzünde das Sky Gate der Gefrorenen Höhen (besiege die Mycelial Queen) und tritt am Quai des Huit (/quai) hindurch."
+ },
+ "heights_02": {
+  "name": "Eis schneiden",
+  "description": "Baue 32 Packeis ab."
+ },
+ "heights_03": {
+  "name": "Blauer Schnitt",
+  "description": "Baue 16 Blaueis ab."
+ },
+ "heights_04": {
+  "name": "Wärme",
+  "description": "Schneide Eis in den Höhen, bis du die Affinität Wärme erhältst (40 Blöcke): Die Kälte beißt dich nicht mehr."
+ },
+ "heights_05": {
+  "name": "Kristalltürme",
+  "description": "Baue 8 Amethystcluster ab, die Kristalle der Höhen."
+ },
+ "heights_06": {
+  "name": "Kühllager",
+  "description": "Stelle einen Schmelzofen her."
+ },
+ "heights_07": {
+  "name": "Vagantenjagd",
+  "description": "Besiege 20 Vaganten."
+ },
+ "heights_08": {
+  "name": "Stase",
+  "description": "Schneide weiter Eis in den Höhen, bis du die Affinität Stase erhältst (200 Blöcke): Schleiche in der Luft, um deinen Fall zu bremsen, überall in den Höhen."
+ },
+ "heights_09": {
+  "name": "Den Boreal Watcher wecken",
+  "description": "Besiege den Boreal Watcher, Wächter der Höhen."
+ },
+ "marsh_01": {
+  "name": "Durch das Braune Tor",
+  "description": "Das fünfte Tor riecht nach nasser Erde und alten Mahlzeiten. Nichts ist hier je wirklich verschwunden. Entzünde das Sky Gate der Fauligen Sümpfe (besiege die Mycelial Queen) und tritt am Quai des Huit (/quai) hindurch."
+ },
+ "marsh_02": {
+  "name": "Schlammige Wurzeln",
+  "description": "Baue 32 schlammige Mangrovenwurzeln ab, aus denen Rot Resin quillt."
+ },
+ "marsh_03": {
+  "name": "Den Bottich füttern",
+  "description": "Rechtsklicke einen Rot Vat mit verdorbenen Gegenständen (Zombiefleisch, Spinnenaugen, Knochen...), um sie zu verwerten."
+ },
+ "marsh_04": {
+  "name": "Gefilterte Luft",
+  "description": "Verwerte, bis du die Affinität Gefiltert erhältst (40 Punkte): Der Miasma schwächt dich nicht mehr."
+ },
+ "marsh_05": {
+  "name": "Schleimhaufen",
+  "description": "Baue 16 Schleimblöcke aus der Deponie und der Weinenden Mangrove ab."
+ },
+ "marsh_06": {
+  "name": "Verwerter",
+  "description": "Verwerte weiter, bis du die Affinität Verwerter erhältst (200 Punkte): Ein Vat braucht für jeden Rot-Resin-Wurf weniger Gegenstände."
+ },
+ "marsh_07": {
+  "name": "Den Verdauer verdauen",
+  "description": "Besiege die Mire Abomination, Wächterin der Sümpfe."
+ },
+ "citadel_01": {
+  "name": "Durch das Goldene Tor",
+  "description": "Hinter dem vierten Tor sind sich die Stunden nicht einig. Die Zitadelle zählt sie alle. Entzünde das Sky Gate der Zitadelle der Goldenen Sande (besiege die Mycelial Queen) und tritt am Quai des Huit (/quai) hindurch."
+ },
+ "citadel_02": {
+  "name": "Dünen der Zitadelle",
+  "description": "Baue 64 Sandsteinblöcke ab."
+ },
+ "citadel_03": {
+  "name": "Die Zeit beschleunigt",
+  "description": "Sei in der Zitadelle, wenn die Time Tide aufwallt: Du bewegst dich schneller, und Chrono Modules laufen schnell."
+ },
+ "citadel_04": {
+  "name": "Die Zeit stockt",
+  "description": "Sei in der Zitadelle, wenn die Time Tide stockt: Du bewegst dich langsamer, und Chrono Modules speichern die verlorenen Zyklen."
+ },
+ "citadel_05": {
+  "name": "Gold der Sande",
+  "description": "Sammle 16 Goldbarren, um das Chrono Module und das Sandglass zu schmieden."
+ },
+ "citadel_06": {
+  "name": "Das Sandglass wenden",
+  "description": "Hole ein Sandglass aus der Forge (/forge)."
+ },
+ "citadel_07": {
+  "name": "Ein Modul, das sich erinnert",
+  "description": "Hole ein Chrono Module aus der Forge (/forge)."
+ },
+ "citadel_08": {
+  "name": "Den Temporal Pharaoh wecken",
+  "description": "Besiege den Temporal Pharaoh, Wächter der Zitadelle."
+ },
+ "chop_logs": {
+  "name": "Holzfäller",
+  "description": "Fälle 32 Baumstämme."
+ },
+ "mine_stone": {
+  "name": "Steinmetz",
+  "description": "Baue 64 Steinblöcke ab."
+ },
+ "mine_ores": {
+  "name": "Prospektor",
+  "description": "Baue 16 Erze ab."
+ },
+ "harvest_crops": {
+  "name": "Grüner Daumen",
+  "description": "Ernte 48 ausgewachsene Feldfrüchte."
+ },
+ "kill_zombies": {
+  "name": "Zombiejäger",
+  "description": "Besiege 15 Zombies."
+ },
+ "kill_skeletons": {
+  "name": "Knochensammler",
+  "description": "Besiege 15 Skelette."
+ },
+ "kill_spiders": {
+  "name": "Netzschneider",
+  "description": "Besiege 12 Spinnen."
+ },
+ "kill_creepers": {
+  "name": "Stille Entschärfung",
+  "description": "Besiege 8 Creeper."
+ },
+ "kill_any": {
+  "name": "Schädlingsbekämpfung",
+  "description": "Besiege 40 Mobs."
+ },
+ "go_fishing": {
+  "name": "Fang des Tages",
+  "description": "Fange 12 Fische."
+ },
+ "fish_lots": {
+  "name": "Hochseeangler",
+  "description": "Fange 25 Fische."
+ },
+ "earn_small": {
+  "name": "Taschengeld",
+  "description": "Verdiene 2.000 Münzen."
+ },
+ "earn_big": {
+  "name": "Händler",
+  "description": "Verdiene 20.000 Münzen."
+ },
+ "craft_planks": {
+  "name": "Zimmermann",
+  "description": "Stelle 64 Bretter her."
+ },
+ "craft_torches": {
+  "name": "Es werde Licht",
+  "description": "Stelle 32 Fackeln her."
+ },
+ "enchant_item": {
+  "name": "Verzauberer",
+  "description": "Verzaubere 3 Gegenstände."
+ },
+ "place_saplings": {
+  "name": "Aufforstung",
+  "description": "Pflanze 20 Setzlinge."
+ },
+ "place_blocks": {
+  "name": "Baumeister",
+  "description": "Platziere 200 Blöcke."
+ },
+ "visit_islands": {
+  "name": "Mitüberlebende",
+  "description": "Besuche Inseln 3-mal."
+ },
+ "visit_nether": {
+  "name": "Schlackentourist",
+  "description": "Besuche deinen Nether."
+ },
+ "visit_end": {
+  "name": "Am Rand der Welt",
+  "description": "Besuche dein Ende."
+ },
+ "bazaar_visit": {
+  "name": "Schaufensterbummel",
+  "description": "Öffne die Sky Exchange und sieh, was die Überlebenden handeln."
+ },
+ "boss_hunt": {
+  "name": "Die Linie halten",
+  "description": "Beteilige dich am Sieg über einen Boss."
+ },
+ "q119": {
+  "name": "Bronze Cleaver",
+  "description": "Hole in der Forge (/forge): Bronze Cleaver."
+ },
+ "q120": {
+  "name": "Bronze Pick",
+  "description": "Hole in der Forge (/forge): Bronze Pick."
+ },
+ "q121": {
+  "name": "Rimeblade",
+  "description": "Hole in der Forge (/forge): Rimeblade."
+ },
+ "q122": {
+  "name": "Rime Pick",
+  "description": "Hole in der Forge (/forge): Rime Pick."
+ },
+ "q123": {
+  "name": "Solar Panel",
+  "description": "Hole in der Forge (/forge): Solar Panel."
+ },
+ "q124": {
+  "name": "Copper Cable",
+  "description": "Hole in der Forge (/forge): 4× Copper Cable."
+ },
+ "q125": {
+  "name": "Coal Generator",
+  "description": "Hole in der Forge (/forge): Coal Generator."
+ },
+ "q126": {
+  "name": "Battery",
+  "description": "Hole in der Forge (/forge): Battery."
+ },
+ "q127": {
+  "name": "Miner I",
+  "description": "Hole in der Forge (/forge): Miner I."
+ },
+ "q128": {
+  "name": "Miner II",
+  "description": "Hole in der Forge (/forge): Miner II."
+ },
+ "q129": {
+  "name": "Ashes Bastion Key",
+  "description": "Hole in der Forge (/forge): Ashes Bastion Key."
+ },
+ "q130": {
+  "name": "Heights Bastion Key",
+  "description": "Hole in der Forge (/forge): Heights Bastion Key."
+ },
+ "q131": {
+  "name": "Grove Bastion Key",
+  "description": "Hole in der Forge (/forge): Grove Bastion Key."
+ },
+ "q132": {
+  "name": "Abyss Bastion Key",
+  "description": "Hole in der Forge (/forge): Abyss Bastion Key."
+ },
+ "q133": {
+  "name": "Crystal Saber Skin",
+  "description": "Hole in der Forge (/forge): Crystal Saber Skin."
+ },
+ "q141": {
+  "name": "Bronze Helmet",
+  "description": "Hole in der Forge (/forge): Bronze Helmet."
+ },
+ "q142": {
+  "name": "Bronze Chestplate",
+  "description": "Hole in der Forge (/forge): Bronze Chestplate."
+ },
+ "q143": {
+  "name": "Bronze Leggings",
+  "description": "Hole in der Forge (/forge): Bronze Leggings."
+ },
+ "q144": {
+  "name": "Bronze Boots",
+  "description": "Hole in der Forge (/forge): Bronze Boots."
+ },
+ "q146": {
+  "name": "Rime Helmet",
+  "description": "Hole in der Forge (/forge): Rime Helmet."
+ },
+ "q147": {
+  "name": "Rime Chestplate",
+  "description": "Hole in der Forge (/forge): Rime Chestplate."
+ },
+ "q148": {
+  "name": "Rime Leggings",
+  "description": "Hole in der Forge (/forge): Rime Leggings."
+ },
+ "q149": {
+  "name": "Rime Boots",
+  "description": "Hole in der Forge (/forge): Rime Boots."
+ },
+ "q151": {
+  "name": "Ember Helmet",
+  "description": "Hole in der Forge (/forge): Ember Helmet."
+ },
+ "q152": {
+  "name": "Ember Chestplate",
+  "description": "Hole in der Forge (/forge): Ember Chestplate."
+ },
+ "q153": {
+  "name": "Ember Leggings",
+  "description": "Hole in der Forge (/forge): Ember Leggings."
+ },
+ "q154": {
+  "name": "Ember Boots",
+  "description": "Hole in der Forge (/forge): Ember Boots."
+ },
+ "q156": {
+  "name": "Void Helmet",
+  "description": "Hole in der Forge (/forge): Void Helmet."
+ },
+ "q157": {
+  "name": "Void Chestplate",
+  "description": "Hole in der Forge (/forge): Void Chestplate."
+ },
+ "q158": {
+  "name": "Void Leggings",
+  "description": "Hole in der Forge (/forge): Void Leggings."
+ },
+ "q159": {
+  "name": "Void Boots",
+  "description": "Hole in der Forge (/forge): Void Boots."
+ },
+ "q161": {
+  "name": "Starcore Helmet",
+  "description": "Hole in der Forge (/forge): Starcore Helmet."
+ },
+ "q162": {
+  "name": "Starcore Chestplate",
+  "description": "Hole in der Forge (/forge): Starcore Chestplate."
+ },
+ "q163": {
+  "name": "Starcore Leggings",
+  "description": "Hole in der Forge (/forge): Starcore Leggings."
+ },
+ "q164": {
+  "name": "Starcore Boots",
+  "description": "Hole in der Forge (/forge): Starcore Boots."
+ },
+ "q166": {
+  "name": "Ember Sword",
+  "description": "Hole in der Forge (/forge): Ember Sword."
+ },
+ "q167": {
+  "name": "Ember Pick",
+  "description": "Hole in der Forge (/forge): Ember Pick."
+ },
+ "q168": {
+  "name": "Void Sword",
+  "description": "Hole in der Forge (/forge): Void Sword."
+ },
+ "q169": {
+  "name": "Void Pick",
+  "description": "Hole in der Forge (/forge): Void Pick."
+ },
+ "q170": {
+  "name": "Starcore Sword",
+  "description": "Hole in der Forge (/forge): Starcore Sword."
+ },
+ "q171": {
+  "name": "Starcore Pick",
+  "description": "Hole in der Forge (/forge): Starcore Pick."
+ },
+ "gadget_skyhook": {
+  "name": "Skyhook",
+  "description": "Hole in der Forge (/forge): Skyhook."
+ },
+ "gadget_ore_compass": {
+  "name": "Ore Compass",
+  "description": "Hole in der Forge (/forge): Ore Compass."
+ },
+ "gadget_cloud_anchor": {
+  "name": "Cloud Anchor",
+  "description": "Hole in der Forge (/forge): Cloud Anchor."
+ },
+ "gadget_rain_totem": {
+  "name": "Rain Totem",
+  "description": "Hole in der Forge (/forge): Rain Totem."
+ },
+ "gadget_satchel": {
+  "name": "Satchel",
+  "description": "Hole in der Forge (/forge): Satchel."
+ },
+ "gadget_void_net": {
+  "name": "Void Net",
+  "description": "Hole in der Forge (/forge): Void Net."
+ },
+ "forge_bronze_bow": {
+  "name": "Bronze Bow",
+  "description": "Hole in der Forge (/forge): Bronze Bow."
+ },
+ "forge_bronze_axe": {
+  "name": "Bronze Axe",
+  "description": "Hole in der Forge (/forge): Bronze Axe."
+ },
+ "forge_bronze_shovel": {
+  "name": "Bronze Shovel",
+  "description": "Hole in der Forge (/forge): Bronze Shovel."
+ },
+ "forge_rime_bow": {
+  "name": "Rime Bow",
+  "description": "Hole in der Forge (/forge): Rime Bow."
+ },
+ "forge_rime_axe": {
+  "name": "Rime Axe",
+  "description": "Hole in der Forge (/forge): Rime Axe."
+ },
+ "forge_rime_shovel": {
+  "name": "Rime Shovel",
+  "description": "Hole in der Forge (/forge): Rime Shovel."
+ },
+ "forge_ember_bow": {
+  "name": "Ember Bow",
+  "description": "Hole in der Forge (/forge): Ember Bow."
+ },
+ "forge_ember_axe": {
+  "name": "Ember Axe",
+  "description": "Hole in der Forge (/forge): Ember Axe."
+ },
+ "forge_ember_shovel": {
+  "name": "Ember Shovel",
+  "description": "Hole in der Forge (/forge): Ember Shovel."
+ },
+ "forge_void_bow": {
+  "name": "Void Bow",
+  "description": "Hole in der Forge (/forge): Void Bow."
+ },
+ "forge_void_axe": {
+  "name": "Void Axe",
+  "description": "Hole in der Forge (/forge): Void Axe."
+ },
+ "forge_void_shovel": {
+  "name": "Void Shovel",
+  "description": "Hole in der Forge (/forge): Void Shovel."
+ },
+ "forge_starcore_bow": {
+  "name": "Starcore Bow",
+  "description": "Hole in der Forge (/forge): Starcore Bow."
+ },
+ "forge_starcore_axe": {
+  "name": "Starcore Axe",
+  "description": "Hole in der Forge (/forge): Starcore Axe."
+ },
+ "forge_starcore_shovel": {
+  "name": "Starcore Shovel",
+  "description": "Hole in der Forge (/forge): Starcore Shovel."
+ }
+}
