@@ -8,7 +8,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import win.vampyuyu.survival.api.Stat;
@@ -38,9 +37,8 @@ public final class ItemRender {
     }
 
     /** Bump to redraw every item the next time a player holds it. */
-    public static final long RENDER_VERSION = 2L;
+    public static final long RENDER_VERSION = 3L;
 
-    private static final MiniMessage MINI = MiniMessage.miniMessage();
     private static final TextColor DAMAGE_COLOR = NamedTextColor.RED;
 
     /** Overrides the display name of special stacks (pet eggs, enchanted books); null keeps the default. */
@@ -110,9 +108,7 @@ public final class ItemRender {
             if (!out.isEmpty()) {
                 out.add(Component.empty());
             }
-            for (String text : info.def().lore()) {
-                out.add(line(MINI.deserialize(text)));
-            }
+            out.addAll(win.vampyuyu.survival.core.ItemRenderer.description(info.def()));
             if (!info.def().lore().isEmpty() && !more.isEmpty()) {
                 out.add(Component.empty());
             }
@@ -171,8 +167,8 @@ public final class ItemRender {
             Keys.RENDERED), org.bukkit.persistence.PersistentDataType.LONG, RENDER_VERSION);
         meta.lore(lore(info, stack, gear));
         String override = nameHook.name(info, stack);
-        Component name = Component.text(override != null ? override : displayName(info, gear.reforges()),
-            info.rarity().color());
+        Component name = (override != null ? Component.text(override) : displayComponent(info, gear.reforges()))
+            .color(info.rarity().color());
         if (info.reforge() != null) {
             meta.customName(line(name));
         } else {
@@ -180,6 +176,12 @@ public final class ItemRender {
             meta.itemName(line(name));
         }
         stack.setItemMeta(meta);
+    }
+
+    /** The name written on the stack: the reforge prefix, then the item name in each viewer's language. */
+    public static Component displayComponent(GearInfo info, ReforgeRegistry reforges) {
+        Component name = win.vampyuyu.survival.core.Lang.name("item." + info.def().id() + ".name", info.def().name());
+        return reforges.get(info.reforge()).map(r -> (Component) Component.text(r.name() + " ").append(name)).orElse(name);
     }
 
     /** "Sharp Void Blade" or "Void Blade". */

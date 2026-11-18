@@ -255,7 +255,7 @@ def prepare_client(tools):
     game = dst / "minecraft"
     game.mkdir()
     (game / "options.txt").write_text("\n".join([
-        "lang:en_us", "onboardAccessibility:false", "tutorialStep:none", "joinedFirstServer:true",
+        "lang:" + os.environ.get("E2E_LANG", "en_us"), "onboardAccessibility:false", "tutorialStep:none", "joinedFirstServer:true",
         "fullscreen:false", "maxFps:30", "renderDistance:4", "pauseOnLostFocus:false",
         "skipMultiplayerWarning:true", "narrator:0", "hideServerAddress:true", ""]))
     return data, game
@@ -2120,6 +2120,10 @@ def imported_scenario(ctx):
         "sword": ["weapon/bronze_cleaver", "weapon/rimeblade", "weapon/ember_sword", "weapon/void_sword", "weapon/starcore_sword"],
         "pick": [f"tool/{t}_pick" for t in ("bronze", "rime", "ember", "void", "starcore")],
         "ore": ["ore/bronzite", "ore/frostium", "ore/sunstone", "ore/voidglass", "ore/starcore"],
+        "core": ["ore/bronze_core", "ore/ember_core", "ore/void_lens", "ore/pebble"],
+        # one whole tier side by side: are the pick, axe, shovel, bow, sword, ore and core of one family?
+        "tier": ["tool/bronze_pick", "tool/bronze_axe", "tool/bronze_shovel", "tool/bronze_bow", "weapon/bronze_cleaver",
+                 "ore/bronzite", "ore/bronze_core", "skin/kitsune", "ore/pebble"],
         # held blocks: the machines against a vanilla stone and furnace (a vanilla block is the size reference)
         "machine": ["minecraft:stone", "forge/forge", "machine/solar_panel", "machine/miner_1", "minecraft:furnace"],
     }
@@ -2148,6 +2152,16 @@ def imported_scenario(ctx):
         shot(tools, shots / f"im-{group}-third-person.png")
         subprocess.run([xdo, "key", "F5"], env=env)
         time.sleep(1)
+        # dropped on the ground, next to a vanilla raw copper for scale: what a player sees after a drop
+        rcon.command("tp E2EBot 0.5 -60 0.5 0 35")
+        rcon.command("kill @e[type=item]")
+        for i, m in enumerate(["minecraft:raw_copper"] + [x for x in models if not x.startswith("minecraft:")]):
+            stack = ('{id:"minecraft:raw_copper",count:1}' if m.startswith("minecraft:") else
+                     '{id:"minecraft:iron_sword",count:1,components:{"minecraft:item_model":"vampyuyu:%s"}}' % m)
+            rcon.command(f"summon item {i * 0.8 - 2.0:.1f} -60 3.0 {{Item:{stack},PickupDelay:32767,Age:-32768}}")
+        time.sleep(2)
+        shot(tools, shots / f"im-{group}-dropped.png")
+        rcon.command("kill @e[type=item]")
 
 
 def swords_scenario(ctx):

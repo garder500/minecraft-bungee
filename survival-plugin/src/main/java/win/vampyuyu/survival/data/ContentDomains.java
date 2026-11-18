@@ -160,6 +160,9 @@ public final class ContentDomains {
         new Root("item_def", "id", null, List.of(new Child("item_stat", "item_id"), new Child("item_ability", "item_id"),
             new Child("item_lore", "item_id"), new Child("item_pdc", "item_id")))));
 
+    /** Translations of item and quest text (scripts/i18n_seed.py). */
+    public static final Domain I18N = new Domain("i18n", List.of(new Root("i18n_text", "id", null, List.of())));
+
     /** The {@code setting} rows of one domain ({@code id} starts with {@code <name>.}). */
     public static Root settings(String name) {
         return new Root("setting", "id", "id GLOB '" + name + ".*'", List.of(new Child("setting_item", "setting_id")));
@@ -167,7 +170,7 @@ public final class ContentDomains {
 
     /** In the order they are synced. */
     public static final List<Domain> ALL = List.of(QUESTS, QUESTS_DAILY, CORE, ISLAND, UTILITY, WINGS, MENU, ECONOMY, SKILLS, QUARRY, GADGETS, BOSS,
-        RESONANCE, TRADES, DUNGEON, BASTION, ITEMS, REALM, HELLGAO, PROMOTION, RUNES, STATIONS, NPC, PARAGON, BREATH);
+        RESONANCE, TRADES, DUNGEON, BASTION, ITEMS, REALM, HELLGAO, PROMOTION, RUNES, STATIONS, NPC, PARAGON, BREATH, I18N);
 
     private ContentDomains() {}
 

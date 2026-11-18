@@ -178,6 +178,7 @@ public final class Core {
         if (data == null) {
             data = win.vampyuyu.survival.data.Db.open(plugin.getDataFolder().toPath().resolve("skyblock.db"));
             win.vampyuyu.survival.data.Seeds.sync(data, win.vampyuyu.survival.data.ContentDomains.ALL, plugin.getLogger());
+            Lang.load(data);
         }
         return data;
     }
@@ -199,6 +200,11 @@ public final class Core {
      */
     public void dataChanged(String domain) {
         scheduler.sync(() -> {
+            try {
+                Lang.load(data()); // an edited English row drops its stale translation, a new translation shows at once
+            } catch (RuntimeException e) {
+                plugin.getLogger().log(java.util.logging.Level.WARNING, "Skyblock data: translations not reloaded", e);
+            }
             for (java.util.function.Consumer<String> listener : dataListeners) {
                 try {
                     listener.accept(domain);

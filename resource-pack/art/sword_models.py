@@ -15,16 +15,17 @@ import math
 import pathlib
 
 import boss_skins as bs
-from imported import gui_model, imported
+from imported import gui_model, has_gui, imported
 
 PACK = bs.PACK
 TURN = ("z", -45, [8, 8, 8])
 
+# The hand transforms of a vanilla sword (item/handheld): the 3D sword is as long as the flat one it replaces.
 DISPLAY = {
-    "thirdperson_righthand": {"rotation": [0, -90, 55], "translation": [0, 3.0, 0.5], "scale": [0.55, 0.55, 0.55]},
-    "thirdperson_lefthand": {"rotation": [0, 90, -55], "translation": [0, 3.0, 0.5], "scale": [0.55, 0.55, 0.55]},
-    "firstperson_righthand": {"rotation": [0, -90, 25], "translation": [1.13, 2.0, 1.13], "scale": [0.42, 0.42, 0.42]},
-    "firstperson_lefthand": {"rotation": [0, 90, -25], "translation": [1.13, 2.0, 1.13], "scale": [0.42, 0.42, 0.42]},
+    "thirdperson_righthand": {"rotation": [0, -90, 55], "translation": [0, 4.0, 0.5], "scale": [0.85, 0.85, 0.85]},
+    "thirdperson_lefthand": {"rotation": [0, 90, -55], "translation": [0, 4.0, 0.5], "scale": [0.85, 0.85, 0.85]},
+    "firstperson_righthand": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.68, 0.68, 0.68]},
+    "firstperson_lefthand": {"rotation": [0, 90, -25], "translation": [1.13, 3.2, 1.13], "scale": [0.68, 0.68, 0.68]},
     "ground": {"translation": [0, 2, 0], "scale": [0.5, 0.5, 0.5]},
     "fixed": {"rotation": [0, 90, 0], "scale": [1, 1, 1]},
     "gui": {"rotation": [30, 225, 0], "translation": [0, -1, 0], "scale": [0.78, 0.78, 0.78]},
@@ -39,6 +40,8 @@ class Sword(bs.Skin):
         """3D model as <name>_3d; the GUI keeps the flat sprite (see item_models.write)."""
         if imported(f"{kind}/{name}"):  # shown as its imported flat sprite everywhere (import_textures.py)
             return
+        if has_gui(f"{kind}/{name}") or (kind == "skin" and (PACK / "models/item/skin" / f"{name}_3d.json").exists()):
+            return  # its 3D model is grown from its flat sprite (item_models.write_sprite)
         three = f"vampyuyu:item/{kind}/{name}_3d"
         model = {"textures": {"0": three, "particle": three},
                  "gui_light": "front", "display": DISPLAY, "elements": self.elements}

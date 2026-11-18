@@ -1,29 +1,44 @@
 #!/usr/bin/env python3
-"""True 3D models of every other custom item: ores, cores, lens, tools, the Forge and the machines.
+"""The 3D models of the custom items that are not swords: ores, cores, lens, tools, bows, the Forge and the machines.
 
     python3 resource-pack/art/item_models.py
 
-Same method as sword_models.py and boss_skins.py (boxes on a 16x16 atlas of 4x4 materials). The machines and the
-Forge are drawn as full blocks: in the world the plugin puts them on an item display over the vanilla block
-(`BlockModels.java`), in the inventory they are the item. Deterministic.
+Two kinds. The machines and the Forge are true blocks made of boxes on a 16x16 atlas of 4x4 materials (same method as
+boss_skins.py): in the world the plugin puts them on an item display over the vanilla block (`BlockModels.java`), in
+the inventory they are the item. Every other item is its flat sprite grown into a slim bevelled slab (sprite_models.py),
+so the hand, the ground and the inventory show the same drawing: the imported sprites (<id>_gui.png: ores, swords,
+pickaxes), the sprites other scripts paint (cores, lens, pebble, sword skins), and for the axes, shovels and bows, which
+never had a sprite, one drawn here from their box model. Deterministic.
 """
 import json
 
 import boss_skins as bs
-from imported import gui_model, imported
+from imported import gui_model, has_gui, imported
+import sprite_models
 import sword_models as sm
 
 PACK = bs.PACK
 Y = ("y", 45, [8, 8, 8])
 
-ITEM_DISPLAY = {
+# A sprite grown into a slab (sprite_models.py) stands upright like a vanilla flat item, so it is held like one.
+SPRITE_DISPLAY = {
     "thirdperson_righthand": {"rotation": [0, 0, 0], "translation": [0, 3, 1], "scale": [0.55, 0.55, 0.55]},
     "thirdperson_lefthand": {"rotation": [0, 0, 0], "translation": [0, 3, 1], "scale": [0.55, 0.55, 0.55]},
-    "firstperson_righthand": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.5, 0.5, 0.5]},
-    "firstperson_lefthand": {"rotation": [0, 90, -25], "translation": [1.13, 3.2, 1.13], "scale": [0.5, 0.5, 0.5]},
-    "ground": {"translation": [0, 3, 0], "scale": [0.55, 0.55, 0.55]},
-    "fixed": {"scale": [0.9, 0.9, 0.9]},
-    "gui": {"rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [0.85, 0.85, 0.85]},
+    "firstperson_righthand": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.45, 0.45, 0.45]},
+    "firstperson_lefthand": {"rotation": [0, 90, -25], "translation": [1.13, 3.2, 1.13], "scale": [0.45, 0.45, 0.45]},
+    "ground": {"translation": [0, 2, 0], "scale": [0.5, 0.5, 0.5]},
+    "head": {"rotation": [0, 180, 0], "translation": [0, 13, 7]},
+    "fixed": {"rotation": [0, 180, 0]},
+    "gui": {"rotation": [0, 0, 0], "scale": [1, 1, 1]},
+}
+# The same for a sword or a tool: its sprite lies on the diagonal like a vanilla one, so it takes the vanilla
+# item/handheld hold and is exactly as long as the flat item.
+SPRITE_HANDHELD = {
+    **SPRITE_DISPLAY,
+    "thirdperson_righthand": {"rotation": [0, -90, 55], "translation": [0, 4.0, 0.5], "scale": [0.85, 0.85, 0.85]},
+    "thirdperson_lefthand": {"rotation": [0, 90, -55], "translation": [0, 4.0, 0.5], "scale": [0.85, 0.85, 0.85]},
+    "firstperson_righthand": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.68, 0.68, 0.68]},
+    "firstperson_lefthand": {"rotation": [0, 90, -25], "translation": [1.13, 3.2, 1.13], "scale": [0.68, 0.68, 0.68]},
 }
 BLOCK_DISPLAY = {
     "thirdperson_righthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375]},
@@ -43,6 +58,8 @@ def write(model_id, s, display, block=False):
         return
     if imported(f"{model_id}_3d"):  # a textured block model from block_models.py
         return
+    if has_gui(model_id):  # grown from its imported sprite instead (write_sprite)
+        return
     three = f"vampyuyu:item/{kind}/{name}_3d"
     model = {"textures": {"0": three, "particle": three},
              "gui_light": "front", "display": display, "elements": s.elements}
@@ -59,92 +76,56 @@ def write(model_id, s, display, block=False):
     tex.write_bytes(bs.png(s.atlas()))
 
 
+def flat_model(model_id, handheld):
+    """The flat GUI model of a sprite this script made itself (items/<kind>/<name>.png)."""
+    kind, name = model_id.split("/")
+    parent = "minecraft:item/handheld" if handheld else "minecraft:item/generated"
+    (bs.PACK / "models" / "item" / kind / f"{name}.json").write_text(json.dumps(
+        {"parent": parent, "textures": {"layer0": f"vampyuyu:item/{model_id}"}}, indent=2) + "\n", encoding="utf-8")
+    return f"vampyuyu:item/{model_id}"
+
+
+def slab(sprite_id, display, thickness):
+    """The bevelled slab grown from textures/item/<sprite_id>.png (sprite_models.py), as a model."""
+    sprite = f"vampyuyu:item/{sprite_id}"
+    return {"textures": {"0": sprite, "particle": sprite}, "gui_light": "front", "display": display,
+            "elements": sprite_models.elements(bs.PACK / "textures" / "item" / f"{sprite_id}.png", thickness)}
+
+
+def gui_or_hand(flat, three):
+    """An item definition piece: the flat sprite in the GUI, the slab everywhere else."""
+    return {"type": "minecraft:select", "property": "minecraft:display_context",
+            "cases": [{"when": "gui", "model": {"type": "minecraft:model", "model": flat}}],
+            "fallback": {"type": "minecraft:model", "model": three}}
+
+
+def write_sprite(model_id, sprite_id=None, flat=None):
+    """The 3D model of an item, grown out of its flat sprite: the same drawing in the hand, on the ground and in the
+    inventory (where the flat sprite itself is shown). One look for all of them: a flat vanilla-like item with a
+    one-pixel bevel, the ores and cores a little thicker than the blades and tools. sprite_id: the texture to grow
+    (default the imported <id>_gui); flat: the GUI model (default the one of the imported sprite)."""
+    kind, name = model_id.split("/")
+    handheld = kind in ("weapon", "tool", "skin")
+    thickness, display = (0.8, SPRITE_HANDHELD) if handheld else (1.3, SPRITE_DISPLAY)
+    model = slab(sprite_id or f"{model_id}_gui", display, thickness)
+    definition = {"model": gui_or_hand(flat or gui_model(model_id), f"vampyuyu:item/{kind}/{name}_3d")}
+    for path, data in ((bs.PACK / "models" / "item" / kind / f"{name}_3d.json", model),
+                       (bs.PACK / "items" / kind / f"{name}.json", definition)):
+        path.write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8")
+    (bs.PACK / "textures" / "item" / kind / f"{name}_3d.png").unlink(missing_ok=True)  # the box atlas it replaced
+
+
+def write_drawn(model_id, s):
+    """An item that never had a painted sprite (axe, shovel): its sprite is drawn from its box model s, seen from the
+    front, then it is grown like the others."""
+    kind, name = model_id.split("/")
+    pixels, _ = sprite_models.render(s.elements, s.atlas())
+    (bs.PACK / "textures" / "item" / kind / f"{name}.png").write_bytes(bs.png(pixels))
+    write_sprite(model_id, sprite_id=model_id, flat=flat_model(model_id, True))
+
+
 def shade(c, f):
     return tuple(min(255, int(v * f)) for v in c)
-
-
-def crystals(name, stone, body, light, seed):
-    """An ore chunk: a rock base with crystals poking out at different angles."""
-    s = bs.Skin(name, [("stone", stone, "plain"), ("rock", shade(stone, 0.75), "plain"), ("body", body, "plain"),
-                       ("light", light, "glow")], seed)
-    s.box((2, 0, 2), (14, 5, 14), "stone")
-    s.box((4, 5, 4), (12, 7, 11), "rock")
-    s.box((7, 7, 6), (10, 15, 9), "body", rot=("z", 12, [8, 7, 8]))
-    s.box((7.4, 11, 6.4), (9.6, 15.5, 8.6), "light", rot=("z", 12, [8, 7, 8]))
-    s.box((3.5, 5, 7), (6.5, 12, 10), "body", rot=("z", -22, [5, 5, 8]))
-    s.box((10, 5, 4), (13, 11, 7), "body", rot=("x", 20, [11, 5, 5]))
-    s.box((10.4, 8, 4.4), (12.6, 11.5, 6.6), "light", rot=("x", 20, [11, 5, 5]))
-    s.box((6, 5, 10), (9, 10, 13), "body", rot=("x", -18, [7, 5, 11]))
-    return s
-
-
-def core(name, shell, gem, glow, seed, motif=None):
-    """A guardian core: a faceted orb (two boxes turned against each other) held by the four-prong dark iron cage of the
-    flat sprites (a prong at each compass point, a hub plate above and below). motif: 'flux' adds a cyan ring around the
-    orb's waist, 'lava' lets cracks of lava break out of it."""
-    s = bs.Skin(name, [("iron", (42, 38, 50), "plain"), ("iron_hi", (110, 104, 120), "plain"), ("gem", gem, "plain"),
-                       ("glow", glow, "glow"), ("shell", shell, "plain")], seed)
-    s.box((5.5, 1.0, 5.5), (10.5, 2.6, 10.5), "iron")              # lower hub
-    s.box((5.5, 13.4, 5.5), (10.5, 15.0, 10.5), "iron")            # upper hub
-    s.box((6.8, 15.0, 6.8), (9.2, 16.0, 9.2), "iron_hi")
-    for sign in (1, -1):
-        for axis in ("x", "z"):
-            def prong(d0, d1, y0, y1, w, mat="iron"):
-                lo, hi = sorted((8 + sign * d0, 8 + sign * d1))
-                a, b = ((lo, y0, 8 - w / 2), (hi, y1, 8 + w / 2)) if axis == "x" else ((8 - w / 2, y0, lo), (8 - w / 2 + w, y1, hi))
-                s.box(a, b, mat)
-            prong(2.6, 4.6, 2.6, 4.0, 1.6)                           # foot on the lower hub
-            prong(4.2, 5.6, 4.0, 6.2, 1.6)
-            prong(5.0, 6.4, 6.2, 9.8, 1.8, "iron_hi")                # the bulge, the part that catches the light
-            prong(4.2, 5.6, 9.8, 12.0, 1.6)
-            prong(2.6, 4.6, 12.0, 13.4, 1.6)                          # claw on the upper hub
-    s.box((5.5, 4.5, 5.5), (10.5, 11.5, 10.5), "gem", rot=("y", 45, [8, 8, 8]))
-    s.box((5.5, 4.5, 5.5), (10.5, 11.5, 10.5), "gem", rot=("x", 45, [8, 8, 8]))
-    s.box((6.8, 6.8, 6.8), (9.2, 9.2, 9.2), "glow", rot=("y", 45, [8, 8, 8]))
-    if motif == "flux":                                               # the cyan Flux ring inside the cage
-        s.box((4.0, 7.5, 4.0), (12.0, 8.5, 4.7), "glow")
-        s.box((4.0, 7.5, 11.3), (12.0, 8.5, 12.0), "glow")
-        s.box((4.0, 7.5, 4.7), (4.7, 8.5, 11.3), "glow")
-        s.box((11.3, 7.5, 4.7), (12.0, 8.5, 11.3), "glow")
-    elif motif == "lava":                                             # cracks: shards of lava breaking out of the orb
-        s.box((7.4, 11.4, 7.4), (8.6, 12.8, 8.6), "glow", rot=("z", 18, [8, 11, 8]))
-        s.box((7.4, 3.2, 7.4), (8.6, 4.6, 8.6), "glow", rot=("z", -18, [8, 5, 8]))
-        s.box((4.2, 7.0, 7.4), (5.6, 8.0, 8.6), "glow", rot=("x", 25, [5, 7, 8]))
-        s.box((10.4, 8.4, 7.4), (11.8, 9.4, 8.6), "glow", rot=("x", -25, [11, 9, 8]))
-    return s
-
-
-def lens(name, rim, glass, glow, seed):
-    s = bs.Skin(name, [("rim", rim, "plain"), ("glass", glass, "plain"), ("glow", glow, "glow"),
-                       ("grip", shade(rim, 0.55), "plain")], seed)
-    s.box((2, 5, 6.5), (14, 6.5, 9.5), "rim")          # not a disc: rim bars on a diamond frame
-    s.box((2, 12, 6.5), (14, 13.5, 9.5), "rim")
-    s.box((2, 5, 6.5), (3.5, 13.5, 9.5), "rim")
-    s.box((12.5, 5, 6.5), (14, 13.5, 9.5), "rim")
-    s.box((3.5, 6.5, 7.4), (12.5, 12, 8.6), "glass")
-    s.box((6, 7.8, 7.0), (10, 10.7, 9.0), "glow", rot=("z", 45, [8, 9.25, 8]))
-    s.box((7, 0, 7), (9, 5, 9), "grip")
-    s.box((6, 0, 6), (10, 1.5, 10), "rim")
-    return s
-
-
-def voidglass(name, glass, dark, glow, seed):
-    s = bs.Skin(name, [("glass", glass, "plain"), ("dark", dark, "plain"), ("glow", glow, "glow")], seed)
-    s.box((1, 0, 1), (15, 2, 15), "dark")
-    s.box((2, 2, 2), (14, 14, 14), "glass")
-    s.box((1, 14, 1), (15, 16, 15), "dark")
-    s.box((5.5, 5.5, 5.5), (10.5, 10.5, 10.5), "glow", rot=("y", 45, [8, 8, 8]))
-    s.box((5.5, 5.5, 5.5), (10.5, 10.5, 10.5), "glow", rot=("z", 45, [8, 8, 8]))
-    return s
-
-
-def starcore(name, body, edge, glow, seed):
-    s = bs.Skin(name, [("body", body, "plain"), ("edge", edge, "plain"), ("glow", glow, "glow")], seed)
-    for ang in (0, 45, 90, 135):
-        s.box((7, 1.5, 7), (9, 14.5, 9), "body", rot=("z", ang, [8, 8, 8]))
-    s.box((7, 1.5, 7), (9, 14.5, 9), "edge", rot=("x", 45, [8, 8, 8]))
-    s.box((6, 6, 6), (10, 10, 10), "glow", rot=("y", 45, [8, 8, 8]))
-    return s
 
 
 def forge(name, seed):
@@ -249,16 +230,6 @@ def miner(name, tier, seed):
     return s
 
 
-def pebble_model(name, seed):
-    s = bs.Skin(name, [("stone", hx("#8a8794"), "plain"), ("dark", hx("#4a4658"), "plain"),
-                       ("light", hx("#c4c0d0"), "plain")], seed)
-    s.box((3, 0, 5), (9, 4, 11), "stone", rot=("y", 20, [6, 2, 8]))
-    s.box((8, 0, 7), (13, 3, 12), "dark", rot=("y", -25, [10, 2, 9]))
-    s.box((4, 4, 6), (8, 5, 10), "light", rot=("y", 20, [6, 4, 8]))
-    s.box((6, 0, 2), (10, 2.5, 5.5), "light", rot=("y", 40, [8, 1, 4]))
-    return s
-
-
 def fountain(name, seed):
     s = bs.Skin(name, [("stone", (120, 124, 130), "plain"), ("dark", (70, 74, 80), "plain"),
                        ("water", (60, 130, 220), "glow"), ("rim", (170, 174, 180), "plain")], seed)
@@ -307,14 +278,6 @@ BOW_DISPLAY = {  # the hand transforms of a vanilla bow, so it is aimed and draw
     "fixed": {"rotation": [0, 180, 0]},
     "gui": {"rotation": [8, -20, 0], "scale": [0.95, 0.95, 0.95]},
 }
-TOOL_DISPLAY = {  # a sword's hold, smaller in first person since the heads are wider than a blade, bigger as an icon
-    **sm.DISPLAY,
-    "firstperson_righthand": {"rotation": [0, -90, 25], "translation": [1.13, 3.0, 1.13], "scale": [0.34, 0.34, 0.34]},
-    "firstperson_lefthand": {"rotation": [0, 90, -25], "translation": [1.13, 3.0, 1.13], "scale": [0.34, 0.34, 0.34]},
-    "gui": {"rotation": [30, 225, 0], "translation": [0, -0.5, 0], "scale": [0.95, 0.95, 0.95]},
-}
-
-
 def tool_materials(tier):
     head, edge, handle, glow = TOOL_COLOURS[tier]
     mats = [("head", head, "plain"), ("edge", edge, "plain"), ("handle", handle, "plain"),
@@ -356,68 +319,6 @@ def gem_socket(s, tier, x0, y0, x1, y1, z):
             s.box((cx - 0.55, cy - 0.55, zz), (cx + 0.55, cy + 0.55, zz + 0.3), "gem")
         else:
             s.box((x0, y0, zz), (x1, y1, zz + 0.25), "gem")
-
-
-def pick(tier, seed):
-    """A pickaxe in the Realm head language of the axes and shovels: the same socket, handle and palette, a head that
-    runs both ways from a centre boss, the gem socket at the centre of the head on both faces. The head is built for
-    one side and mirrored about x = 8."""
-    mats, glow = tier_materials(tier)
-    s = sm.Sword(f"{tier}_pick", mats, seed)
-    body = "body" if tier in ("ember", "void") else "head"
-    s.box((7.3, -1.5, 7.3), (8.7, 12.6, 8.7), "handle")
-    s.box((7.05, -2.2, 7.05), (8.95, -1.0, 8.95), "dark")                  # butt of the handle
-    for k in range(3):
-        s.box((7.15, 0.2 + k * 1.3, 7.15), (8.85, 0.9 + k * 1.3, 8.85), "wrap")
-    s.box((6.6, 9.4, 6.9), (9.4, 13.4, 9.1), "dark")                       # socket
-    s.box((6.3, 10.0, 7.3), (9.7, 13.0, 8.7), body)                        # centre boss, the gem sits on it
-
-    def both(a, b, mat, rot=None):
-        """The same box on the left and on the right of the boss."""
-        (x0, y0, z0), (x1, y1, z1) = a, b
-        s.box((x0, y0, z0), (x1, y1, z1), mat, rot=rot or sm.TURN)
-        s.box((16 - x1, y0, z0), (16 - x0, y1, z1), mat, rot=rot or sm.TURN)
-
-    def pair(x0, y0, x1, y1, mat, surf, t=0.15):
-        decal(s, x0, y0, x1, y1, mat, surf, t)
-        decal(s, 16 - x1, y0, 16 - x0, y1, mat, surf, t)
-
-    if tier == "bronze":                                                   # riveted Flux bronze: plate, seam, rivets
-        both((9.7, 10.2, 7.5), (12.4, 12.8, 8.5), "head")
-        both((12.4, 9.4, 7.65), (14.4, 12.6, 8.35), "edge")
-        both((14.4, 8.4, 7.7), (15.6, 11.2, 8.3), "edge")                  # the point curves down
-        both((9.7, 10.2, 7.45), (10.2, 12.8, 8.55), "dark")                # the seam of the riveted plate
-        pair(11.0, 11.8, 11.6, 12.4, "edge", 0.5)
-        pair(11.0, 10.4, 11.6, 11.0, "edge", 0.5)
-    elif tier == "ember":                                                  # jagged obsidian with lava cracks
-        both((9.7, 10.4, 7.5), (12.2, 12.8, 8.5), "body")
-        for x0, x1, y0, y1 in ((12.2, 13.6, 9.6, 13.2), (13.6, 14.8, 8.4, 12.2), (14.8, 15.8, 7.0, 10.6)):
-            both((x0, y0, 7.6), (x1, y1, 8.4), "body")                     # a tooth each, no two alike
-        both((15.8, 7.4, 7.7), (16.4, 9.8, 8.3), "edge")                   # the tip glows hot
-        both((13.6, 12.2, 7.7), (14.4, 13.4, 8.3), "edge")
-        pair(10.6, 10.8, 11.0, 12.4, "gem", 0.5)                           # cracks
-        pair(11.0, 11.6, 12.0, 12.0, "gem", 0.5)
-    elif tier == "rime":                                                   # crystal teeth
-        both((9.7, 10.4, 7.55), (11.8, 12.6, 8.45), "head")
-        for x, top, down in ((11.8, 14.6, 9.0), (13.0, 15.2, 8.0), (14.2, 14.0, 6.8)):
-            both((x, 10.4, 7.65), (x + 1.2, 12.4, 8.35), "head")
-            both((x + 0.2, 12.4, 7.75), (x + 1.0, top, 8.25), "edge")      # teeth above...
-            both((x + 0.2, down, 7.75), (x + 1.0, 10.4, 8.25), "edge")     # ...and below
-        both((15.4, 10.6, 7.8), (16.2, 12.2, 8.2), "edge")
-    elif tier == "starcore":                                               # gold, broad, with sun-ray horns
-        both((9.7, 9.6, 7.5), (12.6, 13.4, 8.5), "head")
-        both((12.6, 8.6, 7.65), (15.0, 14.4, 8.35), "edge")
-        both((13.0, 14.4, 7.65), (14.6, 15.6, 8.35), "head")
-        both((13.0, 7.4, 7.65), (14.6, 8.6, 8.35), "head")
-        both((13.5, 15.6, 7.75), (14.1, 16.4, 8.25), "edge")
-        both((13.5, 6.6, 7.75), (14.1, 7.4, 8.25), "edge")
-    elif tier == "void":                                                   # dark, split by a rift with a pink eye
-        both((9.7, 10.4, 7.5), (12.0, 12.8, 8.5), "body")
-        both((12.0, 11.8, 7.6), (15.4, 13.8, 8.4), "body")                 # upper horn
-        both((12.0, 8.6, 7.6), (14.6, 10.4, 8.4), "body")                  # lower horn, the rift between the two
-        both((12.0, 10.4, 7.7), (13.4, 11.8, 8.3), "edge")
-    gem_socket(s, tier, 7.4, 10.9, 8.6, 12.1, 8.7)                         # centre of the head, both faces
-    return s
 
 
 def axe(tier, seed):
@@ -570,17 +471,21 @@ def bow(tier, pull, seed):
 
 
 def write_bow(tier, seed):
-    """A bow's models and its definition: at rest, then the three draw stages of a vanilla bow."""
+    """A bow's models and its definition: at rest, then the three draw stages of a vanilla bow. Each stage is drawn as
+    a sprite from its box model and grown into a slab; the GUI shows the flat sprite of the stage."""
     kind, name = "tool", f"{tier}_bow"
     refs = []
     for pull in range(4):
         s = bow(tier, pull, seed + pull)
-        three = f"vampyuyu:item/{kind}/{name}_{pull}"
-        model = {"textures": {"0": three, "particle": three}, "gui_light": "front", "display": BOW_DISPLAY,
-                 "elements": s.elements}
-        (bs.PACK / "models" / "item" / kind / f"{name}_{pull}.json").write_text(json.dumps(model, indent=1) + "\n", encoding="utf-8")
-        (bs.PACK / "textures" / "item" / kind / f"{name}_{pull}.png").write_bytes(bs.png(s.atlas()))
-        refs.append({"type": "minecraft:model", "model": three})
+        stage = f"{kind}/{name}_{pull}"
+        pixels, _ = sprite_models.render(s.elements, s.atlas())
+        (bs.PACK / "textures" / "item" / kind / f"{name}_{pull}.png").write_bytes(bs.png(pixels))
+        (bs.PACK / "models" / "item" / kind / f"{name}_{pull}_flat.json").write_text(json.dumps(
+            {"parent": "minecraft:item/generated", "textures": {"layer0": f"vampyuyu:item/{stage}"}}, indent=2) + "\n",
+            encoding="utf-8")
+        (bs.PACK / "models" / "item" / kind / f"{name}_{pull}.json").write_text(
+            json.dumps(slab(stage, BOW_DISPLAY, 0.8), indent=1) + "\n", encoding="utf-8")
+        refs.append(gui_or_hand(f"vampyuyu:item/{stage}_flat", f"vampyuyu:item/{stage}"))
     definition = {"model": {
         "type": "minecraft:condition", "property": "minecraft:using_item",
         "on_false": refs[0],
@@ -592,18 +497,9 @@ def write_bow(tier, seed):
 def main():
     for i, tier in enumerate(TOOL_COLOURS):
         write_bow(tier, 70 + i * 4)
+        write_drawn(f"tool/{tier}_axe", axe(tier, 90 + i))
+        write_drawn(f"tool/{tier}_shovel", shovel(tier, 95 + i))
     out = {
-        **{f"tool/{tier}_axe": (axe(tier, 90 + i), TOOL_DISPLAY) for i, tier in enumerate(TOOL_COLOURS)},
-        **{f"tool/{tier}_shovel": (shovel(tier, 95 + i), TOOL_DISPLAY) for i, tier in enumerate(TOOL_COLOURS)},
-        "ore/bronzite": (crystals("bronzite", (96, 92, 90), hx("#c98442"), hx("#4af0ff"), 21), ITEM_DISPLAY),
-        "ore/frostium": (crystals("frostium", (92, 100, 108), hx("#7fc8e8"), hx("#e6f7ff"), 22), ITEM_DISPLAY),
-        "ore/sunstone": (crystals("sunstone", (110, 90, 70), hx("#f2c14e"), hx("#3fb6a8"), 23), ITEM_DISPLAY),
-        "ore/bronze_core": (core("bronze_core", hx("#7a4a1e"), hx("#c98442"), hx("#4af0ff"), 24, "flux"), ITEM_DISPLAY),
-        "ore/ember_core": (core("ember_core", hx("#2a1a2e"), hx("#c8461e"), hx("#ff8a2a"), 25, "lava"), ITEM_DISPLAY),
-        "ore/void_lens": (lens("void_lens", hx("#3a1a6a"), hx("#0e0a1a"), hx("#ff4a8a"), 26), ITEM_DISPLAY),
-        "ore/voidglass": (voidglass("voidglass", hx("#4a2a8a"), hx("#1c0f3a"), hx("#ff4a8a"), 27), ITEM_DISPLAY),
-        "ore/starcore": (starcore("starcore", hx("#f2c14e"), hx("#fff1b0"), hx("#3fb6a8"), 28), ITEM_DISPLAY),
-        "ore/pebble": (pebble_model("pebble", 40), ITEM_DISPLAY),
         "machine/fountain": (fountain("fountain", 41), BLOCK_DISPLAY),
         "machine/spring_stone": (spring_stone("spring_stone", 42), BLOCK_DISPLAY),
         "forge/forge": (forge("forge", 29), BLOCK_DISPLAY),
@@ -614,11 +510,19 @@ def main():
         "machine/solar_panel": (solar_panel("solar_panel", 33), BLOCK_DISPLAY),
         "machine/miner_1": (miner("miner_1", 1, 34), BLOCK_DISPLAY),
         "machine/miner_2": (miner("miner_2", 2, 35), BLOCK_DISPLAY),
-        **{f"tool/{tier}_pick": (pick(tier, 80 + i), TOOL_DISPLAY) for i, tier in enumerate(TOOL_COLOURS)},
     }
-    for model_id, (s, display) in out.items():
-        write(model_id, s, display, display is BLOCK_DISPLAY or model_id.endswith(("_axe", "_shovel")))
-    print(f"wrote {len(out)} 3D item models")
+    for model_id, (s, display) in out.items():  # the machines and the Forge stay true blocks
+        write(model_id, s, display, True)
+    sprites = sorted(f"{p.parent.name}/{p.name[:-len('_gui.png')]}" for p in (PACK / "textures/item").glob("*/*_gui.png"))
+    for model_id in sprites:  # the imported ores, swords and pickaxes
+        write_sprite(model_id)
+    # the items whose flat sprite another script paints: the cores, the lens, the pebble and the sword skins
+    painted = [f"ore/{n}" for n in ("bronze_core", "ember_core", "void_lens", "pebble")]
+    painted += sorted(f"skin/{p.name[:-len('_3d.json')]}" for p in (PACK / "models/item/skin").glob("*_3d.json"))
+    for model_id in painted:
+        write_sprite(model_id, sprite_id=model_id, flat=f"vampyuyu:item/{model_id}")
+    print(f"wrote {len(out)} block models, {len(TOOL_COLOURS) * 6} drawn tool sprites and "
+          f"{len(sprites) + len(painted)} more sprite models")
 
 
 if __name__ == "__main__":

@@ -33,7 +33,8 @@ public final class Migrations {
         "V022__npc_memory",
         "V023__paragon",
         "V024__remove_fairy_souls",
-        "V025__quest_proofs");
+        "V025__quest_proofs",
+        "V026__i18n");
 
     private Migrations() {}
 

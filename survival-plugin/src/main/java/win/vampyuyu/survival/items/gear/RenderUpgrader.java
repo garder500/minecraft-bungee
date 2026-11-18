@@ -49,15 +49,59 @@ public final class RenderUpgrader implements Listener {
             || gear.items().getLong(stack, Keys.RENDERED).orElse(0L) != ItemRender.RENDER_VERSION;
     }
 
+    /**
+     * True for a plain custom item (a material, a machine: anything {@link #needsUpgrade} leaves alone) that still
+     * carries the English-only name written before translations existed, while its name is translated now. Only that
+     * old name (the plain English text) is replaced: a stack another feature renamed is never touched.
+     */
+    public boolean needsTranslation(ItemStack stack) {
+        if (stack == null || stack.getType().isAir() || !stack.hasItemMeta() || needsUpgrade(stack)) {
+            return false;
+        }
+        return gear.items().idOf(stack).flatMap(id -> gear.items().def(id)).map(def -> {
+            net.kyori.adventure.text.Component now = stack.getItemMeta().hasItemName() ? stack.getItemMeta().itemName() : null;
+            // the old name: the plain English text and nothing translatable in it (the colour is not compared: a stored
+            // stack may spell it another way)
+            return now != null && !hasTranslatable(now) && hasTranslatable(win.vampyuyu.survival.core.ItemRenderer.name(def))
+                && def.name().equals(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(now));
+        }).orElse(false);
+    }
+
+    private static boolean hasTranslatable(net.kyori.adventure.text.Component c) {
+        if (c instanceof net.kyori.adventure.text.TranslatableComponent) {
+            return true;
+        }
+        for (net.kyori.adventure.text.Component child : c.children()) {
+            if (hasTranslatable(child)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** The stack redrawn by whichever renderer owns it, or null when it is up to date. */
+    private ItemStack redrawn(ItemStack stack) {
+        if (needsUpgrade(stack)) {
+            ItemStack copy = stack.clone();
+            gear.rebuild(copy);
+            return copy;
+        }
+        if (needsTranslation(stack)) {
+            ItemStack copy = stack.clone();
+            gear.items().refresh(copy);
+            return copy;
+        }
+        return null;
+    }
+
     /** Upgrades every stale stack of the player's inventory. Returns how many were redrawn. */
     public int upgrade(Player player) {
         PlayerInventory inventory = player.getInventory();
         int count = 0;
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             ItemStack stack = inventory.getItem(slot);
-            if (needsUpgrade(stack)) {
-                ItemStack copy = stack.clone();
-                gear.rebuild(copy);
+            ItemStack copy = redrawn(stack);
+            if (copy != null) {
                 inventory.setItem(slot, copy);
                 count++;
             }
@@ -78,9 +122,8 @@ public final class RenderUpgrader implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPickup(EntityPickupItemEvent event) {
         ItemStack stack = event.getItem().getItemStack();
-        if (needsUpgrade(stack)) {
-            ItemStack copy = stack.clone();
-            gear.rebuild(copy);
+        ItemStack copy = redrawn(stack);
+        if (copy != null) {
             event.getItem().setItemStack(copy);
         }
     }
@@ -89,9 +132,8 @@ public final class RenderUpgrader implements Listener {
     public void onHeld(PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
         ItemStack stack = player.getInventory().getItem(event.getNewSlot());
-        if (needsUpgrade(stack)) {
-            ItemStack copy = stack.clone();
-            gear.rebuild(copy);
+        ItemStack copy = redrawn(stack);
+        if (copy != null) {
             player.getInventory().setItem(event.getNewSlot(), copy);
         }
     }

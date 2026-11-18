@@ -320,7 +320,15 @@ def mirror(d):
     return out
 
 
-def display(fp_t, fp_r, tp_t=(0, 2.5, 1.5), tp_r=(0, -90, 0)):
+# Third person is another frame than first person: on the arm, the item's +y is forward and its +z runs up the arm
+# (ItemInHandLayer turns the item -90 about x and 180 about y). The gun is built along +x with its top at +y, so it
+# is turned z 90 (muzzle to +y, forward) then y 90 (top to +z, up). The old y -90 alone sent the muzzle up the arm:
+# the gun stood on its stock with the grip the wrong way round. A z above 90 raises the muzzle. The translation
+# lowers the gun along the arm until the grip is in the fist (checked on mannequins seen from the side).
+TP_T, TP_R = (0, 0, -2.5), (0, 90, 90)
+
+
+def display(fp_t, fp_r, tp_t=TP_T, tp_r=TP_R):
     d = {
         "firstperson_righthand": {"rotation": list(fp_r), "translation": list(fp_t), "scale": [SC] * 3},
         "thirdperson_righthand": {"rotation": list(tp_r), "translation": list(tp_t), "scale": [1.0] * 3},
@@ -333,11 +341,11 @@ def display(fp_t, fp_r, tp_t=(0, 2.5, 1.5), tp_r=(0, -90, 0)):
 
 HIP = display((1.0, 0.0, -6.0), (0, -90, 0))
 # Aim: sights under the crosshair (about 9 units left of the hand origin, 5 up).
-AIM = display((-8.0, 3.0, -6.0), (0, -90, 0), tp_t=(0, 3.2, 2.0))
+AIM = display((-8.0, 3.0, -6.0), (0, -90, 0), tp_t=(0, 1.0, -1.5))
 # Reload: the gun tilts muzzle-up and comes toward the middle so the magazine drop is visible.
-RELOAD = display((-1.0, 1.5, -5.0), (0, -90, 28), tp_r=(0, -90, 20))
+RELOAD = display((-1.0, 1.5, -5.0), (0, -90, 28), tp_r=(0, 90, 110))
 # Inspect: the gun turns to show its side for a second after a swap.
-INSPECT = display((-3.0, 3.0, -5.0), (12, -35, -8), tp_r=(0, -50, 0))
+INSPECT = display((-3.0, 3.0, -5.0), (12, -35, -8), tp_r=(0, 90, 100))
 
 
 def with_kick(d):
