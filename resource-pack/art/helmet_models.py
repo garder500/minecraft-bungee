@@ -25,16 +25,48 @@ def _h(hexes):
     return tuple(tuple(int(h[i:i + 2], 16) for i in (1, 3, 5)) for h in hexes.split())
 
 
-# Realm palettes (shadow, base, light, highlight, glow), the same as the worn armour (armor_layers.py): bronze = Flux
-# machinery, rime = Frozen Heights, ember = Cracked Ashes obsidian, void = Ethereal Necropolis with a pink rift eye,
-# starcore = Citadel gold with a turquoise star.
-REALM = {
-    "bronze": _h("#4a2a12 #7a4a1e #c98442 #f2c14e #4af0ff"),
-    "rime": _h("#1f3557 #3b6fa8 #7fc8e8 #e6f7ff #b6a8ff"),
-    "ember": _h("#120a16 #2a1a2e #4a3550 #ff8a2a #ffd36a"),
-    "void": _h("#15121f #241f3a #4a4570 #9c95c8 #ff4a8a"),
-    "starcore": _h("#5a3a12 #a8742a #f2c14e #fff1b0 #3fb6a8"),
-}
+def two_metals(pixels):
+    """(plate pixels, trim pixels or None): a sprite painted in two metals (Starcore: white plates, gold trim) is split
+    by saturation, the paler group is the plate. A sprite of one metal has no second group."""
+    import colorsys
+    sat = lambda c: colorsys.rgb_to_hsv(*(v / 255 for v in c))[1]
+    ranked = sorted(pixels, key=sat)
+    cut = max(range(len(ranked) // 5, len(ranked) * 4 // 5), key=lambda i: sat(ranked[i + 1]) - sat(ranked[i]) if i + 1 < len(ranked) else 0)
+    pale, vivid = ranked[:cut + 1], ranked[cut + 1:]
+    mean = lambda part: sum(sat(c) for c in part) / len(part)
+    if mean(vivid) - mean(pale) < 0.3:
+        return pixels, None
+    lum = lambda c: 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+    return sorted(pale, key=lum), sorted(vivid, key=lum)
+
+
+def sprite_palette(tier):
+    """(shadow, base, light, highlight, glow) read from the helmet's imported sprite, so the helmet on the head is the
+    metal of its inventory icon (same method as the worn armour, armor_layers.palette): four tones of the sprite from
+    dark to bright without its ink outline, and for the glow the sprite's accent (the saturated pixels whose hue is
+    furthest from the metal's) or, without one, a brightened highlight."""
+    import colorsys
+    import sprite_models
+    _, _, px = sprite_models.read_png(PACK / "textures/item/armor" / f"{tier}_helmet.png")
+    lum = lambda c: 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+    pixels = sorted((c[:3] for row in px for c in row if c[3] >= 128), key=lum)
+    pixels, second = two_metals(pixels[len(pixels) // 6:])
+    n = len(pixels)
+    avg = lambda part: tuple(sum(c[k] for c in part) // len(part) for k in range(3))
+    tones = [avg(pixels[int(n * a):int(n * b)]) for a, b in ((0.1, 0.35), (0.42, 0.68), (0.72, 0.9), (0.94, 1.0))]
+    if second:  # the trims and ornaments of the helmet (the highlight tone) take the second metal
+        tones[3] = avg(second[len(second) // 2:])
+        # the pale metal is judged by its lit side, as armor_layers.palette does (its mid tones shade to putty in game)
+        tones[:3] = [avg(pixels[int(n * a):int(n * b)]) for a, b in ((0.3, 0.55), (0.7, 0.92), (0.92, 1.0))]
+    hsv = lambda c: colorsys.rgb_to_hsv(*(v / 255 for v in c))
+    base = hsv(tones[1])[0]
+    accents = [c for c in pixels if hsv(c)[1] > 0.35 and hsv(c)[2] > 0.45
+               and min(abs(hsv(c)[0] - base), 1 - abs(hsv(c)[0] - base)) > 0.12]
+    glow = avg(accents) if len(accents) >= 4 else tuple(int(v + (255 - v) * 0.5) for v in tones[3])
+    return (*tones, glow)
+
+
+REALM = {tier: sprite_palette(tier) for tier in TIERS}
 OUTLINE = (20, 15, 24)
 # glow pixels of the Realm motif on the plate: ashes crack, frost eye, sand clock, soul flame, singularity spark
 MOTIF = {

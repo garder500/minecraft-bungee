@@ -6,7 +6,6 @@ import java.util.Map;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import win.vampyuyu.survival.api.Stat;
 
 /**
@@ -21,8 +20,6 @@ import win.vampyuyu.survival.api.Stat;
  * </pre>
  */
 public final class ItemRenderer {
-    private static final MiniMessage MINI = MiniMessage.miniMessage();
-
     private ItemRenderer() {}
 
     private static Component line(Component component) {
@@ -31,7 +28,7 @@ public final class ItemRenderer {
 
     /** Display name coloured with the rarity. */
     public static Component name(CustomItemDef def) {
-        return line(Component.text(def.name(), def.rarity().color()));
+        return line(Lang.name("item." + def.id() + ".name", def.name()).color(def.rarity().color()));
     }
 
     /** Full lore. {@code bonus} are per-item additions on top of {@code def.stats()}. */
@@ -53,13 +50,20 @@ public final class ItemRenderer {
         if (!out.isEmpty() && !def.lore().isEmpty()) {
             out.add(Component.empty());
         }
-        for (String text : def.lore()) {
-            out.add(line(MINI.deserialize(text)));
-        }
+        out.addAll(description(def));
         if (!out.isEmpty()) {
             out.add(Component.empty());
         }
         out.add(lastLine(def, def.rarity(), false));
+        return out;
+    }
+
+    /** The description lines of an item, each in the viewer's language (see {@link Lang}). */
+    public static List<Component> description(CustomItemDef def) {
+        List<Component> out = new ArrayList<>();
+        for (int i = 0; i < def.lore().size(); i++) {
+            out.add(line(Lang.line("item." + def.id() + ".lore." + i, def.lore().get(i))));
+        }
         return out;
     }
 

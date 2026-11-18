@@ -6,7 +6,7 @@ ZIP ?=
 OUT ?=
 export COMPOSE SERVER WORLD ZIP OUT
 
-.PHONY: pack-valoblock art-valoblock dev-server hotswap dev-stop hud-sheet export-all zip-all help status up stop configure export zip import restore inspect export-panel import-panel backup test-archives pack art test-pack e2e-pack plugin plugin-prod plugin-build plugin-test plugin-clear plugin-clear-prod plugin-status plugin-status-prod test-plugins reload-data reload-data-prod reload-data-clear reload-data-clear-prod
+.PHONY: i18n pack-valoblock art-valoblock dev-server hotswap dev-stop hud-sheet export-all zip-all help status up stop configure export zip import restore inspect export-panel import-panel backup test-archives pack art test-pack e2e-pack plugin plugin-prod plugin-build plugin-test plugin-clear plugin-clear-prod plugin-status plugin-status-prod test-plugins reload-data reload-data-prod reload-data-clear reload-data-clear-prod
 help: ## Show operator commands
 	@python3 scripts/world_archive.py help
 status: ## Show container status
@@ -46,8 +46,11 @@ art: ## Repaint pack textures from resource-pack/art/render.py (needs headless C
 	@python3 resource-pack/art/render.py
 e2e-pack: ## Boot a creative Paper 26.3 + headless 26.3 client and check the pack loads and renders (see scripts/e2e_client.py)
 	@python3 scripts/e2e_client.py
-test-pack: ## Validate both resource packs (menus and ValoBlock): structure, models, reproducibility
+i18n: ## Re-extract the English item text, check the fr/de translations, write the seed and the pack lang files
+	@python3 scripts/i18n_extract.py && python3 scripts/i18n_seed.py
+test-pack: ## Validate both resource packs (menus and ValoBlock): structure, models, reproducibility, translations
 	@python3 scripts/test_pack.py
+	@python3 scripts/i18n_seed.py --check
 	@python3 scripts/test_hud_sheet.py
 	@python3 scripts/test_valoblock_models.py
 	@python3 resource-pack/art/test_skyblock_icon.py

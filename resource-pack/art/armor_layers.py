@@ -1,33 +1,37 @@
 #!/usr/bin/env python3
-"""The worn look of the ladder armour sets and the three Starcore sidegrades, as clean 64x32 pixel art.
+"""The worn look of the ladder armour sets and the three Starcore sidegrades, as 128x64 pixel art.
 
     python3 resource-pack/art/armor_layers.py [--preview out.png]        (stdlib only, deterministic)
 
-A worn armour is two textures in the vanilla player-skin layout (exact UVs of the armour model), humanoid/<set>.png
-(chestplate on body and arms, boots on the feet) and humanoid_leggings/<set>.png (belt and legs). The helmet is a 3D
-model (helmet_models.py), so the head of the layer stays empty. Every piece is drawn by hand with flat plates:
-a bevelled plate has four tones (light from the top left: highlight corner, lit top/left edge, body, shadowed
-bottom/right edge), no dithering, no noise. One trim colour and ONE glowing motif per set, from the Realm palettes:
+A worn armour is two textures in the vanilla player-skin layout at twice its resolution (the armour model's UVs are
+proportional, so a body face is 16x24 pixels instead of 8x12), humanoid/<set>.png (chestplate on body and arms, boots
+on the feet) and humanoid_leggings/<set>.png (belt and legs). The helmet is a 3D model (helmet_models.py), so the head
+of the layer stays empty.
 
-    bronze    Flux machinery bronze plates, dark iron trim, cyan Flux core
-    ember     Cracked Ashes obsidian plates, lava trim, a jagged lava crack
-    rime      Frozen Heights ice plates, navy trim, a violet stasis crystal
-    void      Necropolis dark plates, lavender ash trim, a pink rift eye
-    starcore  Citadel gold plates, turquoise trim, a turquoise star
-    cinder_starcore / grove_starcore / frost_starcore: the Starcore gold with the Realm's trim and gem colour.
+Every face is a small character bitmap (DRAWINGS): a letter is one plate, and paint() bevels each plate by itself (light
+from the top left), so the drawing is a list of shapes, not of colours. The geometry of the armour model is a fixed
+box: the silhouette comes from transparency (pauldrons that end in points, a bare ring between pauldron and bracer,
+cut hems and cuffs). Each ladder set has its own chest, pauldron and tasset drawing, taken from its inventory icon
+(Bronze: riveted round plates, Ember: sun disc and flame tongues, Rime: slanted ice shards, Void: black diamond socket,
+Starcore: gold-rimmed ivory plates and feathered shoulders); the other faces are shared (DEFAULT).
 
-The front has the motif, the back has a spine and shoulder blades, so both read at a glance. armor_tiers.py skips
-these files (imported.txt: equipment/<set>) and keeps the equipment/<set>.json layers this script writes.
+The colours are read from the set's imported chestplate sprite (palette()), so the armour a player wears is the metal
+of the icon in the inventory. Faces are not darkened by side: the game already shades them. The three Starcore
+sidegrades keep the Starcore drawing with their Realm's trim and gem colour.
+
+armor_tiers.py skips these files (imported.txt: equipment/<set>) and keeps the equipment/<set>.json layers this script
+writes.
 """
 import json
 import pathlib
 import sys
 
-from helmet_models import png
+from helmet_models import png, two_metals
 
 ART = pathlib.Path(__file__).resolve().parent
 ASSETS = ART.parent / "pack/assets/vampyuyu"
-W, H = 64, 32
+S = 2                       # pixels per pixel of the vanilla 64x32 layout
+W, H = 64 * S, 32 * S
 
 
 def rgb(hexes):
@@ -42,39 +46,81 @@ def darker(c, t=0.45):
     return tuple(int(v * (1 - t)) for v in c)
 
 
+def mix(a, b, t):
+    return tuple(int(a[k] + (b[k] - a[k]) * t) for k in range(3))
+
+
 def trim4(hexes):
     dk, md, lt = rgb(hexes)
     return (dk, md, lt, lighter(lt))
 
 
-# plate tones are (shadow, body, light, highlight); glow is (rim, glow, core); motif bitmaps use
-# g = glow, d = rim, b = core, k = dark socket floor, . = socket floor
-SETS = {
-    "bronze": dict(  # Flux machinery: bronzite casing, dark iron trim, cyan core in a window
-        plate=rgb("#4a2a12 #7a4a1e #c98442 #f2c14e"), trim=trim4("#1c1a22 #3a3742 #6a6676"),
-        glow=rgb("#1a8f9c #4af0ff #e6ffff"), motif=["dggd", "gbbg", "gbbg", "dggd"], motif_xy=(2, 3)),
-    "ember": dict(  # Cracked Ashes: obsidian split by lava veins
-        plate=rgb("#1c1222 #4a3a58 #7a6288 #a890b4"), trim=trim4("#5a1a10 #c8461e #ff8a2a"),
-        glow=rgb("#c8461e #ff8a2a #ffe08a"), motif=[".gb.", ".gb.", "gb..", "..bg", ".gb.", ".gb."], motif_xy=(2, 2)),
-    "rime": dict(  # Frozen Heights: plates of ice, a stasis crystal
-        plate=rgb("#1f3a66 #3f78b4 #7cc4e8 #dff4ff"), trim=trim4("#0e1c38 #24407a #9cd4f0"),
-        glow=rgb("#7a68d8 #b6a8ff #f0ecff"), motif=[".gg.", "gbgg", "gggg", "gggg", ".gg."], motif_xy=(2, 3)),
-    "void": dict(  # Ethereal Necropolis: dark ash plates, a rift that looks back
-        plate=rgb("#2a2640 #4e4878 #7c74b0 #b8aef0"), trim=trim4("#6a5aa8 #b4a4f0 #e8e0ff"),
-        glow=rgb("#b02a68 #ff4a8a #ffd6e8"), motif=[".dggd.", "dgbbgd", "dgbbgd", ".dggd."], motif_xy=(1, 3)),
-    "starcore": dict(  # Astral Interiority star on Citadel gold
-        plate=rgb("#5a3a12 #a8742a #f2c14e #fff1b0"), trim=trim4("#14403e #2a8a82 #3fb6a8"),
-        glow=rgb("#2a8a82 #3fb6a8 #d2fff6"), motif=["..gg..", "..gg..", "ggbbgg", "ggbbgg", "..gg..", "..gg.."],
-        motif_xy=(1, 2)),
-}
+# plate and trim tones are (shadow, body, light, highlight); glow is (rim, glow, core)
+import colorsys  # noqa: E402
+
+import sprite_models  # noqa: E402
+
+
+
+def sprite_pixels(tier, piece):
+    """The painted pixels of an item sprite without its dark ink outline."""
+    _, _, px = sprite_models.read_png(ASSETS / "textures/item/armor" / f"{tier}_{piece}.png")
+    pixels = sorted((p[:3] for row in px for p in row if p[3] >= 128), key=lum)
+    return pixels[len(pixels) // 6:]    # the darkest sixth is the outline and the deepest shadows
+
+
+def lum(p):
+    return 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]
+
+
+def average(pixels):
+    return tuple(sum(p[k] for p in pixels) // len(pixels) for k in range(3))
+
+
+TWO_METALS = ("starcore",)     # elsewhere the second colour of the sprite is only its shadow: no dark hoops
+
+
+def palette(tier):
+    """The colours of a set, read from its chestplate sprite so the worn armour is the metal of the inventory icon:
+    plate = four tones (shadow, body, light, highlight), trim = the same metal a step darker (a lip between plates, not
+    a black hoop) or the sprite's second metal when it has one, glow = the accent of the sprite (the pixels whose hue is furthest from the metal's), or its highlight
+    when the sprite has no accent."""
+    pixels, second = two_metals(sprite_pixels(tier, "chestplate"))
+    n = len(pixels)
+    plate = tuple(average(pixels[int(n * a):int(n * b)]) for a, b in ((0.12, 0.38), (0.5, 0.75), (0.78, 0.93), (0.95, 1.0)))
+    trim = tuple(mix(plate[i], plate[max(0, i - 1)], 0.55) for i in range(4))   # the same metal, half a step darker
+    if second and tier in TWO_METALS:  # white plates, gold trim: the trim is the second metal
+        m = len(second)
+        trim = tuple(average(second[int(m * a):int(m * b)]) for a, b in ((0.0, 0.3), (0.3, 0.6), (0.6, 0.9), (0.9, 1.0)))
+        # the pale metal is judged by its lit side: the mid tones of an ivory sprite are putty once the game shades them
+        light = average(pixels[int(n * 0.92):])
+        plate = (average(pixels[int(n * 0.3):int(n * 0.55)]), mix(average(pixels[int(n * 0.7):int(n * 0.92)]), light, 0.4), light,
+                 lighter(light, 0.5))
+
+    def hue(c):
+        return colorsys.rgb_to_hsv(*(v / 255 for v in c))
+
+    base = hue(plate[1])[0]
+    accents = [c for c in pixels if hue(c)[1] > 0.35 and hue(c)[2] > 0.45
+               and min(abs(hue(c)[0] - base), 1 - abs(hue(c)[0] - base)) > 0.12]
+    if len(accents) >= 6:
+        accents.sort(key=lum)
+        third = len(accents) // 3
+        glow = (average(accents[:third]), average(accents[third:2 * third]), lighter(average(accents[2 * third:]), 0.35))
+    else:
+        glow = (plate[1], plate[3], lighter(plate[3], 0.5))
+    return dict(plate=plate, trim=trim, glow=glow, art=tier)
+
+
+SETS = {tier: palette(tier) for tier in ("bronze", "ember", "rime", "void", "starcore")}
 for realm, trim, glow in (("cinder", "#5a1a10 #c8461e #ff8a2a", "#c8461e #ff8a2a #ffe08a"),
                           ("grove", "#2c3a1e #4f6b2a #8fb84a", "#8fb84a #d6f08a #f1e7c9"),
                           ("frost", "#1f3557 #3b6fa8 #7fc8e8", "#7a68d8 #b6a8ff #f0ecff")):
     SETS[f"{realm}_starcore"] = dict(SETS["starcore"], trim=trim4(trim), glow=rgb(glow), realm=True)
 
-# face rectangles of the vanilla layout: (u, v, width, height, depth)
-BOXES = {"body": (16, 16, 8, 12, 4), "arm": (40, 16, 4, 12, 4), "leg": (0, 16, 4, 12, 4)}
-SIDE_SHIFT = {"front": 0, "right": 0, "left": 1, "back": 1}  # light from the top left: the far sides are a step darker
+# face rectangles of the vanilla layout, in texture pixels: (u, v, width, height, depth)
+BOXES = {name: tuple(n * S for n in box)
+         for name, box in {"body": (16, 16, 8, 12, 4), "arm": (40, 16, 4, 12, 4), "leg": (0, 16, 4, 12, 4)}.items()}
 
 
 def faces(box):
@@ -83,218 +129,1154 @@ def faces(box):
             "front": (u + d, v + d, w, h), "left": (u + d + w, v + d, d, h), "back": (u + 2 * d + w, v + d, w, h)}
 
 
-class Grid:
-    def __init__(self, w, h):
-        self.w, self.h = w, h
-        self.px = [[None] * w for _ in range(h)]
+# ---------------------------------------------------------------------------------------------------------- the art
+# One bitmap per face, 8 columns. Characters:
+#   A-H   a plate (each letter is bevelled as its own shape)      T-Z   a trim piece (the set's second metal)
+#   '     a rivet or glint on a plate        ,   a dent           x     a glint on trim
+#   #     cloth under the plates             :   ink (sockets, seams, soles)
+#   o g * the gem: rim, glow, core           .   nothing (the player shows through: this is what cuts the silhouette)
+# CHEST and BACK are the left half of the torso (column 7 is the middle; the right half is its mirror). On a limb,
+# OUT is the outer face (column 7 touches the front), FB the front (column 0 is the outer side; the back is its
+# mirror), IN the inner face. SIDE is the flank of the torso (column 7 touches the front). The boots are the last
+# eleven rows of the leg.
+DEFAULT = {
+    "CHEST": """
+CCCCC###
+CCCCCC##
+TTTTTTT#
+AAAAAAAT
+A'AAAAAT
+AAAAAAAT
+AAAAAAAT
+AAAAAATo
+AAAAAATg
+AAAAAATo
+A'AAAAAT
+#AAAAAAT
+##AAAAAT
+#DDDDDDD
+#DDDDDDD
+##DDDDDD
+#EEEEEEE
+#EEEEEEE
+##EEEEEE
+TTTTTTTT
+TTTTTTx:
+TTTTTTTT
+FFFFFF..
+.FFFF...""",
+    "BACK": """
+CCCCCCCC
+CCCCCCCC
+TTTTTTTT
+AAAAAAT:
+AAAAAATx
+AAAAAAT:
+AAAAAATx
+AAAAAAT:
+AAAAAATx
+AAAAAAT:
+AAAAAATx
+#AAAAAT:
+##AAAATx
+#DDDDDDD
+#DDDDDDD
+##DDDDDD
+#EEEEEEE
+#EEEEEEE
+##EEEEEE
+TTTTTTTT
+TTTTTTTT
+TTTTTTTT
+FFFFFFFF
+.FFFFFF.""",
+    "SIDE": """
+CCCCCCCC
+CCCCCCCC
+TTTTTTTT
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+########
+########
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+EEEEEEEE
+EEEEEEEE
+EEEEEEEE
+TTTTTTTT
+TTTTTTTT
+TTTTTTTT
+........
+........""",
+    "ARM_OUT": """
+AAAAAAAA
+AAAAAAAA
+A'AAAA'A
+AAAAAAAA
+BBBBBBBB
+BBBBBBBB
+BBBBBBBB
+CCCCCCCC
+CCCCCCCC
+CCCCCCCC
+.CCCCCC.
+........
+........
+........
+TTTTTTTT
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+D'DDDD'D
+TTTTTTTT
+........
+........""",
+    "ARM_FB": """
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAA#
+BBBBBBB#
+BBBBBB##
+BBBBBB##
+CCCCC###
+CCCCC###
+CCCC####
+.CC####.
+........
+........
+........
+TTTTTTTT
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+TTTTTTTT
+........
+........""",
+    "ARM_IN": """
+########
+########
+########
+########
+########
+########
+########
+########
+########
+.######.
+..####..
+........
+........
+........
+TTTTTTTT
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+TTTTTTTT
+........
+........""",
+    "ARM_TOP": """
+AAAAAAAA
+A'AAAA'A
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+A'AAAA'A
+AAAAAAAA""",
+    "LEG_FB": """
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+A'AAAAAA
+AAAAAAAA
+AAAAAAA#
+#AAAAA##
+##AAA###
+########
+########
+#TTTTTT#
+TBBBBBBT
+TB'BBBBT
+TBBBBBBT
+#TTTTTT#
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD""",
+    "LEG_BACK": """
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+BBBBBBBB
+BBBBBBBB
+BBBBBBB#
+#BBBBB##
+#CCCCC##
+##CCCC##
+########
+########
+########
+EEEEEEEE
+EEEEEEEE
+EEEEEEEE
+EEEEEEEE
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD""",
+    "LEG_OUT": """
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+A'AAAA'A
+AAAAAAAA
+AAAAAAAA
+.AAAAAA.
+..AAAA..
+...##...
+########
+#TTTTTT#
+TBBBBBBT
+TBBBBBBT
+TBBBBBBT
+#TTTTTT#
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD""",
+    "LEG_IN": """
+########
+########
+########
+########
+########
+########
+########
+########
+########
+########
+########
+########
+########
+########
+########
+########
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD""",
+    "HIP": """
+........
+........
+........
+........
+........
+........
+........
+........
+........
+........
+........
+........
+........
+........
+........
+........
+TTTTTTTT
+TTTTTTTT
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA""",
+    "BOOT_FB": """
+..TTTT..
+TTTTTTTT
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+BAAAAAAB
+BBAAAABB
+B'BBBBBB
+BBBBBBBB
+::::::::""",
+    "BOOT_BACK": """
+........
+TTTTTTTT
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+TTTTTTTT
+BBBBBBBB
+BBBBBBBB
+BBBBBBBB
+::::::::""",
+    "BOOT_SIDE": """
+........
+TTTTTTTT
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+TTTTTTTT
+BBBBBBBB
+BBBBBBBB
+BBBBBBBB
+::::::::""",
+}
 
-    def set(self, x, y, c):
-        if 0 <= x < self.w and 0 <= y < self.h:
-            self.px[y][x] = c
+DRAWINGS = {
+    "bronze": {},        # the default drawing is the Bronze one: round riveted plates and a buckle
+    "ember": {           # a sun disc on the chest, scales on the belly, hems cut in flame tongues
+        "CHEST": """
+CCCC####
+CCCCC###
+TTTTTT##
+AAAAAAT#
+AAAAAAAT
+AAAAAAAo
+AAAAAoog
+AAAAAog*
+AAAAoog*
+AAAAAog*
+AAAAAoog
+AAAAAAAo
+#AAAAAAT
+#DDDDDDD
+#DDDDDDD
+##DD#DDD
+#EEEEEEE
+#EEEEEEE
+##EE#EEE
+TTTTTTTT
+TTTTTTxg
+HHHHHHHH
+.HH..HH.
+..H..H..""",
+        "BACK": """
+CCCCCCCC
+CCCCCCCC
+TTTTTTTT
+AAAAAAT:
+AAAAAATx
+AAAAAAT:
+AAAAAATx
+AAAAAAT:
+AAAAAATx
+AAAAAAT:
+AAAAAATx
+#AAAAAT:
+#DDDDDDD
+#DDDDDDD
+##DD#DDD
+#EEEEEEE
+#EEEEEEE
+##EE#EEE
+TTTTTTTT
+TTTTTTTT
+HHHHHHHH
+HHHHHHHH
+.HH..HH.
+..H..H..""",
+        "ARM_OUT": """
+AAAAAAAA
+AAAAAAAA
+AAAooAAA
+AAog*oAA
+AAAooAAA
+BBBBBBBB
+BBBBBBBB
+BBBBBBBB
+CCCCCCCC
+CCCCCCCC
+.CC..CC.
+..C..C..
+........
+........
+TTTTTTTT
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+.DD..DD.
+..D..D..
+........
+........""",
+        "ARM_FB": """
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAA#
+AAAAAAA#
+BBBBBB##
+BBBBBB##
+BBBBBB##
+CCCCC###
+CCCCC###
+.CC.C##.
+..C..#..
+........
+........
+TTTTTTTT
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+.DD..DD.
+..D..D..
+........
+........""",
+        "LEG_FB": """
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+BBBBBBBB
+BBBBBBBB
+BBBBBBB#
+.BB.BB##
+..B..B##
+########
+########
+#TTTTTT#
+TBBBBBBT
+TB'BBBBT
+TBBBBBBT
+#TTTTTT#
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD""",
+        "LEG_OUT": """
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+BBBBBBBB
+BBBBBBBB
+BBBBBBBB
+.BB..BB.
+..B..B..
+...##...
+########
+#TTTTTT#
+TBBBBBBT
+TBBBBBBT
+TBBBBBBT
+#TTTTTT#
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD""",
+        "BOOT_FB": """
+.T.TT.T.
+TTTTTTTT
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+TTTTTTTT
+BBBBBBBB
+B'BBBBBB
+BBBBBBBB
+::::::::""",
+    },
+    "rime": {            # slanted ice shards, long points at every hem, no dark trim
+        "CHEST": """
+CCC#####
+CCCCC###
+CCCCCCC#
+AAAACCCC
+AAAAAACC
+AAAAAAAA
+AAAAAAAA
+AAAAAAAo
+AAAAAAog
+AAAAAAAo
+AAAAAAAA
+BBAAAAAA
+BBBBAAAA
+#BBBBBAA
+#BBBBBBB
+##BBBBBB
+#BBBBBBB
+#DDBBBBB
+##DDDDBB
+TTTTTTTT
+TTTTTTTT
+FFF.FFFF
+.F...FFF
+......FF""",
+        "BACK": """
+CCCCCCCC
+CCCCCCCC
+CCCCCCCC
+AAAACCCC
+AAAAAACC
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+BBAAAAAA
+BBBBAAAA
+#BBBBBAA
+#BBBBBBB
+##BBBBBB
+#BBBBBBB
+#DDBBBBB
+##DDDDBB
+TTTTTTTT
+TTTTTTTT
+FFF.FFFF
+.F...FFF
+......FF""",
+        "ARM_OUT": """
+AAAAAAAA
+AAAAAAAA
+AAAAAABB
+AAAABBBB
+AABBBBBB
+BBBBBBCC
+BBBBCCCC
+BBCCCCCC
+CCCCCCCC
+CCC.CCC.
+CC..CC..
+C...C...
+........
+........
+DDDDDDDD
+DDDDDDEE
+DDDDEEEE
+DDEEEEEE
+EEEEEEEE
+EEEEEEEE
+EEE.EEE.
+EE..EE..
+........
+........""",
+        "ARM_FB": """
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+BBAAAAA#
+BBBBAAA#
+BBBBBB##
+CCBBBB##
+CCCCB###
+CCCCC###
+CC.CC###
+C..C.##.
+...C....
+........
+........
+DDDDDDDD
+EEDDDDDD
+EEEEDDDD
+EEEEEEDD
+EEEEEEEE
+EEEEEEEE
+EE.EEE.E
+E..EE...
+........
+........""",
+        "LEG_FB": """
+AAAAAAAA
+AAAAAAAA
+BBAAAAAA
+BBBBAAAA
+BBBBBBAA
+BBBBBBBB
+BBBBBBB#
+BB.BBB##
+B..BB###
+...B####
+########
+#CCCCCC#
+CCCCCCCC
+CCC'CCCC
+.CCCCCC.
+#.CCCC.#
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD""",
+        "LEG_OUT": """
+AAAAAAAA
+AAAAAAAA
+AAAAAABB
+AAAABBBB
+AABBBBBB
+BBBBBBBB
+BBBBBBBB
+BBB.BBB.
+BB..BB..
+B..#B...
+########
+#CCCCCC#
+CCCCCCCC
+CCCCCCCC
+.CCCCCC.
+#.CCCC.#
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD""",
+        "BOOT_FB": """
+A..AA..A
+AA.AA.AA
+AAAAAAAA
+AAAAAAAA
+BBAAAAAA
+BBBBAAAA
+BBBBBBAA
+BBBBBBBB
+B'BBBBBB
+BBBBBBBB
+::::::::""",
+        "BOOT_SIDE": """
+A...A...
+AA..AA..
+AAAAAAAA
+AAAAAAAA
+AAAAAABB
+AAAABBBB
+AABBBBBB
+BBBBBBBB
+BBBBBBBB
+BBBBBBBB
+::::::::""",
+        "BOOT_BACK": """
+A...A...
+AA..AA..
+AAAAAAAA
+AAAAAAAA
+AAAAAABB
+AAAABBBB
+AABBBBBB
+BBBBBBBB
+BBBBBBBB
+BBBBBBBB
+::::::::""",
+    },
+    "void": {            # angular plates around a black diamond socket with a lit rim
+        "CHEST": """
+CCCC####
+CCCCC###
+TTTTTT##
+AAAAAAT#
+AAAAAAAo
+AAAAAAo:
+AAAAAo::
+AAAAo::g
+AAAAo::g
+AAAAAo::
+AAAAAAo:
+#AAAAAAo
+##AAAAAT
+#DDDDDDT
+#DDDDDDD
+##DDDDDD
+#EEEEEEE
+#EEEEEEE
+##EEEEEE
+TTTTTTTT
+TTTTTTo:
+TTTTTTTT
+.FFFFFF.
+..FFFF..""",
+        "BACK": """
+CCCCCCCC
+CCCCCCCC
+TTTTTTTT
+AAAAAAT:
+AAAAAAT:
+AAAAAAo:
+AAAAAAT:
+AAAAAAT:
+AAAAAAo:
+AAAAAAT:
+AAAAAAT:
+#AAAAAo:
+##AAAAT:
+#DDDDDDD
+#DDDDDDD
+##DDDDDD
+#EEEEEEE
+#EEEEEEE
+##EEEEEE
+TTTTTTTT
+TTTTTTTT
+TTTTTTTT
+.FFFFFF.
+..FFFF..""",
+        "ARM_OUT": """
+AAAAAAAA
+AAAAAAAA
+AAAooAAA
+AAo::oAA
+AAAooAAA
+BBBBBBBB
+BBBBBBBB
+BBBBBBBB
+CCCCCCCC
+.CCCCCC.
+..CCCC..
+...CC...
+........
+........
+TTTTTTTT
+DDDDDDDD
+DDDDDDDD
+DDDooDDD
+DDDDDDDD
+.DDDDDD.
+..DDDD..
+...DD...
+........
+........""",
+        "ARM_FB": """
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAA#
+AAAAAAA#
+BBBBBB##
+BBBBBB##
+BBBBBB##
+CCCCC###
+.CCCC###
+..CC.##.
+...C....
+........
+........
+TTTTTTTT
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+.DDDDDD.
+..DDDD..
+...DD...
+........
+........""",
+        "LEG_FB": """
+AAAAAAAA
+AAAAAAAA
+AAAooAAA
+AAo::oAA
+AAAooAAA
+AAAAAAAA
+.AAAAAA#
+#.AAAA##
+##.AA###
+########
+########
+#TTTTTT#
+TBBBBBBT
+TBBooBBT
+.TBBBBT.
+#.TTTT.#
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD""",
+        "LEG_OUT": """
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+.AAAAAA.
+..AAAA..
+...AA...
+...##...
+########
+#TTTTTT#
+TBBBBBBT
+TBBBBBBT
+.TBBBBT.
+#.TTTT.#
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD""",
+        "BOOT_FB": """
+...TT...
+T.TTTT.T
+AAAAAAAA
+AAAooAAA
+AAo::oAA
+AAAooAAA
+TTTTTTTT
+BBBBBBBB
+B'BBBBBB
+BBBBBBBB
+::::::::""",
+    },
+    "starcore": {        # ivory plates rimmed in gold, a diamond gem, feathered shoulders
+        "CHEST": """
+TTTT####
+CCCTT###
+CCCCTT##
+TTTTTTT#
+AAAAAATT
+AAAAAAAT
+AAAAAATg
+AAAAATg*
+AAAAATg*
+AAAAAATg
+AAAAAAAT
+TAAAAATT
+#TTAAAAT
+#DDTTTTT
+#DDDDDDD
+#TDDDDDD
+##TTTTTT
+#EEEEEEE
+#EEEEEEE
+TTTTTTTT
+TTTTTTxg
+TTTTTTTT
+FFFFF.FF
+.FFF...F""",
+        "BACK": """
+TTTTTTTT
+CCCCCCCC
+CCCCCCCC
+TTTTTTTT
+AAAAAATx
+AAAAAAT:
+AAAAAATx
+AAAAAAT:
+AAAAAATx
+AAAAAAT:
+AAAAAATx
+TAAAAAT:
+#TTAAATx
+#DDTTTTT
+#DDDDDDD
+#TDDDDDD
+##TTTTTT
+#EEEEEEE
+#EEEEEEE
+TTTTTTTT
+TTTTTTTT
+TTTTTTTT
+FFFFF.FF
+.FFF...F""",
+        "ARM_OUT": """
+TTTTTTTT
+TxTTTTxT
+AABBAABB
+AABBAABB
+AABBAABB
+DCCDDCCD
+DCCDDCCD
+DCCDDCCD
+AABBAABB
+AABBAABB
+AABBAABB
+A.B.A.B.
+........
+........
+.EEEEEE.
+EEEEEEEE
+EEEggEEE
+EEEggEEE
+EEEEEEEE
+EEEEEEEE
+EEEEEEEE
+.EEEEEE.
+........
+........""",
+        "ARM_FB": """
+TTTTTTTT
+TTTTTTTT
+AABBAABB
+AABBAAB#
+AABBAAB#
+DCCDDC##
+DCCDDC##
+DCCDDC##
+AABBA###
+AABBA###
+AABB.##.
+A.B..#..
+........
+........
+.EEEEEE.
+EEEEEEEE
+EEEEEEEE
+EEEEEEEE
+EEEEEEEE
+EEEEEEEE
+EEEEEEEE
+.EEEEEE.
+........
+........""",
+        "ARM_TOP": """
+TTTTTTTT
+TAAAAAAT
+TAAAAAAT
+TAA''AAT
+TAA''AAT
+TAAAAAAT
+TAAAAAAT
+TTTTTTTT""",
+        "LEG_FB": """
+TTTTTTTT
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+TAAAAAAT
+#TAAAAT#
+##TAAT##
+###TT###
+########
+########
+#TTTTTT#
+TBBggBBT
+TBg**gBT
+TBBggBBT
+#TTTTTT#
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD""",
+        "LEG_OUT": """
+TTTTTTTT
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+TAAAAAAT
+.TAAAAT.
+..TAAT..
+...TT...
+...##...
+########
+#TTTTTT#
+TBBBBBBT
+TBBBBBBT
+TBBBBBBT
+#TTTTTT#
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD
+DDDDDDDD""",
+        "BOOT_FB": """
+..TTTT..
+TTTTTTTT
+AAAAAAAA
+AAAggAAA
+AAAggAAA
+AAAAAAAA
+BAAAAAAB
+BBAAAABB
+B'BBBBBB
+TTTTTTTT
+::::::::""",
+        "BOOT_SIDE": """
+B.B.....
+BABAB.B.
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+AAAAAAAA
+BBBBBBBB
+BBBBBBBB
+TTTTTTTT
+::::::::""",
+    },
+}
 
-    def fill(self, x, y, w, h, c):
-        for j in range(h):
-            for i in range(w):
-                self.set(x + i, y + j, c)
+PLATE, TRIM, WILD = "ABCDEFGH", "TUVWXYZ", "',x"
 
-    def bevel(self, x, y, w, h, t):
-        """A flat plate: body tone, lit top and left edges, shadowed bottom and right edges, bright top-left corner."""
-        for j in range(h):
-            for i in range(w):
-                if j == h - 1 or i == w - 1:
-                    c = t[0]
-                elif i == 0 or j == 0:
-                    c = t[2]
+
+def bitmap(s, name):
+    rows = (DRAWINGS[s["art"]].get(name) or DEFAULT[name]).strip().split("\n")
+    assert all(len(r) == 8 for r in rows), (s["art"], name)
+    return rows
+
+
+def mirror(rows):
+    return [r[::-1] for r in rows]
+
+
+def whole(rows):
+    """A torso face from its left half."""
+    return [r + r[::-1] for r in rows]
+
+
+def paint(rows, s):
+    """The colours of a bitmap (None = nothing). A plate or trim piece is lit on its top and left edges and shaded
+    on its bottom and right ones; the edge of the face is not an edge of the piece (it goes on around the box)."""
+    h, w = len(rows), len(rows[0])
+    plate, trim, glow = s["plate"], s["trim"], s["glow"]
+    cloth, ink = darker(plate[0], 0.3), darker(plate[0], 0.6)
+    flat = {"o": glow[0], "g": glow[1], "*": glow[2], ":": ink, "'": plate[3], ",": plate[0], "x": trim[3]}
+
+    def edge(x, y, ch):
+        if not (0 <= x < w and 0 <= y < h):
+            return False
+        other = rows[y][x]
+        return other != ch and other not in WILD
+
+    out = [[None] * w for _ in range(h)]
+    for y, row in enumerate(rows):
+        for x, ch in enumerate(row):
+            if ch == ".":
+                continue
+            if ch in flat:
+                out[y][x] = flat[ch]
+            elif ch == "#":
+                above = rows[y - 1][x] if y else "#"
+                out[y][x] = darker(cloth, 0.3) if above in PLATE + TRIM else cloth
+            else:
+                tones = plate if ch in PLATE else trim
+                if ch in PLATE[1::2]:       # every other plate sits a little in the shade, so neighbours read as facets
+                    tones = (tones[0], mix(tones[1], tones[0], 0.28), mix(tones[2], tones[1], 0.4), tones[2])
+                top, left = edge(x, y - 1, ch), edge(x - 1, y, ch)
+                low, right = edge(x, y + 1, ch), edge(x + 1, y, ch)
+                if top and left:
+                    out[y][x] = tones[2]
+                elif top or left:
+                    out[y][x] = mix(tones[1], tones[2], 0.6)
+                elif low or right:
+                    out[y][x] = mix(tones[1], tones[0], 0.6)
                 else:
-                    c = t[1]
-                self.set(x + i, y + j, c)
+                    out[y][x] = tones[1]
+    return out
 
 
-def shifted(t, n):
-    """The tones one step darker per n (the darkest repeated), so side and back faces sit in the shade."""
-    return (t[0],) * n + tuple(t[:4 - n]) if n else tuple(t)
-
-
-def motif(g, s):
-    """The set's glowing motif in a trim socket (the socket never covers the collar rows 0-1)."""
-    bmp = s["motif"]
-    mx, my = s["motif_xy"]
-    mw, mh = len(bmp[0]), len(bmp)
-    sx, sy = mx - 1, max(2, my - 1)
-    g.bevel(sx, sy, mw + 2, my + mh + 1 - sy, s["trim"])
-    rim, glow, core = s["glow"]
-    tone = {"g": glow, "d": rim, "b": core}
-    for j, row in enumerate(bmp):
-        for i, ch in enumerate(row):
-            g.set(mx + i, my + j, tone.get(ch, s["plate"][0]))
-
-
-def chest_front(s, shift):
-    p, t = shifted(s["plate"], shift), shifted(s["trim"], shift)
-    g = Grid(8, 12)
-    g.bevel(0, 0, 8, 2, t)                       # collar
-    g.bevel(0, 2, 3, 6, p)                       # pectorals
-    g.bevel(5, 2, 3, 6, p)
-    g.fill(3, 2, 2, 8, t[0])                     # sternum
-    g.fill(3, 2, 1, 8, t[1])
-    g.bevel(0, 8, 3, 2, p)                       # lower plates
-    g.bevel(5, 8, 3, 2, p)
-    motif(g, {**s, "plate": p, "trim": t})
-    if s.get("realm"):
-        g.fill(0, 7, 8, 1, s["glow"][1])           # accent band across the chest
-    g.bevel(0, 10, 8, 2, t)                      # belt
-    g.set(3, 10, t[3])
-    g.set(4, 10, t[2])
-    g.set(3, 11, t[1])
-    g.set(4, 11, t[0])
-    return g
-
-
-def chest_back(s, shift):
-    p, t = shifted(s["plate"], shift), shifted(s["trim"], shift)
-    g = Grid(8, 12)
-    g.bevel(0, 0, 8, 2, t)
-    g.bevel(0, 2, 3, 6, p)                       # shoulder blades
-    g.bevel(5, 2, 3, 6, p)
-    g.fill(3, 2, 2, 8, t[0])                     # spine
-    g.fill(3, 2, 1, 8, t[1])
-    for y in (4, 6):                             # spine ribs
-        g.set(3, y, t[3])
-    g.bevel(0, 8, 3, 2, p)
-    g.bevel(5, 8, 3, 2, p)
-    if s.get("realm"):
-        g.fill(0, 7, 8, 1, s["glow"][1])           # accent band across the chest
-    g.bevel(0, 10, 8, 2, t)
-    return g
-
-
-def chest_side(s, shift):
-    p, t = shifted(s["plate"], shift), shifted(s["trim"], shift)
-    g = Grid(4, 12)
-    g.bevel(0, 0, 4, 2, t)
-    g.bevel(0, 2, 4, 8, p)
-    g.bevel(0, 10, 4, 2, t)
-    return g
-
-
-def arm(s, shift):
-    p, t = shifted(s["plate"], shift), shifted(s["trim"], shift)
-    s = {**s}
-    g = Grid(4, 12)
-    g.bevel(0, 0, 4, 4, t if s.get("realm") else p)  # pauldron (Realm trim on the sidegrades)
-    g.bevel(0, 4, 4, 1, t)                       # its trim lip
-    g.fill(0, 5, 4, 3, p[0])                     # sleeve
-    g.fill(0, 5, 1, 3, p[1])
-    g.bevel(0, 8, 4, 4, p)                       # vambrace
-    g.bevel(0, 8, 4, 1, t)
-    g.bevel(0, 11, 4, 1, t)
-    if s.get("realm"):
-        g.fill(0, 6, 4, 1, shifted(s["glow"], 0)[1])   # accent band
-    return g
-
-
-def boot(s, shift, front):
-    p, t = shifted(s["plate"], shift), shifted(s["trim"], shift)
-    g = Grid(4, 5)                               # the last five rows of the leg
-    g.bevel(0, 0, 4, 1, t)                       # cuff
-    g.bevel(0, 1, 4, 2, t if s.get("realm") else p)  # greave (Realm trim on the sidegrades)
-    g.bevel(0, 3, 4, 1, p)                       # boot
-    if front:
-        g.set(1, 3, p[3])                        # toe cap catches the light
-    g.fill(0, 4, 4, 1, t[0])                     # sole
-    return g
-
-
-def thigh(s, shift, front):
-    p, t = shifted(s["plate"], shift), shifted(s["trim"], shift)
-    g = Grid(4, 12)
-    g.bevel(0, 0, 4, 5, p)                       # tasset
-    if not front:
-        g.fill(0, 2, 4, 1, p[0])                 # back lamellae
-    g.bevel(0, 5, 4, 1, t)                       # lip
-    if s.get("realm"):
-        g.fill(0, 5, 4, 1, s["glow"][1])         # accent band on the sidegrades
-    g.bevel(0, 6, 4, 2, t)                       # knee guard
-    if front:
-        g.set(1, 6, t[3])
-    g.bevel(0, 8, 4, 4, p)                       # shin
-    return g
-
-
-def belt(s, shift):
-    t = shifted(s["trim"], shift)
-    p = shifted(s["plate"], shift)
-    g = Grid(8, 12)
-    g.fill(0, 8, 8, 1, p[0])
-    g.bevel(0, 9, 8, 3, t)
-    return g
-
-
-def blit(tex, g, x, y, flip=False):
-    for j in range(g.h):
-        for i in range(g.w):
-            c = g.px[j][g.w - 1 - i if flip else i]
+def blit(tex, colours, x, y):
+    for j, row in enumerate(colours):
+        for i, c in enumerate(row):
             if c is not None:
                 tex[y + j][x + i] = c
 
 
+def limb(tex, s, box, out, fb, back, inner, y=0):
+    """The four sides of an arm or a leg. The back continues the front around the outer side, so it is mirrored."""
+    f = faces(box)
+    for name, rows in (("right", out), ("front", fb), ("left", inner), ("back", mirror(back))):
+        blit(tex, paint(rows, s), f[name][0], f[name][1] + y)
+
+
+def solid(tex, rect, c):
+    x, y, w, h = rect
+    for j in range(h):
+        for i in range(w):
+            tex[y + j][x + i] = c
+
+
 def worn(s):
+    """Chestplate (torso and arms) and boots."""
     tex = [[None] * W for _ in range(H)]
-    body, ar, leg = faces("body"), faces("arm"), faces("leg")
-    for name, fn in (("front", chest_front), ("back", chest_back)):
-        x, y, _, _ = body[name]
-        blit(tex, fn(s, SIDE_SHIFT[name]), x, y)
-    for name in ("right", "left"):
-        x, y, _, _ = body[name]
-        blit(tex, chest_side(s, SIDE_SHIFT[name]), x, y)
-    x, y, _, _ = body["top"]
-    for j in range(4):
-        for i in range(8):
-            tex[y + j][x + i] = s["trim"][2] if j < 2 else s["trim"][1]
-    x, y, _, _ = body["bottom"]
-    for j in range(4):
-        for i in range(8):
-            tex[y + j][x + i] = s["plate"][0]
-    for name in ("front", "right", "left", "back"):
-        x, y, _, _ = ar[name]
-        blit(tex, arm(s, SIDE_SHIFT[name]), x, y)
-        x, y, _, _ = leg[name]
-        blit(tex, boot(s, SIDE_SHIFT[name], name == "front"), x, y + 7)
-    x, y, _, _ = ar["top"]
-    g = Grid(4, 4)
-    g.bevel(0, 0, 4, 4, s["plate"])
-    blit(tex, g, x, y)
-    x, y, _, _ = ar["bottom"]
-    g = Grid(4, 4)
-    g.fill(0, 0, 4, 4, s["plate"][0])
-    blit(tex, g, x, y)
-    x, y, _, _ = leg["bottom"]
-    blit(tex, g, x, y)
+    body, arm, leg = faces("body"), faces("arm"), faces("leg")
+    blit(tex, paint(whole(bitmap(s, "CHEST")), s), *body["front"][:2])
+    blit(tex, paint(whole(bitmap(s, "BACK")), s), *body["back"][:2])
+    side = bitmap(s, "SIDE")
+    blit(tex, paint(side, s), *body["right"][:2])
+    blit(tex, paint(mirror(side), s), *body["left"][:2])
+    solid(tex, body["top"], s["trim"][1])
+    limb(tex, s, "arm", bitmap(s, "ARM_OUT"), bitmap(s, "ARM_FB"), bitmap(s, "ARM_FB"), bitmap(s, "ARM_IN"))
+    blit(tex, paint(bitmap(s, "ARM_TOP"), s), *arm["top"][:2])
+    boot_side = bitmap(s, "BOOT_SIDE")
+    limb(tex, s, "leg", boot_side, bitmap(s, "BOOT_FB"), bitmap(s, "BOOT_BACK"), mirror(boot_side),
+         y=BOXES["leg"][3] - len(boot_side))
+    solid(tex, leg["bottom"], darker(s["plate"][0], 0.6))
     return tex
 
 
 def leggings(s):
+    """Belt and legs."""
     tex = [[None] * W for _ in range(H)]
     body, leg = faces("body"), faces("leg")
-    for name in ("front", "right", "left", "back"):
-        x, y, w, _ = body[name]
-        g = belt(s, SIDE_SHIFT[name])
-        if w == 4:
-            g = Grid(4, 12)
-            t, p = shifted(s["trim"], SIDE_SHIFT[name]), shifted(s["plate"], SIDE_SHIFT[name])
-            g.fill(0, 8, 4, 1, p[0])
-            g.bevel(0, 9, 4, 3, t)
-        blit(tex, g, x, y)
-        x, y, _, _ = leg[name]
-        blit(tex, thigh(s, SIDE_SHIFT[name], name == "front"), x, y)
-    x, y, _, _ = leg["top"]
-    g = Grid(4, 4)
-    g.bevel(0, 0, 4, 4, s["plate"])
-    blit(tex, g, x, y)
-    x, y, _, _ = leg["bottom"]
-    g = Grid(4, 4)
-    g.fill(0, 0, 4, 4, s["plate"][0])
-    blit(tex, g, x, y)
+    hip = bitmap(s, "HIP")
+    for name in ("front", "back"):
+        blit(tex, paint(whole(hip), s), *body[name][:2])
+    for name in ("right", "left"):
+        blit(tex, paint(hip, s), *body[name][:2])
+    limb(tex, s, "leg", bitmap(s, "LEG_OUT"), bitmap(s, "LEG_FB"), bitmap(s, "LEG_BACK"), bitmap(s, "LEG_IN"))
+    solid(tex, leg["top"], s["plate"][1])
     return tex
 
 
@@ -302,50 +1284,39 @@ def to_png(tex):
     return png(W, H, [[c + (255,) if c else (0, 0, 0, 0) for c in row] for row in tex])
 
 
-def preview(path, scale=8):
-    """A flat front and back view of the layered model (head as skin, leggings under boots under the chestplate)."""
-    skin = (200, 150, 120)
-    cols = []
-    for name, s in SETS.items():
-        w_, l_ = worn(s), leggings(s)
-        views = []
+def preview(path, scale=5):
+    """A flat front and back view of every set on a bare body (leggings under boots under the chestplate): the
+    composition only, the game adds the volume and its own shading."""
+    skin, bg = (196, 150, 120), (58, 60, 72)
+    u = 4 * S                                           # the width of a limb
+    cw, ch = 4 * u, 8 * S + 24 * S
+    views = []
+    for s in SETS.values():
+        layers = (leggings(s), worn(s))
         for side in ("front", "back"):
-            canvas = [[(60, 60, 72)] * 16 for _ in range(32)]
-
-            def put(layer, face, ox, oy, flip=False, fw=4, fh=12, fy=0):
-                u, v, _, _ = faces(face_box[face])[side]
+            canvas = [[bg] * cw for _ in range(ch)]
+            for j in range(8 * S):
+                for i in range(2 * u):
+                    canvas[j][u + i] = skin
+            parts = (("leg", u, False), ("leg", 2 * u, True), ("arm", 0, False), ("arm", 3 * u, True), ("body", u, False))
+            for part, ox, flip in parts:
+                fx, fy, fw, fh = faces(part)[side]
+                oy = 8 * S + (12 * S if part == "leg" else 0)
+                if side == "back":
+                    ox = cw - ox - fw
                 for j in range(fh):
                     for i in range(fw):
-                        c = layer[v + j][u + (fw - 1 - i if flip else i)]
-                        if c:
-                            canvas[oy + j][ox + i] = c
-            face_box = {"leg": "leg", "arm": "arm", "body": "body"}
-            for j in range(8):                       # head
-                for i in range(8):
-                    canvas[j][4 + i] = skin
-            for part, ox, flip in (("leg", 4, False), ("leg", 8, True), ("arm", 0, False), ("arm", 12, True),
-                                   ("body", 4, False)):
-                fw = 8 if part == "body" else 4
-                oy = 8 if part != "leg" else 20
-                for j in range(12):
-                    for i in range(fw):
-                        canvas[oy + j][ox + i] = skin if part != "body" else (90, 90, 110)
-                if side == "back":
-                    flip = not flip
-                for layer in (l_, w_):
-                    if part == "arm" and layer is l_:
-                        continue
-                    put(layer, part, ox, oy, flip, fw)
+                        c = skin
+                        for layer in layers:
+                            c = layer[fy + j][fx + (fw - 1 - i if flip else i)] or c
+                        canvas[oy + j][ox + i] = c
             views.append(canvas)
-        cols.append(views)
-    gap = 2
-    cw = 16 + gap
-    img = [[(40, 40, 50)] * (cw * 2 * len(SETS)) for _ in range(32)]
-    for k, views in enumerate(cols):
-        for v, canvas in enumerate(views):
-            for y in range(32):
-                for x in range(16):
-                    img[y][(k * 2 + v) * cw + x] = canvas[y][x]
+    gap = 4
+    img = [[bg] * ((cw + gap) * len(views)) for _ in range(ch + 2 * gap)]
+    for k, canvas in enumerate(views):
+        for y in range(ch):
+            for x in range(cw):
+                img[gap + y][gap // 2 + k * (cw + gap) + x] = canvas[y][x]
     big = [[c for c in row for _ in range(scale)] for row in img for _ in range(scale)]
     pathlib.Path(path).write_bytes(png(len(big[0]), len(big), [[c + (255,) for c in row] for row in big]))
 
