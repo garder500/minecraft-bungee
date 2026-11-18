@@ -1,0 +1,9 @@
+# Français. Même clés que en_US.yml (python3 scripts/check_lang_parity.py).
+lang:
+  players_only: "<red>Seuls les joueurs ont une langue."
+  current_chosen: "<gray>Ta langue : <white><language><gray> (choisie)."
+  current_auto: "<gray>Ta langue : <white><language><gray> (celle de ton client Minecraft)."
+  usage: "<gray>Change-la avec <white>/lang [<options>]<gray>. <white>auto<gray> suit à nouveau ton client."
+  unknown: "<red>Langue inconnue <white><input><red>. Disponibles : <white><options><red>."
+  set: "<green>Langue réglée sur <white><language><green>."
+  auto: "<green>Ta langue suit maintenant ton client Minecraft (<white><language><green>)."

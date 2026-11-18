@@ -32,6 +32,9 @@ commands:
     description: View an online player's inventory (read-only)
     usage: /invsee <player>
     permission: vampyuyu.invsee
+  lang:
+    description: Choose your language (en, fr, de) or follow your Minecraft client
+    usage: /lang [en|fr|de|auto]
   exitchat:
     description: Leave a private channel with staff
     usage: /exitchat

@@ -158,6 +158,16 @@ public class ClaimCommand implements CommandExecutor, TabCompleter {
      */
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        // Messages built by the command go out in the sender's language (see ClaimLanguage#setViewer).
+        instance.getLanguage().setViewer(sender);
+        try {
+            return handleCommand(sender, command, label, args);
+        } finally {
+            instance.getLanguage().clearViewer();
+        }
+    }
+
+    private boolean handleCommand(CommandSender sender, Command command, String label, String[] args) {
 
     	// If the sender is not a player
         if (!(sender instanceof Player)) {

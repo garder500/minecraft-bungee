@@ -1,5 +1,6 @@
 package win.vampyuyu.survival.menu;
 
+import win.vampyuyu.survival.core.PlayerLang;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -89,8 +90,8 @@ final class GuideCommands {
             return;
         }
         QuestDef def = tracked.get().def();
-        rt.core.msg().info(player, "Current quest: " + def.name() + " (" + tracked.get().progress() + "/" + def.amount() + ")");
-        rt.core.msg().info(player, def.description());
+        rt.core.msg().info(player, "Current quest: " + rt.engine().catalog().name(def, PlayerLang.of(player)) + " (" + tracked.get().progress() + "/" + def.amount() + ")");
+        rt.core.msg().info(player, rt.engine().catalog().description(def, PlayerLang.of(player)));
         String how = hint(def);
         if (how != null) {
             rt.core.msg().ok(player, "How: " + how);
