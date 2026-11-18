@@ -75,6 +75,37 @@ public final class Guis implements Listener {
         return icon(material, MINI.deserialize(miniName).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE), lore);
     }
 
+    /** Longest tooltip line {@link #wrap} makes, in characters (a wider line runs off a 1080p screen at GUI scale 4). */
+    public static final int LINE_WIDTH = 40;
+
+    /**
+     * Splits plain text (no MiniMessage tags) into tooltip lines of at most {@code width} characters at spaces, each
+     * line starting with {@code prefix} (its colour). A single longer word stays whole on its own line.
+     */
+    public static List<String> wrap(String prefix, String text, int width) {
+        List<String> lines = new ArrayList<>();
+        StringBuilder line = new StringBuilder();
+        for (String word : text.trim().split("\\s+")) {
+            if (word.isEmpty()) {
+                continue;
+            }
+            // French puts a space before : ; ! ? »: that mark stays on the line of the word before it
+            boolean glued = word.matches("[:;!?»]+");
+            if (line.length() > 0 && !glued && line.length() + 1 + word.length() > width) {
+                lines.add(prefix + line);
+                line.setLength(0);
+            }
+            if (line.length() > 0) {
+                line.append(' ');
+            }
+            line.append(word);
+        }
+        if (line.length() > 0) {
+            lines.add(prefix + line);
+        }
+        return lines;
+    }
+
     /** Accent colour of the action line of a tooltip. */
     public static final String ACCENT = "<#F6D58E>";
 
