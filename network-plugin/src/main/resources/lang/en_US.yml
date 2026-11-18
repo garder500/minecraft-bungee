@@ -1,0 +1,11 @@
+# English: the source of every text and the fallback of the other languages.
+# MiniMessage format, <name> placeholders. Keys are dotted paths; keep fr_FR.yml and de_DE.yml in step
+# (python3 scripts/check_lang_parity.py).
+lang:
+  players_only: "<red>Only players have a language."
+  current_chosen: "<gray>Your language: <white><language><gray> (chosen)."
+  current_auto: "<gray>Your language: <white><language><gray> (from your Minecraft client)."
+  usage: "<gray>Change it with <white>/lang [<options>]<gray>. <white>auto<gray> follows your client again."
+  unknown: "<red>Unknown language <white><input><red>. Available: <white><options><red>."
+  set: "<green>Language set to <white><language><green>."
+  auto: "<green>Your language now follows your Minecraft client (<white><language><green>)."

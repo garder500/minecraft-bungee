@@ -135,14 +135,15 @@ one-off conversion from the old YAML.
 ## Translations (survival-plugin, fr and de)
 
 English stays the source (content tables). `scripts/i18n_extract.py` writes the English strings to
-`survival-plugin/i18n/en/<chunk>.json` (item names and description lines, quests, quest categories); translators fill
+`survival-plugin/i18n/en/<chunk>.json` (item names and description lines); translators fill
 `i18n/fr/` and `i18n/de/` with the same keys following `i18n/GLOSSARY.md`; `scripts/i18n_seed.py` checks them (same tags,
-numbers, commands, line length) and writes `db/seed/i18n.sql` (table `i18n_text`, migration V026) and the client lang
+numbers, commands, line length) and writes `db/seed/i18n.sql` (table `i18n_text`, migration V027) and the client lang
 files `resource-pack/pack/assets/vy_i18n/lang/`. `make i18n` does both, `make test-pack` runs the check, `LangTest` fails
-when an item or quest text has no fr/de row. `core/Lang.java`: menus, sidebar and chat use `Lang.tr(player, key,
-english)`; text on an item stack uses `Lang.name` / `Lang.line`, translatable components the PACK translates (Paper
+when an item text has no fr/de row. Quest text, `/lang` and the other plugins: `docs/i18n.md`. `core/Lang.java`: text built
+for one viewer uses `Lang.tr(player, key, english)` (language = `PlayerLang.of`); text on an item stack uses `Lang.name` / `Lang.line`, translatable components the PACK translates (Paper
 translates chat per viewer but not item text: checked with a real client), with the English as fallback and a hash of
-the English in the key, so an English row edited in the panel shows English until it is translated again. After a
+the English in the key, so an English row edited in the panel shows English until it is translated again. Item text follows the CLIENT
+language, not the `/lang` choice (the pack translates it). After a
 content text change: `make i18n`, translate the reported keys, `make i18n` again, rebuild pack and plugin. Real check:
 `E2E_LANG=fr_fr python3 scripts/e2e_client.py ...` (client language of the headless client).
 
@@ -159,6 +160,11 @@ Spring Stone, cables, quest menus), `--scenario quarry` (machines), `--scenario 
 Pillow: `nix-shell -p "python3.withPackages (p: [p.pillow])"`) -> 32x32 sprites listed in `art/imported.txt`, which the
 procedural scripts skip. Remaining 3D models: `resource-pack/art/item_models.py` and `sword_models.py`. Skyblock menu
 backgrounds: `art/sky_menus.py` via `render.py sb_main sb_panel sb_small sb_forge` (headless Chrome).
+
+## Languages
+
+English, French, German: see `docs/i18n.md` (`/lang`, `lang/*.yml`, `python3 scripts/check_lang_parity.py`). New player-facing
+text goes in the language files, not in Java strings.
 
 ## Conventions
 

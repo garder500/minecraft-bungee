@@ -10,9 +10,9 @@ import org.bukkit.entity.Player;
 import win.vampyuyu.survival.data.Db;
 
 /**
- * Content text in the player's language. English is the text of the content tables (item_def, item_lore, quest...);
- * the {@code i18n_text} table holds its translations by key ({@code item.<id>.name}, {@code item.<id>.lore.<n>},
- * (also the enchanted items), {@code quest.<id>.name}, {@code quest.<id>.desc}, {@code category.<id>.name|desc}).
+ * Item text in the player's language. English is the text of the content tables (item_def, item_lore,
+ * enchanted_item); the {@code i18n_text} table holds its translations by key ({@code item.<id>.name},
+ * {@code item.<id>.lore.<n>}). Quest text has its own tables and lookup (QuestCatalog, see docs/i18n.md).
  *
  * <p>Two ways to read it. Text built for one viewer (menus, sidebar, chat) is a plain lookup: {@link #tr}. Text written
  * on an item stack must not freeze a language (the stack ends in chests, trades and other players' hands), and Paper
@@ -48,14 +48,6 @@ public final class Lang {
             for (String[] r : Db.query(c, "SELECT id, name FROM enchanted_item", Lang::pair)) {
                 out.put("item." + r[0] + ".name", r[1]);
             }
-            for (String[] r : Db.query(c, "SELECT id, name, description FROM quest", Lang::triple)) {
-                out.put("quest." + r[0] + ".name", r[1]);
-                out.put("quest." + r[0] + ".desc", r[2]);
-            }
-            for (String[] r : Db.query(c, "SELECT id, name, description FROM quest_category", Lang::triple)) {
-                out.put("category." + r[0] + ".name", r[1]);
-                out.put("category." + r[0] + ".desc", r[2]);
-            }
             return null;
         });
         return out;
@@ -63,10 +55,6 @@ public final class Lang {
 
     private static String[] pair(java.sql.ResultSet rs) throws java.sql.SQLException {
         return new String[] {rs.getString(1), rs.getString(2)};
-    }
-
-    private static String[] triple(java.sql.ResultSet rs) throws java.sql.SQLException {
-        return new String[] {rs.getString(1), rs.getString(2), rs.getString(3)};
     }
 
     /** Reads the translations that are still current and publishes them. Safe to call again after a data change. */
@@ -170,12 +158,12 @@ public final class Lang {
         return tr(language(player), key, english);
     }
 
-    /** The language code of a player's client ("fr" for fr_FR and fr_CA), or null when unknown. */
+    /** The language a player reads: their /lang choice, else their client's language, else English (PlayerLang). */
     public static String language(Player player) {
         try {
-            return player == null ? null : player.locale().getLanguage();
+            return PlayerLang.of(player);
         } catch (RuntimeException e) {
-            return null; // a mock player without a locale
+            return PlayerLang.DEFAULT; // a mock player without a locale
         }
     }
 }

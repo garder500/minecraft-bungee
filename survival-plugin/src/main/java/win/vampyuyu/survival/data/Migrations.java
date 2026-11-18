@@ -34,7 +34,8 @@ public final class Migrations {
         "V023__paragon",
         "V024__remove_fairy_souls",
         "V025__quest_proofs",
-        "V026__i18n");
+        "V026__quest_text",
+        "V027__i18n");
 
     private Migrations() {}
 

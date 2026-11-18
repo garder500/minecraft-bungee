@@ -4,7 +4,8 @@
     python3 scripts/i18n_extract.py
 
 The source is the seed itself (migrations + db/seed/*.sql in an in-memory SQLite). Keys: item.<id>.name,
-item.<id>.lore.<position> (enchanted items are items too), quest.<id>.name, quest.<id>.desc, category.<id>.name, category.<id>.desc.
+item.<id>.lore.<position> (enchanted items are items too). Quest and quest category text has its own files
+(scripts/i18n/quests.<lang>.json, scripts/gen_quest_i18n.py, see docs/i18n.md).
 Translators write survival-plugin/i18n/<locale>/<chunk>.json with the same keys; scripts/i18n_seed.py turns them into
 db/seed/i18n.sql.
 """
@@ -15,7 +16,6 @@ import sqlite3
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RES = ROOT / "survival-plugin/src/main/resources/db"
 OUT = ROOT / "survival-plugin/i18n"
-QUEST_CHUNK = 60
 
 
 def database():
@@ -39,19 +39,7 @@ def sources(db):
             items[f"item.{iid}.lore.{pos}"] = line
     for iid, name in db.execute("SELECT id, name FROM enchanted_item ORDER BY id"):
         items[f"item.{iid}.name"] = name
-    chunks = {"items": items, "categories": {}}
-    for cid, name, desc in db.execute("SELECT id, name, description FROM quest_category ORDER BY position"):
-        chunks["categories"][f"category.{cid}.name"] = name
-        if desc:
-            chunks["categories"][f"category.{cid}.desc"] = desc
-    quests = db.execute("SELECT id, name, description FROM quest ORDER BY pool DESC, position, id").fetchall()
-    for i in range(0, len(quests), QUEST_CHUNK):
-        chunk = chunks.setdefault(f"quests_{i // QUEST_CHUNK + 1:02d}", {})
-        for qid, name, desc in quests[i:i + QUEST_CHUNK]:
-            chunk[f"quest.{qid}.name"] = name
-            if desc:
-                chunk[f"quest.{qid}.desc"] = desc
-    return chunks
+    return {"items": items}
 
 
 def main():

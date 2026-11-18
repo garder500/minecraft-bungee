@@ -1,5 +1,6 @@
 package win.vampyuyu.survival.menu;
 
+import win.vampyuyu.survival.core.PlayerLang;
 import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,7 +22,6 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Criteria;
 import win.vampyuyu.survival.api.IslandInfo;
-import win.vampyuyu.survival.core.Lang;
 import win.vampyuyu.survival.core.Msg;
 import win.vampyuyu.survival.core.Scheduler;
 import win.vampyuyu.survival.core.SkyblockWorlds;
@@ -212,7 +212,7 @@ final class SidebarService implements Listener {
         if (prefs.questTracker) {
             Optional<QuestEngine.Tracked> tracked = quests.tracked(player);
             if (tracked.isPresent()) {
-                questName = Lang.tr(player, "quest." + tracked.get().def().id() + ".name", tracked.get().def().name());
+                questName = rt.engine().catalog().name(tracked.get().def(), PlayerLang.of(player));
                 questProgress = tracked.get().def().amount() > 1
                     ? "(" + Msg.grouped(tracked.get().progress()) + "/" + Msg.grouped(tracked.get().def().amount()) + ")"
                     : null;

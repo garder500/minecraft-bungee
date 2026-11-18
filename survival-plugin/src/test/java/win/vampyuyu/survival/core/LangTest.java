@@ -49,10 +49,10 @@ public class LangTest {
 
     @Test
     public void aMenuReadsTheLanguageOfThePlayerAndEnglishOtherwise() {
-        Lang.publish(Map.of("fr", Map.of("quest.q001.name", "Premier arbre")));
-        assertEquals("Premier arbre", Lang.tr("fr", "quest.q001.name", "First Tree"));
-        assertEquals("First Tree", Lang.tr("de", "quest.q001.name", "First Tree"));
-        assertEquals("First Tree", Lang.tr((String) null, "quest.q001.name", "First Tree"));
+        Lang.publish(Map.of("fr", Map.of("item.bronzite.name", "Bronzite brute")));
+        assertEquals("Bronzite brute", Lang.tr("fr", "item.bronzite.name", "Bronzite"));
+        assertEquals("Bronzite", Lang.tr("de", "item.bronzite.name", "Bronzite"));
+        assertEquals("Bronzite", Lang.tr((String) null, "item.bronzite.name", "Bronzite"));
     }
 
     @Test
@@ -93,12 +93,12 @@ public class LangTest {
     }
 
     @Test
-    public void theSeedTranslatesEveryItemAndQuestTextInFrenchAndGerman() {
+    public void theSeedTranslatesEveryItemTextInFrenchAndGerman() {
         try (Db db = Db.memory()) {
             Seeds.sync(db, ContentDomains.ALL, QUIET);
             Lang.load(db);
             Map<String, String> english = Lang.english(db);
-            assertTrue(english.size() > 900);
+            assertTrue(english.size() > 200);
             List<String> missing = new ArrayList<>();
             for (Map.Entry<String, String> row : english.entrySet()) {
                 if (row.getValue().isEmpty()) {

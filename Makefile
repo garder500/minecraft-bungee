@@ -46,7 +46,7 @@ art: ## Repaint pack textures from resource-pack/art/render.py (needs headless C
 	@python3 resource-pack/art/render.py
 e2e-pack: ## Boot a creative Paper 26.3 + headless 26.3 client and check the pack loads and renders (see scripts/e2e_client.py)
 	@python3 scripts/e2e_client.py
-i18n: ## Re-extract the English item and quest text, check the fr/de translations, write the seed and the pack lang files
+i18n: ## Re-extract the English item text, check the fr/de translations, write the seed and the pack lang files
 	@python3 scripts/i18n_extract.py && python3 scripts/i18n_seed.py
 test-pack: ## Validate both resource packs (menus and ValoBlock): structure, models, reproducibility, translations
 	@python3 scripts/test_pack.py

@@ -109,7 +109,7 @@ def main():
         print("PROBLEM", p)
     if "--check" in sys.argv:
         sys.exit(1 if problems else 0)
-    write("i18n", ["Translations of item and quest text (fr, de). Written by scripts/i18n_seed.py from",
+    write("i18n", ["Translations of item text (fr, de). Written by scripts/i18n_seed.py from",
                    "survival-plugin/i18n/<locale>/*.json: do not edit by hand."], statements)
     print(f"{len(statements)} translations written, {len(problems)} problems")
 

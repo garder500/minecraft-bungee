@@ -358,6 +358,7 @@ public class SimpleClaimSystem extends JavaPlugin {
                 messages.put(key, value);
             }
             claimLanguageInstance.setLanguage(messages);
+            loadOtherLanguages();
             
             // Add default settings (before loading DB)
             Map<String,LinkedHashMap<String, Boolean>> defaultSettings = new HashMap<>();
@@ -1082,6 +1083,7 @@ public class SimpleClaimSystem extends JavaPlugin {
                 messages.put(key, value);
             }
             claimLanguageInstance.setLanguage(messages);
+            loadOtherLanguages();
             
             // Add default settings (before loading DB)
             Map<String,LinkedHashMap<String, Boolean>> defaultSettings = new HashMap<>();
@@ -1774,6 +1776,7 @@ public class SimpleClaimSystem extends JavaPlugin {
             messages.put(key, value);
         }
         claimLanguageInstance.setLanguage(messages);
+            loadOtherLanguages();
         
         getConfig().set("lang", lang);
         saveConfig();
@@ -1795,6 +1798,46 @@ public class SimpleClaimSystem extends JavaPlugin {
         }
     }
     
+    /**
+     * Loads the languages players can read besides the server language (English, French, German): each player gets
+     * theirs from /lang of the network plugin, else from their client. The texts come from the jar, so an update
+     * brings new translations; a file with the same name in the plugin's langs folder overrides single keys. A key a
+     * translation lacks falls back to the server language (see ClaimLanguage).
+     */
+    private void loadOtherLanguages() {
+        Map<String, Map<String, String>> byCode = new HashMap<>();
+        for (String file : new String[] {"en_US.yml", "fr_FR.yml", "de_DE.yml"}) {
+            try {
+                Map<String, String> messages = new HashMap<>();
+                try (InputStream in = getClass().getClassLoader().getResourceAsStream("langs/" + file)) {
+                    if (in != null) {
+                        readLangKeys(YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8)), messages);
+                    }
+                }
+                File override = new File(getDataFolder() + File.separator + "langs", file);
+                if (override.isFile()) readLangKeys(YamlConfiguration.loadConfiguration(override), messages);
+                byCode.put(file.substring(0, 2), messages);
+            } catch (Exception e) {
+                getLogger().warning("Cannot load language file " + file + ": " + e.getMessage());
+            }
+        }
+        claimLanguageInstance.setOtherLanguages(byCode);
+    }
+
+    private static void readLangKeys(FileConfiguration config, Map<String, String> messages) {
+        for (String key : config.getKeys(false)) {
+            if (key.equals("help-command")) {
+                ConfigurationSection configHelp = config.getConfigurationSection("help-command");
+                if (configHelp != null) {
+                    for (String help : configHelp.getKeys(false)) messages.put("help-command." + help, configHelp.getString(help));
+                }
+                continue;
+            }
+            String value = config.getString(key);
+            if (value != null) messages.put(key, value);
+        }
+    }
+
     /**
      * Updates the language file with missing keys and removes obsolete keys.
      * 
