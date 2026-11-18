@@ -2644,10 +2644,18 @@ def start_scenario(ctx):
     # 5. the quest menus
     command("quests categories")
     shot(tools, shots / "st-7-categories.png")
+    # the tooltips of two locked/open categories: wrapped description, labels in the client's language
+    for x, name in (("567", "st-7b-category-tooltip.png"), ("603", "st-7c-category-tooltip.png")):
+        subprocess.run([xdo, "mousemove", x, "226"], env=env)
+        time.sleep(1)
+        shot(tools, shots / name)
     subprocess.run([xdo, "key", "Escape"], env=env)
     time.sleep(1)
     command("quests category start")
     shot(tools, shots / "st-8-category-start.png")
+    subprocess.run([xdo, "mousemove", "531", "226"], env=env)
+    time.sleep(1)
+    shot(tools, shots / "st-8b-quest-tooltip.png")
     subprocess.run([xdo, "key", "Escape"], env=env)
     time.sleep(1)
     command("guide generators")

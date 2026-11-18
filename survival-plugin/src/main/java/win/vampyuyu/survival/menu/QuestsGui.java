@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import win.vampyuyu.survival.core.Gui;
 import win.vampyuyu.survival.core.Guis;
+import win.vampyuyu.survival.core.MenuLang;
 import win.vampyuyu.survival.core.Msg;
 
 /** The /quests menus: overview, tutorial line and daily quests. */
@@ -78,14 +79,15 @@ final class QuestsGui {
         QuestData data = rt.quests(player.getUniqueId());
         QuestEngine engine = rt.engine();
         QuestCatalog catalog = engine.catalog();
-        Gui gui = rt.core.guis().create(6, "<dark_gray>Quests");
+        String lang = PlayerLang.of(player);
+        Gui gui = rt.core.guis().create(6, "<dark_gray>" + MenuLang.tr(lang, "quests.title", "Quests"));
         int main = 0;
         int side = 0;
         for (QuestCatalog.Category category : catalog.categories()) {
             int slot = category.main() ? PATH[Math.min(main++, PATH.length - 1)] : SIDE[Math.min(side++, SIDE.length - 1)];
             gui.set(slot, categoryIcon(player, data, category, category.main() ? main : side), click -> category(player, category.id()));
         }
-        gui.back("To Quests", click -> open(player));
+        gui.back(MenuLang.tr(lang, "quests.back_quests", "To Quests"), click -> open(player));
         gui.open(player);
         rt.play(player, "click");
     }
@@ -97,17 +99,18 @@ final class QuestsGui {
         int done = (int) list.stream().filter(d -> data.completed.contains(d.id())).count();
         boolean open = category.unlock().isEmpty() || data.completed.contains(category.unlock());
         List<String> lore = new ArrayList<>();
-        lore.add("<gray>" + esc(engine.catalog().description(category, lang)));
-        lore.add(bar(done, list.size()) + (category.main() ? " · step " + step + " of the main path" : " · side quests"));
+        lore.addAll(Guis.wrap("<gray>", esc(engine.catalog().description(category, lang)), Guis.LINE_WIDTH));
+        lore.add(bar(done, list.size()) + " · " + (category.main() ? MenuLang.tr(lang, "quests.step", "step {0} of the main path", step)
+            : MenuLang.tr(lang, "quests.side", "side quests")));
         if (done == list.size()) {
-            lore.add("<green>Category complete");
+            lore.add("<green>" + MenuLang.tr(lang, "quests.category_complete", "Category complete"));
         } else if (!open) {
             String need = engine.catalog().tutorialQuest(category.unlock()).map(d -> engine.catalog().name(d, lang)).orElse(category.unlock());
-            lore.add("<red>Locked. Finish first: <yellow>" + esc(need));
+            lore.add("<red>" + MenuLang.tr(lang, "quests.locked_finish", "Locked. Finish first:") + " <yellow>" + esc(need));
         } else {
             list.stream().filter(d -> engine.isActive(data, d)).findFirst()
-                .ifPresent(d -> lore.add("<gray>Next: <yellow>" + esc(engine.catalog().name(d, lang))));
-            lore.add(Guis.ACCENT + "▸ Open");
+                .ifPresent(d -> lore.add("<gray>" + MenuLang.tr(lang, "quests.next", "Next:") + " <yellow>" + esc(engine.catalog().name(d, lang))));
+            lore.add(Guis.ACCENT + "▸ " + MenuLang.tr(lang, "quests.open", "Open"));
         }
         String color = done == list.size() ? "<green>" : open ? (category.main() ? "<gold>" : "<aqua>") : "<gray>";
         ItemStack stack = Guis.icon(category.icon(), color + esc(engine.catalog().name(category, lang)), lore.toArray(String[]::new));
@@ -135,12 +138,13 @@ final class QuestsGui {
                 return;
             }
             if (engine.isActive(data, def) && quests.track(player, def.id())) {
-                rt.core.msg().ok(player, "Now tracking: " + engine.catalog().name(def, PlayerLang.of(player)));
+                rt.core.msg().ok(player, MenuLang.tr(PlayerLang.of(player), "quests.now_tracking", "Now tracking: {0}",
+                    engine.catalog().name(def, PlayerLang.of(player))));
                 rt.play(player, "click");
                 category(player, id);
             }
         });
-        gui.back("To the categories", click -> categories(player));
+        gui.back(MenuLang.tr(PlayerLang.of(player), "quests.back_categories", "To the categories"), click -> categories(player));
         gui.open(player);
     }
 
@@ -158,12 +162,12 @@ final class QuestsGui {
                 return;
             }
             if (engine.isActive(data, def) && quests.track(player, def.id())) {
-                rt.core.msg().ok(player, "Now tracking: " + engine.catalog().name(def, PlayerLang.of(player)));
+                rt.core.msg().ok(player, MenuLang.tr(PlayerLang.of(player), "quests.now_tracking", "Now tracking: {0}", engine.catalog().name(def, PlayerLang.of(player))));
                 rt.play(player, "click");
                 tutorial(player);
             }
         });
-        gui.back("To Quests", click -> open(player));
+        gui.back(MenuLang.tr(PlayerLang.of(player), "quests.back_quests", "To Quests"), click -> open(player));
         gui.open(player);
     }
 
@@ -177,7 +181,7 @@ final class QuestsGui {
             QuestDef def = dailies.get(i);
             gui.set(slots[i], icon(player, data, def, true), click -> {
                 if (!data.dailyDone.contains(def.id()) && quests.track(player, "daily:" + def.id())) {
-                    rt.core.msg().ok(player, "Now tracking: " + engine.catalog().name(def, PlayerLang.of(player)));
+                    rt.core.msg().ok(player, MenuLang.tr(PlayerLang.of(player), "quests.now_tracking", "Now tracking: {0}", engine.catalog().name(def, PlayerLang.of(player))));
                     rt.play(player, "click");
                     daily(player);
                 }
@@ -191,7 +195,7 @@ final class QuestsGui {
             "<gray>Every daily quest: <gold>" + Msg.number(cfg.dailyBonusCoins) + " coins <gray>plus <gold>"
                 + Msg.number(cfg.dailyStreakCoins) + " coins <gray>per streak day.",
             data.dailyBonusPaid ? "<green>Claimed" : "<yellow>Not yet"));
-        gui.back("To Quests", click -> open(player));
+        gui.back(MenuLang.tr(PlayerLang.of(player), "quests.back_quests", "To Quests"), click -> open(player));
         gui.open(player);
     }
 
@@ -202,10 +206,10 @@ final class QuestsGui {
         String lang = PlayerLang.of(player);
         String name = esc(engine.catalog().name(def, lang));
         List<String> lore = new ArrayList<>();
-        lore.add("<gray>" + esc(engine.catalog().description(def, lang)));
+        lore.addAll(Guis.wrap("<gray>", esc(engine.catalog().description(def, lang)), Guis.LINE_WIDTH));
         if (complete) {
-            lore.addAll(rewards(def));
-            lore.add("<green>Completed");
+            lore.addAll(rewards(def, lang));
+            lore.add("<green>" + MenuLang.tr(lang, "quests.completed", "Completed"));
             ItemStack stack = Guis.icon(def.icon(), "<green>✔ " + name, lore.toArray(String[]::new));
             stack.editMeta(meta -> meta.setEnchantmentGlintOverride(true));
             return stack;
@@ -217,20 +221,21 @@ final class QuestsGui {
                     needs.add(esc(rt.engine().catalog().tutorialQuest(id).map(d -> engine.catalog().name(d, lang)).orElse(id)));
                 }
             }
-            return Guis.icon(Material.GRAY_DYE, "<gray>" + name + " <dark_gray>(locked)", "<gray>Requires: <red>"
-                + String.join("<gray>, <red>", needs));
+            return Guis.icon(Material.GRAY_DYE, "<gray>" + name + " <dark_gray>" + MenuLang.tr(lang, "quests.locked", "(locked)"),
+                "<gray>" + MenuLang.tr(lang, "quests.requires", "Requires:") + " <red>" + String.join("<gray>, <red>", needs));
         }
         int progress = engine.progress(data, def, daily);
         lore.add(bar(progress, def.amount()));
-        lore.addAll(rewards(def));
+        lore.addAll(rewards(def, lang));
         String key = daily ? "daily:" + def.id() : def.id();
         boolean tracked = key.equals(data.tracked) || engine.tracked(data).map(t -> t.def().id().equals(def.id())
             && t.daily() == daily).orElse(false);
         int handIn = daily ? 0 : quests.handInAvailable(player, def);
         if (handIn > 0) {
-            lore.add(Guis.ACCENT + "▸ Right-click: hand in " + handIn + " from your inventory");
+            lore.add(Guis.ACCENT + "▸ " + MenuLang.tr(lang, "quests.hand_in", "Right-click: hand in {0} from your inventory", handIn));
         }
-        lore.add(tracked ? "<aqua>Tracking in the sidebar" : Guis.ACCENT + "▸ Track");
+        lore.add(tracked ? "<aqua>" + MenuLang.tr(lang, "quests.tracking", "Tracking in the sidebar")
+            : Guis.ACCENT + "▸ " + MenuLang.tr(lang, "quests.track", "Track"));
         return Guis.icon(def.icon(), "<yellow>" + name, lore.toArray(String[]::new));
     }
 
@@ -239,20 +244,21 @@ final class QuestsGui {
         if (taken <= 0) {
             return false;
         }
-        rt.core.msg().ok(player, "Handed in " + taken + " for " + rt.engine().catalog().name(def, PlayerLang.of(player)) + ".");
+        rt.core.msg().ok(player, MenuLang.tr(PlayerLang.of(player), "quests.handed_in", "Handed in {0} for {1}.", taken,
+            rt.engine().catalog().name(def, PlayerLang.of(player))));
         rt.play(player, "click");
         return true;
     }
 
-    private List<String> rewards(QuestDef def) {
+    private List<String> rewards(QuestDef def, String lang) {
         QuestDef.Rewards r = def.rewards();
         List<String> lines = new ArrayList<>();
         if (r.isEmpty()) {
             return lines;
         }
-        lines.add("<gray>Rewards:");
+        lines.add("<gray>" + MenuLang.tr(lang, "quests.rewards", "Rewards:"));
         if (r.coins() > 0) {
-            lines.add(" <gold>+" + Msg.number(r.coins()) + " coins");
+            lines.add(" <gold>+" + Msg.number(r.coins()) + " " + MenuLang.tr(lang, "quests.coins", "coins"));
         }
         r.skillXp().forEach((skill, xp) -> lines.add(" <aqua>+" + Msg.number(xp) + " " + titleCase(skill) + " XP"));
         r.items().forEach((id, amount) -> lines.add(" <green>" + amount + "x " + esc(rt.core.items().def(id)
