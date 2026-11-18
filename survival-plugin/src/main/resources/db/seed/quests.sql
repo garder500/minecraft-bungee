@@ -56,7 +56,7 @@ INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q018', 0, 
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q018', 1, 'q017');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q019', 'plan', 18, 'generator', 'Stone Bricks', 'Get 16 stone bricks: craft them from stone, or use a stonecutter.', 'OBTAIN_ITEM', 'STONE_BRICKS', 16, 'STONE_BRICKS', 30.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q019', 0, 'q013');
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q020', 'plan', 19, 'generator', 'The Ring', 'Place 7 stone bricks around your Fountain (the Spring Stone takes the south side).', 'PLACE_BLOCK', 'STONE_BRICKS', 7, 'STONE_BRICKS', 60.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q020', 'plan', 19, 'generator', 'The Ring', 'Place 7 stone bricks around your Fountain, at its height (the Spring Stone takes the south side).', 'PLACE_BLOCK', 'STONE_BRICKS', 7, 'STONE_BRICKS', 60.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q020', 0, 'q013');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q021', 'plan', 20, 'generator', 'Stone Generator', 'The ring closes and the fragment breathes again. Complete the ring: your Fountain becomes a Stone generator (right-click it to check what is missing).', 'EVENT', 'generator_built:stone', 1, 'FURNACE', 120.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q021', 0, 'q013');

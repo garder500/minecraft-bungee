@@ -124,7 +124,7 @@ c = cat("generator", "The First Real Generator", "The Devourer's stasis fields s
 cmd(c, "Read the Plan", "Read the generator plan with /guide.", "guide", "WRITABLE_BOOK", 20, items={"spring_stone": 1}, label="read_plan")
 ev(c, "Spring Stone", "Place the Spring Stone on the south side of your Fountain's ring.", "machine_placed:spring_stone", 1, "PRISMARINE_BRICKS", 40, after='Read the Plan')
 obtain(c, "Stone Bricks", "Get 16 stone bricks: craft them from stone, or use a stonecutter.", "STONE_BRICKS", 16, "STONE_BRICKS", 30)
-q(c, "The Ring", "Place 7 stone bricks around your Fountain (the Spring Stone takes the south side).", "PLACE_BLOCK", "STONE_BRICKS", 7, "STONE_BRICKS", 60)
+q(c, "The Ring", "Place 7 stone bricks around your Fountain, at its height (the Spring Stone takes the south side).", "PLACE_BLOCK", "STONE_BRICKS", 7, "STONE_BRICKS", 60)
 ev(c, "Stone Generator", "Complete the ring: your Fountain becomes a Stone generator (right-click it to check what is missing).", "generator_built:stone", 1, "FURNACE", 120, label="stone_gen", lore="The ring closes and the fragment breathes again.", proves=['Spring Stone', 'The Ring'])
 brk(c, "Mine the Generator", "64 cobblestone from it", "COBBLESTONE", 64, "IRON_PICKAXE", 50, after='Stone Generator')
 ore(c, "Iron Nugget", "your first iron nugget", "iron_nugget", 1, "IRON_NUGGET", 30)

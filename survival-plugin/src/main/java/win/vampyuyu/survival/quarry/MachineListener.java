@@ -296,6 +296,13 @@ final class MachineListener implements Listener {
                 GeneratorStructure.Result found = machines.structureOf(block);
                 if (found.complete()) {
                     core.msg().ok(player, found.kind().title + ": one block every second above this Fountain.");
+                } else if (machines.ringOffHeight(block) != 0) {
+                    int dy = machines.ringOffHeight(block);
+                    GeneratorStructure.Result off = machines.structureOf(block, dy);
+                    core.msg().warn(player, "Your ring is one block " + (dy < 0 ? "lower" : "higher") + " than the Fountain: "
+                        + "the ring must stand at the Fountain's height, around it. Move the Fountain one block "
+                        + (dy < 0 ? "down" : "up") + " into the middle of the ring" + (off.missing().isEmpty() ? "."
+                        : "; the ring still lacks: " + String.join(", ", off.missing()) + "."));
                 } else {
                     core.msg().info(player, "Fountain: one cobblestone every 2 seconds. To build the " + found.nearest().title
                         + ", still missing: " + String.join(", ", found.missing()) + ". See /guide.");

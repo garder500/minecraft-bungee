@@ -58,4 +58,27 @@ public class GeneratorStructureTest {
         assertFalse(result.complete());
         assertEquals(8, result.missing().size());
     }
+
+    @Test
+    public void aRingOneBlockBelowTheFountainIsNamed() {
+        Map<String, Material> empty = new HashMap<>();
+        Map<String, Material> ring = ring(Material.STONE_BRICKS, GeneratorStructure.SPRING);
+        ring.put("-1,0", Material.DIRT); // one cell still missing down there
+        assertEquals(-1, GeneratorStructure.offHeight(dy -> detect(dy == -1 ? ring : empty)));
+        assertEquals(1, GeneratorStructure.offHeight(dy -> detect(dy == 1 ? ring : empty)));
+    }
+
+    @Test
+    public void aRingAtTheFountainsHeightOrAFewStrayBricksAreNotOffHeight() {
+        Map<String, Material> empty = new HashMap<>();
+        Map<String, Material> complete = ring(Material.STONE_BRICKS, GeneratorStructure.SPRING);
+        assertEquals(0, GeneratorStructure.offHeight(dy -> detect(dy == 0 ? complete : complete)));
+        Map<String, Material> half = ring(Material.STONE_BRICKS, GeneratorStructure.SPRING);
+        half.put("-1,-1", Material.AIR);
+        assertEquals(0, GeneratorStructure.offHeight(dy -> detect(dy == 0 ? half : empty))); // a ring being built
+        Map<String, Material> stray = new HashMap<>();
+        stray.put("0,-1", Material.STONE_BRICKS);
+        stray.put("1,-1", Material.STONE_BRICKS);
+        assertEquals(0, GeneratorStructure.offHeight(dy -> detect(dy == -1 ? stray : empty)));
+    }
 }

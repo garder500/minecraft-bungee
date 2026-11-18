@@ -322,8 +322,8 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi, w
     }
 
     /** What stands at (dx, dz) from the Fountain: a Spring Stone counts only when the machine store knows it. */
-    private Material ringAt(Block fountain, int dx, int dz) {
-        Block b = fountain.getRelative(dx, 0, dz);
+    private Material ringAt(Block fountain, int dx, int dy, int dz) {
+        Block b = fountain.getRelative(dx, dy, dz);
         if (b.getType() == Material.BARRIER || b.getType() == GeneratorStructure.SPRING) {
             MachineData d = store.get(b.getWorld().getName(), MachineStore.pos(b));
             return d != null && d.kind() == MachineType.SPRING_STONE ? GeneratorStructure.SPRING : b.getType();
@@ -333,7 +333,17 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi, w
 
     /** What a Fountain is right now: used by its status message and by the production below. */
     GeneratorStructure.Result structureOf(Block fountain) {
-        return GeneratorStructure.detect((dx, dz) -> ringAt(fountain, dx, dz));
+        return structureOf(fountain, 0);
+    }
+
+    /** The ring {@code dy} blocks above (or below) the Fountain's height, read as if the Fountain stood there. */
+    GeneratorStructure.Result structureOf(Block fountain, int dy) {
+        return GeneratorStructure.detect((dx, dz) -> ringAt(fountain, dx, dy, dz));
+    }
+
+    /** -1 or 1 when the player built the ring one block below or above the Fountain, else 0 (GeneratorStructure). */
+    int ringOffHeight(Block fountain) {
+        return GeneratorStructure.offHeight(dy -> structureOf(fountain, dy));
     }
 
     /** One second of a Fountain: a block above itself every 2 s alone, every second as a built generator. */
