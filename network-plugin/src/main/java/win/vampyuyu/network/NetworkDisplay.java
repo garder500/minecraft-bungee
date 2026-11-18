@@ -36,6 +36,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 /** Network display and explicitly configured limited role commands. */
 public final class NetworkDisplay extends JavaPlugin implements Listener {
+    private win.vampyuyu.network.i18n.I18n i18n;
+
+    /** Translations of the network plugins (languages en, fr, de; see /lang). Null until enabled. */
+    public win.vampyuyu.network.i18n.I18n i18n() { return i18n; }
     private static final Gson JSON = new GsonBuilder().disableHtmlEscaping().create();
     private static final TextColor GOLD = TextColor.color(0xe9d99b);
     private static final TextColor IVORY = TextColor.color(0xf5e9cf);
@@ -107,6 +111,10 @@ public final class NetworkDisplay extends JavaPlugin implements Listener {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
+        i18n = new win.vampyuyu.network.i18n.I18n(this);
+        win.vampyuyu.network.i18n.LangCommand lang = new win.vampyuyu.network.i18n.LangCommand(i18n);
+        getCommand("lang").setExecutor(lang);
+        getCommand("lang").setTabCompleter(lang);
         new InventoryViewer(this);
         access = new RoleAccess(this, server.equals("creative") ? RoleAccess.CREATIVE_BUILDER : Set.of());
         try { management = new ManagementApi(this, token); }

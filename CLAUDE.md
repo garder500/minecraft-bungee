@@ -145,6 +145,11 @@ Pillow: `nix-shell -p "python3.withPackages (p: [p.pillow])"`) -> 32x32 sprites 
 procedural scripts skip. Remaining 3D models: `resource-pack/art/item_models.py` and `sword_models.py`. Skyblock menu
 backgrounds: `art/sky_menus.py` via `render.py sb_main sb_panel sb_small sb_forge` (headless Chrome).
 
+## Languages
+
+English, French, German: see `docs/i18n.md` (`/lang`, `lang/*.yml`, `python3 scripts/check_lang_parity.py`). New player-facing
+text goes in the language files, not in Java strings.
+
 ## Conventions
 
 - Commit only when asked. Commit messages end with the Co-Authored-By line given by the harness.
