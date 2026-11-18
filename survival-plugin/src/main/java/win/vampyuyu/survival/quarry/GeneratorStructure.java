@@ -71,6 +71,29 @@ public final class GeneratorStructure {
         return new Result(null, best, bestMissing);
     }
 
+    /** At most this many ring cells may be missing one block off for {@link #offHeight} to name that height. */
+    static final int OFF_HEIGHT_MAX_MISSING = 4;
+
+    /**
+     * The height (-1 below, 1 above) of a ring built one block off the Fountain's own height, or 0 when the
+     * Fountain's height is the closest (or the ring there is complete). A ring set into the ground under a Fountain
+     * placed on top looks finished to a player but is not one.
+     *
+     * @param atHeight the detection of the ring at a height offset from the Fountain (0 = its own height)
+     */
+    static int offHeight(java.util.function.IntFunction<Result> atHeight) {
+        int best = 0;
+        int bestMissing = atHeight.apply(0).missing().size();
+        for (int dy : new int[] {-1, 1}) {
+            int missing = atHeight.apply(dy).missing().size();
+            if (missing < bestMissing && missing <= OFF_HEIGHT_MAX_MISSING) {
+                best = dy;
+                bestMissing = missing;
+            }
+        }
+        return best;
+    }
+
     static List<String> missing(Kind kind, BiFunction<Integer, Integer, Material> at) {
         List<String> out = new ArrayList<>();
         for (int i = 0; i < RING.length; i++) {

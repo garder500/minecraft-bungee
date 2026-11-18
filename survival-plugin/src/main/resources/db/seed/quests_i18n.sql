@@ -19,7 +19,7 @@ INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q016:fr'
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q017:fr', 'q017', 'fr', 'Lire le plan', 'Lis le plan du générateur avec /guide.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q018:fr', 'q018', 'fr', 'Spring Stone', 'Pose la Spring Stone du côté sud de l''anneau de ta Fountain.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q019:fr', 'q019', 'fr', 'Briques de pierre', 'Obtiens 16 briques de pierre : fabrique-les à partir de pierre, ou utilise une scie de tailleur de pierre.');
-INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q020:fr', 'q020', 'fr', 'L''anneau', 'Pose 7 briques de pierre autour de ta Fountain (la Spring Stone prend le côté sud).');
+INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q020:fr', 'q020', 'fr', 'L''anneau', 'Pose 7 briques de pierre autour de ta Fountain, à sa hauteur (la Spring Stone prend le côté sud).');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q021:fr', 'q021', 'fr', 'Générateur de pierre', 'L''anneau se ferme et le fragment respire à nouveau. Termine l''anneau : ta Fountain devient un générateur de pierre (fais un clic droit dessus pour voir ce qui manque).');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q022:fr', 'q022', 'fr', 'Miner le générateur', 'Casse-y 64 pavés.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q023:fr', 'q023', 'fr', 'Pépite de fer', 'Trouve ta première pépite de fer dans ton générateur.');
@@ -412,7 +412,7 @@ INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q016:de'
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q017:de', 'q017', 'de', 'Den Plan lesen', 'Lies den Generatorplan mit /guide.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q018:de', 'q018', 'de', 'Spring Stone', 'Setze den Spring Stone an die Südseite des Rings deiner Fountain.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q019:de', 'q019', 'de', 'Steinziegel', 'Besorge 16 Steinziegel: Stelle sie aus Stein her oder nutze eine Steinsäge.');
-INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q020:de', 'q020', 'de', 'Der Ring', 'Setze 7 Steinziegel um deine Fountain (der Spring Stone nimmt die Südseite).');
+INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q020:de', 'q020', 'de', 'Der Ring', 'Setze 7 Steinziegel um deine Fountain, auf ihrer Höhe (der Spring Stone nimmt die Südseite).');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q021:de', 'q021', 'de', 'Steingenerator', 'Der Ring schließt sich, und das Fragment atmet wieder. Vervollständige den Ring: Deine Fountain wird zum Steingenerator (Rechtsklick darauf zeigt, was fehlt).');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q022:de', 'q022', 'de', 'Den Generator abbauen', 'Baue 64 Bruchsteine daraus ab.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q023:de', 'q023', 'de', 'Eisennugget', 'Finde deinen ersten Eisennugget in deinem Generator.');
