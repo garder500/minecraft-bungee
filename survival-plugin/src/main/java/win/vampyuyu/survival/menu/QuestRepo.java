@@ -65,7 +65,22 @@ public final class QuestRepo {
                 }
                 return null;
             });
-        return QuestCatalog.of(categories, plan, daily, problems);
+        return QuestCatalog.of(categories, plan, daily, problems, texts(c));
+    }
+
+    /** The translated names and descriptions ({@code quest_text}, {@code quest_category_text}), by language then id. */
+    private static QuestCatalog.Texts texts(Connection c) throws SQLException {
+        Map<String, Map<String, QuestCatalog.Text>> quests = new HashMap<>();
+        for (Object[] r : Db.query(c, "SELECT lang, quest_id, name, description FROM quest_text",
+                rs -> new Object[] {rs.getString(1), rs.getString(2), new QuestCatalog.Text(rs.getString(3), rs.getString(4))})) {
+            quests.computeIfAbsent((String) r[0], k -> new HashMap<>()).put((String) r[1], (QuestCatalog.Text) r[2]);
+        }
+        Map<String, Map<String, QuestCatalog.Text>> categories = new HashMap<>();
+        for (Object[] r : Db.query(c, "SELECT lang, category_id, name, description FROM quest_category_text",
+                rs -> new Object[] {rs.getString(1), rs.getString(2), new QuestCatalog.Text(rs.getString(3), rs.getString(4))})) {
+            categories.computeIfAbsent((String) r[0], k -> new HashMap<>()).put((String) r[1], (QuestCatalog.Text) r[2]);
+        }
+        return new QuestCatalog.Texts(quests, categories);
     }
 
     private static Material material(String name) {
