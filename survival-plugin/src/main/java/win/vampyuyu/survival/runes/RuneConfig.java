@@ -17,9 +17,29 @@ import win.vampyuyu.survival.data.Settings;
  */
 public record RuneConfig(List<Rune> runes, List<Integer> values, List<Integer> slots, int powder, int fuse, int grindOutput,
         int realmPowder, int realmResource, int realmDiamonds, int burnTicks, int regenTicks, int regenCooldownSeconds,
-        int stasisTicks, String stationBlock, List<String> problems) {
-    /** Rows of the Runecraft menu: no more runes of a kind fit (stat runes on the left, Realm runes on the right). */
+        int stasisTicks, Effects effects, String stationBlock, List<String> problems) {
+    /** Rows of the Runecraft menu: no more stat runes fit (one row each, on the left). */
     public static final int MAX_RUNES = 6;
+    /** Realm runes are one button each in three columns on the right: 3 x 6. */
+    public static final int MAX_REALM_RUNES = 18;
+
+    /** The numbers of the Realm runes of the later Realms ({@code runes.<id>.*}). */
+    public record Effects(int blightTicks, int tempestChains, double tempestRadius, double tempestShare,
+            double rewindBelow, double rewindHeal, int rewindCooldownSeconds, double undertowRadius, double undertowPush,
+            int undertowSlowTicks, int undertowCooldownSeconds, double soulbindHeal) {
+        static Effects parse(Settings s) {
+            return new Effects(Math.max(1, s.getInt("blight.wither-ticks", 60)), Math.max(0, s.getInt("tempest.chains", 2)),
+                Math.max(1, s.getDouble("tempest.radius", 4)), clamp(s.getDouble("tempest.share", 0.35)),
+                clamp(s.getDouble("rewind.below", 0.3)), clamp(s.getDouble("rewind.heal", 0.3)),
+                Math.max(0, s.getInt("rewind.cooldown-seconds", 90)), Math.max(1, s.getDouble("undertow.radius", 3)),
+                Math.max(0, s.getDouble("undertow.push", 1.2)), Math.max(0, s.getInt("undertow.slow-ticks", 40)),
+                Math.max(0, s.getInt("undertow.cooldown-seconds", 10)), clamp(s.getDouble("soulbind.heal", 0.08)));
+        }
+
+        private static double clamp(double v) {
+            return Math.max(0, Math.min(1, v));
+        }
+    }
 
     public static RuneConfig load(Db db) {
         return parse(Settings.load(db, "runes"));
@@ -54,8 +74,9 @@ public record RuneConfig(List<Rune> runes, List<Integer> values, List<Integer> s
                 continue;
             }
             boolean realm = stat == null;
-            if (runes.stream().filter(r -> r.realm() == realm).count() >= MAX_RUNES) {
-                problems.add("runes.list: only the first " + MAX_RUNES + " " + (stat == null ? "Realm" : "stat")
+            int max = realm ? MAX_REALM_RUNES : MAX_RUNES;
+            if (runes.stream().filter(r -> r.realm() == realm).count() >= max) {
+                problems.add("runes.list: only the first " + max + " " + (stat == null ? "Realm" : "stat")
                     + " runes fit the menu, '" + id + "' is ignored");
                 continue;
             }
@@ -73,7 +94,7 @@ public record RuneConfig(List<Rune> runes, List<Integer> values, List<Integer> s
             Math.max(0, s.getInt("realm.powder", 8)), Math.max(1, s.getInt("realm.resource", 4)),
             Math.max(0, s.getInt("realm.diamonds", 1)), Math.max(1, s.getInt("scorch.burn-ticks", 80)),
             Math.max(1, s.getInt("verdant.regen-ticks", 100)), Math.max(0, s.getInt("verdant.cooldown-seconds", 12)),
-            Math.max(1, s.getInt("stasis.slow-ticks", 60)),
+            Math.max(1, s.getInt("stasis.slow-ticks", 60)), Effects.parse(s),
             s.getString("station-block", "GRINDSTONE"), List.copyOf(problems));
     }
 

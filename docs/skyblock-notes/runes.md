@@ -10,5 +10,15 @@ Feature `runes` (`survival-plugin/.../runes/`), API `api/RuneApi`, seed `db/seed
 - **Budget**: a kit has at most 4 armor pieces x 6 = 24 points per stat from runes and one weapon rune, well under the +100 of GDD 8.5 and the +25 Force cap. A test checks it from the seed.
 - **Realm runes** (no rank, worth a rank III, an effect instead of points): **Scorch** (Cinderheart, weapon): a Surge sets the target ablaze for 4 s (`RuneApi.onSurge`, called by `LadderCombat` for melee and arrows). **Verdant** (Heartwood, armor): taking a hit grants Regeneration I for 5 s, 12 s cooldown. Cost 8 powder + 4 resource + 1 diamond.
 
+- **Realm runes of the other Realms** (2026-11-20, one per Realm, made from its local resource like the first ones):
+  **Stasis** (Stasis Crystal, Heights, weapon): a Surge slows and freezes. **Rewind** (Chrono Sand, Citadel, armor): when a
+  hit leaves you under 30 % health, the sands turn back and give 30 % back (90 s cooldown). **Blight** (Rot Resin, Marshes,
+  weapon): a Surge rots the target (Wither I, 3 s). **Tempest** (Thunder Quartz, Archipelago, weapon): a Surge strikes the
+  target (flash only) and chains 35 % of the hit to 2 monsters within 4 blocks (dealt without a source, so it never starts
+  another Surge). **Undertow** (Pressure Pearl, Depths, armor): taking a hit throws the attacker and the monsters within 3
+  blocks back and slows them (10 s cooldown). **Soulbind** (Soul Ash, Necropolis, weapon): each monster slain with the
+  weapon gives back 8 % health. Numbers in `runes.<id>.*`. The Runecraft menu shows Realm runes as one button each (effect
+  and cost in the tooltip), three columns on the right, up to 18.
+
 Guessed values, to measure in play: where Rune Powder comes from (amethyst grinder: the GDD only gives the price), the Realm rune cost, the burn and regeneration durations, the rank II components.
-Not done: pack textures for the rune items (vanilla materials for now), the items feature's `Gear` (not loaded in the simple Skyblock) does not know about runes, a Realm rune does not yet exist for the other six Realms (only the first two Realms are in scope).
+Not done: pack textures for the rune items (vanilla materials for now), the items feature's `Gear` (not loaded in the simple Skyblock) does not know about runes.

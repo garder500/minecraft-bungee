@@ -24,7 +24,8 @@ final class RuneItems {
             if (rune.realm()) {
                 items.register(CustomItemDef.builder(rune.itemId(0), rune.name() + " Rune", Rarity.EPIC, Material.ECHO_SHARD)
                     .type("RUNE").glint(true).pdc(RUNE, rune.id()).pdc(RANK, 0L)
-                    .lore("<gray>A Realm rune: a new effect instead of points.", "<gray>Worth a rank III rune.", "",
+                    .lore("<gold>" + RuneService.effectText(rune, config) + ".", "<gray>A Realm rune: a new effect instead of points.",
+                        "<gray>Worth a rank III rune.", "",
                         "<dark_gray>Click it onto a " + rune.target().name().toLowerCase(java.util.Locale.ROOT)
                             + " in your inventory.").build());
                 continue;

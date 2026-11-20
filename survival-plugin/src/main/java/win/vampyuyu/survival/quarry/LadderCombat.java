@@ -65,7 +65,8 @@ final class LadderCombat implements Listener, win.vampyuyu.survival.api.LadderAp
             settings.elementWeakness, settings.elementResistance);
         if (surge(player, target, charge >= settings.surgeMinCharge)) {
             hit *= surgeMultiplier(player);
-            core.service(win.vampyuyu.survival.api.RuneApi.class).ifPresent(r -> r.onSurge(player, target, weapon));
+            double surgeHit = hit;
+            core.service(win.vampyuyu.survival.api.RuneApi.class).ifPresent(r -> r.onSurge(player, target, weapon, surgeHit));
             target.getWorld().spawnParticle(Particle.END_ROD, target.getLocation().add(0, target.getHeight() * 0.6, 0), 12,
                 0.3, 0.4, 0.3, 0.05);
             player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 0.8f, 1.6f);
@@ -114,8 +115,9 @@ final class LadderCombat implements Listener, win.vampyuyu.survival.api.LadderAp
             traits.weakTo(), traits.resists(), attunement(player), settings.elementWeakness, settings.elementResistance);
         if (surge(player, target, Boolean.TRUE.equals(pdc.get(ARROW_FULL, PersistentDataType.BOOLEAN)))) {
             hit *= surgeMultiplier(player);
+            double surgeHit = hit;
             core.service(win.vampyuyu.survival.api.RuneApi.class)
-                .ifPresent(r -> r.onSurge(player, target, player.getInventory().getItemInMainHand()));
+                .ifPresent(r -> r.onSurge(player, target, player.getInventory().getItemInMainHand(), surgeHit));
         }
         Double share = pdc.get(ARROW_SHARE, PersistentDataType.DOUBLE);
         if (share != null) {

@@ -1,6 +1,6 @@
--- Runes (GDD 10) and the runes of the first two Realms (GDD 3.2). Edit in the panel; the list is read at start, the numbers on a data reload.
+-- Runes (GDD 10) and one Realm rune per Realm (GDD 3.2). Edit in the panel; the list is read at start, the numbers on a data reload.
 -- Rows: id|name|spec|target|component. spec = stat:<STAT> or realm. component = custom item spent for rank II (stat rune) or the Realm resource (Realm rune).
-INSERT INTO setting (id, type, value, note) VALUES ('runes.list', 'list', '', 'Runes as id|name|spec|target|component (at most 6 stat runes and 6 Realm runes: the Runecraft menu has 6 rows, Realm runes in the right half). spec is stat:<STAT> or realm; target is armor, weapon or any.');
+INSERT INTO setting (id, type, value, note) VALUES ('runes.list', 'list', '', 'Runes as id|name|spec|target|component (at most 6 stat runes, one row each, and 18 Realm runes, one button each in three columns on the right). spec is stat:<STAT> or realm; target is armor, weapon or any.');
 INSERT INTO setting_item (setting_id, position, value) VALUES ('runes.list', 0, 'vitality|Vitality|stat:vitality|armor|bronzite');
 INSERT INTO setting_item (setting_id, position, value) VALUES ('runes.list', 1, 'ward|Ward|stat:ward|armor|frostium');
 INSERT INTO setting_item (setting_id, position, value) VALUES ('runes.list', 2, 'might|Might|stat:might|weapon|sunstone');
@@ -8,6 +8,11 @@ INSERT INTO setting_item (setting_id, position, value) VALUES ('runes.list', 3, 
 INSERT INTO setting_item (setting_id, position, value) VALUES ('runes.list', 4, 'scorch|Scorch|realm|weapon|cinderheart');
 INSERT INTO setting_item (setting_id, position, value) VALUES ('runes.list', 5, 'verdant|Verdant|realm|armor|heartwood');
 INSERT INTO setting_item (setting_id, position, value) VALUES ('runes.list', 6, 'stasis|Stasis|realm|weapon|stasis_crystal');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('runes.list', 7, 'rewind|Rewind|realm|armor|chrono_sand');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('runes.list', 8, 'blight|Blight|realm|weapon|rot_resin');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('runes.list', 9, 'tempest|Tempest|realm|weapon|thunder_quartz');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('runes.list', 10, 'undertow|Undertow|realm|armor|pressure_pearl');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('runes.list', 11, 'soulbind|Soulbind|realm|weapon|soul_ash');
 INSERT INTO setting (id, type, value, note) VALUES ('runes.value.rank1', 'int', '2', 'Stat points of a rank I rune (GDD 10).');
 INSERT INTO setting (id, type, value, note) VALUES ('runes.value.rank2', 'int', '4', 'Stat points of a rank II rune (GDD 10).');
 INSERT INTO setting (id, type, value, note) VALUES ('runes.value.rank3', 'int', '6', 'Stat points of a rank III rune (GDD 10). A Realm rune is worth the same.');
@@ -26,4 +31,16 @@ INSERT INTO setting (id, type, value, note) VALUES ('runes.scorch.burn-ticks', '
 INSERT INTO setting (id, type, value, note) VALUES ('runes.verdant.regen-ticks', 'int', '100', 'Verdant: ticks of Regeneration I after taking a hit.');
 INSERT INTO setting (id, type, value, note) VALUES ('runes.verdant.cooldown-seconds', 'int', '12', 'Verdant: seconds before it can trigger again.');
 INSERT INTO setting (id, type, value, note) VALUES ('runes.stasis.slow-ticks', 'int', '60', 'Stasis: ticks the target is slowed (Slowness III) and frozen after a Surge (20 = 1 second).');
+INSERT INTO setting (id, type, value, note) VALUES ('runes.rewind.below', 'real', '0.3', 'Rewind (Citadel, armor): triggers when a hit leaves the player under this share of their health.');
+INSERT INTO setting (id, type, value, note) VALUES ('runes.rewind.heal', 'real', '0.3', 'Rewind: share of the max health given back.');
+INSERT INTO setting (id, type, value, note) VALUES ('runes.rewind.cooldown-seconds', 'int', '90', 'Rewind: seconds before it can trigger again.');
+INSERT INTO setting (id, type, value, note) VALUES ('runes.blight.wither-ticks', 'int', '60', 'Blight (Marshes, weapon): ticks of Wither I after a Surge (20 = 1 second).');
+INSERT INTO setting (id, type, value, note) VALUES ('runes.tempest.chains', 'int', '2', 'Tempest (Archipelago, weapon): other monsters a Surge chains to.');
+INSERT INTO setting (id, type, value, note) VALUES ('runes.tempest.radius', 'real', '4', 'Tempest: blocks around the target where the chain looks for monsters.');
+INSERT INTO setting (id, type, value, note) VALUES ('runes.tempest.share', 'real', '0.35', 'Tempest: share of the Surge hit each chained monster takes.');
+INSERT INTO setting (id, type, value, note) VALUES ('runes.undertow.radius', 'real', '3', 'Undertow (Depths, armor): blocks around the player where monsters are thrown back.');
+INSERT INTO setting (id, type, value, note) VALUES ('runes.undertow.push', 'real', '1.2', 'Undertow: strength of the push.');
+INSERT INTO setting (id, type, value, note) VALUES ('runes.undertow.slow-ticks', 'int', '40', 'Undertow: ticks of Slowness II on the pushed monsters.');
+INSERT INTO setting (id, type, value, note) VALUES ('runes.undertow.cooldown-seconds', 'int', '10', 'Undertow: seconds before it can trigger again.');
+INSERT INTO setting (id, type, value, note) VALUES ('runes.soulbind.heal', 'real', '0.08', 'Soulbind (Necropolis, weapon): share of the max health given back for each monster slain.');
 INSERT INTO setting (id, type, value, note) VALUES ('runes.station-block', 'text', 'GRINDSTONE', 'Vanilla block that opens the Runecraft table in Skyblock worlds (craft and place it). /runecraft opens it from anywhere.');
