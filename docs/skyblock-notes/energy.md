@@ -30,6 +30,10 @@ No fuel. Each is a machine that joins the Flux network (cables, batteries) and m
 Forge recipes (GDD 7.3): Spring Wheel 80 Bronzite + 30 Frostium + 8 Spring Stones; Heat Tap 60 Frostium + 40 Sunstone; Void
 Reactor 50 Voidglass + 40 Sunstone + 8 diamonds; Astral Lattice 40 Starcore + 40 Voidglass.
 
+Fixed 2026-11-19: a network touching a Spring Stone or a Fountain (never part of a network) used to count as "in an unloaded
+chunk" and did not run, so no Spring Wheel made Flux in game. Checked with `e2e_client.py --scenario machines` (a Miner II on a
+Spring Wheel alone) and `MachineTest.aSpringWheelAgainstItsSpringStonePowersAMinerOnItsOwn`.
+
 ## Compression (GDD 7.4)
 
 9 ore -> 1 Bar -> 1 Block (81 ores), for the five tiered ores (Bronzite, Frostium, Sunstone, Voidglass, Starcore). Crafting
@@ -46,6 +50,12 @@ The Frostium Block has no generator yet.
 There is no limit per island. A network runs as many Miners as its Flux allows (`PassiveGeneratorTest.theNumberOfMinersIsLimitedByFluxNotByACap`:
 one Astral Lattice with four Blocks, 350 Flux/s, runs 58 Miner II). What limits a base is the Flux, the space, the cables,
 the batteries, the build cost and the weather (Lightning Rod).
+
+## Ember module smelting
+
+`MachineModule.smelt` (Ember, Cracked Ashes): cobblestone -> stone, sand -> glass, netherrack -> nether brick, and the raw
+ores of the cobble draw (raw copper/iron/gold -> ingots, added 2026-11-19: before, the Ember did nothing on a cobble Miner).
+Only plain vanilla stacks smelt: a custom item on a raw-ore base (Bronzite is `RAW_COPPER`) keeps its PDC id and stays.
 
 ## Tests
 

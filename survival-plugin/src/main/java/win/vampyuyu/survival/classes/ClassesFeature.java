@@ -29,6 +29,8 @@ public final class ClassesFeature implements Feature {
         return "classes";
     }
 
+    private AetherBar aetherBar;
+
     @Override
     public void enable(Core core) {
         service = new ClassService(core);
@@ -61,10 +63,15 @@ public final class ClassesFeature implements Feature {
             }
         });
         core.scheduler().nextTick(() -> org.bukkit.Bukkit.getOnlinePlayers().forEach(service::refresh));
+        aetherBar = new AetherBar(service);
+        core.scheduler().repeating(10, 5, aetherBar::tick);
     }
 
     @Override
     public void disable() {
+        if (aetherBar != null) {
+            aetherBar.restoreAll();
+        }
         if (service != null) {
             org.bukkit.Bukkit.getOnlinePlayers().forEach(p -> {
                 var health = p.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);

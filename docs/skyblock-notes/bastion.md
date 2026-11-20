@@ -4,6 +4,11 @@ The Bastion is the fortress of a Realm's Guardian: an **instanced** fight for a 
 Phase 2 ships two: the **Ashes Bastion** (Lava Colossus = boss `magma_warden`, key `magma_core`) and the **Grove Bastion**
 (Mycelial Queen = boss `sylvan_matriarch`, key `matriarch_egg`). Technical ids are unchanged; the visible names are the canon.
 
+* **Rift of the Echo** (`echo_rift`, boss `voidwyrm`, key `echo_key`, palette `rift`): dungeon 0. It is opened by right-clicking
+  the Echo Key at the Rift altar of the Hub (the altar of the `voidwyrm` summon row; any Bastion key whose summon row is in
+  `altar` mode does the same at its altar) or with `/bastion enter echo_rift`. The Echo used to wake in the shared Hub, where its
+  attacks hit every player around. Not in `bastion.raid.requires`; no Resonance row, so no Memory Shards.
+
 ## Player flow
 * `/bastion` (alias `/bst`) lists the Bastions (key held or missing), `/bastion info <id>`, `/bastion enter <id>`, `/bastion leave`.
   Another feature (a Realm gate, a menu) opens one with `BastionApi.enter(player, id)`.

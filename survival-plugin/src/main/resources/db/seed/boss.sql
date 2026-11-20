@@ -1,6 +1,7 @@
 -- Bosses, slayers, summon recipes and world boss spots; the global knobs are 'boss.*' setting rows.
 -- Converted from the former boss.yml by scripts/yaml_to_seed_boss.py; edit it in the panel.
 -- Loot balance: pity is +0.1 percentage point per dry kill, capped at +1.5 points.
+INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-factor.voidwyrm', 'real', '0.425', 'Health factor of the Echo of the Rift instead of boss.settings.hp-factor (85 %: a flyer takes fewer hits, even with its landings).');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-scale', 'real', '1.0', 'Multiplies every boss health pool (1 = the GDD 8.7 curve as is).');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.damage-scale', 'real', '0.6', 'Multiplies every hit bosses deal to players.');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.incoming-damage-scale', 'real', '1.0', 'Multiplies every hit players deal to bosses (calibrate to the items damage formula).');
@@ -40,11 +41,14 @@ INSERT INTO setting (id, type, value, note) VALUES ('boss.world.duration-minutes
 INSERT INTO setting (id, type, value, note) VALUES ('boss.world.retry-minutes', 'int', '5', '');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.world.leaderboard-size', 'int', '5', '');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.world.history-size', 'int', '10', '');
-INSERT INTO boss (id, kind, tier, name, description, entity, health, damage, armor, scale, speed, knockback_resistance, bar_color, bar_overlay, arena_radius, arena_leash, arena_projectile_range, arena_no_fly, arena_no_build, arena_no_teleport, arena_min_players, arena_scale_per_player, arena_scale_cap, arena_enrage_seconds, arena_enrage_damage, arena_enrage_growth, arena_idle_despawn_seconds, arena_time_limit_seconds, arena_max_minions, option_size, option_baby, option_glow, option_contact_radius, loot_coins, loot_combat_xp, loot_min_share, loot_share_floor, loot_wings_min_share, loot_announce_below, hp_auto, weakness, resistance) VALUES ('voidwyrm', 'boss', 5, '<gradient:#8a2be2:#e0b0ff><bold>Echo of the Rift</bold></gradient>', 'A fragment of the Devourer''s hunger, torn loose at the Rift. Dodge the dives, shatter the crystals, stay out of the breath.', 'ENDER_DRAGON', 51840.0, 14.0, 0.0, 1.0, 1.0, 1.0, 'PURPLE', 'NOTCHED_10', 80.0, 110.0, 90.0, 0, 1, 1, 1, 0.5, 3.0, 540, 1.5, 0.25, 90, 900, 10, NULL, NULL, 0, 9.0, 4000.0, 60000.0, 0.01, 0.25, 0.05, 0.02, 1, 'ASTRAL', 'EARTH');
+INSERT INTO boss (id, kind, tier, name, description, entity, health, damage, armor, scale, speed, knockback_resistance, bar_color, bar_overlay, arena_radius, arena_leash, arena_projectile_range, arena_no_fly, arena_no_build, arena_no_teleport, arena_min_players, arena_scale_per_player, arena_scale_cap, arena_enrage_seconds, arena_enrage_damage, arena_enrage_growth, arena_idle_despawn_seconds, arena_time_limit_seconds, arena_max_minions, option_size, option_baby, option_glow, option_contact_radius, loot_coins, loot_combat_xp, loot_min_share, loot_share_floor, loot_wings_min_share, loot_announce_below, hp_auto, weakness, resistance) VALUES ('voidwyrm', 'boss', 5, '<gradient:#8a2be2:#e0b0ff><bold>Echo of the Rift</bold></gradient>', 'A fragment of the Devourer''s hunger, torn loose at the Rift. Dodge the dives, shatter the crystals, stay out of the breath.', 'ENDER_DRAGON', 51840.0, 14.0, 0.0, 1.0, 0.45, 1.0, 'PURPLE', 'NOTCHED_10', 80.0, 110.0, 90.0, 0, 1, 1, 1, 0.5, 3.0, 540, 1.5, 0.25, 90, 900, 10, NULL, NULL, 0, 9.0, 4000.0, 60000.0, 0.01, 0.25, 0.05, 0.02, 1, 'ASTRAL', 'EARTH');
 INSERT INTO boss_phase (boss_id, position, name, at, title, subtitle, damage, speed) VALUES ('voidwyrm', 0, 'Circling', 1.0, '', '', 1.0, 1.0);
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 0, 'cast', 0, 'breath_cloud', 14.0, 1.5, 0.8, 'random', 1);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 0, 'cast', 0, 'count', 3.0, NULL);
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 0, 'cast', 1, 'dive_bomb', 18.0, 2.0, 2.2, 'random', 1);
+INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 0, 'cast', 1, 'stun', 3.0, NULL);
+INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 0, 'cast', 2, 'perch', 24.0, 2.5, 1.0, 'nearest', 1);
+INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 0, 'cast', 2, 'seconds', 6.0, NULL);
 INSERT INTO boss_phase (boss_id, position, name, at, title, subtitle, damage, speed) VALUES ('voidwyrm', 1, 'Shielded', 0.7, '<light_purple><bold>THE ECHO SCREAMS', '<gray>The Rift answers. Destroy the end crystals!', 1.15, 1.0);
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 1, 'enter', 0, 'shield_crystals', 12.0, 0.0, 1.0, 'nearest', 1);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'enter', 0, 'count', 4.0, NULL);
@@ -57,12 +61,15 @@ INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) 
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 1, 'cast', 0, 'breath_cloud', 12.0, 1.5, 0.9, 'random', 1);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'cast', 0, 'count', 4.0, NULL);
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 1, 'cast', 1, 'dive_bomb', 16.0, 1.8, 2.4, 'top', 1);
+INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'cast', 1, 'stun', 3.0, NULL);
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 1, 'cast', 2, 'summon_minions', 25.0, 0.0, 1.0, 'nearest', 1);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'cast', 2, 'entity', NULL, 'ENDERMITE');
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'cast', 2, 'count', 4.0, NULL);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'cast', 2, 'health', 60.0, NULL);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'cast', 2, 'radius', 8.0, NULL);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'cast', 2, 'name', NULL, '<dark_purple>Void Mite');
+INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 1, 'cast', 3, 'perch', 22.0, 2.5, 1.0, 'nearest', 1);
+INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'cast', 3, 'seconds', 5.0, NULL);
 INSERT INTO boss_phase (boss_id, position, name, at, title, subtitle, damage, speed) VALUES ('voidwyrm', 2, 'Unbound', 0.35, '<dark_purple><bold>THE HUNGER UNBOUND', '<gray>The Echo stops holding back.', 1.35, 1.2);
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 2, 'cast', 0, 'void_zones', 12.0, 1.5, 0.8, 'all', 1);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 2, 'cast', 0, 'count', 5.0, NULL);
@@ -71,6 +78,8 @@ INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) 
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 2, 'cast', 2, 'dive_bomb', 12.0, 1.5, 2.6, 'top', 1);
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 2, 'cast', 3, 'lightning_strikes', 16.0, 1.4, 1.6, 'all', 1);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 2, 'cast', 3, 'count', 6.0, NULL);
+INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 2, 'cast', 4, 'perch', 20.0, 2.0, 1.0, 'nearest', 1);
+INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 2, 'cast', 4, 'seconds', 4.0, NULL);
 INSERT INTO boss_rank_bonus (boss_id, rank, multiplier) VALUES ('voidwyrm', 1, 1.5);
 INSERT INTO boss_rank_bonus (boss_id, rank, multiplier) VALUES ('voidwyrm', 2, 1.25);
 INSERT INTO boss_rank_bonus (boss_id, rank, multiplier) VALUES ('voidwyrm', 3, 1.1);

@@ -155,7 +155,11 @@ seed by hand). Quest types: craft (crafting table only), OBTAIN_ITEM (furnace, s
 place, break, events... A built generator ring catches up a stuck chain (`QuestEngine.catchUp`); generator and miner
 events credit every island member. `make plugin-test PLUGIN=survival TEST=QuestPlanTest,QuestFlowTest` is the
 completability gate. Real-client checks: `python3 scripts/e2e_client.py --scenario start` (pebbles, Fountain, ring,
-Spring Stone, cables, quest menus), `--scenario quarry` (machines), `--scenario swords`. Item sprites: concept sheets
+Spring Stone, cables, quest menus), `--scenario quarry` (machines), `--scenario swords`, `--scenario realms` (Hub, Quai
+des Huit, a walk through a lit Gate, the eight Realms, the Astral Interiority, a Bastion and its Guardian;
+`E2E_REALMS=ashes,grove` and `E2E_SKIP=astral,bastion` shorten it), `--scenario machines` (the visible break through a
+glass wall, a Miner I with an Ember Module, a Miner II on a Spring Wheel alone with its Bronzite Blocks, the three stations
+placed and opened). Item sprites: concept sheets
 (generated images, one item per cell on magenta) in `resource-pack/art/concepts/` -> `art/import_textures.py` (needs
 Pillow: `nix-shell -p "python3.withPackages (p: [p.pillow])"`) -> 32x32 sprites listed in `art/imported.txt`, which the
 procedural scripts skip. Remaining 3D models: `resource-pack/art/item_models.py` and `sword_models.py`. Skyblock menu

@@ -181,7 +181,7 @@ public final class BreathRules {
             case MONSTER -> "Monster damage " + signed(e.value());
             case ROUTE -> "The Sky Gate to the " + title(e.target()) + " is shut";
             case FRACTURE -> "A Fracture has opened in the " + title(e.target()) + " (/breath fracture)";
-            case INVADE -> "Stellar immune cells invade " + (e.target().equals("hub") ? "the Hub" : "the " + title(e.target()));
+            case INVADE -> "Stellar immune cells invade " + (e.target().equals("hub") ? "the Breach, north-west of the Hub" : "the " + title(e.target()));
         };
     }
 

@@ -14,7 +14,7 @@ import org.bukkit.Material;
  */
 public final class HubPlan {
     /** Bump when the layout changes so existing hubs are rebuilt (the marker file stores it). */
-    public static final int VERSION = 3;
+    public static final int VERSION = 4; // 4: the Breach (HubBreach), the hub's one damage zone
     public static final int SPAWN_X = 0;
     public static final int SPAWN_Z = 14;
     /** The Quai bridge (QuaiPlan) starts at this hub Z; the processional ends one block before it. */
@@ -144,6 +144,7 @@ public final class HubPlan {
             spire(plan, at[0], at[1], 0.55);
         }
         rimRuins(plan);
+        breach(plan);
         debris(plan);
         underside(plan);
         plan.anchor("spawn", SPAWN_X, 1, SPAWN_Z);
@@ -813,6 +814,124 @@ public final class HubPlan {
             int y = -8 + h(i, 3, 22) % 18;
             plan.set(x, y, z, h(i, 4, 23) % 4 == 0 ? Material.AMETHYST_BLOCK : h(i, 4, 23) % 4 == 1 ? Material.CRACKED_STONE_BRICKS : Material.STONE_BRICKS);
         }
+    }
+
+    // ---------------------------------------------------------------- the Breach
+
+    /**
+     * The Breach ({@link HubBreach}): a torn islet north-west of the fragment, dark stone split by crying obsidian (its
+     * one glow colour is violet), joined to the rim by a railed bridge with a warning sign at each end. The only place of
+     * the hub where players take damage: the Breath's immune cells come through here.
+     */
+    private static void breach(BlockPlan plan) {
+        int cx = HubBreach.X;
+        int cz = HubBreach.Z;
+        int r = HubBreach.RADIUS;
+        double[] cracks = {0.3, 1.5, 2.6};
+        for (int x = cx - r; x <= cx + r; x++) {
+            for (int z = cz - r; z <= cz + r; z++) {
+                if (!HubBreach.ground(x, z)) {
+                    continue;
+                }
+                double dx = x - cx;
+                double dz = z - cz;
+                boolean crack = false;
+                for (double a : cracks) {
+                    double along = dx * Math.cos(a) + dz * Math.sin(a);
+                    double across = Math.abs(-dx * Math.sin(a) + dz * Math.cos(a) + 1.2 * Math.sin(along * 0.5));
+                    crack |= across < 0.55 && Math.abs(along) > 3 && Math.abs(along) < r - 2 && h(x, z, 40) % 5 != 0;
+                }
+                int roll = h(x, z, 41) % 20;
+                Material m = crack ? Material.CRYING_OBSIDIAN : roll < 9 ? Material.COBBLED_DEEPSLATE
+                    : roll < 13 ? Material.CRACKED_DEEPSLATE_TILES : roll < 17 ? Material.TUFF : Material.DEEPSLATE_TILES;
+                plan.set(x, 0, z, m);
+                int depth = breachDepth(x, z);
+                for (int k = 1; k <= depth; k++) {
+                    boolean shell = k == 1 || k == depth || breachDepth(x + 1, z) < k || breachDepth(x - 1, z) < k
+                        || breachDepth(x, z + 1) < k || breachDepth(x, z - 1) < k;
+                    if (shell) {
+                        plan.set(x, -k, z, k <= 2 ? Material.TUFF : Material.DEEPSLATE);
+                    }
+                }
+                boolean rim = !HubBreach.ground(x + 1, z) || !HubBreach.ground(x - 1, z) || !HubBreach.ground(x, z + 1)
+                    || !HubBreach.ground(x, z - 1);
+                if (rim && h(x, z, 42) % 4 == 0 && Math.hypot(x - HubBreach.BRIDGE_TO[0], z - HubBreach.BRIDGE_TO[1]) > 4) {
+                    ShapeKit.column(plan, x, 1, 1 + h(x, z, 43) % 2, z, Material.COBBLED_DEEPSLATE_WALL);
+                }
+            }
+        }
+        // the tear at the centre: a ring of crying obsidian around amethyst, violet shards hanging above
+        for (int x = cx - 3; x <= cx + 3; x++) {
+            for (int z = cz - 3; z <= cz + 3; z++) {
+                double d = Math.hypot(x - cx, z - cz);
+                if (d <= 2.6 && d >= 1.6) {
+                    plan.set(x, 0, z, Material.CRYING_OBSIDIAN);
+                } else if (d < 1.6) {
+                    plan.set(x, 0, z, Material.AMETHYST_BLOCK);
+                }
+            }
+        }
+        plan.set(cx, 1, cz, Material.AMETHYST_CLUSTER, "facing=up");
+        int[][] shards = {{1, 5, 0}, {-1, 7, 1}, {0, 9, -1}, {2, 11, 1}, {-2, 6, -2}};
+        for (int[] sh : shards) {
+            plan.set(cx + sh[0], sh[1], cz + sh[2], Material.PURPLE_STAINED_GLASS);
+        }
+        // four broken pillars with soul lanterns
+        for (int i = 0; i < 4; i++) {
+            double a = Math.PI / 4 + i * Math.PI / 2;
+            int x = (int) Math.round(cx + Math.cos(a) * 7);
+            int z = (int) Math.round(cz + Math.sin(a) * 7);
+            int top = 2 + h(x, z, 44) % 4;
+            ShapeKit.column(plan, x, 1, top, z, i % 2 == 0 ? Material.CRACKED_DEEPSLATE_BRICKS : Material.POLISHED_BLACKSTONE_BRICKS);
+            plan.set(x, top + 1, z, Material.SOUL_LANTERN, "hanging=false");
+        }
+        // the bridge: three wide, railed, from inside the hub rim to the islet
+        int[] from = HubBreach.BRIDGE_FROM;
+        int[] to = HubBreach.BRIDGE_TO;
+        double len = Math.hypot(to[0] - from[0], to[1] - from[1]);
+        double ux = (to[0] - from[0]) / len;
+        double uz = (to[1] - from[1]) / len;
+        int minX = Math.min(from[0], to[0]) - 4;
+        int maxX = Math.max(from[0], to[0]) + 4;
+        int minZ = Math.min(from[1], to[1]) - 4;
+        int maxZ = Math.max(from[1], to[1]) + 4;
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                if (ground(x, z) || HubBreach.ground(x, z)) {
+                    continue;
+                }
+                double t = (x - from[0]) * ux + (z - from[1]) * uz;
+                double w = Math.abs(-(x - from[0]) * uz + (z - from[1]) * ux);
+                if (t < -3 || t > len + 2 || w > 2.0) {
+                    continue;
+                }
+                plan.set(x, 0, z, w <= 1.0 ? Material.POLISHED_DEEPSLATE : Material.DEEPSLATE_TILES);
+                plan.set(x, -1, z, Material.DEEPSLATE_TILES);
+                if (w > 1.0) {
+                    plan.set(x, 1, z, Material.COBBLED_DEEPSLATE_WALL);
+                }
+            }
+        }
+        int sx = (int) Math.round(from[0] - ux * 2 + uz * 2.5);
+        int sz = (int) Math.round(from[1] - uz * 2 - ux * 2.5);
+        plan.set(sx, 0, sz, Material.POLISHED_DEEPSLATE);
+        plan.sign(sx, 1, sz, Material.DARK_OAK_SIGN, "rotation=" + signRotation(-ux, -uz), "The Breach", "No sanctuary:",
+            "you can be hurt", "past this point");
+        int gx = (int) Math.round(to[0] + ux * 3 - uz * 2.5);
+        int gz = (int) Math.round(to[1] + uz * 3 + ux * 2.5);
+        if (HubBreach.ground(gx, gz) && plan.get(gx, 1, gz) == null) {
+            plan.set(gx, 0, gz, Material.POLISHED_DEEPSLATE);
+            plan.sign(gx, 1, gz, Material.DARK_OAK_SIGN, "rotation=" + signRotation(-ux, -uz), "The Breach", "Immune cells",
+                "come through", "in an invasion");
+        }
+    }
+
+    private static int breachDepth(int x, int z) {
+        if (!HubBreach.ground(x, z)) {
+            return 0;
+        }
+        double u = Math.hypot(x - HubBreach.X, z - HubBreach.Z) / HubBreach.RADIUS;
+        return Math.max(2, (int) Math.round(9 * Math.pow(Math.max(0, 1 - u), 0.8)) + h(x, z, 45) % 2);
     }
 
     // ---------------------------------------------------------------- underside

@@ -701,6 +701,30 @@ public class DungeonRunTest {
     }
 
     @Test
+    public void aGhostCannotSpectateItsWayOutAndAnyEscapeIsBroughtBack() {
+        running();
+        World elsewhere = server.addSimpleWorld("elsewhere");
+        PlayerTeleportEvent spectate = new PlayerTeleportEvent(alice, alice.getLocation(), new Location(elsewhere, 0, 70, 0),
+            PlayerTeleportEvent.TeleportCause.SPECTATE);
+        server.getPluginManager().callEvent(spectate);
+        assertTrue("the spectator menu lists players of every world", spectate.isCancelled());
+        // a way out nobody foresaw: the player lands in another world while still in the run
+        alice.setLocation(new Location(elsewhere, 0, 70, 0));
+        server.getPluginManager().callEvent(new org.bukkit.event.player.PlayerChangedWorldEvent(alice, world));
+        server.getScheduler().performTicks(2);
+        assertEquals("brought back into the dungeon", world, alice.getWorld());
+        assertTrue(run.isParticipant(alice.getUniqueId()));
+    }
+
+    @Test
+    public void leavingTheRunIsNotBroughtBack() {
+        running();
+        run.leave(alice.getUniqueId(), true);
+        server.getScheduler().performTicks(80);
+        assertNotEquals(world, alice.getWorld());
+    }
+
+    @Test
     public void outsidersCannotTeleportIntoADungeonWorld() {
         PlayerMock stranger = server.addPlayer("Stranger");
         Location in = new Location(world, 3, 70, 3);

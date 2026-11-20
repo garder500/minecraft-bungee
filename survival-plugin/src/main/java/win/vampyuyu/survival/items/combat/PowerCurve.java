@@ -77,19 +77,35 @@ public final class PowerCurve {
                     found[t - 1] = new Tier(t, rs.getDouble(2), 0, Element.parse(rs.getString(3)));
                     return null;
                 });
-            Db.query(c, "SELECT d.tier, s.stat, s.value FROM item_def d JOIN item_stat s ON s.item_id = d.id "
+            // A tier can have several full sets (Starcore and its Realm sidegrades): a player wears ONE, so every slot
+            // counts the mean of the pieces made for it. Summing them modelled a tier-5 player with four sets at once:
+            // 2.3x the Might (every health pool sized on dps(), floor 7 and tier-5 slayers, was 2.3x too big) and 4x the
+            // Ward and Vitality (tier-5 boss hits were sized for that player: measured 2026-11-20, the Echo took 55 % of
+            // a full-Starcore player's health per contact hit, where a tier-2 boss takes 4 % of a rime player's).
+            java.util.Map<String, Integer> perSlot = new java.util.HashMap<>();
+            Db.query(c, "SELECT tier, equip_slot FROM item_def WHERE owner = 'quarry' AND tier IS NOT NULL "
+                + "AND equip_slot IS NOT NULL", rs -> {
+                    perSlot.merge(rs.getInt(1) + ":" + rs.getString(2), 1, Integer::sum);
+                    return null;
+                });
+            double[] armorMight = new double[TIERS];
+            Db.query(c, "SELECT d.tier, d.equip_slot, s.stat, s.value FROM item_def d JOIN item_stat s ON s.item_id = d.id "
                 + "WHERE d.owner = 'quarry' AND d.tier IS NOT NULL AND d.equip_slot IS NOT NULL", rs -> {
                     int t = rs.getInt(1);
-                    for (Stat.Converted conv : Stat.resolve(rs.getString(2))) {
-                        if (conv.stat() == Stat.WARD) armorWard[t - 1] += rs.getDouble(3) * conv.factor();
-                        if (conv.stat() == Stat.VITALITY) armorVitality[t - 1] += rs.getDouble(3) * conv.factor();
-                        if (conv.stat() == Stat.MIGHT && found[t - 1] != null) {
-                            Tier old = found[t - 1];
-                            found[t - 1] = new Tier(t, old.damage(), old.might() + rs.getDouble(3) * conv.factor(), old.element());
-                        }
+                    double share = 1.0 / Math.max(1, perSlot.getOrDefault(t + ":" + rs.getString(2), 1));
+                    for (Stat.Converted conv : Stat.resolve(rs.getString(3))) {
+                        double v = rs.getDouble(4) * conv.factor() * share;
+                        if (conv.stat() == Stat.WARD) armorWard[t - 1] += v;
+                        if (conv.stat() == Stat.VITALITY) armorVitality[t - 1] += v;
+                        if (conv.stat() == Stat.MIGHT) armorMight[t - 1] += v;
                     }
                     return null;
                 });
+            for (int t = 0; t < TIERS; t++) {
+                if (found[t] != null) {
+                    found[t] = new Tier(t + 1, found[t].damage(), found[t].might() + armorMight[t], found[t].element());
+                }
+            }
             return null;
         });
         PowerCurve curve = new PowerCurve(rules, found);

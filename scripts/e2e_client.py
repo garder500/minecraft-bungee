@@ -1555,8 +1555,8 @@ def skyblock_scenario(ctx):
         failures.append(f"Survival death missed the independent Survival bed: {normal_respawn}, bed={normal_bed}")
     shot(tools, shots / "sb-6-survival-bed-respawn.png")
     if any((base / name).exists() for base in (server, server / "world/dimensions/minecraft")
-           for name in ("sb_hub", "sb_end")):
-        failures.append("retired Skyblock hub or End was generated")
+           for name in ("sb_end",)):
+        failures.append("retired Skyblock End was generated")
     rcon.command("gamemode creative E2EBot")
     say(f"skyblock: two beds checked; Skyblock={sky_respawn}, Survival={normal_respawn}")
 
@@ -2883,9 +2883,383 @@ def bosses_scenario(ctx):
     rcon.command("boss kill all")
 
 
+def machines_scenario(ctx):
+    """The newer machines with a real client: the visible break of a working Miner (seen through a glass wall), a Miner I
+    with an Ember Module, a Miner II powered only by a Spring Wheel (Spring Stone cell, Bronzite Blocks: activation then
+    overload) and the three stations (Alembic, Crucible, Ranch) placed and opened."""
+    import math, re as _re
+    tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
+    xdo, rcon = tools["xdotool"], Rcon()
+
+    def typed(text, wait=1.5):
+        subprocess.run([xdo, "key", "t"], env=env)
+        time.sleep(0.8)
+        subprocess.run([xdo, "type", "--delay", "20", "/" + text], env=env)
+        time.sleep(0.3)
+        subprocess.run([xdo, "key", "Return"], env=env)
+        time.sleep(wait)
+
+    def as_bot(text):
+        return rcon.command("execute as E2EBot at E2EBot run " + text)
+
+    def stand(x, y, z, yaw, pitch):
+        as_bot(f"tp @s {x} {y} {z} {yaw} {pitch}")
+        time.sleep(1.2)
+
+    def holding(item, amount=1):
+        rcon.command("clear E2EBot")
+        rcon.command(f"sbgive {item} {amount} E2EBot" if not item.startswith("minecraft:") else f"give E2EBot {item} {amount}")
+        subprocess.run([xdo, "key", "1"], env=env)
+        time.sleep(0.6)
+
+    def click(x, y, z, yaw, pitch, times=1):
+        stand(x, y, z, yaw, pitch)
+        for _ in range(times):
+            subprocess.run([xdo, "click", "3"], env=env)
+            time.sleep(0.8)
+
+    def place(item, bx, y, bz):
+        """Places on the floor block (bx, y-1, bz): standing 2.5 blocks south, looking down at 39 degrees."""
+        holding(item)
+        click(bx + 0.5, y, bz + 2.5, 180, 39)
+
+    def on_top(bx, y, bz):
+        """Right-clicks the top face of the block at (bx, y, bz), from 2 blocks south over a 1-high block in between."""
+        click(bx + 0.5, y, bz + 2.5, 180, 17)
+
+    def south_face(bx, y, bz):
+        """Right-clicks the south face of the machine at (bx, y, bz) from 2 blocks away."""
+        click(bx + 0.5, y, bz + 2.5, 180, 25)
+
+    def block_is(x, y, z, name):
+        return "passed" in rcon.command(f"execute in minecraft:sb_world if block {x} {y} {z} minecraft:{name}").lower()
+
+    def left_in_inventory():
+        """Items the bot still holds: what a click did not take (machines.json is only written now and then)."""
+        found = _re.findall(r"count: ([0-9]+)", rcon.command("execute if items entity E2EBot container.* *"), _re.I)
+        return int(found[0]) if found else 0
+
+    def barrel(x, y, z):
+        return rcon.command(f"execute in minecraft:sb_world run data get block {x} {y} {z} Items")
+
+    def cobble_generator(ox, y, cz, glass=False):
+        """The quarry scenario's generator: the spot (ox+1, y, cz) between a walled lava source above and water east."""
+        as_bot(f"fill {ox-1} {y} {cz-1} {ox+3} {y} {cz-1} stone")
+        if glass:  # the visible break is watched from the north, through the spot's wall and the lava's wall above it
+            as_bot(f"setblock {ox+1} {y} {cz-1} glass")
+        as_bot(f"setblock {ox-1} {y} {cz} stone")
+        as_bot(f"setblock {ox} {y} {cz} stone")
+        as_bot(f"setblock {ox+3} {y} {cz} stone")
+        for dx, dz in ((0, 0), (2, 0), (1, -1), (1, 1)):
+            as_bot(f"setblock {ox+dx} {y+1} {cz+dz} {'glass' if glass and (dx, dz) == (1, -1) else 'stone'}")
+        # the Miner goes at (ox+1, y, cz+1), under the lava's south wall: its barrel stands east of it (it also keeps the
+        # water from spreading south) and its south face stays free for the clicks
+        as_bot(f"setblock {ox+2} {y} {cz+1} barrel[facing=up]")
+
+    def fluids(ox, y, cz):
+        as_bot(f"setblock {ox+1} {y+1} {cz} lava")
+        as_bot(f"setblock {ox+2} {y} {cz} water")
+
+    rcon.command("op E2EBot")
+    rcon.command("gamerule spawn_mobs false")
+    typed("menu skyblock")
+    for _ in range(150):
+        if "sb_world" in rcon.command("data get entity E2EBot Dimension"):
+            break
+        time.sleep(1)
+    else:
+        failures.append("never reached sb_world")
+        return
+    time.sleep(8)
+    rcon.command("gamemode survival E2EBot")
+    rcon.command("effect give E2EBot minecraft:resistance 900 4 true")
+    rcon.command("execute in minecraft:sb_world run time set day")
+    pos = player_state(rcon)["pos"]
+    cx, y, cz = math.floor(pos[0]) + 6, math.floor(pos[1]), math.floor(pos[2])
+    as_bot(f"fill {cx-6} {y-1} {cz-6} {cx+16} {y-1} {cz+14} stone")
+    as_bot(f"fill {cx-6} {y} {cz-6} {cx+16} {y+5} {cz+14} air")
+
+    # A. Miner I with an Ember Module and a coal generator, the spot behind a glass wall
+    cobble_generator(cx, y, cz, glass=True)
+    place("coal_generator", cx, y, cz + 1)
+    place("miner_1", cx + 1, y, cz + 1)
+    holding("minecraft:coal", 16)
+    south_face(cx, y, cz + 1)
+    holding("ember_module")
+    south_face(cx + 1, y, cz + 1)
+    shot(tools, shots / "mc-0-ember-installed.png")
+    if not block_is(cx + 1, y, cz + 1, "barrier"):  # a machine is a barrier block under its 3D display
+        failures.append(f"no Miner I at {cx+1},{y},{cz+1}")
+    elif left_in_inventory():
+        failures.append("the Ember Module was not taken by the Miner I")
+
+    # B. Miner II powered only by a Spring Wheel, 8 blocks east
+    ox = cx + 8
+    cobble_generator(ox, y, cz)
+    place("spring_stone", ox - 1, y, cz + 1)
+    place("spring_wheel", ox, y, cz + 1)
+    place("miner_2", ox + 1, y, cz + 1)
+    holding("bronzite_block", 5)
+    stand(ox + 0.5, y, cz + 3.5, 180, 25)
+    for _ in range(5):  # one activates it, three overload it, the fifth must be refused
+        subprocess.run([xdo, "click", "3"], env=env)
+        time.sleep(0.8)
+    shot(tools, shots / "mc-1-spring-wheel-blocks.png")
+    if not block_is(ox, y, cz + 1, "barrier"):
+        failures.append(f"no Spring Wheel at {ox},{y},{cz+1}")
+    elif left_in_inventory() != 1:
+        failures.append(f"the Spring Wheel should take 4 Bronzite Blocks (1 + 3 overload) and refuse the 5th: {left_in_inventory()} left")
+    rcon.command("clear E2EBot")
+    stand(ox + 0.5, y + 1, cz + 5.5, 180, 25)
+    shot(tools, shots / "mc-1-spring-wheel.png")
+
+    # C. The stations, placed in a row and opened
+    for i, (station, block) in enumerate((("alembic", "brewing_stand"), ("crucible", "cauldron"), ("ranch", "composter"))):
+        place(station, cx - 4 + 3 * i, y, cz + 9)
+        if not block_is(cx - 4 + 3 * i, y, cz + 9, block):
+            failures.append(f"the {station} was not placed")
+    rcon.command("clear E2EBot")
+    stand(cx - 1.5, y + 1, cz + 13.5, 180, 20)
+    shot(tools, shots / "mc-2-stations.png")
+    for i, station in enumerate(("alembic", "crucible", "ranch")):
+        click(cx - 4 + 3 * i + 0.5, y, cz + 11.5, 180, 30)
+        time.sleep(1.5)
+        shot(tools, shots / f"mc-3-{station}-menu.png")
+        subprocess.run([xdo, "key", "Escape"], env=env)
+        time.sleep(1)
+
+    # D. Run both Miners: the visible break through the glass, then what landed in the barrels
+    fluids(cx, y, cz)
+    fluids(ox, y, cz)
+    for i in range(6):
+        stand(cx + 1.5, y, cz - 1.7, 0, 27)
+        time.sleep(0.5 + 0.3 * i)
+        shot(tools, shots / f"mc-4-crack-{i}.png")
+    time.sleep(40)
+    stand(cx + 4.5, y + 2, cz + 6.5, 180, 30)
+    shot(tools, shots / "mc-5-both-miners.png")
+    rcon.command("clear E2EBot")
+    for name, mx in (("miner1", cx + 1), ("miner2", ox + 1)):  # an empty-hand click shows the Miner's state in chat
+        south_face(mx, y, cz + 1)
+        shot(tools, shots / f"mc-6-{name}-status.png")
+    first, second = barrel(cx + 2, y, cz + 1), barrel(ox + 2, y, cz + 1)
+    say("machines: Ember barrel " + first.strip()[-400:])
+    say("machines: Spring Wheel barrel " + second.strip()[-400:])
+    if "id:" not in first:  # (the Ember Module smelts cobble, sand and netherrack: the cobble draw's ores stay as they are)
+        failures.append("the Ember Miner I put nothing in its barrel: " + first.strip()[-120:])
+    if "id:" not in second:
+        failures.append("the Miner II on the Spring Wheel alone put nothing in its barrel: " + second.strip()[-120:])
+    log = (server / "console.log").read_text(errors="replace")
+    for line in log.splitlines():
+        if ("Exception" in line or "SEVERE" in line) and " WARN]" not in line and "VampyuyuSurvival" in line:
+            failures.append("server error: " + line[:160])
+            break
+    rcon.command("gamemode creative E2EBot")
+
+
+# Realm id -> its world (api/Realm, core/SkyblockWorlds); the Gate order of the Quai des Huit.
+REALM_WORLDS = [("ashes", "sb_ashes"), ("grove", "sb_grove"), ("heights", "sb_heights"), ("citadel", "sb_citadel"),
+                ("marshes", "sb_marsh"), ("archipelago", "sb_storm"), ("depths", "sb_depths"), ("necropolis", "sb_necropolis")]
+HUB_Y = 100  # island.hub.y of the seed: the surface of the hub plaza and of the Quai
+
+
+def realms_scenario(ctx):
+    """Phase 2 to final with a real client: the Hub, the Quai des Huit (gates dark, then lit), a walk through the Ashes
+    Gate, every Realm reached by its Gate (spawn, behind, above), the Astral Interiority and a Bastion with its Guardian.
+    E2E_REALMS=ashes,grove limits the Realm tour; E2E_SKIP=astral,bastion skips those parts."""
+    import math, re as _re
+    tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
+    xdo, rcon = tools["xdotool"], Rcon()
+    wanted = {r for r in os.environ.get("E2E_REALMS", "").split(",") if r}
+    skip = {r for r in os.environ.get("E2E_SKIP", "").split(",") if r}
+    strip = lambda text: _re.sub("§x(§[0-9a-f]){6}|§.", "", text).strip()
+
+    def typed(cmd, wait=1.0):
+        subprocess.run([xdo, "key", "t"], env=env)
+        time.sleep(0.8)
+        subprocess.run([xdo, "type", "--delay", "20", "/" + cmd], env=env)
+        time.sleep(0.3)
+        subprocess.run([xdo, "key", "Return"], env=env)
+        time.sleep(wait)
+
+    def as_bot(cmd):
+        return rcon.command(f"execute as E2EBot at @s run {cmd}")
+
+    def dimension():
+        return rcon.command("data get entity E2EBot Dimension")
+
+    def wait_world(name, seconds=60):
+        deadline = time.time() + seconds
+        while time.time() < deadline:
+            if f'"minecraft:{name}' in dimension():
+                return True
+            time.sleep(1)
+        return False
+
+    def tail():
+        lines = (server / "console.log").read_text(errors="replace").splitlines()
+        return " | ".join(l for l in lines[-200:] if "WARN" in l or "ERROR" in l)[-600:]
+
+    def on_ground(world):
+        """Creative players do not fall: look for a block under the feet instead. From the console, not "as" the bot:
+        with send_command_feedback off the bot's own test result never reaches RCON."""
+        x, y, z = player_state(rcon)["pos"]
+        return any("failed" in rcon.command(f"execute in minecraft:{world} if block {math.floor(x)} {math.floor(y) - d} "
+                                            f"{math.floor(z)} minecraft:air").lower() for d in (1, 2))
+
+    def perch(world, x, y, z, yaw, pitch):
+        """A view from the air: a creative bot that is not flying falls before the shot, so it stands on a barrier block
+        (invisible) for the time of the shot. Returns the undo."""
+        bx, by, bz = math.floor(x), math.floor(y) - 1, math.floor(z)
+        rcon.command(f"execute in minecraft:{world} run setblock {bx} {by} {bz} minecraft:barrier")
+        as_bot(f"tp @s {x} {y} {z} {yaw} {pitch}")
+        return lambda: rcon.command(f"execute in minecraft:{world} run setblock {bx} {by} {bz} minecraft:air")
+
+    def items():
+        """Occupied inventory slots, read from the player data (the reply of `execute if items` is not a stable format)."""
+        return len(_re.findall(r"Slot: ?-?[0-9]+b", rcon.command("data get entity E2EBot Inventory")))
+
+    rcon.command("op E2EBot")
+    rcon.command("gamemode creative E2EBot")
+    rcon.command("gamerule send_command_feedback false")
+    typed("menu skyblock")
+    if not wait_world("sb_world", 150):
+        failures.append("never reached sb_world")
+        return
+    time.sleep(6)
+
+    # 1. The Hub
+    typed("hub")
+    if not wait_world("sb_hub"):
+        failures.append("/hub did not reach sb_hub: " + dimension()[:80])
+        return
+    time.sleep(5)
+    shot(tools, shots / "rl-0-hub-landing.png")
+    undo = perch("sb_hub", 0.5, HUB_Y + 18, 0.5, 180, 25)
+    time.sleep(3)
+    shot(tools, shots / "rl-0-hub-above.png")
+    undo()
+
+    # 2. The Quai des Huit, dark then lit (the lit look is client-side blocks, resent every second near the Quai)
+    typed("quai")
+    time.sleep(4)
+    # high above the hub end of the bridge (lower, the ruined arch of the bridge fills the view), down on the ring
+    undo = perch("sb_hub", 0.5, HUB_Y + 40, 30.5, 0, 42)
+    time.sleep(3)
+    shot(tools, shots / "rl-1-quai-dark.png")
+    rcon.command("gateadmin dark E2EBot all")
+    lit = strip(rcon.command("gateadmin light E2EBot all"))
+    say("realms: " + lit)
+    time.sleep(3)
+    subprocess.run([xdo, "key", "F1"], env=env)  # hide the HUD: eight "Gate lit" lines would cover the ring
+    time.sleep(1)
+    shot(tools, shots / "rl-1-quai-lit.png")
+    subprocess.run([xdo, "key", "F1"], env=env)
+    undo()
+
+    # 3. Walk into the lit Ashes Gate (ordinal 0 on the ring of radius 15 around the Quai centre, QuaiPlan.buildGates)
+    angle = math.radians(22.5)
+    ox, oz = math.sin(angle), -math.cos(angle)
+    gx, gz = round(15 * ox), 72 + round(15 * oz)
+    yaw = math.degrees(math.atan2(-ox, oz))
+    as_bot(f"tp @s {gx + 0.5 - 3 * ox:.2f} {HUB_Y + 1} {gz + 0.5 - 3 * oz:.2f} {yaw:.1f} 0")
+    time.sleep(2)
+    shot(tools, shots / "rl-2-ashes-gate-close.png")
+    subprocess.run([xdo, "keydown", "w"], env=env)
+    time.sleep(2.5)
+    subprocess.run([xdo, "keyup", "w"], env=env)
+    if wait_world("sb_ashes", 15):
+        say("realms: walked through the Ashes Gate")
+    else:
+        failures.append("walking into the lit Ashes Gate did not reach sb_ashes: " + dimension()[:80] + " " + tail())
+
+    # 4. Every Realm through its Gate (the command skips the walk, not the Gate rules). Night vision: several Realms are
+    # dark on purpose, and the shots are there to show what was built.
+    rcon.command("effect give E2EBot minecraft:night_vision 900 0 true")
+    for realm, world in REALM_WORLDS:
+        if wanted and realm not in wanted:
+            continue
+        reply = strip(rcon.command(f"gateadmin travel E2EBot {realm}"))
+        if not wait_world(world, 30):
+            failures.append(f"the {realm} Gate did not reach {world}: '{reply}', in {dimension().strip()[-30:]} {tail()}")
+            shot(tools, shots / f"rl-3-{realm}-failed.png")
+            continue
+        time.sleep(4)  # the travel blindness, then the chunks
+        x, y, z = player_state(rcon)["pos"]
+        if not on_ground(world):
+            failures.append(f"{realm}: the Gate spawn at {x} {y} {z} has nothing under the feet")
+        say(f"realms: {realm} spawn {x} {y} {z}")
+        shot(tools, shots / f"rl-3-{realm}-spawn.png")
+        as_bot(f"tp @s {x} {y} {z} ~180 10")
+        time.sleep(2)
+        shot(tools, shots / f"rl-3-{realm}-behind.png")
+        # straight above the landing: farther out, the Realm's edge rule carries the player back to it
+        undo = perch(world, x, y + 14, z + 8, 180, 45)
+        time.sleep(3)
+        shot(tools, shots / f"rl-3-{realm}-above.png")
+        undo()
+
+    # 5. The Astral Interiority (the way in is the command for now)
+    if "astral" not in skip:
+        typed("astral go force", 2)
+        if wait_world("sb_astral", 30):
+            time.sleep(4)
+            shot(tools, shots / "rl-4-astral-spawn.png")
+            x, y, z = player_state(rcon)["pos"]
+            undo = perch("sb_astral", x, y + 14, z + 8, 180, 45)
+            time.sleep(3)
+            shot(tools, shots / "rl-4-astral-above.png")
+            undo()
+        else:
+            failures.append("/astral go force did not reach sb_astral: " + dimension()[:80] + " " + tail())
+            shot(tools, shots / "rl-4-astral-failed.png")
+
+    # 6. A Bastion: the key is spent when the countdown ends and the Guardian wakes
+    if "bastion" not in skip:
+        typed("hub")
+        wait_world("sb_hub")
+        time.sleep(3)
+        rcon.command("clear E2EBot")
+        rcon.command("gamemode survival E2EBot")
+        rcon.command("effect give E2EBot minecraft:resistance 600 4 true")
+        rcon.command("effect give E2EBot minecraft:regeneration 600 4 true")
+        rcon.command("sbgive magma_core 1 E2EBot")
+        time.sleep(1)
+        if items() != 1:
+            failures.append(f"sbgive magma_core: {items()} items in the inventory instead of the key")
+        typed("bastion enter ashes_bastion", 2)
+        if not wait_world("sb_bastion_", 30):
+            failures.append("/bastion enter ashes_bastion did not open an instance: " + dimension()[:80] + " " + tail())
+            shot(tools, shots / "rl-5-bastion-failed.png")
+        else:
+            time.sleep(2)
+            shot(tools, shots / "rl-5-bastion-countdown.png")
+            if items() != 1:
+                failures.append(f"the Ashes Bastion key left the inventory before the countdown ended ({items()} items)")
+            time.sleep(10)
+            if items() != 0:  # the leader's key is spent when the countdown ends and the Guardian wakes
+                failures.append(f"the Ashes Bastion key was not spent when the Guardian woke ({items()} items left)")
+            active = strip(rcon.command("boss active"))
+            say("realms: bastion boss: " + active[:120])
+            if "magma_warden" not in active:
+                failures.append("no Guardian in the Ashes Bastion: " + active[:120])
+            entry = player_state(rcon)["pos"]
+            as_bot(f"tp @s {entry[0]} {entry[1] + 2} {entry[2] + 4} 180 12")  # the entry faces the arena; step back
+            time.sleep(2)
+            shot(tools, shots / "rl-5-bastion-guardian.png")
+            rcon.command("bastion admin abort all")
+            time.sleep(4)
+            shot(tools, shots / "rl-5-bastion-aborted.png")
+            time.sleep(16)  # exit-delay-seconds (15) before the party is sent back
+            shot(tools, shots / "rl-5-bastion-after.png")
+            if "sb_bastion_" in dimension():
+                failures.append("the bot was not taken out of the aborted Bastion")
+        rcon.command("gamemode creative E2EBot")
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock", "vbhold", "sbhold", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "valoblock", "vbhold", "sbhold", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -2895,7 +3269,7 @@ def main():
         return dev_server()
     global WITH_SURVIVAL, VALOBLOCK
     VALOBLOCK = args.scenario in ("valoblock", "vbhold")
-    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "sbhold")
+    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "sbhold")
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
@@ -2918,7 +3292,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock", "vbhold", "sbhold"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "valoblock", "vbhold", "sbhold"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -2949,7 +3323,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock", "vbhold", "sbhold"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "valoblock", "vbhold", "sbhold"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -3006,6 +3380,10 @@ def main():
             start_scenario(ctx)
         elif args.scenario == "craft":
             craft_scenario(ctx)
+        elif args.scenario == "realms":
+            realms_scenario(ctx)
+        elif args.scenario == "machines":
+            machines_scenario(ctx)
         elif args.scenario == "valoblock":
             valoblock_scenario(ctx)
         elif args.scenario in ("vbhold", "sbhold"):

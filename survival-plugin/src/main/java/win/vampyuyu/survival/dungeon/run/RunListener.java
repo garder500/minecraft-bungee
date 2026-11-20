@@ -602,6 +602,32 @@ public final class RunListener implements Listener {
         }
     }
 
+    /**
+     * Safety net: a participant of a run in progress who ends up in another world without leaving the run (a teleport
+     * the rules above did not foresee) is brought back: a ghost to its body, the others to their last safe spot. Leaving
+     * the run marks the player as gone before sending them out, so the normal exit is not caught here.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onWorldChange(org.bukkit.event.player.PlayerChangedWorldEvent event) {
+        Player p = event.getPlayer();
+        DungeonRun run = active(p);
+        if (run == null || !run.state.active() || run.world == null || event.getFrom() != run.world
+                || p.getWorld() == run.world || admin(p) || ctx.teleporting() || ctx.exiting.containsKey(p.getUniqueId())) {
+            return; // the feature's own teleports, and an exit (the hub teleport may land a few ticks later)
+        }
+        ctx.scheduler().nextTick(() -> {
+            RunPlayer rp = run.player(p.getUniqueId());
+            if (!p.isOnline() || rp == null || !run.isParticipant(p.getUniqueId()) || !run.state.active()
+                    || p.getWorld() == run.world || ctx.exiting.containsKey(p.getUniqueId())) {
+                return;
+            }
+            org.bukkit.Location back = rp.ghost && rp.body != null ? rp.body.clone().add(0, 1, 0)
+                : rp.lastSafe != null ? rp.lastSafe : run.loc(run.built.spawn());
+            ctx.teleport(p, back);
+            run.say(p, "<red>You cannot leave the dungeon that way. <gray>Use /dungeon leave to abandon the run.");
+        });
+    }
+
     @EventHandler(ignoreCancelled = true)
     public void onPearl(ProjectileLaunchEvent event) {
         if (event.getEntity() instanceof EnderPearl pearl && pearl.getShooter() instanceof Player p

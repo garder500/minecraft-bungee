@@ -136,6 +136,38 @@ public class MachineTest {
     }
 
     @Test
+    public void aSpringWheelAgainstItsSpringStonePowersAMinerOnItsOwn() {
+        // the Spring Stone is not part of the Flux network: it used to count as "a machine in an unloaded chunk",
+        // which stopped the whole network, so no Spring Wheel ever made Flux in game
+        PlayerMock owner = server.addPlayer("Wheelwright");
+        Island island = island(owner);
+        Block miner = base(island);
+        assertTrue(place(owner, miner, "miner_2"));
+        Block wheel = miner.getRelative(1, 0, 0);
+        assertTrue(place(owner, wheel, "spring_wheel"));
+        assertTrue(place(owner, wheel.getRelative(1, 0, 0), "spring_stone"));
+        machines.store().get(sky.getName(), MachineStore.pos(wheel)).blocks = 1;
+        Block barrel = miner.getRelative(0, 1, 0);
+        barrel.setType(Material.BARREL);
+        Block cobble = miner.getRelative(-1, 0, 0);
+        cobble.setType(Material.COBBLESTONE);
+        server.getPluginManager().callEvent(new BlockFormEvent(cobble, cobble.getState()));
+
+        machines.tick();
+
+        assertEquals("the Miner II ran on the Spring Wheel's Flux", Material.AIR, cobble.getType());
+    }
+
+    @Test
+    public void onlyAMachineInAnUnloadedChunkStopsANetwork() {
+        var a = new EnergyNetwork.Pos(0, 70, 0);
+        var b = new EnergyNetwork.Pos(1, 70, 0);
+        assertFalse(MachineService.touchesUnloaded(java.util.List.of(a, b), java.util.Set.of()));
+        assertTrue(MachineService.touchesUnloaded(java.util.List.of(a, b), java.util.Set.of(new EnergyNetwork.Pos(2, 70, 0))));
+        assertFalse(MachineService.touchesUnloaded(java.util.List.of(a, b), java.util.Set.of(new EnergyNetwork.Pos(5, 70, 0))));
+    }
+
+    @Test
     public void aMinerAlsoBreaksTheBlocksOfARingGeneratorAndRollsItsOres() {
         PlayerMock owner = server.addPlayer("Icebreaker");
         Island island = island(owner);

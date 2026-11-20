@@ -46,6 +46,7 @@ final class Abilities {
             case LASER_BEAM -> laser(s, spec);
             case CHARGE_DASH -> charge(s, spec);
             case DIVE_BOMB -> dive(s, spec);
+            case PERCH -> perch(s, spec);
             case TIDAL_WAVE -> tidalWave(s, spec);
             case FIRE_RING -> fireRing(s, spec);
             case BONE_CAGE -> boneCage(s, spec);
@@ -608,6 +609,7 @@ final class Abilities {
             Set<UUID> hit = new HashSet<>();
             int steps = (int) Math.ceil(distance / speed);
             Fx.sound(s.world, s.location(), Sound.ENTITY_PHANTOM_SWOOP, 3f, 0.6f);
+            s.steer(steps + 2);
             s.every(0, 1, steps, step -> {
                 s.entity().setVelocity(dir[0].clone().multiply(speed).setY(flat ? Math.max(0.05, s.entity().getVelocity().getY()) : dir[0].getY() * speed));
                 Location at = bossCenter(s);
@@ -635,6 +637,7 @@ final class Abilities {
         double radius = spec.num("radius", 6.5);
         int tele = tele(spec, 40);
         Location[] mark = {ground(s.world, target.getLocation())};
+        int stun = (int) Math.round(spec.num("stun", 0) * 20);
         Fx.sound(s.world, s.location(), Sound.ENTITY_ENDER_DRAGON_GROWL, 4f, 1.2f);
         s.every(0, 4, Math.max(1, tele / 4), step -> {
             if (step < tele / 4 - 3 && target.isOnline() && target.getWorld().equals(s.world)) {
@@ -652,6 +655,7 @@ final class Abilities {
                 }
             }
             Fx.sound(s.world, s.location(), Sound.ENTITY_PHANTOM_SWOOP, 4f, 0.5f);
+            s.steer(30);
             s.every(0, 1, 28, step -> {
                 Vector to = end.toVector().add(new Vector(0, 2, 0)).subtract(s.location().toVector());
                 if (to.lengthSquared() > 4) {
@@ -671,7 +675,9 @@ final class Abilities {
                         }
                     }
                 }
-                if (s.entity() instanceof EnderDragon dragon) {
+                if (stun > 0) {
+                    land(s, end, stun, "<yellow><bold>" + BossSession.plain(s.def.name()) + " crashed into the ground!");
+                } else if (s.entity() instanceof EnderDragon dragon) {
                     try {
                         dragon.setPhase(EnderDragon.Phase.CIRCLING);
                     } catch (RuntimeException ignored) {
@@ -680,7 +686,105 @@ final class Abilities {
                 }
             });
         });
-        return tele + 28 + 40;
+        return tele + 28 + 40 + stun;
+    }
+
+    // ---------------------------------------------------------------- perch (stun on the ground)
+
+    /**
+     * The flyer glides down to a marked spot near the arena centre and stays stunned there for {@code seconds}: the
+     * window in which a sword reaches it (a circling dragon is out of melee range the rest of the fight).
+     */
+    private static int perch(BossSession s, AbilitySpec spec) {
+        int hold = (int) Math.round(Math.max(1, spec.num("seconds", 5)) * 20);
+        double offset = spec.num("radius", 6);
+        int tele = tele(spec, 50);
+        double angle = s.random.nextDouble() * Math.PI * 2;
+        Location spot = ground(s.world, s.anchor().add(Math.cos(angle) * offset, 8, Math.sin(angle) * offset));
+        s.broadcastNearby(BossSession.MINI.deserialize("<yellow><bold>" + BossSession.plain(s.def.name())
+            + " is tiring! <gray>It comes down to land: get ready to strike."));
+        Fx.sound(s.world, s.location(), Sound.ENTITY_ENDER_DRAGON_GROWL, 4f, 0.7f);
+        s.steer(tele + 2);
+        s.every(0, 1, tele, step -> {
+            Vector to = spot.toVector().add(new Vector(0, 1, 0)).subtract(s.location().toVector());
+            if (to.lengthSquared() > 1) {
+                s.entity().setVelocity(to.normalize().multiply(Math.min(1.2, 0.3 + to.length() * 0.05)));
+            }
+            if (step % 4 == 0) {
+                Fx.dustCircle(s.world, spot.clone().add(0, 0.1, 0), 4, Color.YELLOW, 1.6f, 30);
+            }
+        }, () -> land(s, spot, hold, null));
+        return tele + hold + 20;
+    }
+
+    /**
+     * Pins the flyer on {@code spot} for {@code hold} ticks: a sitting dragon does not knock players back with its wings,
+     * the boss takes the dazed bonus, and it takes off again afterwards.
+     */
+    static void land(BossSession s, Location spot, int hold, String message) {
+        Location at = spot.clone();
+        at.setYaw(s.entity().getLocation().getYaw());
+        at.setPitch(0);
+        s.entity().teleport(at);
+        s.entity().setVelocity(new Vector(0, 0, 0));
+        s.groundFor(hold);
+        sit(s);
+        if (message != null) {
+            s.broadcastNearby(BossSession.MINI.deserialize(message));
+        }
+        net.kyori.adventure.title.Title title = net.kyori.adventure.title.Title.title(
+            BossSession.MINI.deserialize("<yellow><bold>STUNNED"),
+            BossSession.MINI.deserialize("<gray>Strike it now! <white>" + Math.round(hold / 20.0) + "s"),
+            net.kyori.adventure.title.Title.Times.times(java.time.Duration.ofMillis(150), java.time.Duration.ofMillis(1500),
+                java.time.Duration.ofMillis(300)));
+        for (Player p : s.players()) {
+            p.showTitle(title);
+        }
+        Fx.sound(s.world, at, Sound.ENTITY_GENERIC_EXPLODE, 3f, 0.6f);
+        Fx.particle(s.world, Particle.EXPLOSION, at, 6, 2, 0.5, 2, 0);
+        s.every(1, 1, hold, step -> {
+            if (s.entity().getLocation().distanceSquared(at) > 0.09) {
+                s.entity().teleport(at);
+            }
+            s.entity().setVelocity(new Vector(0, 0, 0));
+            sit(s);
+            if (step % 5 == 0) {
+                Location head = at.clone().add(0, s.entity().getHeight() + 0.5, 0);
+                double a = step * 0.4;
+                for (int i = 0; i < 3; i++) {
+                    double b = a + i * Math.PI * 2 / 3;
+                    Fx.particle(s.world, Particle.ELECTRIC_SPARK, head.clone().add(Math.cos(b) * 1.5, 0, Math.sin(b) * 1.5),
+                        3, 0.05, 0.05, 0.05, 0);
+                }
+            }
+        }, () -> {
+            s.groundedUntil = 0;
+            if (s.entity() instanceof EnderDragon dragon) {
+                try {
+                    dragon.setPhase(EnderDragon.Phase.CIRCLING);
+                } catch (RuntimeException ignored) {
+                    // it flies off on its own
+                }
+            }
+            s.steer(20);
+            s.entity().setVelocity(new Vector(0, 0.9, 0));
+            Fx.sound(s.world, s.location(), Sound.ENTITY_ENDER_DRAGON_FLAP, 3f, 0.6f);
+        });
+    }
+
+    /** Keeps a dragon in a sitting phase (no wing knockback, head low); other bosses just stand still. */
+    private static void sit(BossSession s) {
+        if (s.entity() instanceof EnderDragon dragon && dragon.getPhase() != EnderDragon.Phase.SEARCH_FOR_BREATH_ATTACK_TARGET) {
+            try {
+                dragon.setPhase(EnderDragon.Phase.SEARCH_FOR_BREATH_ATTACK_TARGET);
+            } catch (RuntimeException e) {
+                try {
+                    dragon.setPhase(EnderDragon.Phase.HOVER);
+                } catch (RuntimeException ignored) {
+                    // the teleport still pins it
+                }
+            }
+        }
     }
 
     // ---------------------------------------------------------------- tidal wave

@@ -42,7 +42,7 @@ import win.vampyuyu.survival.core.Scheduler;
  * and everything it spawned. Main thread only. Created and driven by {@link BossManager}.
  */
 public final class BossSession {
-    private static final MiniMessage MINI = MiniMessage.miniMessage();
+    static final MiniMessage MINI = MiniMessage.miniMessage();
 
     /** Why a session ended. */
     public enum End {
@@ -137,6 +137,10 @@ public final class BossSession {
     int shieldNovaTicks;
     double shieldNovaDamage;
     long vulnerableUntil;
+    /** Until this session tick a flyer is stunned on the ground: no casts, no contact knockback, melee can reach it. */
+    long groundedUntil;
+    /** Until this server tick an ability steers the flyer itself, so its flight is not slowed down. */
+    int steeredUntil;
     double vulnerableMult = 1.25;
     long casting;
     double baseMoveSpeed;
@@ -195,6 +199,7 @@ public final class BossSession {
             } catch (RuntimeException e) {
                 core.debug("dragon podium/phase unsupported: " + e.getMessage());
             }
+            slowFlight(dragon);
         }
         bar = BossBar.bossBar(barTitle(), 1f, BossBar.Color.valueOf(def.barColor()),
             BossBar.Overlay.valueOf(def.barOverlay()));
@@ -539,7 +544,51 @@ public final class BossSession {
         flushDamage();
     }
 
+    /** Cruise speed of a vanilla dragon in blocks per tick (measured: about 22 blocks a second). */
+    static final double DRAGON_CRUISE = 1.1;
+
+    /**
+     * The vanilla dragon ignores the speed attributes and circles far too fast for melee. Its flight integrates its own
+     * velocity every tick, so its velocity is capped every tick at the boss {@code speed} column times the vanilla
+     * cruise speed (0.45 = about 10 blocks a second). Scaling the velocity instead compounds with the dragon's own drag
+     * (0.55 gave 2.5 blocks a second). Abilities that steer the dragon themselves (dive, charge, landing) are left alone.
+     */
+    private void slowFlight(EnderDragon dragon) {
+        double factor = Math.max(0.1, Math.min(1.0, def.speed()));
+        if (factor >= 0.999) {
+            return;
+        }
+        double cap = factor * DRAGON_CRUISE;
+        every(1, 1, Integer.MAX_VALUE, step -> {
+            if (!grounded() && Bukkit.getCurrentTick() >= steeredUntil && dragon.isValid()) {
+                Vector v = dragon.getVelocity();
+                if (v.lengthSquared() > cap * cap) {
+                    dragon.setVelocity(v.normalize().multiply(cap));
+                }
+            }
+        }, null);
+    }
+
+    /** True while a flyer is stunned on the ground. */
+    boolean grounded() {
+        return ticks < groundedUntil;
+    }
+
+    /** Stuns the boss on the ground for {@code holdTicks}: it takes the dazed bonus damage meanwhile. */
+    void groundFor(int holdTicks) {
+        groundedUntil = ticks + holdTicks;
+        vulnerableUntil = Math.max(vulnerableUntil, groundedUntil);
+    }
+
+    /** An ability steers the flyer for the next {@code serverTicks}. */
+    void steer(int serverTicks) {
+        steeredUntil = Math.max(steeredUntil, Bukkit.getCurrentTick() + serverTicks);
+    }
+
     private void leash() {
+        if (grounded()) {
+            return;
+        }
         Location at = entity.getLocation();
         double minY = world.getMinHeight() - 4;
         boolean far = BossMath.outsideLeash(at.getX() - anchor.getX(), at.getZ() - anchor.getZ(),
@@ -597,8 +646,8 @@ public final class BossSession {
     private void contactDamage(List<Player> inArena) {
         double radius = def.options().get("contact-radius") instanceof Number n ? n.doubleValue()
             : (entity instanceof EnderDragon ? 8 : 0);
-        if (radius <= 0) {
-            return;
+        if (radius <= 0 || grounded()) {
+            return; // a stunned flyer must be reachable with a sword
         }
         Location at = entity.getLocation();
         for (Player p : inArena) {
@@ -1058,6 +1107,8 @@ public final class BossSession {
         text.append(" <white>").append(Msg.number(hp)).append("<gray>/<white>").append(Msg.number(maxHp)).append(" <red>❤");
         if (shielded) {
             text.append(" <light_purple>[SHIELDED]");
+        } else if (grounded()) {
+            text.append(" <yellow>[STUNNED]");
         } else if (ticks < vulnerableUntil) {
             text.append(" <green>[DAZED]");
         } else if (enraged) {

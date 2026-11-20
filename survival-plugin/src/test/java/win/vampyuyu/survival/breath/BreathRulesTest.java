@@ -51,7 +51,7 @@ public class BreathRulesTest {
         assertEquals("Stasis Crystal yield +30 %", lines.get(0));
         assertEquals("Machine Flux consumption +20 %", lines.get(1));
         assertEquals("A Fracture has opened in the Ethereal Necropolis (/breath fracture)", lines.get(2));
-        assertEquals("Stellar immune cells invade the Hub", lines.get(3));
+        assertEquals("Stellar immune cells invade the Breach, north-west of the Hub", lines.get(3));
     }
 
     @Test

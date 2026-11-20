@@ -90,7 +90,23 @@ public class PowerCurveTest {
     /** Seconds one player with the GDD reference weapon of {@code swordTier} needs (no Might, {@link #uptime()} of the time). */
     private static double seconds(BossDefinition boss, int swordTier) {
         PowerCurve.Tier tier = curve.tier(swordTier);
-        return simulate(boss.health(), curve.referenceWeaponOf(swordTier), 0, multiplier(tier.element(), boss)) / uptime();
+        return simulate(boss.health() / flyerShare(boss), curve.referenceWeaponOf(swordTier), 0, multiplier(tier.element(), boss))
+            / uptime();
+    }
+
+    /** Health factor of one boss: {@code boss.settings.hp-factor.<id>} when set, else the shared 0.5. */
+    private static double hpFactor(BossDefinition boss) {
+        Settings s = Settings.load(db, "boss");
+        return s.getDouble("settings.hp-factor." + boss.id(), s.getDouble("settings.hp-factor", 0.5));
+    }
+
+    /**
+     * A boss with its own, lower factor is one that cannot be hit as often as the reference (the Echo flies and only
+     * lands now and then): the time rules below apply to the hits that really land, so its health is read back at the
+     * shared factor.
+     */
+    private static double flyerShare(BossDefinition boss) {
+        return hpFactor(boss) / Settings.load(db, "boss").getDouble("settings.hp-factor", 0.5);
     }
 
     @Test
@@ -125,6 +141,27 @@ public class PowerCurveTest {
     }
 
     @Test
+    public void aTierWithSeveralArmorSetsCountsOneSet() {
+        // tier 5 has Starcore and three Realm sidegrades: a player wears one of them, so the dps (and every health pool
+        // sized on it: dungeon floor 7, tier-5 slayers) counts one set's Might
+        double might = db.read(c -> win.vampyuyu.survival.data.Db.query(c,
+            "SELECT AVG(s.value) FROM item_def d JOIN item_stat s ON s.item_id = d.id WHERE d.owner = 'quarry' AND d.tier = 5 "
+                + "AND d.equip_slot IS NOT NULL AND s.stat = 'might' GROUP BY d.equip_slot", rs -> rs.getDouble(1)))
+            .stream().mapToDouble(Double::doubleValue).sum();
+        assertTrue("one set, not four: " + might, might > 50 && might < 120);
+        assertEquals(might, curve.tier(5).might(), 1e-6);
+        assertTrue(curve.tier(5).might() < 2 * curve.tier(4).might());
+        // and is hit like a player wearing one set: same health as the stat engine gives a full Starcore set
+        double vitality = db.read(c -> win.vampyuyu.survival.data.Db.query(c,
+            "SELECT AVG(s.value) FROM item_def d JOIN item_stat s ON s.item_id = d.id WHERE d.owner = 'quarry' AND d.tier = 5 "
+                + "AND d.equip_slot IS NOT NULL AND s.stat = 'vitality' GROUP BY d.equip_slot", rs -> rs.getDouble(1)))
+            .stream().mapToDouble(Double::doubleValue).sum();
+        assertEquals(20 + vitality / 5, curve.playerHealth(5), 1e-6);
+        assertTrue("a tier-5 boss hit grows with the tier like the others, not 11x",
+            curve.bossHitDamage(5) / curve.bossHitDamage(4) < 3);
+    }
+
+    @Test
     public void everyBossIsAutoScaledFromItsTier() {
         assertEquals(11, config.bosses().values().stream().filter(b -> b.kind() == BossDefinition.Kind.BOSS).count());
         for (BossDefinition boss : config.bosses().values()) {
@@ -134,18 +171,21 @@ public class PowerCurveTest {
             assertTrue(boss.id(), boss.tier() >= 1);
             assertNotNull(boss.id() + " has a weakness", boss.weakness());
             assertNotNull(boss.id() + " has a resistance", boss.resistance());
-            assertEquals(boss.id(), curve.bossHealth(boss.tier(), 180, 0.5), boss.health(), 0);
+            assertEquals(boss.id(), curve.bossHealth(boss.tier(), 180, hpFactor(boss)), boss.health(), 0);
         }
         // bosses of the same tier share the health, a higher tier has more
         assertEquals(config.bosses().get("frost_revenant").health(), config.bosses().get("sylvan_matriarch").health(), 0);
         assertTrue(config.bosses().get("voidwyrm").health() > config.bosses().get("abyssal_leviathan").health());
+        assertTrue("only the flying Echo has its own factor", config.bosses().values().stream()
+            .filter(b -> hpFactor(b) != 0.5).map(BossDefinition::id).allMatch("voidwyrm"::equals));
         assertTrue(config.bosses().get("abyssal_leviathan").health() > config.bosses().get("frost_revenant").health());
     }
 
     @Test
-    public void theVoidwyrmHasAboutFiftyTwoThousandHealthAtTierFive() {
+    public void theVoidwyrmHasAboutFortyFourThousandHealthAtTierFive() {
         BossDefinition wyrm = config.bosses().get("voidwyrm");
-        assertEquals(52_000, wyrm.health(), 520); // GDD 8.7: DPS_ref(5) 576 x 180 s x 0.5
+        // GDD 8.7: DPS_ref(5) 576 x 180 s x 0.5, then 85 % because it flies (boss.settings.hp-factor.voidwyrm 0.425)
+        assertEquals(52_000 * 0.85, wyrm.health(), 520);
         assertEquals(576, curve.referenceDps(5), 1e-6);
         assertEquals(1.0, BossSettings.parse(Settings.load(db, "boss")).hpScale(), 0); // no second halving on top
     }

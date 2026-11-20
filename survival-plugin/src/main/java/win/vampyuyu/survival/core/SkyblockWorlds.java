@@ -51,6 +51,17 @@ public final class SkyblockWorlds {
             || isBastion(worldName);
     }
 
+    /**
+     * Skyblock worlds that were removed from the game: a teleport into one is refused and a player found in one is sent
+     * home. Empty today. It must list names, never "every Skyblock world except a few": that form silently retired each
+     * Realm, the Astral Interiority and the Bastions as they were added, so no Sky Gate could reach them.
+     */
+    public static final java.util.Set<String> RETIRED = java.util.Set.of();
+
+    public static boolean isRetired(String worldName) {
+        return worldName != null && RETIRED.contains(worldName);
+    }
+
     /** World name of a dungeon run. */
     public static String dungeon(String runId) {
         return DUNGEON_PREFIX + runId;

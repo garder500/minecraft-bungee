@@ -26,19 +26,25 @@ import win.vampyuyu.survival.core.Scheduler;
  */
 final class BossSkinService {
     /** One boss look: the pack item model and the display scale (the model is about 2 blocks tall at scale 1). */
+    /**
+     * {@code yawOffset}: the model's face looks along the display's yaw, so a mob boss needs 0 (it looks where its body
+     * looks). The vanilla dragon's yaw points backwards (measured: 180 degrees from its heading), so the Echo needs 180.
+     * Both were swapped before 2026-11-20: every boss walked and flew with its back first.
+     */
     record Look(String model, float scale, boolean hide, float yawOffset) {
         Look(String model, float scale) {
-            this(model, scale, false, 180f);
+            this(model, scale, false, 0f);
         }
     }
 
     static final Map<String, Look> LOOKS = Map.of(
         // the Ender Dragon ignores invisibility: it is hidden from every client instead, and HiddenBossMelee gives the
         // swings that would have hit it back to the players
-        "voidwyrm", new Look("vampyuyu:boss/skin/voidwyrm", 4.2f, true, 0f),
+        "voidwyrm", new Look("vampyuyu:boss/skin/voidwyrm", 4.2f, true, 180f),
         "magma_warden", new Look("vampyuyu:boss/skin/magma_warden", 2.4f),
         "frost_revenant", new Look("vampyuyu:boss/skin/frost_revenant", 3.6f),
-        "sylvan_matriarch", new Look("vampyuyu:boss/skin/sylvan_matriarch", 2.8f),
+        // the spider's eyes glow through invisibility: it is hidden too
+        "sylvan_matriarch", new Look("vampyuyu:boss/skin/sylvan_matriarch", 2.8f, true, 0f),
         "abyssal_leviathan", new Look("vampyuyu:boss/skin/abyssal_leviathan", 2.8f),
         "crypt_lord", new Look("vampyuyu:boss/skin/crypt_lord", 2.4f));
 

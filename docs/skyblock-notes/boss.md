@@ -180,7 +180,38 @@ take the boss away while players walk to it.
 * The summon item cooldown is not re-armed when a boss vanishes after damage (the item is not refunded, which is the
   deterrent).
 * Hub world bosses stand on the hub plaza (spawn pad area): abilities hit every targetable player within radius + 8,
-  including AFK players and new arrivals.
+  including AFK players and new arrivals. Only the world boss events can do that now (`boss.world.enabled`, off by default):
+  the Echo of the Rift no longer wakes in the Hub. Its Echo Key is a Bastion key, so at the Rift altar `SummonListener` opens
+  the `echo_rift` Bastion (an instance for the party, see `bastion.md`) instead of summoning it in the shared world.
+* Boss models were redrawn on 2026-11-20 (`resource-pack/art/boss_skins.py`, class `Painted`): every face has its own
+  painted texture at 2 texels per model unit (plates with rivets, cracked rock with lava veins, scales, bone, cloth folds,
+  faceted ice, bark, membranes), with a lit top, a dark underside, occlusion toward the bottom and bevelled edges, on
+  muted palettes (they were 4x4-pixel flat tiles stretched over each box). New pieces: the Colossus's knee guards, belt
+  and brow, the Watcher's fur mantle and helm band, the Queen's mushroom caps, the Leviathan's chains, the Judge's
+  robe, hood and scales of judgement, the Echo's snout and brow. Second pass the same day, new silhouettes: a hunched
+  Colossus with fists on the ground and a basalt crest, the Watcher with both hands on his planted greatsword, the Queen
+  as a woman rising from a mushroom-grown spider with jointed legs, the Leviathan rearing out of its coil with open jaws
+  and a broken collar chain, the Judge floating in a deep hood with an ornate sceptre, the Echo with a stepped neck, a
+  crown of horns, open jaws and a bladed tail. `resource-pack/art/preview_boss_skins.py` renders them offline (12 s). The Queen's spider is now hidden like the Echo's dragon
+  (a spider's eyes glow through invisibility); `HiddenBossMelee` hits a hidden plain mob on its hit box.
+* Boss models faced backwards until 2026-11-20: `BossSkinService.Look.yawOffset` was 180 for the mob bosses and 0 for
+  the Echo; measured in game, a mob's yaw is where it looks and the vanilla dragon's yaw is 180 degrees from its heading,
+  so it is now 0 for the mobs and 180 for the Echo (`ShippedConfigTest.bossModelsFaceWhereTheBossLooks`).
+* Tier-5 boss hits were sized for a player wearing four armor sets at once (`PowerCurve` summed Starcore and its three
+  Realm sidegrades). Measured in game: the Echo took 55 % of a full-Starcore player's 96 health per contact hit. With one
+  set per slot it takes 2 %, like a tier-2 or tier-3 boss on a player of its tier (2 to 4 %). Every tier is now well
+  under the GDD's 8 hits to go down: the real mitigation has a layer the curve leaves out (vanilla armor points, at a
+  guess). If bosses feel too soft, `boss.settings.hits-to-down` or `boss.settings.damage-scale` is the knob.
+* The Echo's flight (2026-11-20, real client): the vanilla dragon ignores speed attributes and cruises at about 22
+  blocks/s. `BossSession.slowFlight` caps its velocity each tick at `speed` x 1.1 blocks/tick (voidwyrm 0.45: about
+  10 blocks/s measured); scaling the velocity instead compounds with the dragon's drag (0.55 gave 2.5 blocks/s). The
+  `perch` ability (all three phases, 4-6 s) and the `stun` parameter of `dive_bomb` (3 s) pin it on the ground in a
+  sitting phase (no wing knockback, no contact push, `[STUNNED]` on the bar, dazed bonus damage): the melee window.
+  Its health uses `boss.settings.hp-factor.voidwyrm` 0.425 (85 % of the curve; `PowerCurveTest` reads it back as fewer
+  landed hits). A landed vanilla dragon still shoves everyone near its wings every tick (only the wing damage stops when
+  it sits): `BossListener.onPushed`/`onKnockback` cancel the pushes of a grounded boss. Checked in game: landing title,
+  cruise speed, a player beside the landed Echo stays put (pushed 8 blocks a second before the fix) and a Starcore sword
+  hit counts.
 * Non-participants can still build or throw pearls inside a summoned boss's arena until their first hit (the arena rules
   bind the summoner and the players in the ledger). Two summons of the same boss cannot share an altar anchor.
 * The ability-hit damage path is covered by a flag test; the end-to-end test through `Player.damage` is skipped when

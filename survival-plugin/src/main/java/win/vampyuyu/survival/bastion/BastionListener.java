@@ -11,6 +11,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -64,8 +65,35 @@ public final class BastionListener implements Listener {
         }
         switch (e.getCause()) {
             case ENDER_PEARL, CONSUMABLE_EFFECT, COMMAND -> e.setCancelled(true);
+            // an eliminated member is a spectator: the spectator menu teleports to any player, in any world
+            case SPECTATE -> {
+                if (e.getTo() == null || e.getTo().getWorld() != e.getFrom().getWorld()) {
+                    e.setCancelled(true);
+                }
+            }
             default -> { } // our own arrival, exit and return from the void are plugin teleports
         }
+    }
+
+    /**
+     * Safety net: a member of an open run who ends up in another world without the run sending them out (any teleport
+     * this listener did not foresee) is brought back to the arena, so a revive or the exit puts them at the right place.
+     * The run's own exit removes the member before teleporting, so it is not caught here.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onWorldChange(PlayerChangedWorldEvent e) {
+        Player p = e.getPlayer();
+        BastionRun run = service.runOf(p.getUniqueId());
+        if (run == null || run.closed || run.world == null || e.getFrom() != run.world || p.getWorld() == run.world
+                || p.hasPermission(ADMIN)) {
+            return;
+        }
+        core.scheduler().nextTick(() -> {
+            if (p.isOnline() && !run.closed && service.runOf(p.getUniqueId()) == run && p.getWorld() != run.world) {
+                p.teleport(BastionArena.arrival(run.world, run.bastion.radius()));
+                core.msg().warn(p, "You cannot leave the Bastion that way. Use /bastion leave.");
+            }
+        });
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)

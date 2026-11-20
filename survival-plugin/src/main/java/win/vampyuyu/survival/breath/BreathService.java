@@ -51,6 +51,8 @@ public final class BreathService implements BreathApi {
     private volatile BreathEvent active;
     private Scheduler.Handle tick;
     private Scheduler.Handle spawner;
+    /** Every second: the hub's immune cells that left the Breach are removed (they chase players onto the bridge). */
+    private Scheduler.Handle breachLeash;
 
     public BreathService(Core core, BreathConfig config) {
         this.core = core;
@@ -358,9 +360,19 @@ public final class BreathService implements BreathApi {
         stopSpawner();
         long period = config.invaderRespawnSeconds() * 20L;
         spawner = core.scheduler().repeating(40, period, this::spawnInvaders);
+        breachLeash = core.scheduler().repeating(20, 20, () -> {
+            org.bukkit.World hub = Bukkit.getWorld(win.vampyuyu.survival.core.SkyblockWorlds.HUB);
+            if (hub != null && !invaders.isEmpty()) {
+                BreachSpawns.cull(invaders, hub, BreachSpawns.hubY(core));
+            }
+        });
     }
 
     private void stopSpawner() {
+        if (breachLeash != null) {
+            breachLeash.cancel();
+            breachLeash = null;
+        }
         if (spawner != null) {
             spawner.cancel();
             spawner = null;
@@ -405,7 +417,15 @@ public final class BreathService implements BreathApi {
             if (world == null) {
                 continue;
             }
+            boolean hub = BreachSpawns.isHub(world); // the hub is a safe zone: its invasion is in the Breach only
+            int hubY = hub ? BreachSpawns.hubY(core) : 0;
+            if (hub) {
+                BreachSpawns.cull(invaders, world, hubY);
+            }
             for (Player player : world.getPlayers()) {
+                if (hub && !win.vampyuyu.survival.island.HubBreach.contains(player.getLocation(), hubY)) {
+                    continue;
+                }
                 int near = 0;
                 for (UUID id : invaders) {
                     Entity e = Bukkit.getEntity(id);
@@ -414,7 +434,11 @@ public final class BreathService implements BreathApi {
                     }
                 }
                 for (int i = near; i < config.invadersPerPlayer() && invaders.size() < config.invadersMax(); i++) {
-                    spawnOne(player.getLocation());
+                    if (hub) {
+                        spawnAt(BreachSpawns.spot(world, hubY, rng));
+                    } else {
+                        spawnOne(player.getLocation());
+                    }
                 }
             }
         }
@@ -431,7 +455,11 @@ public final class BreathService implements BreathApi {
         if (!ground.getType().isSolid() || ground.isLiquid()) {
             return;
         }
-        Location at = new Location(world, x + 0.5, y + 1, z + 0.5);
+        spawnAt(new Location(world, x + 0.5, y + 1, z + 0.5));
+    }
+
+    private void spawnAt(Location at) {
+        World world = at.getWorld();
         Class<? extends Entity> type = mobClass();
         int cycle = state.cycle;
         Entity spawned = world.spawn(at, type, e -> {

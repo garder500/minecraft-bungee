@@ -23,6 +23,7 @@ public enum AbilityType {
     LASER_BEAM("laser_beam", "Sweeping beam with damage ticks"),
     CHARGE_DASH("charge_dash", "Telegraphed dash along a line"),
     DIVE_BOMB("dive_bomb", "Flyer dives on a marked player"),
+    PERCH("perch", "Flyer lands near the arena centre and stays stunned: the melee window"),
     TIDAL_WAVE("tidal_wave", "Wall of water that sweeps the arena"),
     FIRE_RING("fire_ring", "Expanding ring of fire with a gap"),
     BONE_CAGE("bone_cage", "Traps a player inside a bone cage"),
