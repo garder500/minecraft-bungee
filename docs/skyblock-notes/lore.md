@@ -277,7 +277,7 @@ increases your fire power!" (too long, boasting, mechanical).
 7. **Realm order vs Bastion list order**: Bastion `position` puts Necropolis third; the Realm order (GDD) puts it eighth.
    The Realm number in this bible is the GDD one.
 8. The Great Disillusion, the Reality Pillars and the mouth in the Quai appear only in passing in older notes; they
-   are not built, and this bible does not define them **(proposed: leave undefined until the owner does)**.
+   are not built, except the mouth in the Quai, now built (`quai.md`, open when the eight Guardians are down); the Pillars stay undefined **(proposed: leave undefined until the owner does)**.
 9. The Realm resource names Chrono Sand, Rot Resin, Thunder Quartz, Pressure Pearl, Soul Ash are validated
    (`design-decisions.md`); no rename.
 

@@ -16,3 +16,12 @@ Nothing is built while `sb_hub` does not exist or `hub.enabled` is false.
 - **Commands**: `/quai` (go there), `/gates` (list), `/gateadmin light|dark <player> <realm|all>`, `list`,
   `travel <player> <realm>`, `rebuild`.
 - Layout changes: bump `QuaiPlan.VERSION` so existing Quais are rebuilt (2: the bridge is restyled as the end of the processional, with a ruined arch).
+- **Mouth of the Devourer** (`island/QuaiMouth.java`, plan version 4): a dark rift in the south rim of the platform, between Gates 4 and 5,
+  opposite the bridge, reached by a dark strip from the dais. An elliptical opening (obsidian membrane, blackstone frame,
+  dripstone teeth, sign "The Mouth of the Devourer"). Same mechanism as the Gates: the world holds it sealed, a player who may
+  enter sees it open (client-side blocks: magenta glass with a sea lantern behind, sign "Open", portal particles; resent every second,
+  `SkyGates.refreshMouth`, its own shown-set). **Open condition = `AstralApi.canEnter`**: the player defeated the Guardian of
+  every Realm (setting `realm.astral.require-guardians` false opens it to all). This is what the code has for the "Great
+  Disillusion" (the eighth Guardian down, the text of `AstralRealm.enter`); nothing else is named that. The answer is cached 3 s per player.
+  Walking up to the opening (`QuaiMouth.inMouth`, never overlapping a Gate zone): open = 1.2 s blindness then `AstralApi.enter`;
+  sealed = `enter` tells the player which Guardians are missing (2.5 s cooldown). `/astral go` stays as the other way in.

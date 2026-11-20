@@ -129,7 +129,7 @@ public class SkyGatesTest {
             // standing room in front of the opening
             assertTrue(plan.get(gate.x(), 0, gate.z()) != null);
         }
-        assertEquals(8, plan.signs().size());
+        assertEquals("eight gate signs and the sign of the mouth", 9, plan.signs().size());
         assertNotNull(plan.anchor("spawn"));
         assertEquals(Material.QUARTZ_BRICKS, plan.get(0, 0, QuaiPlan.SPAWN_Z));
         // the bridge reaches the hub ring road
