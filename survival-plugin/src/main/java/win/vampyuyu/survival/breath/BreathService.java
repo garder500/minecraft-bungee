@@ -283,6 +283,7 @@ public final class BreathService implements BreathApi {
         }
         int perKey = config.fragmentsPerKey();
         boolean[] key = {false};
+        int[] held = {0};
         edit(player.getUniqueId(), d -> {
             d.fragments++;
             d.found++;
@@ -293,13 +294,21 @@ public final class BreathService implements BreathApi {
                 d.fragments = made[1];
                 key[0] = true;
             }
+            held[0] = key[0] ? perKey : d.fragments; // the key just made shows as a full set
         });
-        player.sendMessage(Msg.plain("An Interpulsation Fragment settles in your hand, cold as the space between two breaths.",
-            NamedTextColor.LIGHT_PURPLE));
+        // a Fragment is a count kept with the player, not an item: say so, or players look for it in their inventory
+        player.sendMessage(Msg.plain(fragmentMessage(held[0], perKey), NamedTextColor.LIGHT_PURPLE));
         if (key[0]) {
-            player.sendMessage(Msg.plain("The Fragments fit together: you hold an Interpulsation Key.", NamedTextColor.GOLD));
+            player.sendMessage(Msg.plain("The Fragments fit together: you hold an Interpulsation Key (see /breath, used by /hellgao).",
+                NamedTextColor.GOLD));
         }
         return true;
+    }
+
+    /** The message of a found Fragment: what it is, where it is kept, how many towards a key. */
+    static String fragmentMessage(int held, int perKey) {
+        return "You found an Interpulsation Fragment, cold as the space between two breaths. It is kept with you, not in your"
+            + " inventory: " + held + "/" + perKey + " towards a key (see /breath).";
     }
 
     // ---------------------------------------------------------------- fractures

@@ -161,6 +161,9 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
                 islandDone.addAll(engine.prove(shared.quests, "pebble", QuestEngine.Scope.ISLAND));
                 islandStore.markDirty(info.id());
             }
+            if (bridge(data, shared)) {
+                islandStore.markDirty(info.id());
+            }
             changed |= mirror(player, data, shared);
             welcome(player, info, shared);
             islandDone.addAll(engine.sync(shared.quests, def -> probeShared(player, shared, def),
@@ -372,6 +375,9 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
         if (plan > 0) {
             record(player, QuestType.EVENT, "quest_done", plan); // the "complete N quests" quests count these
         }
+        if (scope == QuestEngine.Scope.PERSONAL && plan > 0) {
+            openIslandSteps(player, data); // a personal quest just done may open the island's next step
+        }
         Optional<QuestEngine.StreakBonus> bonus = engine.claimDailyBonus(data, today());
         bonus.ifPresent(b -> payBonus(player, data, b));
         if (dirty || bonus.isPresent()) {
@@ -577,6 +583,48 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
             if (member != null) {
                 mirror(member, rt.quests(id), fresh);
             }
+        }
+    }
+
+    /**
+     * An island quest can wait for a personal one: the Hub and the Rift wait for the Bronze Armor of the Forging side
+     * quests. The island record only holds island quests, so the requirement is written into it once a member has
+     * completed it (the first member who gets there opens the step for the whole island). Without this the island's
+     * copy of such a quest never unlocked: it counted its progress (1/1) and never completed. True when something was
+     * added. The ids added are personal quests: {@link #mirror} only copies island quests, so nobody's own record changes.
+     */
+    boolean bridge(QuestData personal, IslandQuests shared) {
+        QuestEngine engine = rt.engine();
+        boolean changed = false;
+        for (QuestDef def : engine.catalog().tutorial()) {
+            if (!engine.islandScope(def)) {
+                continue;
+            }
+            for (String req : def.requires()) {
+                boolean personalReq = engine.catalog().tutorialQuest(req).map(r -> !engine.islandScope(r)).orElse(false);
+                if (personalReq && personal.completed.contains(req)) {
+                    changed |= shared.quests.completed.add(req);
+                }
+            }
+        }
+        return changed;
+    }
+
+    /** After personal completions: bridges them into the island record and completes the island quests that opened. */
+    private void openIslandSteps(Player player, QuestData data) {
+        Optional<IslandInfo> island = sharedIsland(player);
+        if (island.isEmpty()) {
+            return;
+        }
+        IslandInfo info = island.get();
+        IslandQuests shared = islandRecord(info);
+        if (!bridge(data, shared)) {
+            return;
+        }
+        islandStore.markDirty(info.id());
+        List<Completion> done = rt.engine().sync(shared.quests, def -> probeShared(player, shared, def), QuestEngine.Scope.ISLAND);
+        if (!done.isEmpty()) {
+            completeIsland(info, shared, done);
         }
     }
 

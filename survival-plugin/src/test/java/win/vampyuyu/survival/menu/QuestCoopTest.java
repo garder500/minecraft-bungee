@@ -42,6 +42,8 @@ public class QuestCoopTest extends MenuTestBase {
         plan.put("stone", quest("stone", QuestType.BREAK_BLOCK, "STONE", 5, List.of("logs"), 250, "main"));
         plan.put("iron", quest("iron", QuestType.BREAK_BLOCK, "IRON_ORE", 1, List.of("stone"), 250, "main"));
         plan.put("tutorial", quest("tutorial", QuestType.PLACE_BLOCK, "DIRT", 1, List.of("logs"), 10, "side"));
+        // an island quest that waits for a personal one (the Hub waits for the Bronze Armor of the Forging side quests)
+        plan.put("hub", quest("hub", QuestType.EVENT, "hub_npc:archivist", 1, List.of("tutorial"), 150, "main"));
         MenuConfig config;
         try (win.vampyuyu.survival.data.Db db = win.vampyuyu.survival.data.TestDb.seeded()) {
             config = new MenuConfig(win.vampyuyu.survival.data.Settings.load(db, "menu"), MenuRepo.rows(db),
@@ -210,5 +212,52 @@ public class QuestCoopTest extends MenuTestBase {
         assertFalse(data(bob).progress.containsKey("stone"));
         quests.record(alice, QuestType.BREAK_BLOCK, "OAK_LOG", 20);
         assertTrue("the chain is played again", data(alice).completed.contains("logs"));
+    }
+
+    @Test
+    public void anIslandQuestWaitingForAPersonalQuestCompletesOnceAMemberHasDoneIt() {
+        quests.record(alice, QuestType.BREAK_BLOCK, "OAK_LOG", 20);
+        quests.record(alice, QuestType.PLACE_BLOCK, "DIRT", 1);
+        assertTrue(data(alice).completed.contains("tutorial"));
+        quests.record(alice, QuestType.EVENT, "hub_npc:archivist", 1);
+        assertTrue("the island quest opened by alice's personal quest completes", data(alice).completed.contains("hub"));
+        assertTrue(data(bob).completed.contains("hub"));
+        assertFalse("bob's own side quest is left alone", data(bob).completed.contains("tutorial"));
+    }
+
+    @Test
+    public void anIslandQuestStuckAtFullProgressCompletesAtTheNextSync() {
+        quests.record(alice, QuestType.BREAK_BLOCK, "OAK_LOG", 20);
+        // counted while the island record could not see the personal requirement: 1/1, never completed
+        quests.record(alice, QuestType.EVENT, "hub_npc:archivist", 1);
+        assertFalse(data(alice).completed.contains("hub"));
+        double before = economy.coins(alice.getUniqueId());
+        data(alice).completed.add("tutorial");
+        quests.sync(alice);
+        assertTrue(data(alice).completed.contains("hub"));
+        assertEquals("alice, who clicked, is paid when it settles", before + 150, economy.coins(alice.getUniqueId()), 0);
+        assertTrue(quests.islandRecord(island).quests.completed.contains("hub"));
+    }
+
+    @Test
+    public void theShippedHubQuestsCompleteOnAnIslandOnceAMemberWearsBronze() {
+        MenuConfig config;
+        try (win.vampyuyu.survival.data.Db db = win.vampyuyu.survival.data.TestDb.seeded()) {
+            config = new MenuConfig(win.vampyuyu.survival.data.Settings.load(db, "menu"), MenuRepo.rows(db), QuestRepo.load(db));
+        }
+        rt = new MenuRuntime(core, config);
+        QuestService shipped = new QuestService(rt);
+        IslandInfo other = new IslandInfo(UUID.randomUUID(), alice.getUniqueId(), Set.of(alice.getUniqueId(), bob.getUniqueId()),
+            "sb_world", 0, 0, new Location(world("sb_world"), 100, 80, 100), 50);
+        islands.byPlayer.put(alice.getUniqueId(), other);
+        islands.byPlayer.put(bob.getUniqueId(), other);
+        QuestData own = rt.quests(alice.getUniqueId());
+        own.completed.add("q145"); // Bronze Armor, a Forging side quest: personal
+        shipped.sync(alice);
+        double before = economy.coins(alice.getUniqueId());
+        shipped.record(alice, QuestType.EVENT, "hub_npc:archivist", 1);
+        assertTrue(shipped.islandRecord(other).quests.completed.contains("hub_archivist"));
+        assertTrue(own.completed.contains("hub_archivist"));
+        assertTrue("the Archivist pays its coins (and the Echo Key with them)", economy.coins(alice.getUniqueId()) > before);
     }
 }
