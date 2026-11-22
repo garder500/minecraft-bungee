@@ -31,5 +31,4 @@ Package `depths/` (feature `depths`, listed after `ashes`). World `sb_depths` (v
 ## Not verified
 Written without Paper or Docker (no compile, no test run, nothing seen in game). Pure rules were compiled and unit-tested with
 plain javac/JUnit; everything touching Bukkit (world build, ticks, events, anchors, module) is unrun. `Material.IRON_CHAIN` is looked
-up by name because the block was renamed in recent versions. The Pressure Pearl sprite is a procedural placeholder (the ElevenLabs
-image could not be downloaded here); the Tide Module reuses it. No sounds, no Sky Gate colour check, Hell Gao/modules of other Realms untouched.
+up by name because the block was renamed in recent versions. The Pressure Pearl sprite is a 32x32 procedural drawing (`resource-pack/art/realm32.py`, listed in `imported.txt` so `quarry_items.py` keeps it); the Tide Module reuses it. No sounds, no Sky Gate colour check, Hell Gao/modules of other Realms untouched.

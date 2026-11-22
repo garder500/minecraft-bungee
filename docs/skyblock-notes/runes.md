@@ -21,4 +21,4 @@ Feature `runes` (`survival-plugin/.../runes/`), API `api/RuneApi`, seed `db/seed
   and cost in the tooltip), three columns on the right, up to 18.
 
 Guessed values, to measure in play: where Rune Powder comes from (amethyst grinder: the GDD only gives the price), the Realm rune cost, the burn and regeneration durations, the rank II components.
-Not done: pack textures for the rune items (vanilla materials for now), the items feature's `Gear` (not loaded in the simple Skyblock) does not know about runes.
+Rune textures: `resource-pack/art/rune_items.py` draws 32x32 sprites (Rune Powder, `vampyuyu:rune/<stat>_<rank>`, `vampyuyu:rune/<realm rune id>`), set with `itemModel` in `RuneItems` (`RuneItems.model`: only the ids that have a sprite, the list is editable in the panel; a new rune needs a glyph in `rune_items.py` and its id in the two sets of `RuneItems`). Not done: the items feature's `Gear` (not loaded in the simple Skyblock) does not know about runes.

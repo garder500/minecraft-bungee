@@ -8,5 +8,5 @@ Feature `realm` (`survival-plugin/.../realm/`), API `api/RealmResourceApi`, sche
 - **Pressure Pearl** (Abyssal Depths, #45): fished, see `depths.md`.
 - **First use**: sold to the adventurer (60 coins), not tradable on the market. Real uses are phase 3: runes are done (`runes.md`: Scorch from Cinderheart, Verdant from Heartwood), sidegrades and modules are not.
 - Bastions and Guardians can call `RealmResourceApi.roll(player, resourceId, kind)` to feed a resource.
-- Sprites are placeholders (procedural hearts). The generated concept sheet is meant for `art/concepts/realm.png` (mapping already in `import_textures.py`); the sandbox could not download it.
+- Sprites: Cinderheart, Heartwood and Stasis Crystal are imported (`art/concepts/realm.png`); Soul Ash and Pressure Pearl are 32x32 procedural drawings (`art/realm32.py`), the Marsh items too (`art/marsh_items.py`).
 - **Thunder Quartz** (`thunder_quartz`, Tempestuous Archipelago, `storm.md`): nodes of the zone, pity rows for `sb_storm`, fuel of the Lightning Rod and key of the Tempest Bastion.

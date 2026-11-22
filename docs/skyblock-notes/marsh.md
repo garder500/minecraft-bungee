@@ -25,7 +25,7 @@ Package `marsh/` (feature `marsh`, listed after `ashes`). Written without a Pape
 - **Quests**: category `marsh` (`marsh_01`..`marsh_07`, `scripts/gen_quests.py`), events `marsh_enter`, `marsh_salvage`,
   `marsh_purify:1`, `marsh_purify:2`.
 - **Not done / assumptions**: "industrial processing chains" are only the Vat -> Resin -> Recycler/key forge chain; no
-  Sidegrade armor for the Marsh (not in the issue); item sprites are procedural placeholders (`resource-pack/art/marsh_items.py`,
-  the ElevenLabs sheet could not be downloaded in the sandbox); the Guardian numbers are a first pass; the boss rows use
+  Sidegrade armor for the Marsh (not in the issue); item sprites are 32x32 procedural pixel art (`resource-pack/art/marsh_items.py`
+  writes them, `realm32.py` draws them; no concept sheet); the Guardian numbers are a first pass; the boss rows use
   list positions 14 in `boss.guardian.ids`, `resonance.bastions` and `station.crucible.components` to avoid clashing with the
   other Realm threads.
