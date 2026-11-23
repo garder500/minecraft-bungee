@@ -2,7 +2,7 @@
 -- Converted from the former boss.yml by scripts/yaml_to_seed_boss.py; edit it in the panel.
 -- Loot balance: pity is +0.1 percentage point per dry kill, capped at +1.5 points.
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-factor.voidwyrm', 'real', '0.425', 'Health factor of the Echo of the Rift instead of boss.settings.hp-factor (85 %: a flyer takes fewer hits, even with its landings).');
-INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-factor.devourer', 'real', '3.5', 'Health factor of the Devourer (the final Raid) instead of boss.settings.hp-factor: x7 the Guardian pool. Measured in game: a tier-5 player hitting without a miss killed the 52 000 pool in 35 s; with 3.5 that is about 4 min, a real solo player about 8 (enrage 9), a group of five about 3-4.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-factor.devourer', 'real', '5.0', 'Health factor of the Devourer (the final Raid) instead of boss.settings.hp-factor: x10 the Guardian pool, fixed whatever the group size. Measured in game: a tier-5 player hitting without a miss killed one Guardian pool in 35 s; with 5.0 a flawless solo needs about 6 min (enrage 9), a real group of four about 3.');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-scale', 'real', '1.0', 'Multiplies every boss health pool (1 = the GDD 8.7 curve as is).');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.damage-scale', 'real', '1.0', 'Multiplies every hit bosses deal to players. 1.0 = the hit PowerCurve.bossHitDamage sizes (hits-to-down hits for a tier-matched player); the old 0.6 hid the missing vanilla-armor layer.');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hits-to-down', 'int', '10', 'A player in the full armor of the boss tier goes down after this many plain boss hits (Ward and vanilla armor counted): 10 hits = 10 % of the health per hit, GDD 8 to 12. Measured in game.');
@@ -21,7 +21,7 @@ INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.visual-health
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hit-iframes', 'int', '6', 'Invulnerability ticks of a boss between two hits.');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.magic-find-cap', 'int', '1000', 'Fortune above this is ignored.');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.purge-orphans', 'bool', 'true', 'Remove tagged boss entities left behind (bosses never persist across a restart).');
-INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.scale-min-share', 'real', '0.01', 'A player grows the boss health pool only after dealing this fraction of its base health.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.scale-min-share', 'real', '0.01', 'Unused: boss health is fixed and no longer grows with the number of attackers (2026-11-23).');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.repeat-window-minutes', 'int', '60', 'Kills of the same boss inside this window lower the next payout (coins and combat xp)...');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.repeat-decay', 'real', '0.2', '...by this fraction per earlier kill...');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.repeat-floor', 'real', '0.25', '...down to this fraction (0 decay turns the damper off).');

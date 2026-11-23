@@ -21,7 +21,7 @@ Phase 2 ships two: the **Ashes Bastion** (Lava Colossus = boss `magma_warden`, k
   no longer summon anything in the open world (`SummonListener` refuses a Bastion key). They still drop and are forged as before.
 * Rules inside: no building, no pearls/chorus/teleport commands, only `/bastion /party /pc /msg ...`; 3 lives per player
   (`deaths_allowed`), then spectator; a fall into the void brings you back; all eliminated or gone = defeat; time limit
-  `time_limit_seconds` (20 min). The Guardian's group scaling (0.5 per player, GDD 8.7) is the boss engine's.
+  `time_limit_seconds` (20 min). The Guardian's health is fixed: it does not grow with the party size (2026-11-23).
 
 ## Rewards and coop (GDD 14.4, 15.4)
 Nothing is paid twice: a clear is an ordinary boss kill, so the boss engine pays coins, XP and drops by damage share and the

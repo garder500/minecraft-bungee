@@ -50,7 +50,7 @@ under `vampyuyu:boss/<id>`.
 are the Guardians of the two phase 2 Realms. The technical ids stay (quests, profiles); everything visible uses the canon.
 Their extra rules live in `boss.guardian.*` setting rows of `db/seed/boss.sql`, read into `Guardians`:
 
-* **Health** follows the GDD 8.7 curve like every boss (`hp_auto`, tier 2 / tier 3), group scaling 0.5 per player capped x3,
+* **Health** follows the GDD 8.7 curve like every boss (`hp_auto`, tier 2 / tier 3), fixed whatever the number of attackers (no group scaling since 2026-11-23),
   enrage 9 min. `GuardianTest` re-checks the readability rules (phase x1.4 at most, an ability takes at most 35 percent of the
   reference player).
 * **Spoken lines** (`intro`, `phase1`, `phase2`, `death`, `first-clear`): sent in chat to everyone around the fight, a random

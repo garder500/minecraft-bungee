@@ -216,8 +216,8 @@ public class PowerCurveTest {
     @Test
     public void theFinalRaidLastsMinutesNotSeconds() {
         BossDefinition devourer = config.bosses().get("devourer");
-        // 7 Guardian pools of tier 5: a flawless tier-5 player (measured 35 s on one pool) needs about 4 min, alone
-        assertEquals(curve.bossHealth(5, 180, 0.5) * 7, devourer.health(), 1);
+        // 10 Guardian pools of tier 5, fixed whatever the group: a flawless tier-5 player (35 s on one pool) needs ~6 min
+        assertEquals(curve.bossHealth(5, 180, 0.5) * 10, devourer.health(), 1);
         assertTrue(devourer.health() > 300_000);
         assertEquals(540, devourer.arena().enrageSeconds());
         assertEquals(3.0, BossMath.hpMultiplier(5, devourer.arena().minPlayers(), devourer.arena().scalePerPlayer(),

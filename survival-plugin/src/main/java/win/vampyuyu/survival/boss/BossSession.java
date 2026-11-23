@@ -105,7 +105,6 @@ public final class BossSession {
     private final Map<UUID, Long> contactCooldown = new HashMap<>();
     private final List<Consumer<EndInfo>> endListeners = new ArrayList<>();
     /** Players whose credited damage reached the scaling threshold (they grow the health pool). */
-    private final Set<UUID> scalers = new HashSet<>();
     /** Chunk tickets held for the life of the fight, key = packed chunk coordinates. */
     private final Set<Long> heldChunks = new HashSet<>();
     private boolean ticketsUnsupported;
@@ -972,15 +971,9 @@ public final class BossSession {
         if (!(dmg > 0)) {
             return 0;
         }
-        // A player grows the pool only once they dealt a real share of the health (a one-hit alt account must not make
-        // the fight harder for the group). It happens BEFORE the hit is credited, otherwise a lethal hit would be
-        // capped at the old health and leave the rescaled boss alive.
+        // The health pool is fixed: it never grows with the number of attackers (owner decision 2026-11-23), so a group
+        // simply kills faster. The arena's scale_per_player / scale_cap columns are kept in the data but not applied.
         UUID id = attacker.getUniqueId();
-        double threshold = baseMaxHp * settings.scaleMinShare();
-        if (!scalers.contains(id) && ledger.damageOf(id) + dmg >= threshold) {
-            scalers.add(id);
-            rescale(scalers.size());
-        }
         double credited = ledger.record(id, dmg, hp);
         if (credited <= 0) {
             return 0;
@@ -1070,16 +1063,6 @@ public final class BossSession {
         }
         hp = Math.min(maxHp, hp + amount);
         mirrorHealth();
-    }
-
-    private void rescale(int participants) {
-        double mult = BossMath.hpMultiplier(participants, def.arena().minPlayers(), def.arena().scalePerPlayer(),
-            def.arena().scaleCap());
-        double newMax = baseMaxHp * mult;
-        if (Math.abs(newMax - maxHp) > 1e-9) {
-            hp = hp * newMax / maxHp;
-            maxHp = newMax;
-        }
     }
 
     private void healthChanged(Player attacker) {

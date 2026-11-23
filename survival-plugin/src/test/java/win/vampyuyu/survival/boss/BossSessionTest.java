@@ -165,9 +165,10 @@ public class BossSessionTest {
         small.teleport(session.entity().getLocation().add(3, 0, 1));
         tiny.teleport(session.entity().getLocation().add(3, 0, 2));
         double max = session.maxHp();
-        // a newcomer rescales the pool; stay above the 70 percent shield phase, then finish with the big hitter
+        // the pool is fixed: three attackers do not grow it; stay above the 70 percent shield phase, then finish
         session.applyHit(tiny, 1.0);
         session.applyHit(small, session.maxHp() * 0.20);
+        assertEquals("health does not depend on the number of attackers", max, session.maxHp(), 1e-9);
         session.applyHit(big, 1e15);
         assertTrue(session.isEnded());
         assertEquals(1, events.size());
