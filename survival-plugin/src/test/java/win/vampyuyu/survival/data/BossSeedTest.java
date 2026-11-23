@@ -47,7 +47,7 @@ public class BossSeedTest {
         expected.put("boss_world_spot", 2);
         expected.put("boss_world_pool", 0);
         expected.forEach((table, rows) -> assertEquals(table, rows.longValue(), count(db, table, "")));
-        assertEquals(137, count(db, "setting", "id GLOB 'boss.*'")); // + hp-factor.voidwyrm
+        assertEquals(156, count(db, "setting", "id GLOB 'boss.*'")); // + hp-factor.voidwyrm, + 19 speech rows
         assertEquals(3, count(db, "setting_item", "setting_id = 'boss.world.announce-before-seconds'"));
     }
 

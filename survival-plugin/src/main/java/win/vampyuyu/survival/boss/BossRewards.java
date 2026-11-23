@@ -76,10 +76,11 @@ public final class BossRewards {
         Bukkit.getPluginManager().callEvent(event);
         BossDefinition.Loot loot = def.loot();
         Guardians.Guardian guardian = guardians.get().get(def.id());
-        if (guardian != null) {
-            Component line = Guardians.say(guardian, Guardians.DEATH, random);
+        Guardians.Guardian speaker = guardians.get().speaker(def.id());
+        if (speaker != null) {
+            Guardians.Spoken line = Guardians.say(speaker, Guardians.DEATH, random);
             if (line != null) {
-                session.broadcastNearby(line);
+                session.say(line);
             }
         }
         int eligible = 0;
@@ -191,10 +192,12 @@ public final class BossRewards {
         }
         if (player != null) {
             summary(player, def, damager.damage(), share, rank, coins, xp, items);
-            if (guardian != null && firstClear) {
-                Component line = Guardians.say(guardian, Guardians.FIRST_CLEAR, random);
+            Guardians.Guardian speaker = guardians.get().speaker(def.id());
+            if (speaker != null && firstClear) {
+                Guardians.Spoken line = Guardians.say(speaker, Guardians.FIRST_CLEAR, random);
                 if (line != null) {
-                    player.sendMessage(line);
+                    player.sendMessage(line.text());
+                    Guardians.voice(player, line);
                 }
             }
             if (repeat < 0.999) {

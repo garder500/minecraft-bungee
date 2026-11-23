@@ -192,7 +192,24 @@ take the boss away while players walk to it.
   Colossus with fists on the ground and a basalt crest, the Watcher with both hands on his planted greatsword, the Queen
   as a woman rising from a mushroom-grown spider with jointed legs, the Leviathan rearing out of its coil with open jaws
   and a broken collar chain, the Judge floating in a deep hood with an ornate sceptre, the Echo with a stepped neck, a
-  crown of horns, open jaws and a bladed tail. `resource-pack/art/preview_boss_skins.py` renders them offline (12 s). The Queen's spider is now hidden like the Echo's dragon
+  crown of horns, open jaws and a bladed tail. `resource-pack/art/preview_boss_skins.py` renders them offline (12 s).
+  Third pass after two reviews by a second model (Fable): softer bevel on large faces only and rounded scales (the hard
+  bevel outlined every cuboid like a toy brick), a knuckle-walking Colossus with its heart as three fissures, the
+  Watcher's real greatsword held at the pommel, the Queen's pale face and fanned legs, the Leviathan's S-curve, ringed
+  coil and gaping jaw, the Judge floating with the scales held out, the Echo's raised neck and jointed wings. x-axis
+  rotations follow Minecraft's convention (a positive angle tilts +y toward +z); several were the wrong way round.
+* **Voiced lines (2026-11-23).** Every spoken boss line has a recorded voice: the 8 Guardians (`boss.guardian.<id>.<event>`)
+  and the ultimate bosses, which now speak too without being Guardians (`boss.speech.ids` = voidwyrm, devourer, hell_gao;
+  `boss.speech.<id>.speaker` and `.<event>` lists, read by `Guardians.parse` into a speech-only map, no Guardian loot).
+  `Guardians.say` returns the chat line and its sound `vampyuyu:voice.<boss>.<event>.<n>` (n = position in the list);
+  `BossSession.say` and the death / first-clear lines in `BossRewards` play it on the VOICE channel to the same players.
+  Clips: ElevenLabs library voices, one per boss (`resource-pack/art/boss_voices.py` VOICES), generated from
+  `resource-pack/voices/manifest.json` (`boss_voices.py manifest`), mono Ogg in `pack/assets/vampyuyu/sounds/voice/`,
+  registered by `boss_voices.py sounds`. A line edited in the panel keeps its old clip until it is recorded again:
+  `boss_voices.py check` and `test_pack` list such lines. The Devourer's lines follow the lore (a world-eater that wanted
+  to be loved, not a villain with a speech).
+* Skinned bosses show their name and health on a text display over the model (`BossSkinService.tags`, 2 x scale + 0.25
+  above the feet): the mob's own name tag sat inside the model. The Queen's spider is now hidden like the Echo's dragon
   (a spider's eyes glow through invisibility); `HiddenBossMelee` hits a hidden plain mob on its hit box.
 * Boss models faced backwards until 2026-11-20: `BossSkinService.Look.yawOffset` was 180 for the mob bosses and 0 for
   the Echo; measured in game, a mob's yaw is where it looks and the vanilla dragon's yaw is 180 degrees from its heading,

@@ -3,6 +3,7 @@ package win.vampyuyu.survival.boss;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
@@ -187,5 +188,20 @@ public class GuardianTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void theUltimateBossesSpeakWithoutBeingGuardiansAndEveryLineHasAVoice() {
+        Guardians guardians = BossTestData.shipped().guardians();
+        for (String id : java.util.List.of("voidwyrm", "devourer", "hell_gao")) {
+            assertNull(id + " pays no Guardian loot", guardians.get(id));
+            Guardians.Guardian speaker = guardians.speaker(id);
+            assertNotNull(id, speaker);
+            Guardians.Spoken line = Guardians.say(speaker, Guardians.INTRO, new Random(3));
+            assertNotNull(line);
+            assertTrue(line.sound(), line.sound().matches("vampyuyu:voice\\." + id + "\\.intro\\.[01]"));
+        }
+        Guardians.Spoken colossus = Guardians.say(guardians.speaker("magma_warden"), Guardians.DEATH, new Random(1));
+        assertTrue(colossus.sound().startsWith("vampyuyu:voice.magma_warden.death."));
     }
 }

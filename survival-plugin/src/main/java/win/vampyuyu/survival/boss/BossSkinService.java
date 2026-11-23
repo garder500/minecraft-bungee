@@ -53,6 +53,11 @@ final class BossSkinService {
     private final Core core;
     private final BossManager manager;
     private final Map<UUID, ItemDisplay> displays = new HashMap<>();
+    /**
+     * The boss's name and health over its model. The mob's own name tag sits at the vanilla mob's height, which is inside
+     * the model (at the Colossus's ankles, mid-neck on the Leviathan): it is hidden and copied here, over the model's head.
+     */
+    private final Map<UUID, org.bukkit.entity.TextDisplay> tags = new HashMap<>();
     private Scheduler.Handle task;
 
     BossSkinService(Core core, BossManager manager) {
@@ -70,6 +75,8 @@ final class BossSkinService {
         }
         displays.values().forEach(Entity::remove);
         displays.clear();
+        tags.values().forEach(Entity::remove);
+        tags.clear();
     }
 
     int showing() {
@@ -100,7 +107,25 @@ final class BossSkinService {
             at.setYaw(boss.getBodyYaw() + look.yawOffset());
             at.setPitch(0f);
             display.teleport(at);
+            org.bukkit.entity.TextDisplay tag = tags.get(boss.getUniqueId());
+            if (tag == null || !tag.isValid()) {
+                tag = createTag(boss);
+                tags.put(boss.getUniqueId(), tag);
+            }
+            boss.setCustomNameVisible(false);
+            if (boss.customName() != null && !boss.customName().equals(tag.text())) {
+                tag.text(boss.customName());
+            }
+            tag.teleport(boss.getLocation().add(0, tagHeight(look), 0));
         }
+        tags.entrySet().removeIf(entry -> {
+            Entity boss = core.getPlugin().getServer().getEntity(entry.getKey());
+            if (boss == null || !boss.isValid()) {
+                entry.getValue().remove();
+                return true;
+            }
+            return false;
+        });
         Iterator<Map.Entry<UUID, ItemDisplay>> it = displays.entrySet().iterator();
         while (it.hasNext()) {
             var entry = it.next();
@@ -110,6 +135,25 @@ final class BossSkinService {
                 it.remove();
             }
         }
+    }
+
+    /** Height of the name over the mob's feet: the models are about two blocks tall at scale 1 (32 units). */
+    static double tagHeight(Look look) {
+        return 2.0 * look.scale() + 0.25;
+    }
+
+    private org.bukkit.entity.TextDisplay createTag(LivingEntity boss) {
+        return boss.getWorld().spawn(boss.getLocation(), org.bukkit.entity.TextDisplay.class, t -> {
+            t.setBillboard(Display.Billboard.CENTER);
+            if (boss.customName() != null) {
+                t.text(boss.customName());
+            }
+            t.setTeleportDuration(2);
+            t.setViewRange(2f);
+            t.setShadowed(true);
+            t.setPersistent(false);
+            t.getPersistentDataContainer().set(MARK, PersistentDataType.BYTE, (byte) 1);
+        });
     }
 
     private ItemDisplay create(LivingEntity boss, Look look) {

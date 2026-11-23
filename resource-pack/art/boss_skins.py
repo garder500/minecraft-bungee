@@ -227,10 +227,14 @@ class Painted(Skin):
                     if _hash(x, y, sd, 3) < 0.03:
                         c = _scale(rgb, 0.62)
                 elif style == "scale":
-                    s_ = 4
+                    s_ = 4                                   # rounded scales in offset rows, not bricks
                     off = (y // s_ % 2) * (s_ // 2)
                     lx, ly = (x + off) % s_, y % s_
-                    shade = 1.12 - 0.12 * ly - (0.25 if lx == 0 else 0) + 0.06 * n
+                    shade = 1.1 - 0.08 * ly + 0.06 * n
+                    if ly == 0 and lx in (1, 2):
+                        shade *= 1.14                        # the lit crown of the scale
+                    elif ly == s_ - 1 and lx in (0, s_ - 1):
+                        shade *= 0.72                        # the shadow between two scales
                     c = _scale(rgb, shade)
                 elif style == "leaf":
                     c = _mix(_scale(rgb, 0.6), _scale(rgb, 1.3), n)
@@ -289,11 +293,11 @@ class Painted(Skin):
                         f = 0.58
                     else:
                         f = 1.08 - 0.26 * (y / max(1, h - 1))
-                    if w >= 3 and h >= 3:
-                        if x == 0 or y == 0:
-                            f *= 1.16
+                    if w >= 6 and h >= 6:                    # a soft bevel on large faces only: a hard one outlined
+                        if x == 0 or y == 0:                 # every box like a toy brick
+                            f *= 1.06
                         elif x == w - 1 or y == h - 1:
-                            f *= 0.76
+                            f *= 0.9
                 px[y][x] = tuple(clamp(v * f) for v in px[y][x])
         return px
 
@@ -346,56 +350,49 @@ class Painted(Skin):
 
 
 def magma_warden():
-    """The Lava Colossus: a hunched brute of basalt, fists on the ground, head sunk between boulder shoulders."""
+    """The Lava Colossus: a knuckle-walking basalt brute, fists planted ahead, its heart showing only through fissures."""
     s = Painted("magma_warden", [("rock", (56, 46, 44), "rock"), ("lava", (255, 112, 24), "glow"),
                                  ("obs", (36, 28, 46), "plate", (255, 140, 40)), ("crack", (62, 42, 36), "lavarock", (255, 120, 30)),
                                  ("eye", (255, 220, 90), "eye"), ("ember", (205, 72, 26), "glow")], 11)
-    lean = ("x", -22.5, [8, 15, 10])                                # the whole upper body leans forward
-    s.mirror_x((3, 4, 8), (7.2, 9.5, 13), "crack")                  # thighs
-    s.mirror_x((3.4, 0, 7.4), (6.8, 4.5, 12), "crack")              # shins
-    s.mirror_x((2.8, 0, 6.6), (7.2, 1.2, 12.4), "lava")             # glowing soles
-    s.mirror_x((2.8, 3.6, 6.8), (7.4, 6.2, 8.2), "obs")             # knee guards
-    s.box((3.4, 8.5, 7.5), (12.6, 11.5, 13.5), "obs")               # hips
-    s.box((7, 9, 7.1), (9, 11, 7.6), "ember")                       # belt stone
-    s.box((2.5, 10.5, 6.5), (13.5, 17, 14), "crack")                # belly
+    lean = ("x", -22.5, [8, 15, 10])                                # the upper body leans forward
+    s.mirror_x((4.8, 0, 8), (6.8, 3.5, 12), "crack")                # short shins
+    s.mirror_x((4.6, 3.5, 8.5), (7.2, 8, 12.5), "crack")            # thighs, narrower than the arms
+    s.mirror_x((4.6, 0, 7.8), (7, 0.5, 12.2), "lava")               # a thin glow under the feet
+    s.mirror_x((4.4, 2.8, 7.6), (7.4, 5, 9), "obs")                 # knee guards
+    s.box((3.6, 7.5, 7.5), (12.4, 10.5, 13.5), "obs")               # hips
+    s.box((7, 8, 7.1), (9, 10, 7.6), "ember")                       # belt stone
+    s.box((2.5, 9.5, 6.5), (13.5, 16, 14), "crack")                 # belly
     s.box((1, 15, 4.5), (15, 24, 13.5), "crack", top="rock", rot=lean)   # chest
-    s.box((5, 17, 4), (11, 22.5, 4.6), "lava", rot=lean)            # molten heart
-    s.mirror_x((1.6, 15.5, 3.8), (5.4, 23.5, 4.6), "obs", rot=lean)  # chest plates
+    for x, h in ((6.2, 3), (7.6, 5), (9.0, 3.5)):                   # the molten heart, seen through three fissures
+        s.box((x, 19.5 - h / 2, 4.1), (x + 0.8, 19.5 + h / 2, 4.6), "lava", rot=lean)
+    s.mirror_x((1.6, 15.5, 3.8), (6.2, 23.5, 4.6), "obs", rot=lean)  # obsidian plates over the chest
     for k, y in enumerate((16, 18.5, 21)):                          # lava running in the belly cracks
-        s.box((3 + k * 3.2, 11, 6.2), (3.8 + k * 3.2, y - 2, 6.6), "lava")
-    s.mirror_x((-3.5, 18, 5.5), (3.6, 24.5, 13), "rock", top="rock")    # boulder shoulders, beside the sunk head
+        s.box((3 + k * 3.2, 10.5, 6.2), (3.8 + k * 3.2, y - 3, 6.6), "lava")
+    s.mirror_x((-3.5, 18, 5.5), (3.6, 24.5, 13), "rock", top="rock")    # boulder shoulders
     s.mirror_x((-3, 24, 6.5), (2.6, 25.6, 12), "obs")
-    s.mirror_x((-2.5, 24.5, 7), (-0.3, 29, 9.2), "rock", rot=("z", 22.5, [-1.4, 24.5, 8.1]))   # shoulder shards
-    s.mirror_x((0.2, 24.5, 9.6), (2, 29, 11.4), "crack", rot=("z", 22.5, [1.1, 24.5, 10.5]))
-    s.mirror_x((-3.5, 12, 5.5), (1.5, 20, 11), "crack")             # upper arms
-    s.mirror_x((-5, 3.5, 4), (2.5, 13, 11.5), "crack")              # huge forearms
-    s.mirror_x((-5.4, 6.5, 3.6), (2.9, 10.5, 11.9), "obs")          # bracers
-    s.mirror_x((-5.5, 0, 3), (3, 4, 12), "lava")                    # molten fists on the ground
-    s.mirror_x((-5.8, 2.6, 2.8), (3.3, 4.2, 5), "obs")              # knuckle plates
-    s.mirror_x((-6, 0, 5.5), (-5.2, 2.5, 7), "ember")               # lava dripping
+    s.mirror_x((-2.6, 24.5, 7), (0.4, 29.5, 10), "rock", rot=("z", 22.5, [-1.1, 24.5, 8.5]))   # one shard a shoulder
+    s.mirror_x((-3.5, 13, 3), (1.5, 21, 9), "crack", rot=("x", 22.5, [-1, 21, 8]))     # upper arms reaching forward
+    s.mirror_x((-5, 3.5, -1), (2.5, 13, 6.5), "crack", rot=("x", 22.5, [-1.25, 13, 2.75]))   # huge forearms
+    s.mirror_x((-5.5, 0, -4), (3, 4, 5), "crack")                   # fists planted ahead of the body
+    s.mirror_x((-5.8, 0, -4.3), (3.3, 0.6, 5.3), "lava")            # molten seam where they touch the ground
+    s.mirror_x((-5.8, 2.6, -4.2), (3.3, 4.2, -2), "obs")            # knuckle plates
     s.box((5.5, 20, 1.2), (10.5, 25, 6.5), "rock", top="obs")       # head, low and thrust forward
-    s.box((5, 23.6, 0.8), (11, 25.2, 3), "obs")                     # brow
-    s.mirror_x((6, 22.2, 0.9), (7.6, 23.6, 1.3), "eye")             # eyes in the shadow of the brow
-    s.box((6, 20, 0.8), (10, 21.6, 1.4), "lava")                    # glowing maw
-    s.mirror_x((5, 24, 2), (6.6, 29, 4), "rock", rot=("z", 22.5, [5.8, 24, 3]))   # horns
-    for k in range(4):                                              # basalt crest down the back
-        z = 9 + k * 2.2
-        s.box((7, 17 + k * 0.5, z), (9, 29 - k * 2.5, z + 2), "rock" if k % 2 else "crack",
-              rot=("x", 22.5, [8, 17 + k * 0.5, z + 1]))
-    s.mirror_x((3.6, 22, 12.6), (5.4, 27, 14.4), "obs")             # vents on the shoulder blades
-    s.mirror_x((3.8, 26.6, 12.8), (5.2, 28, 14.2), "ember")
+    s.box((5, 23.6, 0.8), (11, 25.2, 3), "obs")                     # heavy brow
+    s.box((6, 22.6, 0.9), (10, 23.2, 1.3), "ember")                 # one smouldering slit under it
+    for k, (z, y0, h) in enumerate(((6.8, 22.6, 6), (9.4, 23.8, 4), (10.6, 21.4, 3.5))):   # basalt crest down the back
+        s.box((6, y0, z), (10, y0 + h, z + 1.6), "rock" if k != 1 else "crack", rot=("x", 22.5, [8, y0, z + 0.8]))
     s.write()
 
 
 def frost_revenant():
     """The Boreal Watcher: a gaunt knight, both hands on the pommel of the greatsword planted before him."""
-    s = Painted("frost_revenant", [("silver", (148, 162, 182), "plate", (210, 240, 255)), ("ice", (150, 208, 238), "ice"),
+    s = Painted("frost_revenant", [("silver", (112, 126, 150), "plate", (210, 240, 255)), ("ice", (150, 208, 238), "ice"),
                                    ("deep", (42, 66, 120), "plate", (150, 208, 238)), ("eye", (130, 255, 255), "eye"),
                                    ("cloak", (30, 38, 74), "cloth"), ("blade", (205, 236, 250), "ice"),
                                    ("fur", (206, 210, 216), "bone")], 22)
     s.mirror_x((5.2, 1.5, 6.6), (7.6, 12, 9.4), "deep")             # long legs
     s.mirror_x((4.9, 0, 5), (7.8, 2.2, 10), "silver")               # pointed sabatons
-    s.mirror_x((5, 2, 6.2), (7.8, 8, 7.0), "ice")                   # greaves
+    s.mirror_x((5, 2, 6.2), (7.8, 8, 7.0), "silver")                # greaves
     s.mirror_x((4.8, 7.6, 6), (8, 9.4, 9.8), "silver")              # knee cops
     s.box((5.2, 11, 6.2), (10.8, 15, 9.8), "deep")                  # narrow waist
     s.box((4.8, 11.6, 5.8), (11.2, 12.8, 10.2), "silver")           # belt
@@ -404,217 +401,230 @@ def frost_revenant():
     s.box((4.2, 15, 5.2), (11.8, 22, 10.6), "silver", top="ice")    # chest
     s.box((6, 16.5, 4.8), (10, 20.5, 5.3), "ice")                   # chest crystal
     s.box((7, 17.5, 4.5), (9, 19.5, 4.9), "eye")
-    s.box((3.6, 21.5, 5), (12.4, 23.4, 11), "fur")                  # fur mantle
-    for k, (dx, dy) in enumerate(((0, 0), (1.2, 1.6), (2.2, 3.0))):    # three layered pauldron plates a side
+    s.box((3.6, 20, 5), (12.4, 23.4, 12), "fur")                    # fur mantle, all round
+    for k, (dx, dy) in enumerate(((0, 0), (1.2, 1.6), (2.2, 3.0))):  # three layered pauldron plates a side
         s.mirror_x((0.8 + dx, 19 + dy, 5 + k * 0.3), (5 + dx * 0.3, 21.4 + dy, 11 - k * 0.3),
                    "silver" if k != 1 else "ice", rot=("z", 22.5, [3, 20 + dy, 8]))
-    s.mirror_x((1.2, 23, 6.6), (2.4, 28.5, 7.8), "ice", rot=("z", 22.5, [1.8, 23, 7.2]))  # icicle spikes
-    s.mirror_x((1.8, 12, 3.2), (4.2, 20, 6.2), "deep", rot=("x", -22.5, [3, 20, 7.5]))    # arms reaching forward
-    s.mirror_x((3.6, 11.5, 0.5), (6.8, 14.2, 3.4), "silver")        # gauntlets on the pommel
+    s.mirror_x((1.2, 23, 6.6), (2.4, 28.5, 7.8), "ice", rot=("z", 22.5, [1.8, 23, 7.2]))  # one icicle a shoulder
+    s.mirror_x((1.8, 14.5, 4.2), (4.2, 20, 7.2), "deep", rot=("x", 22.5, [3, 20, 7.5]))   # arms reaching forward
+    s.mirror_x((4, 14.4, 0.5), (7.4, 17.5, 3.4), "silver")          # gauntlets on the pommel
     s.box((5.5, 22, 5.6), (10.5, 29, 10.4), "silver", top="ice")    # tall helm
     s.box((5.3, 25.6, 5.3), (10.7, 26.4, 10.7), "deep")             # helm band
     s.box((6, 24, 5.3), (10, 25.2, 5.7), "eye")                     # visor slit
     s.box((7.4, 21.6, 5.2), (8.6, 25.6, 5.6), "deep")               # nose guard
-    s.mirror_x((3.8, 25, 7), (5.6, 30.5, 8.6), "ice", rot=("z", 22.5, [4.7, 25, 7.8]))   # ice wings on the helm
-    for i, h in enumerate((1.6, 2.8, 2.4, 2.8, 1.6)):                # crown of icicles
-        x = 5.8 + i * 1.0
+    for x, h in ((6.2, 1.2), (7.6, 2.9), (9.0, 1.8)):               # a crown of three uneven icicles
         s.box((x, 29, 7.2), (x + 0.8, 29 + h, 8.4), "ice")
-    s.box((7.3, 0, 1.3), (8.7, 10.5, 2.1), "blade")                 # the greatsword, point in the ground
-    s.box((7.6, 0, 1.0), (8.4, 10.5, 2.4), "blade")
-    s.box((3.5, 10.5, 1), (12.5, 11.7, 2.4), "silver")              # crossguard
-    s.box((7.4, 11.7, 1.3), (8.6, 14.5, 2.1), "deep")               # grip
-    s.box((7, 14.5, 0.9), (9, 16.3, 2.5), "eye")                    # pommel crystal
-    s.box((3.6, 3, 10.4), (12.4, 22, 11.2), "cloak")                # long cloak
+    s.box((6.7, 0, 1.3), (9.3, 13, 2.1), "blade")                   # the greatsword, point in the ground
+    s.box((7.7, 0.5, 0.9), (8.3, 13, 1.35), "deep")                 # its fuller
+    s.box((3.5, 13, 1), (12.5, 14.4, 2.4), "silver")                # crossguard
+    s.box((7.4, 14.4, 1.3), (8.6, 18, 2.1), "deep")                 # grip
+    s.box((7, 18, 0.9), (9, 19.8, 2.5), "eye")                      # pommel crystal
+    s.box((6, 3, 10.4), (10, 22, 11.2), "cloak")                    # cloak in three panels
+    s.mirror_x((3.6, 3, 10.4), (6, 22, 11.2), "cloak", rot=("y", 22.5, [6, 12, 10.8]))
+    s.mirror_x((3.0, 8, 8), (3.8, 21, 11.2), "cloak")               # wrapping round the sides
+    s.box((7.4, 4, 11.2), (8.6, 20, 11.6), "ice")                   # frost down the spine
     for i in range(5):                                              # torn hem, flaring back
         s.box((3.6 + i * 1.76, 0, 10.6), (5.0 + i * 1.76, 3.4 + (i % 2) * 1.2, 11.2), "cloak",
-              rot=("x", 22.5, [8, 3.4, 10.9]))
-    s.box((3.8, 0.4, 11.0), (12.2, 2.6, 11.6), "ice", rot=("x", 22.5, [8, 3.4, 10.9]))   # frost on the hem
+              rot=("x", -22.5, [8, 3.4, 10.9]))
     s.write()
 
 
 def sylvan_matriarch():
-    """The Mycelial Queen: a crowned woman of bark and moss rising from a spider's body overgrown with mushrooms."""
+    """The Mycelial Queen: a pale-faced woman of bark and moss rising from a mushroom-grown spider on splayed legs."""
     s = Painted("sylvan_matriarch", [("chitin", (36, 54, 40), "chitin"), ("leaf", (66, 104, 52), "leaf"),
                                      ("bark", (76, 58, 40), "bark"), ("eye", (205, 255, 120), "eye"),
                                      ("bloom", (196, 92, 150), "glow"), ("web", (212, 216, 200), "web"),
                                      ("cap", (138, 62, 52), "scale"), ("gill", (220, 200, 170), "bone")], 33)
     s.box((4.5, 5, 3), (11.5, 10, 9.5), "chitin", top="leaf")      # spider body
-    s.box((2.5, 4, 9), (13.5, 14, 20), "leaf", top="leaf")          # mossy abdomen
-    s.box((3, 3.2, 9.5), (13, 4.2, 19.5), "chitin")
-    for x0, z0, w, h in ((3.4, 10.5, 5.2, 2.2), (8.4, 13, 4.6, 2.6), (4.6, 15.5, 3.6, 1.8), (9.6, 17, 3, 1.6)):   # caps
-        s.box((x0 + 0.6, 14, z0 + 0.6), (x0 + w - 0.6, 14 + h * 0.6, z0 + w - 0.6), "gill")
-        s.box((x0, 14 + h * 0.6, z0), (x0 + w, 14 + h * 1.4, z0 + w), "cap", top="cap")
-    s.mirror_x((2.6, 6, 12), (3.4, 9, 16), "bloom")                 # glowing spore pods on the flanks
+    s.box((3, 5, 9), (13, 13, 16), "leaf", top="leaf")              # teardrop abdomen
+    s.box((4, 6, 16), (12, 12, 20), "leaf", top="leaf")
+    s.box((5.5, 7, 20), (10.5, 10.5, 23), "leaf")
+    s.box((3.4, 4.2, 9.4), (12.6, 5.2, 19.6), "chitin")             # under-plates
+    s.box((7, 13, 11.5), (9, 16, 13.5), "gill")                     # one great mushroom, overhanging
+    s.box((4.5, 16, 9), (11.5, 18.4, 16), "cap", top="cap")
+    s.box((5.5, 18.4, 10), (10.5, 19.2, 15), "cap")
+    s.mirror_x((4.6, 12, 17), (5.6, 14, 18), "gill")                # two small ones
+    s.mirror_x((3.6, 14, 16), (6.6, 15.2, 19), "cap")
+    s.mirror_x((2.6, 7, 12), (3.4, 10, 15), "bloom")                # glowing spore pods on the flanks
     s.mirror_x((3.6, 1.5, 12), (5.6, 4.5, 15), "web")               # silk sacs
-    for i, z in enumerate((3.5, 6, 8.5, 11)):                       # eight jointed legs
-        s.mirror_x((11, 8, z), (18, 9.4, z + 1.3), "bark", rot=("z", 45, [11, 8.7, z]))    # femur, rising
-        s.mirror_x((15.6, 0, z), (16.9, 13, z + 1.3), "chitin", rot=("z", 22.5, [16.2, 13, z]))   # tibia, down
-        s.mirror_x((15.4, 11.8, z - 0.2), (17.1, 13.4, z + 1.5), "bark")                   # knee
-    s.box((6, 9.5, 3.6), (10, 14, 6.6), "chitin")                   # the woman's waist
+    for i, z in enumerate((2, 6.5, 12, 17)):                        # eight legs, fanned front to back
+        s.mirror_x((11, 8, z), (18, 9.8, z + 1.8), "bark", rot=("z", 45, [11, 8.9, z]))   # femur, rising
+        tilt = ("x", 22.5, [16.2, 13, z + 0.9]) if i == 0 else ("x", -22.5, [16.2, 13, z + 0.9]) if i == 3 \
+            else ("z", 22.5, [16.2, 13, z])
+        s.mirror_x((15.6, 4, z + 0.2), (16.9, 13, z + 1.5), "chitin", rot=tilt)            # tibia
+        s.mirror_x((15.6, -1, z + 0.2), (16.9, 4, z + 1.5), "bark", rot=tilt)              # its bark-shod foot
+        s.mirror_x((15.4, 11.8, z), (17.1, 13.4, z + 1.8), "bark")                         # knee
+    s.box((6.6, 9.5, 3.6), (9.4, 14, 6.6), "chitin")                # the woman's narrow waist
+    s.box((4.8, 9.5, 2.8), (11.2, 11.5, 7.6), "leaf")               # a moss skirt where she meets the spider
     s.box((5.2, 14, 3.2), (10.8, 19.5, 7), "bark", top="leaf")      # torso of bark
     s.mirror_x((5.4, 15, 2.9), (7.6, 17.4, 3.3), "leaf")            # moss over the breast
     s.box((4.6, 18.6, 3.4), (11.4, 20, 7.2), "leaf")                # mossy collar
-    s.mirror_x((2.6, 12, 4.4), (4.4, 19, 6), "bark", rot=("z", -22.5, [3.5, 19, 5.2]))   # arms held out
+    s.mirror_x((2.6, 12, 4.4), (4.4, 19, 6), "gill", rot=("z", -22.5, [3.5, 19, 5.2]))   # pale arms held out
     s.mirror_x((0.6, 10, 4), (2.6, 12.4, 6.4), "bloom")             # a spore glow in each hand
     s.box((6.2, 20, 3.8), (9.8, 24, 6.8), "chitin")                 # head
-    s.mirror_x((6.6, 22, 3.5), (7.6, 22.8, 3.9), "eye")             # eyes, two rows
-    s.mirror_x((6.9, 21, 3.5), (7.5, 21.6, 3.9), "eye")
+    s.box((6.6, 20.4, 3.5), (9.4, 23.6, 3.9), "gill")               # pale face
+    s.mirror_x((6.9, 22.2, 3.35), (7.7, 22.7, 3.6), "eye")          # slit eyes
+    s.mirror_x((5.2, 16, 3.8), (6.2, 24, 7), "leaf")                # moss hair falling to the shoulders
     s.box((5.8, 24, 3.4), (10.2, 25, 7.2), "bark")                  # circlet
-    for k, (x, h) in enumerate(((5.6, 3), (7.2, 4.6), (8.8, 3.6))):   # crown of little mushrooms
+    for k, (x, h) in enumerate(((5.6, 3), (7.2, 4.6), (8.8, 3.6))):  # crown of little mushrooms
         s.box((x + 0.3, 25, 4.6), (x + 1.1, 25 + h * 0.7, 5.4), "gill")
         s.box((x - 0.4, 25 + h * 0.7, 4), (x + 1.8, 25 + h * 0.7 + 1.2, 6), "cap")
     s.mirror_x((5, 22, 4.5), (6.2, 30, 5.7), "bark", rot=("z", 22.5, [5.6, 22, 5.1]))   # branch antlers
     s.mirror_x((3, 26, 4.5), (4, 31, 5.5), "bark", rot=("z", 45, [3.5, 26, 5]))
-    s.box((6, 13, 6.8), (10, 23, 7.8), "leaf")                      # moss hanging down her back
+    s.box((6, 13, 6.8), (10, 23, 7.8), "leaf")                      # moss down her back
     s.write()
 
 
 def abyssal_leviathan():
-    """The Chained Leviathan: a sea serpent rearing out of its coil, jaws open, its collar's chain broken."""
+    """The Chained Leviathan: a sea serpent rising in an S out of its coil, jaws wide, its collar's chain broken."""
     s = Painted("abyssal_leviathan", [("scale", (26, 72, 92), "scale"), ("belly", (104, 150, 140), "plate", (170, 230, 220)),
                                       ("eye", (90, 255, 240), "eye"), ("fin", (62, 56, 128), "membrane", (110, 220, 255)),
                                       ("tooth", (226, 228, 214), "bone"), ("deep", (12, 30, 44), "void", (80, 220, 230)),
-                                      ("chain", (92, 96, 100), "plate", (150, 150, 150))], 44)
-    s.box((4, 0, 14), (13, 6, 24), "scale", top="deep")             # the coil on the ground
-    s.box((10, 0, 9), (16, 5, 18), "scale")
-    s.box((1, 0, 20), (7, 5, 28), "scale")
-    s.box((4.6, 0.6, 13.4), (12.4, 5, 14), "belly")
-    s.box((7, 4, 22), (11, 13, 26), "scale", rot=("x", -22.5, [9, 4, 24]))   # tail rising behind
-    s.box((8, 12, 21), (10, 22, 23.5), "fin", rot=("x", -22.5, [9, 12, 22]))   # tail fan
-    s.box((5, 4, 10), (11, 12, 16), "scale")                        # body rising
-    s.box((5.5, 4, 9.6), (10.5, 12, 10.2), "belly")
-    s.box((5.3, 11, 6), (10.7, 18, 11.5), "scale", rot=("x", -22.5, [8, 11, 9]))   # neck
-    s.box((5.8, 11, 5.6), (10.2, 18, 6.2), "belly", rot=("x", -22.5, [8, 11, 9]))
-    s.box((4.6, 13.2, 4.2), (11.4, 14.8, 10.6), "chain", rot=("x", -22.5, [8, 11, 9]))   # the collar
-    for k in range(4):                                              # its broken chain, hanging
-        x0 = 4 + (k % 2) * 0.4
-        s.box((x0, 12.5 - k * 2.2, 5.8 + k * 0.4), (x0 + 1.1, 14.3 - k * 2.2, 7.4 + k * 0.4), "chain")
-    s.box((4, 18, -1), (12, 23, 7), "scale", top="deep")            # head, raised
-    s.box((4.6, 22.6, -0.6), (11.4, 24, 4), "deep")                 # brow
-    s.box((4.5, 14.5, -1.5), (11.5, 17, 6), "belly", rot=("x", 22.5, [8, 17, 6]))    # lower jaw, open
+                                      ("chain", (58, 60, 66), "plate", (120, 120, 126))], 44)
+    for a, b in (((0, 0, 12), (16, 4, 16)), ((0, 0, 24), (16, 4, 28)), ((0, 0, 16), (4, 4, 24)), ((12, 0, 16), (16, 4, 24))):
+        s.box(a, b, "scale", top="deep")                            # the lower ring of the coil
+    for a, b in (((3.5, 3.5, 13.5), (14.5, 7, 17)), ((3.5, 3.5, 21), (14.5, 7, 24.5)), ((3.5, 3.5, 17), (7, 7, 21)),
+                 ((11, 3.5, 17), (14.5, 7, 21))):
+        s.box(a, b, "scale", top="deep")                            # a smaller ring on top
+    s.box((7, 4, 24), (11, 13, 27), "scale", rot=("x", -22.5, [9, 4, 25.5]))   # tail rising behind
+    s.box((8, 12, 22), (10, 21, 24.5), "fin", rot=("x", -22.5, [9, 12, 23]))   # tail fan
+    s.box((4.5, 4, 10), (11.5, 10, 16.5), "scale", rot=("x", 22.5, [8, 4, 13]))   # the S: lower body leaning back
+    s.box((5, 9, 9.5), (11, 15, 15), "scale")                       # upright
+    s.box((5.5, 9, 9.1), (10.5, 15, 9.6), "belly")
+    s.box((5.6, 14, 6), (10.4, 20, 11.5), "scale", rot=("x", -22.5, [8, 14, 9]))   # narrower neck, leaning forward
+    s.box((6.1, 14, 5.6), (9.9, 20, 6.1), "belly", rot=("x", -22.5, [8, 14, 9]))
+    s.box((5, 15.5, 5), (11, 17, 12), "chain", rot=("x", -22.5, [8, 14, 9]))   # the collar
+    for k in range(4):                                              # its broken chain down to the coil
+        y, z = 14 - k * 2.4, 4.6 + k * 1.1
+        if k % 2 == 0:
+            s.box((6.5, y - 2.4, z), (8.5, y, z + 0.8), "chain")
+        else:
+            s.box((7.1, y - 2.4, z - 0.6), (7.9, y, z + 1.4), "chain")
+    s.box((12.5, 7, 14), (14.5, 7.8, 16.4), "chain")                # two loose links on the coil
+    s.box((1, 4, 18), (3.4, 4.8, 20), "chain")
+    s.box((4, 18, -1), (12, 23, 7), "scale", top="deep")            # head, wider than the neck
+    s.box((3.6, 22.2, -1.6), (12.4, 24, 3.5), "deep")               # brow overhanging the eyes
+    jaw = ("x", -22.5, [8, 17, 6])
+    s.box((4.5, 14.5, -1.5), (11.5, 17, 6), "belly", rot=jaw)       # lower jaw, gaping
     for i in range(5):                                              # teeth, upper and lower
         x = 4.5 + i * 1.5
         s.box((x, 16.6, -0.8), (x + 0.8, 18.4, 0), "tooth")
-        s.box((x + 0.4, 16.2, -0.6), (x + 1.1, 17.6, 0.2), "tooth", rot=("x", 22.5, [8, 17, 6]))
+        s.box((x + 0.4, 16.2, -0.6), (x + 1.1, 17.6, 0.2), "tooth", rot=jaw)
+    s.mirror_x((4.6, 15.5, -1.6), (5.4, 17.9, -0.8), "tooth")       # outer fangs
     s.box((5, 17.2, -0.7), (11, 18, 4), "deep")                     # the throat
-    for k in range(3):                                              # three eyes a side
-        s.mirror_x((3.6, 19.5 + k * 1.1, 1 + k * 1.6), (4.1, 20.4 + k * 1.1, 2.2 + k * 1.6), "eye")
-    s.mirror_x((1.5, 18, 3), (4.2, 26, 8), "fin", rot=("z", -22.5, [4, 19, 5.5]))   # head frills
-    s.box((7.4, 21, 2), (8.6, 28, 9), "fin", rot=("x", 22.5, [8, 21, 5]))           # crest
+    s.mirror_x((4.2, 20.4, -1.3), (6, 21.6, -0.9), "eye")           # eyes looking forward
+    for k in range(3):                                              # three swept fins a side
+        s.mirror_x((3.4, 19 + k * 1.5, 5), (4, 20 + k * 1.5, 10), "fin", rot=("x", 45, [3.7, 19.5 + k * 1.5, 5]))
+    s.box((7.4, 21, 2), (8.6, 28, 9), "fin", rot=("x", 22.5, [8, 21, 5]))   # crest
     for k in range(3):                                              # dorsal sail down the neck and body
-        s.box((7.4, 14 - k * 3, 9 + k * 2), (8.6, 20 - k * 3, 13 + k * 2), "fin", rot=("x", 22.5, [8, 14 - k * 3, 11 + k * 2]))
-    s.box((7.5, 22, -2), (8.5, 30, -1), "deep", rot=("x", -22.5, [8, 22, -1.5]))   # the angler's stalk
-    s.box((7, 29.5, -6.5), (9, 31.5, -4.5), "eye")                  # and its lure
+        s.box((7.4, 14 - k * 3, 10 + k * 2), (8.6, 20 - k * 3, 14 + k * 2), "fin", rot=("x", 22.5, [8, 14 - k * 3, 12 + k * 2]))
     s.write()
 
 
 def crypt_lord():
-    """The Judge of Lost Souls: a floating lich in a deep hood, sceptre in one hand, the scales of judgement in the other."""
-    s = Painted("crypt_lord", [("bone", (214, 206, 182), "bone"), ("dark", (124, 114, 96), "bone"),
-                               ("robe", (92, 22, 32), "cloth"), ("gold", (214, 166, 58), "gold"),
+    """The Judge of Lost Souls: a lich floating in a deep hood, the scales of judgement held out on one arm."""
+    s = Painted("crypt_lord", [("bone", (190, 182, 160), "bone"), ("dark", (110, 100, 86), "bone"),
+                               ("robe", (58, 16, 30), "cloth"), ("gold", (150, 118, 50), "gold"),
                                ("eye", (120, 255, 150), "eye"), ("void", (16, 14, 22), "void", (120, 255, 150)),
-                               ("hood", (40, 30, 42), "cloth")], 55)
-    s.box((4, 2, 5), (12, 7, 11.2), "robe")                         # robe, wide at the hem, floating
-    s.box((4.6, 7, 5.6), (11.4, 12.5, 10.6), "robe")
-    for i in range(6):                                              # tattered hem, trailing toward the ground
-        x = 4.1 + i * 1.3
-        s.box((x, 0, 5.2 + (i % 2) * 5.2), (x + 1, 2.4, 5.8 + (i % 2) * 5.2), "robe")
-    s.mirror_x((4, 0.6, 6), (4.6, 2.4, 10), "robe")
-    s.box((7.3, 2, 4.8), (8.7, 12.5, 5.3), "gold")                  # gilded stripe
-    s.box((3.9, 2, 4.9), (12.1, 2.8, 11.3), "gold")
+                               ("hood", (36, 28, 40), "cloth")], 55)
+    s.box((5.4, 5, 6), (10.6, 8, 10.6), "robe")                     # robe narrowing to nothing: he floats
+    for i, end in enumerate((2, 3.5, 1.5, 4, 2.5)):
+        s.box((5.4 + i * 1.04, end, 6.2), (6.3 + i * 1.04, 5, 10.4), "robe")
+    s.box((4.6, 8, 5.6), (11.4, 12.5, 10.6), "robe")
+    s.box((7.4, 5, 5.3), (8.6, 12.5, 5.7), "gold")                  # gilded stripe
     s.box((5, 12.5, 6), (11, 20, 10.4), "robe")                     # torso
-    for i in range(4):                                              # ribs showing through the open robe
+    for i in range(4):                                              # ribs through the open robe
         y = 13.2 + i * 1.6
         s.box((6, y, 5.6), (10, y + 0.9, 6.1), "bone")
     s.box((7.5, 13, 5.5), (8.5, 19.6, 6.0), "dark")                 # sternum
     s.mirror_x((5.2, 12.5, 5.5), (6, 20, 6.2), "gold")              # robe edges
     s.box((7, 17.6, 5.2), (9, 19.6, 5.7), "eye")                    # medallion eye
-    s.box((3.4, 18.5, 5.2), (12.6, 21, 11), "hood")                 # mantle
-    s.mirror_x((1.2, 12, 5.6), (4.4, 20, 10), "robe")               # wide sleeves
-    s.mirror_x((0.6, 10.6, 5.2), (4.8, 12.8, 10.4), "gold")         # cuffs
-    s.mirror_x((1.6, 9, 6.6), (3.6, 10.6, 8.6), "bone")             # skeletal hands
-    s.box((5.8, 21, 5.6), (10.2, 26.6, 9.8), "bone", top="dark")    # skull
-    s.box((5.6, 25, 5.3), (10.4, 25.8, 6), "dark")                  # brow
-    s.mirror_x((6.1, 23.2, 5.2), (7.5, 24.9, 5.7), "void")          # sockets, with the eyes inside
-    s.mirror_x((6.5, 23.6, 5.1), (7.2, 24.4, 5.4), "eye")
-    s.box((7.6, 22.4, 5.3), (8.4, 23.2, 5.7), "void")               # nose
-    s.box((6.4, 21.2, 5.3), (9.6, 22, 5.7), "void")                 # jaw gap
-    for k in range(4):
-        s.box((6.6 + k * 0.75, 21.0, 5.2), (7.0 + k * 0.75, 21.8, 5.4), "bone")
+    s.box((2.4, 18.5, 5.2), (13.6, 21, 11), "hood")                 # wide mantle: he tapers downward
+    s.box((11.6, 12, 5.6), (14.8, 20, 10), "robe")                  # right sleeve, hanging
+    s.box((11.2, 10.6, 5.2), (15.2, 12.8, 10.4), "gold")
+    s.box((13.2, 9, 6.6), (15.2, 10.6, 8.6), "bone")                # the hand on the sceptre
+    s.box((-1.4, 16, 5.8), (4.4, 19, 9.8), "robe")                  # left sleeve, held out
+    s.box((-1.8, 15.6, 5.4), (-0.6, 19.4, 10.2), "gold")
+    s.box((-3, 16.5, 6.6), (-1.4, 18, 8.6), "bone")                 # the hand holding the scales
+    s.box((6.4, 21, 6.4), (9.6, 26.6, 9.8), "bone", top="dark")     # skull, deep in the hood
+    s.box((6.2, 25, 6.0), (9.8, 25.8, 6.7), "dark")                 # brow
+    s.mirror_x((6.5, 23, 6.1), (7.9, 25, 6.5), "void")              # wide sockets, with the eyes inside
+    s.mirror_x((6.8, 23.6, 6.0), (7.6, 24.4, 6.3), "eye")
+    s.box((6.8, 21.4, 6.2), (9.2, 22.2, 6.5), "void")               # jaw gap
     s.box((4.6, 20.5, 7.4), (11.4, 28.5, 11.8), "hood")             # deep hood around the skull
     s.mirror_x((4.6, 20.5, 4.6), (5.6, 28, 7.4), "hood")
     s.box((4.6, 27.2, 4.6), (11.4, 28.5, 7.4), "hood")
-    s.box((5.4, 28.5, 6), (10.6, 29.6, 10.6), "hood")               # its peak
+    s.box((5.4, 28.5, 6), (10.6, 29.6, 10.6), "hood")
+    s.box((6, 24, 11.8), (10, 27.5, 13.8), "hood", rot=("x", 22.5, [8, 27.5, 11.8]))    # drooping hood tip
     for i, h in enumerate((2.2, 3.4, 2.2, 3.4, 2.2)):               # crown through the hood
         s.box((5.6 + i * 1.0, 28.2, 5.0), (6.3 + i * 1.0, 28.2 + h, 5.8), "gold")
-    s.box((5.2, 27.6, 4.6), (10.8, 28.4, 5.8), "gold")
-    s.box((4, 3, 11), (12, 22, 11.8), "robe")                       # the robe's back
-    s.box((14, 2, 7.4), (15.2, 25, 8.6), "dark")                    # sceptre
+    s.box((5.2, 27.6, 4.3), (10.8, 28.4, 5.8), "gold")
+    s.box((4.6, 5, 10.6), (11.4, 22, 11.4), "robe")                 # the robe's back
+    s.box((7, 6, 11.4), (9, 20, 11.8), "gold")                      # stole
+    s.box((14, 8, 7.4), (15.2, 25, 8.6), "dark")                    # sceptre
     s.box((13.8, 25, 7.2), (15.4, 26, 8.8), "gold")
     s.box((13.2, 26, 6.6), (16, 28.8, 9.4), "eye")                  # the orb: the glowing weak spot
     for dx, dz in ((-0.5, -0.5), (2.7, -0.5), (-0.5, 2.7), (2.7, 2.7)):   # golden cage around it
         s.box((13.2 + dx, 25.6, 6.6 + dz), (13.6 + dx, 29.6, 7.0 + dz), "gold")
     s.box((13, 29.4, 6.4), (16.2, 30, 9.6), "gold")
-    s.mirror_x((15.6, 26.5, 7.6), (18.6, 27.3, 8.4), "gold", rot=("z", 22.5, [15.6, 26.9, 8]))   # gilded wings
-    s.box((-1.2, 10, 7.6), (-0.4, 19, 8.4), "gold")                 # the scales of judgement
-    s.box((-4.6, 18.6, 7.6), (2.8, 19.2, 8.4), "gold")
-    s.box((-4.8, 14.4, 6.6), (-2.6, 15, 9.4), "gold")
-    s.box((0.6, 15.6, 6.6), (2.8, 16.2, 9.4), "gold")
-    s.box((-4, 15, 7.8), (-3.4, 18.6, 8.2), "dark")
-    s.box((1.4, 16.2, 7.8), (2, 18.6, 8.2), "dark")
-    s.box((-4.4, 15, 7.4), (-3, 15.8, 8.6), "eye")                  # a soul weighed in the pan
-    for x, y, z in ((2.5, 28, 3), (13, 30.5, 4), (1, 24, 12), (14.5, 21, 12)):   # soul lights around him
-        s.box((x, y, z), (x + 1.2, y + 1.2, z + 1.2), "eye")
+    s.box((-2.6, 15.6, 7.6), (-1.8, 16.5, 8.4), "dark")             # the scales hang from his hand
+    s.box((-7, 14.6, 7.5), (2, 15.6, 8.5), "gold")                  # beam
+    s.box((-6, 11.8, 7.8), (-5.4, 14.6, 8.4), "dark")               # chains
+    s.box((0.4, 13.2, 7.8), (1, 14.6, 8.4), "dark")
+    s.box((-7.2, 11, 6.5), (-4.2, 11.8, 9.5), "gold")               # pans at two heights: one soul outweighs
+    s.box((-0.8, 12.4, 6.5), (2.2, 13.2, 9.5), "gold")
+    s.box((-6.4, 11.8, 7.2), (-5, 12.8, 8.6), "eye")                # the soul being weighed
     s.write()
 
 
 def voidwyrm():
-    """The Echo of the Rift: a long-necked dragon crowned with horns, clawed wings, a tail ending in a blade."""
+    """The Echo of the Rift: a dragon on a rising neck, crowned with swept horns, jointed wings, a tail tipped with bone."""
     s = Painted("voidwyrm", [("scale", (54, 30, 92), "scale"), ("belly", (122, 92, 168), "plate", (200, 150, 255)),
                              ("eye", (255, 120, 255), "eye"), ("wing", (64, 32, 112), "membrane", (190, 100, 255)),
                              ("bone", (220, 210, 236), "bone"), ("void", (12, 6, 24), "void", (210, 150, 255)),
-                             ("vein", (190, 92, 255), "glow")], 66)
+                             ("vein", (190, 92, 255), "glow"), ("horn", (150, 140, 170), "bone")], 66)
     s.box((5, 9, 6), (11, 15, 20), "scale", top="void")             # body
     s.box((5.4, 7.6, 6.4), (10.6, 9, 19.6), "belly")
     s.box((6.4, 10, 5.5), (9.6, 13.4, 6.1), "vein")                 # glowing chest core
-    for a, b in (((6, 11, 2), (10, 15.5, 7)), ((6.2, 12.4, -1.8), (9.8, 16.6, 2.4)), ((6.4, 13.8, -5.2), (9.6, 17.6, -1.4))):
-        s.box(a, b, "scale", top="void")                            # the neck, rising in steps to the head
-    for z in (3.5, 0.2, -3.2):                                      # spikes along the neck
-        s.box((7.5, 16, z), (8.5, 18.5, z + 1.1), "bone", rot=("x", 22.5, [8, 16, z + 0.5]))
-    s.box((5.4, 15, -10), (10.6, 19.6, -4.5), "scale", top="void")  # head, high
-    s.box((5.9, 15.6, -13.5), (10.1, 18.6, -10), "scale")           # snout
-    s.box((6.1, 13.4, -13.2), (9.9, 15, -5), "bone", rot=("x", 22.5, [8, 15, -5]))   # lower jaw, open
+    for a, b in (((6, 11, 2), (10, 16.5, 7)), ((6.2, 14.5, -1), (9.8, 19.5, 3.5)), ((6.4, 18, -3.5), (9.6, 23, 0.5))):
+        s.box(a, b, "scale", top="void")                            # the neck rising high
+    for y, z in ((16.5, 3.5), (19.5, 0.2), (23, -2.6)):             # spikes along the neck
+        s.box((7.5, y, z), (8.5, y + 2.2, z + 1.1), "bone", rot=("x", 22.5, [8, y, z + 0.5]))
+    s.box((5.4, 21, -9), (10.6, 25.6, -2.5), "scale", top="void")   # head
+    s.box((5.9, 21.6, -12.5), (10.1, 24.6, -9), "scale")            # snout
+    jaw = ("x", -22.5, [8, 21, -4])
+    s.box((6.1, 19.4, -12.2), (9.9, 21, -4), "bone", rot=jaw)       # lower jaw, open
     for k in range(4):                                              # teeth
-        s.box((6.3 + k * 1.0, 14.6, -13.2), (6.8 + k * 1.0, 15.8, -12.7), "bone")
-    s.box((6.4, 14.6, -12.6), (9.6, 15.4, -6), "vein")              # the glow in its throat
-    s.mirror_x((5.2, 17.6, -9.6), (6.8, 18.8, -8.4), "eye")         # burning eyes
-    s.box((5.2, 19.2, -10.2), (10.8, 20.2, -5), "void")             # brow plate
-    for k, (x, ang, h) in enumerate(((5.2, 22.5, 6.5), (6.2, 22.5, 4.5))):   # crown of horns
-        s.mirror_x((x, 19.6, -6 + k * 1.5), (x + 1.4, 19.6 + h, -4.6 + k * 1.5), "bone", rot=("x", ang, [x + 0.7, 19.6, -5.3 + k * 1.5]))
-    s.mirror_x((4.6, 16, -6), (5.4, 19, -4), "bone", rot=("z", 45, [5, 17.5, -5]))   # cheek spikes
-    # wings: arm bone with a claw, three fingers and veined membrane
-    s.mirror_x((11, 13, 8), (22, 14.6, 10), "bone", rot=("z", 22.5, [11, 13.8, 9]))
-    s.mirror_x((20, 17, 7.4), (21.6, 19.5, 8.6), "bone", rot=("z", -22.5, [20.8, 17, 8]))   # thumb claw
-    s.mirror_x((11, 13.6, 7), (31, 14.2, 12.5), "wing", rot=("z", 22.5, [11, 13.9, 9.75]))
-    s.mirror_x((11, 13.4, 12), (30, 14, 17.5), "wing", rot=("z", 22.5, [11, 13.7, 14.75]))
-    s.mirror_x((11, 13.2, 15), (27, 13.8, 22), "wing", rot=("z", 22.5, [11, 13.5, 18.5]))
-    s.mirror_x((11, 13.9, 8.4), (31.5, 14.6, 9.2), "bone", rot=("z", 22.5, [11, 14.2, 8.8]))
-    s.mirror_x((11, 13.7, 12.6), (29.5, 14.4, 13.2), "bone", rot=("z", 22.5, [11, 14, 12.9]))
-    s.mirror_x((11, 13.5, 16.8), (26.5, 14.2, 17.4), "bone", rot=("z", 22.5, [11, 13.8, 17.1]))
-    s.mirror_x((14, 14.0, 9), (25, 14.5, 9.8), "vein", rot=("z", 22.5, [11, 14.2, 9.4]))
-    # tail, tapering, with a ridge of spikes and a blade at the tip
-    for k, (w, z0, z1) in enumerate(((2.6, 20, 24), (2.2, 24, 27.5), (1.7, 27.5, 30.5), (1.2, 30.5, 32))):
-        s.box((8 - w, 10.5 - w * 0.6, z0), (8 + w, 10.5 + w * 0.9, z1), "scale")
-    s.box((7.6, 7, 29), (8.4, 15, 32), "vein")                      # the blade
-    for k, z in enumerate((8, 11.5, 15, 18.5, 22, 25.5)):           # dorsal spikes
-        h = 4.6 - k * 0.55
-        s.box((7.4, 15 if z < 20 else 12.5, z), (8.6, (15 if z < 20 else 12.5) + h, z + 1.6), "bone",
-              rot=("x", 22.5, [8, 15 if z < 20 else 12.5, z + 0.8]))
-    s.mirror_x((4.8, 4, 8.5), (7.2, 9.4, 12), "scale")              # thighs
-    s.mirror_x((4.8, 4, 15.5), (7.2, 9.4, 19), "scale")
-    s.mirror_x((4.4, 2.6, 7.4), (7.6, 4, 12), "bone")               # claws
-    s.mirror_x((4.4, 2.6, 14.4), (7.6, 4, 19), "bone")
-    s.mirror_x((4.4, 2.6, 7.0), (5.2, 3.4, 7.6), "bone")
+        s.box((6.3 + k * 1.0, 20.6, -12.2), (6.8 + k * 1.0, 21.8, -11.7), "bone")
+    s.box((6.4, 20.6, -11.6), (9.6, 21.4, -5), "vein")              # the glow in its throat
+    s.mirror_x((5.2, 23.6, -8.6), (6.8, 24.8, -7.4), "eye")         # burning eyes
+    s.box((5.2, 25.2, -9.2), (10.8, 26.2, -4), "void")              # brow plate
+    s.mirror_x((5.4, 25.6, -6), (6.3, 31, -5.1), "horn", rot=("x", 45, [5.85, 25.6, -5.55]))   # two long horns
+    s.mirror_x((6.6, 25.6, -4.5), (7.5, 28.6, -3.6), "horn", rot=("x", 45, [7.05, 25.6, -4.05]))   # and two short
+    s.mirror_x((4.6, 22, -5), (5.4, 25, -3), "bone", rot=("z", 45, [5, 23.5, -4]))   # cheek spikes
+    # jointed wings: the arm rises to a wrist, three panels droop from it with bone fingers
+    s.mirror_x((11, 13.5, 8), (20, 15, 9.6), "bone", rot=("z", 45, [11, 14.2, 8.8]))   # arm to the wrist
+    s.mirror_x((11, 13.9, 9.6), (20, 14.5, 16), "wing", rot=("z", 45, [11, 14.2, 12.8]))   # inner membrane
+    s.mirror_x((17, 21, 7.4), (18.6, 23.5, 8.6), "bone", rot=("z", -22.5, [17.8, 21, 8]))   # wrist claw
+    for (z0, z1, length) in ((7, 12, 14), (12, 17, 11), (17, 22, 8)):
+        s.mirror_x((17, 20, z0), (17 + length, 20.6, z1), "wing", rot=("z", -22.5, [17, 20.3, (z0 + z1) / 2]))
+        s.mirror_x((17, 20.6, z0 + 1), (17.5 + length, 21.3, z0 + 1.8), "bone", rot=("z", -22.5, [17, 20.9, z0 + 1.4]))
+    s.mirror_x((18, 20.7, 9), (29, 21.1, 9.8), "vein", rot=("z", -22.5, [17, 20.9, 9.4]))
+    # tail tapering and dipping, tipped with a bone arrowhead
+    for (w, z0, z1, dy) in ((2.6, 20, 23.5, 0), (2.2, 23.5, 26, -0.8), (1.7, 26, 28, -2)):
+        s.box((8 - w, 10.5 - w * 0.6 + dy, z0), (8 + w, 10.5 + w * 0.9 + dy, z1), "scale")
+    s.box((7.6, 8, 27.5), (8.4, 10, 32), "bone", rot=("x", 45, [8, 9, 28]))
+    s.box((7.6, 8, 27.5), (8.4, 10, 32), "bone", rot=("x", -45, [8, 9, 28]))
+    s.box((7.8, 8.6, 28), (8.2, 9.4, 31.6), "vein")
+    for k, z in enumerate((8, 11.5, 15, 18.5, 22)):                 # dorsal spikes
+        y = 15 if z < 20 else 12.5
+        s.box((7.4, y, z), (8.6, y + 4.6 - k * 0.6, z + 1.6), "bone", rot=("x", 22.5, [8, y, z + 0.8]))
+    s.mirror_x((5.1, 4, 8.5), (6.9, 9.4, 12), "scale")              # front legs
+    s.mirror_x((4.7, 2.6, 7.4), (7.3, 4, 12), "bone")
+    s.mirror_x((4.2, 6, 14.5), (7.4, 12, 20), "scale", rot=("x", 22.5, [5.8, 12, 17.25]))   # rear haunches
+    s.mirror_x((4.8, 2.5, 17), (6.8, 7.5, 19.5), "scale", rot=("x", 22.5, [5.8, 7.5, 18.25]))
+    for k in range(3):                                              # three toes
+        s.mirror_x((4.4 + k * 0.9, 1.6, 15.2), (5.2 + k * 0.9, 2.6, 17.4), "bone")
     s.write()
 
 

@@ -1079,13 +1079,21 @@ public final class BossSession {
 
     /** A Guardian's spoken line to everybody around the fight; nothing for a boss that is not a Guardian. */
     private void speak(String event) {
-        Guardians.Guardian guardian = manager.config().guardians().get(def.id());
-        if (guardian == null) {
+        Guardians.Guardian speaker = manager.config().guardians().speaker(def.id());
+        if (speaker == null) {
             return;
         }
-        Component line = Guardians.say(guardian, event, java.util.concurrent.ThreadLocalRandom.current());
+        Guardians.Spoken line = Guardians.say(speaker, event, java.util.concurrent.ThreadLocalRandom.current());
         if (line != null) {
-            broadcastNearby(line);
+            say(line);
+        }
+    }
+
+    /** A spoken line to everybody near the fight: in the chat, and in its recorded voice. */
+    void say(Guardians.Spoken line) {
+        for (Player p : viewers()) {
+            p.sendMessage(line.text());
+            Guardians.voice(p, line);
         }
     }
 
