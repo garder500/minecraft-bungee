@@ -285,11 +285,7 @@ public final class StormRealm implements Listener {
         if (gates == null || !gates.light(id, Realm.ARCHIPELAGO)) {
             return false;
         }
-        Player player = Bukkit.getPlayer(id);
-        if (player != null) {
-            core.msg().ok(player, "Gate 6 of the Quai des Huit lights: the Tempestuous Archipelago is open.");
-        }
-        return true;
+        return true; // the Quai title and chat line come from SkyGates.light
     }
 
     // ---------------------------------------------------------------- moving platforms

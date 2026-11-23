@@ -21,7 +21,7 @@ public class IslandSeedTest {
             assertEquals(11, count(db, "SELECT COUNT(*) FROM island_chest_item"));
             assertEquals(45, count(db, "SELECT COUNT(*) FROM island_level_weight"));
             assertEquals(8, count(db, "SELECT COUNT(*) FROM island_flag_default"));
-            assertEquals(52, count(db, "SELECT COUNT(*) FROM setting WHERE id GLOB 'island.*'"));
+            assertEquals(54, count(db, "SELECT COUNT(*) FROM setting WHERE id GLOB 'island.*'")); // + quai.reveal-start-ticks, reveal-gap-ticks
             assertTrue(Settings.load(db, "island").problems().toString(), Settings.load(db, "island").problems().isEmpty());
         }
     }

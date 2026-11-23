@@ -58,6 +58,8 @@ public final class SkyGates implements SkyGateApi, Listener {
     private static final String HUB_LANE = "hub";
     private static final int TRAVEL_FADE_TICKS = 24;
     private static final double VIEW_RANGE = 48;
+    /** Server ticks between two runs of {@link #tick}. */
+    private static final int TICK_PERIOD = 10;
 
     private final Core core;
     private final IslandService service;
@@ -82,6 +84,10 @@ public final class SkyGates implements SkyGateApi, Listener {
     private final Set<UUID> mouthShown = new HashSet<>();
     private final Map<UUID, long[]> mouthAccess = new HashMap<>();
     private static final long MOUTH_CACHE_MS = 3000;
+    /** Gates that woke this tick per player: one title and one chat line for the whole batch (the Queen wakes five). */
+    private final Map<UUID, Set<Realm>> waking = new HashMap<>();
+    /** The pace of the reveal on the Quai, per player near it. */
+    private final Map<UUID, GateReveal.Pacer> pacers = new HashMap<>();
     private SkyGateState state = new SkyGateState();
     private Scheduler.Handle viewTask;
     private int viewTick;
@@ -105,7 +111,7 @@ public final class SkyGates implements SkyGateApi, Listener {
         core.listen(this);
         registerCommands();
         quai.start();
-        viewTask = core.scheduler().repeating(10L, 10L, this::tick);
+        viewTask = core.scheduler().repeating(TICK_PERIOD, TICK_PERIOD, this::tick);
     }
 
     public void close() {
@@ -146,9 +152,14 @@ public final class SkyGates implements SkyGateApi, Listener {
         save();
         Player online = Bukkit.getPlayer(player);
         if (online != null) {
-            refreshView(online, true);
-            core.msg().ok(online, "The Sky Gate to the " + realm.title() + " is lit.");
-            online.playSound(online, Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.4f);
+            // the Gate stays dark in the view until its reveal on the Quai (tick); the title batches what woke this tick
+            Set<Realm> batch = waking.get(player);
+            if (batch == null) {
+                batch = new HashSet<>();
+                waking.put(player, batch);
+                core.scheduler().nextTick(() -> announce(player));
+            }
+            batch.add(realm);
         }
         return true;
     }
@@ -159,11 +170,45 @@ public final class SkyGates implements SkyGateApi, Listener {
             return false;
         }
         save();
+        Set<Realm> batch = waking.get(player);
+        if (batch != null) {
+            batch.remove(realm);
+        }
         Player online = Bukkit.getPlayer(player);
         if (online != null) {
             refreshView(online, true);
         }
         return true;
+    }
+
+    /**
+     * The beat when Guardian kills (or an admin) light Gates: a title naming them, a sound, and a chat line that takes the
+     * player to the Quai. The Guardian's own first-clear voice line is played by the boss rewards, not here. The Gates
+     * themselves light on the Quai ({@link #reveal}).
+     */
+    private void announce(UUID id) {
+        Set<Realm> batch = waking.remove(id);
+        Player player = Bukkit.getPlayer(id);
+        if (batch == null || batch.isEmpty() || player == null) {
+            return;
+        }
+        List<Realm> woke = new ArrayList<>();
+        for (Realm realm : Realm.values()) {
+            if (batch.contains(realm) && state.isLit(id, realm)) {
+                woke.add(realm);
+            }
+        }
+        if (woke.isEmpty()) {
+            return;
+        }
+        GateReveal.Announce text = GateReveal.announce(woke, win.vampyuyu.survival.core.Lang.language(player));
+        player.showTitle(Title.title(Component.text(text.title(), NamedTextColor.GOLD), Component.text(text.subtitle(), NamedTextColor.WHITE),
+            Title.Times.times(java.time.Duration.ofMillis(300), java.time.Duration.ofMillis(3200), java.time.Duration.ofMillis(800))));
+        player.playSound(player, Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.4f);
+        player.playSound(player, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1.0f, 0.8f);
+        player.sendMessage(Component.text(text.chat() + " ", NamedTextColor.GOLD).append(Component.text(text.click(), NamedTextColor.AQUA)
+            .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(Component.text(text.hover())))
+            .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/quai"))));
     }
 
     @Override
@@ -509,6 +554,8 @@ public final class SkyGates implements SkyGateApi, Listener {
         mouthShown.remove(event.getPlayer().getUniqueId());
         mouthAccess.remove(event.getPlayer().getUniqueId());
         shown.remove(event.getPlayer().getUniqueId());
+        pacers.remove(event.getPlayer().getUniqueId());
+        waking.remove(event.getPlayer().getUniqueId());
         travelling.remove(event.getPlayer().getUniqueId());
     }
 
@@ -547,14 +594,19 @@ public final class SkyGates implements SkyGateApi, Listener {
             if (player.getLocation().distanceSquared(center) > VIEW_RANGE * VIEW_RANGE) {
                 shown.remove(player.getUniqueId());
                 mouthShown.remove(player.getUniqueId());
+                GateReveal.Pacer away = pacers.get(player.getUniqueId());
+                if (away != null) {
+                    away.leave();
+                }
                 continue;
             }
+            reveal(player, hub);
             refreshMouth(player, viewTick % 2 == 0);
             if (mouthShown.contains(player.getUniqueId())) {
                 Location mouth = new Location(hub, 0.5, cfg.hubY + 4, QuaiPlan.CENTER_Z + QuaiMouth.Z - 0.5);
                 player.spawnParticle(Particle.REVERSE_PORTAL, mouth, 10, 1.4, 2, 0.3, 0.05);
             }
-            Set<Realm> lit = state.litRealms(player.getUniqueId());
+            List<Realm> lit = state.revealed(player.getUniqueId());
             if (lit.isEmpty() && !shown.containsKey(player.getUniqueId())) {
                 continue;
             }
@@ -568,13 +620,45 @@ public final class SkyGates implements SkyGateApi, Listener {
         }
     }
 
+    /**
+     * The next Gate of a player's reveal, when they are on the Quai: the newly lit Gates light one at a time (a burst, a chime
+     * rising with each, then the Gate stays lit and is marked seen so it plays once). The first waits a moment after they
+     * arrive, not while they travel. Settings {@code quai.reveal-start-ticks} and {@code quai.reveal-gap-ticks}.
+     */
+    private void reveal(Player player, World hub) {
+        UUID id = player.getUniqueId();
+        List<Realm> unseen = state.unseen(id);
+        GateReveal.Pacer pacer = pacers.computeIfAbsent(id, k -> new GateReveal.Pacer());
+        if (unseen.isEmpty() || travelling.contains(id) || waking.containsKey(id)) {
+            pacer.poll(List.of(), viewTick, 0, 1);
+            return;
+        }
+        var settings = win.vampyuyu.survival.data.Settings.load(core.data(), "island");
+        int start = GateReveal.steps(settings.getInt("quai.reveal-start-ticks", 40), TICK_PERIOD);
+        int gap = GateReveal.steps(settings.getInt("quai.reveal-gap-ticks", 20), TICK_PERIOD);
+        Realm realm = pacer.poll(unseen, viewTick, start, gap);
+        if (realm == null || !state.markSeen(id, realm)) {
+            return;
+        }
+        save();
+        refreshView(player, false);
+        QuaiPlan.Gate gate = QuaiPlan.gate(realm);
+        Location at = new Location(hub, gate.x() + 0.5, cfg.hubY + 3, QuaiPlan.CENTER_Z + gate.z() + 0.5);
+        int index = Math.max(0, pacer.fired() - 1); // the chime rises with each Gate of the sequence
+        player.spawnParticle(Particle.END_ROD, at, 50, 0.9, 1.6, 0.9, 0.12);
+        player.spawnParticle(Particle.TOTEM_OF_UNDYING, at, 30, 0.9, 1.6, 0.9, 0.3);
+        float pitch = (float) Math.min(2.0, 0.7 + 0.12 * index);
+        player.playSound(at, Sound.BLOCK_BEACON_POWER_SELECT, 1.2f, pitch);
+        player.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.5f, pitch);
+    }
+
     /** Sends the lit gates, and restores the ones that went out since the last call. {@code resend}: lit ones too. */
     void refreshView(Player player, boolean resend) {
         World hub = quai.hub();
         if (hub == null || !hub.equals(player.getWorld())) {
             return;
         }
-        Set<Realm> lit = state.litRealms(player.getUniqueId());
+        List<Realm> lit = state.revealed(player.getUniqueId());
         Set<Realm> was = shown.computeIfAbsent(player.getUniqueId(), k -> new HashSet<>());
         for (Realm realm : Realm.values()) {
             boolean isLit = lit.contains(realm);

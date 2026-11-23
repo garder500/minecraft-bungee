@@ -247,11 +247,7 @@ public final class DepthsRealm implements Listener {
         if (gates == null || !gates.light(id, Realm.DEPTHS)) {
             return false;
         }
-        Player player = Bukkit.getPlayer(id);
-        if (player != null) {
-            core.msg().ok(player, "Gate 7 of the Quai des Huit lights: the Abyssal Depths are open.");
-        }
-        return true;
+        return true; // the Quai title and chat line come from SkyGates.light
     }
 
     // ---------------------------------------------------------------- pressure and breath

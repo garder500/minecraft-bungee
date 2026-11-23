@@ -23,6 +23,21 @@ pillar: Realm name / "Walk through the" / "arch to the Quai" / "/hub or /island"
 Each `*Realm` registers its arrival spot with `SkyGateApi.setReturnArch` (world and position come from `spawn()`). `QuaiLanding` (a small platform per Realm in the sky of the hub) is only a fallback for a
 Realm that registers no destination (none today); while a Realm is not ready its destination returns null and the
 player sees "The way through the Gate is not open right now." instead.
+- **Waking Gates (title, then reveal)**: every Guardian kill that lights Gates (`*.gate-boss` settings: the Queen wakes five at
+  once, each `*Realm` handler calls `SkyGateApi.light`) goes through `SkyGates.light`, which does two things for the player.
+  (1) The same tick, one batch (`SkyGates.announce`, words in `island/GateReveal`, fr/de in `lang/menu_*.properties`
+  `quai.wake.*`): a short title ("A Gate wakes", or "5 Gates wake"; a longer one clips in a small window) with the Realm name(s) as subtitle
+  (one or two Gates; more would not fit, the names go to the chat line "... wake on the Quai: names"), a beacon and amethyst sound, and a chat line with a clickable `[Go to the Quai]` (`/quai`).
+  The Guardian's voiced first-clear line is still played by `BossRewards`; nothing new is recorded. The old per-Gate "is lit" lines
+  of `light`, Storm, Depths and Ashes are gone (the title replaces them). An offline winner gets no title, only the reveal.
+  (2) The Gate stays dark in the player's view until its reveal: the first time they are near the Quai (`VIEW_RANGE`, not travelling)
+  `GateReveal.Pacer` waits `island.quai.reveal-start-ticks` (40), then wakes one Gate every `island.quai.reveal-gap-ticks` (20), in
+  Gate order: END_ROD and totem burst, a flash, a chime that rises with each Gate, then it stays lit. Shown only to that player.
+  "Seen" is saved per player in `island/gates.json` (`seen`, next to the lit list: it also covers offline winners). A file without
+  `seen` (before this feature) counts every lit Gate as seen, so nobody replays old Gates; `extinguish` forgets a Gate, so
+  `/gateadmin dark` then `light` replays it. Leaving the Quai mid-sequence resumes the rest on the next visit.
+  The reveal only runs within 48 blocks of the platform centre (`VIEW_RANGE`, 3D). Tests: `GateRevealTest` (new Gates, order, once, migration, pacing, words), `SkyGatesTest` (five Gates in one tick: one chat line). Real client: `--scenario realms` step 2b
+  (`E2E_SKIP=reveal` skips it): `rl-1b-wake-*.png`, `rl-1b-reveal-*.png`.
 - **Commands**: `/quai` (go there), `/gates` (list), `/gateadmin light|dark <player> <realm|all>`, `list`,
   `travel <player> <realm>`, `rebuild`.
 - Layout changes: bump `QuaiPlan.VERSION` so existing Quais are rebuilt (2: the bridge is restyled as the end of the processional, with a ruined arch).

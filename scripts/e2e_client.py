@@ -3574,7 +3574,7 @@ HUB_Y = 100  # island.hub.y of the seed: the surface of the hub plaza and of the
 def realms_scenario(ctx):
     """Phase 2 to final with a real client: the Hub, the Quai des Huit (gates dark, then lit), a walk through the Ashes
     Gate, every Realm reached by its Gate (spawn, behind, above), the Astral Interiority and a Bastion with its Guardian.
-    E2E_REALMS=ashes,grove limits the Realm tour; E2E_SKIP=astral,bastion,seal skips those parts; E2E_SEAL=all|a,b picks the Realms whose
+    E2E_REALMS=ashes,grove limits the Realm tour; E2E_SKIP=astral,bastion,seal,reveal skips those parts (reveal = a Guardian clear wakes Gates, title, chat, the Quai sequence); E2E_SEAL=all|a,b picks the Realms whose
     seal the bot right-clicks (default ashes,grove); E2E_ARCH=all|a,b picks the
     Realms whose return arch the bot walks into (default ashes,grove,depths)."""
     import math, re as _re
@@ -3657,18 +3657,69 @@ def realms_scenario(ctx):
     typed("quai")
     time.sleep(4)
     # high above the hub end of the bridge (lower, the ruined arch of the bridge fills the view), down on the ring
-    undo = perch("sb_hub", 0.5, HUB_Y + 40, 30.5, 0, 42)
+    undo = perch("sb_hub", 0.5, HUB_Y + 32, 46.5, 0, 51)  # inside the 48 blocks the Quai view is kept up in
     time.sleep(3)
     shot(tools, shots / "rl-1-quai-dark.png")
     rcon.command("gateadmin dark E2EBot all")
     lit = strip(rcon.command("gateadmin light E2EBot all"))
     say("realms: " + lit)
-    time.sleep(3)
+    time.sleep(16)  # the reveal: a 2 s wait, then one Gate per second (island.quai.reveal-*-ticks)
     subprocess.run([xdo, "key", "F1"], env=env)  # hide the HUD: eight "Gate lit" lines would cover the ring
     time.sleep(1)
     shot(tools, shots / "rl-1-quai-lit.png")
     subprocess.run([xdo, "key", "F1"], env=env)
     undo()
+
+    # 2b. A Guardian clear that wakes Gates: title and chat where the bot stands, then the Gates light one by one on its next
+    # visit to the Quai (E2E_SKIP=reveal skips it). The Mycelial Queen lights five Gates; the bot is made to kill her with
+    # damage commands, and when that does not credit the kill the five Gates are lit by hand (said in the log).
+    if "reveal" not in skip:
+        typed("hub")
+        wait_world("sb_hub", 20)
+        time.sleep(4)
+        queen = ("heights", "citadel", "marshes", "archipelago", "depths")  # the gates of island.*.gate-boss = sylvan_matriarch
+        for realm in queen:
+            rcon.command(f"gateadmin dark E2EBot {realm}")
+        time.sleep(1)
+        x, y, z = player_state(rcon)["pos"]
+        out = strip(rcon.command(f"boss spawn sylvan_matriarch {x + 6:.1f} {y:.1f} {z:.1f} sb_hub"))
+        say("realms: reveal: spawn the Queen: " + out[:120])
+        time.sleep(3)
+        lit_now = 0
+        for hit in range(12):
+            reply = strip(rcon.command("execute as E2EBot at @s as @e[type=!minecraft:player,distance=..30] run damage @s "
+                                       "100000 minecraft:player_attack by E2EBot"))
+            if hit == 0:
+                say("realms: reveal: damage reply: " + reply[:160])
+            time.sleep(0.5)
+            lit_now = strip(rcon.command("gateadmin list E2EBot")).count("  lit")
+            if lit_now >= 8:
+                break
+        if lit_now < 8:
+            say(f"realms: reveal: NOT VERIFIED with a real kill ({lit_now} Gates lit): waking the five with one command")
+            rcon.command("gateadmin light E2EBot all")  # one command = one tick = one batch, like the Queen's five handlers
+        else:
+            say("realms: reveal: the Queen's kill woke the five Gates (real kill)")
+        time.sleep(0.6)
+        shot(tools, shots / "rl-1b-wake-title.png")
+        time.sleep(1.5)
+        shot(tools, shots / "rl-1b-wake-chat.png")
+        rcon.command("boss kill all")
+        typed("quai")  # what the chat line's click does
+        undo = perch("sb_hub", 0.5, HUB_Y + 32, 46.5, 0, 51)
+        t0 = time.time()
+        for i, at in enumerate((1.0, 3.0, 4.2, 5.4, 6.6, 8.0, 11.0)):
+            time.sleep(max(0, at - (time.time() - t0)))
+            shot(tools, shots / f"rl-1b-reveal-{i}.png")
+        undo()
+        gates_file = next((server / "plugins").glob("*/island/gates.json"), None)
+        seen = json.loads(gates_file.read_text()).get("seen", {}) if gates_file else {}
+        if not any(set(queen) <= set(v) for v in seen.values()):
+            failures.append(f"the reveal did not mark the five Gates seen: {seen}")
+        else:
+            say("realms: reveal: the five Gates are saved as seen")
+        rcon.command("gateadmin light E2EBot all")  # the walk below needs the Ashes Gate
+        time.sleep(1)
 
     # 3. Walk into the lit Ashes Gate (ordinal 0 on the ring of radius 15 around the Quai centre, QuaiPlan.buildGates)
     angle = math.radians(22.5)

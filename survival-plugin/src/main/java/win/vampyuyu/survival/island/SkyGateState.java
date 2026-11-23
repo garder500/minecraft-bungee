@@ -22,9 +22,15 @@ public final class SkyGateState {
     public static final class Doc {
         public int version = 1;
         public Map<String, List<String>> players = new LinkedHashMap<>();
+        /**
+         * The lit Gates each player has already watched wake on the Quai. Null in a file written before the reveal
+         * existed: every Gate lit then counts as seen, so nobody replays old Gates.
+         */
+        public Map<String, List<String>> seen;
     }
 
     private final Map<UUID, EnumSet<Realm>> lit = new HashMap<>();
+    private final Map<UUID, EnumSet<Realm>> seen = new HashMap<>();
 
     public boolean isLit(UUID player, Realm realm) {
         EnumSet<Realm> set = lit.get(player);
@@ -41,8 +47,51 @@ public final class SkyGateState {
         return lit.computeIfAbsent(player, k -> EnumSet.noneOf(Realm.class)).add(realm);
     }
 
+    /**
+     * The Gates this player has lit but not yet watched wake on the Quai, in Realm order (the order they light in the
+     * reveal). A Gate put out is forgotten, so lighting it again replays it.
+     */
+    public List<Realm> unseen(UUID player) {
+        EnumSet<Realm> set = lit.get(player);
+        if (set == null) {
+            return List.of();
+        }
+        EnumSet<Realm> done = seen.get(player);
+        List<Realm> out = new ArrayList<>();
+        for (Realm realm : set) {
+            if (done == null || !done.contains(realm)) {
+                out.add(realm);
+            }
+        }
+        return out;
+    }
+
+    /** Records that the reveal of this Gate played. True when it was not marked yet. Ignored for a Gate that is not lit. */
+    public boolean markSeen(UUID player, Realm realm) {
+        return isLit(player, realm) && seen.computeIfAbsent(player, k -> EnumSet.noneOf(Realm.class)).add(realm);
+    }
+
+    /** The Gates shown lit to this player right now: lit and already revealed, in Realm order. */
+    public List<Realm> revealed(UUID player) {
+        EnumSet<Realm> set = lit.get(player);
+        EnumSet<Realm> done = seen.get(player);
+        List<Realm> out = new ArrayList<>();
+        if (set != null && done != null) {
+            for (Realm realm : set) {
+                if (done.contains(realm)) {
+                    out.add(realm);
+                }
+            }
+        }
+        return out;
+    }
+
     /** True when the state changed. */
     public boolean extinguish(UUID player, Realm realm) {
+        EnumSet<Realm> done = seen.get(player);
+        if (done != null) {
+            done.remove(realm);
+        }
         EnumSet<Realm> set = lit.get(player);
         if (set == null || !set.remove(realm)) {
             return false;
@@ -61,6 +110,16 @@ public final class SkyGateState {
                 ids.add(realm.id());
             }
             doc.players.put(entry.getKey().toString(), ids);
+        }
+        doc.seen = new LinkedHashMap<>();
+        for (Map.Entry<UUID, EnumSet<Realm>> entry : seen.entrySet()) {
+            List<String> ids = new ArrayList<>();
+            for (Realm realm : entry.getValue()) {
+                ids.add(realm.id());
+            }
+            if (!ids.isEmpty()) {
+                doc.seen.put(entry.getKey().toString(), ids);
+            }
         }
         return doc;
     }
@@ -85,6 +144,24 @@ public final class SkyGateState {
                 Realm realm = Realm.byId(id);
                 if (realm != null) {
                     state.light(player, realm);
+                    if (doc.seen == null) {
+                        state.markSeen(player, realm); // saved before the reveal existed: nothing is new
+                    }
+                }
+            }
+        }
+        if (doc.seen != null) {
+            for (Map.Entry<String, List<String>> entry : doc.seen.entrySet()) {
+                try {
+                    UUID player = UUID.fromString(entry.getKey());
+                    for (String id : entry.getValue() == null ? List.<String>of() : entry.getValue()) {
+                        Realm realm = Realm.byId(id);
+                        if (realm != null) {
+                            state.markSeen(player, realm);
+                        }
+                    }
+                } catch (IllegalArgumentException e) {
+                    // a bad uuid: skipped
                 }
             }
         }

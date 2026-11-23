@@ -295,7 +295,7 @@ public final class AshesRealm implements Listener {
         }
         Player player = Bukkit.getPlayer(id);
         if (player != null) {
-            core.msg().ok(player, "The Echo falls. Gate 1 of the Quai des Huit lights: the Cracked Ashes are open.");
+            core.msg().ok(player, "The Echo falls.");
         }
         return true;
     }

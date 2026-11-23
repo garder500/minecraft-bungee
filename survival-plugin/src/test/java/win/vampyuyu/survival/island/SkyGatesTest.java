@@ -199,6 +199,25 @@ public class SkyGatesTest {
     }
 
     @Test
+    public void gatesLitInTheSameTickShareOneTitleAndOneChatLine() {
+        SurvivalPlugin plugin = MockBukkit.load(SurvivalPlugin.class);
+        SkyGateApi api = plugin.core().service(SkyGateApi.class).orElseThrow();
+        var player = server.addPlayer();
+        while (player.nextComponentMessage() != null) {
+            // drop the join messages
+        }
+        for (Realm realm : new Realm[] {Realm.DEPTHS, Realm.HEIGHTS, Realm.CITADEL, Realm.MARSHES, Realm.ARCHIPELAGO}) {
+            assertTrue(api.light(player.getUniqueId(), realm));
+        }
+        server.getScheduler().performTicks(2);
+        net.kyori.adventure.text.Component chat = player.nextComponentMessage();
+        assertNotNull("one chat line", chat);
+        assertTrue(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(chat)
+            .contains("5 Gates wake on the Quai: Frozen Heights"));
+        assertNull("not one chat line per Gate", player.nextComponentMessage());
+    }
+
+    @Test
     public void adminCommandLightsAGateByName() {
         SurvivalPlugin plugin = MockBukkit.load(SurvivalPlugin.class);
         SkyGateApi api = plugin.core().service(SkyGateApi.class).orElseThrow();
