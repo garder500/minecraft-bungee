@@ -31,7 +31,7 @@ public class NecropolisTest {
         assertTrue(a.count(Material.SOUL_SAND) > 30);
         assertTrue(a.count(Material.BONE_BLOCK) > 10);
         assertTrue(a.count(Material.SOUL_LANTERN) > 10);
-        assertEquals(1, a.signs().size());
+        assertEquals("the return arch sign and the seal sign", 2, a.signs().size());
     }
 
     @Test

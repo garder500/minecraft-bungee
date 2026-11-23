@@ -83,6 +83,11 @@ public final class StormPlan {
     /** The seal of the Sarcophagus: right-click it to enter the Tempest Bastion. */
     public static final int[] SEAL = {232, 21, 11 - 13};
 
+    /** The seal block itself, the lodestone in front of the crying obsidian wall (plan coordinates). */
+    public static int[] sealBlock() {
+        return new int[] {SEAL[0], SEAL[1], SEAL[2] + 1};
+    }
+
     public static Islet at(String id) {
         for (Islet islet : ISLETS) {
             if (islet.id().equals(id)) {
@@ -301,7 +306,8 @@ public final class StormPlan {
         plan.fill(sx - 1, at.y() + 2, sz, sx + 1, at.y() + 4, sz, Material.WAXED_OXIDIZED_CUT_COPPER);
         plan.set(sx, SEAL[1], sz + 1, Material.LODESTONE);
         plan.set(sx, at.y() + 5, sz, Material.LIGHTNING_ROD, "facing=up");
-        plan.sign(sx - 2, at.y() + 1, sz + 2, Material.OAK_SIGN, "rotation=0", "Sealed", "The Thunder Dragon", "sleeps. Right-click", "the seal with a key.");
+        java.util.List<String> lines = win.vampyuyu.survival.island.SealDoor.signLines(win.vampyuyu.survival.api.Realm.ARCHIPELAGO);
+        plan.sign(sx - 2, at.y() + 1, sz + 2, Material.OAK_SIGN, "rotation=0", lines.get(0), lines.get(1), lines.get(2), lines.get(3));
         plan.anchor("seal", sx, SEAL[1], sz + 1);
     }
 

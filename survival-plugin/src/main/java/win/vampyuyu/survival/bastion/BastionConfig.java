@@ -25,6 +25,8 @@ public final class BastionConfig {
     public String raidId = "";
     /** Bastions every member must have cleared before the Raid opens. */
     public List<String> raidRequires = List.of();
+    /** The Bastion each Realm's seal opens, by {@link win.vampyuyu.survival.api.Realm#id()} (settings {@code bastion.seal.<realm>}). */
+    public Map<String, String> seals = new LinkedHashMap<>();
     /** Coins each member gets the first time they clear the Raid (GDD 16.2: at most 5 000). */
     public double raidFirstClearCoins = 4000;
     /** Phase index (0 = first) from which the arena collapses. */
@@ -55,6 +57,17 @@ public final class BastionConfig {
         });
         if (c.bastions.isEmpty()) {
             c.problems.add("the bastion table has no valid row");
+        }
+        for (win.vampyuyu.survival.api.Realm realm : win.vampyuyu.survival.api.Realm.values()) {
+            String target = s.getString("seal." + realm.id(), "").trim().toLowerCase(Locale.ROOT);
+            if (target.isEmpty()) {
+                continue;
+            }
+            if (c.bastions.containsKey(target)) {
+                c.seals.put(realm.id(), target);
+            } else {
+                c.problems.add("bastion.seal." + realm.id() + " = " + target + " is not a bastion, the seal is dead");
+            }
         }
         if (!c.raidId.isEmpty() && !c.bastions.containsKey(c.raidId)) {
             c.problems.add("bastion.raid.id " + c.raidId + " is not a bastion, the raid is off");

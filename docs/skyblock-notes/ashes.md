@@ -9,7 +9,7 @@ built once by `AshesRealm` from `AshesPlan` (marker `realms/ashes-world.json`, b
 - **Opening**: killing boss `voidwyrm` (the Echo) lights Gate 1 for the killer and every damager (`BossKillEvent`).
   Travel is `SkyGateApi.travel`; `/ashes go` does the same, `/ashes go force` (admin) skips the Gate. Back: `/quai`, `/hub`.
 - **Zone**: Ember Landing (cooled, no building), five islets joined by bridges (Needle, Slag Foundry, Cinder Fields, Ember Tarn,
-  Rib of the Colossus), the Caldera with the sealed Sarcophagus door (placeholder for the Colossus fight), five contained seas of magma.
+  Rib of the Colossus), the Caldera with the sealed Sarcophagus door (its seal opens the Ashes Bastion, see bastion.md), five contained seas of magma.
 - **Heat** (`HeatMath`): tiers 0/1/2/3 (landing / islets+bridges / tarn / caldera, +1 beside lava or magma). Needed resistance 0/20/45/75.
   Resistance = worn armor (netherite 12 per piece, gold/diamond/copper 8, iron 6, chain 4, leather 2) + item PDC double
   `heat_resist` (for Sunstone gear) + 15 after Ashen Attunement. Fire Resistance = immune. Too little: slowness and damage every 2 s,

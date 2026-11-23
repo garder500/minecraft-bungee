@@ -29,7 +29,7 @@ public class GroveTest {
         assertTrue(a.count(Material.MANGROVE_ROOTS) > 20);
         assertTrue(a.count(Material.SHROOMLIGHT) > 10);
         assertTrue(a.count(Material.FARMLAND) > 40);
-        assertEquals(1, a.signs().size());
+        assertEquals("the return arch sign and the seal sign", 2, a.signs().size());
     }
 
     @Test

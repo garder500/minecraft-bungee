@@ -18,6 +18,11 @@ public interface BastionApi {
      */
     String enter(Player leader, String bastionId);
 
+    /** True when the block is the seal of a Realm (its right-click opens a Bastion, whatever the player holds). */
+    default boolean isSeal(org.bukkit.block.Block block) {
+        return false;
+    }
+
     /**
      * True while the player is a member of a Bastion whose arena is built and still open: a death there respawns them in the
      * arena (they have lives), so the mode travel must not send them back to their island.

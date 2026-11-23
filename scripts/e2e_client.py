@@ -3454,7 +3454,8 @@ HUB_Y = 100  # island.hub.y of the seed: the surface of the hub plaza and of the
 def realms_scenario(ctx):
     """Phase 2 to final with a real client: the Hub, the Quai des Huit (gates dark, then lit), a walk through the Ashes
     Gate, every Realm reached by its Gate (spawn, behind, above), the Astral Interiority and a Bastion with its Guardian.
-    E2E_REALMS=ashes,grove limits the Realm tour; E2E_SKIP=astral,bastion skips those parts; E2E_ARCH=all|a,b picks the
+    E2E_REALMS=ashes,grove limits the Realm tour; E2E_SKIP=astral,bastion,seal skips those parts; E2E_SEAL=all|a,b picks the Realms whose
+    seal the bot right-clicks (default ashes,grove); E2E_ARCH=all|a,b picks the
     Realms whose return arch the bot walks into (default ashes,grove,depths)."""
     import math, re as _re
     tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
@@ -3611,6 +3612,103 @@ def realms_scenario(ctx):
             else:
                 failures.append(f"{realm}: walking into the return arch did not reach sb_hub: {dimension().strip()[-40:]} {tail()}")
                 shot(tools, shots / f"rl-3-{realm}-arch-failed.png")
+
+    # 4b. The seals (bastion.SealDoors): right-click the seal of a Realm's sealed door, first without the key (the Bastion's own
+    # refusal names the key), then with it (the bot lands in an sb_bastion_ world), then abort. E2E_SEAL=all|a,b picks the
+    # Realms (default ashes,grove); the seal coordinates come from `bastion admin seals`, so the script writes none.
+    seal_env = os.environ.get("E2E_SEAL", "ashes,grove")
+    seal_realms = [r for r, _ in REALM_WORLDS] if seal_env == "all" else [r for r in seal_env.split(",") if r]
+    if seal_realms and "seal" not in skip:
+        clog = WORK / "prism" / "instances" / INSTANCE / "minecraft" / "logs" / "latest.log"
+
+        def chat():
+            """The chat lines the client received (client log), without the command noise."""
+            if not clog.exists():
+                return []
+            return [l.split("[CHAT] ", 1)[1] for l in clog.read_text(errors="replace").splitlines()
+                    if "[CHAT] " in l and "Teleported" not in l]
+
+        seals = {}
+        for line in strip(rcon.command("bastion admin seals")).splitlines():
+            m = _re.search(r"seal (\w+) (\w+) (-?\d+) (-?\d+) (-?\d+) face (-?\d+) (-?\d+) above (-?\d+) opens (\w+)", line.strip())
+            if m:
+                seals[m.group(1)] = (m.group(2), *map(int, m.group(3, 4, 5, 6, 7, 8)), m.group(9))
+        say("realms: seals " + str(seals))
+        if len(seals) != 8:
+            failures.append(f"`bastion admin seals` listed {len(seals)} seals instead of 8: {list(seals)}")
+        seal_blocks = {"ashes": "respawn_anchor", "grove": "shroomlight", "heights": "pearlescent_froglight", "citadel": "gold_block",
+                       "marshes": "ochre_froglight", "archipelago": "lodestone", "depths": "sea_lantern", "necropolis": "verdant_froglight"}
+        seal_keys = {"ashes": ("magma_core", "Ashes Bastion Key"), "grove": ("matriarch_egg", "Grove Bastion Key"),
+                     "heights": ("frost_heart", "Heights Bastion Key"), "citadel": ("pharaoh_scarab", "Citadel Bastion Key"),
+                     "marshes": ("mire_cyst", "Marsh Bastion Key"), "archipelago": ("tempest_key", "Tempest Bastion Key"),
+                     "depths": ("leviathan_scale", "Abyss Bastion Key"), "necropolis": ("judge_seal", "Necropolis Bastion Key")}
+
+        def stand_before(seal, dist, mode):
+            world, sx, sy, sz, fx, fz, above, _ = seal  # above: the seal's height over the standing level
+            px, py, pz = sx + 0.5 + fx * dist, sy - above, sz + 0.5 + fz * dist
+            yaw = math.degrees(math.atan2(fx, -fz))
+            pitch = -math.degrees(math.atan2((sy + 0.5) - (py + 1.62), dist))
+            rcon.command(f"gamemode {mode} E2EBot")
+            rcon.command(f"execute in minecraft:{world} run tp E2EBot {px:.2f} {py} {pz:.2f} {yaw:.1f} {pitch:.1f}")
+
+        for realm in seal_realms:
+            world = dict(REALM_WORLDS).get(realm)
+            seal = seals.get(realm)
+            if seal is None:
+                failures.append(f"seal {realm}: `bastion admin seals` did not list it: {list(seals)}")
+                continue
+            key, key_name = seal_keys[realm]
+            rcon.command("gamemode creative E2EBot")
+            rcon.command("effect give E2EBot minecraft:night_vision 900 0 true")
+            reply = strip(rcon.command(f"gateadmin travel E2EBot {realm}"))
+            if not wait_world(world, 30):
+                failures.append(f"seal {realm}: the Gate did not reach {world}: '{reply}' {tail()}")
+                continue
+            time.sleep(4)
+            _, sx, sy, sz = seal[:4]
+            if "failed" in rcon.command(f"execute in minecraft:{world} if block {sx} {sy} {sz} minecraft:{seal_blocks[realm]}").lower():
+                failures.append(f"seal {realm}: no minecraft:{seal_blocks[realm]} at {sx} {sy} {sz} (the plan and the world differ)")
+            stand_before(seal, 3 if realm == "marshes" else 5, "creative")  # the Marsh islet ends 3 blocks in front of its door
+            time.sleep(3)
+            shot(tools, shots / f"rl-6-seal-{realm}-door.png")
+            rcon.command("clear E2EBot")
+            rcon.command("effect give E2EBot minecraft:resistance 900 4 true")
+            rcon.command("effect give E2EBot minecraft:regeneration 900 4 true")
+            stand_before(seal, 2, "survival")
+            time.sleep(2)
+            shot(tools, shots / f"rl-6-seal-{realm}-close.png")
+            before = len(chat())
+            subprocess.run([xdo, "click", "3"], env=env)
+            time.sleep(1.5)
+            shot(tools, shots / f"rl-6-seal-{realm}-refused.png")
+            refusal = f"You need a {key_name}"
+            if not any(refusal in l for l in chat()[before:]):
+                failures.append(f"seal {realm}: no refusal naming '{key_name}' in the chat: {chat()[before:][-4:]}")
+            if f'"minecraft:{world}' not in dimension():
+                failures.append(f"seal {realm}: the bot left {world} without a key: {dimension()[:80]}")
+            rcon.command(f"sbgive {key} 1 E2EBot")
+            time.sleep(1)
+            stand_before(seal, 2, "survival")
+            time.sleep(1)
+            before = len(chat())
+            subprocess.run([xdo, "click", "3"], env=env)
+            if wait_world("sb_bastion_", 30):
+                say(f"realms: seal {realm} opened a Bastion for the bot")
+                time.sleep(2)
+                shot(tools, shots / f"rl-6-seal-{realm}-opened.png")
+                if any("This is a Bastion key" in l for l in chat()[before:]):
+                    failures.append(f"seal {realm}: the key in the hand also drew the summon refusal: {chat()[before:][-4:]}")
+            else:
+                failures.append(f"seal {realm}: right-clicking it with {key} did not open a Bastion: {dimension()[:80]} {tail()}")
+                shot(tools, shots / f"rl-6-seal-{realm}-no-bastion.png")
+            rcon.command("bastion admin abort all")
+            deadline = time.time() + 45
+            while time.time() < deadline and "sb_bastion_" in dimension():
+                time.sleep(2)
+            if "sb_bastion_" in dimension():
+                failures.append(f"seal {realm}: the bot was not taken out of the aborted Bastion")
+            rcon.command("clear E2EBot")
+        rcon.command("gamemode creative E2EBot")
 
     # 5. The Astral Interiority (the way in is the command for now)
     if "astral" not in skip:

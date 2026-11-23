@@ -12,13 +12,16 @@ import win.vampyuyu.survival.api.Realm;
  */
 public final class GrovePlan {
     /** Bump when the layout changes so an existing Grove is rebuilt (the marker file stores it). */
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
     public static final int MAIN_RADIUS = 24;
     public static final int ISLET_COUNT = 6;
     public static final int ISLET_ORBIT = 44;
     public static final int ISLET_RADIUS = 9;
     public static final int BORDER = 120;
     private static final long SEED = 0x6120_0030L;
+
+    /** The seal block of the Guardian's door (plan coordinates): right-click it with the Bastion key. */
+    public static final int[] SEAL = SealDoor.sealCell(0, 1, -12);
 
     private GrovePlan() {}
 
@@ -73,6 +76,8 @@ public final class GrovePlan {
         // the return arch and its sign (it also clears the cell of the old standing sign on a rebuild)
         ReturnArch.build(plan, Realm.GROVE, s[0], s[1], s[2]);
         plan.anchor("spawn", s[0], s[1], s[2]);
+        // the sealed door where the exploration ends: right-click the seal with the Bastion key
+        SealDoor.build(plan, Realm.GROVE, SEAL[0], 1, SEAL[2]);
         plan.anchor("queen", 0, 1, -6);
         plan.biome(-MAIN_RADIUS - 4, -20, -MAIN_RADIUS - 4, MAIN_RADIUS + 4, 12, MAIN_RADIUS + 4, "minecraft:lush_caves");
         return plan;

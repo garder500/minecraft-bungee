@@ -29,7 +29,7 @@ public class FrostTest {
         assertTrue(a.count(Material.BLUE_ICE) > 20);
         assertTrue(a.count(Material.PACKED_ICE) > 100);
         assertTrue(a.count(Material.AMETHYST_CLUSTER) > 2);
-        assertEquals(1, a.signs().size());
+        assertEquals("the return arch sign and the seal sign", 2, a.signs().size());
     }
 
     @Test

@@ -32,3 +32,12 @@ INSERT INTO setting_item (setting_id, position, value) VALUES ('bastion.raid.req
 INSERT INTO setting (id, type, value, note) VALUES ('bastion.raid.first-clear-coins', 'real', '4000', 'Coins each member gets the first time they clear the Raid, on top of the boss coins (GDD 16.2: at most 5 000 in all). A guess to measure.');
 INSERT INTO setting (id, type, value, note) VALUES ('bastion.raid.collapse-phase', 'int', '2', 'Phase index (0 = first) from which the arena falls ring by ring.');
 INSERT INTO setting (id, type, value, note) VALUES ('bastion.raid.collapse-seconds', 'int', '3', 'Seconds between two rings of the arena falling in the last phase.');
+-- The seal of each Realm (the sealed door next to its Guardian) opens this Bastion: right-click it with the key, like /bastion enter. Realm ids, not world names.
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.seal.ashes', 'text', 'ashes_bastion', 'Bastion opened by the seal of the ashes Realm (empty = the seal does nothing).');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.seal.grove', 'text', 'grove_bastion', 'Bastion opened by the seal of the grove Realm (empty = the seal does nothing).');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.seal.heights', 'text', 'heights_bastion', 'Bastion opened by the seal of the heights Realm (empty = the seal does nothing).');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.seal.citadel', 'text', 'citadel_bastion', 'Bastion opened by the seal of the citadel Realm (empty = the seal does nothing).');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.seal.marshes', 'text', 'marsh_bastion', 'Bastion opened by the seal of the marshes Realm (empty = the seal does nothing).');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.seal.archipelago', 'text', 'tempest_bastion', 'Bastion opened by the seal of the archipelago Realm (empty = the seal does nothing).');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.seal.depths', 'text', 'depths_bastion', 'Bastion opened by the seal of the depths Realm (empty = the seal does nothing).');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.seal.necropolis', 'text', 'necropolis_bastion', 'Bastion opened by the seal of the necropolis Realm (empty = the seal does nothing).');

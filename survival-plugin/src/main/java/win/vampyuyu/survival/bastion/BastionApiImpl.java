@@ -7,9 +7,16 @@ import win.vampyuyu.survival.api.BastionApi;
 /** The published {@link BastionApi}. */
 public final class BastionApiImpl implements BastionApi {
     private final BastionService service;
+    private final SealDoors seals;
 
-    public BastionApiImpl(BastionService service) {
+    public BastionApiImpl(BastionService service, SealDoors seals) {
         this.service = service;
+        this.seals = seals;
+    }
+
+    @Override
+    public boolean isSeal(org.bukkit.block.Block block) {
+        return seals != null && seals.siteAt(block) != null;
     }
 
     @Override

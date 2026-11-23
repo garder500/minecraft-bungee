@@ -11,7 +11,7 @@ import java.util.List;
  */
 public final class DepthsLayout {
     /** Bump to rebuild existing worlds when the layout changes. */
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
     /** World y of the landing surface. */
     public static final int ORIGIN_Y = 100;
     public static final int LANDING_RADIUS = 12;

@@ -452,7 +452,7 @@ public final class AshesRealm implements Listener {
             return true;
         }
         AshesPlan.Islet caldera = AshesPlan.at("caldera");
-        return y >= 0 && y <= 7 && Math.abs(x - caldera.x()) <= 3 && Math.abs(z - (caldera.z() - 14)) <= 1;
+        return y >= 0 && y <= 7 && Math.abs(x - caldera.x()) <= 3 && Math.abs(z - (caldera.z() - 14)) <= 2;
     }
 
     private void harvest(Player player, Block block, long k) {
