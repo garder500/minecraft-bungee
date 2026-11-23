@@ -225,7 +225,7 @@ public class ReviewFixesTest {
     // ---------------------------------------------------------------- hp scaling
 
     @Test
-    public void altAccountsDoNotGrowTheBoss() {
+    public void noNumberOfAttackersGrowsTheBoss() { // boss health is fixed (owner decision 2026-11-23)
         BossSession session = spawn("voidwyrm");
         double before = session.maxHp();
         for (int i = 0; i < 8; i++) {
@@ -238,7 +238,7 @@ public class ReviewFixesTest {
         PlayerMock second = server.addPlayer();
         session.applyHit(real, before * 0.02);
         session.applyHit(second, before * 0.02);
-        assertTrue("two real fighters do", session.maxHp() > before);
+        assertEquals("real fighters do not grow it either", before, session.maxHp(), 1e-9);
         session.end(BossSession.End.ADMIN, null);
     }
 
