@@ -3063,7 +3063,8 @@ def endgame_scenario(ctx):
     rewards), a Celestial Breath Fracture entered by a normal player, and floor 7 of the Catacombs. Bot HP is protected
     (resistance, regeneration) only where a kill time is measured; the damage a Starcore bot takes unprotected is measured
     separately. The Raid is opened by clearing its requirement rows in the database, which stands in for eight Bastion clears
-    (the refusal itself is checked first, as a normal player)."""
+    (the refusal itself is checked first, as a normal player).
+    E2E_EG_STEPS=floor7 runs only the floor 7 step (about 5 min instead of 12): the Starcore set is given, no runes."""
     import re as _re, sqlite3
     tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
     xdo, rcon = tools["xdotool"], Rcon()
@@ -3123,6 +3124,125 @@ def endgame_scenario(ctx):
     def stats(label, found, want="", note=""):
         say(f"endgame: {label}: {found}" + (f" (want {want})" if want else "") + (" " + note if note else ""))
 
+    def floor7():
+        """Floor 7 (seed 11), the first ambush room. Two runs: a passive bot (no potion effects, standing still: the time
+        until it falls and becomes a ghost, 96 max health in full Starcore) and a fighting bot (it faces the nearest enemy
+        and clicks, healed now and then: the time to 'Room cleared!'), then the boss room. E2E_EG_PASSIVE_SECONDS (75) is
+        how long the passive bot is watched, E2E_EG_MODES=passive|fight picks one of the two runs, E2E_EG_BOT
+        =strike adds /damage hits (the dungeon does not count them as weapon hits: nothing dies, do not use)."""
+        watch = int(os.environ.get("E2E_EG_PASSIVE_SECONDS", "75"))
+        modes = os.environ.get("E2E_EG_MODES", "passive,fight").split(",")
+        strike = os.environ.get("E2E_EG_BOT", "click") == "strike"  # strike: also hits by /damage (the dungeon ignores it: no kills); click: real clicks only
+
+        def start_run():
+            rcon.command("dungeon admin abort all")
+            time.sleep(3)
+            rcon.command("op E2EBot")
+            typed("menu skyblock") if "sb_" not in dimension() else None
+            time.sleep(2)
+            typed("dungeon admin start 7 11", 1.0)
+            if not wait_world("sb_dungeon", 120):
+                failures.append("floor 7 did not start: " + dimension()[:80])
+                return False
+            time.sleep(15)
+            rcon.command("effect clear E2EBot")
+            rcon.command("effect give E2EBot minecraft:instant_health 1 10 true")
+            time.sleep(1)
+            return True
+
+        def gamemode():
+            found = _re.findall(r"data: (\d+)", rcon.command("data get entity E2EBot playerGameType"))
+            return found[0] if found else None
+
+        # exc is defined once here: real enemies only (not players, markers, displays), not the Watcher's roaming guards
+        exc = "type=!player,type=!item_display,type=!text_display,type=!armor_stand,type=!interaction,type=!block_display,type=!marker,type=!item,name=!\"Warden Guard\""
+
+        def alive():
+            found = _re.findall(r"count: (\d+)", rcon.command(f"execute as E2EBot at @s if entity @e[distance=..40,{exc}]"), _re.I)
+            return int(found[0]) if found else 0
+
+        def alive_of(kind):
+            found = _re.findall(r"count: (\d+)", rcon.command(f"execute as E2EBot at @s if entity @e[distance=..40,type={kind}]"), _re.I)
+            return int(found[0]) if found else 0
+
+        if "passive" in modes:
+            if not start_run():
+                return
+            stats("floor 7 passive bot max health / health",
+                  f"{_re.findall(r'is ([0-9.]+)', rcon.command('attribute E2EBot minecraft:max_health get'))} / {hp()}", "96")
+            typed("dungeon admin goto MOB AMBUSH", 0.5)
+            began = time.time()
+            trace, ghost_at = [], None
+            while time.time() - began < watch:
+                t = time.time() - began
+                trace.append((int(t), None if hp() is None else round(hp()), alive()))
+                if gamemode() == "3":
+                    ghost_at = t
+                    break
+                if int(t) in (6, 12):
+                    kinds = {k: alive_of(k) for k in ("zombie", "skeleton", "wither_skeleton", "witch", "vindicator", "iron_golem", "enderman", "phantom", "vex")}
+                    eff = _re.findall(r'id: "minecraft:([a-z_]+)"', rcon.command("data get entity E2EBot active_effects"))
+                    stats(f"floor 7 passive bot at {int(t)} s: enemies by type, effects on the bot", {k: v for k, v in kinds.items() if v}, "", str(eff))
+                if int(t) in (2, 6, 15, 30) and not (shots / f"eg-6-floor7-passive-{int(t)}.png").exists():
+                    shot(tools, shots / f"eg-6-floor7-passive-{int(t)}.png")
+                time.sleep(1)
+            survived = ghost_at if ghost_at is not None else float(watch)
+            stats("floor 7 passive bot in the first ambush room (unprotected, standing still)",
+                  f"ghost after {ghost_at:.0f} s" if ghost_at is not None else f"alive after {watch} s", "more than 45 s")
+            stats("floor 7 passive bot health trace (s, hp, enemies alive)", [x for x in trace if x[0] % 3 == 0])
+            stats("floor 7 passive bot most enemies alive at once", max([x[2] for x in trace] or [0]))
+            shot(tools, shots / "eg-6-floor7-passive-end.png")
+            if survived <= 45:
+                failures.append(f"floor 7 ambush: the passive bot was a ghost after {survived:.0f} s (want more than 45 s)")
+
+        if "fight" not in modes:
+            return
+        if not start_run():
+            return
+        typed("dungeon admin goto MOB AMBUSH", 0.5)
+        began = time.time()
+        cleared, ghosts, last_heal, hp_low, series = False, 0, 0, 999.0, []
+        while time.time() - began < 180:
+            # walk up to an enemy that is out of reach, face the nearest one, swing (a full charge: 0.7 s)
+            as_bot(f"facing entity @e[distance=3.5..18,{exc},limit=1,sort=nearest] eyes run tp @s ^ ^ ^2.5")
+            as_bot(f"facing entity @e[distance=..18,{exc},limit=1,sort=nearest] eyes run tp @s ~ ~ ~ ~ ~")
+            click()
+            if strike:  # one full-charge Starcore hit on the nearest enemy in reach, like a player who lands every swing
+                as_bot(f"damage @e[distance=..6,{exc},limit=1,sort=nearest] 100000 minecraft:player_attack by E2EBot")
+            time.sleep(0.7)
+            now = int(time.time() - began)
+            series.append((now, alive()))
+            h = hp()
+            if h is not None:
+                hp_low = min(hp_low, h)
+                if h < 30 and now - last_heal >= 3:  # the bot is a poor dodger: a flask now and then (counted)
+                    rcon.command("effect give E2EBot minecraft:instant_health 1 10 true")
+                    last_heal = now
+                    ghosts += 1
+            if now in (3, 10) and not (shots / f"eg-6-floor7-fight-{now}.png").exists():
+                shot(tools, shots / f"eg-6-floor7-fight-{now}.png")
+            if chat_has("Room cleared!"):
+                cleared = True
+                break
+        stats("floor 7 ambush room (level 50), fighting bot",
+              f"cleared={cleared} in {int(time.time() - began)} s, lowest health {hp_low:.0f}, heals {ghosts}, most alive at once {max([x[1] for x in series] or [0])}", "")
+        stats("floor 7 fighting bot enemies alive (s, n)", [x for x in series if x[0] % 10 == 0 or x[0] < 4][:40])
+        shot(tools, shots / "eg-6-floor7-room.png")
+        if not cleared:
+            failures.append("floor 7 ambush room was not cleared by the fighting bot in 180 s")
+        typed("dungeon admin goto BOSS", 0.5)
+        time.sleep(8)
+        shot(tools, shots / "eg-6-floor7-boss.png")
+        if "Hollow Star" not in rcon.command("execute as E2EBot at @s run data get entity @e[type=wither_skeleton,limit=1,sort=nearest] CustomName"):
+            failures.append("the floor 7 boss (The Hollow Star) did not appear")
+        typed("dungeon leave", 1.0)
+
+        # nothing may stay open
+        rcon.command("breath stop")
+        rcon.command("bastion admin abort all")
+        rcon.command("dungeon admin abort all")
+        rcon.command("gamemode creative E2EBot")
+
     rcon.command("op E2EBot")
     rcon.command("gamemode survival E2EBot")
     rcon.command("gamerule send_command_feedback false")
@@ -3135,6 +3255,19 @@ def endgame_scenario(ctx):
         return
     time.sleep(6)
     rcon.command("clear E2EBot")
+    if os.environ.get("E2E_EG_STEPS", "") == "floor7":
+        # only the floor 7 step: the full Starcore set (no runes), the sword in the first hotbar slot
+        for item in ("starcore_sword", "starcore_chestplate", "starcore_leggings", "starcore_helmet", "starcore_boots"):
+            rcon.command(f"sbgive {item} 1 E2EBot")
+        time.sleep(1)
+        for slot_name, src in (("chest", "hotbar.1"), ("legs", "hotbar.2"), ("head", "hotbar.3"), ("feet", "hotbar.4")):
+            rcon.command(f"item replace entity E2EBot armor.{slot_name} from entity E2EBot {src}")
+        time.sleep(1)
+        for src in ("hotbar.1", "hotbar.2", "hotbar.3", "hotbar.4"):
+            rcon.command(f"item replace entity E2EBot {src} with minecraft:air")
+        subprocess.run([xdo, "key", "1"], env=env)
+        floor7()
+        return
 
     # 1. Realm runes: engraved with real clicks in the inventory, then triggered by real hits and hits taken.
     for item in ("starcore_sword", "rune_blight", "rune_tempest", "rune_soulbind", "starcore_chestplate", "starcore_leggings",
@@ -3404,45 +3537,8 @@ def endgame_scenario(ctx):
     rcon.command("dungeon admin abort all")
     time.sleep(2)
 
-    # 4. Floor 7: the first ambush room cleared with real hits (protected), then the boss room
-    rcon.command("op E2EBot")
-    typed("menu skyblock") if "sb_" not in dimension() else None
-    time.sleep(2)
-    typed("dungeon admin start 7 11", 1.0)
-    if not wait_world("sb_dungeon", 120):
-        failures.append("floor 7 did not start: " + dimension()[:80])
-        return
-    for _ in range(15):
-        rcon.command("effect give E2EBot minecraft:resistance 900 4 true")
-        rcon.command("effect give E2EBot minecraft:regeneration 900 4 true")
-        time.sleep(1)
-    typed("dungeon admin goto MOB", 0.5)
-    began = time.time()
-    exc = "type=!player,type=!item_display,type=!text_display,type=!armor_stand,type=!interaction,type=!block_display,type=!marker,type=!item"
-    cleared = False
-    while time.time() - began < 90:
-        as_bot(f"facing entity @e[distance=..45,{exc},limit=1,sort=nearest] eyes run tp @s ~ ~ ~ ~ ~")
-        click()
-        time.sleep(0.5)
-        if chat_has("Room cleared!"):
-            cleared = True
-            break
-    stats("floor 7 ambush room (12 enemies, level 50), protected bot", f"cleared={cleared} in {int(time.time() - began)} s", "")
-    shot(tools, shots / "eg-6-floor7-room.png")
-    # informational: a bot that only faces the nearest enemy is a poor fighter (see the "Enemies N left" bar in the shot),
-    # so the clear time is reported, not asserted
-    typed("dungeon admin goto BOSS", 0.5)
-    time.sleep(8)
-    shot(tools, shots / "eg-6-floor7-boss.png")
-    if "Hollow Star" not in rcon.command("execute as E2EBot at @s run data get entity @e[type=wither_skeleton,limit=1,sort=nearest] CustomName"):
-        failures.append("the floor 7 boss (The Hollow Star) did not appear")
-    typed("dungeon leave", 1.0)
-
-    # nothing may stay open
-    rcon.command("breath stop")
-    rcon.command("bastion admin abort all")
-    rcon.command("dungeon admin abort all")
-    rcon.command("gamemode creative E2EBot")
+    # 4. Floor 7: the first ambush room (passive, then fighting), then the boss room
+    floor7()
 
 
 # Realm id -> its world (api/Realm, core/SkyblockWorlds); the Gate order of the Quai des Huit.

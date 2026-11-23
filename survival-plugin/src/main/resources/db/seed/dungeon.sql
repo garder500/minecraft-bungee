@@ -132,3 +132,11 @@ INSERT INTO setting (id, type, value, note) VALUES ('dungeon.boss.warning-ticks'
 INSERT INTO setting (id, type, value, note) VALUES ('dungeon.boss.pause-ticks', 'int', '100', 'Time between two boss attacks.');
 INSERT INTO setting (id, type, value, note) VALUES ('dungeon.rooms.hold-seconds', 'int', '20', 'How long someone must stand in the ring of a Hold room.');
 INSERT INTO setting (id, type, value, note) VALUES ('dungeon.rooms.elite-health-percent', 'int', '500', 'Health of an Elite, in percent of the same monster.');
+INSERT INTO setting (id, type, value, note) VALUES ('dungeon.rooms.ambush-telegraph-seconds', 'int', '2', 'Ambush rooms: seconds of warning (title, sound, particles where the enemies come in, doors locked) before each wave. 0 = none.');
+INSERT INTO setting (id, type, value, note) VALUES ('dungeon.rooms.ambush-waves', 'int', '2', 'Ambush rooms: the enemies of the room (same total as before) come in this many waves.');
+INSERT INTO setting (id, type, value, note) VALUES ('dungeon.rooms.ambush-next-wave-left', 'int', '2', 'Ambush rooms: the next wave comes when the current one is down to this many enemies.');
+INSERT INTO setting (id, type, value, note) VALUES ('dungeon.rooms.ambush-next-wave-seconds', 'int', '12', 'Ambush rooms: or this many seconds after the current wave started, whichever comes first.');
+INSERT INTO setting (id, type, value, note) VALUES ('dungeon.rooms.ambush-min-distance', 'int', '8', 'Ambush rooms: enemies come in along the walls, at least this many blocks from every player.');
+INSERT INTO setting (id, type, value, note) VALUES ('dungeon.rooms.ambush-spawn-interval-ticks', 'int', '20', 'Ambush rooms: ticks between two enemies coming in (20 = one a second). 0 = all that the cap allows at once.');
+INSERT INTO setting (id, type, value, note) VALUES ('dungeon.rooms.ambush-simultaneous-base', 'int', '3', 'Ambush rooms: enemies alive at once for a party of one (the rest wait for a free place, none is lost).');
+INSERT INTO setting (id, type, value, note) VALUES ('dungeon.rooms.ambush-simultaneous-per-extra-player', 'int', '2', 'Ambush rooms: more enemies alive at once for each extra party member.');

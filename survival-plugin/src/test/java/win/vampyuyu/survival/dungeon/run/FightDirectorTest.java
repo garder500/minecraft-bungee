@@ -296,4 +296,84 @@ public class FightDirectorTest {
             assertNotNull(rt.build.spawn);
         }
     }
+
+    private RoomRt mobRoom() {
+        return run.rooms.values().stream().filter(r -> r.build.plan.type == RoomType.MOB).findFirst().orElseThrow();
+    }
+
+    @Test
+    public void anAmbushWarnsBeforeAnyoneSpawnsThenBringsTheSameEnemiesInTwoWaves() {
+        RoomRt rt = mobRoom();
+        run.fights.forcedStyle = FightStyle.AMBUSH;
+        long start = run.tick;
+        run.fights.firstEnter(rt, alice);
+        assertEquals(FightStyle.AMBUSH, rt.style);
+        assertEquals(RoomRt.State.ACTIVE, rt.state);
+        assertEquals("the warning lasts the configured seconds", start + svc.cfg().ambushTelegraphSeconds * 20L, rt.telegraphUntil);
+        assertEquals(svc.cfg().ambushWaves, rt.waves.size());
+        int total = rt.waves.stream().mapToInt(java.util.List::size).sum();
+        assertEquals("the room keeps its total", total, rt.fightTotal);
+        assertTrue(total <= svc.cfg().maxMobsPerRoom);
+        int queued = rt.queue.size();
+        assertEquals(rt.waves.get(0).size(), queued);
+        assertFalse("places are marked for the first wave", rt.spots.isEmpty());
+        // during the warning nothing leaves the queue (the mock refuses every spawn, so a spawn attempt empties it)
+        while (run.tick + DungeonRun.STEP < rt.telegraphUntil) {
+            run.tick += DungeonRun.STEP;
+            run.fights.tick();
+            assertEquals(queued, rt.queue.size());
+            assertEquals(0, rt.wave);
+        }
+        // after it the enemies come one at a time (the mock refuses every spawn, so each attempt drains one place)
+        run.tick = rt.telegraphUntil;
+        run.fights.tick();
+        assertEquals("one enemy at the end of the warning", queued - 1, rt.queue.size());
+        run.tick += DungeonRun.STEP;
+        run.fights.tick();
+        assertEquals("the next one a beat later, not at once", queued - 1, rt.queue.size());
+        int guard = 0;
+        while (rt.wave == 0 && guard++ < 500) {
+            run.tick += DungeonRun.STEP;
+            run.fights.tick();
+        }
+        assertEquals("the second wave came after the first", 1, rt.wave);
+        assertTrue("and it is warned too", rt.telegraphUntil > run.tick);
+        int leftOver = rt.queue.size() - rt.waves.get(1).size();
+        assertTrue("it came when the first wave was down to the configured few", leftOver >= 0 && leftOver <= svc.cfg().ambushNextWaveLeft);
+    }
+
+    @Test
+    public void anAmbushRoomIsClearedAfterAllItsWaves() {
+        RoomRt rt = mobRoom();
+        run.fights.forcedStyle = FightStyle.AMBUSH;
+        run.fights.firstEnter(rt, alice);
+        for (int i = 0; i < 200 && rt.state == RoomRt.State.ACTIVE; i++) {
+            run.tick += DungeonRun.STEP;
+            run.fights.tick();
+        }
+        assertEquals(RoomRt.State.CLEARED, rt.state);
+        assertEquals(svc.cfg().ambushWaves - 1, rt.wave);
+    }
+
+    @Test
+    public void theNumberAliveAtOnceFollowsThePartySize() {
+        var c = svc.cfg();
+        assertEquals(c.ambushSimultaneousBase, run.fights.ambushCap());
+        for (int i = 0; i < 3; i++) {
+            var id = java.util.UUID.randomUUID();
+            run.players.put(id, new RunPlayer(id, "Extra" + i));
+        }
+        assertEquals(4, run.partySize());
+        assertEquals(Math.min(c.maxMobsPerRoom, c.ambushSimultaneousBase + 3 * c.ambushSimultaneousPerExtra), run.fights.ambushCap());
+        assertTrue(run.fights.ambushCap() > c.ambushSimultaneousBase);
+    }
+
+    @Test
+    public void theDefaultAmbushSettingsMakeAFirstWaveThatFitsASoloPlayer() {
+        var c = svc.cfg();
+        assertEquals(2, c.ambushTelegraphSeconds);
+        assertEquals(3, c.ambushSimultaneousBase);
+        assertEquals(2, c.ambushSimultaneousPerExtra);
+        assertEquals(2, c.ambushWaves);
+    }
 }

@@ -34,7 +34,7 @@ Instanced, procedurally generated dungeons ("the Catacombs") for parties of 1 to
   the generator guarantees the floor is solvable). Secret doors open with a hidden lever (counts as a secret). The blood
   door opens with the blood key, forged when all of the Watcher's guards (sent progressively, one per newly visited
   room, the rest when the blood room is entered) are dead.
-* **Mob rooms** have a style, never the same twice in a row (`FightStyle`): waves, an ambush (all at once), an elite (one
+* **Mob rooms** have a style, never the same twice in a row (`FightStyle`): waves, an ambush (see Ambush rooms below), an elite (one
   glowing strong enemy, `rooms.elite-health-percent`) or, from floor 2, holding a green ring (`rooms.hold-seconds`). A
   title says what the room asks.
 * **Boss**: every floor has its own (`dungeon_boss`, `dungeon_boss_attack`): name, body, weapon, attacks. Every attack
@@ -201,3 +201,39 @@ Everything below was only covered by unit and MockBukkit tests (all green); none
 * Players who leave early get a failed run but share no reward even if they were there for most of the run.
 * Room variety: one template per room type (plus random decoration), one path puzzle, no multi-cell rooms, no real
   trap rooms (dispensers, collapsing floors). Needs screenshots to do properly.
+
+## Ambush rooms (fair and readable)
+
+Measured with a real client on floor 7 (full Starcore, 96 max health): the old ambush put all 12 enemies in the room at
+once, at random spots, and a passive player was a ghost after about 16 s. Now (`FightDirector`, pure numbers in
+`AmbushPacing`, all values are `setting` rows `dungeon.rooms.ambush-*` in `db/seed/dungeon.sql`, read by `DungeonConfig`):
+
+* **Warning** (`ambush-telegraph-seconds`, 2): the doors lock, a title and a growl say "AMBUSH", soul-fire particles mark
+  the spots where the enemies will come in, and nothing spawns until the time is up. 0 turns it off. Every later wave is
+  warned the same way.
+* **Waves** (`ambush-waves`, 2): the enemies of the room (the same total as before, so the reward pace is unchanged, still
+  capped by `mobs.max-per-room`) are cut into this many consecutive waves. The next one is warned when the current one is
+  down to `ambush-next-wave-left` (2) enemies, alive or still waiting for a place, or `ambush-next-wave-seconds` (12) after it
+  started, whichever comes first (a passive player still gets wave 2).
+* **Cap alive at once**: `ambush-simultaneous-base` (3) plus `ambush-simultaneous-per-extra-player` (2) for each extra
+  party member, never above `max-per-room`. The enemies over the cap wait in the queue (none is dropped) and come as places free up.
+  Only ambush rooms use it: waves, elite, hold and mini-boss rooms are unchanged.
+* **One at a time** (`ambush-spawn-interval-ticks`, 20): the enemies of a wave come in a beat apart, not together. 0 = all
+  that the cap allows at once.
+* **Entry spots**: taken from the room's free mob spots, at least `ambush-min-distance` (8) blocks from every living player
+  (if none is that far, the farthest half), the ones nearest to the walls first. The spots marked during the warning are the
+  ones used, unless a player walked onto one meanwhile.
+* Unit tests: `AmbushPacingTest` (cap with 1 and 4 players, split, warning, release rule, spots) and the ambush tests of
+  `FightDirectorTest` (warning timing, waves, total unchanged, cap by party size).
+* Real check: `E2E_EG_STEPS=floor7 python3 scripts/e2e_client.py --scenario endgame` runs only the floor 7 step (about 6 min):
+  a passive unprotected bot standing in the first ambush room (time until it becomes a ghost, `E2E_EG_PASSIVE_SECONDS`, default
+  75) then a fighting bot (time to "Room cleared!"). `E2E_EG_MODES=passive` or `fight` runs one of the two.
+
+Measured on floor 7 with a real client (unprotected bot in full Starcore standing still in the first ambush room, seed 11):
+old ambush (12 at once) a ghost after about 16 s; cap 5 at once 20 s; cap 3 one a second 19 to 23 s; cap 2 one every 3 s 21 s.
+The drain is about 5 health per second as soon as two or three melee enemies reach the bot, whatever the cap: floor 7 damage
+(6.0) times the hit, so the cap and the waves cannot make a passive player last 45 s. That needs a lever on the damage itself
+(floor damage, the Bone Brute's Wither), not on these settings. What the settings do change: nothing lands on the player (the
+enemies spawn along the walls, 8+ blocks away, after a warning), the wave is readable, and an active player meets 3 at a time.
+Hits sent by `/damage` do not kill dungeon enemies (the virtual health pool only takes real weapon hits), so the e2e fighting
+bot only uses real clicks, which clear about half of the 12 enemies in 3 minutes before and after (the bot walks badly).

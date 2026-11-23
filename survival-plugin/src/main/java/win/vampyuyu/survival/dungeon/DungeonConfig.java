@@ -52,6 +52,18 @@ public final class DungeonConfig {
     public int bossWarningTicks;
     public int bossPauseTicks;
     public int holdSeconds;
+    /** Ambush rooms: seconds of warning before each wave, number of waves, next wave at N enemies left or after T seconds. */
+    public int ambushTelegraphSeconds;
+    public int ambushWaves;
+    public int ambushNextWaveLeft;
+    public int ambushNextWaveSeconds;
+    /** Enemies come in at least this many blocks from every player. */
+    public int ambushMinDistance;
+    /** Ambush rooms: ticks between two enemies coming in (0 = all that the cap allows at once). */
+    public int ambushSpawnIntervalTicks;
+    /** Enemies of an ambush room alive at once: base plus a step per extra player. */
+    public int ambushSimultaneousBase;
+    public int ambushSimultaneousPerExtra;
     public int eliteHealthPercent;
     /** From this floor on the boss feature's crypt_lord is used (0 = never, the scripted floor-scaled boss is used). */
     public int bossExternalFromFloor;
@@ -218,6 +230,14 @@ public final class DungeonConfig {
         bossPauseTicks = num(r, "boss.pause-ticks", 100, 20, 600);
         holdSeconds = num(r, "rooms.hold-seconds", 20, 5, 120);
         eliteHealthPercent = num(r, "rooms.elite-health-percent", 500, 100, 5000);
+        ambushTelegraphSeconds = num(r, "rooms.ambush-telegraph-seconds", 2, 0, 10);
+        ambushWaves = num(r, "rooms.ambush-waves", 2, 1, 5);
+        ambushNextWaveLeft = num(r, "rooms.ambush-next-wave-left", 2, 0, 20);
+        ambushNextWaveSeconds = num(r, "rooms.ambush-next-wave-seconds", 12, 3, 120);
+        ambushMinDistance = num(r, "rooms.ambush-min-distance", 8, 0, 30);
+        ambushSpawnIntervalTicks = num(r, "rooms.ambush-spawn-interval-ticks", 20, 0, 200);
+        ambushSimultaneousBase = num(r, "rooms.ambush-simultaneous-base", 3, 1, 60);
+        ambushSimultaneousPerExtra = num(r, "rooms.ambush-simultaneous-per-extra-player", 2, 0, 20);
         bossExternalFromFloor = num(r, "boss-external-from-floor", 0, 0, 99);
         readyCountdownSeconds = num(r, "ready-countdown-seconds", 8, 0, 120);
         sidebar = r.getBoolean("sidebar", true);

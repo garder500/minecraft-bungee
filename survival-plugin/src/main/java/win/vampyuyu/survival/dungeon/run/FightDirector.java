@@ -396,7 +396,8 @@ final class FightDirector {
             case AMBUSH -> {
                 List<MobSpec> all = new ArrayList<>();
                 waves.forEach(all::addAll);
-                waves = List.of(new ArrayList<>(all.subList(0, Math.min(cap, all.size()))));
+                // same enemies as before, in waves: the cap of enemies alive at once keeps each wave readable
+                waves = AmbushPacing.split(new ArrayList<>(all.subList(0, Math.min(cap, all.size()))), run.ctx.cfg.ambushWaves);
             }
             case ELITE -> {
                 MobSpec base = MobRoster.pick(run.floorNumber(), run.rng());
@@ -411,7 +412,10 @@ final class FightDirector {
         }
         startFight(rt, waves, false);
         switch (style) {
-            case AMBUSH -> run.titleAll("<red><bold>AMBUSH!", "<gray>They all come at once");
+            case AMBUSH -> {
+                run.titleAll("<red><bold>AMBUSH!", "<gray>They come in from the walls");
+                telegraph(rt);
+            }
             case ELITE -> run.titleAll("<gold><bold>ELITE", "<gray>Bring down the glowing one");
             case HOLD -> {
                 run.titleAll("<green><bold>HOLD THE RING", "<white>Stay in the green ring for " + run.ctx.cfg.holdSeconds + " seconds");
@@ -420,6 +424,54 @@ final class FightDirector {
             }
             default -> { }
         }
+    }
+
+    /** Alive enemies of an ambush room at once for this party (see {@link AmbushPacing#cap}). */
+    int ambushCap() {
+        var c = run.ctx.cfg;
+        return AmbushPacing.cap(c.ambushSimultaneousBase, c.ambushSimultaneousPerExtra, run.partySize(), c.maxMobsPerRoom);
+    }
+
+    /** Where a wave of an ambush room comes in: spots along the walls, away from the players, marked before they spawn. */
+    private void pickSpots(RoomRt rt) {
+        List<double[]> at = new ArrayList<>();
+        for (RunPlayer rp : run.players.values()) {
+            Player p = rp.alive() ? Bukkit.getPlayer(rp.id) : null;
+            if (p != null && p.getWorld() == run.world) {
+                at.add(new double[] {p.getLocation().getX(), p.getLocation().getZ()});
+            }
+        }
+        rt.spots.clear();
+        rt.spots.addAll(AmbushPacing.edgeSpots(rt.build.mobSpawns, rt.build.spawn, at, run.ctx.cfg.ambushMinDistance,
+            Math.max(1, Math.min(rt.queue.size(), ambushCap())), run.rng()));
+    }
+
+    /** The warning before a wave: nothing spawns until {@code telegraphUntil}; the spots are marked meanwhile. */
+    private void telegraph(RoomRt rt) {
+        rt.telegraphUntil = run.tick + run.ctx.cfg.ambushTelegraphSeconds * 20L;
+        rt.waveStartTick = rt.telegraphUntil;
+        pickSpots(rt);
+        run.soundAll(Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 0.8f);
+    }
+
+    private void markSpots(RoomRt rt) {
+        for (Pos p : rt.spots) {
+            run.world.spawnParticle(Particle.SOUL_FIRE_FLAME, run.loc(p).add(0, 1, 0), 10, 0.3, 0.9, 0.3, 0.01);
+        }
+    }
+
+    /** The place of the next enemy of an ambush: the marked spot, or a fresh one if a player stands there now. */
+    private Location ambushSpot(RoomRt rt) {
+        Pos p = rt.spots.poll();
+        if (p != null) {
+            Player near = nearestAlive(run.loc(p));
+            if (near == null || near.getLocation().distanceSquared(run.loc(p)) >= Math.pow(run.ctx.cfg.ambushMinDistance, 2)) {
+                return run.loc(p);
+            }
+        }
+        pickSpots(rt);
+        p = rt.spots.poll();
+        return p == null ? null : run.loc(p);
     }
 
     /** The same monster, much tougher and easy to tell apart. */
@@ -483,6 +535,8 @@ final class FightDirector {
         rt.queue.clear();
         rt.queue.addAll(waves.get(0));
         rt.spawnedTotal = 0;
+        rt.telegraphUntil = 0;
+        rt.spots.clear();
         rt.level = mini ? 1 : 0;
         int total = 0;
         for (List<MobSpec> w : waves) {
@@ -609,13 +663,33 @@ final class FightDirector {
                 }
             }
         }
-        // staggered spawning, within the caps
-        int budget = rt.style == FightStyle.AMBUSH ? 6 : 2;
-        while (budget-- > 0 && !rt.queue.isEmpty() && rt.mobs.size() < run.ctx.cfg.maxMobsPerRoom
+        boolean ambush = rt.style == FightStyle.AMBUSH;
+        if (ambush && AmbushPacing.telegraphOver(run.tick, rt.telegraphUntil) && rt.wave + 1 < rt.waves.size()
+                && AmbushPacing.nextWaveDue(rt.mobs.size(), rt.queue.size(), run.tick, rt.waveStartTick,
+                    run.ctx.cfg.ambushNextWaveLeft, run.ctx.cfg.ambushNextWaveSeconds * 20L)) {
+            rt.wave++;
+            rt.queue.addAll(rt.waves.get(rt.wave));
+            run.sayAll("<red>Reinforcements! <gray>(wave " + (rt.wave + 1) + "/" + rt.waves.size() + ")");
+            run.titleAll("<red><bold>MORE COME", "<gray>Watch the walls");
+            telegraph(rt);
+        }
+        if (ambush && !AmbushPacing.telegraphOver(run.tick, rt.telegraphUntil)) {
+            markSpots(rt); // the warning: nobody spawns yet
+        }
+        // staggered spawning, within the caps (an ambush: after its warning, and a smaller number alive at once)
+        int budget = ambush ? 6 : 2;
+        if (ambush && run.ctx.cfg.ambushSpawnIntervalTicks > 0) {
+            // one enemy at a time, a beat apart: they walk in from the walls instead of landing together
+            budget = run.tick - rt.lastSpawnTick >= run.ctx.cfg.ambushSpawnIntervalTicks ? 1 : 0;
+        }
+        int roomCap = ambush ? Math.min(run.ctx.cfg.maxMobsPerRoom, ambushCap()) : run.ctx.cfg.maxMobsPerRoom;
+        while (budget-- > 0 && !rt.queue.isEmpty() && rt.mobs.size() < roomCap
+                && (!ambush || AmbushPacing.telegraphOver(run.tick, rt.telegraphUntil))
                 && liveMobs() < run.ctx.cfg.maxMobsPerRun) {
             MobSpec spec = rt.queue.poll();
+            rt.lastSpawnTick = run.tick;
             boolean mini = rt.level == 1 && spec == MobRoster.WARLORD;
-            LivingEntity e = spawn(rt, spec, mini ? "miniboss" : "mob", null);
+            LivingEntity e = spawn(rt, spec, mini ? "miniboss" : "mob", ambush ? ambushSpot(rt) : null);
             if (e != null) {
                 rt.mobs.add(e.getUniqueId());
                 rt.spawnedTotal++;

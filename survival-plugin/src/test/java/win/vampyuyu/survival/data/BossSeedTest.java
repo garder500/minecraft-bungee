@@ -60,7 +60,7 @@ public class BossSeedTest {
         assertEquals(11, count(db, "dungeon_reward", ""));
         assertEquals(7, count(db, "dungeon_trade", ""));
         assertEquals(11, count(db, "dungeon_trade_cost", ""));
-        assertEquals(52, count(db, "setting", "id GLOB 'dungeon.*'"));
+        assertEquals(60, count(db, "setting", "id GLOB 'dungeon.*'")); // + 8 dungeon.rooms.ambush-* (waves, cap, telegraph)
         assertEquals(11, count(db, "setting_item", "setting_id = 'dungeon.rules.allowed-commands'"));
     }
 
