@@ -2,6 +2,7 @@
 -- Converted from the former boss.yml by scripts/yaml_to_seed_boss.py; edit it in the panel.
 -- Loot balance: pity is +0.1 percentage point per dry kill, capped at +1.5 points.
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-factor.voidwyrm', 'real', '0.425', 'Health factor of the Echo of the Rift instead of boss.settings.hp-factor (85 %: a flyer takes fewer hits, even with its landings).');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-factor.devourer', 'real', '3.5', 'Health factor of the Devourer (the final Raid) instead of boss.settings.hp-factor: x7 the Guardian pool. Measured in game: a tier-5 player hitting without a miss killed the 52 000 pool in 35 s; with 3.5 that is about 4 min, a real solo player about 8 (enrage 9), a group of five about 3-4.');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-scale', 'real', '1.0', 'Multiplies every boss health pool (1 = the GDD 8.7 curve as is).');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.damage-scale', 'real', '1.0', 'Multiplies every hit bosses deal to players. 1.0 = the hit PowerCurve.bossHitDamage sizes (hits-to-down hits for a tier-matched player); the old 0.6 hid the missing vanilla-armor layer.');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hits-to-down', 'int', '10', 'A player in the full armor of the boss tier goes down after this many plain boss hits (Ward and vanilla armor counted): 10 hits = 10 % of the health per hit, GDD 8 to 12. Measured in game.');

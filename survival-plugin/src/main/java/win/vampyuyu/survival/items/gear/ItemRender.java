@@ -37,7 +37,7 @@ public final class ItemRender {
     }
 
     /** Bump to redraw every item the next time a player holds it. */
-    public static final long RENDER_VERSION = 3L;
+    public static final long RENDER_VERSION = 4L; // 4: the plain renderer shows weapon damage
 
     private static final TextColor DAMAGE_COLOR = NamedTextColor.RED;
 

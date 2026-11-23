@@ -3339,7 +3339,7 @@ def endgame_scenario(ctx):
     began = time.time()
     shot_at = {20: False}
     killed = False
-    while time.time() - began < 240:
+    while time.time() - began < 480:  # the Raid pool is 7 Guardian pools (boss.settings.hp-factor.devourer)
         out = rcon.command("execute as E2EBot at @s run data get entity @e[type=warden,limit=1,sort=nearest] Pos")
         p = [float(v) for v in _re.findall(r"(-?[0-9.]+)d", out)[:3]]
         if len(p) < 3:
@@ -3355,9 +3355,9 @@ def endgame_scenario(ctx):
     took = int(time.time() - began)
     time.sleep(3)
     shot(tools, shots / "eg-4-raid-cleared.png")
-    stats("Devourer kill time with real hits (protected bot)", f"{took} s", "under 240 s")
+    stats("Devourer kill time with real hits (protected bot)", f"{took} s", "about 4 min, under the 9 min enrage")
     if not killed:
-        failures.append("the Devourer was not killed in 240 s")
+        failures.append("the Devourer was not killed in 480 s")
     for line in ("The Devourer defeated!", "First clear of the Raid: +4000 coins", "Raid of the Devourer cleared in"):
         if not chat_has(line):
             failures.append(f"the Raid kill did not show '{line}'")
@@ -3398,6 +3398,8 @@ def endgame_scenario(ctx):
             typed("dungeon leave", 2.0)
             time.sleep(5)
             say("endgame: after leaving the Fracture the bot is in " + dimension().strip()[-24:])
+            if "sb_grove" not in dimension():
+                failures.append("leaving the Fracture did not bring the bot back to the Grove: " + dimension().strip()[-30:])
     rcon.command("breath stop")
     rcon.command("dungeon admin abort all")
     time.sleep(2)

@@ -11,6 +11,7 @@ import win.vampyuyu.survival.api.Stat;
 /**
  * Stable lore layout of every custom item (pure, no Bukkit state):
  * <pre>
+ * Damage: +320 ✦           weapons only (item_def.damage), first so a new blade visibly beats the old one
  * Might: +50 (+5)           one line per stat, enum order; "(+5)" = bonus from reforges/enchants
  * Ward: +10
  *                           blank, only when stats and description both exist
@@ -34,6 +35,11 @@ public final class ItemRenderer {
     /** Full lore. {@code bonus} are per-item additions on top of {@code def.stats()}. */
     public static List<Component> lore(CustomItemDef def, Map<Stat, Double> bonus) {
         List<Component> out = new ArrayList<>();
+        double damage = def.pdcDoubles().getOrDefault("damage", 0.0);
+        if (damage > 0) {
+            String number = damage == Math.rint(damage) ? Long.toString((long) damage) : Double.toString(Math.round(damage * 10) / 10.0);
+            out.add(line(Component.text("Damage: ", NamedTextColor.GRAY).append(Component.text("+" + number + " ✦", NamedTextColor.RED))));
+        }
         for (Stat stat : Stat.values()) {
             double base = def.stats().getOrDefault(stat, 0.0);
             double extra = bonus.getOrDefault(stat, 0.0);

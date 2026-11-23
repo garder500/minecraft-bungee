@@ -13,6 +13,7 @@ import net.kyori.adventure.bossbar.BossBar;
 import org.bukkit.Bukkit;
 import org.bukkit.Difficulty;
 import org.bukkit.GameRules;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.entity.Player;
@@ -172,6 +173,13 @@ public final class RunManager {
     }
 
     /** {@code /dungeon admin start}: any floor, whatever the party cleared before. */
+    /** Sends {@code player} back to {@code at} (not to the hub) when their next run ends: see {@link RunContext#returnTo}. */
+    public void returnAfterRun(UUID player, Location at) {
+        if (player != null && at != null && at.getWorld() != null && !SkyblockWorlds.isDungeon(at.getWorld().getName())) {
+            ctx.returnTo.put(player, at.clone());
+        }
+    }
+
     public String startAsAdmin(Party party, UUID starter, int floorNumber, Long forcedSeed) {
         return start(party, starter, floorNumber, forcedSeed, true);
     }
@@ -195,6 +203,7 @@ public final class RunManager {
             BossBar.Color.PURPLE, BossBar.Overlay.PROGRESS);
         progressBars.put(id, bar);
         List<UUID> members = party.members();
+        members.forEach(ctx.returnTo::remove); // a new run starts from scratch: the caller sets its own return point
         for (UUID m : members) {
             Player p = Bukkit.getPlayer(m);
             if (p != null) {
@@ -356,10 +365,19 @@ public final class RunManager {
      * request and moves the player synchronously.
      */
     static void sendOut(RunContext ctx, Player p, boolean immediate) {
-        if (p == null || !p.isOnline()) {
-            return;
+        if (p == null || !p.isOnline() || !inDungeonWorld(p)) {
+            return; // already out (a leave schedules a send-out for the next tick, the run's close may have moved them first)
         }
         UUID id = p.getUniqueId();
+        Location back = ctx.returnTo.remove(id);
+        if (back != null && back.getWorld() != null && Bukkit.getWorld(back.getWorld().getUID()) != null
+                && !SkyblockWorlds.isDungeon(back.getWorld().getName())) {
+            if (ctx.teleport(p, back)) {
+                ctx.exiting.remove(id);
+                return; // a Fracture run goes back to the Realm it was opened from
+            }
+            ctx.log().warning("Dungeon: could not send " + p.getName() + " back to " + back.getWorld().getName() + ", using the hub");
+        }
         Long since = ctx.exiting.get(id);
         long now = System.currentTimeMillis();
         if (!immediate && since != null && now - since < EXIT_GRACE_MS) {

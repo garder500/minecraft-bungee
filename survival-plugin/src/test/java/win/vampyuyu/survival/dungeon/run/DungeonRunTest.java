@@ -275,6 +275,44 @@ public class DungeonRunTest {
     }
 
     @Test
+    public void aFractureRunSendsThePlayerBackToTheRealmItWasOpenedFromNotTheHub() {
+        asyncHub(false);
+        World grove = server.addSimpleWorld("sb_realm_grove");
+        org.bukkit.Location entry = new org.bukkit.Location(grove, 12.5, 70, -4.5);
+        svc.runs.returnAfterRun(alice.getUniqueId(), entry);
+        running();
+        RunManager.sendOut(svc.ctx, alice);
+        assertEquals("back in the Realm, no hub request", 0, hubCalls.get());
+        assertEquals(grove, alice.getWorld());
+        assertEquals(12.5, alice.getLocation().getX(), 1e-9);
+        // used once: the next exit (a normal run) goes to the hub again
+        svc.ctx.teleport(alice, world.getSpawnLocation());
+        RunManager.sendOut(svc.ctx, alice);
+        assertEquals(1, hubCalls.get());
+    }
+
+    @Test
+    public void aSoloLeaveDoesNotSendTheRealmReturnToTheHubOnTheNextTick() {
+        asyncHub(false);
+        World grove = server.addSimpleWorld("sb_realm_grove");
+        svc.runs.returnAfterRun(alice.getUniqueId(), new org.bukkit.Location(grove, 3, 70, 3));
+        running();
+        svc.ctx.teleport(bob, server.getWorld("main_world").getSpawnLocation());
+        run.leave(bob.getUniqueId(), false);
+        // Alice leaves last: the run closes at once (moving her) and the leave's own send-out fires a tick later
+        svc.runs.leave(alice);
+        server.getScheduler().performTicks(80);
+        assertEquals(grove, alice.getWorld());
+        assertEquals("nobody asked the hub for a player who was already out", 0, hubCalls.get());
+    }
+
+    @Test
+    public void aReturnPointInsideADungeonWorldIsIgnored() {
+        svc.runs.returnAfterRun(alice.getUniqueId(), world.getSpawnLocation());
+        assertFalse(svc.ctx.returnTo.containsKey(alice.getUniqueId()));
+    }
+
+    @Test
     public void quitAndShutdownMoveThePlayerAtOnceWithoutWaitingForTheHub() {
         asyncHub(false);
         running();

@@ -79,7 +79,9 @@ public class PowerCurveTest {
      * Temporal Pharaoh is written to want Frost and resist Ember, the tier's own element (docs/skyblock-notes/citadel.md).
      */
     private static boolean onTheLadder(BossDefinition boss) {
-        return boss.kind() == BossDefinition.Kind.BOSS && !boss.id().equals("hell_gao") && !boss.id().equals("temporal_pharaoh");
+        // the Devourer is the final Raid, paced on its own (boss.settings.hp-factor.devourer), not a step of the ladder
+        return boss.kind() == BossDefinition.Kind.BOSS && !boss.id().equals("hell_gao") && !boss.id().equals("temporal_pharaoh")
+            && !boss.id().equals("devourer");
     }
 
     /** Share of the time a player really lands hits (GDD 8.7 factor 0.5), read from the data. */
@@ -206,9 +208,20 @@ public class PowerCurveTest {
         // bosses of the same tier share the health, a higher tier has more
         assertEquals(config.bosses().get("frost_revenant").health(), config.bosses().get("sylvan_matriarch").health(), 0);
         assertTrue(config.bosses().get("voidwyrm").health() > config.bosses().get("abyssal_leviathan").health());
-        assertTrue("only the flying Echo has its own factor", config.bosses().values().stream()
-            .filter(b -> hpFactor(b) != 0.5).map(BossDefinition::id).allMatch("voidwyrm"::equals));
+        assertTrue("only the flying Echo and the final Raid have their own factor", config.bosses().values().stream()
+            .filter(b -> hpFactor(b) != 0.5).map(BossDefinition::id).allMatch(id -> id.equals("voidwyrm") || id.equals("devourer")));
         assertTrue(config.bosses().get("abyssal_leviathan").health() > config.bosses().get("frost_revenant").health());
+    }
+
+    @Test
+    public void theFinalRaidLastsMinutesNotSeconds() {
+        BossDefinition devourer = config.bosses().get("devourer");
+        // 7 Guardian pools of tier 5: a flawless tier-5 player (measured 35 s on one pool) needs about 4 min, alone
+        assertEquals(curve.bossHealth(5, 180, 0.5) * 7, devourer.health(), 1);
+        assertTrue(devourer.health() > 300_000);
+        assertEquals(540, devourer.arena().enrageSeconds());
+        assertEquals(3.0, BossMath.hpMultiplier(5, devourer.arena().minPlayers(), devourer.arena().scalePerPlayer(),
+            devourer.arena().scaleCap()), 1e-9);
     }
 
     @Test
