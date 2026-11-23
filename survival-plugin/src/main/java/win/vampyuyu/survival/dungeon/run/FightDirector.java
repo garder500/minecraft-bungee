@@ -477,7 +477,7 @@ final class FightDirector {
     /** The same monster, much tougher and easy to tell apart. */
     private MobSpec elite(MobSpec base) {
         return new MobSpec("elite_" + base.id(), "Elite " + base.name(), base.type(), base.health() * run.ctx.cfg.eliteHealthPercent / 100.0,
-            base.damage() * 1.25, base.speed(), base.weapon(), base.armored(), false, base.minFloor(), 0, "<gold>");
+            base.damage() * 2.0, base.speed(), base.weapon(), base.armored(), false, base.minFloor(), 0, "<gold>");
     }
 
     /** A Hold room: the time only runs with someone in the ring, and enemies keep coming until it is over. */
@@ -579,6 +579,19 @@ final class FightDirector {
         return best;
     }
 
+    /** The plain monster hit before Ward and armor on this floor's tier, or 0 without a curve (the old rule). */
+    private double baseHit(String kind) {
+        var curve = run.ctx.curve();
+        int tier = run.floor.tier();
+        if (curve == null || !curve.has(tier)) {
+            return 0;
+        }
+        // the floor's own boss keeps the boss hit (a tenth of the health, party scale only): the floor's damage factor,
+        // which the factory multiplies in, is divided out again
+        return kind.equals("boss") ? curve.bossHitDamage(tier) / Math.max(0.1, run.floor.damage())
+            : curve.hitDamage(tier, 1.0 / run.ctx.cfg.mobHitsToDown);
+    }
+
     /** Spawns one monster of a room fight (or a guard). */
     LivingEntity spawn(RoomRt rt, MobSpec spec, String kind, Location where) {
         Location at = where;
@@ -605,7 +618,7 @@ final class FightDirector {
         LivingEntity e = run.ctx.mobFactory.spawn(run.world, at, spec, run.id, rt.index(), kind, run.floorNumber(),
             run.floor.mobLevel(), DungeonHp.health(run.ctx.curve(), run.floor.tier(), run.ctx.cfg.mobTargetSeconds,
                 run.ctx.cfg.mobBaseHealth, spec.health(), run.floor.hp(), party),
-            run.floor.damage() * dmgParty, nearestAlive(at), run.floor);
+            run.floor.damage() * dmgParty, baseHit(kind), nearestAlive(at), run.floor);
         if (e == null) {
             return null;
         }

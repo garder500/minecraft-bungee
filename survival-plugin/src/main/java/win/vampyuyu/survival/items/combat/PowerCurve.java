@@ -153,7 +153,16 @@ public final class PowerCurve {
      * deals BEFORE both layers, so it grows with the tier's gear; the same hit on a player wearing less hurts far more.
      */
     public double bossHitDamage(int tier) {
-        double wanted = playerHealth(tier) / hitsToDown; // what must get through Ward and vanilla armor
+        return hitDamage(tier, 1.0 / hitsToDown);
+    }
+
+    /**
+     * The hit, before Ward and vanilla armor, that costs a player wearing the full armor of the tier {@code share} of its
+     * health once both have acted ({@link #bossHitDamage} is this with {@code 1 / hitsToDown}). Dungeon monsters use the
+     * same maths with their own, much smaller share.
+     */
+    public double hitDamage(int tier, double share) {
+        double wanted = playerHealth(tier) * share; // what must get through Ward and vanilla armor
         double armor = vanillaArmor[tier - 1];
         double toughness = vanillaToughness[tier - 1];
         double low = wanted;
@@ -187,7 +196,12 @@ public final class PowerCurve {
 
     /** The share of its health a player of this tier loses to one boss hit of this tier at multiplier 1 (damage-scale 1). */
     public double bossHitShare(int tier) {
-        double afterWard = bossHitDamage(tier) * 100.0 / (100.0 + ward[tier - 1]);
+        return hitShare(tier, bossHitDamage(tier));
+    }
+
+    /** The share of its health a player wearing the full armor of the tier loses to a hit of {@code damage} (before Ward and armor). */
+    public double hitShare(int tier, double damage) {
+        double afterWard = damage * 100.0 / (100.0 + ward[tier - 1]);
         return afterVanillaArmor(afterWard, vanillaArmor[tier - 1], vanillaToughness[tier - 1]) / playerHealth(tier);
     }
 

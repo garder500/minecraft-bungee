@@ -436,7 +436,54 @@ public class DungeonRunTest {
         var hit = new org.bukkit.event.entity.EntityDamageByEntityEvent(mob(3.0), alice,
             EntityDamageEvent.DamageCause.ENTITY_ATTACK, 4.0);
         server.getPluginManager().callEvent(hit);
-        assertEquals("items formula (10) first, then the floor multiplier (x3)", 30.0, hit.getDamage(), 0.001);
+        assertEquals("without a power curve (no fixed hit) the old rule stays: items formula (10) first, then the multiplier (x3)", 30.0,
+            hit.getDamage(), 0.001);
+    }
+
+    /** What the event carried after LOW (the fixed hit) and what a Ward stand-in at HIGH makes of it (half). */
+    private double[] seenAtNormal = new double[1];
+
+    private void wardHalvesWhatLowSet() {
+        server.getPluginManager().registerEvents(new org.bukkit.event.Listener() {
+            @org.bukkit.event.EventHandler(priority = org.bukkit.event.EventPriority.NORMAL)
+            public void seen(org.bukkit.event.entity.EntityDamageByEntityEvent e) {
+                seenAtNormal[0] = e.getDamage();
+            }
+
+            @org.bukkit.event.EventHandler(priority = org.bukkit.event.EventPriority.HIGH)
+            public void ward(org.bukkit.event.entity.EntityDamageByEntityEvent e) {
+                e.setDamage(seenAtNormal[0] / 2); // replaces whatever the real items formula did, like Ward does
+            }
+        }, plugin);
+    }
+
+    @Test
+    public void aMonsterWithAFixedHitDealsItBeforeWardWhateverItsWeaponSays() {
+        running();
+        wardHalvesWhatLowSet();
+        alice.setHealth(20);
+        var z = mob(3.0);
+        z.getPersistentDataContainer().set(svc.ctx.keys.hit, org.bukkit.persistence.PersistentDataType.DOUBLE, 8.0);
+        var hit = new org.bukkit.event.entity.EntityDamageByEntityEvent(z, alice,
+            EntityDamageEvent.DamageCause.ENTITY_ATTACK, 11.0); // the vanilla weapon hit is irrelevant
+        server.getPluginManager().callEvent(hit);
+        assertEquals("the absolute hit is in place before Ward (HIGH)", 8.0, seenAtNormal[0], 0.001);
+        assertEquals("Ward halves it, and the x3 multiplier does not come after", 4.0, hit.getDamage(), 0.001);
+    }
+
+    @Test
+    public void theSameFixedHitFromTwoDifferentWeaponsIsTheSame() {
+        running();
+        wardHalvesWhatLowSet();
+        alice.setHealth(20);
+        var z = mob(1.0);
+        z.getPersistentDataContainer().set(svc.ctx.keys.hit, org.bukkit.persistence.PersistentDataType.DOUBLE, 1.5);
+        var weak = new org.bukkit.event.entity.EntityDamageByEntityEvent(z, alice, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 2.0);
+        var strong = new org.bukkit.event.entity.EntityDamageByEntityEvent(z, alice, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 14.0);
+        server.getPluginManager().callEvent(weak);
+        server.getPluginManager().callEvent(strong);
+        assertEquals(weak.getDamage(), strong.getDamage(), 1e-9);
+        assertEquals(0.75, weak.getDamage(), 1e-9);
     }
 
     @Test

@@ -229,11 +229,34 @@ once, at random spots, and a passive player was a ghost after about 16 s. Now (`
   a passive unprotected bot standing in the first ambush room (time until it becomes a ghost, `E2E_EG_PASSIVE_SECONDS`, default
   75) then a fighting bot (time to "Room cleared!"). `E2E_EG_MODES=passive` or `fight` runs one of the two.
 
-Measured on floor 7 with a real client (unprotected bot in full Starcore standing still in the first ambush room, seed 11):
-old ambush (12 at once) a ghost after about 16 s; cap 5 at once 20 s; cap 3 one a second 19 to 23 s; cap 2 one every 3 s 21 s.
-The drain is about 5 health per second as soon as two or three melee enemies reach the bot, whatever the cap: floor 7 damage
-(6.0) times the hit, so the cap and the waves cannot make a passive player last 45 s. That needs a lever on the damage itself
-(floor damage, the Bone Brute's Wither), not on these settings. What the settings do change: nothing lands on the player (the
-enemies spawn along the walls, 8+ blocks away, after a warning), the wave is readable, and an active player meets 3 at a time.
-Hits sent by `/damage` do not kill dungeon enemies (the virtual health pool only takes real weapon hits), so the e2e fighting
-bot only uses real clicks, which clear about half of the 12 enemies in 3 minutes before and after (the bot walks badly).
+Measured on floor 7 with a real client before the damage rework (unprotected bot in full Starcore standing still in the first
+ambush room, seed 11): old ambush (12 at once) a ghost after about 16 s; cap 5 at once 20 s; cap 3 one a second 19 to 23 s. The
+drain was about 5 health per second (floor damage 6.0 on the vanilla hit): the cap and the waves could not fix it, the damage
+could (next section). Hits sent by `/damage` do not kill dungeon enemies (the virtual health pool only takes real weapon
+hits), so the e2e fighting bot only uses real clicks (it clears a few of the 12 enemies in 3 minutes: it walks badly).
+
+## Monster damage (readable and fair, 2026-11-23)
+
+A monster hit no longer depends on its weapon or the floor's gear. `MobFactory` stores the absolute hit in the PDC key
+`dungeon_hit` = `PowerCurve.hitDamage(floor tier, 1 / dungeon.mobs.hits-to-down)` x kind (`MobSpec.damage`) x floor `damage` x
+party scale. `RunListener.onMobHit` sets it at LOW, BEFORE Ward (items feature, HIGH) and the vanilla armor, which both still
+act on it (setting it at HIGHEST would erase Ward). `hitDamage(tier, share)` is the boss maths with another share
+(`bossHitDamage(tier) = hitDamage(tier, 1 / boss hits-to-down)`, unchanged: 10 %).
+
+* `dungeon.mobs.hits-to-down` (60): a plain hit at floor damage 1.0 costs a tier-matched player 1/60 of its health.
+* `dungeon_floor.damage` is relative like `hp`: 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.05 (was 1.0 to 6.0), so a plain hit is 1.25 %
+  (floor 1) to 1.75 % (floor 7). Kinds: Bone Brute and Shadow Assassin 1.3 (the Assassin was 1.0), Sniper 1.2, Wraith 1.1,
+  Warden Guard 0.9, elite x2.0 (was 1.25), Bone Warlord x3.0 (was 1.6, about 5 %), boss-room adds = plain.
+* The floor's own boss (kind `boss`) melee is `bossHitDamage x party` (the floor factor is divided out): about 10 %.
+* Not under the fixed hit: a witch's splash (cause MAGIC, armor cannot reduce it) and the boss attack circles
+  (`BossDirector.land`, `4 + 2.5 x floor`), which keep their own rules. Without a power curve for the tier the old rule
+  (vanilla hit x floor damage after the items formula) still applies.
+* Measured, floor 7, full Starcore (96 health), passive bot in the first ambush room: 1.51 (Warden Guard), about 1.7 (plain,
+  1.75 %) and 2.18 (Bone Brute / Assassin, 1.3x) per hit, 44 s to a ghost (was about 20 s; the target was about 30 s: only
+  about one heavy hit per second lands, the 0.5 s invulnerability window eats the rest, and a Bone Brute's Wither adds 0.5
+  to 0.7 a second).
+* Health: a floor 7 Zombie Knight has a virtual pool of 2,661 (`dungeon_hp_max`, entity health attribute 100 mirroring it) and
+  dies to 4 Starcore hits (845 each). A one-hit kill was NOT reproduced on this build, so nothing was changed in
+  `DungeonHp`. Read a live monster with `data get entity <sel> BukkitValues."vampyuyusurvival:dungeon_hp"`.
+* Tests: `PowerCurveTest` (1 to 2 % per plain hit on every floor), `DungeonRunTest` (fixed hit before Ward, same hit from
+  two weapons), `DungeonHpTest` (tier-5 Knight pool), `BossSeedTest` (61 `dungeon.*` settings).

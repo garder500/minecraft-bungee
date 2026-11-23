@@ -180,6 +180,22 @@ public class PowerCurveTest {
         }
     }
 
+    /**
+     * The monster twin: a plain dungeon monster hit (dungeon.mobs.hits-to-down 60, floor damage 0.75 to 1.05) costs a
+     * tier-matched player 1 to 2 % of its health on every floor, whatever the tier.
+     */
+    @Test
+    public void aTierMatchedPlayerLosesOneToTwoPercentPerPlainMonsterHit() {
+        double[] floorDamage = {0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.05};
+        int[] floorTier = {1, 1, 2, 2, 3, 4, 5};
+        for (int floor = 1; floor <= 7; floor++) {
+            int tier = floorTier[floor - 1];
+            double share = curve.hitShare(tier, curve.hitDamage(tier, 1.0 / 60) * floorDamage[floor - 1]);
+            assertTrue("floor " + floor + " loses " + share + " per plain hit", share >= 0.01 && share <= 0.02);
+        }
+        assertEquals("the boss hit is the same maths with 1 / hitsToDown", curve.bossHitDamage(3), curve.hitDamage(3, 0.1), 1e-9);
+    }
+
     @Test
     public void anUnderGearedPlayerIsPunishedHarderThanATierMatchedOne() {
         for (int tier = 2; tier <= 5; tier++) {

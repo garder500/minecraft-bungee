@@ -23,9 +23,9 @@ public final class MobRoster {
     public static final MobSpec CRYPT_WITCH = new MobSpec("crypt_witch", "Crypt Witch", EntityType.WITCH, 46, 1.0, 1.0,
         Material.AIR, false, false, 4, 10, "<dark_purple>");
     public static final MobSpec SHADOW_ASSASSIN = new MobSpec("shadow_assassin", "Shadow Assassin", EntityType.VINDICATOR, 60,
-        1.0, 1.25, Material.IRON_AXE, true, false, 5, 14, "<dark_gray>");
+        1.3, 1.25, Material.IRON_AXE, true, false, 5, 14, "<dark_gray>");
 
-    public static final MobSpec WARLORD = new MobSpec("bone_warlord", "Bone Warlord", EntityType.WITHER_SKELETON, 400, 1.6,
+    public static final MobSpec WARLORD = new MobSpec("bone_warlord", "Bone Warlord", EntityType.WITHER_SKELETON, 400, 3.0,
         1.05, Material.NETHERITE_SWORD, true, false, 1, 0, "<dark_red>");
     public static final MobSpec WATCHER_GUARD = new MobSpec("watcher_guard", "Warden Guard", EntityType.ZOMBIE, 36, 0.9, 1.0,
         Material.STONE_SWORD, true, false, 1, 0, "<red>");

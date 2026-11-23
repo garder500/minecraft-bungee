@@ -12,6 +12,8 @@ public final class Keys {
     public final NamespacedKey mob;
     public final NamespacedKey kind;
     public final NamespacedKey damage;
+    /** Absolute hit (before Ward and armor) of a monster that deals a fixed hit; absent only without a power curve (then {@link #damage} applies, after the items formula). */
+    public final NamespacedKey hit;
     public final NamespacedKey npc;
     public final NamespacedKey level;
     /** Total health of a monster whose wanted health is above the vanilla attribute cap (its virtual pool). */
@@ -25,6 +27,7 @@ public final class Keys {
         mob = new NamespacedKey(plugin, "dungeon_mob");
         kind = new NamespacedKey(plugin, "dungeon_kind");
         damage = new NamespacedKey(plugin, "dungeon_damage");
+        hit = new NamespacedKey(plugin, "dungeon_hit");
         npc = new NamespacedKey(plugin, "dungeon_npc");
         level = new NamespacedKey(plugin, "dungeon_level");
         hpMax = new NamespacedKey(plugin, "dungeon_hp_max");
@@ -46,6 +49,10 @@ public final class Keys {
 
     public Double damageOf(Entity e) {
         return e.getPersistentDataContainer().get(damage, PersistentDataType.DOUBLE);
+    }
+
+    public Double hitOf(Entity e) {
+        return e.getPersistentDataContainer().get(hit, PersistentDataType.DOUBLE);
     }
 
     /** Total of the virtual health pool, or null for a monster with plain vanilla health. */

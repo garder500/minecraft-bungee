@@ -44,4 +44,16 @@ public class DungeonHpTest {
         // an empty pool is lethal whatever the entity has left
         assertTrue(VirtualHp.mirrored(0, 4000, 100, 37) >= 37 + 100);
     }
+
+    /** The shipped curve: a floor 7 Zombie Knight (tier 5, 2.5 s of Starcore) has a pool above the 1,024 an entity holds. */
+    @Test
+    public void aTierFiveKnightOfTheShippedCurveHasAVirtualPool() {
+        PowerCurve shipped = PowerCurve.load(win.vampyuyu.survival.data.TestDb.seeded());
+        assertTrue(shipped.has(5));
+        double knight = DungeonHp.health(shipped, 5, 2.5, 40, MobRoster.ZOMBIE_KNIGHT.health(), 1.0, 1.0);
+        assertTrue("a tier-5 Knight has " + knight, knight > 1024);
+        assertTrue("about 2.5 s of Starcore, not one hit: " + knight, knight > 2000 && knight < 4000);
+        double brute = DungeonHp.health(shipped, 5, 2.5, 40, MobRoster.BONE_BRUTE.health(), 1.0, 1.0);
+        assertEquals(knight * 70 / 40, brute, 2);
+    }
 }

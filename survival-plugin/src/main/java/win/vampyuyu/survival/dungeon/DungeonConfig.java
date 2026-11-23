@@ -105,6 +105,8 @@ public final class DungeonConfig {
     public double mobTargetSeconds;
     /** Base health that counts as one basic monster. */
     public double mobBaseHealth;
+    /** A plain monster hit costs a tier-matched player 1 / this of its health at damage multiplier 1 (see PowerCurve#hitDamage). */
+    public double mobHitsToDown;
     public int watcherGuardsBase;
     public int watcherGuardsPerFloor;
 
@@ -287,6 +289,7 @@ public final class DungeonConfig {
         partyDamageScale = dbl(r, "mobs.party-damage-scale", 0.10, 0.0, 3.0);
         mobTargetSeconds = dbl(r, "mobs.target-seconds", 2.5, 0.0, 600.0);
         mobBaseHealth = dbl(r, "mobs.base-health", 40.0, 1.0, 10000.0);
+        mobHitsToDown = dbl(r, "mobs.hits-to-down", 60.0, 2.0, 1000.0);
         watcherGuardsBase = num(r, "mobs.watcher-guards-base", 3, 0, 30);
         watcherGuardsPerFloor = num(r, "mobs.watcher-guards-per-floor", 1, 0, 10);
 
@@ -494,14 +497,15 @@ public final class DungeonConfig {
     /** Built-in floors, identical to the seeded floors. */
     private static final Object[][] FLOOR_TABLE = {
         // name, palette, grid, rooms, puzzles, traps, secretRooms, miniBosses, shop, fairy, witherDoors, loops, hp, dmg, level, par, secrets%, reward, minCombat
-        // hp is a multiplier on the tier's curve health (see dungeon.run.DungeonHp), not the monster health itself
-        {"The Entrance", "stone_brick", 3, 8, 1, 0, 1, 0, false, true, 0, 0, 1.0, 1.0, 3, 420, 40, 1.0, 0},
-        {"The Ossuary", "mossy", 4, 13, 2, 1, 1, 1, true, true, 1, 1, 1.3, 1.4, 8, 600, 45, 1.5, 5},
-        {"The Drowned Vault", "deepslate", 4, 15, 2, 1, 2, 1, true, true, 1, 1, 1.0, 1.9, 14, 720, 50, 2.2, 10},
-        {"The Black Chapel", "blackstone", 5, 18, 3, 2, 2, 2, true, true, 2, 2, 1.3, 2.6, 21, 900, 55, 3.2, 15},
-        {"The Ember Crypt", "nether", 5, 21, 3, 3, 3, 2, true, true, 2, 2, 1.0, 3.5, 29, 1080, 60, 4.6, 20},
-        {"The Crimson Spire", "crimson", 6, 26, 4, 3, 3, 3, true, true, 3, 3, 1.0, 4.6, 38, 1320, 65, 6.5, 25},
-        {"The Void Sanctum", "end", 7, 34, 5, 4, 4, 3, true, true, 3, 4, 1.0, 6.0, 50, 1680, 70, 9.0, 30}};
+        // hp is a multiplier on the tier's curve health (see dungeon.run.DungeonHp), not the monster health itself; dmg is
+        // relative too: a multiplier on the plain monster hit (dungeon.mobs.hits-to-down), not on the vanilla weapon hit
+        {"The Entrance", "stone_brick", 3, 8, 1, 0, 1, 0, false, true, 0, 0, 1.0, 0.75, 3, 420, 40, 1.0, 0},
+        {"The Ossuary", "mossy", 4, 13, 2, 1, 1, 1, true, true, 1, 1, 1.3, 0.8, 8, 600, 45, 1.5, 5},
+        {"The Drowned Vault", "deepslate", 4, 15, 2, 1, 2, 1, true, true, 1, 1, 1.0, 0.85, 14, 720, 50, 2.2, 10},
+        {"The Black Chapel", "blackstone", 5, 18, 3, 2, 2, 2, true, true, 2, 2, 1.3, 0.9, 21, 900, 55, 3.2, 15},
+        {"The Ember Crypt", "nether", 5, 21, 3, 3, 3, 2, true, true, 2, 2, 1.0, 0.95, 29, 1080, 60, 4.6, 20},
+        {"The Crimson Spire", "crimson", 6, 26, 4, 3, 3, 3, true, true, 3, 3, 1.0, 1.0, 38, 1320, 65, 6.5, 25},
+        {"The Void Sanctum", "end", 7, 34, 5, 4, 4, 3, true, true, 3, 4, 1.0, 1.05, 50, 1680, 70, 9.0, 30}};
 
     /** Weakness and resistance of the built-in floors. */
     private static final String[][] FLOOR_ELEMENTS = {{"EARTH", "VOID"}, {"EARTH", "ASTRAL"}, {"FROST", "EMBER"}, {"FROST", "VOID"},

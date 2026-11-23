@@ -198,7 +198,7 @@ public final class RunListener implements Listener {
         Entity victim = event.getEntity();
         if (victim instanceof Player) {
             LivingEntity mob = mobOf(event.getDamager());
-            Double mult = mob == null ? null : ctx.keys.damageOf(mob);
+            Double mult = mob == null || fixedHit(event, mob) != null ? null : ctx.keys.damageOf(mob); // a fixed hit was set at LOW
             if (mult != null) {
                 event.setDamage(event.getDamage() * mult);
             }
@@ -213,6 +213,28 @@ public final class RunListener implements Listener {
                 ctx.scheduler().nextTick(() -> VirtualHp.sync(ctx.keys, (LivingEntity) victim));
             }
         }
+    }
+
+    /**
+     * A monster hits for a fixed share of a tier-matched player's health, whatever its weapon or the floor's gear: the
+     * absolute hit is set at LOW, BEFORE Ward (items feature, HIGH) and vanilla armor, which both still act on it. Setting
+     * it at HIGHEST would have erased Ward.
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    public void onMobHit(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player) || !dungeonWorld(event.getEntity().getWorld())) {
+            return;
+        }
+        LivingEntity mob = mobOf(event.getDamager());
+        Double hit = mob == null ? null : fixedHit(event, mob);
+        if (hit != null) {
+            event.setDamage(hit);
+        }
+    }
+
+    /** The fixed hit of a monster for this event: melee and arrows only (a witch's splash is magic: armor cannot reduce it). */
+    private Double fixedHit(EntityDamageByEntityEvent event, LivingEntity mob) {
+        return event.getCause() == EntityDamageEvent.DamageCause.MAGIC ? null : ctx.keys.hitOf(mob);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

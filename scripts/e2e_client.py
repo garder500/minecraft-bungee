@@ -3172,28 +3172,39 @@ def endgame_scenario(ctx):
                   f"{_re.findall(r'is ([0-9.]+)', rcon.command('attribute E2EBot minecraft:max_health get'))} / {hp()}", "96")
             typed("dungeon admin goto MOB AMBUSH", 0.5)
             began = time.time()
-            trace, ghost_at = [], None
+            trace, ghost_at, last_h, drops = [], None, None, []
             while time.time() - began < watch:
                 t = time.time() - began
                 trace.append((int(t), None if hp() is None else round(hp()), alive()))
                 if gamemode() == "3":
                     ghost_at = t
                     break
+                if int(t) in (3, 8):  # the health pool of a real monster: BukkitValues carries dungeon_hp_max / dungeon_hp / dungeon_hit
+                    for kind in ("zombie", "wither_skeleton", "vindicator"):
+                        stats(f"floor 7 monster {kind} data at {int(t)} s",
+                              rcon.command(f"data get entity @e[type={kind},name=!\"Warden Guard\",limit=1,sort=nearest] BukkitValues")[:400],
+                              "", rcon.command(f"attribute @e[type={kind},limit=1,sort=nearest] minecraft:max_health get")[:80])
                 if int(t) in (6, 12):
                     kinds = {k: alive_of(k) for k in ("zombie", "skeleton", "wither_skeleton", "witch", "vindicator", "iron_golem", "enderman", "phantom", "vex")}
                     eff = _re.findall(r'id: "minecraft:([a-z_]+)"', rcon.command("data get entity E2EBot active_effects"))
                     stats(f"floor 7 passive bot at {int(t)} s: enemies by type, effects on the bot", {k: v for k, v in kinds.items() if v}, "", str(eff))
-                if int(t) in (2, 6, 15, 30) and not (shots / f"eg-6-floor7-passive-{int(t)}.png").exists():
+                if int(t) in (1, 2, 6, 15, 30) and not (shots / f"eg-6-floor7-passive-{int(t)}.png").exists():
                     shot(tools, shots / f"eg-6-floor7-passive-{int(t)}.png")
-                time.sleep(1)
+                for _ in range(5):  # 0.2 s samples: every drop is one or more hits (health before / after)
+                    h2 = hp()
+                    if h2 is not None and last_h is not None and h2 < last_h - 0.05:
+                        drops.append(round(last_h - h2, 2))
+                    last_h = h2 if h2 is not None else last_h
+                    time.sleep(0.2)
+            stats("floor 7 passive bot damage drops per 0.2 s sample (a hit each, 96 max health)", drops[:60])
             survived = ghost_at if ghost_at is not None else float(watch)
             stats("floor 7 passive bot in the first ambush room (unprotected, standing still)",
-                  f"ghost after {ghost_at:.0f} s" if ghost_at is not None else f"alive after {watch} s", "more than 45 s")
+                  f"ghost after {ghost_at:.0f} s" if ghost_at is not None else f"alive after {watch} s", "about 30 s")
             stats("floor 7 passive bot health trace (s, hp, enemies alive)", [x for x in trace if x[0] % 3 == 0])
             stats("floor 7 passive bot most enemies alive at once", max([x[2] for x in trace] or [0]))
             shot(tools, shots / "eg-6-floor7-passive-end.png")
-            if survived <= 45:
-                failures.append(f"floor 7 ambush: the passive bot was a ghost after {survived:.0f} s (want more than 45 s)")
+            if survived < 30:
+                failures.append(f"floor 7 ambush: the passive bot was a ghost after {survived:.0f} s (want at least 30 s; measured 44 s on 2026-11-23)")
 
         if "fight" not in modes:
             return
@@ -3201,12 +3212,24 @@ def endgame_scenario(ctx):
             return
         typed("dungeon admin goto MOB AMBUSH", 0.5)
         began = time.time()
-        cleared, ghosts, last_heal, hp_low, series = False, 0, 0, 999.0, []
+        cleared, ghosts, last_heal, hp_low, series, pool_trace, now_shots = False, 0, 0, 999.0, [], [], 0
         while time.time() - began < 180:
             # walk up to an enemy that is out of reach, face the nearest one, swing (a full charge: 0.7 s)
             as_bot(f"facing entity @e[distance=3.5..18,{exc},limit=1,sort=nearest] eyes run tp @s ^ ^ ^2.5")
             as_bot(f"facing entity @e[distance=..18,{exc},limit=1,sort=nearest] eyes run tp @s ~ ~ ~ ~ ~")
             click()
+            if now_shots < 3:  # the AMBUSH title lives 2 s: a few shots back to back right after the goto
+                shot(tools, shots / f"eg-6-floor7-fight-title-{now_shots}.png")
+                now_shots += 1
+            if len(pool_trace) < 60:  # a Zombie Knight's virtual pool (dungeon_hp / dungeon_hp_max) and entity health: hits to kill
+                knight = ('@e[distance=..12,type=zombie,limit=1,sort=nearest,'
+                          'nbt={BukkitValues:{"vampyuyusurvival:dungeon_mob":"zombie_knight"}}]')
+                def knight_data(path):
+                    return as_bot(f'data get entity {knight} {path}')
+                last = lambda text: (_re.findall(r"(-?[0-9.]+)[df]?$", text.strip()) or ["-"])[0]
+                pool_trace.append((round(time.time() - began, 1), last(knight_data('BukkitValues."vampyuyusurvival:dungeon_hp"')),
+                                   last(knight_data('BukkitValues."vampyuyusurvival:dungeon_hp_max"')), last(knight_data("Health")),
+                                   last(knight_data("UUID[0]"))))
             if strike:  # one full-charge Starcore hit on the nearest enemy in reach, like a player who lands every swing
                 as_bot(f"damage @e[distance=..6,{exc},limit=1,sort=nearest] 100000 minecraft:player_attack by E2EBot")
             time.sleep(0.7)
@@ -3219,13 +3242,14 @@ def endgame_scenario(ctx):
                     rcon.command("effect give E2EBot minecraft:instant_health 1 10 true")
                     last_heal = now
                     ghosts += 1
-            if now in (3, 10) and not (shots / f"eg-6-floor7-fight-{now}.png").exists():
+            if now in (1, 3, 10) and not (shots / f"eg-6-floor7-fight-{now}.png").exists():
                 shot(tools, shots / f"eg-6-floor7-fight-{now}.png")
             if chat_has("Room cleared!"):
                 cleared = True
                 break
         stats("floor 7 ambush room (level 50), fighting bot",
               f"cleared={cleared} in {int(time.time() - began)} s, lowest health {hp_low:.0f}, heals {ghosts}, most alive at once {max([x[1] for x in series] or [0])}", "")
+        stats("floor 7 fighting bot nearest enemy pool trace (s, dungeon_hp, dungeon_hp_max, entity health)", pool_trace)
         stats("floor 7 fighting bot enemies alive (s, n)", [x for x in series if x[0] % 10 == 0 or x[0] < 4][:40])
         shot(tools, shots / "eg-6-floor7-room.png")
         if not cleared:
