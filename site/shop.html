@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Locker | Vampyuyu</title>
+  <link rel="icon" href="assets/img/icon.png">
+  <link rel="preload" href="assets/fonts/GrenzeGotisch.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/Figtree.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="shop" data-title="shop.title" data-store="colony">
+  <a class="skip" href="#main">Skip to content</a>
+  <header id="site-header"></header>
+
+  <main id="main">
+    <section class="page-head">
+      <div class="wrap">
+        <h1 data-i18n="shop.title">The Locker</h1>
+        <p class="lead" data-i18n="shop.lead"></p>
+        <p class="notice">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+          <span data-i18n="shop.notice"></span>
+        </p>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <div class="tabs" role="tablist" aria-label="Shops">
+        <button type="button" role="tab" data-store-tab="colony" aria-controls="shop" data-i18n="shop.tab.colony">Colony locker</button>
+        <button type="button" role="tab" data-store-tab="isles" aria-controls="shop" data-i18n="shop.tab.isles">Isles (Skyblock)</button>
+      </div>
+
+      <div class="shop-layout" id="shop" role="tabpanel">
+        <div id="shop-items"></div>
+        <aside class="cart" aria-labelledby="cart-title">
+          <h2 id="cart-title" data-i18n="shop.cart">Cart</h2>
+          <p class="store" id="cart-store"></p>
+          <div id="cart-lines"></div>
+          <div class="cart-total"><span data-i18n="shop.total">Total</span><span id="cart-total"></span></div>
+          <button type="button" class="btn btn-off" disabled data-i18n="shop.checkout">Checkout opens soon</button>
+          <p class="note" data-i18n="shop.cartNote"></p>
+        </aside>
+      </div>
+
+      <div class="shop-extra">
+        <div class="never-box">
+          <h2 data-i18n="prices.never.title">Never for sale</h2>
+          <ul class="never" id="never-list"></ul>
+        </div>
+        <div class="side">
+          <div class="panel">
+            <h2 data-i18n="prices.odds.title">Box odds</h2>
+            <p data-i18n="prices.odds.body"></p>
+          </div>
+          <div class="panel">
+            <h2 data-i18n="shop.parentsTitle">For parents</h2>
+            <p data-i18n="shop.parentsBody"></p>
+            <a href="parents.html" data-i18n="shop.parentsMore">Read more</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="site-footer"></footer>
+  <script src="assets/i18n.js"></script>
+  <script src="assets/shop-data.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
