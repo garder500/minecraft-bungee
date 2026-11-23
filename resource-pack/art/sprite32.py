@@ -122,7 +122,7 @@ def minus(a, *cuts):
     return lambda x, y: a(x, y) and not any(s(x, y) for s in cuts)
 
 
-def sphere(c, cx, cy, r, ramp, light=(-0.55, -0.65), rim=None):
+def sphere(c, cx, cy, r, ramp, light=(-0.55, -0.65), rim=None, dither=True):
     """Shades a ball with the ramp (dark to light), 2x2 ordered dither between the steps, no colour outside the ramp."""
     lx, ly = light
     lz = math.sqrt(max(0.0, 1 - lx * lx - ly * ly))
@@ -138,7 +138,7 @@ def sphere(c, cx, cy, r, ramp, light=(-0.55, -0.65), rim=None):
             pos = lum * (len(ramp) - 1)
             lo = int(pos)
             frac = pos - lo
-            idx = lo + (1 if lo < len(ramp) - 1 and frac > bayer[y % 2][x % 2] else 0)
+            idx = lo + (1 if lo < len(ramp) - 1 and frac > (bayer[y % 2][x % 2] if dither else 0.5) else 0)
             col = ramp[idx]
             if rim and dx * 0.7 + dy * 0.7 > 0.86:   # a rim light on the lower right
                 col = rim
@@ -181,3 +181,31 @@ def contact_sheet(path, canvases, cols, scale=5, gap=2):
     with open(path, "wb") as f:
         f.write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
                 + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b""))
+
+
+def lobes(c, balls, ramp, light=(-0.55, -0.65)):
+    """Several overlapping balls (cx, cy, r) shaded as one lumpy body: each pixel takes the ball it is deepest in.
+    Hard steps, no dither."""
+    lx, ly = light
+    lz = math.sqrt(max(0.0, 1 - lx * lx - ly * ly))
+    for y in range(N):
+        for x in range(N):
+            best = None
+            for cx, cy, r in balls:
+                dx, dy = (x + 0.5 - cx) / r, (y + 0.5 - cy) / r
+                d2 = dx * dx + dy * dy
+                if d2 <= 1 and (best is None or d2 < best[0]):
+                    best = (d2, dx, dy)
+            if best:
+                d2, dx, dy = best
+                nz = math.sqrt(1 - d2)
+                lum = max(0.0, min(1.0, 0.18 + 0.82 * (dx * lx + dy * ly + nz * lz)))
+                c.set(x, y, ramp[min(len(ramp) - 1, int(lum * (len(ramp) - 1) + 0.5))])
+
+
+def brush(c, x, y, color, size=2):
+    """A size x size square whose top-left pixel is (floor x, floor y): the 2 px strokes of the thick glyphs and claws."""
+    x, y = math.floor(x), math.floor(y)
+    for dy in range(size):
+        for dx in range(size):
+            c.set(x + dx, y + dy, color)
