@@ -121,10 +121,10 @@ final class FightDirector {
                 if (run.witherKeys > 0) {
                     run.witherKeys--;
                     openDoor(i);
-                    run.sayAll("<dark_gray>" + p.getName() + " <gray>unlocked a <dark_gray>Wither Door<gray>. Keys left: <white>"
+                    run.sayAll("<dark_gray>" + p.getName() + " <gray>unlocked a <dark_gray>Barrow Door<gray>. Keys left: <white>"
                         + run.witherKeys);
                 } else {
-                    run.say(p, "<gray>This door is sealed by <dark_gray>Wither<gray> magic. Clear a mob room to claim a <white>Wither Key<gray>.");
+                    run.say(p, "<gray>This door is sealed by <dark_gray>barrow<gray> magic. Clear a mob room to claim a <white>Barrow Key<gray>.");
                     run.sound(run.built.doors.get(i).blocks().get(0), Sound.BLOCK_CHAIN_PLACE, 1f, 0.6f);
                 }
             }
@@ -133,7 +133,7 @@ final class FightDirector {
                     openBloodDoor();
                 } else {
                     int left = guardsLeft();
-                    run.say(p, "<red>The blood door is sealed. <gray>The Watcher's guards still live (<white>" + left + "<gray> left).");
+                    run.say(p, "<red>The ossuary door is sealed. <gray>The Warden's guards still live (<white>" + left + "<gray> left).");
                 }
             }
             case OPEN -> run.say(p, "<gray>The doors are locked until the fight is over.");
@@ -234,8 +234,8 @@ final class FightDirector {
         for (int i = 0; i < now; i++) {
             spawnGuard(run.layout.entrance().index);
         }
-        run.sayAll("<gray>The <dark_red>Watcher<gray> has sent <white>" + guardsTotal
-            + "<gray> guards to find you. Slay them all to forge the <red>blood key<gray>.");
+        run.sayAll("<gray>The <dark_red>Barrow Warden<gray> has sent <white>" + guardsTotal
+            + "<gray> guards to find you. Slay them all to forge the <red>ossuary key<gray>.");
     }
 
     private void spawnGuard(int room) {
@@ -274,7 +274,7 @@ final class FightDirector {
     private void checkBloodKey() {
         if (guardsStarted && !bloodKey && guardsSpawned >= guardsTotal && guards.isEmpty()) {
             bloodKey = true;
-            run.sayAll("<red><bold>The blood key is forged!</bold> <gray>Open the blood door next to the blood room.");
+            run.sayAll("<red><bold>The ossuary key is forged!</bold> <gray>Open the ossuary door next to the ossuary room.");
             run.soundAll(Sound.BLOCK_BEACON_ACTIVATE, 1f, 0.5f);
             RoomRt blood = run.rooms.get(run.layout.blood().index);
             if (blood != null && blood.visited) {
@@ -291,7 +291,7 @@ final class FightDirector {
             if (d.kind == DoorKind.BLOOD) {
                 bloodOpened = true;
                 openDoor(run.layout.doors().indexOf(d));
-                run.sayAll("<red>The blood door grinds open...");
+                run.sayAll("<red>The ossuary door grinds open...");
                 run.soundAll(Sound.ENTITY_WITHER_SPAWN, 0.4f, 0.6f);
             }
         }
@@ -322,9 +322,9 @@ final class FightDirector {
             case BLOOD -> {
                 spawnRemainingGuards(plan.index);
                 if (rt.build.bloodSign != null) {
-                    run.spawnLabel(run.loc(rt.build.bloodSign).add(0, 0.5, 0), "<red><bold>BLOOD DOOR");
+                    run.spawnLabel(run.loc(rt.build.bloodSign).add(0, 0.5, 0), "<red><bold>OSSUARY DOOR");
                 }
-                run.say(p, "<red>The air is thick with blood. <gray>Slay the Watcher's guards, then open the door.");
+                run.say(p, "<red>The air is thick with grave dust. <gray>Slay the Warden's guards, then open the door.");
                 if (bloodKey) {
                     openBloodDoor();
                 }
@@ -665,7 +665,7 @@ final class FightDirector {
         run.sayAll("<green>Room cleared!");
         if (rt.build.plan.keyCarrier) {
             run.witherKeys++;
-            run.sayAll("<dark_gray><bold>A Wither Key</bold> <gray>drops from the last enemy! Keys: <white>" + run.witherKeys);
+            run.sayAll("<dark_gray><bold>A Barrow Key</bold> <gray>drops from the last enemy! Keys: <white>" + run.witherKeys);
             run.soundAll(Sound.ENTITY_ITEM_PICKUP, 1f, 0.6f);
         }
     }

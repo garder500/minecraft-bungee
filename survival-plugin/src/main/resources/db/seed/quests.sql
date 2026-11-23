@@ -7,7 +7,7 @@ INSERT INTO quest_category (id, position, name, description, main, icon, unlock)
 INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('tiers', 3, 'Raise the Generators', 'The Forge, the cores, tiers I to IV. The crystallised memories of Aethelgard answer your hammer, and progress speeds up.', 1, 'AMETHYST_SHARD', 'q031');
 INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('rift', 4, 'The Hub and the Rift', 'With the Bronze armor on your back the Call shows you the way out of the islet: the Hub, its people, and the Rift where the first Echo waits.', 1, 'CRYING_OBSIDIAN', 'q145');
 INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('nether', 5, 'The Nether and the Ember', 'Your fragment has a slag-red twin. Through a portal wait the Ember generator, quartz and soul sand.', 1, 'NETHERRACK', 'q060');
-INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('end', 6, 'The End and the Void', 'The Void Lens opens /island end. The Echo of the Rift haunts the Void.', 1, 'END_STONE', 'q065');
+INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('end', 6, 'The End and the Void', 'The Void Lens opens /island end. Face the Echo of the Rift again at the Hub altar.', 1, 'END_STONE', 'q065');
 INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('farm', 7, 'Farming and Food', 'Quiet work for a fragment that is learning to grow things again. Play it alongside the generators.', 0, 'WHEAT', 'q013');
 INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('forging', 8, 'Forge and Gear', 'Everything the Forge makes, from the bronze tools to the Bastion keys.', 0, 'BLAST_FURNACE', 'q057');
 INSERT INTO quest_category (id, position, name, description, main, icon, unlock) VALUES ('machines', 9, 'Machines and Energy', 'Coal, cables on redstone, batteries, solar panels, then Miners that break the generator for you.', 0, 'REDSTONE', 'q021');
@@ -258,7 +258,7 @@ INSERT INTO quest (id, pool, position, category, name, description, type, target
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q093', 0, 'q065');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q094', 'plan', 100, 'end', 'End Bricks', 'Craft 16 end stone bricks.', 'CRAFT_ITEM', 'END_STONE_BRICKS', 16, 'END_STONE_BRICKS', 200.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q094', 0, 'q065');
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q095', 'plan', 101, 'end', 'Void Sigil', 'Collect a Void Sigil from the Forge (/forge).', 'FORGE_ITEM', 'void_sigil', 1, 'NETHER_STAR', 400.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q095', 'plan', 101, 'end', 'Void Sigil', 'Forge a Void Sigil (/forge), a trophy of the Rift. It no longer summons the Echo: the Echo Key does.', 'FORGE_ITEM', 'void_sigil', 1, 'NETHER_STAR', 400.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q095', 0, 'q065');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q097', 'plan', 102, 'end', 'Echo of the Rift Again', 'Defeat the Echo of the Rift 3 times.', 'BOSS_KILL', 'voidwyrm', 3, 'DRAGON_HEAD', 2000.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q097', 0, 'q065');
@@ -595,9 +595,9 @@ INSERT INTO quest (id, pool, position, category, name, description, type, target
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q240', 0, 'q212');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q241', 'plan', 267, 'bosses', 'Chained Leviathan x3', 'Defeat the Chained Leviathan 3 times.', 'BOSS_KILL', 'abyssal_leviathan', 3, 'PRISMARINE_SHARD', 1000.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q241', 0, 'q212');
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q242', 'plan', 268, 'bosses', 'Crypt Lord', 'Defeat the Crypt Lord, the boss of the dungeon floors (/dungeon).', 'BOSS_KILL', 'crypt_lord', 1, 'SKELETON_SKULL', 800.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q242', 'plan', 268, 'bosses', 'Judge of Lost Souls', 'Defeat the Judge of Lost Souls, Guardian of the Ethereal Necropolis (/bastion).', 'BOSS_KILL', 'crypt_lord', 1, 'SKELETON_SKULL', 800.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q242', 0, 'q212');
-INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q243', 'plan', 269, 'bosses', 'Crypt Lord x3', 'Defeat the Crypt Lord 3 times.', 'BOSS_KILL', 'crypt_lord', 3, 'SKELETON_SKULL', 1100.0);
+INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q243', 'plan', 269, 'bosses', 'Judge of Lost Souls x3', 'Defeat the Judge of Lost Souls 3 times.', 'BOSS_KILL', 'crypt_lord', 3, 'SKELETON_SKULL', 1100.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q243', 0, 'q212');
 INSERT INTO quest (id, pool, position, category, name, description, type, target, amount, icon, reward_coins) VALUES ('q244', 'plan', 270, 'bosses', 'Any Boss x50', 'Defeat 50 bosses.', 'BOSS_KILL', '', 50, 'DRAGON_HEAD', 5000.0);
 INSERT INTO quest_requirement (quest_id, position, requires) VALUES ('q244', 0, 'q212');

@@ -25,7 +25,7 @@
  },
  "cat:end": {
   "name": "L'End et le Vide",
-  "description": "La Void Lens ouvre /island end. L'Écho de la Faille hante le Vide."
+  "description": "La Void Lens ouvre /island end. Affronte de nouveau l'Écho de la Faille à l'autel du Hub."
  },
  "cat:farm": {
   "name": "Agriculture et nourriture",
@@ -481,7 +481,7 @@
  },
  "q095": {
   "name": "Void Sigil",
-  "description": "Récupère un Void Sigil à la Forge (/forge)."
+  "description": "Forge un Void Sigil (/forge), trophée de la Faille. Il n'invoque plus l'Écho : c'est l'Echo Key qui s'en charge."
  },
  "q097": {
   "name": "L'Écho de la Faille, encore",
@@ -904,12 +904,12 @@
   "description": "Vaincs le Chained Leviathan 3 fois."
  },
  "q242": {
-  "name": "Crypt Lord",
-  "description": "Vaincs le Crypt Lord, le boss des étages du donjon (/dungeon)."
+  "name": "Juge des âmes perdues",
+  "description": "Vaincs le Juge des âmes perdues, Gardien de la Nécropole éthérée (/bastion)."
  },
  "q243": {
-  "name": "Crypt Lord ×3",
-  "description": "Vaincs le Crypt Lord 3 fois."
+  "name": "Juge des âmes perdues ×3",
+  "description": "Vaincs le Juge des âmes perdues 3 fois."
  },
  "q244": {
   "name": "N'importe quel boss ×50",

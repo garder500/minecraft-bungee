@@ -101,7 +101,7 @@ INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q091:fr'
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q092:fr', 'q092', 'fr', 'Pierre de l''End', 'Casse 64 blocs de pierre de l''End.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q093:fr', 'q093', 'fr', 'Mites du Vide', 'Vaincs 15 endermites (les Void Mites de l''Écho de la Faille).');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q094:fr', 'q094', 'fr', 'Briques de l''End', 'Fabrique 16 briques de pierre de l''End.');
-INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q095:fr', 'q095', 'fr', 'Void Sigil', 'Récupère un Void Sigil à la Forge (/forge).');
+INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q095:fr', 'q095', 'fr', 'Void Sigil', 'Forge un Void Sigil (/forge), trophée de la Faille. Il n''invoque plus l''Écho : c''est l''Echo Key qui s''en charge.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q097:fr', 'q097', 'fr', 'L''Écho de la Faille, encore', 'Vaincs l''Écho de la Faille 3 fois.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q098:fr', 'q098', 'fr', 'Maître de l''Écho de la Faille', 'Vaincs l''Écho de la Faille 10 fois.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q099:fr', 'q099', 'fr', 'Houe', 'Fabrique une houe en bois.');
@@ -268,8 +268,8 @@ INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q238:fr'
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q239:fr', 'q239', 'fr', 'Boreal Watcher ×3', 'Vaincs le Boreal Watcher 3 fois.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q240:fr', 'q240', 'fr', 'Mycelial Queen ×3', 'Vaincs la Mycelial Queen 3 fois.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q241:fr', 'q241', 'fr', 'Chained Leviathan ×3', 'Vaincs le Chained Leviathan 3 fois.');
-INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q242:fr', 'q242', 'fr', 'Crypt Lord', 'Vaincs le Crypt Lord, le boss des étages du donjon (/dungeon).');
-INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q243:fr', 'q243', 'fr', 'Crypt Lord ×3', 'Vaincs le Crypt Lord 3 fois.');
+INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q242:fr', 'q242', 'fr', 'Juge des âmes perdues', 'Vaincs le Juge des âmes perdues, Gardien de la Nécropole éthérée (/bastion).');
+INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q243:fr', 'q243', 'fr', 'Juge des âmes perdues ×3', 'Vaincs le Juge des âmes perdues 3 fois.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q244:fr', 'q244', 'fr', 'N''importe quel boss ×50', 'Vaincs 50 boss.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q245:fr', 'q245', 'fr', 'N''importe quel boss ×100', 'Vaincs 100 boss.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q246:fr', 'q246', 'fr', 'Des clés pour l''équipe', 'Récupère à la Forge (/forge) : 2× Ashes Bastion Key.');
@@ -380,7 +380,7 @@ INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUE
 INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUES ('tiers:fr', 'tiers', 'fr', 'Élever les générateurs', 'La Forge, les noyaux, les paliers I à IV. Les souvenirs cristallisés d''Aethelgard répondent à ton marteau, et les progrès s''accélèrent.');
 INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUES ('rift:fr', 'rift', 'fr', 'Le Hub et la Faille', 'Avec l''armure de Bronze sur le dos, l''Appel te montre la sortie de l''îlot : le Hub, ses habitants, et la Faille où attend le premier Écho.');
 INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUES ('nether:fr', 'nether', 'fr', 'Le Nether et la Braise', 'Ton fragment a un jumeau rouge de scories. Derrière un portail t''attendent le générateur Ember, le quartz et le sable des âmes.');
-INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUES ('end:fr', 'end', 'fr', 'L''End et le Vide', 'La Void Lens ouvre /island end. L''Écho de la Faille hante le Vide.');
+INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUES ('end:fr', 'end', 'fr', 'L''End et le Vide', 'La Void Lens ouvre /island end. Affronte de nouveau l''Écho de la Faille à l''autel du Hub.');
 INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUES ('farm:fr', 'farm', 'fr', 'Agriculture et nourriture', 'Un travail tranquille pour un fragment qui réapprend à faire pousser des choses. À jouer en parallèle des générateurs.');
 INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUES ('forging:fr', 'forging', 'fr', 'Forge et équipement', 'Tout ce que fabrique la Forge, des outils de bronze aux clés du Bastion.');
 INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUES ('machines:fr', 'machines', 'fr', 'Machines et énergie', 'Du charbon, des câbles sur de la redstone, des batteries, des panneaux solaires, puis des Miners qui cassent le générateur à ta place.');
@@ -494,7 +494,7 @@ INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q091:de'
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q092:de', 'q092', 'de', 'Endstein', 'Baue 64 Endstein ab.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q093:de', 'q093', 'de', 'Leeremilben', 'Besiege 15 Endermiten (die Void Mites des Echos des Risses).');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q094:de', 'q094', 'de', 'Endziegel', 'Stelle 16 Endsteinziegel her.');
-INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q095:de', 'q095', 'de', 'Void Sigil', 'Hole ein Void Sigil aus der Forge (/forge).');
+INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q095:de', 'q095', 'de', 'Void Sigil', 'Schmiede ein Void Sigil (/forge), eine Trophäe des Risses. Es beschwört das Echo nicht mehr: Das übernimmt der Echo Key.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q097:de', 'q097', 'de', 'Das Echo des Risses, nochmal', 'Besiege das Echo des Risses 3-mal.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q098:de', 'q098', 'de', 'Meister des Echos des Risses', 'Besiege das Echo des Risses 10-mal.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q099:de', 'q099', 'de', 'Hacke', 'Stelle eine Holzhacke her.');
@@ -661,8 +661,8 @@ INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q238:de'
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q239:de', 'q239', 'de', 'Boreal Watcher ×3', 'Besiege den Boreal Watcher 3-mal.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q240:de', 'q240', 'de', 'Mycelial Queen ×3', 'Besiege die Mycelial Queen 3-mal.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q241:de', 'q241', 'de', 'Chained Leviathan ×3', 'Besiege den Chained Leviathan 3-mal.');
-INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q242:de', 'q242', 'de', 'Crypt Lord', 'Besiege den Crypt Lord, den Boss der Verlies-Etagen (/dungeon).');
-INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q243:de', 'q243', 'de', 'Crypt Lord ×3', 'Besiege den Crypt Lord 3-mal.');
+INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q242:de', 'q242', 'de', 'Richter der verlorenen Seelen', 'Besiege den Richter der verlorenen Seelen, Wächter der Ätherischen Nekropole (/bastion).');
+INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q243:de', 'q243', 'de', 'Richter der verlorenen Seelen ×3', 'Besiege den Richter der verlorenen Seelen 3-mal.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q244:de', 'q244', 'de', 'Beliebiger Boss ×50', 'Besiege 50 Bosse.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q245:de', 'q245', 'de', 'Beliebiger Boss ×100', 'Besiege 100 Bosse.');
 INSERT INTO quest_text (id, quest_id, lang, name, description) VALUES ('q246:de', 'q246', 'de', 'Schlüssel für eine Gruppe', 'Hole in der Forge (/forge): 2× Ashes Bastion Key.');
@@ -773,7 +773,7 @@ INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUE
 INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUES ('tiers:de', 'tiers', 'de', 'Die Generatoren aufwerten', 'Die Forge, die Kerne, Stufen I bis IV. Die kristallisierten Erinnerungen Aethelgards antworten auf deinen Hammer, und der Fortschritt beschleunigt sich.');
 INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUES ('rift:de', 'rift', 'de', 'Der Hub und der Riss', 'Mit der Bronzerüstung auf dem Rücken zeigt dir der Ruf den Weg von der Insel: der Hub, seine Bewohner und der Riss, in dem das erste Echo wartet.');
 INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUES ('nether:de', 'nether', 'de', 'Der Nether und die Glut', 'Dein Fragment hat einen schlackenroten Zwilling. Hinter einem Portal warten der Ember-Generator, Quarz und Seelensand.');
-INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUES ('end:de', 'end', 'de', 'Das Ende und die Leere', 'Die Void Lens öffnet /island end. Das Echo des Risses spukt in der Leere.');
+INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUES ('end:de', 'end', 'de', 'Das Ende und die Leere', 'Die Void Lens öffnet /island end. Stelle dich am Altar im Hub erneut dem Echo des Risses.');
 INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUES ('farm:de', 'farm', 'de', 'Landwirtschaft und Essen', 'Ruhige Arbeit für ein Fragment, das wieder lernt, Dinge wachsen zu lassen. Spiel sie neben den Generatoren.');
 INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUES ('forging:de', 'forging', 'de', 'Schmiede und Ausrüstung', 'Alles, was die Forge herstellt, von den Bronzewerkzeugen bis zu den Bastionsschlüsseln.');
 INSERT INTO quest_category_text (id, category_id, lang, name, description) VALUES ('machines:de', 'machines', 'de', 'Maschinen und Energie', 'Kohle, Kabel auf Redstone, Batterien, Solarpaneele und dann Miner, die den Generator für dich abbauen.');

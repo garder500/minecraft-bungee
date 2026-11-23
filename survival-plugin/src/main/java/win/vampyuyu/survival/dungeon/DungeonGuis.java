@@ -118,7 +118,7 @@ public final class DungeonGuis {
         DungeonData.FloorStats s = data.floors.get(Integer.toString(f.number()));
         List<String> lore = new ArrayList<>();
         lore.add("<gray>" + f.rooms() + " rooms, " + f.puzzles() + " puzzles, " + f.secretRooms() + " secret rooms");
-        lore.add("<gray>" + f.miniBosses() + " mini-bosses, " + f.witherDoors() + " wither doors");
+        lore.add("<gray>" + f.miniBosses() + " mini-bosses, " + f.witherDoors() + " barrow doors");
         lore.add("<gray>Monsters: level <white>" + f.mobLevel() + "<gray>, health x<white>" + f.hp() + "<gray>, damage x<white>" + f.damage());
         lore.add("<gray>Par time: <white>" + clock(f.parSeconds() * 1000L) + "<gray>, rewards x<white>" + f.reward());
         if (s != null && s.runs > 0) {
