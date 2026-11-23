@@ -11,8 +11,14 @@ Nothing is built while `sb_hub` does not exist or `hub.enabled` is false.
 - **Travel**: walking into the glass of a lit gate. A 1.2 s blindness hides the teleport (title with the Realm).
   Dark gate: a "dormant" notice. Back: `/hub`, `/island`, or `/quai`.
 - **API** (`api/SkyGateApi`): `light`, `extinguish`, `isLit`, `litRealms`, `setDestination(realm, player -> Location)`,
-  `travel`, `quaiSpawn`. A phase that opens a Realm calls `light` and `setDestination`. Without a destination a lit gate
-  leads to a placeholder landing (`QuaiLanding`, a small platform per Realm in the sky of the hub, built on first use).
+  `travel`, `quaiSpawn`. A phase that opens a Realm calls `light` and `setDestination`. All eight Realms (Ashes, Grove, Heights, Citadel, Marshes, Archipelago, Depths, Necropolis) register a destination
+when their world is built (`AshesRealm`, `GroveRealm`, `FrostRealm`, `CitadelRealm`, `MarshRealm`, `StormRealm`,
+`DepthsRealm`, `NecropolisRealm`), so a lit gate leads to the Realm's own landing, a themed platform with a sign
+(`<Realm>Plan`, anchor `spawn`). Ashes, Archipelago and Depths read "/quai to return"; Grove, Heights, Citadel,
+Marshes and Necropolis read "/hub to leave" and "/island to go home" (`/quai` works too). There is no physical return
+gate: the way back is a command. `QuaiLanding` (a small platform per Realm in the sky of the hub) is only a fallback for a
+Realm that registers no destination (none today); while a Realm is not ready its destination returns null and the
+player sees "The way through the Gate is not open right now." instead.
 - **Commands**: `/quai` (go there), `/gates` (list), `/gateadmin light|dark <player> <realm|all>`, `list`,
   `travel <player> <realm>`, `rebuild`.
 - Layout changes: bump `QuaiPlan.VERSION` so existing Quais are rebuilt (2: the bridge is restyled as the end of the processional, with a ruined arch).
