@@ -7,7 +7,9 @@ A complete Realm: zone + local resource + system + Bastion + Guardian.
   dais arch of the Judge, soul sand field, landing). Marker `island/necropolis-build.json`; bump `NecropolisPlan.VERSION` to rebuild.
 - **Gate**: `SkyGateApi.setDestination(Realm.NECROPOLIS, ...)`. Lights for the players who fought the boss of the setting
   `island.necropolis.gate-boss` (default `abyssal_leviathan`, a guess: the Guardian of the Realm before it). `/gateadmin light <player> necropolis` works.
-- **Mechanics**: the fading of the memories (Darkness pulses, no damage) until affinity tier 1 *Lucidity*; affinity points =
+- **Mechanics**: the fading of the memories (Darkness waves, no damage) until affinity tier 1 *Lucidity*: a 4 s wave every 24 s per player (own phase), never within
+  24 blocks of the landing (`NecropolisRealm.hazeNow`). It used to be refreshed every second, which makes Darkness permanent (no pulse, black sky,
+  Night Vision useless: seen from 14 blocks above the landing); affinity points =
   undead killed in the Necropolis (40 -> Lucidity, 200 -> *Recall*: one Memory Shard every `island.necropolis.recall-kills` = 10 undead kills,
   via `ResonanceApi.grantShards`). Void rescue to the landing. Quest events: `necropolis_enter`, `necropolis_affinity:1|2` (no quest uses them yet).
 - **Soul Ash** (GDD 3.2, name still to validate): `realm_resource` row `soul_ash` (6 % / 12 / 36 like the other two), from soul sand, soul soil, bone

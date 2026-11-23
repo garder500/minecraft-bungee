@@ -245,3 +245,7 @@ take the boss away while players walk to it.
   lock pearls and building in the hub; edit `summon.worlds` to change it.
 * No custom sounds or translated names (pack rules): vanilla sounds only.
 * Slayers run only in island worlds (`sb_world`, `sb_nether`, `sb_end`); `sb_hub` was removed from `slayers.*.worlds` (design principle, docs/skyblock-design.md section 13). World boss spots stay on the hub plaza (special event).
+
+* **Land-locked Guardian**: the Chained Leviathan is an Elder Guardian, and every Bastion arena (and the hub) is dry. Vanilla makes a Guardian out of water flop
+  (a hop and a random sideways push at every landing), so it wandered off and fell from small platforms with its model. `BossSession.keepWaterMobOnLand` turns its AI
+  off while it is not in water (abilities are the session's own and keep running), faces it toward the nearest player and gives the AI back in water.

@@ -12,8 +12,9 @@ GDD 12.4 (ranks), 15.2 (pity), 15.3-15.5 (Shards). Code: `survival/resonance/`, 
 ## Memory Shards
 - Source: each Bastion clear pays `baseShards` (per boss, `resonance.bastions` list row `bossId|realmId|component|baseShards`) x
   `(1 + 0.25 x (rank-1))`, x2 on the first clear of the UTC day (no permanent streak). Needs `shards.min-share` (5%) of the damage.
-- Failure (GDD 15.4): `ResonanceRules.defeat` pays `defeat-fraction` (20%) of a clear scaled by progress. **Not wired yet**: nothing
-  calls it, the boss feature has no "late defeat" signal for the summon fights.
+- Failure (GDD 15.4): `ResonanceRules.defeat` pays `defeat-fraction` (20%) of a clear scaled by progress. Wired for Bastions: `BastionService` calls
+  `ResonanceApi.payDefeat` (`ResonanceService.payDefeat`, needs `shards.min-share` of the damage and some progress) for each present player on a
+  `DEFEATED` run. **Not wired for the summon fights**: the boss feature has no "late defeat" signal outside a Bastion, so only Bastion defeats pay.
 - Use: `/resonance forge <boss>` costs 100 Shards for one component of a boss whose component the player already got once
   (`found`), 5 forges per ISO week (guess).
 - Guarantee (GDD 15.2): `BossLootHook` (3-argument `roll` sees what the boss already dropped). The component is handed out on the 4th

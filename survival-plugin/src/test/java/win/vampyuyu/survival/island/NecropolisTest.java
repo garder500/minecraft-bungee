@@ -109,4 +109,20 @@ public class NecropolisTest {
         m.version = NecropolisPlan.VERSION - 1;
         assertFalse(NecropolisRealm.upToDate(m));
     }
+
+    @Test
+    public void hazeComesInWavesAndSparesTheLanding() {
+        int phase = 7;
+        int waves = 0;
+        for (int second = 0; second < NecropolisRealm.HAZE_PERIOD * 10; second++) {
+            assertFalse("never near the landing", NecropolisRealm.hazeNow(second, phase, 5));
+            if (NecropolisRealm.hazeNow(second, phase, 60)) {
+                waves++;
+            }
+        }
+        assertEquals(10, waves);
+        assertTrue("a wave is shorter than the gap between two", NecropolisRealm.HAZE_TICKS < NecropolisRealm.HAZE_PERIOD * 20);
+        assertTrue(NecropolisRealm.hazeNow(NecropolisRealm.HAZE_PERIOD - 7, 7, 60));
+        assertTrue("negative phases work", NecropolisRealm.hazeNow(0, -NecropolisRealm.HAZE_PERIOD, 60));
+    }
 }

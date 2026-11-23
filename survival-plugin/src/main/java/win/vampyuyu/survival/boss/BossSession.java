@@ -26,6 +26,7 @@ import org.bukkit.World;
 import org.bukkit.entity.EnderCrystal;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Guardian;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
@@ -530,6 +531,7 @@ public final class BossSession {
             end(End.TIMEOUT, null);
             return;
         }
+        keepWaterMobOnLand(inArena);
         leash();
         targetOwner();
         updateEnrage();
@@ -583,6 +585,42 @@ public final class BossSession {
     /** An ability steers the flyer for the next {@code serverTicks}. */
     void steer(int serverTicks) {
         steeredUntil = Math.max(steeredUntil, Bukkit.getCurrentTick() + serverTicks);
+    }
+
+    /**
+     * A Guardian (the Chained Leviathan is an Elder Guardian) out of water does what vanilla makes it do on land: it flops,
+     * a hop of 0.5 block with a random sideways push, on every landing. Observed in the hub's Breach islet: it wandered
+     * ten blocks from where it was spawned and dropped off the edge, the model with it. Every Bastion arena is a dry
+     * floor, so it did the same there. While it is dry its AI is off (it stays where it is, the abilities still run, they
+     * are the session's own) and the session turns it toward the nearest player, which the swim AI would have done. The AI
+     * comes back as soon as it is in water.
+     */
+    private void keepWaterMobOnLand(List<Player> inArena) {
+        if (!(entity instanceof Guardian guardian)) {
+            return;
+        }
+        boolean dry = !guardian.isInWater();
+        if (guardian.hasAI() == dry) {
+            guardian.setAI(!dry);
+        }
+        if (dry && !inArena.isEmpty()) {
+            Location at = guardian.getLocation();
+            Player nearest = null;
+            double best = Double.MAX_VALUE;
+            for (Player p : inArena) {
+                double d = Fx.flat(p.getLocation(), at);
+                if (d < best) {
+                    best = d;
+                    nearest = p;
+                }
+            }
+            if (nearest != null) {
+                Location to = nearest.getLocation();
+                float yaw = (float) Math.toDegrees(Math.atan2(-(to.getX() - at.getX()), to.getZ() - at.getZ()));
+                guardian.setRotation(yaw, 0f);
+                guardian.setBodyYaw(yaw);
+            }
+        }
     }
 
     private void leash() {
