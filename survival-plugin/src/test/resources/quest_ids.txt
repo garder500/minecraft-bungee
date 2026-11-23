@@ -319,3 +319,11 @@ forge_void_shovel forging FORGE_ITEM void_shovel
 forge_starcore_bow forging FORGE_ITEM starcore_bow
 forge_starcore_axe forging FORGE_ITEM starcore_axe
 forge_starcore_shovel forging FORGE_ITEM starcore_shovel
+ashes_01 ashes EVENT ashes_enter
+ashes_02 ashes EVENT ashes_landmark:needle
+ashes_03 ashes EVENT ashes_explored
+ashes_04 ashes EVENT ashes_gathered
+ashes_05 ashes EVENT ashes_vent
+ashes_06 ashes EVENT ashes_attuned
+ashes_07 ashes FORGE_ITEM magma_core
+ashes_08 ashes BOSS_KILL magma_warden

@@ -29,6 +29,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -41,6 +42,7 @@ import win.vampyuyu.survival.api.EconomyApi;
 import win.vampyuyu.survival.api.Realm;
 import win.vampyuyu.survival.api.SkyGateApi;
 import win.vampyuyu.survival.api.event.BossKillEvent;
+import win.vampyuyu.survival.api.event.QuarryProgressEvent;
 import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.Scheduler;
 import win.vampyuyu.survival.core.SkyblockWorlds;
@@ -246,6 +248,26 @@ public final class AshesRealm implements Listener {
         return progress;
     }
 
+    // ---------------------------------------------------------------- quest events
+
+    /** Arriving in the Realm: the step through Gate 1, and what the player already did here (see {@code questKeys}). */
+    @EventHandler
+    public void onArrive(PlayerChangedWorldEvent event) {
+        Player player = event.getPlayer();
+        if (inRealm(player.getWorld())) {
+            List<String> keys = new ArrayList<>();
+            keys.add(AshesProgress.KEY_ENTER);
+            keys.addAll(progress.questKeys(player.getUniqueId()));
+            fire(player, keys);
+        }
+    }
+
+    private static void fire(Player player, List<String> keys) {
+        for (String key : keys) {
+            Bukkit.getPluginManager().callEvent(new QuarryProgressEvent(player, "EVENT", key, 1));
+        }
+    }
+
     // ---------------------------------------------------------------- opening: the Echo falls
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -370,6 +392,7 @@ public final class AshesRealm implements Listener {
         player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1f, 0.8f);
         core.msg().info(player, mark.lore());
         pay(player, coins, "realm:ashes:discover");
+        fire(player, AshesProgress.discoverKeys(mark.id(), progress.exploreDone(player.getUniqueId())));
         if (progress.exploreDone(player.getUniqueId())) {
             core.msg().ok(player, "Exploration complete: every landmark of the Cracked Ashes is charted.");
         }
@@ -446,6 +469,9 @@ public final class AshesRealm implements Listener {
         }
         dirty = true;
         int have = progress.harvested(player.getUniqueId());
+        if (have >= AshesProgress.GATHER_GOAL) {
+            fire(player, List.of(AshesProgress.KEY_GATHERED));
+        }
         if (have <= AshesProgress.GATHER_GOAL) {
             player.sendActionBar(Component.text("Cinderheart gathered " + have + " / " + AshesProgress.GATHER_GOAL,
                 NamedTextColor.GOLD));
@@ -491,7 +517,9 @@ public final class AshesRealm implements Listener {
         block.getWorld().spawnParticle(org.bukkit.Particle.CAMPFIRE_COSY_SMOKE, block.getLocation().add(0.5, 1.2, 0.5), 20, 0.2, 0.4, 0.2, 0.01);
         core.msg().ok(player, "Vent stabilised (" + progress.of(id).vents.size() + " / " + AshesPlan.VENTS.size() + ").");
         pay(player, coins, "realm:ashes:vent");
+        fire(player, List.of(AshesProgress.KEY_VENT));
         if (progress.attuned(id)) {
+            fire(player, List.of(AshesProgress.KEY_ATTUNED));
             core.msg().ok(player, "Ashen Attunement: +" + HeatMath.ATTUNEMENT + " heat resistance for good.");
         }
     }

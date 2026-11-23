@@ -326,6 +326,8 @@ final class QuestService implements win.vampyuyu.survival.api.QuestGateApi {
                 }
             }).orElse(OptionalInt.empty());
             case FORGE_ITEM -> OptionalInt.of(forgedProof(player, def.target()));
+            case BOSS_KILL -> def.target().isEmpty() ? OptionalInt.empty() : rt.core.service(win.vampyuyu.survival.api.BossApi.class)
+                .map(api -> OptionalInt.of(api.kills(id, def.target()))).orElse(OptionalInt.empty());
             default -> OptionalInt.empty();
         };
     }

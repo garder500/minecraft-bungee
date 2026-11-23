@@ -1570,5 +1570,41 @@
  "forge_starcore_shovel": {
   "name": "Starcore Shovel",
   "description": "Hole in der Forge (/forge): Starcore Shovel."
+ },
+ "cat:ashes": {
+  "name": "Die Rissige Asche",
+  "description": "Reich 1. Eine abgekühlte Welt, von Schlackenadern durchzogen, die noch atmet. Der Lavakoloss hält das Feuer des Verschlingers in Ordnung, und es entgleitet ihm."
+ },
+ "ashes_01": {
+  "name": "Durch das Aschetor",
+  "description": "Hinter dem ersten Tor ist der Stein abgekühlt, der Riss darunter nicht. Geh am Quai des Huit (/quai) durch Tor 1. Der Fall des Echos hat es für dich entzündet."
+ },
+ "ashes_02": {
+  "name": "Die Nadel",
+  "description": "Überquere die erste Brücke vom Ember Landing und erreiche die Nadel, den Basaltturm auf dem ersten Inselchen."
+ },
+ "ashes_03": {
+  "name": "Die Asche erkunden",
+  "description": "Besuche alle fünf Orte der Rissigen Asche: die Nadel, die Schlackenschmiede, den Ember Tarn, die Rippe des Kolosses und den Kalderarand (/ashes listet sie auf)."
+ },
+ "ashes_04": {
+  "name": "Cinderheart",
+  "description": "Schlage mit einer Spitzhacke 12 Cinderheart aus den Knoten aus vergoldetem Schwarzstein. Es ist noch warm."
+ },
+ "ashes_05": {
+  "name": "Einen Schlot beruhigen",
+  "description": "Mach mit 3 Cinderheart im Inventar einen Rechtsklick auf einen Hitzeschlot, um ihn zu beruhigen."
+ },
+ "ashes_06": {
+  "name": "Ascheneinstimmung",
+  "description": "Beruhige alle drei Schlote (Schlackenschmiede, Ember Tarn, Kalderarand). Die Hitze hinterlässt eine Spur an dir, die du tragen kannst."
+ },
+ "ashes_07": {
+  "name": "Ein Herz aus Schlacke",
+  "description": "Der Koloss antwortet nicht auf Klopfen. Er antwortet auf einen Schlüssel aus seiner eigenen Schlacke (12 Frostium, 8 Magmablöcke und 4 Lohenruten, eine Stunde in der Schmiede). Hol dir einen Asche-Bastion-Schlüssel aus der Schmiede (/forge)."
+ },
+ "ashes_08": {
+  "name": "Den Lavakoloss wecken",
+  "description": "Besiege den Lavakoloss, Wächter der Rissigen Asche, im Aschebastion (/bastion). Sein Fall entzündet Tor 2."
  }
 }

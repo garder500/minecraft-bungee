@@ -168,4 +168,50 @@ public class QuestFlowTest {
         assertTrue("a placed Fountain proves the craft and the pebbles: " + done,
             done.containsAll(List.of("q014", "q013", "q006", "q007")));
     }
+
+    // ---------------------------------------------------------------- the Ashes chain before the Grove
+
+    private boolean open(QuestData data, String id) {
+        return engine.isActive(data, engine.catalog().tutorialQuest(id).orElseThrow());
+    }
+
+    @Test
+    public void theGroveOpensWhenTheColossusFallsNotBeforeAndTheAshesQuestsCountEarly() {
+        QuestData data = upTo("echo_defeat");
+        assertEquals("ashes_08", engine.catalog().category("grove").orElseThrow().unlock());
+        assertTrue(open(data, "ashes_01"));
+        assertFalse("the Grove waits for the Colossus", open(data, "grove_01"));
+        assertEquals(List.of("ashes_01"), apply(data, QuestType.EVENT, "ashes_enter", 1));
+        assertEquals(List.of("ashes_02"), apply(data, QuestType.EVENT, "ashes_landmark:needle", 1));
+        apply(data, QuestType.EVENT, "ashes_explored", 1);
+        apply(data, QuestType.EVENT, "ashes_gathered", 1);
+        apply(data, QuestType.EVENT, "ashes_vent", 1);
+        apply(data, QuestType.EVENT, "ashes_attuned", 1);
+        apply(data, QuestType.FORGE_ITEM, "magma_core", 1);
+        assertFalse(open(data, "grove_01"));
+        assertEquals(List.of("ashes_08"), apply(data, QuestType.BOSS_KILL, "magma_warden", 1));
+        assertTrue("the Grove is open", open(data, "grove_01"));
+    }
+
+    @Test
+    public void aColossusBeatenBeforeTheQuestExistedOpensTheGroveAtTheNextSync() {
+        QuestData data = upTo("echo_defeat");
+        assertFalse(open(data, "grove_01"));
+        engine.sync(data, d -> java.util.OptionalInt.empty());
+        assertFalse("a fresh player never beat it", open(data, "grove_01"));
+        engine.sync(data, d -> d.type() == QuestType.BOSS_KILL && d.target().equals("magma_warden")
+            ? java.util.OptionalInt.of(1) : java.util.OptionalInt.empty());
+        assertTrue(data.completed.contains("ashes_08"));
+        assertTrue(open(data, "grove_01"));
+    }
+
+    @Test
+    public void aPlayerAlreadyInTheGroveKeepsItsQuestsOpen() {
+        QuestData data = upTo("echo_defeat");
+        data.completed.add("grove_01"); // entered the Grove, record from before the Ashes category existed
+        assertFalse(open(data, "grove_02"));
+        engine.sync(data, d -> java.util.OptionalInt.empty());
+        assertTrue("the Grove quest proves the Colossus quest", data.completed.contains("ashes_08"));
+        assertTrue(open(data, "grove_02"));
+    }
 }
