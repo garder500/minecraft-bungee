@@ -3454,12 +3454,16 @@ HUB_Y = 100  # island.hub.y of the seed: the surface of the hub plaza and of the
 def realms_scenario(ctx):
     """Phase 2 to final with a real client: the Hub, the Quai des Huit (gates dark, then lit), a walk through the Ashes
     Gate, every Realm reached by its Gate (spawn, behind, above), the Astral Interiority and a Bastion with its Guardian.
-    E2E_REALMS=ashes,grove limits the Realm tour; E2E_SKIP=astral,bastion skips those parts."""
+    E2E_REALMS=ashes,grove limits the Realm tour; E2E_SKIP=astral,bastion skips those parts; E2E_ARCH=all|a,b picks the
+    Realms whose return arch the bot walks into (default ashes,grove,depths)."""
     import math, re as _re
     tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
     xdo, rcon = tools["xdotool"], Rcon()
     wanted = {r for r in os.environ.get("E2E_REALMS", "").split(",") if r}
     skip = {r for r in os.environ.get("E2E_SKIP", "").split(",") if r}
+    # Realms where the bot also walks into the return arch (E2E_ARCH=all for the eight): one per group of landings
+    arch_env = os.environ.get("E2E_ARCH", "ashes,grove,depths")
+    arch_walk = {r for r, _ in REALM_WORLDS} if arch_env == "all" else {r for r in arch_env.split(",") if r}
     strip = lambda text: _re.sub("§x(§[0-9a-f]){6}|§.", "", text).strip()
 
     def typed(cmd, wait=1.0):
@@ -3586,6 +3590,27 @@ def realms_scenario(ctx):
         time.sleep(3)
         shot(tools, shots / f"rl-3-{realm}-above.png")
         undo()
+
+        # The return arch (ReturnArch): two blocks behind the arrival spot, veil on the south side. Stand 3 blocks from
+        # the glass facing it (yaw 0 = south), take the shot, walk into it, and expect the Quai (the hub world).
+        if realm in arch_walk:
+            bx, bz = math.floor(x), math.floor(z)
+            if realm == "grove":  # the Grove arch stands east of the landing (ReturnArch.side): its bridge leaves south
+                as_bot(f"tp @s {bx + 0.5 - 1.0} {y} {bz + 0.5} -90 4")
+            else:
+                as_bot(f"tp @s {bx + 0.5} {y} {bz + 0.5 - 1.0} 0 4")
+            time.sleep(3)
+            shot(tools, shots / f"rl-3-{realm}-arch.png")
+            subprocess.run([xdo, "keydown", "w"], env=env)
+            time.sleep(2.5)
+            subprocess.run([xdo, "keyup", "w"], env=env)
+            if wait_world("sb_hub", 15):
+                time.sleep(3)
+                say(f"realms: walked back from {realm} through its arch to the Quai")
+                shot(tools, shots / f"rl-3-{realm}-arch-quai.png")
+            else:
+                failures.append(f"{realm}: walking into the return arch did not reach sb_hub: {dimension().strip()[-40:]} {tail()}")
+                shot(tools, shots / f"rl-3-{realm}-arch-failed.png")
 
     # 5. The Astral Interiority (the way in is the command for now)
     if "astral" not in skip:

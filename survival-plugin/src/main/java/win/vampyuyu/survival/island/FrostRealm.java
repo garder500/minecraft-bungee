@@ -103,6 +103,7 @@ public final class FrostRealm implements Listener {
     public void start() {
         affinity = FrostAffinity.fromDoc(core.store().read(FrostAffinity.FILE, FrostAffinity.Doc.class, FrostAffinity.Doc::new));
         gates.setDestination(Realm.HEIGHTS, player -> ready ? spawn() : null);
+        gates.setReturnArch(Realm.HEIGHTS, () -> ready ? spawn() : null);
         core.listen(this);
         task = core.scheduler().repeating(20L, 20L, this::tick);
         World world = world();
@@ -123,6 +124,7 @@ public final class FrostRealm implements Listener {
             task = null;
         }
         gates.setDestination(Realm.HEIGHTS, null);
+        gates.setReturnArch(Realm.HEIGHTS, null);
         save();
     }
 

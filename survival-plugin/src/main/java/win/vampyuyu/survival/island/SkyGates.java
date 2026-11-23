@@ -67,6 +67,15 @@ public final class SkyGates implements SkyGateApi, Listener {
     private final Map<Realm, Function<Player, Location>> destinations = new EnumMap<>(Realm.class);
     private final Map<Realm, CompletableFuture<Location>> landings = new EnumMap<>(Realm.class);
     private final Set<UUID> travelling = new HashSet<>();
+    /** The return arch of each Realm: where its landing's arrival spot is (null while the Realm is not ready). */
+    private final Map<Realm, java.util.function.Supplier<Location>> returnArches = new EnumMap<>(Realm.class);
+    /** Arch sites by world name, resolved on first use (the worlds are not all loaded when the Realms register). */
+    private final Map<String, ArchSite> archSites = new HashMap<>();
+    /** Worlds with no arch (islands, the hub...) and when that was last checked: a move there costs one lookup. */
+    private final Map<String, Long> noArch = new HashMap<>();
+
+    /** A Realm's arrival spot as block coordinates, the reference of {@link ReturnArch}. */
+    private record ArchSite(Realm realm, int x, int y, int z) {}
     /** Gates currently shown lit to a player, so a gate put out is restored. */
     private final Map<UUID, Set<Realm>> shown = new HashMap<>();
     /** Players who are shown the Devourer's mouth open, and the last answer of the access check (it is not free). */
@@ -164,6 +173,17 @@ public final class SkyGates implements SkyGateApi, Listener {
         } else {
             destinations.put(realm, destination);
         }
+    }
+
+    @Override
+    public void setReturnArch(Realm realm, java.util.function.Supplier<Location> arrivalSpot) {
+        if (arrivalSpot == null) {
+            returnArches.remove(realm);
+        } else {
+            returnArches.put(realm, arrivalSpot);
+        }
+        archSites.values().removeIf(site -> site.realm() == realm);
+        noArch.clear();
     }
 
     @Override
@@ -269,12 +289,24 @@ public final class SkyGates implements SkyGateApi, Listener {
     public void onMove(PlayerMoveEvent event) {
         Location to = event.getTo();
         Location from = event.getFrom();
-        if (to == null || to.getBlockX() == from.getBlockX() && to.getBlockZ() == from.getBlockZ()
-                && to.getBlockY() == from.getBlockY()) {
+        if (to == null) {
             return;
         }
         World world = to.getWorld();
-        if (world == null || !SkyblockWorlds.HUB.equals(world.getName())) {
+        if (world == null) {
+            return;
+        }
+        if (!SkyblockWorlds.HUB.equals(world.getName())) {
+            // not filtered by block: the veil is touched from the block in front of it, a step within that block counts
+            if (to.getX() != from.getX() || to.getY() != from.getY() || to.getZ() != from.getZ()) {
+                ArchSite arch = archSite(world);
+                if (arch != null && ReturnArch.inVeil(arch.realm(), to.getX(), to.getY(), to.getZ(), arch.x(), arch.y(), arch.z())) {
+                    returnToQuai(event.getPlayer(), arch.realm());
+                }
+            }
+            return;
+        }
+        if (to.getBlockX() == from.getBlockX() && to.getBlockZ() == from.getBlockZ() && to.getBlockY() == from.getBlockY()) {
             return;
         }
         Player player = event.getPlayer();
@@ -291,6 +323,70 @@ public final class SkyGates implements SkyGateApi, Listener {
         } else {
             notice(player, "The Sky Gate to the " + gate.title() + " is dormant.", false);
         }
+    }
+
+    /** The return arch of a Realm world, or null (cheap: a map lookup once the site is known). */
+    private ArchSite archSite(World world) {
+        ArchSite known = archSites.get(world.getName());
+        if (known != null || returnArches.isEmpty()) {
+            return known;
+        }
+        long now = System.currentTimeMillis();
+        Long checked = noArch.get(world.getName());
+        if (checked != null && now - checked < 5000) {
+            return null; // looked a moment ago (a Realm still building is looked at again after 5 s)
+        }
+        for (var entry : returnArches.entrySet()) {
+            Location spot = entry.getValue().get();
+            if (spot != null && spot.getWorld() != null && spot.getWorld().equals(world)) {
+                ArchSite site = new ArchSite(entry.getKey(), spot.getBlockX(), spot.getBlockY(), spot.getBlockZ());
+                archSites.put(world.getName(), site);
+                noArch.remove(world.getName());
+                return site;
+            }
+        }
+        noArch.put(world.getName(), now);
+        return null;
+    }
+
+    /**
+     * Walking into the veil of a return arch: the same beat as a Gate (blindness, a title, then the teleport), to the
+     * Quai. No travel guard applies to the way home.
+     */
+    void returnToQuai(Player player, Realm from) {
+        UUID id = player.getUniqueId();
+        if (travelling.contains(id)) {
+            return;
+        }
+        if (service.inDungeon(player)) {
+            notice(player, "You cannot leave a dungeon run like that.", false);
+            return;
+        }
+        if (quai.spawn() == null || !quai.ready()) {
+            notice(player, "The Quai des Huit is not built yet. Try again in a moment.", false);
+            return;
+        }
+        travelling.add(id);
+        World origin = player.getWorld();
+        player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, TRAVEL_FADE_TICKS + 26, 0, false, false, false));
+        player.playSound(player, Sound.BLOCK_PORTAL_TRAVEL, 0.5f, 0.8f);
+        player.showTitle(Title.title(Component.text("Quai des Huit", NamedTextColor.GOLD),
+            Component.text("Back from " + ReturnArch.signName(from), NamedTextColor.WHITE),
+            Title.Times.times(java.time.Duration.ofMillis(200), java.time.Duration.ofMillis(1400), java.time.Duration.ofMillis(500))));
+        core.scheduler().later(TRAVEL_FADE_TICKS, () -> {
+            travelling.remove(id);
+            if (!player.isOnline() || !player.getWorld().equals(origin)) {
+                return;
+            }
+            Location spawn = quai.spawn();
+            if (spawn == null || !quai.ready()) {
+                player.removePotionEffect(PotionEffectType.BLINDNESS);
+                core.msg().warn(player, "The way back is not open right now. Try /quai in a moment.");
+                return;
+            }
+            player.teleport(spawn, PlayerTeleportEvent.TeleportCause.PLUGIN);
+            player.playSound(player, Sound.BLOCK_END_PORTAL_SPAWN, 0.3f, 1.8f);
+        });
     }
 
     /**
@@ -418,8 +514,30 @@ public final class SkyGates implements SkyGateApi, Listener {
 
     // ---------------------------------------------------------------- what a player sees
 
+    /** A few particles in the veil of each return arch, for the players near it. */
+    private void archParticles() {
+        for (var entry : returnArches.entrySet()) {
+            Location spot = entry.getValue().get();
+            if (spot == null || spot.getWorld() == null) {
+                continue;
+            }
+            double[] c = ReturnArch.veilCentre(entry.getKey(), spot.getBlockX(), spot.getBlockY(), spot.getBlockZ());
+            Location at = new Location(spot.getWorld(), c[0], c[1], c[2]);
+            boolean alongZ = ReturnArch.side(entry.getKey()) == ReturnArch.Side.EAST; // the veil runs north-south
+            double wx = alongZ ? 0.15 : 0.8;
+            double wz = alongZ ? 0.8 : 0.15;
+            for (Player player : spot.getWorld().getPlayers()) {
+                if (player.getLocation().distanceSquared(at) < 24 * 24) {
+                    player.spawnParticle(Particle.PORTAL, at, 20, wx, 1.0, wz, 0.3);
+                    player.spawnParticle(Particle.END_ROD, at, 2, wx, 1.0, wz, 0.01);
+                }
+            }
+        }
+    }
+
     private void tick() {
         viewTick++;
+        archParticles();
         World hub = quai.hub();
         if (hub == null) {
             return;

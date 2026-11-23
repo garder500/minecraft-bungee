@@ -109,6 +109,7 @@ public final class NecropolisRealm implements Listener {
     public void start() {
         affinity = NecropolisAffinity.fromDoc(core.store().read(NecropolisAffinity.FILE, NecropolisAffinity.Doc.class, NecropolisAffinity.Doc::new));
         gates.setDestination(Realm.NECROPOLIS, player -> ready ? spawn() : null);
+        gates.setReturnArch(Realm.NECROPOLIS, () -> ready ? spawn() : null);
         core.listen(this);
         task = core.scheduler().repeating(20L, 20L, this::tick);
         World world = world();
@@ -129,6 +130,7 @@ public final class NecropolisRealm implements Listener {
             task = null;
         }
         gates.setDestination(Realm.NECROPOLIS, null);
+        gates.setReturnArch(Realm.NECROPOLIS, null);
         save();
     }
 

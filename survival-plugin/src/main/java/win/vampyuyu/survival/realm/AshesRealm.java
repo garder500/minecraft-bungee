@@ -123,6 +123,7 @@ public final class AshesRealm implements Listener {
         registerCommand();
         islands = core.service(IslandApi.class).filter(IslandService.class::isInstance).map(IslandService.class::cast).orElse(null);
         core.service(SkyGateApi.class).ifPresent(gates -> gates.setDestination(Realm.ASHES, p -> ready ? spawn() : null));
+        core.service(SkyGateApi.class).ifPresent(gates -> gates.setReturnArch(Realm.ASHES, () -> ready ? spawn() : null));
         core.scheduler().nextTick(this::setupWorld);
         tasks.add(core.scheduler().repeating(40L, 40L, this::heatTick));
         tasks.add(core.scheduler().repeating(20L, 20L, this::discoverTick));
@@ -133,6 +134,7 @@ public final class AshesRealm implements Listener {
         tasks.forEach(Scheduler.Handle::cancel);
         tasks.clear();
         core.service(SkyGateApi.class).ifPresent(gates -> gates.setDestination(Realm.ASHES, null));
+        core.service(SkyGateApi.class).ifPresent(gates -> gates.setReturnArch(Realm.ASHES, null));
         World world = world();
         if (world != null) {
             for (long k : pendingNodes) {

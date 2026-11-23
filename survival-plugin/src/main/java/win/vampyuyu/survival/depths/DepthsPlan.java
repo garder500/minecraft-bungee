@@ -1,7 +1,9 @@
 package win.vampyuyu.survival.depths;
 
 import org.bukkit.Material;
+import win.vampyuyu.survival.api.Realm;
 import win.vampyuyu.survival.island.BlockPlan;
+import win.vampyuyu.survival.island.ReturnArch;
 import win.vampyuyu.survival.island.ShapeKit;
 
 /**
@@ -66,7 +68,8 @@ public final class DepthsPlan {
             plan.set(d[0], 0, d[1], Material.SEA_LANTERN);
         }
         plan.set(0, 1, 0, Material.LODESTONE);
-        plan.sign(0, 1, 3, Material.OAK_SIGN, "rotation=0", "Gate 7", "Abyssal Depths", "Pressure Landing", "/quai to return");
+        plan.air(0, 1, 3); // the old standing sign of the landing
+        ReturnArch.build(plan, Realm.DEPTHS, DepthsLayout.SPAWN[0], DepthsLayout.SPAWN[1], DepthsLayout.SPAWN[2]);
     }
 
     /** A bowl of water in a shell, with a walkable rim and sea lanterns shining into the water. */

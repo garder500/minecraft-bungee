@@ -144,6 +144,7 @@ public final class StormRealm implements Listener {
         registerCommand();
         islands = core.service(IslandApi.class).filter(IslandService.class::isInstance).map(IslandService.class::cast).orElse(null);
         core.service(SkyGateApi.class).ifPresent(gates -> gates.setDestination(Realm.ARCHIPELAGO, p -> ready ? spawn() : null));
+        core.service(SkyGateApi.class).ifPresent(gates -> gates.setReturnArch(Realm.ARCHIPELAGO, () -> ready ? spawn() : null));
         core.scheduler().nextTick(this::setupWorld);
         tasks.add(core.scheduler().repeating(1L, 1L, this::platformTick));
         tasks.add(core.scheduler().repeating(4L, 4L, this::padTick));
@@ -156,6 +157,7 @@ public final class StormRealm implements Listener {
         tasks.forEach(Scheduler.Handle::cancel);
         tasks.clear();
         core.service(SkyGateApi.class).ifPresent(gates -> gates.setDestination(Realm.ARCHIPELAGO, null));
+        core.service(SkyGateApi.class).ifPresent(gates -> gates.setReturnArch(Realm.ARCHIPELAGO, null));
         World world = world();
         if (world != null) {
             for (Mover mover : movers) {

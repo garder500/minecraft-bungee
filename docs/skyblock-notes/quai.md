@@ -14,9 +14,13 @@ Nothing is built while `sb_hub` does not exist or `hub.enabled` is false.
   `travel`, `quaiSpawn`. A phase that opens a Realm calls `light` and `setDestination`. All eight Realms (Ashes, Grove, Heights, Citadel, Marshes, Archipelago, Depths, Necropolis) register a destination
 when their world is built (`AshesRealm`, `GroveRealm`, `FrostRealm`, `CitadelRealm`, `MarshRealm`, `StormRealm`,
 `DepthsRealm`, `NecropolisRealm`), so a lit gate leads to the Realm's own landing, a themed platform with a sign
-(`<Realm>Plan`, anchor `spawn`). Ashes, Archipelago and Depths read "/quai to return"; Grove, Heights, Citadel,
-Marshes and Necropolis read "/hub to leave" and "/island to go home" (`/quai` works too). There is no physical return
-gate: the way back is a command. `QuaiLanding` (a small platform per Realm in the sky of the hub) is only a fallback for a
+(`<Realm>Plan`, anchor `spawn`). Every landing has the same **return arch** (`island/ReturnArch.java`, plan versions
+bumped to 2): two pillars and a lintel (5 wide, 5 tall with the lights) around a 3 x 3 veil of stained glass, two blocks
+south of the arrival spot (veil at `spawn.z + 2`), a Realm palette (`ReturnArch.palette`) and a wall sign on the east
+pillar: Realm name / "Walk through the" / "arch to the Quai" / "/hub or /island". Walking into the veil
+(`ReturnArch.inVeil`, handled in `SkyGates.onMove`, no travel guard on the way home) gives the Gate's beat
+(1.2 s blindness, title "Quai des Huit") and teleports to the Quai; `/quai`, `/hub` and `/island` still work.
+Each `*Realm` registers its arrival spot with `SkyGateApi.setReturnArch` (world and position come from `spawn()`). `QuaiLanding` (a small platform per Realm in the sky of the hub) is only a fallback for a
 Realm that registers no destination (none today); while a Realm is not ready its destination returns null and the
 player sees "The way through the Gate is not open right now." instead.
 - **Commands**: `/quai` (go there), `/gates` (list), `/gateadmin light|dark <player> <realm|all>`, `list`,

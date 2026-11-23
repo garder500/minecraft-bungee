@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import org.bukkit.Material;
+import win.vampyuyu.survival.api.Realm;
 import win.vampyuyu.survival.island.BlockPlan;
+import win.vampyuyu.survival.island.ReturnArch;
 import win.vampyuyu.survival.island.ShapeKit;
 
 /**
@@ -15,7 +17,7 @@ import win.vampyuyu.survival.island.ShapeKit;
  */
 public final class AshesPlan {
     /** Bump to rebuild existing worlds when the layout changes. */
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
     /** World y of the landing surface (the Nether ceiling is 128, the tallest structure is 22 above). */
     public static final int ORIGIN_Y = 96;
     public static final int LANDING_RADIUS = 13;
@@ -211,7 +213,8 @@ public final class AshesPlan {
             plan.set(d[0], 0, d[1], Material.SHROOMLIGHT);
         }
         plan.set(0, 1, 0, Material.LODESTONE);
-        plan.sign(0, 1, 3, Material.OAK_SIGN, "rotation=0", "Gate 1", "Cracked Ashes", "Ember Landing", "/quai to return");
+        plan.air(0, 1, 3); // the old standing sign of the landing
+        ReturnArch.build(plan, Realm.ASHES, SPAWN[0], SPAWN[1], SPAWN[2]);
     }
 
     private static void needle(BlockPlan plan, Islet at) {

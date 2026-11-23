@@ -96,6 +96,7 @@ public final class GroveRealm implements Listener {
     public void start() {
         affinity = GroveAffinity.fromDoc(core.store().read(GroveAffinity.FILE, GroveAffinity.Doc.class, GroveAffinity.Doc::new));
         gates.setDestination(Realm.GROVE, player -> ready ? spawn() : null);
+        gates.setReturnArch(Realm.GROVE, () -> ready ? spawn() : null);
         core.listen(this);
         task = core.scheduler().repeating(20L, 20L, this::tick);
         World world = world();
@@ -116,6 +117,7 @@ public final class GroveRealm implements Listener {
             task = null;
         }
         gates.setDestination(Realm.GROVE, null);
+        gates.setReturnArch(Realm.GROVE, null);
         save();
     }
 

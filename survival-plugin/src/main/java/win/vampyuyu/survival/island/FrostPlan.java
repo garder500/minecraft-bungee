@@ -2,6 +2,7 @@ package win.vampyuyu.survival.island;
 
 import java.util.Random;
 import org.bukkit.Material;
+import win.vampyuyu.survival.api.Realm;
 
 /**
  * The Frozen Heights (GDD 3.1), relative coordinates, surface at y = 0: a high island of snow and packed ice held up by
@@ -11,7 +12,7 @@ import org.bukkit.Material;
  */
 public final class FrostPlan {
     /** Bump when the layout changes so an existing zone is rebuilt (the marker file stores it). */
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
     public static final int MAIN_RADIUS = 24;
     public static final int PEAK_COUNT = 6;
     public static final int PEAK_ORBIT = 44;
@@ -64,7 +65,8 @@ public final class FrostPlan {
         ShapeKit.disc(plan, s[0], 0, s[2], 4.5, Material.PACKED_ICE);
         ShapeKit.ring(plan, s[0], 0, s[2], 3.2, 4.4, Material.STONE_BRICKS);
         plan.set(s[0], 0, s[2], Material.SEA_LANTERN);
-        plan.sign(s[0] + 2, 1, s[2] + 1, Material.SPRUCE_SIGN, "rotation=0", "Frozen Heights", "/hub to leave", "/island to go home", "");
+        // the return arch and its sign (it also clears the cell of the old standing sign on a rebuild)
+        ReturnArch.build(plan, Realm.HEIGHTS, s[0], s[1], s[2]);
         plan.anchor("spawn", s[0], s[1], s[2]);
         plan.anchor("watcher", 0, 1, -6);
         plan.biome(-MAIN_RADIUS - 4, -20, -MAIN_RADIUS - 4, MAIN_RADIUS + 4, 12, MAIN_RADIUS + 4, "minecraft:frozen_peaks");
