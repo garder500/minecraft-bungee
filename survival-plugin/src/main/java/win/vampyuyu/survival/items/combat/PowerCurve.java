@@ -42,7 +42,10 @@ public final class PowerCurve {
     /** Ward and Vitality of the full armor of each tier (index tier - 1); how many boss hits that armor should take. */
     private final double[] ward = new double[TIERS];
     private final double[] vitality = new double[TIERS];
-    private int hitsToDown = 8;
+    /** Vanilla armor points and toughness of the base materials of the full set (see {@link #bossHitDamage}). */
+    private final double[] vanillaArmor = new double[TIERS];
+    private final double[] vanillaToughness = new double[TIERS];
+    private int hitsToDown = 10;
     /** GDD 8.6 weapon of each tier (index tier - 1), the gear {@link #referenceDps} is measured with. */
     private final double[] reference = new double[TIERS];
 
@@ -69,6 +72,8 @@ public final class PowerCurve {
             items.getDouble("combat.element-resistance", 0.6));
         Tier[] found = new Tier[TIERS];
         double[] armorWard = new double[TIERS];
+        double[] vanillaArmorPoints = new double[TIERS];
+        double[] vanillaArmorToughness = new double[TIERS];
         double[] armorVitality = new double[TIERS];
         db.read(c -> {
             Db.query(c, "SELECT tier, damage, element FROM item_def WHERE owner = 'quarry' AND tier IS NOT NULL "
@@ -89,6 +94,17 @@ public final class PowerCurve {
                     return null;
                 });
             double[] armorMight = new double[TIERS];
+            // the base material's armor plus the item's own bonus (the pdc rows extra_armor / extra_toughness, see Items)
+            Db.query(c, "SELECT d.tier, d.equip_slot, d.material, "
+                + "(SELECT CAST(value AS REAL) FROM item_pdc WHERE item_id = d.id AND key = 'extra_armor'), "
+                + "(SELECT CAST(value AS REAL) FROM item_pdc WHERE item_id = d.id AND key = 'extra_toughness') "
+                + "FROM item_def d WHERE d.owner = 'quarry' AND d.tier IS NOT NULL AND d.equip_slot IS NOT NULL", rs -> {
+                    int t = rs.getInt(1);
+                    double share = 1.0 / Math.max(1, perSlot.getOrDefault(t + ":" + rs.getString(2), 1));
+                    vanillaArmorPoints[t - 1] += (VanillaArmor.points(rs.getString(3)) + rs.getDouble(4)) * share;
+                    vanillaArmorToughness[t - 1] += (VanillaArmor.toughness(rs.getString(3)) + rs.getDouble(5)) * share;
+                    return null;
+                });
             Db.query(c, "SELECT d.tier, d.equip_slot, s.stat, s.value FROM item_def d JOIN item_stat s ON s.item_id = d.id "
                 + "WHERE d.owner = 'quarry' AND d.tier IS NOT NULL AND d.equip_slot IS NOT NULL", rs -> {
                     int t = rs.getInt(1);
@@ -111,7 +127,9 @@ public final class PowerCurve {
         PowerCurve curve = new PowerCurve(rules, found);
         System.arraycopy(armorWard, 0, curve.ward, 0, TIERS);
         System.arraycopy(armorVitality, 0, curve.vitality, 0, TIERS);
-        curve.hitsToDown = Math.max(2, boss.getInt("settings.hits-to-down", 8));
+        System.arraycopy(vanillaArmorPoints, 0, curve.vanillaArmor, 0, TIERS);
+        System.arraycopy(vanillaArmorToughness, 0, curve.vanillaToughness, 0, TIERS);
+        curve.hitsToDown = Math.max(2, boss.getInt("settings.hits-to-down", 10));
         for (int t = 1; t <= TIERS; t++) {
             curve.reference[t - 1] = Math.max(1, boss.getDouble("settings.reference-weapon." + t, referenceWeapon(t)));
         }
@@ -127,11 +145,50 @@ public final class PowerCurve {
     }
 
     /**
-     * The hit of a boss of this tier: a player wearing the full armor of the tier goes down after {@code hitsToDown}
-     * hits ({@code boss.settings.hits-to-down}), counting the armor's Ward ({@code x 100 / (100 + Ward)} per hit).
+     * The hit of a boss of this tier: a player wearing the full armor of the tier loses {@code 1 / hitsToDown} of its
+     * health per hit ({@code boss.settings.hits-to-down}) once EVERY layer of defence has acted. There are two: the
+     * armor's Ward ({@code x 100 / (100 + Ward)}) and the vanilla armor points and toughness of the base materials
+     * (chainmail, iron, diamond, netherite), which the ladder armor keeps. Measured 2026-11-23: leaving the second one
+     * out made every hit about 5 times too soft (2 to 4 % of the health instead of 1 / 8). The result is what the boss
+     * deals BEFORE both layers, so it grows with the tier's gear; the same hit on a player wearing less hurts far more.
      */
     public double bossHitDamage(int tier) {
-        return playerHealth(tier) * (1 + ward[tier - 1] / 100.0) / hitsToDown;
+        double wanted = playerHealth(tier) / hitsToDown; // what must get through Ward and vanilla armor
+        double armor = vanillaArmor[tier - 1];
+        double toughness = vanillaToughness[tier - 1];
+        double low = wanted;
+        double high = wanted * 1000;
+        for (int i = 0; i < 80; i++) { // vanilla's armor formula depends on the damage: solved by bisection
+            double mid = (low + high) / 2;
+            if (afterVanillaArmor(mid, armor, toughness) < wanted) {
+                low = mid;
+            } else {
+                high = mid;
+            }
+        }
+        return high * (100.0 + ward[tier - 1]) / 100.0;
+    }
+
+    /** Vanilla's reduction by armor points and toughness (no enchantments or effects). */
+    public static double afterVanillaArmor(double damage, double armor, double toughness) {
+        double effective = Math.min(20.0, Math.max(armor / 5.0, armor - damage / (2.0 + toughness / 4.0)));
+        return damage * (1.0 - effective / 25.0);
+    }
+
+    /** Vanilla armor points of the full set of this tier. */
+    public double vanillaArmor(int tier) {
+        return vanillaArmor[tier - 1];
+    }
+
+    /** Vanilla armor toughness of the full set of this tier. */
+    public double vanillaToughness(int tier) {
+        return vanillaToughness[tier - 1];
+    }
+
+    /** The share of its health a player of this tier loses to one boss hit of this tier at multiplier 1 (damage-scale 1). */
+    public double bossHitShare(int tier) {
+        double afterWard = bossHitDamage(tier) * 100.0 / (100.0 + ward[tier - 1]);
+        return afterVanillaArmor(afterWard, vanillaArmor[tier - 1], vanillaToughness[tier - 1]) / playerHealth(tier);
     }
 
     public Rules rules() {

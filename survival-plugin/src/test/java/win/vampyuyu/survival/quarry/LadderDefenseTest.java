@@ -94,13 +94,15 @@ public class LadderDefenseTest {
     }
 
     @Test
-    public void theCryptLordTakesEightHitsToDownATierOnePlayer() {
+    public void theCryptLordTakesAboutTenHitsToDownATierOnePlayer() {
         PowerCurve curve = PowerCurve.load(plugin.core().data());
         double hit = win.vampyuyu.survival.boss.BossConfig.load(plugin.core().data()).bosses().get("crypt_lord").damage();
         assertEquals(curve.bossHitDamage(1), hit, 1e-9);
+        // Ward first (this listener), then the vanilla armor of the chainmail base (the game): both layers count
         double afterWard = hit * 100 / 141.0;
-        int hits = (int) Math.ceil(curve.playerHealth(1) / afterWard);
-        assertTrue("a bronze player survives several Crypt Lord hits, not one: " + hits, hits >= 7 && hits <= 9);
+        double afterArmor = PowerCurve.afterVanillaArmor(afterWard, 12, 0);
+        int hits = (int) Math.ceil(curve.playerHealth(1) / afterArmor);
+        assertTrue("a bronze player survives about ten Crypt Lord hits, not one: " + hits, hits >= 8 && hits <= 12);
     }
 
     @Test

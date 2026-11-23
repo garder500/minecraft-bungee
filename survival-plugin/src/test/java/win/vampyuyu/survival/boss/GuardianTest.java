@@ -167,7 +167,7 @@ public class GuardianTest {
         var db = win.vampyuyu.survival.data.TestDb.seeded();
         PowerCurve curve = PowerCurve.load(db);
         BossConfig config = BossRepo.load(db);
-        double hitsToDown = win.vampyuyu.survival.data.Settings.load(db, "boss").getInt("settings.hits-to-down", 8);
+        double hitsToDown = win.vampyuyu.survival.data.Settings.load(db, "boss").getInt("settings.hits-to-down", 10);
         double damageScale = win.vampyuyu.survival.data.Settings.load(db, "boss").getDouble("settings.damage-scale", 1);
         for (String id : IDS) {
             BossDefinition boss = config.bosses().get(id);

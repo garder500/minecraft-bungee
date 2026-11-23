@@ -3,7 +3,8 @@
 -- Loot balance: pity is +0.1 percentage point per dry kill, capped at +1.5 points.
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-factor.voidwyrm', 'real', '0.425', 'Health factor of the Echo of the Rift instead of boss.settings.hp-factor (85 %: a flyer takes fewer hits, even with its landings).');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-scale', 'real', '1.0', 'Multiplies every boss health pool (1 = the GDD 8.7 curve as is).');
-INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.damage-scale', 'real', '0.6', 'Multiplies every hit bosses deal to players.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.damage-scale', 'real', '1.0', 'Multiplies every hit bosses deal to players. 1.0 = the hit PowerCurve.bossHitDamage sizes (hits-to-down hits for a tier-matched player); the old 0.6 hid the missing vanilla-armor layer.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hits-to-down', 'int', '10', 'A player in the full armor of the boss tier goes down after this many plain boss hits (Ward and vanilla armor counted): 10 hits = 10 % of the health per hit, GDD 8 to 12. Measured in game.');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.incoming-damage-scale', 'real', '1.0', 'Multiplies every hit players deal to bosses (calibrate to the items damage formula).');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.target-seconds', 'real', '180', 'GDD 8.7: boss health = reference DPS of the tier x this many seconds x hp-factor (reference weapon alone, hitting the weakness).');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-factor', 'real', '0.5', 'GDD 8.7: share of the time a player really lands hits. Halves the health, so a player of the tier needs about target-seconds.');

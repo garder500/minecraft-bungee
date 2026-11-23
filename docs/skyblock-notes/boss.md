@@ -216,9 +216,28 @@ take the boss away while players walk to it.
   so it is now 0 for the mobs and 180 for the Echo (`ShippedConfigTest.bossModelsFaceWhereTheBossLooks`).
 * Tier-5 boss hits were sized for a player wearing four armor sets at once (`PowerCurve` summed Starcore and its three
   Realm sidegrades). Measured in game: the Echo took 55 % of a full-Starcore player's 96 health per contact hit. With one
-  set per slot it takes 2 %, like a tier-2 or tier-3 boss on a player of its tier (2 to 4 %). Every tier is now well
-  under the GDD's 8 hits to go down: the real mitigation has a layer the curve leaves out (vanilla armor points, at a
-  guess). If bosses feel too soft, `boss.settings.hits-to-down` or `boss.settings.damage-scale` is the knob.
+  set per slot it took 2 %, like a tier-2 or tier-3 boss on a player of its tier (2 to 4 %).
+* Hits too soft, fixed (2026-11-23, real client). The missing layer was the VANILLA ARMOR of the base materials: the items
+  feature (which zeroes it) is not loaded in production, so a ladder player keeps chainmail 12, iron 15, diamond 20 / 8,
+  netherite 20 / 12 and Starcore 25 / 16 (base material plus the `extra_armor` / `extra_toughness` pdc rows), measured
+  with `attribute E2EBot minecraft:armor get`. `PowerCurve.bossHitDamage` now solves for the hit that loses
+  `1 / hits-to-down` of the health AFTER Ward and vanilla armor (`afterVanillaArmor`, bisection: vanilla's formula
+  depends on the damage). `boss.settings.hits-to-down` is now a seed row at 10 (was 8 in code, GDD says 8 to 12) and
+  `boss.settings.damage-scale` 0.6 -> 1.0 (it was hiding the same gap the other way). Tier 5 uses the per-slot mean of
+  Starcore and its sidegrades (armor 24.25), the wearer of plain Starcore (25 / 16) takes a bit less.
+  Measured, a full tier set against its boss, one plain hit (mult 1.0), before -> after, % of max health:
+
+  | tier | boss | player (max hp, armor/tough) | before | after |
+  |---|---|---|---|---|
+  | 1 | Crypt Lord | bronze (30, 12/0) | 3.4 | 10.0 |
+  | 2 | Magma Warden | rime (40, 15/0) | 2 to 4 | 9.7 |
+  | 3 | Frost Revenant | ember (54, 20/8) | 1 | 10.0 |
+  | 5 | Echo of the Rift | starcore (96, 25/16) | 1.5 | 8.6 |
+
+  Abilities with a lower multiplier hurt less (0.7 to 5 %), the Echo's x3.5 dive bomb about a third, as the seed
+  intends (`PowerCurveTest` readability limit now 0.4). A bare or under-geared player takes far more
+  (`PowerCurveTest.anUnderGearedPlayerIsPunishedHarderThanATierMatchedOne`). Tests: `aTierMatchedPlayerLosesAboutATenth
+  OfItsHealthPerBossHit` pins 8 to 12 % for every tier. Not measured: tier 4 (the bot died before its run).
 * The Echo's flight (2026-11-20, real client): the vanilla dragon ignores speed attributes and cruises at about 22
   blocks/s. `BossSession.slowFlight` caps its velocity each tick at `speed` x 1.1 blocks/tick (voidwyrm 0.45: about
   10 blocks/s measured); scaling the velocity instead compounds with the dragon's drag (0.55 gave 2.5 blocks/s). The

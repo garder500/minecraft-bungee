@@ -161,6 +161,36 @@ public class PowerCurveTest {
             curve.bossHitDamage(5) / curve.bossHitDamage(4) < 3);
     }
 
+    /**
+     * A boss hit is sized so that the player of its tier (full set) loses about a tenth of its health once Ward AND the
+     * vanilla armor of the base materials (chainmail 12, iron 15, diamond 20 / 8, netherite 20 / 12, Starcore 25 / 16 with its bonus rows) have acted. Before
+     * 2026-11-23 only Ward was counted and the game measured 2 to 4 % per hit (5 times too soft).
+     */
+    @Test
+    public void aTierMatchedPlayerLosesAboutATenthOfItsHealthPerBossHit() {
+        double[] armor = {12, 15, 20, 20, 25};
+        double[] toughness = {0, 0, 8, 12, 16};
+        for (int tier = 1; tier <= 5; tier++) {
+            assertEquals("vanilla armor of tier " + tier, armor[tier - 1], curve.vanillaArmor(tier), 1.0); // tier 5: mean of Starcore and its sidegrades (24.25)
+            assertEquals("toughness of tier " + tier, toughness[tier - 1], curve.vanillaToughness(tier), 1.0);
+            double share = curve.bossHitShare(tier);
+            assertTrue("tier " + tier + " loses " + share + " of its health per hit", share >= 0.08 && share <= 0.12);
+        }
+    }
+
+    @Test
+    public void anUnderGearedPlayerIsPunishedHarderThanATierMatchedOne() {
+        for (int tier = 2; tier <= 5; tier++) {
+            double bare = curve.bossHitDamage(tier) / 20.0; // no armor, no Ward, 20 health
+            assertTrue("a bare player takes " + bare + " per tier-" + tier + " hit vs " + curve.bossHitShare(tier),
+                bare > 2 * curve.bossHitShare(tier));
+        }
+        // a bronze player (chainmail, a third of the Ward) under a tier-5 hit
+        double inBronze = PowerCurve.afterVanillaArmor(curve.bossHitDamage(5) / 2.0, curve.vanillaArmor(1),
+            curve.vanillaToughness(1)) / curve.playerHealth(1);
+        assertTrue("a tier-1 player takes " + inBronze + " of its health per tier-5 hit", inBronze > 0.5);
+    }
+
     @Test
     public void everyBossIsAutoScaledFromItsTier() {
         assertEquals(11, config.bosses().values().stream().filter(b -> b.kind() == BossDefinition.Kind.BOSS).count());
@@ -223,7 +253,7 @@ public class PowerCurveTest {
 
     @Test
     public void readabilityRulesHoldPhasesAtMostOnePointFourAndAbilitiesAtMostAThirdOfTheReferencePlayer() {
-        double hitsToDown = Settings.load(db, "boss").getInt("settings.hits-to-down", 8);
+        double hitsToDown = Settings.load(db, "boss").getInt("settings.hits-to-down", 10);
         double damageScale = Settings.load(db, "boss").getDouble("settings.damage-scale", 1);
         for (BossDefinition boss : config.bosses().values()) {
             if (boss.kind() != BossDefinition.Kind.BOSS) {
@@ -234,7 +264,10 @@ public class PowerCurveTest {
                 for (var ability : java.util.stream.Stream.concat(phase.enter().stream(), phase.abilities().stream()).toList()) {
                     // a boss hit takes 1/hitsToDown of the reference player's health, then the global and phase multipliers
                     double share = ability.damage() * phase.damageMult() * damageScale / hitsToDown;
-                    assertTrue(boss.id() + " " + ability.type() + " takes " + share, share <= 0.35);
+                    // 2026-11-23: damage-scale went 0.6 -> 1.0 and hits-to-down 8 -> 10 (the curve now counts vanilla armor, so
+                    // a plain hit really is a tenth of the health). The Echo's telegraphed dive bomb (x3.5) is a third of
+                    // the health of a tier-matched player, 0.35, and the limit is 0.4 (about three of them to go down).
+                    assertTrue(boss.id() + " " + ability.type() + " takes " + share, share <= 0.4);
                 }
             }
         }
