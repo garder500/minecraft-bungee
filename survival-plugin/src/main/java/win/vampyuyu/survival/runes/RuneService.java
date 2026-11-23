@@ -309,8 +309,9 @@ public final class RuneService implements RuneApi {
     public void onHurt(Player victim, org.bukkit.event.entity.EntityDamageEvent event) {
         onHurt(victim);
         RuneConfig.Effects fx = config.effects();
-        if (worn(victim, "undertow") && ready(undertowReady, victim.getUniqueId(), fx.undertowCooldownSeconds())
-                && event instanceof org.bukkit.event.entity.EntityDamageByEntityEvent by) {
+        // the attacker test comes first: ready() arms the cooldown, and a fall or a Wither tick must not spend it
+        if (event instanceof org.bukkit.event.entity.EntityDamageByEntityEvent by && worn(victim, "undertow")
+                && ready(undertowReady, victim.getUniqueId(), fx.undertowCooldownSeconds())) {
             org.bukkit.entity.Entity source = by.getDamager();
             if (source instanceof org.bukkit.entity.Projectile p && p.getShooter() instanceof org.bukkit.entity.Entity shooter) {
                 source = shooter;

@@ -178,6 +178,26 @@ public class RuneServiceTest {
     }
 
     @Test
+    public void undertowIsNotSpentByDamageThatHasNoAttacker() {
+        core.items().register(CustomItemDef.builder("test_boots", "Test Boots", Rarity.COMMON, Material.IRON_BOOTS)
+            .type("BOOTS").tier(2).build());
+        PlayerMock player = server.addPlayer();
+        ItemStack boots = core.items().create("test_boots");
+        assertTrue(service.engrave(boots, core.items().create("rune_undertow")).ok());
+        player.getInventory().setBoots(boots);
+        var fall = new org.bukkit.event.entity.EntityDamageEvent(player, org.bukkit.event.entity.EntityDamageEvent.DamageCause.FALL,
+            org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.FALL).build(), 1.0);
+        service.onHurt(player, fall); // a fall, the Wither, fire: nobody to throw back
+        org.bukkit.entity.Zombie zombie = player.getWorld().spawn(player.getLocation().add(1, 0, 0), org.bukkit.entity.Zombie.class);
+        var bite = new org.bukkit.event.entity.EntityDamageByEntityEvent(zombie, player,
+            org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+            org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.MOB_ATTACK).withCausingEntity(zombie).withDirectEntity(zombie).build(), 1.0);
+        service.onHurt(player, bite);
+        assertTrue("the hit right after a fall still throws the attacker back",
+            zombie.hasPotionEffect(org.bukkit.potion.PotionEffectType.SLOWNESS));
+    }
+
+    @Test
     public void grindingTurnsAnAmethystShardIntoPowder() {
         PlayerMock player = server.addPlayer();
         assertFalse(service.grind(player).ok());

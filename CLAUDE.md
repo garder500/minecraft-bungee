@@ -159,7 +159,9 @@ Spring Stone, cables, quest menus), `--scenario quarry` (machines), `--scenario 
 des Huit, a walk through a lit Gate, the eight Realms, the Astral Interiority, a Bastion and its Guardian;
 `E2E_REALMS=ashes,grove` and `E2E_SKIP=astral,bastion` shorten it), `--scenario machines` (the visible break through a
 glass wall, a Miner I with an Ember Module, a Miner II on a Spring Wheel alone with its Bronzite Blocks, the three stations
-placed and opened). Item sprites: concept sheets
+placed and opened), `--scenario endgame` (Realm runes engraved by clicking and triggered by hits, the Raid of the Devourer
+from refusal to kill, a Breath Fracture, floor 7; about 12 minutes; the Raid is opened by emptying `bastion.raid.requires`
+in the test database). Item sprites: concept sheets
 (generated images, one item per cell on magenta) in `resource-pack/art/concepts/` -> `art/import_textures.py` (needs
 Pillow: `nix-shell -p "python3.withPackages (p: [p.pillow])"`) -> 32x32 sprites listed in `art/imported.txt`, which the
 procedural scripts skip. Remaining 3D models: `resource-pack/art/item_models.py` and `sword_models.py`. Skyblock menu

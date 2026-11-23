@@ -26,4 +26,10 @@ public final class BastionApiImpl implements BastionApi {
     public String enter(Player leader, String bastionId) {
         return service.enter(leader, bastionId);
     }
+
+    @Override
+    public boolean inArena(java.util.UUID player) {
+        BastionRun run = service.runOf(player);
+        return run != null && run.world != null && !run.closed;
+    }
 }

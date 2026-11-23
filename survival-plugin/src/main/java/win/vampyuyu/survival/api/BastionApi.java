@@ -17,4 +17,12 @@ public interface BastionApi {
      * @return the English refusal, or null when the Bastion is opening
      */
     String enter(Player leader, String bastionId);
+
+    /**
+     * True while the player is a member of a Bastion whose arena is built and still open: a death there respawns them in the
+     * arena (they have lives), so the mode travel must not send them back to their island.
+     */
+    default boolean inArena(java.util.UUID player) {
+        return false;
+    }
 }

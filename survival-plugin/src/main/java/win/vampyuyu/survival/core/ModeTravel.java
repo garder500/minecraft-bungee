@@ -400,6 +400,9 @@ public final class ModeTravel implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
+        if (core.service(win.vampyuyu.survival.api.BastionApi.class).map(b -> b.inArena(player.getUniqueId())).orElse(false)) {
+            return; // a Bastion member has lives: the Bastion's own handler (HIGH) already put them back in the arena
+        }
         boolean skyblock = sky(player.getWorld());
         Location nativeTarget = event.getRespawnLocation();
         Point saved = skyblock ? points(player).skyblock : points(player).survival;
