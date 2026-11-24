@@ -132,6 +132,16 @@ public final class ArenaManager {
     sessions.put(c.id(), open(c));
   }
 
+  /**
+   * Provisions a built-in arena (e.g. ValoBlock / Werewolf waiting hub) when no arena with that id
+   * exists yet, without overwriting an administrator's custom configuration.
+   */
+  public synchronized boolean ensureBuiltin(ArenaConfig config) throws IOException {
+    if (sessions.containsKey(config.id())) return false;
+    save(config);
+    return true;
+  }
+
   public synchronized void delete(String id) throws IOException {
     ArenaSession s = require(id);
     if (!s.players.isEmpty()
@@ -263,6 +273,7 @@ public final class ArenaManager {
                           p.setWorldBorder(border);
                           plugin.gui.giveCompass(p);
                           s.hooks.onJoin(s, p);
+                          if (plugin.waitingHotbar != null) plugin.waitingHotbar.give(p, s);
                           p.sendMessage(
                               Component.text(
                                   "Joined "
@@ -464,6 +475,12 @@ public final class ArenaManager {
         presets
             .get(s.config.preset())
             .create(s.config, Set.copyOf(s.players.keySet()), Map.copyOf(forcedRoles));
+    if (plugin.waitingHotbar != null) {
+      for (UUID pid : s.roster.keySet()) {
+        Player p = Bukkit.getPlayer(pid);
+        if (p != null) plugin.onPlayer(p, () -> { plugin.waitingHotbar.clear(p); return null; });
+      }
+    }
     s.hooks.onStart(s);
     s.startedAt = System.currentTimeMillis();
     s.phaseEndsAt = s.startedAt + phaseMillis(s);
