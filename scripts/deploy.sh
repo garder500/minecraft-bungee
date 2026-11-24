@@ -33,6 +33,7 @@ if [[ "$previous" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$previous^{commit}" 2
  grep -qx 'infra/start.sh' <<< "$changed" && force+=(velocity lobby creative survival)
  grep -qxE 'infra/(velocity\.toml|server-icon\.png)' <<< "$changed" && force+=(velocity)
  grep -qx 'infra/redis-start.sh' <<< "$changed" && force+=(redis)
+ grep -qx 'infra/site-nginx.conf' <<< "$changed" && force+=(site)
 fi
 
 # A deployment is the source of truth: plugin hotfixes (scripts/plugins.sh) must not shadow the jars it
@@ -49,7 +50,7 @@ done
 # From here on a failure leaves the new tags in .env; rerunning the deployment finishes it.
 trap - ERR
 running=$(docker compose -f "$compose" ps --status running --services)
-for service in redis controller panel velocity lobby creative survival; do
+for service in redis controller panel site velocity lobby creative survival; do
  flags=(--no-deps)
  [[ " ${force[*]} " == *" $service "* ]] && flags+=(--force-recreate)
  case $service in
