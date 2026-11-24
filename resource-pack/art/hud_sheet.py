@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Contact sheet of every state of the custom HUD, composited from the real sprites.
 
-    python3 resource-pack/art/hud_sheet.py [--scale 3] [--mode auto|large|medium|small] [--out DIR]
+    python3 resource-pack/art/hud_sheet.py [--scale 3] [--mode auto|large|medium|small] [--lang fr_FR] [--out DIR]
     make hud-sheet [SCALE=2] [MODE=small]
 
 Writes resource-pack/dist/hud-sheet/: one PNG per state (top plate and right panel crops, plus a few
@@ -13,7 +13,8 @@ Two things are ported here as pure functions so the sheet shows what the game sh
     `seats`, `badges`, `render` below. scripts/test_hud_sheet.py checks them against sequences
     derived by hand from the Java.
   * the core shader's placement of a glyph (art/fx_shaders.py COMMON_VS): `place`.
-Nothing here draws text: the words are painted in the sprites by art/hud.py.
+The words are text, as in the game: read from the plugin's language files (arena-plugin lang/*.yml) and written
+one glyph per character with the fonts of art/hud_font.py; a few states are also shown in French and German.
 """
 import argparse, base64, hashlib, html, json, math, pathlib, struct, sys, zlib
 from dataclasses import dataclass, field
@@ -22,6 +23,7 @@ ART = pathlib.Path(__file__).resolve().parent
 ROOT = ART.parent.parent
 sys.path.insert(0, str(ART.parent))
 import layout  # noqa: E402
+import hud_font  # noqa: E402
 
 SPRITES = ART.parent / "pack" / "assets" / "vampyuyu" / "textures" / "font" / "hud"
 SCREEN_W, SCREEN_H = 1920, 1080
@@ -32,6 +34,31 @@ BY_PHASE = {r["call"]["phase"]: (rid, r) for rid, r in ROLES.items() if "call" i
 DANGER_SECONDS = 5
 SEATS, BADGES = layout.HUD_SEATS, 4
 NIGHT_PHASES = {"CUPID", "GUARD", "SEER", "NIGHT", "WITCH", "MINION", "AMULET", "HUNTER_SHOT"}
+LANG_DIR = ROOT / "arena-plugin" / "src" / "main" / "resources" / "lang"
+LANGS = ("en_US", "fr_FR", "de_DE")
+_langs = {}
+
+
+def lang_file(tag):
+    """key -> text of a language file. One `key: "text"` per line (HudLang.java reads it the same way)."""
+    if tag not in _langs:
+        out = {}
+        for n, line in enumerate((LANG_DIR / f"{tag}.yml").read_text(encoding="utf-8").split("\n"), 1):
+            if not line.strip() or line.lstrip().startswith("#"):
+                continue
+            key, sep, value = line.partition(": ")
+            value = value.strip()
+            if not sep or key != key.strip() or len(value) < 2 or value[0] != '"' or value[-1] != '"' or '"' in value[1:-1] \
+                    or "\\" in value:
+                raise ValueError(f"{tag}.yml line {n}: expected key: \"text\"")
+            out[key] = value[1:-1]
+        _langs[tag] = out
+    return _langs[tag]
+
+
+def tr(lang, key, fallback):
+    """HudLang.tr: the player's language, else English, else the word itself (a role added by an override)."""
+    return lang_file(lang).get(key) or lang_file("en_US").get(key) or fallback
 
 
 # ------------------------------------------------------------------------------------------
@@ -79,6 +106,7 @@ class Facts:
     votes_against: int = 0           # votes(viewer).getOrDefault(viewer, 0)
     seats: tuple = ()
     badges: tuple = ()
+    turn: int = 120                  # game.seconds(): the length of the turn, for the draining bar
 
 
 def word(text):
@@ -167,6 +195,7 @@ def state_of(f):
         seats=tuple(f.seats),
         badges=tuple(f.badges),
         against=f.votes_against if f.phase == "DAY_VOTE" and not f.dead and f.tally_visible else -1,
+        fraction=max(0.0, min(1.0, f.seconds / f.turn)) if timed and f.turn > 0 else 1.0,
     )
 
 
@@ -195,7 +224,7 @@ def badges(alive=True, in_love=False, mayor=False, silenced=False, exiled=False,
     return out
 
 
-def render(s, md=78, sprites=None, elements=None, strict=False):
+def render(s, md=78, sprites=None, elements=None, strict=False, lang="en_US"):
     """CustomHud.render(): the glyphs of the action bar, in order, as (mode, element, sprite, parameter).
 
     A glyph whose element or sprite is unknown renders as nothing, as in Java (`Component.empty()`);
@@ -210,6 +239,13 @@ def render(s, md=78, sprites=None, elements=None, strict=False):
         elif strict:
             raise KeyError(f"no sprite {sprite!r} for element {element!r}")
 
+    def text(element, line):
+        """One line of text: a glyph per character, its parameter the start of its cell (CustomHud.text)."""
+        font, align, limit = layout.HUD_TEXT[element]
+        line = hud_font.fit(font, hud_font.normalise(line), limit)
+        for ch, x in hud_font.offsets(font, line, align, limit):
+            glyph(element, hud_font.sprite(font, ch), x)
+
     danger = s.timed and s.seconds <= DANGER_SECONDS
     t = max(0, min(9 * 60 + 59, s.seconds))
     plate = "danger" if danger and t % 2 == 0 else s.palette
@@ -217,7 +253,10 @@ def render(s, md=78, sprites=None, elements=None, strict=False):
     glyph("frame", "frame_" + plate)
     glyph("icon", "icon_" + s.top_icon)
     glyph("round", "s" + str(max(0, min(9, s.round))))
-    glyph("label", "label_" + word(s.label))
+    # the phase: the headline font, or the bold one when the headline would not fit
+    phase = tr(lang, "hud.phase." + word(s.label), s.label)
+    wide = hud_font.width("h", hud_font.normalise(phase)) > layout.HUD_TEXT["label"][2]
+    text("label2" if wide else "label", phase)
     if s.timed:
         glyph("fill", "fill_" + plate, int(round(max(0.0, min(1.0, s.fraction)) * 255)))
         clock = "%d%02d" % (t // 60, t % 60)
@@ -228,14 +267,9 @@ def render(s, md=78, sprites=None, elements=None, strict=False):
     if s.show_role:
         glyph("pframe", "pframe_" + s.role_palette)
         glyph("picon", "picon_" + s.role_icon)
-        glyph("plabel", "plabel_" + word(s.role_word))
-        glyph("pteam", "pteam_" + word(s.team_word))
-        alive, total = "%2d" % min(99, s.alive), "%2d" % min(99, s.total)
-        for el, c in (("a1", alive[0]), ("a2", alive[1])):
-            glyph(el, "dblank" if c == " " else "d" + c)
-        glyph("aslash", "dslash")
-        for el, c in (("a3", total[0]), ("a4", total[1])):
-            glyph(el, "dblank" if c == " " else "d" + c)
+        text("pcount", "%d/%d" % (min(99, s.alive), min(99, s.total)))
+        text("prole", tr(lang, "hud.role." + word(s.role_word), s.role_word))
+        text("pteam", tr(lang, "hud.team." + word(s.team_word), s.team_word))
         for i in range(min(SEATS, len(s.seats))):
             glyph("m%d" % i, "dot_" + s.seats[i])
         for i in range(min(BADGES, len(s.badges))):
@@ -244,9 +278,11 @@ def render(s, md=78, sprites=None, elements=None, strict=False):
             hot = s.against > 0
             digits = "%2d" % min(99, s.against)
             glyph("vframe", "vframe_" + ("hot" if hot else "calm"))
+            text("vcap1", tr(lang, "hud.votes.line1", "VOTES"))
+            text("vcap2", tr(lang, "hud.votes.line2", "AGAINST YOU"))
             for i in range(2):
-                c = digits[i]
-                glyph("v%d" % (i + 1), "dblank" if c == " " else ("x" if hot else "d") + c)
+                if digits[i] != " ":
+                    glyph("v%d" % (i + 1), ("x" if hot else "d") + digits[i])
     return out
 
 
@@ -265,19 +301,27 @@ def gui_size(scale):
 def factor(md, scale):
     gx, gy = gui_size(scale)
     fit = min(gx / 640.0, gy / 360.0)
-    return {79: 1.0, 80: 0.75, 81: 0.5}.get(md) or (1.0 if fit >= 0.9 else 0.75 if fit >= 0.65 else 0.5)
+    return {79: 1.0, 80: 0.75, 81: 0.5}.get(md) or (1.0 if fit >= 0.65 else 0.75 if fit >= 0.45 else 0.5)
 
 
 def rnd(v):
     return math.floor(v + 0.5)
 
 
-def place(element, md, scale):
-    """Screen box (x0, y0, x1, y1) in GUI px of an element: anchor + round((box + corner) * f)."""
-    _, anchor, x, y, w, h = ELEMENTS[element]
+def place(element, md, scale, parameter=0):
+    """Screen box (x0, y0, x1, y1) in GUI px of a glyph: anchor + round((box + corner) * f).
+
+    `parameter` is the blue channel: the width of the time bar (its share of 255), and for a character of a line
+    of text how far right of the line's origin its cell starts. Text rounds its origin and its size apart."""
+    index, anchor, x, y, w, h = ELEMENTS[element]
     gx, gy = gui_size(scale)
     f = factor(md, scale) * (layout.HUD_PANEL_SCALE if anchor == 1 else 1.0)
     ax, ay = (gx // 2, 0) if anchor == 0 else (gx, gy // 2)
+    if index >= layout.HUD_TEXT_FIRST:
+        x0, y0 = ax + rnd((x + parameter) * f), ay + rnd(y * f)
+        return x0, y0, x0 + rnd(w * f), y0 + rnd(h * f)
+    if element == "fill":
+        w = max(1, rnd(w * parameter / 255.0))
     return ax + rnd(x * f), ay + rnd(y * f), ax + rnd((x + w) * f), ay + rnd((y + h) * f)
 
 
@@ -441,8 +485,8 @@ def blit(rows, spr, x0, y0, x1, y1):
 def compose(glyphs, scale, base):
     """Draw glyphs (as `render` returns them) over a copy of a background; returns rows at GUI resolution."""
     rows = [bytearray(r) for r in base]
-    for md, element, name, _ in glyphs:
-        blit(rows, sprite(name), *place(element, md, scale))
+    for md, element, name, parameter in glyphs:
+        blit(rows, sprite(name), *place(element, md, scale, parameter))
     return rows
 
 
@@ -469,9 +513,9 @@ def crops(scale, md, state):
     """Crop boxes (GUI px) of the top plate and the right panel for a state."""
     gx, gy = gui_size(scale)
     f = factor(md, scale)
-    top = (gx // 2 - math.ceil(132 * f), 0, gx // 2 + math.ceil(132 * f), math.ceil(52 * f))
-    low = math.ceil((92 if state.against >= 0 else 60) * f)
-    panel = (gx - math.ceil(140 * f), gy // 2 - math.ceil(60 * f), gx, gy // 2 + low)
+    top = (gx // 2 - math.ceil(100 * f), 0, gx // 2 + math.ceil(100 * f), math.ceil(42 * f))
+    low = math.ceil((73 if state.against >= 0 else 44) * f)
+    panel = (gx - math.ceil(108 * f), gy // 2 - math.ceil(44 * f), gx, gy // 2 + low)
     return top, panel
 
 
@@ -508,6 +552,7 @@ class Scenario:
     night: bool = None         # background; default follows facts.night
     mode: int = None
     scale: int = None
+    lang: str = None           # language file of the words; default the sheet's (--lang)
 
 
 def scenarios():
@@ -627,6 +672,20 @@ def scenarios():
     for sc in (2, 3, 4):
         add("Sizes", f"size-auto-gui{sc}", f"Mode auto (78), GUI scale {sc}", "the HUD follows the window",
             fx(phase="DAY_VOTE", role="SEER", votes_against=3, badges=("mayor",)), scene=True, mode=78, scale=sc)
+
+    # --- languages: the same states in French and German (the words come from lang/<tag>.yml)
+    for tag in LANGS[1:]:
+        code = tag[:2]
+        add("Languages", f"lang-{code}-vote", f"{tag}: vote, 3 ballots against", "caption and words translated",
+            fx(phase="DAY_VOTE", role="SEER", votes_against=3, badges=("mayor", "lover")), scene=True, lang=tag)
+        add("Languages", f"lang-{code}-night", f"{tag}: the wolves hunt", "",
+            fx(phase="NIGHT", role="WEREWOLF", night=True, actor=True, seconds=24, mates=(5, 9)), scene=True, lang=tag)
+        add("Languages", f"lang-{code}-sleeping", f"{tag}: asleep", "",
+            fx(phase="SEER", role="BEAR_TAMER", night=True, seconds=41), lang=tag)
+        add("Languages", f"lang-{code}-dead", f"{tag}: dead, game over", "",
+            fx(phase="FINISHED", role="WITCH", dead=(1, 7, 3), seconds=0), lang=tag)
+        add("Languages", f"lang-{code}-medium", f"{tag}: mode medium, GUI scale 2", "text at 0.75",
+            fx(phase="DAY_VOTE", role="SEER", votes_against=3, badges=("mayor",)), scene=True, mode=80, scale=2, lang=tag)
     return S
 
 
@@ -652,7 +711,7 @@ def palette_scenarios():
 # ------------------------------------------------------------------------------------------
 # Output
 
-def render_all(scale, md, outdir, log=print):
+def render_all(scale, md, outdir, log=print, lang="en_US"):
     outdir.mkdir(parents=True, exist_ok=True)
     (outdir / "states").mkdir(exist_ok=True)
     (outdir / "scenes").mkdir(exist_ok=True)
@@ -676,7 +735,7 @@ def render_all(scale, md, outdir, log=print):
         sc = sc_.scale or scale
         m = sc_.mode or md
         st = state_of(sc_.facts)
-        glyphs = render(st, m, strict=True)
+        glyphs = render(st, m, strict=True, lang=sc_.lang or lang)
         night = sc_.facts.night if sc_.night is None else sc_.night
         rows = compose(glyphs, sc, bg(sc, night))
         top_box, panel_box = crops(sc, m, st)
@@ -684,7 +743,7 @@ def render_all(scale, md, outdir, log=print):
                 "palette": st.palette, "label": st.label, "role_palette": st.role_palette,
                 "mode": m, "scale": sc, "factor": factor(m, sc), "state": st.__dict__ | {"seats": list(st.seats), "badges": list(st.badges)},
                 "glyphs": [f"{e}:{n}" for _, e, n, _ in glyphs]}
-        if sc_.category != "Sizes":
+        if sc_.mode is None and sc_.scale is None:
             item["top"] = keep(f"{sc_.sid}-top.png", png_of(rows, sc, top_box), "states")
             if st.show_role:
                 item["panel"] = keep(f"{sc_.sid}-panel.png", png_of(rows, sc, panel_box), "states")
@@ -696,7 +755,7 @@ def render_all(scale, md, outdir, log=print):
     for p, f in palette_scenarios():
         s = state_of(f)
         s = State(**{**s.__dict__, "palette": p, "role_palette": p, "against": -1, "timed": True, "seconds": 61, "label": "debate"})
-        rows = compose(render(s, md, strict=True), scale, bg(scale, True))
+        rows = compose(render(s, md, strict=True, lang=lang), scale, bg(scale, True))
         top_box, panel_box = crops(scale, md, s)
         swatches.append({"palette": p, "color": "#%06x" % layout.HUD_PALETTES[p],
                          "top": keep(f"palette-{p}-top.png", png_of(rows, scale, top_box), "states"),
@@ -741,7 +800,7 @@ def build_html(items, swatches, blobs, scale, md, path):
             out.append(f"<h3>{html.escape(it['title'])}</h3><div class=n>{html.escape(it['id'])} — {html.escape(it['note'])}</div>")
             out.append(f"<div class=tags><span class=tag>plate: {it['palette']}</span><span class=tag>label: {html.escape(it['label'])}</span>"
                        f"<span class=tag>panel: {it['role_palette']}</span><span class=tag>mode {it['mode']}·GUI {it['scale']}·x{it['factor']}</span></div>")
-            if "scene" in it and c == "Sizes":
+            if "scene" in it and "top" not in it:
                 out.append(f"<img class=scene alt='{html.escape(it['id'])}' src='{uri(it['scene'])}'>")
             else:
                 out.append("<div class=row>")
@@ -768,12 +827,13 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--scale", type=int, default=3, choices=(1, 2, 3, 4), help="GUI scale of the 1920x1080 screen")
     ap.add_argument("--mode", default="auto", choices=("auto", "large", "medium", "small"))
+    ap.add_argument("--lang", default="en_US", choices=LANGS, help="language of the words")
     ap.add_argument("--out", default=str(ROOT / "resource-pack" / "dist" / "hud-sheet"))
     a = ap.parse_args(argv)
     if not (SPRITES / "frame_wolf.png").exists():
         sys.exit("HUD sprites missing: run python3 resource-pack/art/hud.py first")
     outdir = pathlib.Path(a.out)
-    items, swatches, blobs = render_all(a.scale, mode(a.mode), outdir)
+    items, swatches, blobs = render_all(a.scale, mode(a.mode), outdir, lang=a.lang)
     size = build_html(items, swatches, blobs, a.scale, mode(a.mode), outdir / "index.html")
     (outdir / "states.json").write_text(json.dumps({"scale": a.scale, "mode": a.mode, "states": items, "palettes": swatches}, indent=1))
     print(f"{len(items)} states, {len(swatches)} palettes, {len(blobs)} images; {outdir / 'index.html'} = {size / 1e6:.2f} MB")

@@ -735,6 +735,7 @@ public final class BossSession {
         int busy;
         try {
             busy = Abilities.cast(this, spec);
+            BossCues.cue(entity, spec.type().id());
         } catch (RuntimeException e) {
             core.getPlugin().getLogger().log(Level.WARNING, "Ability " + spec.type().id() + " failed for " + def.id(), e);
             busy = 20;
@@ -1089,6 +1090,7 @@ public final class BossSession {
 
     private void enterPhase(int index) {
         BossDefinition.Phase phase = def.phases().get(index);
+        BossCues.cue(entity, "phase");
         announcePhase(phase, false);
         speak(Guardians.phaseEvent(index));
         retune();
@@ -1245,6 +1247,7 @@ public final class BossSession {
         handles.clear();
         Location at = location();
         if (reason == End.KILLED) {
+            BossCues.cue(entity, "death");   // before the mob goes: its displays keep playing the death clip
             Fx.sound(world, at, Sound.ENTITY_ENDER_DRAGON_DEATH, 4f, 0.8f);
             Fx.particle(world, Particle.EXPLOSION_EMITTER, at, 4, 2, 1, 2, 0);
             Fx.particle(world, Particle.TOTEM_OF_UNDYING, at.clone().add(0, 1, 0), 120, 2, 2, 2, 0.4);

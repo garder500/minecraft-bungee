@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Draws the 16x16 pixel-art icons of the Skyblock `items` feature (stdlib only, deterministic).
+"""Draws the icons of the Skyblock `items` feature (stdlib only, deterministic): the 16x16 weapons and tools below and
+the painted 32x32 class armour (armor32.py), accessories (trinkets32.py), pets (creatures32.py) and misc items
+(goods32.py), all drawn with paint32.py.
 
     python3 resource-pack/art/items_icons.py            # writes textures, models and item definitions
     python3 resource-pack/art/items_icons.py --sheet out.png   # also writes an 8x contact sheet to look at
@@ -8,7 +10,7 @@ Outputs (all paths contain the feature name, see docs/skyblock-design.md section
   pack/assets/vampyuyu/textures/item/items/<id>.png
   pack/assets/vampyuyu/models/item/items/<id>.json
   pack/assets/vampyuyu/items/items/<id>.json          -> item_model "vampyuyu:items/<id>"
-Style: the Skyblock lore sprites (docs/skyblock-notes/lore.md, lore_sprites.py): one Realm palette per item
+Style of the 16 px sprites: the Skyblock lore sprites (docs/skyblock-notes/lore.md, lore_sprites.py): one Realm palette per item
 (shadow, base, light, highlight, glow), light from the top left, no anti-aliasing, the family silhouette stays and the
 glow pixels (one to four, see MOTIFS) mark the Realm motif.
 The id list must match survival-plugin ItemCatalog + the eight pet species (items.pet_<id> models).
@@ -19,6 +21,10 @@ import struct
 import sys
 import zlib
 
+import armor32
+import creatures32
+import goods32
+import trinkets32
 from imported import imported
 
 ART = pathlib.Path(__file__).resolve().parent
@@ -337,24 +343,6 @@ ROD = [
     "................",
     "................",
 ]
-HOOK = [
-    "......bbbb......",
-    ".....ba..ac.....",
-    ".....b....c.....",
-    ".....ba..ac.....",
-    "......bacc......",
-    ".......d........",
-    ".......d........",
-    ".......d........",
-    ".......d........",
-    ".......d........",
-    "......idi.......",
-    "......iii.......",
-    ".......g........",
-    "................",
-    "................",
-    "................",
-]
 BOW = [
     "................",
     "......bbbbb.....",
@@ -427,672 +415,29 @@ SCYTHE = [
     "................",
     "................",
 ]
-CRYSTAL = [
-    "................",
-    ".......bb.......",
-    "......bhhb......",
-    ".....bhgggb.....",
-    "....bhgggggc....",
-    "....bgggggggc...",
-    "....bgggggggc...",
-    "....bgggggggc...",
-    ".....bgggggc....",
-    ".....bgggggc....",
-    "......bgggc.....",
-    ".......bgc......",
-    "........c.......",
-    "................",
-    "................",
-    "................",
-]
-
-HELMET = [
-    "................",
-    "................",
-    "....bbbbbbbb....",
-    "...baaaaaaaac...",
-    "..baaaaaaaaaac..",
-    "..baaaaaaaaaac..",
-    "..bahhaaaahhac..",
-    "..baaaaaaaaaac..",
-    "..baaa....aaac..",
-    "..baac....caac..",
-    "..bac......cac..",
-    "................",
-    "................",
-    "................",
-    "................",
-    "................",
-]
-CHEST = [
-    "................",
-    "..bb........bb..",
-    ".baac.bbbb.baac.",
-    ".baaabaaaacbaac.",
-    ".baaaaaaaaaaaac.",
-    "..baaaaaaaaaac..",
-    "..baaahhhhaaac..",
-    "..baaahggghaac..",
-    "..baaahhhhaaac..",
-    "..baaaaaaaaaac..",
-    "..baaaaaaaaaac..",
-    "..bcaaaaaaaacc..",
-    "...cccccccccc...",
-    "................",
-    "................",
-    "................",
-]
-LEGS = [
-    "................",
-    "...bbbbbbbbbb...",
-    "..baaaaaaaaaac..",
-    "..baaaaaaaaaac..",
-    "..bahhaaaahhac..",
-    "..baaaa..aaaac..",
-    "..baaac..caaac..",
-    "..baaac..caaac..",
-    "..baaac..caaac..",
-    "..baaac..caaac..",
-    "..baacc..ccaac..",
-    "..bcc......ccc..",
-    "................",
-    "................",
-    "................",
-    "................",
-]
-BOOTS = [
-    "................",
-    "................",
-    "................",
-    "..bbbb....bbbb..",
-    "..baac....baac..",
-    "..baac....baac..",
-    "..baac....baac..",
-    "..bahc....bahc..",
-    ".baaac...baaac..",
-    ".baaaac.baaaac..",
-    ".bhhaacbbhhaac..",
-    ".bcccccbcccccc..",
-    "................",
-    "................",
-    "................",
-    "................",
-]
-
-RING = [
-    "................",
-    "................",
-    ".......gg.......",
-    "......ghhg......",
-    ".......gg.......",
-    "......bbbb......",
-    ".....baaaac.....",
-    "....baa..aac....",
-    "....ba....ac....",
-    "....ba....ac....",
-    "....baa..aac....",
-    ".....baaaac.....",
-    "......cccc......",
-    "................",
-    "................",
-    "................",
-]
-CHARM = [
-    "................",
-    "........bb......",
-    ".......b..b.....",
-    ".......b..b.....",
-    "......bbbbbb....",
-    ".....baaaaaac...",
-    "....baaggggaac..",
-    "....baghhhgaac..",
-    "....bagggggaac..",
-    "....baaaggaaac..",
-    ".....baaaaaac...",
-    "......cccccc....",
-    "................",
-    "................",
-    "................",
-    "................",
-]
-TALISMAN = [
-    "................",
-    ".......bb.......",
-    "......b..b......",
-    "......bbbb......",
-    ".....baaaac.....",
-    "....baggggac....",
-    "...baagggggac...",
-    "...baghhhggac...",
-    "...baagggggac...",
-    "....baaggaac....",
-    ".....baaaac.....",
-    "......cccc......",
-    "................",
-    "................",
-    "................",
-    "................",
-]
-ARTIFACT = [
-    "................",
-    ".......ww.......",
-    "......bwwb......",
-    ".....baggab.....",
-    "..bb.baggab.bb..",
-    ".baab.bgga.baab.",
-    ".baaabbgggbbaab.",
-    "..baaaaggaaaab..",
-    "...baaaggaaab...",
-    "....baaaaaab....",
-    ".....baaaaab....",
-    "......baaab.....",
-    ".......bab......",
-    "........c.......",
-    "................",
-    "................",
-]
-
-BOOK = [
-    "................",
-    "...bbbbbbbbb....",
-    "..baaaaaaaaac...",
-    "..baaiiiiiaac...",
-    "..baaaaaaaaac...",
-    "..baaaghgaaac...",
-    "..baaagggaaac...",
-    "..baaaaaaaaac...",
-    "..baaiiiiiaac...",
-    "..baaaaaaaaac...",
-    "..bddddddddc....",
-    "..bwwwwwwwwc....",
-    "...cccccccc.....",
-    "................",
-    "................",
-    "................",
-]
-STAR = [
-    "................",
-    ".......bb.......",
-    ".......bb.......",
-    "......bhhb......",
-    "..bbbbbhhbbbbb..",
-    "...baaahhaaac...",
-    "....baaaaaac....",
-    ".....baaaac.....",
-    "....baaaaaac....",
-    "...baaac.baac...",
-    "..baac.....baa..",
-    "..bc.........c..",
-    "................",
-    "................",
-    "................",
-    "................",
-]
-POTATO_BOOK = BOOK
-LOG = [
-    "................",
-    "................",
-    "..bbbbbbbbbbbb..",
-    ".baaaaaaaaaaaac.",
-    ".baddddddddddac.",
-    ".badeeeeeeeedac.",
-    ".badeffffffedac.",
-    ".badeffggffedac.",
-    ".badeffffffedac.",
-    ".badeeeeeeeedac.",
-    ".baddddddddddac.",
-    ".baaaaaaaaaaaac.",
-    "..cccccccccccc..",
-    "................",
-    "................",
-    "................",
-]
-BLOCK = [
-    "................",
-    "................",
-    "..bbbbbbbbbbbb..",
-    ".baaaaaaaaaaaac.",
-    ".baaaaaaaaaaaac.",
-    ".baagggaaaggaac.",
-    ".baaghgaaaghaac.",
-    ".baaagaaaaagaac.",
-    ".baaaaaaaaaaaac.",
-    ".baaaggaaaaaaac.",
-    ".baaaghaaaaaaac.",
-    ".baaaaaaaaaaaac.",
-    "..cccccccccccc..",
-    "................",
-    "................",
-    "................",
-]
-LUMP = [
-    "................",
-    "................",
-    "................",
-    "......bbbb......",
-    "....bbaaaabb....",
-    "...baaaaaaaac...",
-    "..baaaghaaaaac..",
-    "..baaaaaaaaaac..",
-    "..baaaaaagaaac..",
-    "...baaaaaaaac...",
-    "....baaaaacc....",
-    ".....cccccc.....",
-    "................",
-    "................",
-    "................",
-    "................",
-]
-BARREL = [
-    "................",
-    "....bbbbbbbb....",
-    "...baaaaaaaac...",
-    "..iiiiiiiiiiii..",
-    "..baaaaaaaaaac..",
-    "..baaahhhhaaac..",
-    "..baaahggghaac..",
-    "..baaahhhhaaac..",
-    "..baaaaaaaaaac..",
-    "..iiiiiiiiiiii..",
-    "..baaaaaaaaaac..",
-    "...baaaaaaaac...",
-    "....cccccccc....",
-    "................",
-    "................",
-    "................",
-]
-PEARL = [
-    "................",
-    "................",
-    ".....bbbbbb.....",
-    "...bbaaaaaabb...",
-    "..baahhaaaaaac..",
-    "..bahhaaaaaaac..",
-    ".baahaaaaaggaac.",
-    ".baaaaaaaggggac.",
-    ".baaaaaaaaggaac.",
-    "..baaaaaaaaaac..",
-    "..bcaaaaaaacc...",
-    "...bccaaacc.....",
-    ".....cccc.......",
-    "................",
-    "................",
-    "................",
-]
-SHARD = [
-    "................",
-    "...........b....",
-    "..........bhb...",
-    ".........bhgb...",
-    "........bhggb...",
-    ".......bhgggb...",
-    "......bhgggc....",
-    ".....bhgggc.....",
-    "....bhgggc......",
-    "...bhggcc.......",
-    "..bhgcc.........",
-    "..bgcc..........",
-    "..ccc...........",
-    "................",
-    "................",
-    "................",
-]
-EGG = [
-    "................",
-    "................",
-    ".......bb.......",
-    "......baac......",
-    ".....baaaac.....",
-    "....baagagac....",
-    "....baaaaaac....",
-    "...baagggaaac...",
-    "...baaagaaaac...",
-    "...baaaaaagac...",
-    "....baaaaaac....",
-    ".....bcccac.....",
-    "......cccc......",
-    "................",
-    "................",
-    "................",
-]
-BERRY = [
-    "................",
-    "......dd........",
-    ".....d..d.......",
-    "....bbbbbb......",
-    "...baaaaaac.....",
-    "..baahaaaaac....",
-    "..baaaaagaac....",
-    "..baaaaaaaac....",
-    "...baaaaaac.....",
-    "....bcccc.......",
-    "................",
-    "................",
-    "................",
-    "................",
-    "................",
-    "................",
-]
-BONE = [
-    "................",
-    "..........bb.bb.",
-    ".........baaabac",
-    "........baaaac.c",
-    ".......baaac....",
-    "......baaac.....",
-    ".....baaac......",
-    "....baaac.......",
-    "...baaac........",
-    ".bbaaac.........",
-    "baaab...........",
-    ".cc.c...........",
-    "................",
-    "................",
-    "................",
-    "................",
-]
-SCUTE = [
-    "................",
-    "................",
-    "....bbbbbbbb....",
-    "...baaaaaaaac...",
-    "..baahhaahhaac..",
-    "..baahhaahhaac..",
-    "..baaaaaaaaaac..",
-    "..baahhaahhaac..",
-    "...baaaaaaaac...",
-    "....bccccccc....",
-    "................",
-    "................",
-    "................",
-    "................",
-    "................",
-    "................",
-]
-CLOVER = [
-    "................",
-    "....bb....bb....",
-    "...baac..baac...",
-    "...baaabbaaac...",
-    "....baaaaaac....",
-    "...bbaaaaaabb...",
-    "..baaabaabaaac..",
-    "..baaac..baaac..",
-    "...bcc.d.bcc....",
-    "........d.......",
-    ".......d........",
-    "......dd........",
-    "................",
-    "................",
-    "................",
-    "................",
-]
-BOTTLE = [
-    "................",
-    ".......ii.......",
-    ".......dd.......",
-    "......wddw......",
-    ".......bb.......",
-    "......baac......",
-    ".....baaaac.....",
-    "....baahaaac....",
-    "....baaaaaac....",
-    "....baaagaac....",
-    "....baaaaaac....",
-    ".....bccccc.....",
-    "................",
-    "................",
-    "................",
-    "................",
-]
-GEAR = [
-    "................",
-    ".......bb.......",
-    "....bb.bb.bb....",
-    "...baabaabaac...",
-    "....baaaaaac....",
-    "..bbaac..caabb..",
-    "..baaac..caaac..",
-    "..bbaac..caabb..",
-    "....baaaaaac....",
-    "...baabaabaac...",
-    "....bc.bb.cc....",
-    ".......cc.......",
-    "................",
-    "................",
-    "................",
-    "................",
-]
-
-# ---- pets (16x16 mini portraits)
-PET_WOLF = [
-    "................",
-    "..bb........bb..",
-    "..baab....baab..",
-    "..baaabbbbaaab..",
-    "..baaaaaaaaaac..",
-    "..baaaaaaaaaac..",
-    "..baakaaaakaac..",
-    "...baaaaaaaac...",
-    "...baaabbaaac...",
-    "....baabbaac....",
-    "....baadkaac....",
-    ".....bacccc.....",
-    "......cccc......",
-    "................",
-    "................",
-    "................",
-]
-PET_RABBIT = [
-    "..bb......bb....",
-    ".baab....baab...",
-    ".baab....baab...",
-    ".baab....baab...",
-    ".bdab....bdab...",
-    "..bbbbbbbbbb....",
-    "..baaaaaaaaac...",
-    ".baakaaaakaaac..",
-    ".baaaaaaaaaaac..",
-    ".baaaaadaaaaac..",
-    "..baaaaaaaaac...",
-    "...bacccccac....",
-    "....cccccccc....",
-    "................",
-    "................",
-    "................",
-]
-PET_ENDERMAN = [
-    "................",
-    "...bbbbbbbbbb...",
-    "..baaaaaaaaaac..",
-    "..baaaaaaaaaac..",
-    "..baaaaaaaaaac..",
-    "..bgggaaaagggc..",
-    "..bghgaaaaghgc..",
-    "..baaaaaaaaaac..",
-    "..baaaaaaaaaac..",
-    "..baaaaaaaaaac..",
-    "...bcccccccac...",
-    "....cccccccc....",
-    "................",
-    "................",
-    "................",
-    "................",
-]
-PET_PHOENIX = [
-    "................",
-    "...........bb...",
-    "..bb......baab..",
-    ".baab....baaac..",
-    ".baaab..baaac...",
-    "..baaabbaaac....",
-    "...baaaaaaac.i..",
-    "....baagaaaaii..",
-    "...bbaaaaaaac...",
-    "..baaabaaaac....",
-    ".baaab.baac.....",
-    ".baab...bac.....",
-    "..bb....bb......",
-    "................",
-    "................",
-    "................",
-]
-PET_DRAGON = [
-    "................",
-    ".bb..........bb.",
-    ".baab......baab.",
-    "..baaabbbbaaab..",
-    "..baaaaaaaaaac..",
-    "..baaaaaaaaaac..",
-    "..bgggaaaagggc..",
-    "..bghgaaaaghgc..",
-    "...baaaaaaaaac..",
-    "...baadaaadaac..",
-    "....baaaaaaac...",
-    ".....baddddac...",
-    "......cccccc....",
-    "................",
-    "................",
-    "................",
-]
-PET_TIGER = [
-    "................",
-    "..bb........bb..",
-    "..baab....baab..",
-    "..baaabbbbaaab..",
-    "..baakaaaakaac..",
-    "..bakaaaaaakac..",
-    "..baakaaaakaac..",
-    "...baaaaaaaaac..",
-    "...baawwddwaac..",
-    "....baaddddaac..",
-    "....baadkkdaac..",
-    ".....bacccccc...",
-    "......cccc......",
-    "................",
-    "................",
-    "................",
-]
-PET_ELEPHANT = [
-    "................",
-    "..bbb......bbb..",
-    ".baaabbbbbbaaab.",
-    ".baaaaaaaaaaaac.",
-    ".baaaaaaaaaaaac.",
-    ".baaakaaaakaaac.",
-    "..baaaaaaaaaac..",
-    "..bwwaaaaaawwc..",
-    "...bwaaaaaawc...",
-    "....baaaaaac....",
-    ".....baaaac.....",
-    ".....baaac......",
-    "......bac.......",
-    "......cc........",
-    "................",
-    "................",
-]
-PET_TURTLE = [
-    "................",
-    "................",
-    "................",
-    "....bbbbbbbb....",
-    "...baaaaaaaac...",
-    "..baahhaahhaac..",
-    ".bbaahhaahhaabb.",
-    "bdbaaaaaaaaaabdb",
-    "bddbaahhhhaabddb",
-    ".bddbaaaaaabddb.",
-    "..bdb.cccc.bdb..",
-    "...bb.b..b.bb...",
-    "................",
-    "................",
-    "................",
-    "................",
-]
-
-
 # --------------------------------------------------------------------------------------------- catalog
 # Armor sets, accessory families and pets each take the palette and motif of one Realm.
-SETS = {
-    "miner": "ashes", "lumberjack": "grove", "farmer": "citadel", "hunter": "marsh", "void_walker": "astral",
-    "frostborne": "heights",
-}
-FAMILIES = {
-    "speed": "storm", "strength": "ashes", "crit": "astral", "vitality": "grove", "guard": "heights",
-    "mind": "necro", "harvest": "citadel", "prospect": "marsh", "fortune": "depths",
-}
-TIER_SHAPE = [TALISMAN, CHARM, RING, ARTIFACT]
-PETS = {
-    "wolf": (PET_WOLF, "heights"), "rabbit": (PET_RABBIT, "grove"), "enderman": (PET_ENDERMAN, "astral"),
-    "phoenix": (PET_PHOENIX, "ashes"), "ender_dragon": (PET_DRAGON, "storm"), "tiger": (PET_TIGER, "citadel"),
-    "elephant": (PET_ELEPHANT, "necro"), "turtle": (PET_TURTLE, "depths"),
-}
-# (shape, realm, glow pixels) of every other item; the motif goes on the gem, else on the head of the tool.
+# (shape, realm, glow pixels) of the 16 px weapons and tools; the motif goes on the gem, else on the head of the tool.
 ITEMS = {
     "rookie_sword": (SWORD, "ashes", 1), "warriors_blade": (SWORD, "citadel", 1), "leaping_sword": (SWORD, "storm", 2),
     "frozen_scythe": (SCYTHE, "heights", 2), "void_blade": (SWORD, "astral", 2), "wither_blade": (SWORD, "necro", 2),
-    "ember_rod": (WAND, "ashes", 2), "healing_wand": (WAND, "grove", 2), "overflux_capacitor": (CRYSTAL, "flux", 3),
+    "ember_rod": (WAND, "ashes", 2), "healing_wand": (WAND, "grove", 2),
     "staff_of_the_volcano": (STAFF, "ashes", 3), "hunters_shortbow": (BOW, "marsh", 1),
     "voidpiercer_bow": (BOW, "astral", 2),
     "treecapitator": (AXE, "grove", 2), "jungle_axe": (AXE, "marsh", 1), "diggers_shovel": (SHOVEL, "citadel", 1),
     "miners_pickaxe": (PICKAXE, "ashes", 2), "miners_drill": (DRILL, "flux", 2), "titan_drill": (DRILL, "flux", 4),
     "farmers_hoe": (HOE, "grove", 1), "harvest_hoe": (HOE, "citadel", 2), "rod_of_legends": (ROD, "depths", 3),
-    "grappling_hook": (HOOK, "storm", 1),
-    "wood_singularity": (LOG, "grove", 2), "stone_singularity": (BLOCK, "ashes", 2),
-    "hay_singularity": (BLOCK, "citadel", 2), "drill_fuel_cell": (LUMP, "flux", 2),
-    "drill_fuel_volta": (BLOCK, "flux", 3), "drill_fuel_oil": (BARREL, "marsh", 2), "warp_pearl": (PEARL, "astral", 2),
-    "reforge_stone_fabled": (SHARD, "citadel", 2), "reforge_stone_withered": (SHARD, "necro", 2),
-    "reforge_stone_ancient": (SHARD, "ashes", 2), "reforge_stone_refined": (SHARD, "heights", 2),
-    "enchanted_book": (BOOK, "astral", 3), "pet_egg": (EGG, "grove", 2), "pet_candy": (BERRY, "depths", 2),
-    "pet_tier_boost": (SHARD, "astral", 3), "pet_xp_share": (BOTTLE, "necro", 2), "pet_big_teeth": (BONE, "ashes", 1),
-    "pet_hardened_scales": (SCUTE, "marsh", 2), "pet_lucky_clover": (CLOVER, "grove", 2),
-    # imported sprites (imported.txt) keep their concept art, these are only drawn for the design check
-    "recombobulator": (STAR, "astral", 2), "hot_potato_book": (BOOK, "ashes", 2),
 }
 
 
-def armor(rows, realm, tier):
-    """Body in light, trim darker on tier 1 and bright on tier 2 and 3; the Realm motif has as many glow pixels as the tier."""
-    s, b, l, h, e = realm_colors(realm)
-    trim = b if tier == 1 else h
-    img = draw(rows, {"a": l, "b": h, "c": b, "h": trim, "g": trim, "d": s, "i": l, "k": s, "w": h})
-    points = find(rows, "g") or find(rows, "a")
-    stamp(img, realm, tier, centre(points))
-    return img.outline()
-
-
-def accessory(rows, realm, tier):
-    """Frame in the Realm's light tones around a dark stone; the glow pixels grow from one to four with the tier."""
-    s, b, l, h, e = realm_colors(realm)
-    img = draw(rows, {"a": l, "b": h, "c": b, "g": s if realm != "ashes" else b, "h": b if realm != "ashes" else l, "w": h})
-    points = find(rows, "g")
-    stamp(img, realm, tier, centre(points))
-    return img.outline()
-
-
-def pet(rows, realm):
-    """Animal in the Realm palette; the glow pixel is its eye (or the middle of the body)."""
-    s, b, l, h, e = realm_colors(realm)
-    img = draw(rows, {"a": l, "b": h, "c": b, "g": h, "h": h, "i": b, "d": s, "k": OUTLINE, "w": h})
-    eyes = find(rows, "k")
-    stamp(img, realm, 1, eyes[0] if eyes else centre(find(rows, "a")))
-    return img.outline()
-
-
 def build():
+    """The 16 px weapons and tools (Img) and the painted 32 px icons (paint32.Pic): class armour, accessories, pets, misc."""
     icons = {}
     for name, (rows, realm, n) in ITEMS.items():
         icons[name] = realm_item(rows, realm, n)
-    slots = {"helmet": HELMET, "chestplate": CHEST, "leggings": LEGS, "boots": BOOTS}
-    for set_id, realm in SETS.items():
-        for slot, rows in slots.items():
-            for tier in (1, 2, 3):
-                icons[f"{set_id}_{slot}_t{tier}"] = armor(rows, realm, tier)
-    for family, realm in FAMILIES.items():
-        for tier in range(4):
-            icons[f"acc_{family}_{tier + 1}"] = accessory(TIER_SHAPE[tier], realm, tier + 1)
-    for name, (rows, realm) in PETS.items():
-        icons[f"pet_{name}"] = pet(rows, realm)
+    for module in (armor32, trinkets32, creatures32):
+        icons.update(module.all_icons())
+    icons.update({name: draw() for name, draw in goods32.MISC.items()})
     return icons
 
 
@@ -1115,19 +460,21 @@ def write(icons):
 def sheet(icons, path, scale=8, columns=16):
     names = sorted(icons)
     rows = (len(names) + columns - 1) // columns
-    cell = W * scale + 4
+    scale = scale // 2          # one cell holds a 32 px icon; a 16 px one is drawn twice as large
+    cell = 32 * scale + 4
     width, height = columns * cell, rows * cell
     bg = (0x3a, 0x3a, 0x44, 255)
     pixels = [[bg] * width for _ in range(height)]
     for i, name in enumerate(names):
         ox, oy = (i % columns) * cell + 2, (i // columns) * cell + 2
-        for y in range(W):
-            for x in range(W):
-                c = icons[name].p[y][x]
+        grid = icons[name].p
+        k = scale * 32 // len(grid)
+        for y, row in enumerate(grid):
+            for x, c in enumerate(row):
                 if c:
-                    for sy in range(scale):
-                        for sx in range(scale):
-                            pixels[oy + y * scale + sy][ox + x * scale + sx] = c
+                    for sy in range(k):
+                        for sx in range(k):
+                            pixels[oy + y * k + sy][ox + x * k + sx] = c
     raw = b"".join(b"\x00" + b"".join(bytes(c) for c in row) for row in pixels)
 
     def chunk(tag, data):
@@ -1141,7 +488,8 @@ def sheet(icons, path, scale=8, columns=16):
 def main():
     icons = build()
     for name, img in icons.items():
-        assert all(len(row) == W for row in img.p), name
+        grid = img.p
+        assert len(grid) in (W, 32) and all(len(row) == len(grid) for row in grid), name
     write(icons)
     if "--sheet" in sys.argv:
         sheet(icons, sys.argv[sys.argv.index("--sheet") + 1])

@@ -2,6 +2,7 @@ package win.vampyuyu.werewolf.hud;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.util.*;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
@@ -13,8 +14,13 @@ import win.vampyuyu.werewolf.roles.RoleInfo;
 /**
  * The custom HUD, drawn from the resource pack instead of vanilla's bossbar and sidebar: glyphs of
  * font vampyuyu:hud2 in the action bar, each coloured (78, 100 + element, parameter) so the core
- * shader moves it to its place on screen (resource-pack/art/hud.py and art/fx_shaders.py). Pure
- * text: no Bukkit access.
+ * shader moves it to its place on screen (resource-pack/art/hud.py and art/fx_shaders.py).
+ *
+ * <p>No word is painted in a sprite: the phase, the role, the team and the vote caption are text, read from the
+ * language files ({@link HudLang}) and written one glyph per character with the HUD's own pixel fonts
+ * (resource-pack/art/hud_font.py). For a character the colour's parameter is how far right of its line's origin
+ * the glyph starts, so this class lays the line out: capitals, proportional advances, a cut when a word is too
+ * wide. resource-pack/art/hud_sheet.py is the Python twin (scripts/test_hud_sheet.py). No Bukkit access.
  */
 public final class CustomHud {
   public static final Key FONT = Key.key("vampyuyu", "hud2");
@@ -25,6 +31,12 @@ public final class CustomHud {
 
   private final Map<String, Integer> sprites = new HashMap<>();
   private final Map<String, Integer> elements = new HashMap<>();
+  /** Text: the advance of each character sprite, of each font's space, and each line's font, alignment and width. */
+  private final Map<String, Integer> advances = new HashMap<>();
+  private final Map<String, Integer> spaces = new HashMap<>();
+  private final Map<String, Line> lines = new HashMap<>();
+
+  private record Line(String font, String align, int limit) {}
 
   /** Reads hud-sprites.txt, which the pack's art script writes next to the sprites. */
   public CustomHud() {
@@ -32,8 +44,17 @@ public final class CustomHud {
       if (in == null) throw new IllegalStateException("hud-sprites.txt missing");
       for (String line : new String(in.readAllBytes(), StandardCharsets.UTF_8).split("\n")) {
         String[] parts = line.trim().split(" ");
-        if (parts.length != 3) continue;
-        (parts[0].equals("sprite") ? sprites : elements).put(parts[2], Integer.parseInt(parts[1]));
+        if (parts.length < 3) continue;
+        switch (parts[0]) {
+          case "sprite" -> sprites.put(parts[2], Integer.parseInt(parts[1]));
+          case "element" -> elements.put(parts[2], Integer.parseInt(parts[1]));
+          case "advance" -> advances.put(parts[2], Integer.parseInt(parts[1]));
+          case "space" -> spaces.put(parts[2], Integer.parseInt(parts[1]));
+          case "text" -> {
+            if (parts.length == 5) lines.put(parts[1], new Line(parts[2], parts[3], Integer.parseInt(parts[4])));
+          }
+          default -> {}
+        }
       }
     } catch (IOException e) {
       throw new UncheckedIOException(e);
@@ -78,26 +99,114 @@ public final class CustomHud {
         .font(FONT);
   }
 
-  /** A word's sprite key: lower case, anything else than letters and digits becomes one underscore. */
+  /** A word's key (language files, hud.phase.<key>): lower case, anything else than letters and digits becomes one underscore. */
   public static String word(String text) {
     return text.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_").replaceAll("^_|_$", "");
   }
 
+  // ------------------------------------------------------------------ text
+
+  private static String charSprite(String font, char ch) {
+    return "f" + font + "_" + String.format(Locale.ROOT, "%04x", (int) ch);
+  }
+
+  /**
+   * What the HUD can write of a text: capitals, single spaces, the accented letters its fonts have; another
+   * accented letter loses its accent, anything else becomes '?'. (hud_font.normalise)
+   */
+  String normalise(String text) {
+    String upper =
+        Normalizer.normalize(text, Normalizer.Form.NFC)
+            .toUpperCase(Locale.ROOT)
+            .replace('\u2019', '\'')
+            .replace("\u0152", "OE")
+            .replace("\u00C6", "AE")
+            .strip()
+            .replaceAll("\\s+", " ");
+    StringBuilder out = new StringBuilder();
+    for (int i = 0; i < upper.length(); i++) {
+      char ch = upper.charAt(i);
+      if (ch == ' ' || advances.containsKey(charSprite("m", ch))) {
+        out.append(ch);
+        continue;
+      }
+      char plain = Normalizer.normalize(String.valueOf(ch), Normalizer.Form.NFD).charAt(0);
+      out.append(advances.containsKey(charSprite("m", plain)) ? plain : '?');
+    }
+    return out.toString();
+  }
+
+  /** Pixel width of a normalised line in a font: each character's ink and one pixel between two. */
+  int width(String font, String line) {
+    int total = 0;
+    for (int i = 0; i < line.length(); i++) {
+      char ch = line.charAt(i);
+      total += ch == ' ' ? spaces.getOrDefault(font, 0) : advances.getOrDefault(charSprite(font, ch), 0);
+    }
+    return Math.max(0, total - 1);
+  }
+
+  /**
+   * The line cut to {@code limit} pixels, ending with a dot when something was dropped. A net for words that come
+   * from a data override: the shipped ones all fit (scripts/test_hud_sheet.py).
+   */
+  String fit(String font, String line, int limit) {
+    if (width(font, line) <= limit) return line;
+    while (!line.isEmpty() && width(font, line.stripTrailing() + ".") > limit) line = line.substring(0, line.length() - 1);
+    return line.stripTrailing() + ".";
+  }
+
+  /** One line of text at a text element: a glyph per character, its parameter where its cell starts. */
+  private Component text(int mode, String element, String raw) {
+    Line spec = lines.get(element);
+    if (spec == null) return Component.empty();
+    String line = fit(spec.font(), normalise(raw), spec.limit());
+    int free = spec.limit() - width(spec.font(), line);
+    int x = spec.align().equals("right") ? free : spec.align().equals("centre") ? free / 2 : 0;
+    Component out = Component.empty();
+    for (int i = 0; i < line.length(); i++) {
+      char ch = line.charAt(i);
+      if (ch == ' ') {
+        x += spaces.getOrDefault(spec.font(), 0);
+        continue;
+      }
+      String sprite = charSprite(spec.font(), ch);
+      out = out.append(glyph(mode, element, sprite, x));
+      x += advances.getOrDefault(sprite, 0);
+    }
+    return out;
+  }
+
+  /** The phase on the top plate: the headline font, or the bold one when the headline would be too wide. */
+  private Component label(int mode, String phase) {
+    Line headline = lines.get("label");
+    boolean wide = headline != null && width(headline.font(), normalise(phase)) > headline.limit();
+    return text(mode, wide ? "label2" : "label", phase);
+  }
+
+  // ------------------------------------------------------------------ rendering
+
   /** Seconds left at which the plate and the clock turn red and flash. */
   public static final int DANGER_SECONDS = 5;
 
+  /** The HUD in English (tests and tools). */
   public Component render(State s, int mode) {
+    return render(s, mode, HudLang.DEFAULT);
+  }
+
+  /** The HUD of one player; {@code lang} is their language file ({@link HudLang#of}). */
+  public Component render(State s, int mode, String lang) {
     boolean danger = s.timed() && s.seconds() <= DANGER_SECONDS;
     long t = Math.max(0, Math.min(9 * 60 + 59, s.seconds()));
     // The plate flashes red every other second once the turn is nearly over.
     String plate = danger && t % 2 == 0 ? "danger" : s.palette();
     String clockKind = danger ? "x" : "d";
     Component out = Component.empty();
-    // Top plate: phase medallion, round, label and the clock (the time as digits and a bar that drains).
+    // Top plate: phase medallion, round, the phase's name and the clock (the time as digits and a bar that drains).
     out = out.append(glyph(mode, "frame", "frame_" + plate, 0));
     out = out.append(glyph(mode, "icon", "icon_" + s.topIcon(), 0));
     out = out.append(glyph(mode, "round", "s" + Math.max(0, Math.min(9, s.round())), 0));
-    out = out.append(glyph(mode, "label", "label_" + word(s.label()), 0));
+    out = out.append(label(mode, HudLang.tr(lang, "hud.phase." + word(s.label()), s.label())));
     if (s.timed()) {
       // The draining bar: the shader stretches it to the blue channel's share of its full width.
       out = out.append(glyph(mode, "fill", "fill_" + plate, (int) Math.round(Math.max(0, Math.min(1, s.fraction())) * 255)));
@@ -107,17 +216,13 @@ public final class CustomHud {
       out = out.append(glyph(mode, "t3", clockKind + clock.charAt(1), 0));
       out = out.append(glyph(mode, "t4", clockKind + clock.charAt(2), 0));
     }
-    // Right panel: role, team, the number alive and one pip per player.
+    // Right panel: role medallion, the number alive, the badges, then the role, the team and one pip per player.
     if (s.showRole()) {
       out = out.append(glyph(mode, "pframe", "pframe_" + s.rolePalette(), 0));
       out = out.append(glyph(mode, "picon", "picon_" + s.roleIcon(), 0));
-      out = out.append(glyph(mode, "plabel", "plabel_" + word(s.roleWord()), 0));
-      out = out.append(glyph(mode, "pteam", "pteam_" + word(s.teamWord()), 0));
-      String alive = String.format(Locale.ROOT, "%2d", Math.min(99, s.alive()));
-      String total = String.format(Locale.ROOT, "%2d", Math.min(99, s.total()));
-      out = out.append(bigDigit(mode, "a1", alive.charAt(0))).append(bigDigit(mode, "a2", alive.charAt(1)));
-      out = out.append(glyph(mode, "aslash", "dslash", 0));
-      out = out.append(bigDigit(mode, "a3", total.charAt(0))).append(bigDigit(mode, "a4", total.charAt(1)));
+      out = out.append(text(mode, "pcount", Math.min(99, s.alive()) + "/" + Math.min(99, s.total())));
+      out = out.append(text(mode, "prole", HudLang.tr(lang, "hud.role." + word(s.roleWord()), s.roleWord())));
+      out = out.append(text(mode, "pteam", HudLang.tr(lang, "hud.team." + word(s.teamWord()), s.teamWord())));
       // The table strip: one dot per seat, in seat order.
       for (int i = 0; i < Math.min(SEATS, s.seats().size()); i++)
         out = out.append(glyph(mode, "m" + i, "dot_" + s.seats().get(i), 0));
@@ -128,17 +233,15 @@ public final class CustomHud {
         boolean hot = s.against() > 0;
         String digits = String.format(Locale.ROOT, "%2d", Math.min(99, s.against()));
         out = out.append(glyph(mode, "vframe", "vframe_" + (hot ? "hot" : "calm"), 0));
+        out = out.append(text(mode, "vcap1", HudLang.tr(lang, "hud.votes.line1", "VOTES")));
+        out = out.append(text(mode, "vcap2", HudLang.tr(lang, "hud.votes.line2", "AGAINST YOU")));
         for (int i = 0; i < 2; i++) {
           char c = digits.charAt(i);
-          out = out.append(glyph(mode, "v" + (i + 1), c == ' ' ? "dblank" : (hot ? "x" : "d") + c, 0));
+          if (c != ' ') out = out.append(glyph(mode, "v" + (i + 1), (hot ? "x" : "d") + c, 0));
         }
       }
     }
     return out;
-  }
-
-  private Component bigDigit(int mode, String element, char c) {
-    return glyph(mode, element, c == ' ' ? "dblank" : "d" + c, 0);
   }
 
   // ------------------------------------------------------------------ derivation

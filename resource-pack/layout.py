@@ -12,7 +12,7 @@ ASCENT = 13              # baseline of the vanilla title: the window top sits 13
 
 # name -> (first tile codepoint, window height in GUI px, tile rows)
 BACKGROUNDS = {
-    "menu_lobby":   (0xE100, 168, 4),   # 27-slot window
+    "menu_lobby":   (0xE100, 222, 6),   # 54-slot window: worlds on rows 0-2, games on rows 3-5
     "menu_setup":   (0xE200, 222, 6),   # 54-slot window
     "menu_list":    (0xE300, 222, 6),
     "menu_detail":  (0xE400, 168, 4),
@@ -129,43 +129,51 @@ HUD_PALETTES = {  # name -> role colour
 
 # element -> (anchor, x, y, w, h); anchor 0 = top centre, 1 = right middle. The element's id is its
 # index here. "fill" is stretched to the width given by the colour's blue channel (0-255).
+# Sizes (2026-11): the top plate is 188 x 34 (was 250 x 44), the role panel 96 x 78 (was 128 x 108), the vote
+# plate 96 x 26 (was 128 x 30): about a quarter smaller, repainted, never scaled.
 HUD_ELEMENTS = [
-    ("frame", 0, -125, 4, 250, 44),
-    ("icon", 0, -115, 14, 24, 24),
-    ("round", 0, -96, 32, 7, 9),
-    ("label", 0, -81, 8, 136, 17),
-    ("fill", 0, -80, 32, 140, 4),
-    ("t1", 0, 65, 8, 12, 17),
-    ("tcolon", 0, 78, 8, 6, 17),
-    ("t3", 0, 85, 8, 12, 17),
-    ("t4", 0, 98, 8, 12, 17),
-    ("pframe", 1, -134, -54, 128, 108),
-    ("picon", 1, -122, -42, 32, 32),
-    ("plabel", 1, -80, -42, 68, 9),
-    ("pteam", 1, -80, -30, 68, 9),
-    ("a1", 1, -84, 2, 12, 17),
-    ("a2", 1, -72, 2, 12, 17),
-    ("aslash", 1, -60, 2, 8, 17),
-    ("a3", 1, -52, 2, 12, 17),
-    ("a4", 1, -40, 2, 12, 17),
-] + [(f"m{i}", 1, -126 + 5 * i, 24, 5, 8) for i in range(20)] + [
-    (f"b{i}", 1, -126 + 14 * i, 38, 12, 12) for i in range(4)
+    ("frame", 0, -94, 4, 188, 34),
+    ("icon", 0, -86, 11, 20, 20),       # the phase medallion's slot
+    ("round", 0, -68, 26, 7, 9),
+    ("fill", 0, -57, 27, 104, 3),
+    ("t1", 0, 56, 14, 9, 13),
+    ("tcolon", 0, 64, 14, 4, 13),
+    ("t3", 0, 67, 14, 9, 13),
+    ("t4", 0, 75, 14, 9, 13),
+    ("pframe", 1, -102, -39, 96, 78),
+    ("picon", 1, -94, -31, 24, 24),     # the role medallion's slot
+] + [(f"m{i}", 1, -94 + 4 * i, 26, 4, 7) for i in range(20)] + [
+    (f"b{i}", 1, -63 + 13 * i, -19, 13, 13) for i in range(4)
 ] + [
-    ("vframe", 1, -134, 58, 128, 30),   # "votes against you", under the panel during the day vote
-    ("v1", 1, -44, 64, 12, 17),
-    ("v2", 1, -31, 64, 12, 17),
+    ("vframe", 1, -102, 43, 96, 26),    # "votes against you", under the panel during the day vote
+    ("v1", 1, -30, 49, 9, 13),
+    ("v2", 1, -22, 49, 9, 13),
 ]
+
+# Text: the HUD's words are written one glyph per character (art/hud_font.py draws the fonts, the plugin lays the
+# line out in the player's language). A text element is the origin of a line and the cell of its font; the blue
+# channel of a glyph's colour is how far right of the origin its cell starts, in GUI pixels. They come last in
+# HUD_ELEMENTS, from HUD_TEXT_FIRST on: the shader tells them by their index.
+HUD_FONT_CELLS = {"h": (10, 14), "b": (9, 12), "m": (7, 12)}   # font -> cell (w, h); see art/hud_font.py
+HUD_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:/-'!?&+ÀÂÄÇÈÉÊËÎÏÔÖÙÛÜ"
+# element -> (anchor, x, y, font, align, widest line in px)
+HUD_TEXTS = [
+    ("label", 0, -58, 9, "h", "left", 106),     # the phase, as a headline
+    ("label2", 0, -58, 10, "b", "left", 106),   # the same in bold when the headline is too wide
+    ("pcount", 1, -54, -34, "b", "left", 43),   # alive/total, next to the panel's head-count pictogram
+    ("prole", 1, -96, 2, "b", "left", 84),
+    ("pteam", 1, -96, 12, "m", "left", 84),
+    ("vcap1", 1, -96, 45, "b", "left", 62),
+    ("vcap2", 1, -96, 54, "m", "left", 62),
+]
+HUD_TEXT = {t[0]: (t[4], t[5], t[6]) for t in HUD_TEXTS}
+HUD_TEXT_FIRST = len(HUD_ELEMENTS)
+HUD_ELEMENTS += [(name, anchor, x, y, *HUD_FONT_CELLS[font]) for name, anchor, x, y, font, _, _ in HUD_TEXTS]
 HUD_PANEL_SCALE = 1.0    # the right-hand role panel: a non-integer scale mangles its pixel-art text (tried 0.85 and 0.75)
 HUD_ID_BASE = 100        # the green channel of an element's colour is HUD_ID_BASE + its index
 HUD_SPRITE_BASE = 0xE000
 HUD_NEG_BASE = 0xF000    # negative-advance twin of every sprite: sprite index + HUD_NEG_BASE
 
-HUD_PHASE_WORDS = unique(
-    (r["call"]["label"] for r in roles().values() if "call" in r),
-    ["DEBATE", "VOTE", "SLEEPING", "CUPID AWAKE", "GUARD AWAKE", "SEER AWAKE",
-     "WOLVES HUNT", "WITCH AWAKE", "LAST SHOT", "GAME OVER", "WAITING", "DEFENSE", "TRIAL", "AMULET", "ELECTION", "AWAY"])
-HUD_ROLE_WORDS = unique((r["word"] for r in roles().values()), []) + ["FALLEN"]
-HUD_TEAM_WORDS = unique((team_word(r) for r in roles().values()), []) + ["OUT"]
 HUD_TOP_ICONS = ["moon", "sun", "vote"]
 HUD_ROLE_ICONS = unique((r["icon"] for r in roles().values()), []) + ["dead"]
 HUD_SEATS = 20          # seats of the table strip; the first ones are drawn on bigger tables
@@ -179,19 +187,17 @@ def hud_sprites():
     out = []
     pals = list(HUD_PALETTES)
     out += [(f"frame_{p}", *box["frame"]) for p in pals]
-    out += [(f"fill_{p}", 8, 4) for p in pals]
+    out += [(f"fill_{p}", 8, 3) for p in pals]
     out += [(f"icon_{n}", *box["icon"]) for n in HUD_TOP_ICONS]
-    out += [(f"label_{key(w)}", *box["label"]) for w in HUD_PHASE_WORDS]
     out += [(f"d{d}", *box["t1"]) for d in "0123456789"]
     out += [(f"x{d}", *box["t1"]) for d in "0123456789"]
-    out += [("dblank", *box["t1"]), ("dcolon", *box["tcolon"]), ("xcolon", *box["tcolon"]),
-            ("dslash", *box["aslash"])]
+    out += [("dcolon", *box["tcolon"]), ("xcolon", *box["tcolon"])]
     out += [(f"s{d}", *box["round"]) for d in "0123456789"]
     out += [(f"pframe_{p}", *box["pframe"]) for p in pals]
     out += [(f"picon_{n}", *box["picon"]) for n in HUD_ROLE_ICONS]
-    out += [(f"plabel_{key(w)}", *box["plabel"]) for w in HUD_ROLE_WORDS]
-    out += [(f"pteam_{key(w)}", *box["pteam"]) for w in HUD_TEAM_WORDS]
     out += [(f"dot_{n}", *box["m0"]) for n in HUD_DOTS]
     out += [(f"badge_{n}", *box["b0"]) for n in HUD_BADGES]
     out += [(f"vframe_{n}", *box["vframe"]) for n in ("calm", "hot")]
+    # the fonts: one sprite per character, named by its code point (file names are [a-z0-9_])
+    out += [(f"f{font}_{ord(ch):04x}", *cell) for font, cell in HUD_FONT_CELLS.items() for ch in HUD_CHARS]
     return out

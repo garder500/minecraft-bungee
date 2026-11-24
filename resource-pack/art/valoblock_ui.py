@@ -26,6 +26,8 @@ import fx_shaders  # noqa: E402
 import layout  # noqa: E402
 import valoblock_ability_icons as icons  # noqa: E402
 import valoblock_items as vi  # noqa: E402
+import valoblock_menukit as kit  # noqa: E402
+import valoblock_portraits as portraits  # noqa: E402
 import valoblock_seed as vs  # noqa: E402
 import vb_layout as vb  # noqa: E402
 
@@ -43,6 +45,13 @@ DIGITS = {
     "6": ["00110", "01000", "10000", "11110", "10001", "10001", "01110"], "7": ["11111", "00001", "00010", "00100", "01000", "01000", "01000"],
     "8": ["01110", "10001", "10001", "01110", "10001", "10001", "01110"], "9": ["01110", "10001", "10001", "01111", "00001", "00010", "01100"],
     "U": ["10001", "10001", "10001", "10001", "10001", "10001", "01110"],
+}
+# 3 x 5 digits for the small figures (shield, reserve) and the ability keys.
+TINY = {
+    "0": ["111", "101", "101", "101", "111"], "1": ["010", "110", "010", "010", "111"], "2": ["111", "001", "111", "100", "111"],
+    "3": ["111", "001", "011", "001", "111"], "4": ["101", "101", "111", "001", "001"], "5": ["111", "100", "111", "001", "111"],
+    "6": ["111", "100", "111", "101", "111"], "7": ["111", "001", "010", "010", "010"], "8": ["111", "101", "111", "101", "111"],
+    "9": ["111", "101", "111", "001", "111"], "U": ["101", "101", "101", "101", "111"],
 }
 
 
@@ -90,10 +99,10 @@ def blit(dst, src, ox, oy):
                 dst[oy + y][ox + x] = px
 
 
-def glyph(ch, color, k=1, shadow=None):
-    """A 5x7 digit (scaled k) with an optional 1 px drop shadow, returned as (5k+1) x (7k+1) rows."""
-    rows = DIGITS[ch]
-    img = canvas(5 * k + 1, 7 * k + 1)
+def glyph(ch, color, k=1, shadow=None, font=None):
+    """A 5x7 digit (scaled k; font=TINY for 3x5) with an optional 1 px drop shadow, returned as (w*k+1) x (h*k+1) rows."""
+    rows = (font or DIGITS)[ch]
+    img = canvas(len(rows[0]) * k + 1, len(rows) * k + 1)
     for y, row in enumerate(rows):
         for x, bit in enumerate(row):
             if bit == "1":
@@ -127,62 +136,122 @@ def hide_vanilla():
     base = PACK / "assets/minecraft/textures/gui/sprites"
     for name, w, h in vb.hidden_sprites():
         write_png(base / f"{name}.png", canvas(w, h))
-    return len(vb.hidden_sprites())
+    # The minimap is a map held in the off hand, which the client draws big: no paper behind it, so only the small framed plan
+    # MiniMapMath paints in the map's top-left corner shows (the rest of the map is the transparent colour).
+    for name in vb.HIDDEN_MAP_TEXTURES:
+        write_png(PACK / f"assets/minecraft/textures/map/{name}.png", canvas(64, 64))
+    return len(vb.hidden_sprites()) + len(vb.HIDDEN_MAP_TEXTURES)
 
 
 # ------------------------------------------------------------------ menu backgrounds
 
-BG, EDGE, PANEL, SLOT = col("12151d"), col("2a2f3c"), col("1c1730"), col("232733")
+def window_base(accent=kit.STEEL):
+    """The 176 x 222 window of the shared frame system (valoblock_menukit.py): panel, title strip, the player's inventory wells."""
+    return kit.window(accent)
 
 
-def window_base():
-    """The 176 x 222 window: dark plate, title strip, the player's inventory as 36 empty slot frames."""
-    img = canvas(176, vb.GUI_H, BG)
-    frame(img, 0, 0, 176, vb.GUI_H, BG, col("0b0d12"), 2)
-    rect(img, 2, 2, 172, 14, col("0d0f15"))
-    for r in range(3):
-        for c in range(9):
-            frame(img, 7 + 18 * c, 139 + 18 * r, 18, 18, col("171a22"), col("0d0f15"))
-    for c in range(9):
-        frame(img, 7 + 18 * c, 197, 18, 18, col("171a22"), col("0d0f15"))
-    return img
-
-
-def slot_frame(img, col_, row, w=1, h=1, fill=SLOT, border=EDGE):
+def slot_box(col_, row, w=1, h=1):
+    """(x, y, width, height) of the well around a block of chest slots."""
     x, y = vb.slot_xy(col_, row)
-    frame(img, x - 1, y - 1, 18 * w, 18 * h, fill, border)
+    return x - 1, y - 1, 18 * w, 18 * h
+
+
+def slot_well(img, col_, row, w=1, h=1, **kw):
+    kit.well(img, *slot_box(col_, row, w, h), **kw)
 
 
 def select_background():
-    img = window_base()
-    x, y = vb.slot_xy(0, 0)
-    frame(img, x - 1, y - 1, 18 * vb.SEL_PORTRAIT_COLS, 18 * vb.SEL_PORTRAIT_ROWS, PANEL, col("c9a8ff"), 2)
-    rect(img, x + 4, y + 18 * vb.SEL_PORTRAIT_ROWS - 9, 18 * vb.SEL_PORTRAIT_COLS - 10, 4, col("120e22"))  # the floor under the portrait
+    """Agent select: the lit portrait bay, the roster tiles (the head sits in the left slot of each), Random, the role filters,
+    the team's seats and the Lock in button. The sprites of Random and Lock in are icons only: the buttons are painted here."""
+    accent = kit.ACCENT_SELECT
+    img = window_base(accent)
+    kit.bay(img, *slot_box(0, 0, vb.SEL_PORTRAIT_COLS, vb.SEL_PORTRAIT_ROWS), accent)
     for tr in range(vb.SEL_TILE_ROWS):
         for tc in range(vb.SEL_TILE_COLS):
-            slot_frame(img, vb.SEL_ROSTER_COL + 2 * tc, tr, 2, 1)
-            sx, sy = vb.slot_xy(vb.SEL_ROSTER_COL + 2 * tc + 1, tr)
-            rect(img, sx - 1, sy - 1, 1, 18, col("171a22"))
-    slot_frame(img, 0, 4, 2, 1, col("2a2a36"), col("9aa3b5"))            # Random
+            x, y, w, h = slot_box(vb.SEL_ROSTER_COL + 2 * tc, tr, 2, 1)
+            kit.well(img, x, y, w, h)
+            kit.slashes(img, x + 20, y + 2, 14, 14, kit.mix(kit.WELL, accent, 0.22), 6, 2, (0.9, 0.15))   # the name side of the tile
+    x, y, w, h = slot_box(0, 4, 2, 1)                                     # Random: a steel button, the die on its left
+    kit.raised(img, x, y, w, h, col("56607a"))
+    shuffle(img, x + 20, y + 5, col("dfe4ee"), col("2a3144"))
+    kit.tray(img, *grow(slot_box(3, 4, 4, 1), 1))                         # the role filters share a rail
     for c in (3, 4, 5, 6):
-        slot_frame(img, c, 4)                                              # role filters
+        slot_well(img, c, 4)
+    x, y, w, h = slot_box(7, 4, 2, 1)
+    kit.slashes(img, x + 4, y + 4, w - 6, 10, accent, 6, 3, (0.75, 0.1))
     for c in range(5):
-        slot_frame(img, c, 5, 1, 1, col("1e2230"), col("3a3f4c"))          # the team
-    slot_frame(img, 5, 5, 4, 1, col("1f5a35"), col("5ad07a"))              # Lock in
+        slot_well(img, c, 5, fill=col("121622"), light=kit.mix(kit.WELL_LIGHT, accent, 0.35))   # the team
+    x, y, w, h = slot_box(5, 5, 4, 1)                                     # Lock in: a green button, the padlock on its left
+    kit.raised(img, x, y, w, h, col("2fa858"))
+    for k in range(3):                                                    # three chevrons pointing at the match
+        chevron(img, x + 30 + 12 * k, y + 5, kit.mix(col("2fa858"), kit.WHITE, 0.35 + 0.2 * k), col("14532b"))
     return img
 
 
+def grow(box, by):
+    x, y, w, h = box
+    return x - by, y - by, w + 2 * by, h + 2 * by
+
+
+def chevron(img, x, y, c, shadow):
+    """A 5 x 8 chevron pointing right, with a 1 px shadow under it."""
+    for k in range(4):
+        for yy in (y + k, y + 7 - k):
+            kit.rect(img, x + k, yy + 1, 2, 1, shadow)
+    for k in range(4):
+        for yy in (y + k, y + 7 - k):
+            kit.rect(img, x + k, yy, 2, 1, c)
+
+
+def shuffle(img, x, y, c, shadow):
+    """Two crossing arrows (12 x 8): shuffle. Painted on the Random button."""
+    rows = ["........##..",
+            "##.....####.",
+            "###...##.##.",
+            "..##.##.....",
+            "...###......",
+            "..##.##.....",
+            "###...##.##.",
+            "##.....####.",
+            "........##.."]
+    for dy, row in enumerate(rows):
+        for dx, ch in enumerate(row):
+            if ch == "#":
+                kit.put(img, x + dx + 1, y + dy, shadow)
+    for dy, row in enumerate(rows):
+        for dx, ch in enumerate(row):
+            if ch == "#":
+                kit.put(img, x + dx, y + dy - 1, c)
+
+
+def card_well(img, col_, row, glow=None):
+    """The bay of a 2 x 2 card: the card item (items(): card_frame*) lays its state edge and the weapon over it."""
+    x, y, w, h = slot_box(col_, row, 2, 2)
+    kit.well(img, x, y, w, h, fill=col("10141e"), glow=glow)
+    kit.glow(img, x + 2, y + 2, w - 4, h - 4, x + w / 2, y + h / 2, w * 0.6, h * 0.5, glow or col("5a6788"), 0.16)
+    kit.rect(img, x + 6, y + h - 8, w - 12, 1, kit.mix(kit.WELL, glow or col("5a6788"), 0.4))    # the shelf the weapon lies on
+
+
 def armory_background():
-    img = window_base()
+    """Armory: the class tabs in a rail down the left, eight card bays, the two Ward bays and the agent's two ability buys."""
+    accent = kit.ACCENT_ARMORY
+    img = window_base(accent)
+    kit.tray(img, *grow(slot_box(vb.ARM_TAB_COL, 0, 1, 6), 0))
     for r in range(6):
-        slot_frame(img, vb.ARM_TAB_COL, r, 1, 1, col("232733"), col("3a3f4c"))
+        slot_well(img, vb.ARM_TAB_COL, r, fill=col("121622"))
     for k in range(vb.ARM_CARD_COLS):
         for j in range(vb.ARM_CARD_ROWS):
-            slot_frame(img, vb.ARM_CARD_COL + 2 * k, 2 * j, 2, 2, col("1d212c"))
+            card_well(img, vb.ARM_CARD_COL + 2 * k, 2 * j)
     for k in range(2):
-        slot_frame(img, vb.ARM_CARD_COL + 2 * k, vb.ARM_SHIELD_ROW, 2, 2, col("1f3557"), col("7fc8e8"))
+        card_well(img, vb.ARM_CARD_COL + 2 * k, vb.ARM_SHIELD_ROW, kit.BLUE)
+    # the abilities: a teal bay over the last four columns of rows 4 and 5, one well per buy
+    x, y, w, h = slot_box(5, vb.ARM_SHIELD_ROW, 4, 2)
+    kit.tray(img, x, y, w, h, kit.mix(col("0b0d14"), kit.TEAL, 0.05))
+    kit.slashes(img, x + 4, y + 23, w - 8, 9, kit.TEAL, 6, 3, (0.5, 0.05))
     for s in vb.ARM_ABILITY_SLOTS:
-        slot_frame(img, s % 9, s // 9, 1, 1, col("232733"), col("6affd8"))
+        bx, by, bw, bh = slot_box(s % 9, s // 9)
+        kit.well(img, bx, by, bw, bh, glow=kit.TEAL)
+        kit.brackets(img, bx - 1, by - 1, bw + 2, bh + 2, kit.mix(kit.TEAL, kit.BLACK, 0.25), 4)
     return img
 
 
@@ -204,44 +273,9 @@ def cut_background(name, base, img):
 # ------------------------------------------------------------------ portraits
 
 def portrait(agent, silhouette=False):
-    """A 48 x 64 full-body figure from the agent's colour plan: the 8 x 8 face scaled x3, torso, arms, legs, a glow mark."""
-    c = agent["colors"] if agent else {}
-    pal = agent["face"]["palette"] if agent else {}
-    grey = col("2a2f3c")
-
-    def pick(hex6):
-        return grey if silhouette else col(hex6)
-
-    img = canvas(vb.PORTRAIT_W, vb.PORTRAIT_H)
-    if agent:
-        face = agent["face"]
-        for y, row in enumerate(face["rows"]):
-            for x, ch in enumerate(row):
-                rect(img, 12 + x * 3, 2 + y * 3, 3, 3, pick(pal[ch]))
-        rect(img, 20, 26, 8, 3, pick(pal["s"]))
-        rect(img, 12, 29, 24, 20, pick(c["torso"]))
-        rect(img, 12, 29, 24, 3, pick(c["trim"]))
-        rect(img, 12, 46, 24, 3, pick(c["trim"]))
-        rect(img, 22, 36, 4, 6, pick(c["glow"]))
-        rect(img, 5, 29, 7, 18, pick(c["arm"]))
-        rect(img, 36, 29, 7, 18, pick(c["arm"]))
-        rect(img, 5, 47, 7, 4, pick(pal["s"]))
-        rect(img, 36, 47, 7, 4, pick(pal["s"]))
-        rect(img, 13, 49, 10, 11, pick(c["legs"]))
-        rect(img, 25, 49, 10, 11, pick(c["legs"]))
-        rect(img, 13, 60, 10, 4, pick(c["boots"]))
-        rect(img, 25, 60, 10, 4, pick(c["boots"]))
-        rect(img, 5, 29, 7, 2, pick(c["trim"]))
-        rect(img, 36, 29, 7, 2, pick(c["trim"]))
-    else:  # nobody picked yet: a plain silhouette
-        rect(img, 12, 2, 24, 24, grey)
-        rect(img, 12, 29, 24, 20, grey)
-        rect(img, 5, 29, 7, 22, grey)
-        rect(img, 36, 29, 7, 22, grey)
-        rect(img, 13, 49, 10, 15, grey)
-        rect(img, 25, 49, 10, 15, grey)
-    outline(img)
-    return img
+    """The agent's portrait glyph (valoblock_portraits.bust_hd: the Blockbench render at 4x, drawn 48 x 64); None or silhouette:
+    the unlit figure of an empty seat."""
+    return portraits.bust_hd(None if silhouette else agent)
 
 
 def menu_font():
@@ -265,34 +299,37 @@ def menu_font():
 # ------------------------------------------------------------------ HUD sprites
 
 def agent_icon(agent, slot, on):
-    """16 x 16 ability icon of the agent's slot 4-7 ability (valoblock_ability_icons.py, the same pixels as the hotbar item)."""
+    """16 x 16 ability icon of the agent's slot 4-7 ability (valoblock_ability_icons.py: the hotbar item's glyph drawn at 16 px)."""
     ab = next(x for x in agent["abilities"] if x["slot"] == slot)
     return icons.icon(agent, ab["id"], slot, "on" if on else "off")
 
 
 def tile_sprite(slot, on):
-    img = canvas(*vb.TILE)
+    """20 x 24: the 16 px icon sits at (2, 2), the key at the bottom left, the three charge pips right of it (vb_layout)."""
+    w, h = vb.TILE
+    img = canvas(w, h)
     edge = col("ffd36a") if slot == 7 and on else col("c9a8ff") if on else col("3a3f4c")
-    frame(img, 0, 0, 30, 38, col("0b0d12", 217), edge)
+    frame(img, 0, 0, w, h, col("0b0d12", 217), edge)
     key = "U" if slot == 7 else str(slot)
-    blit(img, glyph(key, col("ffffff") if on else col("7a7f8c")), 12, 28)
+    blit(img, glyph(key, col("ffffff") if on else col("7a7f8c"), 1, None, TINY), 2, 18)
     return img
 
 
 def plate_sprite(kind):
-    """The 88 x 36 plate under the digits. Coordinates are plate-relative: element x/y minus the plate's own (see vb_layout)."""
-    img = canvas(*vb.PLATE)
-    frame(img, 0, 0, 88, 36, col("0b0d12", 217), col("2a2f3c"))
+    """The 60 x 22 plate under the digits. Coordinates are plate-relative: element x/y minus the plate's own (see vb_layout)."""
+    w, h = vb.PLATE
+    img = canvas(w, h)
+    frame(img, 0, 0, w, h, col("0b0d12", 217), col("2a2f3c"))
     if kind == "hp":
-        rect(img, 6, 21, 50, 4, col("232733"))                       # the health track (hp_bar: x 10, y -21)
-        rect(img, 6, 29, 50, 3, col("1f3557"))                       # the shield track (sh_bar: x 10, y -13)
-        rect(img, 57, 4, 1, 28, col("2a2f3c"))                       # the divider before the shield figures
-        rect(img, 61, 17, 6, 5, col("7fc8e8"))                       # a small shield mark under the figures
-        rect(img, 62, 22, 4, 2, col("7fc8e8"))
-        rect(img, 63, 24, 2, 1, col("7fc8e8"))
+        rect(img, 4, 14, 34, 3, col("232733"))                       # the health track (hp_bar: x 8, y -12)
+        rect(img, 4, 19, 34, 2, col("1f3557"))                       # the shield track (sh_bar: x 8, y -7)
+        rect(img, 41, 3, 1, 16, col("2a2f3c"))                       # the divider before the shield figures
+        rect(img, 46, 12, 5, 4, col("7fc8e8"))                       # a small shield mark under the figures
+        rect(img, 47, 16, 3, 1, col("7fc8e8"))
+        rect(img, 48, 17, 1, 1, col("7fc8e8"))
     else:
-        for k in range(13):                                          # the slash between the magazine and its size
-            rect(img, 36 + (12 - k) // 3, 6 + k, 2, 1, col("9aa3b5"))
+        for k in range(9):                                           # the slash between the magazine and its size
+            rect(img, 21 + (8 - k) // 3, 4 + k, 1, 1, col("9aa3b5"))
     return img
 
 
@@ -330,12 +367,12 @@ def hud_sprites():
     pip_on, pip_off = canvas(*vb.PIP, col("ffd36a")), canvas(*vb.PIP, col("3a3f4c"))
     out += [("pip_on", pip_on), ("pip_off", pip_off)]
     for tag, color in (("w", col("ffffff")), ("r", col("ff5a5a"))):
-        out += [(f"bd_{tag}_{d}", pad(glyph(d, color, 2, col("000000", 170)), *vb.BIG)) for d in "0123456789"]
+        out += [(f"bd_{tag}_{d}", pad(glyph(d, color, 1, col("000000", 170)), *vb.BIG)) for d in "0123456789"]
     out.append(("bd_blank", canvas(*vb.BIG)))
     for tag, color in (("w", col("ffffff")), ("b", col("7fc8e8")), ("g", col("9aa3b5"))):
-        out += [(f"sd_{tag}_{d}", pad(glyph(d, color, 1, col("000000", 170)), *vb.SMALL)) for d in "0123456789"]
+        out += [(f"sd_{tag}_{d}", pad(glyph(d, color, 1, col("000000", 170), TINY), *vb.SMALL)) for d in "0123456789"]
     out.append(("sd_blank", canvas(*vb.SMALL)))
-    out += [("hp_bar", canvas(8, 4, col("5ad07a"))), ("hp_bar_low", canvas(8, 4, col("ff5a5a"))), ("sh_bar", canvas(8, 3, col("7fc8e8")))]
+    out += [("hp_bar", canvas(8, 3, col("5ad07a"))), ("hp_bar_low", canvas(8, 3, col("ff5a5a"))), ("sh_bar", canvas(8, 2, col("7fc8e8")))]
     out += [(f"xh_{i}", cross_sprite(i)) for i in range(4)]
     out += [(f"hit_{k}", hit_sprite(k)) for k in "whk"]
     # The Rift Seed: the carrier's icon (two frames, it pulses in a site) and the planting track and fill (appended: older ids stay).
@@ -353,25 +390,8 @@ def pad(img, w, h):
 
 
 def head_sprite(agent, state):
-    """The 8 x 8 face in a 10 x 10 frame: alive, dead (grey with a red cross) or not chosen yet."""
-    img = canvas(vb.HEAD, vb.HEAD, col("06070a"))
-    if state == "none":
-        rect(img, 1, 1, 8, 8, col("3a3f4c"))
-        rect(img, 4, 4, 2, 2, col("5a5f6c"))
-        return img
-    pal, rows = agent["face"]["palette"], agent["face"]["rows"]
-    for y, row in enumerate(rows):
-        for x, ch in enumerate(row):
-            r, g, b, a = col(pal[ch])
-            if state == "dead":
-                v = (r + g + b) // 6
-                r = g = b = v + 20
-            img[1 + y][1 + x] = (r, g, b, a)
-    if state == "dead":
-        for i in range(1, 9):
-            img[i][i] = col("ff4a4a")
-            img[i][9 - i] = col("ff4a4a")
-    return img
+    """The 8 x 8 face in a 10 x 10 frame (valoblock_portraits.py): alive, dead (grey, struck through in red) or not chosen yet."""
+    return portraits.head(agent, state)
 
 
 def skull_sprite():
@@ -494,9 +514,39 @@ def item(name, model, extra=None):
     write_json(NS / f"models/item/valoblock/{name}.json", model)
 
 
-def frame_texture(border, fill):
+def card_frame(state):
+    """The state edge of an Armory card, 32 x 32 drawn over 2 x 2 slots (36 GUI px: 1.125 px a texel, so nothing here is thinner
+    than 2 texels). Mostly clear: the bay under it is painted in the background at 1 px per GUI px. A colour bar down the left
+    edge and a corner flag say the state: gold = for sale, green = owned (the flag is filled), dim red = too expensive."""
+    colour = {"": col("ffd36a"), "_owned": col("5ad07a"), "_locked": col("8a4650")}[state]
     img = canvas(32, 32)
-    frame(img, 0, 0, 32, 32, fill, border, 1)
+    if state == "_locked":
+        kit.rect(img, 1, 1, 30, 30, col("05060a", 96))
+    elif state == "_owned":
+        kit.rect(img, 1, 1, 30, 30, (colour[0], colour[1], colour[2], 44))   # well over the 0.1 alpha the item shader discards
+    for y in range(1, 31):                                       # the bar: bright at the top, deeper at the bottom
+        kit.rect(img, 1, y, 3, 1, kit.mix(kit.mix(colour, kit.WHITE, 0.25), kit.mix(colour, kit.BLACK, 0.3), y / 30))
+    kit.rect(img, 4, 1, 1, 30, col("05060a", 150))
+    n = 9
+    for k in range(n):                                           # the corner flag: a wedge, filled when owned, an angled bar otherwise
+        kit.rect(img, 31 - n + k, 1 + k, n - k if state == "_owned" else min(3, n - k), 1, colour)
+    kit.rect(img, 4, 29, 27, 2, kit.mix(colour, kit.BLACK, 0.3))                                        # the edge turns along the bottom
+    return img
+
+
+def tab_texture(weapon, selected):
+    """A class tab, 32 x 32 for one slot (2 texels a GUI px): the class's weapon over the rail's well; the open tab is lit gold."""
+    img = canvas(32, 32)
+    if selected:
+        gold = kit.ACCENT_ARMORY
+        for y in range(32):
+            kit.rect(img, 0, y, 32, 1, kit.mix(col("3a2f18"), col("1c1a18"), y / 31))
+        kit.rect(img, 0, 0, 32, 2, gold)
+        kit.rect(img, 0, 30, 32, 2, kit.mix(gold, kit.BLACK, 0.45))
+        kit.rect(img, 0, 0, 4, 32, gold)
+        kit.rect(img, 30, 0, 2, 32, kit.mix(gold, kit.BLACK, 0.3))
+        kit.rect(img, 4, 2, 2, 28, col("05060a", 140))
+    blit(img, vi.sprite(weapon["texture"], weapon["metal"]), 1 if selected else 0, 0)
     return img
 
 
@@ -507,9 +557,9 @@ CARD_SCALE, CARD_SHIFT = 2.25, 9
 
 def items():
     n = 0
-    states = {"": (col("3a3f4c"), col("1d212c")), "_owned": (col("5ad07a"), col("17301f")), "_locked": (col("2a2f3c"), col("14161c"))}
-    for suffix, (border, fill) in states.items():
-        write_png(NS / f"textures/item/valoblock/card_frame{suffix}.png", frame_texture(border, fill))
+    states = ("", "_owned", "_locked")
+    for suffix in states:
+        write_png(NS / f"textures/item/valoblock/card_frame{suffix}.png", card_frame(suffix))
     display = {"gui": {"scale": [CARD_SCALE] * 3, "translation": [CARD_SHIFT, -CARD_SHIFT, 0]}}
     for w in vi.weapons():
         for suffix in states:
@@ -522,9 +572,7 @@ def items():
     for i, name in enumerate(CLASSES):
         w = reps[CLASS_REPRESENTATIVE[i]]
         for sel in (False, True):
-            img = canvas(32, 32)
-            frame(img, 0, 0, 32, 32, col("2a2622") if sel else col("1e222c"), col("ffd36a") if sel else col("3a3f4c"), 2)
-            blit(img, vi.sprite(w["texture"], w["metal"]), 0, 0)
+            img = tab_texture(w, sel)
             tag = f"tab_{name.lower()}" + ("_sel" if sel else "")
             write_png(NS / f"textures/item/valoblock/{tag}.png", img)
             item(tag, {"parent": "minecraft:item/generated", "textures": {"layer0": f"vampyuyu:item/valoblock/{tag}"}})

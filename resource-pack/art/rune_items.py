@@ -12,8 +12,10 @@ Item models (set with CustomItemDef.itemModel in RuneItems.java):
 Written to pack/assets/vampyuyu/{textures/item,models/item,items}/rune/. Stdlib only, deterministic.
 
 Look: a carved tablet with one glyph. A stat rune keeps one silhouette per stat (vitality round, ward a shield, might a
-tablet, aether a lozenge) and its colour. The rank reads from the rim, not from the glyph: rank I a worn dark stone rim,
-II a 2 px silver rim, III a 2 px gold rim (electrum on Might), and one to three gem studs set into the bottom rim.
+tablet, aether a lozenge) and its colour. The rank reads from the glyph and the rim: the
+sign is plain at rank I and gains strokes at II and III (a heartbeat then a heart within the heart, a foot bar then a
+second pair of arms, a second then a third barb, four rays then eight then a ring of motes); rank I has a worn dark
+stone rim, II a 2 px silver rim, III a 2 px gold rim, and one to three gem studs sit in the bottom rim.
 A Realm rune is a tall hexagon whose silhouette is changed by a crest or a notch that says what the rune is about
 (flame-licked top, leaf sprig, icicles, pinched waist, bitten corner, cracked rim, wavy foot, ring at the top).
 """
@@ -34,25 +36,51 @@ def _big(shape):  # a glyph drawn on a 12 box, stretched to 14
     return lambda x, y: shape(x * 12 / GB, y * 12 / GB)
 
 
-def _heart():
-    return s.union(s.circle(4.2, 4.8, 4.1), s.circle(9.8, 4.8, 4.1), s.poly([(0.2, 6.2), (13.8, 6.2), (7, 13.6)]))
+# The four stat glyphs take the rank: the same sign, cut with more strokes as the rune grows (I plain, II one more
+# stroke, III the full sign).
+def _heart(rank=1):
+    heart = s.union(s.circle(4.2, 4.8, 4.1), s.circle(9.8, 4.8, 4.1), s.poly([(0.2, 6.2), (13.8, 6.2), (7, 13.6)]))
+    if rank == 1:
+        return heart
+    pulse = s.union(s.seg(1.5, 6.5, 4.5, 6.5, 0.5), s.seg(4.5, 6.5, 6.0, 3.5, 0.5), s.seg(6.0, 3.5, 8.0, 9.5, 0.5),
+                    s.seg(8.0, 9.5, 9.5, 6.5, 0.5), s.seg(9.5, 6.5, 12.5, 6.5, 0.5))
+    if rank == 2:   # a heartbeat carved across it
+        return s.minus(heart, pulse)
+    core = s.union(s.circle(5.1, 5.6, 2.5), s.circle(8.9, 5.6, 2.5), s.poly([(2.8, 6.6), (11.2, 6.6), (7, 11.2)]))
+    band = s.union(s.circle(5.0, 5.4, 3.3), s.circle(9.0, 5.4, 3.3), s.poly([(1.8, 6.4), (12.2, 6.4), (7, 12.2)]))
+    spark = s.poly([(7, 4.6), (8.6, 7), (7, 9.4), (5.4, 7)])
+    return s.union(s.minus(heart, band), s.minus(core, spark))   # a heart within a heart, a spark cut in the inner one
 
 
-def _algiz():  # protection: a stem with two raised arms
-    return s.union(s.seg(7, 0.8, 7, 13.4, 1.0), s.seg(7, 7.4, 1.6, 1.4, 1.0), s.seg(7, 7.4, 12.4, 1.4, 1.0))
+def _algiz(rank=1):  # protection: a stem with two raised arms
+    sign = [s.seg(7, 0.8, 7, 13.4, 1.0), s.seg(7, 7.4, 1.6, 1.4, 1.0), s.seg(7, 7.4, 12.4, 1.4, 1.0)]
+    if rank >= 2:    # a foot bar: the ward stands on the ground
+        sign.append(s.seg(3.6, 12.9, 10.4, 12.9, 0.6))
+    if rank == 3:    # a second, lower pair of arms and a bead on each raised tip
+        sign += [s.seg(7, 11.0, 3.2, 7.2, 0.6), s.seg(7, 11.0, 10.8, 7.2, 0.6), s.circle(1.5, 1.5, 1.5), s.circle(12.5, 1.5, 1.5)]
+    return s.union(*sign)
 
 
-def _tiwaz():  # the war rune: a 2 px stem under two 45 degree strokes
-    return s.union(s.seg(7, 1.4, 7, 13.4, 1.0), s.seg(7, 1.4, 2.0, 6.4, 1.0), s.seg(7, 1.4, 12.0, 6.4, 1.0))
+def _tiwaz(rank=1):  # the war rune: a 2 px stem under two 45 degree strokes
+    sign = [s.seg(7, 1.4, 7, 13.4, 1.0), s.seg(7, 1.4, 2.0, 6.4, 1.0), s.seg(7, 1.4, 12.0, 6.4, 1.0)]
+    if rank >= 2:    # a second barb under the head
+        sign += [s.seg(7, 5.6, 2.6, 10.0, 0.6), s.seg(7, 5.6, 11.4, 10.0, 0.6)]
+    if rank == 3:    # a third barb and a foot bar
+        sign += [s.seg(7, 9.4, 3.6, 12.8, 0.6), s.seg(7, 9.4, 10.4, 12.8, 0.6), s.seg(4.6, 13.5, 9.4, 13.5, 0.5)]
+    return s.union(*sign)
 
 
-def _star():   # aether: an eight-point star, long axis rays, short diagonal rays, a narrow waist
+def _star(rank=2):   # aether: four long rays at rank I, the eight-point star at II, the star in a ring of motes at III
     pts = []
     for k in range(16):
         a = math.radians(k * 22.5 - 90)
-        r = 7.0 if k % 4 == 0 else 5.0 if k % 4 == 2 else 2.0
+        r = 7.0 if k % 4 == 0 else (5.0 if rank >= 2 else 2.4) if k % 4 == 2 else 2.0
         pts.append((7 + r * math.cos(a), 7 + r * math.sin(a)))
-    return s.poly(pts)
+    sign = s.poly(pts)
+    if rank == 3:
+        motes = [s.rect(x, y, x + 1.0, y + 1.0) for x, y in ((0, 0), (13, 0), (0, 13), (13, 13))]
+        sign = s.union(s.minus(sign, s.poly([(7, 5.2), (8.8, 7), (7, 8.8), (5.2, 7)])), s.rect(6.5, 6.5, 7.5, 7.5), *motes)
+    return sign
 
 
 def _flame():
@@ -271,7 +299,7 @@ def carve(inside, stone, rim, glyph, origin, colors, rank, studs=(), halo=False,
 
 def stat_rune(stat, rank):
     inside, glyph, origin, stone, colors = STATS[stat]
-    return carve(inside, stone, RIMS[rank], glyph, origin, colors, rank, studs=STUD_X[rank], halo=rank == 3)
+    return carve(inside, stone, RIMS[rank], lambda: glyph(rank), origin, colors, rank, studs=STUD_X[rank], halo=rank == 3)
 
 
 def realm_rune(rune_id):

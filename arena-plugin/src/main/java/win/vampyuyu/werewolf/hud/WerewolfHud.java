@@ -24,15 +24,35 @@ public final class WerewolfHud {
   /** Role cards as font glyphs (resource-pack/art/render.py, font vampyuyu:hud). */
   public static final Key FONT = Key.key("vampyuyu", "hud");
 
-  public static final List<String> CARDS =
-      List.of("back", "villager", "werewolf", "seer", "cupid", "hunter", "witch", "guard");
+  /** The cards in glyph order: the pack's art script writes the list (card-names.txt), every role has its own. */
+  public static final List<String> CARDS = cardNames();
+
+  /** Distance from a card's glyph to its grey "dead" version (resource-pack/art/werewolf_art.py CARD_DEAD). */
+  public static final int DEAD_OFFSET = 0x40;
+
+  private static List<String> cardNames() {
+    List<String> base =
+        List.of("back", "villager", "werewolf", "seer", "cupid", "hunter", "witch", "guard");
+    try (var in = WerewolfHud.class.getResourceAsStream("/card-names.txt")) {
+      if (in == null) return base;
+      List<String> names =
+          new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
+              .lines()
+              .map(String::trim)
+              .filter(l -> !l.isEmpty())
+              .toList();
+      return names.isEmpty() ? base : names;
+    } catch (java.io.IOException e) {
+      return base;
+    }
+  }
 
   /** Glyph of a card: the back, a role card, or its grey version once the player is dead. */
   public static char glyph(String role, boolean dead) {
     int found = CARDS.indexOf(role.toLowerCase(Locale.ROOT));
-    // Only the first roles have a painted card: the others use the villager's.
-    int index = found >= 0 ? found : role.equals("back") ? 0 : CARDS.indexOf("villager");
-    return (char) ('\uE000' + index + (dead && index > 0 ? 0x10 : 0));
+    // A role the pack does not know yet falls back to the villager's card.
+    int index = found >= 0 ? found : CARDS.indexOf("villager");
+    return (char) ('\uE000' + index + (dead && index > 0 ? DEAD_OFFSET : 0));
   }
 
   /** Role and HUD icons as font glyphs (resource-pack/art/icons.py, font vampyuyu:icons). */

@@ -52,10 +52,11 @@ def frame(w, h, svg, body):
 {body}</div></body></html>'''
 
 def lobby():
-    """/menu: 27-slot container, 176x168 GUI px. Slots: rows y=51+54r, cols x=21+54c."""
-    W, H = 528, 504
+    """/menu: 54-slot container, 176x222 GUI px. Slots: rows y=51+54r, cols x=21+54c.
+    Rows 0-2 are the worlds (WorldSelector.CREATIVE_AREA...), rows 3-5 the games (WEREWOLF_AREA, VALOBLOCK_AREA)."""
+    W, H = 528, 666
     svg = f'''<defs>
-<linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#150e2e"/><stop offset=".3" stop-color="#46246a"/><stop offset=".5" stop-color="#8a4a7a"/><stop offset=".7" stop-color="#1b1038"/><stop offset="1" stop-color="#0c0720"/></linearGradient>
+<linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#150e2e"/><stop offset=".22" stop-color="#46246a"/><stop offset=".36" stop-color="#8a4a7a"/><stop offset=".55" stop-color="#1b1038"/><stop offset="1" stop-color="#0c0720"/></linearGradient>
 <linearGradient id="cs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a4fa8"/><stop offset=".6" stop-color="#ee9a7e"/><stop offset="1" stop-color="#ffd6a0"/></linearGradient>
 <linearGradient id="ss" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f2638"/><stop offset=".65" stop-color="#2f6b5c"/><stop offset="1" stop-color="#8ccf8a"/></linearGradient>
 <radialGradient id="gl"><stop offset="0" stop-color="#ffe9b0" stop-opacity=".9"/><stop offset="1" stop-color="#ffb454" stop-opacity="0"/></radialGradient>
@@ -77,16 +78,79 @@ def lobby():
 <circle cx="426" cy="175" r="20" fill="url(#gl)"/><path d="M420 182 q6 -18 12 0z" fill="#ffb454"/><path d="M423 182 q3 -11 6 0z" fill="#fff0a8"/></g>
 <path d="M333 183 V132 a81 81 0 0 1 162 0 V183" fill="none" stroke="#bfe6b0" stroke-width="2.5"/><path d="M339 183 V132 a75 75 0 0 1 150 0 V183" fill="none" stroke="#fff" stroke-opacity=".25"/></g>
 {skyblock_card()}
-{hills27()}{lower_panel27()}'''
+{games_band()}
+{lower_panel()}'''
     body = (title("Worlds")
-            + text(21, 186, 162, "CREATIVE", 19, "#fff1e0", True, "center", 4)
-            + text(21, 210, 162, "Build freely. Dream bigger.", 12, "#ffd7d2", extra="white-space:nowrap")
-            + text(345, 186, 162, "SURVIVAL", 19, "#f2ffe8", True, "center", 4)
-            + text(333, 210, 186, "Gather. Explore. Make it yours.", 12, "#d6f0c8", extra="white-space:nowrap")
+            + text(21, 183, 162, "CREATIVE", 18, "#fff1e0", True, "center", 4)
+            + text(21, 203, 162, "Build freely. Dream bigger.", 11, "#ffd7d2", extra="white-space:nowrap")
+            + text(345, 183, 162, "SURVIVAL", 18, "#f2ffe8", True, "center", 4)
+            + text(333, 203, 186, "Gather. Explore. Make it yours.", 11, "#d6f0c8", extra="white-space:nowrap")
             + text(195, 124, 138, "SKYBLOCK", 15, "#fffbe8", True, "center", 3)
             + text(195, 143, 138, "Build your island.", 11, "#cfe9ff", extra="white-space:nowrap")
-            + text(195, 182, 138, "← Back to the lobby", 13, "#fff", extra="white-space:nowrap"))
+            + text(195, 182, 138, "← Back to the lobby", 13, "#fff", extra="white-space:nowrap")
+            + text(21, 333, 216, "WEREWOLF", 17, "#ffe6e0", True, "center", 4)
+            + text(21, 353, 216, "Who hunts tonight?", 11, "#ffc2b8", extra="white-space:nowrap")
+            + text(291, 333, 216, "VALOBLOCK", 17, "#e6fbff", True, "center", 4)
+            + text(291, 353, 216, "Plant the Rift Seed.", 11, "#a8eeff", extra="white-space:nowrap"))
     return W, H, frame(W, H, svg, body)
+
+def games_band():
+    """Rows 3-5 of /menu: the Werewolf card on columns 0-3, ValoBlock on columns 5-8, a bat between them.
+    Each card is a scene over a dark caption band (y 326-372) like the Skyblock card."""
+    ww_x0, ww_x1, vb_x0, vb_x1, y0, y1, band = 21, 237, 291, 507, 226, 372, 326
+    village = "".join(
+        f'<rect x="{x}" y="{326 - h}" width="{w}" height="{h}" fill="#2a1430"/>'
+        f'<path d="M{x - 3} {326 - h} l{w / 2 + 3:.0f} -12 l{w / 2 + 3:.0f} 12z" fill="#1c0c22"/>'
+        f'<rect x="{x + w / 2 - 3:.0f}" y="{326 - h + 7}" width="6" height="7" fill="#ffc46a"/>'
+        for x, w, h in [(132, 22, 22), (160, 28, 28), (194, 20, 18), (216, 18, 24)])
+    wolf = ("M44 322 L50 314 L56 300 L66 289 L72 276 L76 266 L78 256 L82 262 L86 254 L96 249 L97 254 "
+            "L88 264 L86 276 L90 296 L93 322 L86 322 L82 308 L70 314 L66 322Z")
+    grid = "".join(f'<path d="M{vb_x0 + 18 * i} {y0} L{vb_x0 - 60 + 30 * i} {band}" stroke="#7fe8ff" stroke-opacity=".10"/>'
+                   for i in range(15))
+    grid += "".join(f'<path d="M{vb_x0} {y} H{vb_x1}" stroke="#7fe8ff" stroke-opacity="{.05 + .02 * k}"/>'
+                    for k, y in enumerate([268, 284, 298, 310, 320]))
+    return f'''<defs>
+{grad('wwk', [(0, '#120a2e'), (.55, '#4a1a46'), (1, '#a8404a')])}
+{grad('vbk', [(0, '#06121f'), (.6, '#0f3048'), (1, '#1a5a6e')])}
+<radialGradient id="wwm"><stop offset="0" stop-color="#fff2d6" stop-opacity=".9"/><stop offset="1" stop-color="#ff9a8a" stop-opacity="0"/></radialGradient>
+<radialGradient id="vbg"><stop offset="0" stop-color="#7fe8ff" stop-opacity=".6"/><stop offset="1" stop-color="#7fe8ff" stop-opacity="0"/></radialGradient>
+<radialGradient id="vbr"><stop offset="0" stop-color="#ff5fa2" stop-opacity=".85"/><stop offset="1" stop-color="#ff5fa2" stop-opacity="0"/></radialGradient>
+<clipPath id="wwc"><rect x="{ww_x0}" y="{y0}" width="{ww_x1 - ww_x0}" height="{y1 - y0}" rx="22"/></clipPath>
+<clipPath id="vbc"><rect x="{vb_x0}" y="{y0}" width="{vb_x1 - vb_x0}" height="{y1 - y0}" rx="22"/></clipPath></defs>
+<g clip-path="url(#wwc)"><rect x="{ww_x0}" y="{y0}" width="{ww_x1 - ww_x0}" height="{y1 - y0}" fill="url(#wwk)"/>
+<g fill="#fff" opacity=".7"><circle cx="40" cy="240" r="1"/><circle cx="118" cy="236" r="1.2"/><circle cx="96" cy="262" r="1"/><circle cx="214" cy="244" r="1"/></g>
+<circle cx="168" cy="268" r="46" fill="url(#wwm)"/><circle cx="168" cy="268" r="24" fill="#fff0d2"/>
+<g fill="#e8cfa6" fill-opacity=".55"><circle cx="160" cy="262" r="5"/><circle cx="176" cy="276" r="6"/><circle cx="172" cy="256" r="2.5"/></g>
+<g fill="#0c0612"><path d="M118 248 q-7 -7 -15 0 q7 1 9 7 q3 -6 6 -7z"/><path d="M206 238 q-6 -6 -13 0 q6 1 8 6 q2 -5 5 -6z"/></g>
+<path d="M{ww_x0} 326 V306 Q60 296 110 310 T{ww_x1} 302 V326z" fill="#1a0a20"/>
+{village}
+<path d="M30 326 Q40 316 70 318 Q100 316 108 326z" fill="#0c0612"/>
+<path d="{wolf}" fill="#0c0612"/>
+<g fill="#ff4a4a"><circle cx="85" cy="259" r="1.3"/></g>
+<rect x="{ww_x0}" y="{band}" width="{ww_x1 - ww_x0}" height="{y1 - band}" fill="#0a0820" fill-opacity=".62"/></g>
+<rect x="{ww_x0}" y="{y0}" width="{ww_x1 - ww_x0}" height="{y1 - y0}" rx="22" fill="none" stroke="#f08a80" stroke-width="2.5"/>
+<rect x="{ww_x0 + 6}" y="{y0 + 6}" width="{ww_x1 - ww_x0 - 12}" height="{y1 - y0 - 12}" rx="17" fill="none" stroke="#fff" stroke-opacity=".25"/>
+<g clip-path="url(#vbc)"><rect x="{vb_x0}" y="{y0}" width="{vb_x1 - vb_x0}" height="{y1 - y0}" fill="url(#vbk)"/>
+{grid}
+<circle cx="452" cy="270" r="44" fill="url(#vbg)"/>
+<circle cx="452" cy="270" r="22" fill="none" stroke="#bff6ff" stroke-width="2.5"/>
+<circle cx="452" cy="270" r="13" fill="none" stroke="#bff6ff" stroke-opacity=".5" stroke-dasharray="3 4"/>
+<path d="M452 240 V254 M452 286 V300 M422 270 H436 M468 270 H482" stroke="#bff6ff" stroke-width="2.5" stroke-linecap="round"/>
+<circle cx="452" cy="270" r="2.5" fill="#ff5fa2"/>
+<path d="M300 326 L326 296 L352 314 L378 288 L404 312 L436 300 L{vb_x1} 318 V326z" fill="#0a2232"/>
+<g transform="translate(330 262)">
+<circle cx="0" cy="22" r="26" fill="url(#vbr)"/>
+<path d="M0 6 L14 22 L0 38 L-14 22Z" fill="#2a0f2a" stroke="#ff8cc0" stroke-width="2"/>
+<path d="M0 13 L7 22 L0 31 L-7 22Z" fill="#ff5fa2"/>
+<path d="M0 -2 V4 M-18 22 H-24 M18 22 H24" stroke="#ff8cc0" stroke-width="1.6" stroke-linecap="round"/></g>
+<g fill="#cfe9f2" stroke="#06121f" stroke-width="1.2" stroke-linejoin="round">
+<path d="M372 316 h62 v-8 h14 v-6 h-22 v-4 h-46 l-8 4 v6 h-8 v8z"/>
+<path d="M386 316 l-6 10 h10 l4 -10z" fill="#9fc3cf"/></g>
+<rect x="{vb_x0}" y="{band}" width="{vb_x1 - vb_x0}" height="{y1 - band}" fill="#0a0820" fill-opacity=".62"/></g>
+<rect x="{vb_x0}" y="{y0}" width="{vb_x1 - vb_x0}" height="{y1 - y0}" rx="22" fill="none" stroke="#7fe8ff" stroke-width="2.5"/>
+<rect x="{vb_x0 + 6}" y="{y0 + 6}" width="{vb_x1 - vb_x0 - 12}" height="{y1 - y0 - 12}" rx="17" fill="none" stroke="#fff" stroke-opacity=".25"/>
+<path d="M264 236 V284 M264 314 V362" stroke="#e9d99b" stroke-opacity=".35" stroke-width="1.5"/>
+<path d="M264 296 q-6 -8 -16 -4 q6 2 7 8 q4 -3 9 -2 q5 -1 9 2 q1 -6 7 -8 q-10 -4 -16 4z" fill="#e9d99b" fill-opacity=".8"/>'''
 
 def skyblock_card():
     """Centre of /menu (slots 3-5 of rows 0-1: x 183..345, y 51..159): a floating island with a tree in a
@@ -233,19 +297,41 @@ def detail():
     return W, H, frame(W, H, svg, body)
 
 def confirm():
-    """Destructive confirmation: 27 slots. Cancel on 19-21, confirm on 23-25."""
+    """Destructive confirmation: 27 slots. Cancel on 19-21, confirm on 23-25. Same moonlit panel as the role
+    menus, under an ember sky. No word is painted: the title names the action, the buttons' tooltips say
+    Cancel / Confirm and that it cannot be undone (ArenaAdmin.confirm, CommunityFeatures)."""
     W, H = 528, 504
-    svg = f"""<defs>{grad('sk', [(0, '#1a0a14'), (.3, '#5a1626'), (.5, '#d9604a'), (.51, '#1a0a14'), (1, '#0c0510')])}
-<radialGradient id="eg"><stop offset="0" stop-color="#ffb070" stop-opacity=".7"/><stop offset="1" stop-color="#ff6a2c" stop-opacity="0"/></radialGradient></defs>
-<rect width="{W}" height="{H}" fill="url(#sk)"/>{stars(110, 12, 8)}
-<circle cx="264" cy="110" r="120" fill="url(#eg)"/>
-<path d="M264 36 l44 76 h-88z" fill="none" stroke="#f0b26a" stroke-width="2.5" stroke-linejoin="round"/><path d="M264 62v26M264 98v2" stroke="#f0b26a" stroke-width="4" stroke-linecap="round"/>
-<rect x="75" y="155" width="162" height="52" rx="18" fill="#fff" fill-opacity=".1" stroke="#fff" stroke-opacity=".55" stroke-width="2"/>
-<rect x="291" y="155" width="162" height="52" rx="18" fill="#d6483c" fill-opacity=".35" stroke="#f08a80" stroke-width="2"/>{hills27()}{lower_panel27()}"""
-    body = (title() + text(75, 159 + 14, 162, "CANCEL", 17, "#fff6d8", True, "center", 3).replace("top:173px", "top:170px")
-            + text(291, 170, 162, "CONFIRM", 17, "#ffd6d0", True, "center", 3)
-            + text(60, 124, 408, "This cannot be undone.", 13, "#ffe3c4"))
-    return W, H, frame(W, H, svg, body)
+    n = NIGHT
+    red, pale = "#e2584a", "#cdbfe3"
+    svg = f"""<defs>{grad('sk', [(0, '#150a1c'), (.45, '#5a1626'), (.8, '#c9563f'), (1, '#e58a52')])}
+<radialGradient id="eg"><stop offset="0" stop-color="#ffb070" stop-opacity=".75"/><stop offset="1" stop-color="#ff6a2c" stop-opacity="0"/></radialGradient>
+<radialGradient id="vig" cx=".5" cy=".46" r=".72"><stop offset=".55" stop-color="{n["ink"]}" stop-opacity="0"/><stop offset="1" stop-color="{n["ink"]}" stop-opacity=".8"/></radialGradient>
+<linearGradient id="sink" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{n["deep"]}" stop-opacity="0"/><stop offset="1" stop-color="{n["deep"]}"/></linearGradient>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#15112f"/><stop offset=".5" stop-color="{n["deep"]}"/><stop offset="1" stop-color="#07050f"/></linearGradient>
+<linearGradient id="rail" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{n["gilt"]}"/><stop offset=".8" stop-color="{n["gold"]}" stop-opacity=".7"/><stop offset="1" stop-color="{n["gold"]}" stop-opacity="0"/></linearGradient>
+<radialGradient id="aura"><stop offset="0" stop-color="{red}" stop-opacity=".32"/><stop offset="1" stop-color="{red}" stop-opacity="0"/></radialGradient>
+<clipPath id="scene"><rect x="18" y="51" width="492" height="186"/></clipPath></defs>
+<rect width="{W}" height="{H}" fill="url(#bg)"/>
+<ellipse cx="264" cy="330" rx="250" ry="110" fill="url(#aura)"/>
+<g clip-path="url(#scene)"><rect x="18" y="51" width="492" height="186" fill="url(#sk)"/>{stars(110, 14, 8)}
+<circle cx="264" cy="104" r="110" fill="url(#eg)"/>
+<path d="M18 237V196L70 160L118 190L176 150L236 186H292L352 150L410 190L458 160L510 196V237z" fill="#2a0d1c"/>
+<path d="M18 237V214L96 190L170 212L264 196L358 212L432 190L510 214V237z" fill="#16081a"/>
+<path d="M264 57l42 72h-84z" fill="#1a0a14" fill-opacity=".55" stroke="#f0b26a" stroke-width="3" stroke-linejoin="round"/><path d="M264 81v24M264 115.5v1.5" stroke="#f0b26a" stroke-width="4.5" stroke-linecap="round"/>
+<rect x="18" y="51" width="492" height="186" fill="url(#vig)"/><rect x="18" y="204" width="492" height="33" fill="url(#sink)"/></g>
+<path d="M16.5 237V49.5H511.5V237" fill="none" stroke="{n["ink"]}" stroke-width="3"/>
+<path d="M19.5 237V52.5H508.5V237" fill="none" stroke="url(#rail)" stroke-width="1.5"/>
+{_plaque(63, 141, 186, 90, pale, .85)}{_plaque(279, 141, 186, 90, red, .85)}
+{''.join(_well(24 + 54 * c, 162, pale, .8) for c in (1, 2, 3))}{''.join(_well(24 + 54 * c, 162, red, .8) for c in (5, 6, 7))}
+{_plaque(15, 243, 498, 168, None, .5)}
+{_flourish(48, 480, 276, n["gilt"], red)}
+<path d="M96 327H222M306 327H432" stroke="{n["gold"]}" stroke-width="1.5" stroke-opacity=".6"/>
+<circle cx="264" cy="327" r="30" fill="none" stroke="{n["gold"]}" stroke-width="1.5" stroke-opacity=".7"/><circle cx="264" cy="327" r="24" fill="#110e28" stroke="{n["gilt"]}" stroke-opacity=".3" stroke-width="1.5"/>
+{_crescent(264, 327, 15, "#110e28")}{_gem(87, 327, red)}{_gem(441, 327, red)}{_gem(231, 327, n["gilt"], 3)}{_gem(297, 327, n["gilt"], 3)}
+{_flourish(48, 480, 378, n["gilt"], red)}
+{_plaque(15, 420, 498, 72, None, .5)}{_flourish(48, 480, 456, n["gold"], red)}
+{_shell(W, H, red)}"""
+    return W, H, _page(W, H, svg)
 
 def render_icons():
     """The menu and werewolf icons are 16x16 pixel art (stdlib, no Chrome): see skyblock_icon.py."""
@@ -309,94 +395,154 @@ def profile():
 
 WEREWOLF = HERE / "werewolf"   # illustrations of the werewolf design guide (decors, icons, cards)
 
-# Design guide colours (tokens.json of the "Loup-Garou Vampyuyu" design system)
-GUI = {"face": "#c9cad6", "tab": "#b9bbca", "title": "#22223a", "outline": "#14121f", "light": "#ffffff",
-       "shadow": "#7d7f95", "panel": "#2b3150", "panel-light": "#48507a", "panel-dark": "#1a1e33",
-       "box": "#232842", "night-800": "#120b2a", "ink-muted": "#cdbfe3", "ink-dim": "#8f84b3"}
+# ---------------------------------------------------------------------------------------------
+# Moonlit dark-fantasy panel: the frame of the Werewolf role menus and of the confirmation window.
+# No word is painted: the window title and the item tooltips carry every text (the language files of the
+# plugins). All coordinates are CSS px (3 per GUI px); lines sit on multiples of 1.5 so they stay
+# crisp at 4 texture px per GUI px.
+NIGHT = {"ink": "#05040c", "deep": "#0b0920", "stone": "#15122e", "gold": "#b8935a", "gilt": "#e9d99b",
+         "moon": "#e9e4c8"}
 
-# name -> (decor, painted title, role colour, bottom boxes as (first column, width, label, tone))
+def _well(x, y, accent, floor=.78):
+    """A bevelled slot well for the 48x48 item area whose top left corner is (x, y)."""
+    n = NIGHT
+    return (f'<rect x="{x - 3}" y="{y - 3}" width="54" height="54" fill="{n["ink"]}" fill-opacity=".6"/>'
+            f'<rect x="{x}" y="{y}" width="48" height="48" fill="#090718" fill-opacity="{floor}"/>'
+            f'<path d="M{x} {y}h48v3h-45v45h-3z" fill="#000" fill-opacity=".55"/>'
+            f'<path d="M{x + 48} {y}v48h-48v-1.5h46.5v-46.5z" fill="#fff" fill-opacity=".16"/>'
+            f'<rect x="{x - 2.25}" y="{y - 2.25}" width="52.5" height="52.5" fill="none" stroke="{accent}" stroke-width="1.5" stroke-opacity=".9"/>'
+            + "".join(f'<rect x="{cx}" y="{cy}" width="3" height="3" fill="{n["gilt"]}"/>'
+                      for cx in (x - 3, x + 48) for cy in (y - 3, y + 48)))
+
+def _gem(x, y, color, r=4.5):
+    return (f'<path d="M{x} {y - r}L{x + r} {y}L{x} {y + r}L{x - r} {y}Z" fill="{color}" stroke="{NIGHT["ink"]}" stroke-width="1.5"/>'
+            f'<path d="M{x} {y - r + 1.5}L{x - r + 1.5} {y}" stroke="#fff" stroke-opacity=".7" stroke-width="1.5"/>')
+
+def _plaque(x, y, w, h, tone=None, fill=.62):
+    """A carved stone plaque: dark outline, a thin gilt (or tone) line, a bevel."""
+    n = NIGHT
+    line = tone or n["gold"]
+    body = f"color-mix(in srgb,{tone} 18%,{n['stone']})" if tone else n["stone"]
+    return (f'<rect x="{x + 1.5}" y="{y + 1.5}" width="{w - 3}" height="{h - 3}" fill="none" stroke="{n["ink"]}" stroke-width="3"/>'
+            f'<rect x="{x + 3}" y="{y + 3}" width="{w - 6}" height="{h - 6}" fill="{n["ink"]}" fill-opacity="{fill}"/>'
+            f'<rect x="{x + 3}" y="{y + 3}" width="{w - 6}" height="{h - 6}" style="fill:{body}" fill-opacity="{fill}"/>'
+            f'<path d="M{x + 3} {y + 3}h{w - 6}v1.5h-{w - 7.5}v{h - 7.5}h-1.5z" fill="#fff" fill-opacity=".13"/>'
+            f'<path d="M{x + w - 3} {y + 3}v{h - 6}h-{w - 6}v-1.5h{w - 7.5}v-{h - 7.5}z" fill="#000" fill-opacity=".45"/>'
+            f'<rect x="{x + 6.75}" y="{y + 6.75}" width="{w - 13.5}" height="{h - 13.5}" fill="none" stroke="{line}" stroke-width="1.5" stroke-opacity=".75"/>')
+
+def _flourish(x0, x1, y, color, accent):
+    """A thin engraved line between x0 and x1 with a gem in its middle and a dot at each end."""
+    mid = (x0 + x1) / 2
+    return (f'<path d="M{x0 + 6} {y}H{mid - 12}M{mid + 12} {y}H{x1 - 6}" stroke="{color}" stroke-width="1.5" stroke-opacity=".6"/>'
+            f'<rect x="{x0 + 1.5}" y="{y - 1.5}" width="3" height="3" fill="{color}"/><rect x="{x1 - 4.5}" y="{y - 1.5}" width="3" height="3" fill="{color}"/>'
+            + _gem(mid, y, accent))
+
+def _crescent(x, y, r, back):
+    return (f'<circle cx="{x}" cy="{y}" r="{r}" fill="{NIGHT["moon"]}"/>'
+            f'<circle cx="{x + r * .45:.2f}" cy="{y - r * .25:.2f}" r="{r * .82:.2f}" fill="{back}"/>')
+
+def _shell(W, H, accent):
+    """Opaque night stone to the window edge, the thin ornate frame and the title cartouche: a moon
+    sigil where the old wordmark was, then a dark plate under the title text (GUI x=44, y=6..14)."""
+    n = NIGHT
+    corner = (f'<path d="M6.75 36V6.75H36" fill="none" stroke="{n["gilt"]}" stroke-width="3"/>'
+              f'<path d="M13.5 28.5v-15h15" fill="none" stroke="{n["gold"]}" stroke-width="1.5"/>'
+              + _gem(13.5, 13.5, accent, 6))
+    corners = "".join(f'<g transform="translate({tx} {ty}) scale({sx} {sy})">{corner}</g>'
+                      for tx, ty, sx, sy in [(0, 0, 1, 1), (W, 0, -1, 1), (0, H, 1, -1), (W, H, -1, -1)])
+    return f'''<rect x="1.5" y="1.5" width="{W - 3}" height="{H - 3}" fill="none" stroke="{n["ink"]}" stroke-width="3"/>
+<rect x="6.75" y="6.75" width="{W - 13.5}" height="{H - 13.5}" fill="none" stroke="{n["gold"]}" stroke-width="1.5"/>
+<rect x="9.75" y="9.75" width="{W - 19.5}" height="{H - 19.5}" fill="none" stroke="{n["gilt"]}" stroke-opacity=".22" stroke-width="1.5"/>
+{corners}
+<rect x="123" y="12" width="{W - 123 - 18}" height="33" fill="{n["ink"]}"/>
+<rect x="126" y="15" width="{W - 123 - 24}" height="27" fill="#0d0a22"/>
+<path d="M126 15h{W - 147}v3h-{W - 150}v24h-3z" fill="#000" fill-opacity=".5"/>
+<path d="M{W - 21} 15v27h-{W - 147}v-1.5h{W - 148.5}v-25.5z" fill="{accent}" fill-opacity=".45"/>
+<path d="M36 28.5H57M84 28.5H114" stroke="{n["gold"]}" stroke-width="1.5"/>
+{_crescent(70.5, 28.5, 10.5, n["deep"])}{_gem(99, 28.5, accent)}{_gem(42, 28.5, n["gilt"], 3)}'''
+
+def _page(W, H, svg):
+    """Like frame(), without its border, fonts or text layer: these windows paint no word."""
+    return f'''<!doctype html><html><head><meta charset="utf-8">
+<style>html,body{{margin:0;background:{NIGHT["deep"]}}}</style></head><body>
+<svg style="display:block" width="{W}" height="{H}" viewBox="0 0 {W} {H}">{svg}</svg></body></html>'''
+
+# name -> (decor, role colour, bottom plaques as (first column, width, tone), columns of inventory row 1 where an
+# item can sit (WerewolfMenus.bottom / village), hotbar columns (card, timer, lock; the village's lock moves to 7
+# while the compass still sits in 8))
 ROLE_MENUS = {
-    "menu_vote":    ("vote", "VILLAGE VOTE", "#ffd36e", [(0, 3, "YOUR VOTE", None), (3, 3, "LEADING", None), (6, 3, "SKIP", GUI["ink-dim"])]),
-    "menu_hunt":    ("werewolf", "THE HUNT", "#ff5a5a", [(0, 4, "YOUR PREY", None), (5, 4, "THE PACK", None)]),
-    "menu_vision":  ("seer", "THE VISION", "#b892ff", [(0, 9, "YOUR VISIONS", None)]),
-    "menu_potions": ("witch", "THE POTIONS", "#6fdc8c", [(0, 3, "LIFE", "#ffd36e"), (3, 3, "DEATH", "#6fdc8c"), (6, 3, "SLEEP", GUI["ink-dim"])]),
-    "menu_guard":   ("guard", "THE GUARD", "#6cc6ff", [(0, 4, "LAST NIGHT", None), (5, 4, "PROTECT ME", "#6cc6ff")]),
-    "menu_lovers":  ("cupid", "THE LOVERS", "#ff8fc0", [(0, 5, "THE LOVERS", None), (6, 3, "BIND", "#ff8fc0")]),
-    "menu_shot":    ("hunter", "LAST SHOT", "#f0a050", [(0, 5, "YOUR TARGET", None), (6, 3, "SHOOT", "#f0a050")]),
-    "menu_village": ("village", "THE VILLAGE", "#e9d99b", [(0, 4, "THE GAME", None), (5, 4, "THE VILLAGE", None)]),
+    "menu_vote":    ("vote", "#ffd36e", [(0, 3, None), (3, 3, None), (6, 3, "#8f84b3")], [1, 4, 7], [0, 4, 8]),
+    "menu_hunt":    ("werewolf", "#ff5a5a", [(0, 4, None), (5, 4, None)], [1, 6, 7, 8], [0, 4, 8]),
+    "menu_vision":  ("seer", "#b892ff", [(0, 9, None)], [1, 2, 4, 5, 7, 8], [0, 4, 8]),
+    "menu_potions": ("witch", "#6fdc8c", [(0, 3, "#ffd36e"), (3, 3, "#6fdc8c"), (6, 3, "#8f84b3")], [1, 4, 7], [0, 4, 8]),
+    "menu_guard":   ("guard", "#6cc6ff", [(0, 4, None), (5, 4, "#6cc6ff")], [1, 6], [0, 4, 8]),
+    "menu_lovers":  ("cupid", "#ff8fc0", [(0, 5, None), (6, 3, "#ff8fc0")], [1, 2, 3, 7], [0, 4, 8]),
+    "menu_shot":    ("hunter", "#f0a050", [(0, 5, None), (6, 3, "#f0a050")], [1, 7], [0, 4, 8]),
+    "menu_village": ("village", "#e9d99b", [(0, 4, None), (5, 4, None)], [1, 6, 7, 8], [0, 4, 7, 8]),
 }
 RING = [2, 3, 4, 5, 6, 16, 25, 34, 43, 51, 50, 49, 48, 47, 37, 28, 19, 10]  # plugin: WerewolfMenus.RING
 
 def role_menu(name):
-    """A werewolf role menu, drawn on the real 54-slot grid: the role's decor behind the chest, the
-    18 ring slots for the heads, the labelled boxes of the bottom panel and the hotbar's card, timer
-    and lock slots. Only the static frame is painted; heads, icons and counts are real items."""
-    decor, label, color, boxes = ROLE_MENUS[name]
+    """A werewolf role menu, drawn on the real 54-slot grid (slot items at x=24+54c; chest rows y=54+54r,
+    inventory rows y=420+54r, hotbar y=594): the role's scene behind the chest with the 18 ring wells for
+    the heads, bleeding down into its own dark reflection; a carved panel whose plaques hold the wells of
+    the bottom buttons; the hotbar's card, timer and lock wells. No word is painted: the title and the
+    items' tooltips say everything (WerewolfMenus, lang/menus/*.yml)."""
+    decor, color, boxes, wells, hotbar = ROLE_MENUS[name]
     W, H = 528, 666
-    g = GUI
-    bevel = "box-shadow:inset 3px 3px 0 rgba(255,255,255,.18),inset -3px -3px 0 rgba(0,0,0,.35);"
-    def box(x, y, w, h, css):
-        return f'<div style="position:absolute;box-sizing:border-box;left:{x}px;top:{y}px;width:{w}px;height:{h}px;{css}"></div>'
-    def label_at(x, y, w, t, tone):
-        return (f'<div style="position:absolute;left:{x}px;top:{y}px;width:{w}px;text-align:center;font-size:18px;'
-                f'font-weight:700;letter-spacing:1px;color:{tone};text-shadow:2px 2px 0 rgba(0,0,0,.45)">{t}</div>')
-    out = [box(0, 0, W, H, f"background:{g['face']};border:3px solid {g['outline']};"
-                           f"box-shadow:inset 3px 3px 0 {g['light']},inset -3px -3px 0 {g['shadow']};")]
-    out.append(f'<div style="position:absolute;box-sizing:border-box;left:114px;top:9px;width:300px;height:33px;'
-               f'background:{g["tab"]};border:3px solid {g["outline"]};display:flex;align-items:center;justify-content:center;'
-               f'font-size:18px;font-weight:600;letter-spacing:2px;color:{g["title"]}">{label}</div>')
+    n = NIGHT
     picture = (WEREWOLF / "decors" / f"{decor}.png").as_uri()
-    out.append(f'<div style="position:absolute;box-sizing:border-box;left:15px;top:48px;width:498px;height:336px;'
-               f'border:3px solid {g["outline"]};background:{g["night-800"]};overflow:hidden">'
-               f'<img src="{picture}" style="position:absolute;left:0;top:0;width:492px;height:330px;object-fit:cover">'
-               f'<div style="position:absolute;inset:0;box-shadow:inset 0 0 0 3px {color}"></div></div>')
+    svg = [f'''<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#15112f"/><stop offset=".5" stop-color="{n["deep"]}"/><stop offset="1" stop-color="#07050f"/></linearGradient>
+<radialGradient id="vig" cx=".5" cy=".46" r=".72"><stop offset=".55" stop-color="{n["ink"]}" stop-opacity="0"/><stop offset="1" stop-color="{n["ink"]}" stop-opacity=".8"/></radialGradient>
+<linearGradient id="sink" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{n["deep"]}" stop-opacity="0"/><stop offset="1" stop-color="{n["deep"]}"/></linearGradient>
+<linearGradient id="pool" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{n["deep"]}" stop-opacity=".5"/><stop offset=".12" stop-color="{n["deep"]}" stop-opacity=".2"/><stop offset=".7" stop-color="#07050f" stop-opacity=".55"/><stop offset="1" stop-color="#07050f" stop-opacity=".85"/></linearGradient>
+<linearGradient id="rail" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{n["gilt"]}"/><stop offset=".8" stop-color="{n["gold"]}" stop-opacity=".7"/><stop offset="1" stop-color="{n["gold"]}" stop-opacity="0"/></linearGradient>
+<radialGradient id="aura"><stop offset="0" stop-color="{color}" stop-opacity=".30"/><stop offset="1" stop-color="{color}" stop-opacity="0"/></radialGradient>
+<filter id="blur" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="4.5"/></filter>
+<clipPath id="low"><rect x="12" y="381" width="504" height="273"/></clipPath></defs>
+<rect width="{W}" height="{H}" fill="url(#bg)"/>
+<g clip-path="url(#low)"><image href="{picture}" x="18" y="381" width="492" height="330" preserveAspectRatio="xMidYMid slice" transform="translate(0 1092) scale(1 -1)" filter="url(#blur)"/>
+<rect x="12" y="381" width="504" height="273" fill="url(#pool)"/><ellipse cx="264" cy="498" rx="250" ry="90" fill="url(#aura)"/></g>
+<image href="{picture}" x="18" y="51" width="492" height="330" preserveAspectRatio="xMidYMid slice"/>
+<rect x="18" y="51" width="492" height="330" fill="url(#vig)"/>
+<rect x="18" y="330" width="492" height="51" fill="url(#sink)"/>
+<path d="M16.5 381V49.5H511.5V381" fill="none" stroke="{n["ink"]}" stroke-width="3"/>
+<path d="M19.5 381V52.5H508.5V381" fill="none" stroke="url(#rail)" stroke-width="1.5"/>''']
     for slot in RING:
-        x, y = 21 + 54 * (slot % 9), 51 + 54 * (slot // 9)
-        out.append(box(x, y, 54, 54, f"border:3px solid {color};background:rgba(18,11,42,.72);{bevel}"))
-    out.append(box(15, 396, 498, 258, f"border:3px solid {g['outline']};background:{g['panel']};"
-                                      f"box-shadow:inset 3px 3px 0 {g['panel-light']},inset -3px -3px 0 {g['panel-dark']};"))
-    for col, width, text, tone in boxes:
-        x, y = 24 + 54 * col - 3, 420 - 3
-        fill = f"color-mix(in srgb,{tone} 30%,{g['box']})" if tone else g["box"]
-        out.append(box(x, y, width * 54, 108, f"border:3px solid {g['outline']};background:{fill};"
-                                              f"box-shadow:inset 3px 3px 0 {tone or '#3d4570'},inset -3px -3px 0 rgba(0,0,0,.35);"))
-        out.append(label_at(x, y + 11, width * 54, text, tone or g["ink-muted"]))
-        for c in range(col, col + width):  # faint wells where the box's items sit (inventory row 1)
-            out.append(box(24 + 54 * c, 474, 48, 48, "background:rgba(0,0,0,.22);"))
-    for col in (0, 4, 8):
-        out.append(box(24 + 54 * col - 3, 594 - 3, 54, 54, f"border:3px solid {g['outline']};background:{g['box']};{bevel}"))
-    html = f'''<!doctype html><html><head><meta charset="utf-8">{FONTS}
-<style>html,body{{margin:0;background:{g['night-800']}}}</style></head><body>
-<div style="position:relative;width:{W}px;height:{H}px;overflow:hidden;font-family:'Pixelify Sans',monospace">{"".join(out)}</div></body></html>'''
-    return W, H, html
+        svg.append(_well(24 + 54 * (slot % 9), 54 + 54 * (slot // 9), color, .66))
+    # the carved panel: a frieze over each plaque, the plaques with their wells, a closing flourish
+    svg.append(_plaque(15, 399, 498, 174, None, .3))
+    for col, width, tone in boxes:
+        x = 21 + 54 * col
+        svg.append(_flourish(x + 6, x + width * 54 - 6, 438, n["gilt"], tone or color))
+        svg.append(_plaque(x, 462, width * 54, 72, tone or None, .8))
+    for col in wells:
+        tone = next((t for c, w, t in boxes if c <= col < c + w), None)
+        svg.append(_well(24 + 54 * col, 474, tone or color, .85))
+    svg.append(f'<path d="M150 552H243M285 552H378" stroke="{n["gold"]}" stroke-width="1.5" stroke-opacity=".6"/>'
+               + _crescent(264, 552, 9, "#110e28") + _gem(141, 552, color, 3) + _gem(387, 552, color, 3))
+    # the hotbar rail: card, timer, lock
+    svg.append(_plaque(15, 582, 498, 72, None, .45))
+    marks = sorted(hotbar)
+    for a, b in zip(marks, marks[1:]):
+        if b - a > 1:
+            svg.append(_flourish(24 + 54 * a + 54, 24 + 54 * b - 6, 618, n["gold"], color))
+    for col in hotbar:
+        svg.append(_well(24 + 54 * col, 594, color, .85))
+    svg.append(_shell(W, H, color))
+    return W, H, _page(W, H, "".join(svg))
 
 def render_werewolf():
-    """Werewolf items and HUD cards, from the guide's illustrations (needs Pillow, not Chrome):
-    icons and role cards as item models (vampyuyu:icon/<name>), and the card glyphs of the
-    vampyuyu:hud font. Icons are reduced with a quality filter, never upscaled."""
-    from PIL import Image, ImageEnhance
-    icon_dir = PACK / "textures" / "item" / "icon"
-    def grey(image):
-        rgb = ImageEnhance.Brightness(image.convert("RGBA").convert("LA").convert("RGBA")).enhance(.6)
-        rgb.putalpha(image.convert("RGBA").getchannel("A"))
-        return rgb
+    """Werewolf items and HUD cards. The 16x16 item sprites come from skyblock_icon.py; the role cards (HUD glyphs and
+    the card items of the roles that have no sprite) and the role medallions come from the renders in
+    werewolf/skins_src through werewolf_art.py (stdlib only, no Pillow)."""
     for sub in ("textures/item/icon", "models/item/icon", "items/icon", "textures/font/card", "font"):
         (PACK / sub).mkdir(parents=True, exist_ok=True)
     import skyblock_icon
-    skyblock_icon.write_icons()  # icon/* are hand-drawn 16x16 sprites; only the HUD card glyphs come from the guide
-    cards = {p.stem: Image.open(p).convert("RGBA") for p in sorted((WEREWOLF / "cards").glob("*.png"))}
-    providers = []
-    for i, role in enumerate(layout.CARDS):
-        face = cards[role].resize((64, 64), Image.LANCZOS)
-        face.save(PACK / "textures/font/card" / f"{role}.png", optimize=True)
-        providers.append({"type": "bitmap", "file": f"vampyuyu:font/card/{role}.png", "ascent": layout.CARD_ASCENT,
-                          "height": layout.CARD_HEIGHT, "chars": [chr(layout.CARD_BASE + i)]})
-        if role != "back":
-            grey(face).save(PACK / "textures/font/card" / f"{role}-dead.png", optimize=True)
-            providers.append({"type": "bitmap", "file": f"vampyuyu:font/card/{role}-dead.png", "ascent": layout.CARD_ASCENT,
-                              "height": layout.CARD_HEIGHT, "chars": [chr(layout.CARD_BASE + layout.CARD_DEAD + i)]})
-    (PACK / "font" / "hud.json").write_text(json.dumps({"providers": providers}, indent=1) + "\n")
-    print("wrote", len(providers), "card glyphs")
+    skyblock_icon.write_icons()  # icon/* are hand-drawn 16x16 sprites
+    import werewolf_art
+    werewolf_art.main()
 
 import sky_menus  # noqa: E402  (Skyblock backgrounds; same frame and tiling)
 
@@ -407,6 +553,9 @@ ART = {"sb_main": lambda: sky_menus.main_menu(frame, sb_title), "sb_panel": lamb
        "sb_small": lambda: sky_menus.panel27(frame, sb_title), "sb_forge": lambda: sky_menus.forge(frame, sb_title),
        "menu_lobby": lobby, "menu_setup": setup, "menu_list": listing, "menu_detail": detail, "menu_confirm": confirm, "menu_compass": compass, "menu_profile": profile, "menu_alembic": alembic,
        **{name: (lambda n=name: role_menu(n)) for name in ROLE_MENUS}}
+
+# Backgrounds saved as palette PNGs (the pack has a size budget: scripts/test_pack.py). Only fully opaque ones.
+PALETTED = {*ROLE_MENUS, "menu_confirm"}
 
 def _shot(html, w, h, out):
     with tempfile.TemporaryDirectory() as tmp:
@@ -436,8 +585,10 @@ def render(name):
         full = Image.open(shot).convert("RGBA").crop((0, 0, layout.GUI_W * layout.PX_PER_GUI, gui_h * layout.PX_PER_GUI))
     for r in range(rows):
         for c in range(layout.COLS):
-            full.crop((c * tile_w, r * tile_h, (c + 1) * tile_w, (r + 1) * tile_h)).save(
-                outdir / f"{layout.tile_file(name, r, c)}.png", optimize=True)
+            tile = full.crop((c * tile_w, r * tile_h, (c + 1) * tile_w, (r + 1) * tile_h))
+            if name in PALETTED:  # opaque art with soft gradients: 256 colours per tile, a third of the bytes
+                tile = tile.convert("RGB").quantize(256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
+            tile.save(outdir / f"{layout.tile_file(name, r, c)}.png", optimize=True)
     print("wrote", rows * layout.COLS, "tiles for", name)
 
 def write_font():

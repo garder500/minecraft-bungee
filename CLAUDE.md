@@ -164,7 +164,11 @@ from refusal to kill, a Breath Fracture, floor 7; about 12 minutes; the Raid is 
 in the test database). Item sprites: concept sheets
 (generated images, one item per cell on magenta) in `resource-pack/art/concepts/` -> `art/import_textures.py` (needs
 Pillow: `nix-shell -p "python3.withPackages (p: [p.pillow])"`) -> 32x32 sprites listed in `art/imported.txt`, which the
-procedural scripts skip. Remaining 3D models: `resource-pack/art/item_models.py` and `sword_models.py`. Skyblock menu
+procedural scripts skip. Every Skyblock 3D model (helmets, worn wings, bosses, tools, swords, bows, ore clusters,
+machines, cables) is a Blockbench project in `resource-pack/art/blockbench/<armor|bosses|items|blocks>/`: edit it in
+Blockbench, then run its converter (`helmet_models.py`, `wings_art.py`, `boss_skins.py`, `item_models.py`,
+`sword_models.py`, `block_models.py`, all reading through `art/bbmodel.py`); never write geometry in Python.
+`scripts/test_blockbench_models.py` (in `make test-pack`) checks the sources and that the pack matches them. Skyblock menu
 backgrounds: `art/sky_menus.py` via `render.py sb_main sb_panel sb_small sb_forge` (headless Chrome).
 
 ## Languages

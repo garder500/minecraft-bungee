@@ -8,6 +8,7 @@ of lore_sprites.py); this script owns where they are written. Stdlib only, deter
 import json
 import pathlib
 
+import goods32
 import realm32
 
 PACK = pathlib.Path(__file__).resolve().parent.parent / "pack/assets/vampyuyu"
@@ -19,7 +20,7 @@ def main():
         family, item = name.split("/")
         tex = PACK / f"textures/item/{family}/{item}.png"
         tex.parent.mkdir(parents=True, exist_ok=True)
-        tex.write_bytes(realm32.draw(item).png())
+        tex.write_bytes((goods32.rot_resin() if item == "rot_resin" else realm32.draw(item)).png())   # Rot Resin: repainted in goods32
         model = PACK / f"models/item/{family}/{item}.json"
         model.parent.mkdir(parents=True, exist_ok=True)
         model.write_text(json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"vampyuyu:item/{name}"}}, indent=1) + "\n")

@@ -1,0 +1,86 @@
+{
+ "textures": {
+  "0": "vampyuyu:item/boss/skin/sylvan_matriarch",
+  "particle": "vampyuyu:item/boss/skin/sylvan_matriarch"
+ },
+ "elements": [
+  {
+   "from": [
+    19.5,
+    6.25,
+    4.25
+   ],
+   "to": [
+    21.0,
+    22.75,
+    5.75
+   ],
+   "shade": false,
+   "faces": {
+    "north": {
+     "uv": [
+      6.25,
+      0.0,
+      6.4375,
+      2.0625
+     ],
+     "texture": "#0"
+    },
+    "east": {
+     "uv": [
+      6.625,
+      0.0,
+      6.8125,
+      2.0625
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      6.4375,
+      0.0,
+      6.625,
+      2.0625
+     ],
+     "texture": "#0"
+    },
+    "west": {
+     "uv": [
+      6.8125,
+      0.0,
+      7.0,
+      2.0625
+     ],
+     "texture": "#0"
+    },
+    "up": {
+     "uv": [
+      15.25,
+      13.375,
+      15.4375,
+      13.5625
+     ],
+     "texture": "#0"
+    },
+    "down": {
+     "uv": [
+      15.4375,
+      13.375,
+      15.625,
+      13.5625
+     ],
+     "texture": "#0"
+    }
+   },
+   "rotation": {
+    "angle": -31.264,
+    "axis": "z",
+    "origin": [
+     20.25,
+     14.5,
+     5.0
+    ]
+   }
+  }
+ ]
+}

@@ -6,7 +6,7 @@ import java.util.UUID;
 
 /**
  * The bot's buy rules: a full buy (rifle and the best shield it can pay) at 3,900 Shards or more,
- * otherwise it saves and keeps Pip with a light shield. Goes through {@link Armory}, so the buy phase,
+ * otherwise it saves and keeps the SP-9 Sentry with a light shield. Goes through {@link Armory}, so the buy phase,
  * the price and the sell-back rules are the humans' own. Pure.
  */
 public final class BotBuyer {

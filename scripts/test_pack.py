@@ -11,7 +11,8 @@ import build_pack  # noqa: E402
 import layout  # noqa: E402
 import vb_layout  # noqa: E402
 sys.path.insert(0, str(ROOT / "resource-pack" / "art"))
-import hud as hud_art  # noqa: E402
+import hud_font  # noqa: E402
+import werewolf_art  # noqa: E402
 
 def ogg_seconds(data):
     """Length of an Ogg Vorbis file: the last page's granule position counts PCM samples."""
@@ -108,15 +109,19 @@ class PackTest(unittest.TestCase):
             self.assertIn(info["team"], ("village", "wolves", "vampires", "cult", "solo"), role)
             self.assertIn(info["palette"], layout.HUD_PALETTES, role)
             self.assertRegex(info["color"], "^[0-9a-f]{6}$", role)
-            # plabel / pteam are 68 px boxes of 1x text (6 px a letter plus the 2 px outline); the
-            # phase label is 136 px of 2x text
-            self.assertLessEqual((len(info["word"]) - 1) * 6 + 5 + 2, 68, f"{role} word '{info['word']}'")
-            self.assertLessEqual((len(layout.team_word(info)) - 1) * 6 + 5 + 2, 68, f"{role} team word")
-            for ch in info["word"] + layout.team_word(info):
-                self.assertIn(ch, hud_art.FONT, f"{role}: no glyph for {ch!r}")
+            # The HUD writes these words as text. The language files translate them (lang/*.yml of the plugin,
+            # scripts/test_hud_sheet.py checks those); the words here are the fallback and must fit their line
+            # too: the role in bold, the team in the regular font, the call's label in bold at worst.
+            words = [(info["word"], "prole"), (layout.team_word(info), "pteam")]
+            if "call" in info:
+                words.append((info["call"]["label"], "label2"))
+            for text, element in words:
+                font, _, limit = layout.HUD_TEXT[element]
+                line = hud_font.normalise(text)
+                self.assertNotIn("?", line, f"{role}: no glyph for a character of {text!r}")
+                self.assertLessEqual(hud_font.width(font, line), limit, f"{role}: {text!r} is too wide for {element}")
             if "call" in info:
                 call = info["call"]
-                self.assertLessEqual(((len(call["label"]) - 1) * 6 + 5) * 2 + 2, 136, f"{role} label")
                 self.assertNotIn(call["phase"], phases, f"two roles own the call {call['phase']}")
                 phases.add(call["phase"])
                 for field in ("label", "title", "subtitle", "instruction"):
@@ -148,6 +153,40 @@ class PackTest(unittest.TestCase):
         self.assertEqual([l.split()[2] for l in table if l.startswith("element")], [e[0] for e in layout.HUD_ELEMENTS])
         vsh = (PACK / "assets/minecraft/shaders/core/text.vsh").read_text()
         self.assertIn(f"const int HUD_COUNT = {len(layout.HUD_ELEMENTS)};", vsh)
+        self.assertIn(f"const int HUD_TEXT = {layout.HUD_TEXT_FIRST};", vsh)
+        self.assertLess(layout.HUD_ID_BASE + len(layout.HUD_ELEMENTS), 256, "an element id is a colour channel")
+
+    def test_custom_hud_text_fonts(self):
+        names = {n: (w, h) for n, w, h in layout.hud_sprites()}
+        table = [l.split() for l in (ROOT / "arena-plugin/src/main/resources/hud-sprites.txt").read_text().split("\n")]
+        advances = {l[2]: int(l[1]) for l in table if l and l[0] == "advance"}
+        self.assertEqual({l[2]: int(l[1]) for l in table if l and l[0] == "space"}, hud_font.SPACE)
+        self.assertEqual({l[1]: (l[2], l[3], int(l[4])) for l in table if l and l[0] == "text"}, layout.HUD_TEXT)
+        self.assertEqual(len(set(layout.HUD_CHARS)), len(layout.HUD_CHARS))
+        elements = {e[0]: e for e in layout.HUD_ELEMENTS}
+        for font, cell in layout.HUD_FONT_CELLS.items():
+            for ch in layout.HUD_CHARS:
+                name = hud_font.sprite(font, ch)
+                self.assertRegex(name, "^f[hbm]_[0-9a-f]{4}$")
+                self.assertEqual(names[name], cell, name)
+                # the ink, its outline and the pixel of spacing fit the cell; the advance is the one the plugin reads
+                self.assertEqual(advances[name], hud_font.advance(font, ch), name)
+                self.assertLessEqual(advances[name] + 1, cell[0], name)
+        for name, (font, align, limit) in layout.HUD_TEXT.items():
+            self.assertEqual(tuple(elements[name][4:6]), layout.HUD_FONT_CELLS[font], name)
+            self.assertGreaterEqual([e[0] for e in layout.HUD_ELEMENTS].index(name), layout.HUD_TEXT_FIRST, name)
+            self.assertLessEqual(limit, 255, "an offset is a colour channel")
+            self.assertIn(align, ("left", "right", "centre"))
+
+    def test_every_hud_sprite_is_as_wide_as_its_file_for_the_game(self):
+        # A bitmap glyph advances by its ink (cut at the last column that is not empty) + 1, and the negative
+        # advance after each sprite is -(width + 1): the last column of every sprite must hold a pixel, or the
+        # action bar's own text would slide sideways with the HUD's content.
+        sys.path.insert(0, str(ROOT / "resource-pack" / "art"))
+        import hud_sheet
+        for name, w, h in layout.hud_sprites():
+            pw, ph, rows = hud_sheet.png_read(PACK / "assets/vampyuyu/textures/font/hud" / f"{name}.png")
+            self.assertTrue(any(row[(w - 1) * 4 + 3] for row in rows), f"{name}: empty last column")
 
     def test_inventory_label_is_blank_in_every_shipped_language(self):
         langs = sorted((PACK / "assets/minecraft/lang").glob("*.json"))
@@ -167,8 +206,11 @@ class PackTest(unittest.TestCase):
     def test_role_cards_are_hud_glyphs_with_dead_versions(self):
         font = json.loads((PACK / "assets/vampyuyu/font/hud.json").read_text())
         glyphs = {ord(p["chars"][0]): p for p in font["providers"]}
-        for i, role in enumerate(layout.CARDS):
-            for code, suffix in [(layout.CARD_BASE + i, "")] + ([] if role == "back" else [(layout.CARD_BASE + layout.CARD_DEAD + i, "-dead")]):
+        cards = werewolf_art.cards()  # layout.CARDS is the old list of eight: werewolf_art owns the table now
+        self.assertEqual(cards, (ROOT / "arena-plugin/src/main/resources/card-names.txt").read_text().split())
+        self.assertEqual(sorted(c for c in cards if c != "back"), sorted(r.lower() for r in layout.roles()), "a card per role")
+        for i, role in enumerate(cards):
+            for code, suffix in [(layout.CARD_BASE + i, "")] + ([] if role == "back" else [(layout.CARD_BASE + werewolf_art.CARD_DEAD + i, "-dead")]):
                 provider = glyphs.pop(code)
                 self.assertEqual(provider["file"], f"vampyuyu:font/card/{role}{suffix}.png")
                 self.assertEqual((provider["height"], provider["ascent"]), (layout.CARD_HEIGHT, layout.CARD_ASCENT))
@@ -188,7 +230,8 @@ class PackTest(unittest.TestCase):
         village = re.search(r"VILLAGE = '\\u([0-9A-F]{4})'", menus)
         self.assertEqual(int(village.group(1), 16), layout.BACKGROUNDS["menu_village"][0])
         hud = (java / "hud/WerewolfHud.java").read_text()
-        self.assertIn("List.of(%s)" % ", ".join(f'"{c}"' for c in layout.CARDS), " ".join(hud.split()).replace("( ", "("))
+        self.assertIn("/card-names.txt", hud)
+        self.assertIn("DEAD_OFFSET = 0x%X" % werewolf_art.CARD_DEAD, hud)
         icons = {p.stem for p in (PACK / "assets/vampyuyu/items/icon").glob("*.json")}
         source = menus + (java / "WerewolfCompass.java").read_text()
         for icon in set(re.findall(r'"((?:potion-|mark-|card-)[a-z-]*|target|heart|shield|moon|lock|timer|skip)"', source)):
@@ -343,7 +386,7 @@ class ValoBlockPackTest(unittest.TestCase):
                 base = f"ab_{a['id']}_{ab['id']}"
                 names = [base, base + "_empty"] + ([base + "_ready"] if ab["slot"] == 7 else [])
                 for name in names:
-                    self.assertEqual(png_size(self.base / f"textures/item/valoblock/{name}.png"), (16, 16), name)
+                    self.assertEqual(png_size(self.base / f"textures/item/valoblock/{name}.png"), (32, 32), name)
                     model = json.loads((self.base / f"models/item/valoblock/{name}.json").read_text())
                     self.assertEqual(model["textures"]["layer0"], f"vampyuyu:item/valoblock/{name}")
                     definition = json.loads((self.base / f"items/valoblock/{name}.json").read_text())
@@ -368,7 +411,8 @@ class ValoBlockPackTest(unittest.TestCase):
             self.assertEqual(
                 sorted(set(walk_models(definition["model"]))),
                 sorted({f"vampyuyu:item/valoblock/{n}" for n in (name, f"{name}_3d", f"{name}_fire", f"{name}_reload", f"{name}_inspect", f"{name}_aim")}))
-            self.assertEqual(png_size(self.base / f"textures/item/valoblock/{name}_3d.png"), (32, 32), name)
+            w3, h3 = png_size(self.base / f"textures/item/valoblock/{name}_3d.png")  # the Blockbench texture: a square of 32 to 256
+            self.assertTrue(w3 == h3 and w3 in (32, 64, 128, 256), (name, w3, h3))
             for state in ("3d", "fire", "reload", "inspect", "aim"):
                 model = json.loads((self.base / f"models/item/valoblock/{name}_{state}.json").read_text())
                 self.assertEqual(model["textures"]["0"], f"vampyuyu:item/valoblock/{name}_3d")
@@ -508,8 +552,8 @@ class ValoBlockPackTest(unittest.TestCase):
         agents = json.loads((ROOT / "arena-plugin/src/main/resources/valoblock/agents/index.json").read_text())["agents"]
         for i in range(len(agents)):
             provider, width, height = tiles[vb_layout.PORTRAIT_BASE + i]
-            self.assertEqual((width, height), (vb_layout.PORTRAIT_W, vb_layout.PORTRAIT_H))
-            self.assertEqual(provider["height"], vb_layout.PORTRAIT_H)
+            self.assertIn((width, height), ((vb_layout.PORTRAIT_W, vb_layout.PORTRAIT_H), (vb_layout.PORTRAIT_W * 4, vb_layout.PORTRAIT_H * 4)))
+            self.assertEqual(provider["height"], vb_layout.PORTRAIT_H)  # a 4x render is drawn at the same 48 x 64
             self.assertEqual(provider["ascent"], layout.ASCENT - vb_layout.PORTRAIT_Y)
         self.assertIn(vb_layout.PORTRAIT_NONE, tiles)
         # the tactical map: one plan glyph per map and one per zone, 90 x 90 px = 1 texture px per GUI px, over the chest's 5 x 5 middle slots
@@ -538,7 +582,7 @@ class ValoBlockPackTest(unittest.TestCase):
         self.assertIn(f"FIRST_ROW = {vb_layout.VOTE_ROW},", vote_java, "the tiles of the window and of its background share a row")
         for mid, colour in vb_layout.VOTE_REALM.items():
             self.assertIn(f'"{mid}", "#{colour}"', vote_java, mid)
-        for sprite in ("tac_dim", "tac_far", "tac_mark", "tac_pick"):
+        for sprite in ("tac_dim", "tac_far", "tac_mark", "tac_pick", "tac_back", "tac_cancel"):
             self.assertTrue((VALO / f"assets/vampyuyu/items/valoblock/{sprite}.json").is_file(), sprite)
             self.assertEqual(png_size(VALO / f"assets/vampyuyu/textures/item/valoblock/{sprite}.png"), (16, 16))
         # the title text lands where a window title starts: x = 8

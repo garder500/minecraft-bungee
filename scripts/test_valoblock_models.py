@@ -12,19 +12,41 @@ MIN_LUM = 0.25 * 255
 
 
 def read_png(path):
-    data = path.read_bytes()
-    pos, idat, w, h = 8, b"", 0, 0
-    while pos < len(data):
-        n, tag = struct.unpack(">I4s", data[pos:pos + 8])
-        body = data[pos + 8:pos + 8 + n]
-        if tag == b"IHDR":
-            w, h = struct.unpack(">II", body[:8])
-        elif tag == b"IDAT":
-            idat += body
-        pos += 12 + n
-    raw = zlib.decompress(idat)
-    stride = 1 + 4 * w
-    return w, h, [[tuple(raw[y * stride + 1 + x * 4:y * stride + 5 + x * 4]) for x in range(w)] for y in range(h)]
+    """(w, h, rows) of a PNG, any filter (Blockbench saves with filters)."""
+    sys.path.insert(0, str(ROOT / "resource-pack/art"))
+    import valoblock_models as vm
+    rows = vm.read_png(path.read_bytes())
+    return len(rows[0]), len(rows), rows
+
+
+def used_pixels(px, elements):
+    """Texels the faces of a model actually show (uv 0..16 over the whole texture)."""
+    h, w = len(px), len(px[0])
+    seen = set()
+    for el in elements:
+        for f in el["faces"].values():
+            u0, v0, u1, v1 = f["uv"]
+            for y in range(int(min(v0, v1) * h / 16), max(int(min(v0, v1) * h / 16) + 1, int(max(v0, v1) * h / 16 - 1e-6) + 1)):
+                for x in range(int(min(u0, u1) * w / 16), max(int(min(u0, u1) * w / 16) + 1, int(max(u0, u1) * w / 16 - 1e-6) + 1)):
+                    seen.add((x, y))
+    return seen
+
+
+def coplanar(label, elements):
+    """Two overlapping boxes with the same rotation must not share a face plane (the faces would flicker)."""
+    out = []
+    key = lambda e: json.dumps(e.get("rotation"), sort_keys=True)  # noqa: E731
+    for j, q in enumerate(elements):
+        for p in elements[:j]:
+            if key(p) != key(q):
+                continue
+            if not all(p["from"][i] < q["to"][i] - 1e-6 and q["from"][i] < p["to"][i] - 1e-6 for i in range(3)):
+                continue
+            for i in range(3):
+                if abs(p["from"][i] - q["from"][i]) < 1e-4 or abs(p["to"][i] - q["to"][i]) < 1e-4:
+                    out.append(f"{label}: boxes {p['from']}-{p['to']} and {q['from']}-{q['to']} share a face plane on {'xyz'[i]}")
+                    break
+    return out
 
 
 def main():
@@ -38,17 +60,21 @@ def main():
             if not (PACK / f"models/item/valoblock/{name}_{state}.json").exists():
                 errors.append(f"{name}: missing {state} model")
         w, h, px = read_png(PACK / f"textures/item/valoblock/{name}_3d.png")
-        if (w, h) != (32, 32):
-            errors.append(f"{name}: atlas is {w}x{h}, expected 32x32")
-        for y, row in enumerate(px):
-            for x, (r, g, b, a) in enumerate(row):
-                if 0.2126 * r + 0.7152 * g + 0.0722 * b < MIN_LUM:
-                    errors.append(f"{name}: atlas pixel {x},{y} darker than 25% grey {(r, g, b)}")
-                    break
+        if w != h or w not in (32, 64, 128, 256):
+            errors.append(f"{name}: atlas is {w}x{h}, expected a square of 32 to 256")
+        fire = json.loads((PACK / f"models/item/valoblock/{name}_fire.json").read_text())["elements"]
+        for x, y in sorted(used_pixels(px, fire)):      # the fire state shows every part, flash included
+            r, g, b, a = px[y][x]
+            if 0.2126 * r + 0.7152 * g + 0.0722 * b < MIN_LUM:
+                errors.append(f"{name}: texel {x},{y} on a face is darker than 25% grey {(r, g, b)}")
+                break
         for state in ("3d", "fire", "reload", "aim", "inspect"):
             data = json.loads((PACK / f"models/item/valoblock/{name}_{state}.json").read_text())
             if len(data["elements"]) < (8 if name == "shard_knife" else 14):
                 errors.append(f"{name}_{state}: only {len(data['elements'])} parts")
+            if data["elements"] and any(el.get("shade", True) for el in data["elements"]):
+                errors.append(f"{name}_{state}: an element is shaded (the engine would darken it again)")
+            errors += coplanar(f"{name}_{state}", data["elements"])
             for el in data["elements"]:
                 if set(el["faces"]) != {"north", "east", "south", "west", "up", "down"}:
                     errors.append(f"{name}_{state}: element with missing faces")

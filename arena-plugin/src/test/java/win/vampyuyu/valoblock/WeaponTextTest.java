@@ -17,7 +17,7 @@ public class WeaponTextTest {
   public void fluxTooltipIsTheDesignsExactly() {
     assertEquals(
         List.of(
-            "Flux Rifle",
+            "AR-77 Tempest",
             "Rifle, full auto · Sunstone + Flux",
             "Head 156 · Body 39 · Legs 33",
             "10 shots/s · 25 rounds · reload 2.5 s",

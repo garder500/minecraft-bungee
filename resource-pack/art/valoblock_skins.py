@@ -3,7 +3,9 @@
 
     python3 resource-pack/art/valoblock_skins.py
 
-The single source is arena-plugin/src/main/resources/valoblock/agents/*.json (the colour plan of the VB-Agents
+Since 2026-11-24 an agent with a painted skin in resource-pack/art/valoblock_skins_src/<id>.png (made in Blockbench, the
+"Minecraft Skin" project <id>.bbmodel next to it) uses that skin; the procedural painter below is the fallback for an agent
+without one. The procedural source is arena-plugin/src/main/resources/valoblock/agents/*.json (the colour plan of the VB-Agents
 sheet: face rows and palette = hood and mask, colors = torso, trim = Realm trim, glow = the glow mark). Per agent:
 
     textures/entity/valoblock/skin_<id>.png                      64x64 player skin (classic arms). Bots: the mannequin
@@ -190,11 +192,28 @@ def write(path, data):
     path.write_bytes(data)
 
 
+SKINS_SRC = pathlib.Path(__file__).resolve().parent / "valoblock_skins_src"
+
+
+def painted(agent_id):
+    """The Blockbench skin of an agent as a Skin, or None."""
+    f = SKINS_SRC / f"{agent_id}.png"
+    if not f.exists():
+        return None
+    import valoblock_models as vm
+    rows = vm.read_png(f.read_bytes())
+    if (len(rows[0]), len(rows)) != (64, 64):
+        raise ValueError(f"{f}: a skin is 64 x 64")
+    s = Skin(agent_id)
+    s.px = [[tuple(px) for px in row] for row in rows]
+    return s
+
+
 def main():
     n = 0
     for a in agents():
         i = a["id"]
-        s = paint(a)
+        s = painted(i) or paint(a)
         write(ASSETS / f"textures/entity/valoblock/skin_{i}.png", vi.png(s.px))
         layer = vi.png(armour_layer(s))
         write(ASSETS / f"textures/entity/equipment/humanoid/valoblock/{i}.png", layer)

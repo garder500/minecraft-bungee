@@ -1,7 +1,9 @@
 package win.vampyuyu.survival.boss;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.bukkit.Material;
@@ -13,9 +15,6 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.util.Transformation;
-import org.joml.AxisAngle4f;
-import org.joml.Vector3f;
 import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.Scheduler;
 
@@ -23,6 +22,11 @@ import win.vampyuyu.survival.core.Scheduler;
  * The custom looks of the bosses. The vanilla mob stays (it keeps the hit box, the movement and the abilities) but is
  * invisible, and an item display with the boss's model from the resource pack follows it every tick. Only our bosses
  * are touched, so the vanilla mobs of the other modes keep their look. See resource-pack/art/boss_skins.py.
+ *
+ * A boss with a rig (BossRig: its Blockbench bones and animation clips) gets one item display per bone instead, all at the
+ * mob's position; every {@code step} ticks each one gets the pose of the clip its BossAnimator picks (idle, walk, attack,
+ * hurt, an ability, phase, death), and the client interpolates between two poses. A killed boss keeps its displays in
+ * {@link #dying} until its death clip has played out.
  */
 final class BossSkinService {
     /** One boss look: the pack item model and the display scale (the model is about 2 blocks tall at scale 1). */
@@ -52,7 +56,30 @@ final class BossSkinService {
 
     private final Core core;
     private final BossManager manager;
-    private final Map<UUID, ItemDisplay> displays = new HashMap<>();
+    /** What follows one boss: its displays (one, or one per bone of its rig), the rig and its animator. */
+    private static final class Visual {
+        final List<ItemDisplay> displays = new ArrayList<>();
+        BossRig rig;
+        BossAnimator animator;
+        float scale;
+        org.bukkit.Location last;
+        long deathEnd;
+        /** The ground height of a hopping mob (slime, magma cube): its model walks, it does not leap with the mob. */
+        double groundY = Double.NaN;
+
+        boolean valid() {
+            return !displays.isEmpty() && displays.stream().allMatch(Entity::isValid);
+        }
+
+        void remove() {
+            displays.forEach(Entity::remove);
+            displays.clear();
+        }
+    }
+
+    private final Map<UUID, Visual> displays = new HashMap<>();
+    private final List<Visual> dying = new ArrayList<>();
+    private long now;
     /**
      * The boss's name and health over its model. The mob's own name tag sits at the vanilla mob's height, which is inside
      * the model (at the Colossus's ankles, mid-neck on the Leviathan): it is hidden and copied here, over the model's head.
@@ -67,14 +94,44 @@ final class BossSkinService {
 
     void start() {
         task = core.scheduler().repeating(1, 1, this::tick);
+        BossCues.listen(this::cue, this::play);
+    }
+
+    /** A cue from the fight (BossCues). The death cue moves the boss's displays to {@link #dying}. */
+    void cue(UUID boss, String name) {
+        Visual v = displays.get(boss);
+        if (v == null || v.animator == null) {
+            return;
+        }
+        if (v.animator.cue(name, now) && name.equals("death")) {
+            // the visual stays with its boss and holds the last pose of the clip; once the mob is gone (killed, or
+            // despawned) tick() moves it to dying, which keeps it until the clip has played out
+            v.deathEnd = now + v.animator.deathLeft(now) + 10;
+        }
+    }
+
+    /** Plays a clip on every active rigged boss (the /boss anim admin command); returns how many started it. */
+    int play(String name) {
+        int n = 0;
+        for (Map.Entry<UUID, Visual> e : List.copyOf(displays.entrySet())) {
+            Visual v = e.getValue();
+            if (v.animator != null && v.animator.clipFor(name) != null) {
+                cue(e.getKey(), name);
+                n++;
+            }
+        }
+        return n;
     }
 
     void stop() {
         if (task != null) {
             task.cancel();
         }
-        displays.values().forEach(Entity::remove);
+        BossCues.listen(null, null);
+        displays.values().forEach(Visual::remove);
         displays.clear();
+        dying.forEach(Visual::remove);
+        dying.clear();
         tags.values().forEach(Entity::remove);
         tags.clear();
     }
@@ -84,16 +141,20 @@ final class BossSkinService {
     }
 
     private void tick() {
+        now++;
         for (BossSession session : manager.active()) {
             LivingEntity boss = session.entity();
             Look look = LOOKS.get(session.definition().id());
             if (boss == null || !boss.isValid() || look == null) {
                 continue;
             }
-            ItemDisplay display = displays.get(boss.getUniqueId());
-            if (display == null || !display.isValid()) {
-                display = create(boss, look);
-                displays.put(boss.getUniqueId(), display);
+            Visual visual = displays.get(boss.getUniqueId());
+            if (visual == null || !visual.valid()) {
+                if (visual != null) {
+                    visual.remove();
+                }
+                visual = create(boss, look, session.definition().id());
+                displays.put(boss.getUniqueId(), visual);
                 if (look.hide()) {
                     boss.setVisibleByDefault(false);
                 } else {
@@ -106,7 +167,16 @@ final class BossSkinService {
             var at = boss.getLocation();
             at.setYaw(boss.getBodyYaw() + look.yawOffset());
             at.setPitch(0f);
-            display.teleport(at);
+            if (boss instanceof org.bukkit.entity.Slime) {
+                if (boss.isOnGround() || Double.isNaN(visual.groundY) || at.getY() < visual.groundY) {
+                    visual.groundY = at.getY();
+                }
+                at.setY(visual.groundY);   // the mob hops, the colossus on top of it stays on its feet
+            }
+            for (ItemDisplay d : visual.displays) {
+                d.teleport(at);
+            }
+            animate(visual, at);
             org.bukkit.entity.TextDisplay tag = tags.get(boss.getUniqueId());
             if (tag == null || !tag.isValid()) {
                 tag = createTag(boss);
@@ -118,6 +188,14 @@ final class BossSkinService {
             }
             tag.teleport(boss.getLocation().add(0, tagHeight(look), 0));
         }
+        dying.removeIf(v -> {
+            if (now >= v.deathEnd || !v.valid()) {
+                v.remove();
+                return true;
+            }
+            animate(v, null);
+            return false;
+        });
         tags.entrySet().removeIf(entry -> {
             Entity boss = core.getPlugin().getServer().getEntity(entry.getKey());
             if (boss == null || !boss.isValid()) {
@@ -126,14 +204,50 @@ final class BossSkinService {
             }
             return false;
         });
-        Iterator<Map.Entry<UUID, ItemDisplay>> it = displays.entrySet().iterator();
+        Iterator<Map.Entry<UUID, Visual>> it = displays.entrySet().iterator();
         while (it.hasNext()) {
             var entry = it.next();
             Entity boss = core.getPlugin().getServer().getEntity(entry.getKey());
             if (boss == null || !boss.isValid()) {
-                entry.getValue().remove();
+                Visual v = entry.getValue();
                 it.remove();
+                if (v.animator != null && v.animator.clipFor("death") != null && !v.animator.dying()) {
+                    v.animator.cue("death", now);   // gone without the kill cue (despawn, entity lost): still fall
+                    v.deathEnd = now + v.animator.deathLeft(now) + 10;
+                    dying.add(v);
+                } else if (v.animator != null && v.animator.dying()) {
+                    v.deathEnd = Math.max(v.deathEnd, now + v.animator.deathLeft(now) + 10);
+                    dying.add(v);
+                } else {
+                    v.remove();
+                }
             }
+        }
+    }
+
+    /** Every step ticks: the base clip follows the movement, each bone display gets its pose, interpolated by the client. */
+    private void animate(Visual v, org.bukkit.Location at) {
+        if (v.animator == null) {
+            return;
+        }
+        if (at != null) {
+            if (v.last != null && v.last.getWorld() == at.getWorld()) {
+                double dx = at.getX() - v.last.getX(), dz = at.getZ() - v.last.getZ();
+                v.animator.moving(dx * dx + dz * dz > 0.0016, now);   // over 0.04 block a tick
+            }
+            v.last = at.clone();
+        }
+        BossRig.Clip any = v.rig.clips.values().iterator().next();
+        int step = Math.max(1, any.step());
+        if (now % step != 0) {
+            return;
+        }
+        float[][] poses = v.animator.poses(now);
+        for (int i = 0; i < v.displays.size() && i < poses.length; i++) {
+            ItemDisplay d = v.displays.get(i);
+            d.setInterpolationDelay(0);
+            d.setInterpolationDuration(step);
+            d.setTransformation(BossRig.transform(poses[i], v.scale));
         }
     }
 
@@ -156,17 +270,32 @@ final class BossSkinService {
         });
     }
 
-    private ItemDisplay create(LivingEntity boss, Look look) {
+    private Visual create(LivingEntity boss, Look look, String bossId) {
+        Visual v = new Visual();
+        v.scale = look.scale();
+        BossRig rig = BossRig.of(bossId).orElse(null);
+        if (rig == null) {
+            v.displays.add(display(boss, look, look.model()));
+            return v;
+        }
+        v.rig = rig;
+        v.animator = new BossAnimator(rig, now);
+        for (BossRig.Bone bone : rig.bones) {
+            v.displays.add(display(boss, look, bone.model()));
+        }
+        return v;
+    }
+
+    private ItemDisplay display(LivingEntity boss, Look look, String model) {
         ItemStack stack = new ItemStack(Material.PAPER);
         ItemMeta meta = stack.getItemMeta();
-        meta.setItemModel(NamespacedKey.fromString(look.model()));
+        meta.setItemModel(NamespacedKey.fromString(model));
         stack.setItemMeta(meta);
         return boss.getWorld().spawn(boss.getLocation(), ItemDisplay.class, d -> {
             d.setItemStack(stack);
             d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE);
             // the model's centre is the display's position: lift it so its feet stand where the mob's feet are
-            d.setTransformation(new Transformation(new Vector3f(0f, 0.5f * look.scale(), 0f), new AxisAngle4f(),
-                new Vector3f(look.scale(), look.scale(), look.scale()), new AxisAngle4f()));
+            d.setTransformation(BossRig.transform(BossRig.REST, look.scale()));
             d.setTeleportDuration(2);
             d.setViewRange(4f);
             d.setBrightness(new Display.Brightness(12, 12));

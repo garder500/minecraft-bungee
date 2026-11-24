@@ -33,7 +33,7 @@ TO_PLAN, FROM_PLAN = 0xE013, 0xE014
 # add a gold frame round map 0, 1 or 2 (the voter's choice), the 1st has none. Tile k is 3 x 3 slots at column 3 * k, row 2 (VOTE_ROW), centred between the title and the bottom edge.
 VOTE_BASES = (0xE700, 0xE800, 0xE900, 0xEA00)
 VOTE_COLS, VOTE_ROWS, VOTE_ROW = 3, 3, 2
-VOTE_THUMB = 45                                 # px: the 90 px tactical plan halved
+VOTE_THUMB = 46                                 # px: the plan painted at the tile's size (52 px tile, 3 px frame)
 VOTE_REALM = {"hourfall": "d9b23c", "rootvault": "46b866", "stormbreak": "4aa3d8"}   # the Realm colour of each map's frame (= MapVoteMenu.REALM)
 VOTE_PICK = "ffe94a"
 ADVANCES = {
@@ -67,26 +67,31 @@ HUD_ID_BASE = 160     # green channel = HUD_ID_BASE + element; the blue channel 
 SPRITE_BASE, NEG_BASE = 0xE000, 0xF000
 TL, TC, TR, BL, BC, BR, CE = range(7)
 # name, anchor, x, y, w, h, stretch (the blue channel sets the width). y counts from the anchor: negative = up from the bottom.
+# v3 (2026-11-24, "the HUD is huge"): every panel repainted about 2/3 of its old size, never scaled: the plates went from 88 x 36
+# to 60 x 22, the big digits from 10 x 14 to 5 x 7 px, the small ones from 5 x 7 to 3 x 5, the ability tiles from 30 x 38 to 20 x 24.
 HUD_ELEMENTS = (
-    [("hp_plate", BL, 4, -42, 88, 36, 0), ("hp_bar", BL, 10, -21, 50, 4, 1), ("sh_bar", BL, 10, -13, 50, 3, 1)]
-    + [(f"hp{i + 1}", BL, 10 + 12 * i, -38, 11, 15, 0) for i in range(3)]
-    + [(f"sh{i + 1}", BL, 64 + 7 * i, -37, 6, 8, 0) for i in range(3)]
-    + [(f"tile{i}", BC, -64 + 32 * i, -72, 30, 38, 0) for i in range(4)]
-    + [(f"icon{i}", BC, -57 + 32 * i, -68, 16, 16, 0) for i in range(4)]
-    + [(f"pip{i}_{j}", BC, -58 + 32 * i + 7 * j, -48, 5, 3, 0) for i in range(4) for j in range(3)]
-    + [("am_plate", BR, -92, -42, 88, 36, 0)]
-    + [(f"am{i + 1}", BR, -84 + 12 * i, -38, 11, 15, 0) for i in range(2)]
-    + [(f"rs{i + 1}", BR, -52 + 7 * i, -34, 6, 8, 0) for i in range(3)]
+    [("hp_plate", BL, 4, -26, 60, 22, 0), ("hp_bar", BL, 8, -12, 34, 3, 1), ("sh_bar", BL, 8, -7, 34, 2, 1)]
+    + [(f"hp{i + 1}", BL, 8 + 7 * i, -23, 7, 9, 0) for i in range(3)]
+    + [(f"sh{i + 1}", BL, 49 + 4 * i, -23, 4, 6, 0) for i in range(3)]
+    + [(f"tile{i}", BC, -44 + 22 * i, -50, 20, 24, 0) for i in range(4)]
+    + [(f"icon{i}", BC, -42 + 22 * i, -48, 16, 16, 0) for i in range(4)]
+    + [(f"pip{i}_{j}", BC, -36 + 22 * i + 4 * j, -30, 3, 2, 0) for i in range(4) for j in range(3)]
+    + [("am_plate", BR, -64, -26, 60, 22, 0)]
+    + [(f"am{i + 1}", BR, -58 + 7 * i, -23, 7, 9, 0) for i in range(2)]
+    + [(f"rs{i + 1}", BR, -36 + 4 * i, -20, 4, 6, 0) for i in range(3)]
     + [("xh", CE, -10, -10, 21, 21, 0), ("hit", CE, -10, -10, 21, 21, 0)]
     # The Rift Seed (appended: the ids of the elements above keep their numbers). The icon sits right of the health plate and only
     # the carrier gets it; the planting bar (a track and a stretched fill) sits under the crosshair while the carrier holds.
-    + [("seed", BL, 94, -38, 16, 16, 0), ("plant_track", CE, -26, 22, 52, 7, 0), ("plant_bar", CE, -24, 24, 48, 3, 1)]
+    + [("seed", BL, 66, -24, 16, 16, 0), ("plant_track", CE, -26, 22, 52, 7, 0), ("plant_bar", CE, -24, 24, 48, 3, 1)]
 )
 HUD_COUNT = len(HUD_ELEMENTS)
-BIG, SMALL = (11, 15), (6, 8)
-TILE, ICON, PIP, PLATE, CROSS = (30, 38), (16, 16), (5, 3), (88, 36), (21, 21)
+BIG, SMALL = (7, 9), (4, 6)
+TILE, ICON, PIP, PLATE, CROSS = (20, 24), (16, 16), (3, 2), (60, 22), (21, 21)
 SEED, PLANT_TRACK = (16, 16), (52, 7)
 HEAD = 10             # inline agent head, px
+
+# Map backgrounds the pack blanks (textures/map/<name>.png, 64 x 64): the off-hand minimap shows no paper.
+HIDDEN_MAP_TEXTURES = ("map_background", "map_background_checkerboard")
 
 # Vanilla HUD sprites the pack hides: (path under textures/gui/sprites/, width, height)
 def hidden_sprites():

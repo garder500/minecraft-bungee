@@ -49,7 +49,7 @@ public final class GunState {
     return lastIndex;
   }
 
-  /** Whether the trigger is spinning the Grinder up (first {@code spinUp} seconds of a spray). */
+  /** Whether the trigger is spinning the RK-90 Thresher up (first {@code spinUp} seconds of a spray). */
   public boolean spinningUp(long now) {
     return w.spinUp() > 0 && now - sprayStart < w.spinUp() * 1000;
   }

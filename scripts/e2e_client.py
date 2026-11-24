@@ -211,7 +211,8 @@ def start_server(zip_path, sha1, plugin=False, pack_required=True):
                    MENU_PACK_SHA1_FILE=str(WORK / "pack" / "vampyuyu-menus.sha1"),
                    VALOBLOCK_PACK_SHA1_FILE=str(WORK / "pack" / "vampyuyu-valoblock.sha1"),
                    ROLE_BRIDGE_URL="http://127.0.0.1:9", ARENA_REDIS_HOST="127.0.0.1",
-                   WEREWOLF_LOG_CONSOLE="false")
+                   WEREWOLF_LOG_CONSOLE="false",
+                   WEREWOLF_ARENA=os.environ.get("E2E_SERVER_ID", "survival") + ":e2e")
     log = open(server / "console.log", "w")
     # DEBUG_PORT: JDWP for scripts/hotswap.py (class redefinition without a restart).
     debug = [f"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=127.0.0.1:{DEBUG_PORT}"] if DEBUG else []
@@ -264,6 +265,59 @@ def prepare_client(tools):
 def shot(tools, path):
     env = dict(os.environ, DISPLAY=DISPLAY)
     subprocess.run([tools["import"], "-window", "root", str(path)], env=env, check=True)
+
+
+_FFMPEG = []
+
+
+def ffmpeg_bin():
+    """An ffmpeg that can grab X11 (x11grab): $E2E_FFMPEG, the PATH, or any build in the nix store, looked up once."""
+    if not _FFMPEG:
+        import glob
+        found = None
+        for exe in [os.environ.get("E2E_FFMPEG"), shutil.which("ffmpeg")] + sorted(glob.glob("/nix/store/*ffmpeg*/bin/ffmpeg")):
+            if not exe or not os.access(exe, os.X_OK):
+                continue
+            devices = subprocess.run([exe, "-hide_banner", "-devices"], capture_output=True, text=True).stdout
+            if "x11grab" in devices:
+                found = exe
+                break
+        _FFMPEG.append(found)
+    return _FFMPEG[0]
+
+
+def client_geometry(tools):
+    """(x, y, w, h) of the game window on the Xvfb screen (the client draws 854x480 in the middle of it)."""
+    env = dict(os.environ, DISPLAY=DISPLAY)
+    out = subprocess.run([tools["xdotool"], "search", "--name", "Minecraft", "getwindowgeometry", "--shell"],
+                         capture_output=True, text=True, env=env).stdout
+    vals = dict(line.split("=", 1) for line in out.splitlines() if "=" in line)
+    try:
+        x, y, w, h = int(vals["X"]), int(vals["Y"]), int(vals["WIDTH"]), int(vals["HEIGHT"])
+        if w >= 320 and h >= 240:
+            return x, y, w - w % 2, h - h % 2
+    except (KeyError, ValueError):
+        pass
+    return 213, 120, 854, 480
+
+
+def record(tools, path, seconds, fps=30, slow=1):
+    """A short H.264 clip of the game window (x11grab on the Xvfb display), small enough to send (CRF 30).
+    slow: the caller has slowed the game down that many times (/tick rate 20/slow): the grab lasts slow x longer and the
+    clip is sped back up, so it plays at the real speed with slow x more distinct frames than the software-rendered
+    client manages in real time (about 12 a second)."""
+    exe = ffmpeg_bin()
+    if not exe:
+        say("record: no ffmpeg, skipped " + str(path))
+        return None
+    x, y, w, h = client_geometry(tools)
+    cmd = [exe, "-y", "-loglevel", "error", "-f", "x11grab", "-video_size", f"{w}x{h}", "-framerate", str(fps),
+           "-t", str(seconds * slow), "-i", f"{DISPLAY}+{x},{y}"]   # -t before -i: the length of the grab
+    if slow > 1:
+        cmd += ["-vf", f"setpts=PTS/{slow}", "-r", str(fps)]
+    cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "30", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(path)]
+    subprocess.run(cmd, check=False)
+    return path
 
 
 def brightness(tools, path):
@@ -759,6 +813,44 @@ def offline_uuid(name):
     return str(uuid.UUID(bytes=bytes(raw)))
 
 
+def worlds_scenario(ctx):
+    """/menu with the pack: the worlds on top, the Werewolf and ValoBlock cards under them. Hovers both game cards,
+    then clicks Werewolf, which joins the e2e arena (WEREWOLF_ARENA points at it for this run)."""
+    tools, env, shots, failures = (ctx[k] for k in ("tools", "env", "shots", "failures"))
+    xdo = tools["xdotool"]
+
+    def command(text):
+        subprocess.run([xdo, "key", "slash"], env=env)
+        time.sleep(.5)
+        subprocess.run([xdo, "type", "--delay", "35", text], env=env)
+        subprocess.run([xdo, "key", "Return"], env=env)
+        time.sleep(3)
+
+    # The 854x480 game window sits centred on the 1280x720 screen at GUI scale 2: the 176x222 container's top left
+    # is at screen (464, 138), slot (row r, col c) at GUI (8 + 18c, 18 + 18r).
+    def slot_xy(row, col):
+        return str(464 + 2 * (16 + 18 * col)), str(138 + 2 * (26 + 18 * row))
+
+    command("menu")
+    shot(tools, shots / "worlds-1-menu.png")
+    subprocess.run([xdo, "mousemove", *slot_xy(4, 1)], env=env)
+    time.sleep(1.5)
+    shot(tools, shots / "worlds-2-werewolf-card.png")
+    subprocess.run([xdo, "mousemove", *slot_xy(4, 6)], env=env)
+    time.sleep(1.5)
+    shot(tools, shots / "worlds-3-valoblock-card.png")
+    subprocess.run([xdo, "mousemove", *slot_xy(4, 1), "click", "1"], env=env)
+    time.sleep(6)
+    shot(tools, shots / "worlds-4-joined.png")
+    state = api("GET", "/arenas")
+    joined = [p["name"] for a in state["arenas"] if a["config"]["id"] == "e2e" for p in a["players"]]
+    if "E2EBot" not in joined:
+        failures.append(f"clicking the Werewolf card did not put the bot in the e2e arena (players: {joined})")
+    if "Unhandled exception" in (ctx["server"] / "console.log").read_text(errors="replace"):
+        failures.append("a command threw on the server: see .e2e/server/console.log")
+    say("worlds: menu, both game cards and the Werewolf join checked")
+
+
 def staffchat_scenario(ctx):
     """The private staff<->player channel through the network plugin's management API, with a real client:
     staff write to the bot, the bot answers by typing in the chat box, and /exitchat leaves."""
@@ -1138,6 +1230,31 @@ def valoblock_extras(ctx, rcon, map_id, failures):
     time.sleep(3)
     shot(tools, shots / "vb-13-hud-combat.png")
     say("where: " + vb(rcon, "debug where E2EBot"))
+    if os.environ.get("E2E_VB_GALLERY"):
+        # Every gun and the knife held (its item model, no plugin state): first person, then third person from behind
+        # and from the front (F5 twice), hotbar slot 1 (empty in a match; slot 6 is rewritten by the abilities). E2E_VB_GALLERY=1 turns it on; E2E_VB_GALLERY=pip,gnat picks some.
+        # A visual tool: waiting for each combat phase can eat whole rounds, so with many weapons the later respawn check may fail.
+        data = json.loads((ROOT / "arena-plugin/src/main/resources/valoblock/weapons.json").read_text())["weapons"]
+        pick = os.environ["E2E_VB_GALLERY"].split(",")
+        for w in data:
+            if w["texture"] == "ward" or (pick != ["1"] and w["id"] not in pick):
+                continue
+            t0 = time.time()
+            while "Phase COMBAT" not in vb(rcon, "status") and time.time() - t0 < 60:
+                time.sleep(1)  # the buy phase opens the Armory over the view
+            tp(sx, 65, sz, 180, 0)
+            rcon.command(f'item replace entity E2EBot hotbar.0 with {w["base"].lower() if ":" in w["base"] else "minecraft:" + w["base"].lower()}[item_model="vampyuyu:valoblock/{w["id"]}"]')
+            key("key", "1")
+            time.sleep(1.5)
+            shot(tools, shots / f"vb-40-{w['id']}-first.png")
+            key("key", "F5")
+            time.sleep(1.2)
+            shot(tools, shots / f"vb-41-{w['id']}-back.png")
+            key("key", "F5")
+            time.sleep(1.2)
+            shot(tools, shots / f"vb-42-{w['id']}-front.png")
+            key("key", "F5")
+            time.sleep(0.5)
     # Overview in combat: spectator, high above the south half, looking north.
     size = 150 if map_id == "stormbreak" else 120
     m = size / 2
@@ -2825,33 +2942,98 @@ def bosses_scenario(ctx):
     cx, y, cz = math.floor(pos[0]) + 8, math.floor(pos[1]), math.floor(pos[2])
     as_bot(f"time set day")
     as_bot(f"fill {cx-45} {y-1} {cz-45} {cx+45} {y-1} {cz+45} stone")
-    as_bot(f"fill {cx-45} {y} {cz-45} {cx+45} {y+30} {cz+45} air")
-    # a pool for the sea boss
-    as_bot(f"fill {cx+24} {y-12} {cz-8} {cx+36} {y-1} {cz+8} water")
-    for boss, back, pitch, dx in (("voidwyrm", 26, 10, 0), ("magma_warden", 12, 14, 0), ("frost_revenant", 12, 14, 0),
-                                  ("sylvan_matriarch", 9, 14, 0), ("abyssal_leviathan", 14, 14, 30), ("abyssal_leviathan", 16, 14, 0),
-                                  ("crypt_lord", 14, 14, 0)):
+    for yy in range(y, y + 31):  # one layer at a time: a fill is capped at 32768 blocks, the whole volume failed
+        as_bot(f"fill {cx-45} {yy} {cz-45} {cx+45} {yy} {cz+45} air")
+    as_bot(f"kill @e[type=!player,distance=..80]")
+    rcon.command("gamerule send_command_feedback false")
+    # a creative camera standing on a barrier block: a spectator would see the invisible mob as a grey ghost
+    rcon.command("gamemode creative E2EBot")
+    subprocess.run([xdo, "key", "F1"], env=env)  # no HUD, no chat: the model fills the frame
+    time.sleep(1)
+    import re as _re
+    strip = lambda t: _re.sub(r"\u00a7x(\u00a7[0-9a-f]){6}|\u00a7.", "", t).strip()  # noqa: E731
+    # boss -> plugin scale (BossSkinService.LOOKS): the model is 32 units high at most, 16 units = scale blocks
+    only = [b for b in os.environ.get("E2E_BOSSES", "").split(",") if b]   # e.g. E2E_BOSSES=magma_warden
+    for boss, scale in (("magma_warden", 2.4), ("frost_revenant", 3.6), ("sylvan_matriarch", 2.8),
+                        ("abyssal_leviathan", 2.8), ("crypt_lord", 2.4), ("voidwyrm", 4.2)):
+        if only and boss not in only:
+            continue
         rcon.command("boss kill all")
-        as_bot(f"tp @s {cx+dx+0.5} {y} {cz+0.5} 0 0")
+        as_bot(f"tp @s {cx+0.5} {y} {cz+8.5} 180 0")
         time.sleep(1.5)
-        out = rcon.command(f"boss spawn {boss} {cx+dx+0.5} {y} {cz+0.5} sb_world")  # a console proxy has no location
-        import re as _re
-        clean = _re.sub(r"\u00a7x(\u00a7[0-9a-f]){6}|\u00a7.", "", out).strip()
-        say(f"bosses: spawn {boss}: " + clean[:160])
-        say("bosses: active: " + _re.sub(r"\u00a7x(\u00a7[0-9a-f]){6}|\u00a7.", "", rcon.command("boss active")).strip()[:160].replace("\n", " "))
+        say(f"bosses: spawn {boss}: " + strip(rcon.command(f"boss spawn {boss} {cx+0.5} {y} {cz+0.5} sb_world"))[:160])
         time.sleep(1.5)
-        as_bot(f"tp @s {cx+dx+0.5} {y+2} {cz+0.5+back} 180 {pitch}")
-        time.sleep(4)
-        say(f"bosses: {boss} displays near: " + as_bot("execute if entity @e[type=minecraft:item_display,distance=..80]").strip()
-            + " pos " + as_bot("data get entity @e[type=minecraft:item_display,sort=nearest,limit=1,distance=..80] Pos").strip()[-60:])
-        shot(tools, shots / f"boss-{boss}-{dx}.png")
-        # closer from the front, then from behind: the weak spots and the back details (cauldron, antlers, sacs, sail)
-        as_bot(f"tp @s {cx+dx+0.5} {y+3} {cz+0.5+back*0.55} 180 {pitch * 0.6}")
+        # freeze it on the spot, facing south (+z), on the ground: the shots must show the model, not a moving mob
+        mob = f"@e[type=!player,type=!item_display,type=!text_display,type=!item,distance=..12,sort=nearest,limit=1]"
+        as_bot(f"execute as {mob} run data merge entity @s {{NoAI:1b,NoGravity:0b}}")
+        as_bot(f"tp {mob} {cx+0.5} {y} {cz+0.5} 0 0")
         time.sleep(2)
-        shot(tools, shots / f"boss-{boss}-{dx}-close.png")
-        as_bot(f"tp @s {cx+dx+0.5} {y+3} {cz+0.5-back*0.55} 0 {pitch * 0.6}")
-        time.sleep(2)
-        shot(tools, shots / f"boss-{boss}-{dx}-back.png")
+        height = 2 * scale                       # blocks
+        dist = max(8.0, 2.3 * height)
+        eye = y + height / 2 - 1.62
+        say(f"bosses: {boss} mob at " + as_bot(f"data get entity {mob} Pos").strip()[-60:]
+            + " | display at " + as_bot("data get entity @e[type=minecraft:item_display,sort=nearest,limit=1,distance=..40] Pos").strip()[-60:])
+        for view, ddx, ddz, yaw in (("front", 0, 1, 180), ("three-quarter", 0.72, 0.72, 135), ("side", 1, 0, 90), ("back", 0, -1, 0)):
+            bx, bz = math.floor(cx + 0.5 + ddx * dist), math.floor(cz + 0.5 + ddz * dist)
+            as_bot(f"setblock {bx} {math.floor(eye) - 1} {bz} barrier")
+            as_bot(f"tp @s {bx + 0.5} {math.floor(eye)} {bz + 0.5} {yaw} 0")
+            time.sleep(2.5)
+            shot(tools, shots / f"boss-{boss}-{view}.png")
+        video = os.environ.get("E2E_BOSS_VIDEO", "")
+        rig_file = ROOT / "survival-plugin/src/main/resources/boss/rigs" / f"{boss}.json"
+        if video and (video == "fps" or rig_file.exists()):
+            # one short clip per animation of the boss's rig (/boss anim), from the front three-quarter view, then one
+            # with its AI back on (the clips the fight picks by itself). E2E_BOSS_VIDEO=fps: 5 s of the frozen boss.
+            out_dir = ROOT / ".e2e" / "boss-videos"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            bx, bz = math.floor(cx + 0.5 + 0.6 * dist), math.floor(cz + 0.5 + 0.8 * dist)
+            as_bot(f"setblock {bx} {math.floor(eye) - 1} {bz} barrier")
+            as_bot(f"tp @s {bx + 0.5} {math.floor(eye)} {bz + 0.5} {math.degrees(math.atan2(0.6, -0.8)):.1f} 0")  # facing the boss
+            time.sleep(1.5)
+            if video == "fps":
+                record(tools, out_dir / f"{boss}-probe.mp4", 5)
+            else:
+                clips = json.loads(rig_file.read_text())["animations"]
+                order = sorted(clips)
+                slow = int(os.environ.get("E2E_VIDEO_SLOW", "4"))   # the game runs 4x slower while recording
+
+                def fresh_boss():
+                    # a new frozen boss for every clip: a session with no targetable player despawns after its idle
+                    # time (60 s for the Colossus), and the slowed recordings add up past it
+                    rcon.command("tick rate 20")
+                    rcon.command("boss kill all")
+                    time.sleep(1)
+                    rcon.command(f"boss spawn {boss} {cx+0.5} {y} {cz+0.5} sb_world")
+                    time.sleep(1.5)
+                    as_bot(f"execute as {mob} run data merge entity @s {{NoAI:1b}}")
+                    as_bot(f"tp {mob} {cx+0.5} {y} {cz+0.5} 0 0")
+                    time.sleep(1.5)
+                    rcon.command(f"tick rate {20 / slow:g}")
+                    time.sleep(1)
+
+                for clip in order:
+                    fresh_boss()
+                    rcon.command(f"boss anim {clip}")
+                    record(tools, out_dir / f"{boss}-{clip}.mp4", min(8, clips[clip]["ticks"] / 20 + (1.5 if clip == "death" else 1.2)), slow=slow)
+                rcon.command("tick rate 20")
+                # the fight as it plays by itself: AI on, a player it can target (adventure, unhurt) in front of it
+                rcon.command("boss kill all")
+                time.sleep(1)
+                rcon.command(f"boss spawn {boss} {cx+0.5} {y} {cz+0.5} sb_world")
+                time.sleep(1.5)
+                rcon.command("effect give E2EBot minecraft:resistance infinite 255 true")
+                rcon.command("effect give E2EBot minecraft:fire_resistance infinite 0 true")
+                rcon.command("effect give E2EBot minecraft:regeneration infinite 255 true")
+                rcon.command("gamemode adventure E2EBot")
+                rcon.command(f"tick rate {20 / slow:g}")
+                record(tools, out_dir / f"{boss}-live.mp4", 8, slow=slow)
+                rcon.command("tick rate 20")
+                rcon.command("gamemode creative E2EBot")
+                rcon.command("effect clear E2EBot")
+            say(f"bosses: videos of {boss} in {out_dir}")
+    subprocess.run([xdo, "key", "F1"], env=env)
+    rcon.command("gamerule send_command_feedback true")
+    rcon.command("gamemode creative E2EBot")
     # power scaling: one fully charged Bronze Cleaver hit (tier 1, damage 40) on a still dummy with a big health pool
     # (the ore swords used to deal vanilla damage, about 6). A dummy, because a boss model moves and is hard to aim at.
     import re as _re
@@ -3941,7 +4123,7 @@ def realms_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -3974,7 +4156,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -4005,7 +4187,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -4038,6 +4220,8 @@ def main():
             showcase_scenario(ctx)
         elif args.scenario == "staffchat":
             staffchat_scenario(ctx)
+        elif args.scenario == "worlds":
+            worlds_scenario(ctx)
         elif args.scenario == "back":
             back_scenario(ctx)
         elif args.scenario == "skyblock":

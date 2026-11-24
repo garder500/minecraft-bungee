@@ -165,11 +165,11 @@ public final class TacMapService implements Listener {
       }
     markers(inv, p, s, zoom);
     // controls
-    inv.setItem(TacGrid.BACK, zoom ? cell("tac_dim", "back", new AgentText.Line("Back to the whole map", AgentText.GOLD))
+    inv.setItem(TacGrid.BACK, zoom ? cell("tac_back", "back", new AgentText.Line("Back to the whole map", AgentText.GOLD))
         : s.spots.isEmpty() ? null
-        : cell("tac_dim", "back", new AgentText.Line("Undo the last " + TacTargeting.of(s.ability.id()).noun(), AgentText.GOLD)));
+        : cell("tac_back", "back", new AgentText.Line("Undo the last " + TacTargeting.of(s.ability.id()).noun(), AgentText.GOLD)));
     if (kit != null) inv.setItem(TacGrid.INFO, AgentItems.ability(kit.agent(), s.ability, kit));
-    inv.setItem(TacGrid.CANCEL, cell("tac_dim", "cancel", new AgentText.Line("Cancel", AgentText.RED), new AgentText.Line("Esc does the same: no charge is spent.", AgentText.GRAY)));
+    inv.setItem(TacGrid.CANCEL, cell("tac_cancel", "cancel", new AgentText.Line("Cancel", AgentText.RED), new AgentText.Line("Esc does the same: no charge is spent.", AgentText.GRAY)));
   }
 
   /** Teammates (heads, on the plan and in the left column), the player's own placed smokes and the spots picked so far. */

@@ -40,6 +40,54 @@ public class WerewolfMenusTest {
     return menu.stream().filter(e -> e.raw() == raw).findFirst().orElse(null);
   }
 
+  /**
+   * The backgrounds paint no word (they used to say YOUR VOTE, LEADING, YOUR PREY...): every plaque
+   * holds an item from the first second of the turn, named in the viewer's language.
+   */
+  @Test
+  public void everyPlaqueHoldsANamedItemBeforeAnythingIsChosenInEveryLanguage() {
+    var g = game(Map.of("WEREWOLF", 2, "SEER", 1, "WITCH", 1, "GUARD", 1, "CUPID", 1, "HUNTER", 1));
+    Map<String, int[]> plaques = new LinkedHashMap<>();
+    plaques.put("CUPID", new int[] {1, 2, 3, 7});
+    plaques.put("GUARD", new int[] {1, 6});
+    plaques.put("SEER", new int[] {1});
+    plaques.put("NIGHT", new int[] {1, 6});
+    plaques.put("WITCH", new int[] {1, 4, 7});
+    plaques.put("DAY_VOTE", new int[] {1, 4, 7});
+    Map<String, String> actor =
+        Map.of("NIGHT", "WEREWOLF", "DAY_VOTE", "VILLAGER", "SEER", "SEER", "WITCH", "WITCH",
+            "GUARD", "GUARD", "CUPID", "CUPID");
+    for (var e : plaques.entrySet()) {
+      phase(g, e.getKey());
+      UUID viewer = role(g, actor.get(e.getKey()));
+      for (var lang : win.vampyuyu.arena.ArenaLang.Lang.values()) {
+        var menu = WerewolfMenus.menu(g, viewer, names(), 30, true, lang);
+        for (int col : e.getValue()) {
+          var item = at(menu, WerewolfMenus.box(col));
+          assertNotNull(e.getKey() + " plaque column " + col, item);
+          String name = item.lines().getFirst().text();
+          assertFalse(e.getKey() + " column " + col + " has no name", name.isBlank());
+          assertFalse(lang + " " + name + " is a raw key", name.startsWith("werewolf.menu."));
+          assertTrue(e.getKey() + " column " + col + " has no tooltip", item.lines().size() >= 2);
+        }
+        for (var entry : menu)
+          for (var line : entry.lines())
+            assertFalse(lang + " shows a raw key: " + line.text(), line.text().contains("werewolf.menu."));
+      }
+    }
+    var fr = WerewolfMenus.menu(g, role(g, "VILLAGER"), names(), 30, true, win.vampyuyu.arena.ArenaLang.Lang.FR);
+    assertEquals("Ton vote", at(fr, WerewolfMenus.box(1)).lines().getFirst().text());
+    assertNull("a placeholder is not a button", at(fr, WerewolfMenus.box(1)).click());
+    assertEquals("Passer le vote", at(fr, WerewolfMenus.box(7)).lines().getFirst().text());
+    assertEquals("Vote du village", WerewolfMenus.Kind.VOTE.title(win.vampyuyu.arena.ArenaLang.Lang.FR));
+    assertEquals("Dorfabstimmung", WerewolfMenus.Kind.VOTE.title(win.vampyuyu.arena.ArenaLang.Lang.DE));
+    assertEquals("Village vote", WerewolfMenus.Kind.VOTE.title(win.vampyuyu.arena.ArenaLang.Lang.EN));
+    // once a choice is made the plaque shows it instead of the placeholder
+    UUID voter = role(g, "VILLAGER"), other = ids().stream().filter(p -> !p.equals(voter) && g.alive().contains(p)).findFirst().orElseThrow();
+    g.select(voter, other);
+    assertEquals(other, at(menu(g, voter), WerewolfMenus.box(1)).head());
+  }
+
   @Test
   public void headsSpreadEvenlyOnTheRingAndNeverCoverTheEmblemUnderNineteen() {
     Set<Integer> ring = new HashSet<>();

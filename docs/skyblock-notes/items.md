@@ -1,7 +1,7 @@
 # Items feature (`items`)
 
 Package `win.vampyuyu.survival.items`, content in the SQLite content database (domain `items`: `db/seed/items.sql`, `V013__items`, `V014__elements`), implements `StatsApi`, profile sections `items` (reserved),
-`pets`, `accessories`. Pack art: `resource-pack/art/items_icons.py` (159 deterministic 16x16 icons: 151 registered items plus 8 pet species models).
+`pets`, `accessories`. Pack art: `resource-pack/art/items_icons.py` (deterministic icons, 151 registered items plus 8 pet species models: the weapons and tools are still 16x16, the class armour, accessories, pets and misc items are painted 32x32 in `armor32.py`, `trinkets32.py`, `creatures32.py` and `goods32.py` with `paint32.py`).
 
 ## What players get
 

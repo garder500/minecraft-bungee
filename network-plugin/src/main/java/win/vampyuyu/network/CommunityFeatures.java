@@ -111,6 +111,16 @@ final class CommunityFeatures implements Listener {
     }
   }
 
+  /**
+   * A plain-text label in the player's language (lang/*.yml), with {@code <name>} placeholders given as
+   * name/value pairs; the English text when the plugin has no translations (unit tests).
+   */
+  private String word(Player p, String key, String english, String... pairs) {
+    var i18n = plugin instanceof NetworkDisplay display ? display.i18n() : null;
+    String text = i18n == null ? english : i18n.translations().raw(i18n.of(p), key);
+    return win.vampyuyu.network.i18n.Translations.fill(text, pairs);
+  }
+
   static ItemStack item(Material mat, String title, String... lore) {
     ItemStack item = new ItemStack(mat);
     var meta = item.getItemMeta();
@@ -382,23 +392,27 @@ final class CommunityFeatures implements Listener {
           Material.BARRIER,
           "Delete",
           () -> {
-            Menu confirm = new Menu(p, Kind.CONFIRM, "Delete " + name);
+            // The confirmation background paints no word: the title and the buttons say it all.
+            String delete = word(p, "confirm.delete_warp", "Delete <name>", "name", name);
+            Menu confirm = new Menu(p, Kind.CONFIRM, delete);
             confirm.area(
                 new int[] {23, 24, 25},
                 Material.RED_WOOL,
                 "trash",
-                "Delete " + name,
+                delete,
                 () -> {
                   warps.edit(
                       name, p.getUniqueId(), p.hasPermission("vampyuyu.warp.admin"), "", true);
                   listing(p, 0);
-                });
+                },
+                word(p, "confirm.warning", "This cannot be undone."));
             confirm.area(
                 new int[] {19, 20, 21},
                 Material.ARROW,
                 "back",
-                "Cancel",
-                () -> details(p, name, page));
+                word(p, "confirm.cancel", "Cancel"),
+                () -> details(p, name, page),
+                word(p, "confirm.cancel_info", "Go back, nothing changes"));
             show(p, confirm);
           });
     }

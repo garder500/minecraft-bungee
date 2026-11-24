@@ -6,8 +6,8 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import skyblock_icon  # noqa: E402
 
-# sha256 of the 16x16 PNG; change it together with the drawing, on purpose.
-EXPECTED_SHA256 = "bc5cec64b8a2c507aa000434ca55acb50d2b875a0530c37ee011df0c6070c9fb"
+# sha256 of the 32x32 PNG; change it together with the drawing, on purpose.
+EXPECTED_SHA256 = "e9fd63aa13925f83b3f2fe7a8b58201a5dfce97df3eb568a7adf3d46bd3d982a"
 
 
 class SkyblockIconTest(unittest.TestCase):

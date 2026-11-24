@@ -75,12 +75,44 @@ public class MenuPackTest {
     @Test
     public void everyPaintedSlotBelongsToExactlyOneCard() {
         int cards = 0;
-        for (int slot = 0; slot < 27; slot++) {
-            if (WorldSelector.destination(true, slot) != null) cards++;
+        int games = 0;
+        for (int slot = 0; slot < 54; slot++) {
+            boolean world = WorldSelector.destination(true, slot) != null;
+            boolean game = WorldSelector.game(true, slot) != null;
+            assertFalse("slot " + slot + " is both a world and a game", world && game);
+            if (world) cards++;
+            if (game) games++;
         }
         assertEquals(9 + 9 + 6 + 3, cards);
+        assertEquals(12 + 12, games);
         assertNull(WorldSelector.destination(true, -1));
-        assertNull(WorldSelector.destination(true, 27));
+        assertNull(WorldSelector.game(true, -1));
+        assertNull("column 4 between the game cards is decoration", WorldSelector.game(true, 40));
+        assertNull(WorldSelector.game(true, 54));
+    }
+
+    @Test
+    public void theGameCardsRouteToTheirGame() {
+        assertEquals(WorldSelector.Game.WEREWOLF, WorldSelector.game(true, 27));
+        assertEquals(WorldSelector.Game.WEREWOLF, WorldSelector.game(true, 48));
+        assertEquals(WorldSelector.Game.VALOBLOCK, WorldSelector.game(true, 32));
+        assertEquals(WorldSelector.Game.VALOBLOCK, WorldSelector.game(true, 53));
+        assertEquals(WorldSelector.Game.WEREWOLF, WorldSelector.game(false, 29));
+        assertEquals(WorldSelector.Game.VALOBLOCK, WorldSelector.game(false, 33));
+        assertNull(WorldSelector.game(false, 27));
+        assertEquals(WorldSelector.Game.WEREWOLF, WorldSelector.Game.parse("WereWolf"));
+        assertEquals(WorldSelector.Game.VALOBLOCK, WorldSelector.Game.parse("valoblock"));
+        assertNull(WorldSelector.Game.parse("creative"));
+    }
+
+    @Test
+    public void aGameArenaIsAServerAndAnIdOrTheDefault() {
+        assertEquals("creative:werewolf", WorldSelector.Game.WEREWOLF.arena());
+        assertEquals("creative:valoblock", WorldSelector.Game.VALOBLOCK.arena());
+        assertEquals("lobby:ww-2", WorldSelector.Game.arena(" lobby:ww-2 ", "creative:werewolf"));
+        assertEquals("creative:werewolf", WorldSelector.Game.arena(null, "creative:werewolf"));
+        assertEquals("creative:werewolf", WorldSelector.Game.arena("skyblock:ww", "creative:werewolf"));
+        assertEquals("creative:werewolf", WorldSelector.Game.arena("lobby:ww; op me", "creative:werewolf"));
     }
 
     @Test

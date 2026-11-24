@@ -20,6 +20,7 @@ import win.vampyuyu.werewolf.WerewolfMenus;
 import win.vampyuyu.werewolf.WerewolfOptions;
 import win.vampyuyu.werewolf.WerewolfSession;
 import win.vampyuyu.werewolf.hud.CustomHud;
+import win.vampyuyu.werewolf.hud.HudLang;
 import win.vampyuyu.werewolf.hud.WerewolfHud;
 
 /** Entity-local one-shot sounds and guarded presentation tasks. Never broadcasts world sounds. */
@@ -599,7 +600,8 @@ public final class WerewolfAmbience {
           bar.append(
               plugin.werewolf.customHud.render(
                   CustomHud.of(game, me, seconds, s.players.size(), now >= WerewolfSession.of(s).cardsTurnAt),
-                  CustomHud.mode(plugin.hudSize(p))));
+                  CustomHud.mode(plugin.hudSize(p)),
+                  HudLang.of(p)));
     }
     return bar;
   }

@@ -7,3 +7,25 @@ lang:
   unknown: "<red>Langue inconnue <white><input><red>. Disponibles : <white><options><red>."
   set: "<green>Langue réglée sur <white><language><green>."
   auto: "<green>Ta langue suit maintenant ton client Minecraft (<white><language><green>)."
+worlds:
+  werewolf:
+    name: "<#f08a80><b>LOUP-GAROU"
+    tagline: "<#f5e9cf>Qui chasse cette nuit ?"
+    lore1: "<#c5a69b>Un village, des rôles cachés et un vote chaque jour :"
+    lore2: "<#c5a69b>trouve les loups avant qu'ils te trouvent."
+    players: "<#c5a69b>4 à 20 joueurs · un hôte lance la partie"
+  valoblock:
+    name: "<#7fe8ff><b>VALOBLOCK"
+    tagline: "<#f5e9cf>Plante la Graine de Faille."
+    lore1: "<#c5a69b>Deux équipes, des agents et leurs capacités :"
+    lore2: "<#c5a69b>plante la Graine sur un site, ou empêche-le."
+    players: "<#c5a69b>Jusqu'à 10 joueurs · un hôte lance la partie"
+  games:
+    click: "<#e9d99b>Clique pour rejoindre la salle d'attente →"
+    unavailable: "<#d58b8e>Les jeux ne sont pas accessibles depuis ce monde. Retourne au lobby avec /menu lobby."
+# La fenêtre de confirmation (suppression d'un warp) : aucun mot n'est peint, le titre et ces infobulles disent tout.
+confirm:
+  delete_warp: "Supprimer <name>"
+  warning: "Cette action est irréversible."
+  cancel: "Annuler"
+  cancel_info: "Revenir en arrière, rien ne change"

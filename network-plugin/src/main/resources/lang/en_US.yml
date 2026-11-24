@@ -9,3 +9,27 @@ lang:
   unknown: "<red>Unknown language <white><input><red>. Available: <white><options><red>."
   set: "<green>Language set to <white><language><green>."
   auto: "<green>Your language now follows your Minecraft client (<white><language><green>)."
+# The game cards of the Worlds menu (/menu, WorldSelector.Menu.gameCard): one key per tooltip line.
+worlds:
+  werewolf:
+    name: "<#f08a80><b>WEREWOLF"
+    tagline: "<#f5e9cf>Who hunts tonight?"
+    lore1: "<#c5a69b>A village, hidden roles and a vote each day:"
+    lore2: "<#c5a69b>find the wolves before they find you."
+    players: "<#c5a69b>4 to 20 players · a host starts the game"
+  valoblock:
+    name: "<#7fe8ff><b>VALOBLOCK"
+    tagline: "<#f5e9cf>Plant the Rift Seed."
+    lore1: "<#c5a69b>Two teams, agents and their abilities:"
+    lore2: "<#c5a69b>plant the Seed on a site, or stop it."
+    players: "<#c5a69b>Up to 10 players · a host starts the game"
+  games:
+    click: "<#e9d99b>Click to join the waiting room →"
+    unavailable: "<#d58b8e>Games cannot be reached from this world. Go back to the lobby with /menu lobby."
+# The confirmation window (CommunityFeatures: deleting a warp). Its background paints no word, so the title and
+# these button names and tooltips say everything. Plain text: the menu colours it.
+confirm:
+  delete_warp: "Delete <name>"
+  warning: "This cannot be undone."
+  cancel: "Cancel"
+  cancel_info: "Go back, nothing changes"

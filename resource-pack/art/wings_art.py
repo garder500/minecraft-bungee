@@ -12,8 +12,9 @@ Writes, under resource-pack/pack/assets/vampyuyu/:
   items/wings/*.json, models/item/wings/*.json        item definitions (item model vampyuyu:wings/<name>)
 
 Worn look (the real 3D model, shown by the plugin as an ItemDisplay on the wearer's back):
-  textures/item/wings/worn_tier1..5.png               16x16 feather strips (one 2 px column pair per feather)
-  models/item/wings/worn_tierN_<folded|spread>_<left|right>.json   one 3D wing per model (two displays), pivot = shoulder root
+  textures/item/wings/worn_tier1..5.png, worn_spread_tier1..5.png   the Blockbench palette textures, byte for byte
+  models/item/wings/worn_tierN_<folded|spread>_<left|right>.json   one 3D wing per model (two displays), pivot = shoulder root,
+      converted from resource-pack/art/blockbench/armor/wings_tierN_<state>.bbmodel (the right wing; left = mirror)
   items/wings/worn_tierN_<state>_<side>.json   item definitions (item model vampyuyu:wings/worn_tierN_<state>_<side>)
 The elytra equipment layer is a fully transparent texture: the vanilla geometry never shows, flight is untouched.
 Model space: the pivot (8, 8, 8) is the middle of the shoulder blades, +x = the wing side, the wing plane is
@@ -219,193 +220,30 @@ def icon_core(tier):
     return {k: v for k, v in px.items() if 0 <= k[0] < 16 and 0 <= k[1] < 16}
 
 
-# ---- worn 3D model ----------------------------------------------------------------------------------------
-FEATHERS = 6
-# per feather: (length in px, angle from straight down in degrees, spread / folded). 90 = horizontal.
-# Spread never goes above the horizontal (angle <= 90) so no feather ever rises above the shoulder plane.
-SPREAD_ANGLES = (90, 80, 68, 56, 44, 32)
-FOLDED_ANGLES = (22, 17, 12, 8, 4, 0)
-LENGTHS_SPREAD = (14, 18, 19, 18, 16, 13)
-LENGTHS_FOLDED = (14, 17, 19, 18, 16, 13)
-FEATHER_W = 3.0
-FEATHER_T = 0.6
-ROOT_X = 10.0   # the wing root sits 2 px beside the spine
+# ---- worn 3D model: Blockbench sources ------------------------------------------------------------------------
+# Each worn wing is modelled in Blockbench: resource-pack/art/blockbench/armor/wings_tier<N>_<folded|spread>.bbmodel
+# holds the RIGHT wing (it reaches toward model +x, the wearer's right) with its half of the harness plate; the left
+# wing is its mirror image across x = 8 (bbmodel.Source.java(mirror_x=True)). Pivot (8, 8, 8) = the shoulder root,
+# y up, feathers behind the body on +z. The plugin gives each spread wing its dihedral, sweep and flap about that root.
+SOURCES = ART / "blockbench" / "armor"
 # Envelope (blocks, relative to the shoulder pivot, x outward, y up, behind = +): the plugin's WingsMath.ENVELOPE
-# must contain every vertex; the generator asserts it.
+# must contain every vertex; the converter asserts it.
 ENVELOPE = {"folded": (0.60, -1.25, 0.20, 0.0, 0.14), "spread": (1.32, -1.20, 0.20, 0.0, 0.50)}
 # (max |x|, min y, max y, min behind, max behind)
 
 
-def worn_texture(tier):
-    """16x16: feather k is the 2 px column pair x=2k..2k+1, light at the root down to the glowing tip."""
-    light, mid, dark, outline, glow = TIERS[tier]
-    px = {}
-    for k in range(FEATHERS):
-        for y in range(16):
-            t = y / 15.0
-            c = mix(light, mid, t * 1.5) if t < 0.66 else mix(mid, dark, (t - 0.66) / 0.34)
-            if y >= 14:
-                c = mix(c, glow, 0.85)
-            if y == 0:
-                c = mix(dark, outline, 0.3)
-            for x in (2 * k, 2 * k + 1):
-                col = mix(c, outline, 0.5) if x == 2 * k + 1 else c  # one darker rib per feather
-                px[(x, y)] = col + (255,)
-    px[(14, 0)] = outline + (255,)   # edge pixel for the thin sides
-    px[(14, 1)] = outline + (255,)
-    px[(15, 0)] = glow + (255,)      # the Realm gem on the back plate
-    px[(15, 1)] = mix(glow, TIERS[tier][0], 0.5) + (255,)
-    return px
-
-
-def _corners(x0, x1, y0, y1, ox, oy, theta):
-    import math
-    c, s_ = math.cos(math.radians(theta)), math.sin(math.radians(theta))
-    out = []
-    for x in (x0, x1):
-        for y in (y0, y1):
-            dx, dy = x - ox, y - oy
-            out.append((ox + dx * c - dy * s_, oy + dx * s_ + dy * c))
-    return out
-
-
 def worn_model(tier, state, side):
-    """One wing (side +1 extends toward model +x, -1 toward model -x) as feather boxes plus its half of the back plate.
-    Returns (model dict, vertices in px relative to the pivot)."""
-    angles = SPREAD_ANGLES if state == "spread" else FOLDED_ANGLES
-    lengths = LENGTHS_SPREAD if state == "spread" else LENGTHS_FOLDED
-    elements, verts = [], []
-    z0 = 8.0
-    for side in (side,):
-        for k, (a, ln) in enumerate(zip(angles, lengths)):
-            z = z0 + 0.2 + (k % 2) * FEATHER_T  # alternate layers: no z-fighting between neighbours
-            ry = 8.0 + 0.0
-            if a >= 67.5:                      # horizontal base box, tilted by a - 90
-                base = (ROOT_X, ROOT_X + ln, ry - FEATHER_W / 2, ry + FEATHER_W / 2)
-                theta = a - 90.0
-                rot_face = 90
-            else:                              # vertical base box (hangs down), tilted outward by a
-                base = (ROOT_X - FEATHER_W / 2, ROOT_X + FEATHER_W / 2, ry - ln, ry)
-                theta = float(a)
-                rot_face = 0
-            x0, x1, y0, y1 = base
-            # rotation is about the root (ROOT_X, ry)
-            if side == -1:                     # mirror x about the pivot x = 8
-                x0, x1 = 16 - x1, 16 - x0
-                ox, th = 16 - ROOT_X, -theta
-            else:
-                ox, th = ROOT_X, theta
-            u = (2 * k, 0, 2 * k + 2, 16)
-            face = {"uv": list(u), "texture": "#f", "rotation": rot_face}
-            side_face = {"uv": [14, 0, 15, 2], "texture": "#f"}
-            el = {"from": [x0, y0, z], "to": [x1, y1, z + FEATHER_T],
-                  "faces": {"north": dict(face), "south": dict(face), "up": dict(side_face), "down": dict(side_face),
-                            "east": dict(side_face), "west": dict(side_face)}}
-            if abs(th) > 1e-6:
-                el["rotation"] = {"angle": round(th, 3), "axis": "z", "origin": [ox, ry, z]}
-            elements.append(el)
-            for (vx, vy) in _corners(x0, x1, y0, y1, ox, ry, th):
-                for vz in (z, z + FEATHER_T):
-                    verts.append((vx - 8, vy - 8, vz - 8))
-    px0, px1 = (8.0, 10.5) if side == 1 else (5.5, 8.0)
-    plate = {"from": [px0, 3.0, z0], "to": [px1, 10.0, z0 + 1.0],
-             "faces": {f: {"uv": [14, 0, 15, 1], "texture": "#f"} for f in ("north", "south", "up", "down", "east", "west")}}
-    plate["faces"]["south"] = {"uv": [15, 0, 16, 2], "texture": "#f"}
-    elements.append(plate)
-    for vx in (px0, px1):
-        for vy in (3.0, 10.0):
-            for vz in (z0, z0 + 1.0):
-                verts.append((vx - 8, vy - 8, vz - 8))
-    model = {"credit": "generated by art/wings_art.py", "textures": {"f": f"vampyuyu:item/wings/worn_tier{tier}",
-                                                                    "particle": f"vampyuyu:item/wings/worn_tier{tier}"},
-             "elements": elements}
-    return model, verts
-
-
-# ---- spread wings: one model per wing --------------------------------------------------------------------------
-# Each wing is its own model whose root is the model centre (the display pivot, the shoulder): the plugin gives each
-# one its dihedral, sweep and flap as a rotation about that root. The wing itself is built flat with four spanwise
-# rows of overlapping feather panes tilted back about the x axis (+z = behind, which is up while gliding), so it has
-# area seen from below, from behind and from the side. (hinge height px, span px, chord px, tilt degrees, texture row)
-SPAN_K = 1.2
-SPREAD_ROWS = ((8.0, 17.5, 4.5, 8.0, 0), (4.0, 16.0, 5.0, 18.0, 1), (-0.5, 13.0, 5.0, 30.0, 2), (-4.5, 8.0, 4.5, 42.0, 3))
-OUTER_EXTRA_TILT = 8.0
-SPREAD_T = 1.0
-
-
-def spread_texture(tier):
-    """16x16: four 3 px strips (one per row, u = root to tip, v = leading edge to trailing edge) and the shoulder plate."""
-    light, mid, dark, outline, glow = TIERS[tier]
-    px = {}
-    for r in range(4):
-        v0 = 3 * r
-        lift = 0.18 * (3 - r) / 3.0
-        for u in range(16):
-            lead = mix(light, (255, 255, 255), lift) if u % 4 else mix(light, outline, 0.25)
-            body = mix(mid, dark, 0.5) if u % 4 == 1 else mid
-            trail = mix(dark, glow, 0.6) if u % 4 != 3 else None
-            if u >= 14:
-                trail = None
-            rows = [lead, body, trail]
-            if u == 15:
-                rows[1] = None
-            if r == 0:
-                rows[0] = mix(dark, outline, 0.3)             # the arm bone along the top of the wing
-            for dv, c in enumerate(rows):
-                if c is not None:
-                    px[(u, v0 + dv)] = c + (255,)
-    for x in range(4):                                        # shoulder plate: dark metal with the Realm gem
-        for y in range(12, 16):
-            px[(x, y)] = mix(dark, outline, 0.4) + (255,)
-    px[(1, 13)] = px[(2, 13)] = px[(1, 14)] = px[(2, 14)] = glow + (255,)
-    px[(1, 13)] = mix(glow, light, 0.5) + (255,)
-    return px
-
-
-def _rot_x(vy, vz, hy, hz, deg):
-    import math
-    a = math.radians(-deg)
-    dy, dz = vy - hy, vz - hz
-    return hy + dy * math.cos(a) - dz * math.sin(a), hz + dy * math.sin(a) + dz * math.cos(a)
-
-
-def spread_model(tier, side):
-    """One spread wing; side +1 reaches toward model +x (the wearer's right), -1 toward model -x (their left)."""
-    elements, verts = [], []
-    hz = 8.5
-    for (hy, span, chord, tilt, row) in SPREAD_ROWS:
-        span *= SPAN_K
-        cut = span * 0.55
-        for seg, (a0, a1, th) in enumerate(((0.0, cut + 1.0, tilt), (cut, span, tilt + OUTER_EXTRA_TILT))):
-            x0, x1 = 8.0 + a0, 8.0 + a1
-            if side == -1:
-                x0, x1 = 16 - x1, 16 - x0
-            v0, v1 = 3 * row, 3 * row + 3
-            u0, u1 = (0, 8) if seg == 0 else (7, 16)
-            south = [u0, v0, u1, v1] if side == 1 else [u1, v0, u0, v1]
-            north = [u1, v0, u0, v1] if side == 1 else [u0, v0, u1, v1]
-            edge = {"uv": [6, v0 + 1, 7, v0 + 2], "texture": "#f"}
-            zz = hz + seg * 0.25                  # the outer pane sits a hair behind: no z-fighting at the overlap
-            el = {"from": [x0, hy - chord, zz], "to": [x1, hy, zz + SPREAD_T],
-                  "rotation": {"angle": round(-th, 3), "axis": "x", "origin": [8, hy, zz]},
-                  "faces": {"south": {"uv": south, "texture": "#f"}, "north": {"uv": north, "texture": "#f"},
-                            "up": dict(edge), "down": dict(edge), "east": dict(edge), "west": dict(edge)}}
-            elements.append(el)
-            for vx in (x0, x1):
-                for vy in (hy - chord, hy):
-                    for vz in (zz, zz + SPREAD_T):
-                        ry, rz = _rot_x(vy, vz, hy, zz, th)
-                        verts.append((vx - 8, ry - 8, rz - 8))
-    px0, px1 = 6.0, 10.0   # the shoulder plate straddles the root and rides with the wing
-    plate = {"from": [px0, 3.0, 8.0], "to": [px1, 10.0, 9.0],
-             "faces": {f: {"uv": [0, 12, 4, 16], "texture": "#f"} for f in ("north", "south", "up", "down", "east", "west")}}
-    elements.append(plate)
-    for vx in (px0, px1):
-        for vy in (3.0, 10.0):
-            for vz in (8.0, 9.0):
-                verts.append((vx - 8, vy - 8, vz - 8))
-    tex = f"vampyuyu:item/wings/worn_spread_tier{tier}"
-    return {"credit": "generated by art/wings_art.py", "textures": {"f": tex, "particle": tex}, "elements": elements}, verts
+    """One wing from its Blockbench source; side +1 = right (as modelled), -1 = left (mirrored).
+    Returns (model dict, vertices in px relative to the pivot, texture PNG bytes)."""
+    import bbmodel
+    src = bbmodel.Source(SOURCES / f"wings_tier{tier}_{state}.bbmodel")
+    elements = src.java(mirror_x=side == -1)
+    verts = [(x - 8, y - 8, z - 8) for el in elements for (x, y, z) in bbmodel.corners(el)]
+    tex = f"vampyuyu:item/wings/{'worn_spread' if state == 'spread' else 'worn'}_tier{tier}"
+    model = {"textures": {"0": tex, "particle": tex}, "elements": elements}
+    problems = bbmodel.problems(src.name, elements, src.tex)
+    assert not problems, problems
+    return model, verts, src.png
 
 
 def check_envelope(state, verts):
@@ -437,12 +275,11 @@ def build(preview=None):
         item_files(name)
         # the worn look is the 3D display: the elytra layer stays fully transparent (flight is untouched)
         png(ASSETS / "textures" / "entity" / "equipment" / "wings" / f"wings_tier{tier}.png", 64, 32, {})
-        png(ASSETS / "textures" / "item" / "wings" / f"worn_tier{tier}.png", 16, 16, worn_texture(tier))
-        png(ASSETS / "textures" / "item" / "wings" / f"worn_spread_tier{tier}.png", 16, 16, spread_texture(tier))
         for state in ("folded", "spread"):
             for side, sname in ((-1, "left"), (1, "right")):
-                model, verts = spread_model(tier, side) if state == "spread" else worn_model(tier, state, side)
+                model, verts, tex = worn_model(tier, state, side)
                 check_envelope(state, verts)
+                (ASSETS / "textures" / "item" / "wings" / f"{'worn_spread' if state == 'spread' else 'worn'}_tier{tier}.png").write_bytes(tex)
                 name = f"worn_tier{tier}_{state}_{sname}"
                 write_json(ASSETS / "models" / "item" / "wings" / f"{name}.json", model)
                 write_json(ASSETS / "items" / "wings" / f"{name}.json",

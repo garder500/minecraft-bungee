@@ -11,22 +11,22 @@ public class MiniMapMathTest {
   }
 
   @Test
-  public void theThirtyCellPlanTakesFourPixelsACellCentredInTheMap() {
+  public void theThirtyCellPlanTakesTwoPixelsACellInTheTopLeftCorner() {
     for (VbMap m : VbData.maps().values()) {
-      assertEquals(4, MiniMapMath.cellPx(m));
+      assertEquals(2, MiniMapMath.cellPx(m));
       assertArrayEquals(new int[] {4, 4}, MiniMapMath.origin(m));
     }
   }
 
   @Test
   public void aPointProjectsToItsPixel() {
-    VbMap h = map("hourfall"); // 4 blocks a cell = 1 block a pixel
+    VbMap h = map("hourfall"); // 4 blocks a cell = 2 blocks a pixel
     assertArrayEquals(new int[] {4, 4}, MiniMapMath.project(h, 0, 0));
-    assertArrayEquals(new int[] {64, 123}, MiniMapMath.project(h, 60, 120 - 0.01));
-    assertArrayEquals(new int[] {4 + 59, 4 + 29}, MiniMapMath.project(h, 59.9, 29.9));
-    assertArrayEquals(new int[] {123, 123}, MiniMapMath.project(h, 119.9, 119.9));
-    VbMap s = map("stormbreak"); // 5 blocks a cell: 1.25 blocks a pixel
-    assertArrayEquals(new int[] {4 + 40, 4 + 80}, MiniMapMath.project(s, 50, 100));
+    assertArrayEquals(new int[] {34, 63}, MiniMapMath.project(h, 60, 120 - 0.01));
+    assertArrayEquals(new int[] {4 + 29, 4 + 14}, MiniMapMath.project(h, 59.9, 29.9));
+    assertArrayEquals(new int[] {63, 63}, MiniMapMath.project(h, 119.9, 119.9));
+    VbMap s = map("stormbreak"); // 5 blocks a cell: 2.5 blocks a pixel
+    assertArrayEquals(new int[] {4 + 20, 4 + 40}, MiniMapMath.project(s, 50, 100));
     assertNull(MiniMapMath.project(h, -20, 0));
     assertNull(MiniMapMath.project(h, 0, 140));
   }
@@ -44,7 +44,9 @@ public class MiniMapMathTest {
     VbMap h = map("hourfall");
     int[] base = MiniMapMath.base(h);
     assertEquals(MiniMapMath.SIZE * MiniMapMath.SIZE, base.length);
-    assertEquals(MiniMapMath.EDGE, base[0]);
+    assertEquals(MiniMapMath.CLEAR, base[0]); // outside the plan: transparent
+    assertEquals(MiniMapMath.CLEAR, base[127 * 128 + 127]);
+    assertEquals(MiniMapMath.EDGE, base[2 * 128 + 2]); // the frame round the plan
     assertEquals(MiniMapMath.WALL, base[4 * 128 + 4]); // cell (0,0) is wall
     int[] floor = MiniMapMath.project(h, 4 * 12 + 2, 4 * 1 + 2); // plain floor inside the Sealer spawn (12, 1)
     int at = base[floor[1] * 128 + floor[0]];

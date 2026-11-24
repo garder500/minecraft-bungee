@@ -132,6 +132,9 @@ public final class BossListener implements Listener {
         BossSession boss = manager.sessionOfBoss(victim);
         if (boss != null) {
             bossHurt(event, boss);
+            if (!event.isCancelled()) {
+                BossCues.cue(boss.entity(), "hurt");
+            }
             return;
         }
         if (victim instanceof org.bukkit.entity.ComplexEntityPart) {
@@ -263,6 +266,7 @@ public final class BossListener implements Listener {
         }
         // always the boss's own number: the held weapon and the world difficulty must not add to it
         event.setDamage(Math.max(0.5, session.hitDamage(1.0)));
+        BossCues.cue(damager, "attack");
     }
 
 
