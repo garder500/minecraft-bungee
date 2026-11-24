@@ -223,9 +223,9 @@ public final class LobbySelector extends JavaPlugin implements Listener {
         text("VAMPYUYU ", ROSE)
             .decorate(TextDecoration.BOLD)
             .append(text("Welcome home. ", IVORY))
-            .append(text("Right-click your compass or use /menu: Creative, Survival or ", GOLD))
+            .append(text("Right-click your compass or use /menu: Creative, Survival, ", GOLD))
             .append(text("Skyblock", SKY).decorate(TextDecoration.BOLD))
-            .append(text(".", GOLD)));
+            .append(text(", Werewolf or ValoBlock.", GOLD)));
   }
 
   @EventHandler

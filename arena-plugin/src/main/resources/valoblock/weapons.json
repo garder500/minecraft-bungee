@@ -5,7 +5,7 @@
  "weapons": [
   {
    "id": "pip",
-   "name": "Pip",
+   "name": "SP-9 Sentry",
    "price": 0,
    "kind": "Pistol",
    "metal": "bronze",
@@ -45,7 +45,7 @@
   },
   {
    "id": "tickhand",
-   "name": "Tickhand",
+   "name": "BX-3 Ratchet",
    "price": 500,
    "kind": "Burst pistol",
    "metal": "sun",
@@ -86,7 +86,7 @@
   },
   {
    "id": "gravebell",
-   "name": "Gravebell",
+   "name": "R-454 Undertaker",
    "price": 800,
    "kind": "Revolver",
    "metal": "bone",
@@ -127,7 +127,7 @@
   },
   {
    "id": "shard_knife",
-   "name": "Shard Knife",
+   "name": "Talon Knife",
    "price": 0,
    "kind": "Melee",
    "metal": "star",
@@ -167,7 +167,7 @@
   },
   {
    "id": "gnat",
-   "name": "Gnat",
+   "name": "MX-7 Hornet",
    "price": 900,
    "kind": "SMG",
    "metal": "marsh",
@@ -207,7 +207,7 @@
   },
   {
    "id": "mistral",
-   "name": "Mistral",
+   "name": "KR-45 Vesper",
    "price": 1600,
    "kind": "SMG",
    "metal": "storm",
@@ -247,7 +247,7 @@
   },
   {
    "id": "scrapper",
-   "name": "Scrapper",
+   "name": "PX-12 Breacher",
    "price": 1000,
    "kind": "Pump shotgun",
    "metal": "bronze",
@@ -287,7 +287,7 @@
   },
   {
    "id": "mire_maw",
-   "name": "Mire Maw",
+   "name": "AS-20 Mauler",
    "price": 1850,
    "kind": "Auto shotgun",
    "metal": "marsh",
@@ -328,7 +328,7 @@
   },
   {
    "id": "bronzite_carbine",
-   "name": "Bronzite Carbine",
+   "name": "TR-16 Lancer",
    "price": 2100,
    "kind": "Rifle, semi-auto",
    "metal": "bronze",
@@ -368,7 +368,7 @@
   },
   {
    "id": "flux_rifle",
-   "name": "Flux Rifle",
+   "name": "AR-77 Tempest",
    "price": 2900,
    "kind": "Rifle, full auto",
    "metal": "sun",
@@ -408,7 +408,7 @@
   },
   {
    "id": "longwind",
-   "name": "Longwind",
+   "name": "DM-10 Longbow",
    "price": 1100,
    "kind": "Marksman",
    "metal": "frost",
@@ -449,7 +449,7 @@
   },
   {
    "id": "watchers_eye",
-   "name": "Watcher's Eye",
+   "name": "HX-50 Sovereign",
    "price": 4500,
    "kind": "Bolt sniper",
    "metal": "frost",
@@ -491,7 +491,7 @@
   },
   {
    "id": "grinder",
-   "name": "Grinder",
+   "name": "RK-90 Thresher",
    "price": 3200,
    "kind": "LMG",
    "metal": "void",

@@ -45,30 +45,32 @@ public final class WerewolfCompass {
   public boolean open(CompassGUI gui, Player p, ArenaSession s, boolean skinned) {
     WerewolfMenus.Kind kind =
         s.game instanceof WerewolfGame wolf ? WerewolfMenus.kind(wolf, p.getUniqueId()) : null;
+    ArenaLang.Lang lang = ArenaLang.of(p);
     if (kind != null) {
-      // The painted background carries the menu's name in its title tab.
+      // The background paints no word: the title names the menu, in the player's language, on the
+      // dark plate the art leaves at the title's place.
+      Component name = Component.text(kind.title(lang), TextColor.color(kind.color));
       WerewolfMenuHolder holder =
           new WerewolfMenuHolder(
               p.getUniqueId(),
               s.config.id(),
               skinned,
-              skinned
-                  ? MenuSkin.title(kind.tile, MenuSkin.ROWS_54, Component.empty())
-                  : Component.text(kind.title, TextColor.color(kind.color)));
+              skinned ? MenuSkin.title(kind.tile, MenuSkin.ROWS_54, name) : name);
       holder.kind = kind;
       p.openInventory(holder.getInventory());
       render(gui, holder, p, s);
       return true;
     }
     if (s.game == null || s.game instanceof WerewolfGame) {
+      Component name =
+          Component.text(
+              WerewolfMenus.villageTitle(lang), TextColor.color(WerewolfPresentation.VILLAGER));
       WerewolfMenuHolder holder =
           new WerewolfMenuHolder(
               p.getUniqueId(),
               s.config.id(),
               skinned,
-              skinned
-                  ? MenuSkin.title(WerewolfMenus.VILLAGE, MenuSkin.ROWS_54, Component.empty())
-                  : Component.text("The village", TextColor.color(WerewolfPresentation.VILLAGER)));
+              skinned ? MenuSkin.title(WerewolfMenus.VILLAGE, MenuSkin.ROWS_54, name) : name);
       holder.village = true;
       p.openInventory(holder.getInventory());
       render(gui, holder, p, s);
@@ -136,7 +138,8 @@ public final class WerewolfCompass {
             p.getUniqueId(),
             s.players,
             seconds,
-            plugin.arenas.leaveBlocked(p.getUniqueId()))) {
+            plugin.arenas.leaveBlocked(p.getUniqueId()),
+            ArenaLang.of(p))) {
       CompassGUI.place(inv, p, entry.raw(), item(gui, holder, entry));
       if (entry.click() != null) holder.clicks.put(entry.raw(), entry.click());
     }
@@ -162,7 +165,8 @@ public final class WerewolfCompass {
             s.players,
             s.config.name(),
             seconds,
-            plugin.arenas.leaveBlocked(p.getUniqueId()))) {
+            plugin.arenas.leaveBlocked(p.getUniqueId()),
+            ArenaLang.of(p))) {
       // Before the deal the compass still sits in hotbar slot 9: the lock moves next to it.
       int raw =
           entry.raw() == WerewolfMenus.LOCK && gui.compass(p.getInventory().getItem(8))
@@ -201,6 +205,8 @@ public final class WerewolfCompass {
       case "lock" -> Material.BARRIER;
       case "timer" -> Material.CLOCK;
       case "mark-wolf" -> Material.BONE;
+      case "tag" -> Material.NAME_TAG; // a plaque nobody is chosen for yet
+      case "star" -> Material.NETHER_STAR;
       default -> Material.GRAY_DYE; // skip, mark-last
     };
   }

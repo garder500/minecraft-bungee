@@ -400,6 +400,29 @@ public class SkyblockRouteTest {
     }
 
     @Test
+    public void thePaintedMenuHasTheGameCardsInThePlayersLanguage() throws Exception {
+        var yaml = new org.bukkit.configuration.file.YamlConfiguration();
+        try (var in = getClass().getClassLoader().getResourceAsStream("lang/fr_FR.yml")) {
+            yaml.load(new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8));
+        }
+        java.util.Map<String, String> texts = new java.util.HashMap<>();
+        for (String key : yaml.getKeys(true)) if (yaml.isString(key)) texts.put(key, yaml.getString(key));
+        var painted = new WorldSelector.Menu(true, true, -1, WorldSelector.Words.of(texts)).getInventory();
+        assertEquals(54, painted.getSize());
+        for (int slot : WorldSelector.WEREWOLF_AREA) {
+            assertTrue("slot " + slot, tooltip(painted.getItem(slot)).contains("LOUP-GAROU"));
+        }
+        for (int slot : WorldSelector.VALOBLOCK_AREA) {
+            assertTrue("slot " + slot, tooltip(painted.getItem(slot)).contains("salle d'attente"));
+        }
+        assertNull("column 4 stays empty", painted.getItem(40));
+        var plain = new WorldSelector.Menu(false, true).getInventory();
+        assertEquals(36, plain.getSize());
+        assertEquals(Material.BONE, plain.getItem(29).getType());
+        assertEquals(Material.CROSSBOW, plain.getItem(33).getType());
+    }
+
+    @Test
     public void theConnectMessageIsTheBungeeCordFormat() throws Exception {
         try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(WorldSelector.connectMessage("survival")))) {
             assertEquals("Connect", in.readUTF());

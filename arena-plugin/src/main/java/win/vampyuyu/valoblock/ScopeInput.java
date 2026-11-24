@@ -3,9 +3,9 @@ package win.vampyuyu.valoblock;
 /**
  * How a sniper is aimed and fired, with no Bukkit (tested). Two kinds of zoom:
  * <ul>
- *   <li>a <b>hold scope</b> (the Watcher's Eye): the stack is a vanilla spyglass, so the client zooms and draws the
+ *   <li>a <b>hold scope</b> (the HX-50 Sovereign): the stack is a vanilla spyglass, so the client zooms and draws the
  *       spyglass overlay while the player holds right-click (it is "using" the item). Left-click fires.</li>
- *   <li>a <b>sneak zoom</b> (Longwind and any other weapon with a zoom): sneaking scopes, right-click fires.</li>
+ *   <li>a <b>sneak zoom</b> (DM-10 Longbow and any other weapon with a zoom): sneaking scopes, right-click fires.</li>
  * </ul>
  */
 final class ScopeInput {

@@ -5,7 +5,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Bookkeeping of the sneak zoom (Longwind). The client narrows the field of view when the player's movement speed
+ * Bookkeeping of the sneak zoom (DM-10 Longbow). The client narrows the field of view when the player's movement speed
  * attribute is below the walking speed (the effect of a drawn bow), so the zoom is one temporary MULTIPLY_SCALAR_1
  * modifier on the movement speed. It is added once when the zoom starts and removed when it ends: it never stacks.
  * The service applies what {@link #update} says; the rules of when it is wanted are pure and tested.

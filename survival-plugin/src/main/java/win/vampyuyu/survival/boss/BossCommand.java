@@ -57,6 +57,16 @@ public final class BossCommand implements CommandExecutor, TabCompleter {
                     core.msg().ok(sender, reload.get());
                 }
             }
+            case "anim" -> {
+                if (admin(sender)) {
+                    if (args.length < 2) {
+                        core.msg().error(sender, "Usage: /boss anim <idle|walk|attack|hurt|phase|death|ability id>");
+                    } else {
+                        int n = BossCues.play(args[1].toLowerCase(Locale.ROOT));
+                        core.msg().ok(sender, "Playing " + args[1] + " on " + n + " boss(es).");
+                    }
+                }
+            }
             default -> help(sender);
         }
         return true;
@@ -236,7 +246,7 @@ public final class BossCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             out.addAll(List.of("list", "info", "claim"));
             if (admin) {
-                out.addAll(List.of("spawn", "kill", "active", "reload"));
+                out.addAll(List.of("spawn", "kill", "active", "reload", "anim"));
             }
         } else if (args.length == 2) {
             switch (args[0].toLowerCase(Locale.ROOT)) {

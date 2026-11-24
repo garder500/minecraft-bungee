@@ -14,6 +14,7 @@ import sys
 import zlib
 
 import boss_items as b
+import goods32
 from imported import has_gui, imported
 
 BRONZE = (0xC9, 0x84, 0x42)
@@ -33,18 +34,6 @@ def bronzite(c):
     c.outline()
 
 
-def pebble(c):
-    # a pebble of Aethelgard: cooled stone of the Cracked Ashes with one ember in its crack
-    c.fill_shape(b.union(b.circle(6.5, 9.5, 3.4), b.circle(10.2, 8, 2.8), b.circle(8.5, 11, 2.4)), b.BASE)
-    c.set(5, 8, b.shade(b.BASE, 1.35))
-    c.set(6, 8, b.shade(b.BASE, 1.35))
-    c.set(9, 6, b.shade(b.BASE, 1.35))
-    c.set(8, 10, b.shade(b.BASE, 0.7))
-    c.set(9, 10, b.shade(b.ACCENT, 1.4))
-    c.outline()
-    b.requant(c, "ashes")
-
-
 def bar(c, color, light):
     c.fill_shape(lambda x, y: 2 <= x <= 14 and 6 <= y <= 12 and x - 2 + (12 - y) * 0.0 >= 0, color)
     c.rect(3, 7, 13, 7, b.shade(light, 1.0))
@@ -62,17 +51,6 @@ def frostium_bar(c):
 
 def sunstone_bar(c):
     bar(c, (0xF2, 0xC1, 0x4E), (0xFF, 0xF3, 0xB0))
-
-
-def bronze_core(c):
-    # bronzite casing with a cyan Flux heart (Flux machinery palette)
-    c.fill_shape(b.diamond(8, 8, 6.2, 6.2), b.BASE)
-    c.fill_shape(b.diamond(8, 8, 3.4, 3.4), b.shade(b.BASE, 1.25), light=1.0, dark=0.8)
-    c.fill_shape(b.diamond(8, 8, 1.4, 1.4), b.ACCENT)
-    c.set(4, 7, b.shade(b.BASE, 1.5))
-    c.set(5, 6, b.shade(b.BASE, 1.5))
-    c.outline()
-    b.requant(c, "flux")
 
 
 def forge(c):
@@ -168,17 +146,6 @@ def sunstone(c):
     c.outline()
 
 
-def ember_core(c):
-    # a cooled slag diamond split by a lava vein (Cracked Ashes motif)
-    c.fill_shape(b.diamond(8, 8, 6.2, 6.2), b.BASE)
-    c.fill_shape(b.diamond(8, 8, 3.6, 3.6), b.shade(b.BASE, 1.25), light=1.0, dark=0.8)
-    c.line(10, 4, 6, 12, b.ACCENT)
-    c.line(11, 4, 7, 12, b.ACCENT)
-    c.set(5, 6, b.shade(b.BASE, 1.5))
-    c.outline()
-    b.requant(c, "ashes")
-
-
 def bronze_pick(c):
     pick(c, BRONZE, GOLD)
 
@@ -234,17 +201,6 @@ def miner_1(c):
 
 def miner_2(c):
     miner(c, FROST)
-
-
-def void_lens(c):
-    # a rift that looks back: a lens with a dark iris and one glowing pupil (Astral Interiority motif)
-    c.fill_shape(b.ellipse(8, 8, 6.4, 4.4), b.shade(b.BASE, 1.25), light=1.0, dark=0.8)
-    c.fill_shape(b.ellipse(8, 8, 3.6, 3.6), b.shade(b.BASE, 0.7), light=1.0, dark=1.0)
-    c.fill_shape(b.circle(8, 8, 1.6), b.ACCENT, light=1.0, dark=1.0)
-    c.set(5, 6, b.shade(b.BASE, 1.5))
-    c.set(4, 7, b.shade(b.BASE, 1.5))
-    c.outline()
-    b.requant(c, "astral")
 
 
 def px(c, cells, color):
@@ -362,26 +318,20 @@ SAND = (0xE8, 0xC8, 0x6A)
 
 
 # Sprites ported pixel by pixel from the approved design (lore_sprites.py); they carry their own outline.
-LORE = ["ore/chrono_sand", "ore/sandglass", "ore/soul_ash", "ore/pressure_pearl", "ore/thunder_quartz",
-        "ore/bronzite_block", "ore/frostium_block", "ore/sunstone_block", "ore/voidglass_block", "ore/starcore_block",
-        "machine/spring_wheel", "machine/heat_tap", "machine/void_reactor", "machine/astral_lattice",
-        "machine/lightning_rod"]
+LORE = ["ore/soul_ash", "ore/pressure_pearl", "machine/spring_wheel", "machine/heat_tap", "machine/void_reactor",
+        "machine/astral_lattice", "machine/lightning_rod"]
 
 
 ICONS = {
-    "ore/pebble": pebble,
     "ore/bronzite_bar": bronzite_bar,
     "ore/frostium_bar": frostium_bar,
     "ore/sunstone_bar": sunstone_bar,
     "ore/bronzite": bronzite,
-    "ore/bronze_core": bronze_core,
     "forge/forge": forge,
     "weapon/bronze_cleaver": bronze_cleaver,
     "tool/bronze_pick": bronze_pick,
     "ore/frostium": frostium,
     "ore/sunstone": sunstone,
-    "ore/ember_core": ember_core,
-    "ore/void_lens": void_lens,
     "ore/voidglass": voidglass,
     "ore/starcore": starcore,
     "machine/solar_panel": solar_panel,
@@ -407,11 +357,17 @@ ICONS = {
 }
 
 
+# Repainted at 32 px (goods32.py, paint32): these ids no longer use the 16 px functions above nor lore_sprites.
+PAINTED32 = {f"ore/{name}" for name in goods32.ORE}
+
+
 def all_ids():
-    return list(ICONS) + LORE
+    return list(ICONS) + LORE + sorted(PAINTED32)
 
 
 def draw(icon_id):
+    if icon_id in PAINTED32:
+        return goods32.ORE[icon_id.split("/")[1]]()
     if icon_id in LORE:
         import lore_sprites
         return lore_sprites.draw(icon_id.split("/")[1])
@@ -431,7 +387,11 @@ def sheet(path):
         for x in range(w):
             idx = x // (18 * scale_up)
             ix, iy = (x % (18 * scale_up)) // scale_up - 1, y // scale_up - 1
-            px = drawn[ids[idx]][iy][ix] if 0 <= ix < 16 and 0 <= iy < 16 else None
+            grid = drawn[ids[idx]]
+            half = len(grid) == 32   # a 32 px sprite is shown at half scale in its 16 px cell
+            if half:
+                ix, iy = (x % (18 * scale_up)) // (scale_up // 2) - 2, y // (scale_up // 2) - 2
+            px = grid[iy][ix] if 0 <= ix < len(grid) and 0 <= iy < len(grid) else None
             raw.extend(px if px else ((60, 60, 70, 255) if (x // 10 + y // 10) % 2 else (70, 70, 80, 255)))
 
     def chunk(tag, data):

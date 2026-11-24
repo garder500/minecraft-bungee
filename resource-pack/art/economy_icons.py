@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Draws the 16x16 Skyblock economy menu icons (stdlib only, deterministic) and their pack definitions.
+"""Paints the 32x32 Skyblock economy menu icons (stdlib only, deterministic) and their pack definitions.
 
     python3 resource-pack/art/economy_icons.py [--sheet out.png]
 
@@ -7,275 +7,157 @@ Writes, for every icon NAME below:
   assets/vampyuyu/textures/item/economy/NAME.png
   assets/vampyuyu/models/item/economy/NAME.json
   assets/vampyuyu/items/economy/NAME.json     (item model "vampyuyu:economy/NAME")
-`--sheet` also renders an 8x contact sheet for a quick look. Output is byte for byte reproducible.
+`--sheet` renders a contact sheet instead. Output is byte for byte reproducible.
+Painted with sb_paint in the style of the imported item/menu icons: gold, wood, parchment and stone ramps, light from
+the top left. Green means in (buy, deposit), orange means out (sell, withdraw), a bolt means instant.
 """
-import json, pathlib, struct, sys, zlib
+import json, pathlib, sys
+
+from sb_paint import (Art, INK, GOLD, WOOD, DARKWOOD, STONE, IRON, STEEL, LEAF, RED, WHITE, PAPER, GLASS, LEATHER, CLOTH,
+                      ramp, tones, rect, rrect, ell, ring, poly, line, path, pts, shift, edge, ball, grad, vcyl, hcyl, sheet)
+from sb_things import GREEN, ORANGE, TEAL, coin, arrow, harrow, scroll, chest, check, plus, bolt, gavel, magnifier
 
 PACK = pathlib.Path(__file__).resolve().parent.parent / "pack" / "assets" / "vampyuyu"
-OUTLINE = (20, 15, 24, 255)
-
-def c(r, g, b, a=255):
-    return (r, g, b, a)
+MARBLE = tones("5a5a84", "9498bc", "c8cce2", "eceef6", "ffffff")
 
 
-def hx(value):
-    return c(int(value[0:2], 16), int(value[2:4], 16), int(value[4:6], 16))
+def strongbox(a, y0=14):
+    """The bank's iron-bound coffer, seen from the front."""
+    a.fill(rrect(3, y0, 28, 29, 1), STEEL, grad(0, y0, 0, 29, 0.8, 0.3), rim=0.18)
+    a.fill(rect(3, y0, 28, y0 + 2), IRON, 0.75, rim=0.15)
+    a.fill(rect(3, 27, 28, 29), IRON, 0.4, rim=0.15)
+    for x in (6, 24):
+        a.put(pts(x, y0 + 5, x, 25), IRON[4])
+    a.fill(ell(15.5, y0 + 8.5, 4, 4), GOLD, ball(15.5, y0 + 8.5, 4.4))
+    a.put(rect(15, y0 + 7, 16, y0 + 10), INK)
+    return a
 
 
-# Realm palettes (docs/skyblock-notes/lore.md): shadow, base, light, highlight, glow. The economy belongs to the
-# Citadel of Golden Sands (gold, linen, wood, turquoise glow); accents borrow the palette of another Realm.
-CITADEL = [hx(v) for v in ("5a3a12", "a8742a", "f2c14e", "fff1b0", "3fb6a8")]
-GROVE = [hx(v) for v in ("2c3a1e", "4f6b2a", "8fb84a", "d6f08a", "f1e7c9")]
-ASHES = [hx(v) for v in ("120a16", "2a1a2e", "5a2a2a", "c8461e", "ff8a2a")]
-FROST = [hx(v) for v in ("1f3557", "3b6fa8", "7fc8e8", "e6f7ff", "b6a8ff")]
-NECRO = [hx(v) for v in ("241f3a", "4a4570", "9c95c8", "e8e4ff", "6affd8")]
-ABYSS = [hx(v) for v in ("0a1a2a", "12405a", "2a8a9a", "bff0f0", "ff6ab0")]
-
-GOLD, GOLD_D, GOLD_L = CITADEL[2], CITADEL[1], CITADEL[3]
-GLOW = CITADEL[4]
-GREEN, GREEN_D = GROVE[2], GROVE[1]
-RED, RED_D = ASHES[3], ASHES[2]
-ORANGE = ASHES[4]
-PAPER, PAPER_D = GROVE[4], hx("b8a878")
-INK = CITADEL[0]
-STONE, STONE_D = FROST[3], FROST[2]
-WOOD, WOOD_D = CITADEL[1], CITADEL[0]
-PURPLE, PURPLE_D = NECRO[2], NECRO[1]
-BLUE, BLUE_D = ABYSS[2], ABYSS[1]
-WHITE = CITADEL[3]
-
-
-class Canvas:
-    def __init__(self):
-        self.p = [[None] * 16 for _ in range(16)]
-
-    def px(self, x, y, col):
-        if 0 <= x < 16 and 0 <= y < 16:
-            self.p[y][x] = col
-
-    def rect(self, x0, y0, x1, y1, col):
-        for y in range(y0, y1 + 1):
-            for x in range(x0, x1 + 1):
-                self.px(x, y, col)
-
-    def line(self, x0, y0, x1, y1, col):
-        dx, dy = abs(x1 - x0), -abs(y1 - y0)
-        sx, sy = (1 if x0 < x1 else -1), (1 if y0 < y1 else -1)
-        err = dx + dy
-        while True:
-            self.px(x0, y0, col)
-            if x0 == x1 and y0 == y1:
-                return
-            e2 = 2 * err
-            if e2 >= dy:
-                err += dy
-                x0 += sx
-            if e2 <= dx:
-                err += dx
-                y0 += sy
-
-    def disc(self, cx, cy, r2, col):
-        """Filled disc; r2 is the squared radius (use .5 steps for odd sizes)."""
-        for y in range(16):
-            for x in range(16):
-                if (x - cx) ** 2 + (y - cy) ** 2 <= r2:
-                    self.px(x, y, col)
-
-    def ring(self, cx, cy, r2_out, r2_in, col):
-        for y in range(16):
-            for x in range(16):
-                d = (x - cx) ** 2 + (y - cy) ** 2
-                if r2_in < d <= r2_out:
-                    self.px(x, y, col)
-
-    def outline(self):
-        out = [row[:] for row in self.p]
-        for y in range(16):
-            for x in range(16):
-                if self.p[y][x] is None:
-                    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                        nx, ny = x + dx, y + dy
-                        if 0 <= nx < 16 and 0 <= ny < 16 and self.p[ny][nx] is not None:
-                            out[y][x] = OUTLINE
-                            break
-        self.p = out
-
-    def png(self):
-        raw = bytearray()
-        for row in self.p:
-            raw.append(0)
-            for px in row:
-                raw.extend(px if px else (0, 0, 0, 0))
-        def chunk(tag, data):
-            body = tag + data
-            return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF)
-        return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 16, 16, 8, 6, 0, 0, 0))
-                + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b""))
-
-
-def coin(cv, cx, cy, big=True):
-    if big:
-        cv.disc(cx, cy, 20, GOLD_D)
-        cv.disc(cx, cy, 14, GOLD)
-        cv.ring(cx, cy, 6, 1, GOLD_D)
-        cv.px(cx - 3, cy - 3, GOLD_L); cv.px(cx - 2, cy - 3, GOLD_L); cv.px(cx - 3, cy - 2, GOLD_L)
-    else:
-        cv.disc(cx, cy, 7, GOLD_D)
-        cv.disc(cx, cy, 3, GOLD)
-        cv.px(cx - 1, cy - 1, GOLD_L)
-
-
-def arrow_down(cv, cx, y, col, dark):
-    cv.rect(cx - 1, y, cx, y + 3, col)
-    cv.rect(cx - 3, y + 4, cx + 2, y + 4, col)
-    cv.rect(cx - 2, y + 5, cx + 1, y + 5, col)
-    cv.rect(cx - 1, y + 6, cx, y + 6, col)
-    cv.px(cx, y + 6, dark); cv.px(cx, y + 5, dark)
-
-
-def arrow_up(cv, cx, y, col, dark):
-    cv.rect(cx - 1, y + 3, cx, y + 6, col)
-    cv.rect(cx - 3, y + 2, cx + 2, y + 2, col)
-    cv.rect(cx - 2, y + 1, cx + 1, y + 1, col)
-    cv.rect(cx - 1, y, cx, y, col)
-    cv.px(cx, y + 3, dark); cv.px(cx, y + 4, dark)
-
-
-def scroll(cv):
-    cv.rect(3, 2, 12, 13, PAPER)
-    cv.rect(3, 2, 12, 2, PAPER_D); cv.rect(3, 13, 12, 13, PAPER_D)
-    cv.rect(12, 3, 12, 12, PAPER_D)
-    cv.rect(5, 5, 9, 5, INK); cv.rect(5, 7, 8, 7, INK)
-
-
-def glow(cv):
-    """One glow pixel marks the Realm motif: the turquoise inlay, set in the gold or the light body of the icon."""
-    best = None
-    for col in (GOLD, GOLD_L, GREEN, PAPER, STONE, PURPLE, BLUE, WOOD):
-        spots = [(abs(x - 9) + abs(y - 6), y, x) for y in range(1, 15) for x in range(1, 15)
-                 if cv.p[y][x] == col and all(cv.p[y + dy][x + dx] not in (None, OUTLINE)
-                                              for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))]
-        if spots:
-            best = min(spots)
-            break
-    if best:
-        cv.p[best[1]][best[2]] = GLOW
+def bag(a, cx=15.5, mat=LEATHER):
+    a.fill(poly((cx - 5, 9), (cx - 7, 3), (cx - 2, 5), (cx, 2), (cx + 2, 5), (cx + 7, 3), (cx + 5, 9)), mat, grad(cx - 7, 2, cx + 7, 9, 0.9, 0.35))
+    a.fill(ell(cx, 19.5, 12, 10), mat, ball(cx, 19.5, 12.5, 10.5))
+    a.fill(rect(round(cx - 5), 9, round(cx + 5), 10), GOLD, grad(cx - 5, 0, cx + 5, 0, 0.95, 0.4))
+    return a
 
 
 def draw(name):
-    cv = Canvas()
+    a = Art()
     if name == "coin":
-        coin(cv, 8, 8)
+        coin(a, 15, 15, 13)
     elif name == "bank":
-        for i, (x0, x1) in enumerate(((7, 8), (6, 9), (5, 10), (4, 11), (3, 12))):
-            cv.rect(x0, 2 + i, x1, 2 + i, STONE)
-        cv.rect(7, 3, 8, 4, GOLD)
-        cv.rect(2, 7, 13, 7, STONE_D)
-        for x in (3, 7, 11):
-            cv.rect(x, 8, x + 1, 11, STONE)
-            cv.rect(x + 1, 8, x + 1, 11, STONE_D)
-        cv.rect(1, 12, 14, 13, STONE_D)
-        cv.rect(1, 12, 14, 12, STONE)
-    elif name == "deposit":
-        cv.rect(2, 10, 13, 14, WOOD); cv.rect(2, 10, 13, 10, WOOD_D); cv.rect(2, 14, 13, 14, WOOD_D)
-        cv.rect(7, 11, 8, 12, GOLD)
-        arrow_down(cv, 8, 2, GREEN, GREEN_D)
-        cv.disc(8, 2, 1, GOLD)
-    elif name == "withdraw":
-        cv.rect(2, 10, 13, 14, WOOD); cv.rect(2, 10, 13, 10, WOOD_D); cv.rect(2, 14, 13, 14, WOOD_D)
-        cv.rect(7, 11, 8, 12, GOLD)
-        arrow_up(cv, 8, 1, ORANGE, RED_D)
+        a.fill(rect(1, 27, 30, 29), MARBLE, 0.5, rim=0.2)
+        a.fill(rect(3, 24, 28, 26), MARBLE, 0.65, rim=0.2)
+        for x in (5, 11, 18, 24):
+            a.fill(rect(x, 13, x + 2, 23), MARBLE, vcyl(x, x + 2, 0.98, 0.35))
+        a.fill(rect(3, 11, 28, 12), MARBLE, 0.8, rim=0.15)
+        a.fill(poly((2, 10), (15.5, 1), (29, 10)), MARBLE, grad(4, 2, 26, 11, 0.98, 0.45))
+        coin(a, 15.5, 6.5, 2.6, emblem=False)
+        a.fill(rect(14, 16, 17, 23), DARKWOOD, 0.4)
+    elif name in ("deposit", "withdraw"):
+        strongbox(a, 15)
+        if name == "deposit":
+            coin(a, 22, 6, 5, emblem=False)
+            arrow(a, 9, 1, 13, GREEN)
+        else:
+            coin(a, 22, 7, 5, emblem=False)
+            arrow(a, 9, 13, 1, ORANGE)
     elif name == "upgrade":
-        cv.rect(6, 8, 9, 13, PURPLE); cv.rect(9, 8, 9, 13, PURPLE_D)
-        for i, (x0, x1) in enumerate(((7, 8), (6, 9), (5, 10), (4, 11), (3, 12))):
-            cv.rect(x0, 2 + i, x1, 2 + i, PURPLE)
-        cv.px(8, 3, PURPLE_D); cv.px(8, 4, PURPLE_D)
-        cv.rect(4, 14, 11, 14, GOLD)
+        strongbox(a, 17)
+        for y in (2, 8):
+            a.fill(path([(6, y + 6), (15.5, y), (25, y + 6)], 3.2), GOLD, grad(6, y, 25, y + 7, 1.0, 0.4))
     elif name == "history":
-        scroll(cv)
-        cv.rect(5, 9, 10, 9, INK); cv.rect(5, 11, 7, 11, INK)
-        coin(cv, 11, 11, big=False)
+        scroll(a, 2, 2, 22, 29)
+        a.fill(ell(21.5, 21.5, 8.5, 8.5), GOLD, ball(21.5, 21.5, 9))
+        a.fill(ell(21.5, 21.5, 6.2, 6.2), MARBLE, 0.85)
+        a.put(line(21, 21, 21, 17) | line(21, 21, 24, 23), INK)
     elif name == "buyback":
-        cv.ring(8, 8, 22, 9, BLUE)
-        cv.rect(9, 2, 14, 2, BLUE); cv.rect(10, 3, 13, 3, BLUE); cv.rect(11, 4, 12, 4, BLUE)
-        coin(cv, 8, 8, big=False)
+        coin(a, 15.5, 15.5, 8, emblem=True)
+        arc = (ring(15.5, 15.5, 14, 14, 3) - poly((15.5, 15.5), (33, 4), (33, 20))) - poly((15.5, 15.5), (0, 34), (9, 34))
+        a.fill(arc, TEAL, ball(15.5, 15.5, 15))
+        a.fill(poly((22, 1), (30, 6), (22, 11)), TEAL, grad(22, 1, 30, 11, 0.95, 0.4))
     elif name == "sell_all":
-        cv.rect(2, 3, 13, 4, STONE); cv.rect(3, 5, 12, 6, STONE_D)
-        cv.rect(4, 7, 11, 8, STONE_D); cv.rect(6, 9, 9, 11, STONE)
-        cv.rect(7, 11, 8, 13, STONE_D)
-        coin(cv, 8, 14, big=False)
+        bag(a, 13)
+        coin(a, 13, 20, 5, emblem=False)
+        for y in (26, 22, 18):
+            a.fill(ell(25, y + 1, 5.5, 2.6), GOLD, 0.25)
+            a.fill(ell(25, y, 5.5, 2.6), GOLD, grad(19, y - 2, 31, y + 2, 0.98, 0.5), ink=False)
     elif name == "bazaar":
-        for i, x in enumerate(range(2, 14, 2)):
-            col = RED if i % 2 == 0 else WHITE
-            cv.rect(x, 3, x + 1, 6, col)
-        cv.rect(2, 7, 13, 7, RED_D)
-        cv.rect(3, 8, 3, 13, WOOD_D); cv.rect(12, 8, 12, 13, WOOD_D)
-        cv.rect(2, 10, 13, 11, WOOD); cv.rect(2, 10, 13, 10, WOOD_D)
-        coin(cv, 8, 8, big=False)
-    elif name == "buy_now":
-        coin(cv, 8, 5, big=False)
-        arrow_down(cv, 8, 7, GREEN, GREEN_D)
-        cv.rect(3, 14, 12, 14, GOLD_D)
-    elif name == "sell_now":
-        arrow_up(cv, 8, 1, ORANGE, RED_D)
-        coin(cv, 8, 11, big=False)
-        cv.rect(3, 14, 12, 14, GOLD_D)
-    elif name == "buy_order":
-        scroll(cv)
-        cv.rect(5, 9, 10, 9, GREEN); cv.rect(7, 8, 8, 10, GREEN)
-    elif name == "sell_order":
-        scroll(cv)
-        cv.rect(5, 9, 10, 10, ORANGE)
+        a.fill(rect(3, 13, 5, 29) | rect(26, 13, 28, 29), WOOD, vcyl(3, 5))
+        a.fill(rect(26, 13, 28, 29), WOOD, vcyl(26, 28), ink=False)
+        a.fill(rect(2, 21, 29, 29), WOOD, grad(0, 21, 0, 29, 0.75, 0.3), rim=0.18)
+        a.tone(rect(3, 25, 28, 25), -1)
+        for cx, mat in ((9, RED), (15.5, GOLD), (22, LEAF)):
+            a.fill(ell(cx, 18.5, 3, 3), mat, ball(cx, 18.5, 3.3))
+        awning = poly((3, 3), (28, 3), (30, 12), (1, 12))
+        a.fill(awning, RED, grad(0, 3, 0, 12, 0.9, 0.4))
+        for i, x0 in enumerate(range(1, 31, 5)):
+            if i % 2:
+                a.fill(rect(x0, 3, x0 + 4, 12) & awning, WHITE, grad(0, 3, 0, 12, 0.98, 0.55), ink=False)
+        for x0 in range(1, 31, 5):
+            a.fill(ell(x0 + 2, 12.5, 2.4, 2), RED if (x0 // 5) % 2 == 0 else WHITE, 0.5, ink=False)
+    elif name in ("buy_now", "sell_now"):
+        if name == "buy_now":
+            a.fill(ring(15.5, 13, 9, 9, 2) & rect(0, 0, 31, 13), WOOD, grad(6, 4, 25, 4, 0.9, 0.4), ink=False)
+            basket = poly((2, 13), (29, 13), (26, 29), (5, 29))
+            a.fill(basket, ramp("c89a4a"), grad(2, 13, 29, 29, 0.95, 0.25))
+            for y in (17, 21, 25):
+                a.tone(rect(3, y, 28, y) & basket, -1)
+            for x in (9, 15, 21):
+                a.tone(rect(x, 14, x, 28) & basket, -1)
+            a.fill(rect(1, 12, 30, 14), ramp("c89a4a"), 0.8, rim=0.15)
+        else:
+            for y in (25, 20, 15):
+                a.fill(ell(13, y + 2, 10.5, 4), GOLD, 0.2)
+                a.fill(ell(13, y, 10.5, 4), GOLD, grad(3, y - 3, 23, y + 3, 0.98, 0.5), ink=False)
+                a.tone(ring(13, y, 7.5, 2.6, 1), -1)
+        bolt(a, 22, 1, 1.0, GREEN if name == "buy_now" else ORANGE)
+    elif name in ("buy_order", "sell_order", "create"):
+        scroll(a, 2, 2, 22, 29)
+        if name == "buy_order":
+            arrow(a, 23, 12, 29, GREEN)
+            coin(a, 24, 6, 4.5, emblem=False)
+        elif name == "sell_order":
+            arrow(a, 23, 29, 12, ORANGE)
+            coin(a, 24, 6, 4.5, emblem=False)
+        else:
+            plus(a, 22, 22, 6, GREEN)
     elif name == "orders":
-        cv.rect(2, 4, 10, 13, PAPER_D); cv.rect(4, 2, 12, 11, PAPER)
-        cv.rect(6, 5, 10, 5, INK); cv.rect(6, 7, 9, 7, INK)
-        cv.line(13, 7, 8, 13, WOOD); cv.line(13, 8, 9, 13, WOOD_D)
-        cv.px(8, 13, INK)
+        a.fill(rrect(3, 3, 28, 30, 2), WOOD, None)
+        a.fill(rect(6, 7, 25, 28), PAPER, grad(6, 7, 25, 28, 0.9, 0.55))
+        a.fill(rrect(10, 1, 21, 6, 1), IRON, None)
+        for y, mat in ((11, GREEN), (17, GREEN), (23, ORANGE)):
+            a.fill(rect(8, y, 10, y + 2), mat, 0.6, ink=False)
+            a.put(rect(13, y + 1, 23 - (y % 3), y + 1), (106, 86, 80))
     elif name == "auction":
-        cv.rect(2, 12, 9, 13, WOOD_D)
-        cv.rect(2, 3, 8, 6, STONE_D); cv.rect(2, 3, 8, 3, STONE)
-        cv.line(9, 6, 5, 10, WOOD); cv.line(9, 7, 6, 10, WOOD_D)
-        cv.rect(9, 8, 13, 9, GOLD_D); cv.rect(10, 7, 13, 7, GOLD)
-        cv.rect(11, 12, 13, 13, GOLD)
+        a.fill(rrect(3, 24, 20, 29, 1), DARKWOOD, None)
+        a.fill(rect(5, 22, 18, 24), WOOD, 0.7, rim=0.15)
+        gavel(a)
     elif name == "browse":
-        cv.ring(6, 6, 20, 8, STONE)
-        cv.disc(6, 6, 8, BLUE)
-        cv.px(4, 4, WHITE); cv.px(5, 4, WHITE)
-        cv.line(10, 10, 13, 13, WOOD); cv.line(11, 10, 13, 12, WOOD_D)
-    elif name == "create":
-        cv.rect(2, 4, 10, 13, PAPER); cv.rect(2, 4, 10, 4, PAPER_D)
-        cv.rect(4, 7, 8, 7, INK); cv.rect(4, 9, 7, 9, INK)
-        cv.rect(11, 2, 12, 8, GREEN); cv.rect(9, 4, 14, 5, GREEN)
+        magnifier(a)
     elif name == "my_auctions":
-        cv.rect(3, 2, 12, 13, PURPLE_D); cv.rect(4, 3, 12, 12, PAPER)
-        cv.rect(3, 2, 3, 13, PURPLE)
-        cv.rect(6, 5, 10, 5, INK); cv.rect(6, 7, 9, 7, INK)
-        coin(cv, 9, 10, big=False)
+        tag = poly((3, 13), (13, 3), (28, 3), (28, 18), (18, 28), (13, 28), (3, 18))
+        a.fill(tag, PAPER, grad(3, 3, 28, 28, 0.95, 0.45), rim=0.14)
+        a.fill(ring(23.5, 7.5, 2.6, 2.6, 1.2), IRON, 0.5, ink=False)
+        star = poly((14, 9), (16, 14), (21, 14), (17, 17), (19, 23), (14, 19), (9, 23), (11, 17), (7, 14), (12, 14))
+        a.fill(star, GOLD, grad(7, 9, 21, 23, 1.0, 0.4))
     elif name == "buy_it_now":
-        cv.rect(2, 4, 10, 12, GREEN); cv.rect(3, 3, 9, 3, GREEN); cv.rect(11, 5, 11, 11, GREEN_D)
-        cv.rect(2, 4, 10, 4, GREEN_D)
-        cv.px(4, 6, PAPER); cv.px(5, 6, PAPER)
-        coin(cv, 7, 9, big=False)
-        cv.line(11, 3, 13, 1, INK)
+        coin(a, 13, 17, 11.5, emblem=False)
+        bolt(a, 20, 1, 1.25, GREEN)
     elif name == "bid":
-        cv.disc(7, 5, 12, WOOD)
-        cv.ring(7, 5, 12, 7, WOOD_D)
-        cv.rect(7, 9, 8, 14, WOOD_D)
-        cv.rect(5, 4, 9, 4, GOLD_L); cv.rect(6, 3, 8, 3, GOLD_L); cv.rect(6, 5, 8, 5, GOLD_L)
+        a.fill(line(15.5, 20, 15.5, 29, 3.4), WOOD, vcyl(13, 18))
+        a.fill(ell(15.5, 12, 12, 11), ramp("c8483a"), ball(15.5, 12, 12.5, 11.5))
+        a.fill(ell(15.5, 12, 9, 8), PAPER, grad(7, 4, 24, 20, 0.95, 0.6), ink=True)
+        coin(a, 15.5, 12, 5, emblem=True)
     elif name == "claim":
-        cv.rect(2, 8, 13, 13, WOOD); cv.rect(2, 8, 13, 8, WOOD_D)
-        cv.rect(2, 4, 13, 7, WOOD_D); cv.rect(3, 5, 12, 7, GOLD_D)
-        cv.rect(7, 9, 8, 11, GOLD)
-        cv.px(2, 1, GOLD_L); cv.px(8, 0, GOLD_L); cv.px(14, 2, GOLD_L); cv.px(5, 2, GOLD_L); cv.px(11, 1, GOLD_L)
+        chest(a, 2, 5, 29, 29, opened=True)
+        for cx, cy in ((8, 11), (23, 11), (15.5, 9), (11, 13), (20, 13)):
+            coin(a, cx, cy, 3.4, emblem=False)
+        a.put(pts(5, 3, 26, 2, 15, 1), (255, 250, 214))
     elif name == "confirm":
-        cv.disc(7.5, 7.5, 31, GREEN_D)
-        cv.disc(7.5, 7.5, 21, GREEN)
-        cv.line(4, 8, 7, 11, WHITE); cv.line(5, 8, 7, 10, WHITE); cv.line(7, 11, 12, 5, WHITE); cv.line(7, 10, 11, 5, WHITE)
-    else:
-        raise SystemExit("no drawing for " + name)
-    cv.outline()
-    glow(cv)
-    return cv
+        a.fill(ell(15.5, 15.5, 14, 14), GREEN, ball(15.5, 15.5, 14.5))
+        a.tone(ring(15.5, 15.5, 11.5, 11.5, 1), -1)
+        check(a, 13, 22, WHITE, 3.6, 0.95)
+    return a.outline()
 
 
 NAMES = ["coin", "bank", "deposit", "withdraw", "upgrade", "history", "buyback", "sell_all", "bazaar", "buy_now",
@@ -283,40 +165,25 @@ NAMES = ["coin", "bank", "deposit", "withdraw", "upgrade", "history", "buyback",
          "bid", "claim", "confirm"]
 
 
-def write(path, data):
-    path.parent.mkdir(parents=True, exist_ok=True)
+def write(path_, data):
+    path_.parent.mkdir(parents=True, exist_ok=True)
     mode = "wb" if isinstance(data, bytes) else "w"
-    with open(path, mode) as f:
+    with open(path_, mode) as f:
         f.write(data)
 
 
 def main():
+    if "--sheet" in sys.argv:
+        out = pathlib.Path(sys.argv[sys.argv.index("--sheet") + 1])
+        out.write_bytes(sheet([draw(n).grid() for n in NAMES], cols=11, scale=6))
+        return
     for name in NAMES:
         write(PACK / "textures/item/economy" / f"{name}.png", draw(name).png())
         write(PACK / "models/item/economy" / f"{name}.json", json.dumps(
             {"parent": "minecraft:item/generated", "textures": {"layer0": f"vampyuyu:item/economy/{name}"}}, indent=2) + "\n")
         write(PACK / "items/economy" / f"{name}.json", json.dumps(
             {"model": {"type": "minecraft:model", "model": f"vampyuyu:item/economy/{name}"}}, indent=2) + "\n")
-    if "--sheet" in sys.argv:
-        out = pathlib.Path(sys.argv[sys.argv.index("--sheet") + 1])
-        cols, scale = 6, 8
-        rows = (len(NAMES) + cols - 1) // cols
-        w, h = cols * 18 * scale, rows * 18 * scale
-        raw = bytearray()
-        for y in range(h):
-            raw.append(0)
-            for x in range(w):
-                cell = (x // scale) // 18 + ((y // scale) // 18) * cols
-                lx, ly = (x // scale) % 18 - 1, (y // scale) % 18 - 1
-                px = None
-                if cell < len(NAMES) and 0 <= lx < 16 and 0 <= ly < 16:
-                    px = draw(NAMES[cell]).p[ly][lx]
-                raw.extend(px if px else (60, 60, 70, 255))
-        def chunk(tag, data):
-            body = tag + data
-            return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF)
-        out.write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0))
-                        + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b""))
+    print(f"wrote {len(NAMES)} economy icons")
 
 
 if __name__ == "__main__":

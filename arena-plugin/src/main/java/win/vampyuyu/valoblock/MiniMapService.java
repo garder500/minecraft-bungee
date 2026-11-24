@@ -220,6 +220,7 @@ public final class MiniMapService implements Listener {
 
   @SuppressWarnings("deprecation")
   private byte colour(int rgb) {
+    if (rgb == MiniMapMath.CLEAR) return MapPalette.TRANSPARENT;
     return bytes.computeIfAbsent(rgb, k -> MapPalette.matchColor(new java.awt.Color(k)));
   }
 

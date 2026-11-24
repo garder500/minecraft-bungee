@@ -3,6 +3,8 @@ package win.vampyuyu.werewolf;
 import static win.vampyuyu.werewolf.ambience.WerewolfPresentation.*;
 
 import java.util.*;
+import win.vampyuyu.arena.ArenaLang;
+import win.vampyuyu.arena.ArenaLang.Lang;
 import win.vampyuyu.arena.CompassGUI;
 import win.vampyuyu.werewolf.ambience.WerewolfPresentation;
 
@@ -11,32 +13,59 @@ import win.vampyuyu.werewolf.ambience.WerewolfPresentation;
  * in which raw slot of the 54-slot window and what a click does; CompassGUI turns it into items.
  *
  * <p>Raw slots: 0-53 chest (the painted scene, heads on a ring), 54-80 the player's inventory rows
- * (painted boxes and buttons), 81-89 the hotbar (card, timer, lock).
+ * (painted plaques and buttons), 81-89 the hotbar (card, timer, lock).
+ *
+ * <p>The backgrounds paint no word: the window title ({@link Kind#title}) and the names and tooltips
+ * of the items are the only labels, all read from {@code lang/menus/*.yml} ({@link ArenaLang}, keys under
+ * {@code werewolf.menu.}). A plaque whose content is not chosen yet holds a placeholder item, so no
+ * well is left without a name. Role names, phase lines and role help still come from the role data
+ * in English.
  */
 public final class WerewolfMenus {
   private WerewolfMenus() {}
 
-  /** Painted background (resource-pack/layout.py), window title and colour of each menu. */
+  /**
+   * Painted background (resource-pack/layout.py), title key (lang/menus/*.yml {@code
+   * werewolf.menu.title.<key>}) and colour of each menu.
+   */
   public enum Kind {
-    VOTE("menu_vote", '\uE900', "Village vote", WerewolfPresentation.VOTE),
-    HUNT("menu_hunt", '\uEA00', "The hunt", WEREWOLF),
-    VISION("menu_vision", '\uEB00', "The vision", SEER),
-    POTIONS("menu_potions", '\uEC00', "The potions", WITCH),
-    GUARD("menu_guard", '\uED00', "The guard", WerewolfPresentation.GUARD),
-    LOVERS("menu_lovers", '\uEE00', "The lovers", CUPID),
-    SHOT("menu_shot", '\uEF00', "Last shot", HUNTER);
+    VOTE("menu_vote", '\uE900', "vote", WerewolfPresentation.VOTE),
+    HUNT("menu_hunt", '\uEA00', "hunt", WEREWOLF),
+    VISION("menu_vision", '\uEB00', "vision", SEER),
+    POTIONS("menu_potions", '\uEC00', "potions", WITCH),
+    GUARD("menu_guard", '\uED00', "guard", WerewolfPresentation.GUARD),
+    LOVERS("menu_lovers", '\uEE00', "lovers", CUPID),
+    SHOT("menu_shot", '\uEF00', "shot", HUNTER);
 
     public final String background;
     public final char tile;
-    public final String title;
+    public final String key;
     public final int color;
 
-    Kind(String background, char tile, String title, int color) {
+    Kind(String background, char tile, String key, int color) {
       this.background = background;
       this.tile = tile;
-      this.title = title;
+      this.key = key;
       this.color = color;
     }
+
+    /** The window title: the menu's name, which the background no longer paints. */
+    public String title(Lang lang) {
+      return t(lang, "title." + key);
+    }
+  }
+
+  /** Title of the village overview. */
+  public static String villageTitle(Lang lang) {
+    return t(lang, "title.village");
+  }
+
+  private static String t(Lang lang, String key, Object... pairs) {
+    return ArenaLang.tr(lang, "werewolf.menu." + key, pairs);
+  }
+
+  private static Line tl(Lang lang, int color, String key, Object... pairs) {
+    return new Line(t(lang, key, pairs), color);
   }
 
   /** The 18 ring slots around the painted emblem, clockwise from the top left. */
@@ -45,7 +74,7 @@ public final class WerewolfMenus {
   /** Raw slots of the hotbar: card, timer, lock. */
   public static final int CARD = 81, TIMER = 85, LOCK = 89;
 
-  /** First item row of the painted boxes (inventory row 1; the labels are painted on row 0). */
+  /** Item row of the painted plaques (inventory row 1; rows 0 and 2 are ornament). */
   public static int box(int col) {
     return 63 + col;
   }
@@ -109,13 +138,24 @@ public final class WerewolfMenus {
     return names.getOrDefault(id, "Player");
   }
 
-  /** Every item of the viewer's role menu, or an empty list when no role menu applies. */
+  /** {@link #menu(WerewolfGame, UUID, Map, long, boolean, Lang)} in English, the source language. */
   public static List<Entry> menu(
       WerewolfGame game,
       UUID viewer,
       Map<UUID, String> names,
       long secondsLeft,
       boolean leaveLocked) {
+    return menu(game, viewer, names, secondsLeft, leaveLocked, Lang.EN);
+  }
+
+  /** Every item of the viewer's role menu, or an empty list when no role menu applies. */
+  public static List<Entry> menu(
+      WerewolfGame game,
+      UUID viewer,
+      Map<UUID, String> names,
+      long secondsLeft,
+      boolean leaveLocked,
+      Lang lang) {
     synchronized (game) {
       Kind kind = kind(game, viewer);
       if (kind == null) return List.of();
@@ -127,15 +167,21 @@ public final class WerewolfMenus {
               .toList();
       int[] ring = slots(targets.size());
       for (int i = 0; i < targets.size() && i < 54; i++)
-        out.add(head(game, kind, viewer, targets.get(i), ring[i], names));
-      bottom(game, kind, viewer, names, out);
-      hotbar(game, viewer, names, secondsLeft, leaveLocked, out);
+        out.add(head(game, kind, viewer, targets.get(i), ring[i], names, lang));
+      bottom(game, kind, viewer, names, out, lang);
+      hotbar(game, viewer, names, secondsLeft, leaveLocked, out, lang);
       return out;
     }
   }
 
   private static Entry head(
-      WerewolfGame game, Kind kind, UUID viewer, UUID target, int slot, Map<UUID, String> names) {
+      WerewolfGame game,
+      Kind kind,
+      UUID viewer,
+      UUID target,
+      int slot,
+      Map<UUID, String> names,
+      Lang lang) {
     String n = who(names, target);
     int c = kind.color;
     switch (kind) {
@@ -150,15 +196,11 @@ public final class WerewolfMenus {
             mine,
             lines(
                 name(n),
-                new Line(
-                    votes == 0
-                        ? "No votes yet"
-                        : votes + (votes == 1 ? " vote" : " votes") + " against them",
-                    c),
+                votes == 0
+                    ? tl(lang, c, "vote.none")
+                    : tl(lang, c, votes == 1 ? "vote.against_one" : "vote.against_many", "count", votes),
                 BLANK,
-                mine
-                    ? new Line("Your vote · Click: take it back", OK)
-                    : new Line("Click: vote against " + n, OK)),
+                mine ? tl(lang, OK, "vote.mine") : tl(lang, OK, "vote.click", "player", n)),
             "select:" + target);
       }
       case HUNT -> {
@@ -171,9 +213,9 @@ public final class WerewolfMenus {
               false,
               lines(
                   name(n),
-                  new Line("A wolf of your pack", c),
+                  tl(lang, c, "hunt.packmate"),
                   BLANK,
-                  new Line("Wolves never hunt a wolf", NO)),
+                  tl(lang, NO, "hunt.never")),
               null);
         int votes = game.votes(viewer).getOrDefault(target, 0);
         boolean mine = target.equals(game.ballot(viewer));
@@ -186,11 +228,9 @@ public final class WerewolfMenus {
             mine,
             lines(
                 name(n),
-                new Line("Pack: " + votes + " / " + pack + (pack == 1 ? " wolf" : " wolves"), c),
+                tl(lang, c, pack == 1 ? "hunt.count_one" : "hunt.count_many", "votes", votes, "pack", pack),
                 BLANK,
-                mine
-                    ? new Line("Your prey · Click: change your mind", VOTE)
-                    : new Line("Click: hunt " + n, OK)),
+                mine ? tl(lang, VOTE, "hunt.mine") : tl(lang, OK, "hunt.click", "player", n)),
             "select:" + target);
       }
       case VISION -> {
@@ -204,9 +244,9 @@ public final class WerewolfMenus {
               false,
               lines(
                   name(n),
-                  new Line("✦ Seen: " + roleName(seen), c),
+                  tl(lang, c, "vision.seen", "role", roleName(seen)),
                   BLANK,
-                  new Line("Already seen", INK_DIM)),
+                  tl(lang, INK_DIM, "vision.already")),
               null);
         return new Entry(
             slot,
@@ -216,9 +256,9 @@ public final class WerewolfMenus {
             false,
             lines(
                 name(n),
-                new Line("Unknown role", c),
+                tl(lang, c, "vision.unknown"),
                 BLANK,
-                new Line("Click: see " + n + "'s role", OK)),
+                tl(lang, OK, "vision.click", "player", n)),
             "select:" + target);
       }
       case POTIONS -> {
@@ -227,16 +267,16 @@ public final class WerewolfMenus {
         boolean death = game.deathPotion(viewer);
         List<Line> l = new ArrayList<>();
         l.add(name(n));
-        if (victim) l.add(new Line("☠ The wolves' victim tonight", WEREWOLF));
-        else l.add(new Line(picked ? "Picked for the death potion" : "Asleep", c));
+        if (victim) l.add(tl(lang, WEREWOLF, "potions.victim"));
+        else l.add(tl(lang, c, picked ? "potions.picked" : "potions.asleep"));
         l.add(BLANK);
-        if (victim) l.add(new Line("LIFE: save them", VOTE));
-        if (!death) l.add(new Line("Your death potion is used", NO));
+        if (victim) l.add(tl(lang, VOTE, "potions.save"));
+        if (!death) l.add(tl(lang, NO, "potions.death_used"));
         else
           l.add(
               picked
-                  ? new Line("DEATH: poison " + n + " · Click: unpick", OK)
-                  : new Line("Click: pick for the death potion", OK));
+                  ? tl(lang, OK, "potions.unpick", "player", n)
+                  : tl(lang, OK, "potions.pick"));
         return new Entry(
             slot, target, null, 1, picked, List.copyOf(l), death ? "aim:" + target : null);
       }
@@ -250,9 +290,9 @@ public final class WerewolfMenus {
               false,
               lines(
                   name(n),
-                  new Line("Protected last night", c),
+                  tl(lang, c, "guard.last"),
                   BLANK,
-                  new Line("Not available tonight", NO)),
+                  tl(lang, NO, "guard.unavailable")),
               null);
         return new Entry(
             slot,
@@ -262,9 +302,9 @@ public final class WerewolfMenus {
             false,
             lines(
                 name(n),
-                new Line("Sleeping", c),
+                tl(lang, c, "guard.sleeping"),
                 BLANK,
-                new Line("Click: protect " + n + " (final)", OK)),
+                tl(lang, OK, "guard.click", "player", n)),
             "select:" + target);
       }
       case LOVERS -> {
@@ -279,16 +319,16 @@ public final class WerewolfMenus {
             at >= 0
                 ? lines(
                     name(n),
-                    new Line("Lover #" + (at + 1), c),
+                    tl(lang, c, "lovers.number", "number", at + 1),
                     BLANK,
-                    new Line("Click: unpick " + n, INK_DIM))
+                    tl(lang, INK_DIM, "lovers.unpick", "player", n))
                 : lines(
                     name(n),
-                    new Line("Not in love", c),
+                    tl(lang, c, "lovers.none"),
                     BLANK,
                     picks.size() < 2
-                        ? new Line("Click: pick " + n + " as a lover", OK)
-                        : new Line("Two lovers picked: unpick one first", NO)),
+                        ? tl(lang, OK, "lovers.pick", "player", n)
+                        : tl(lang, NO, "lovers.full")),
             "aim:" + target);
       }
       default -> { // SHOT
@@ -300,16 +340,29 @@ public final class WerewolfMenus {
             1,
             picked,
             picked
-                ? lines(
-                    name(n), new Line("Your target", c), BLANK, new Line("Then press SHOOT", VOTE))
-                : lines(name(n), new Line("Alive", c), BLANK, new Line("Click: aim at " + n, OK)),
+                ? lines(name(n), tl(lang, c, "shot.target"), BLANK, tl(lang, VOTE, "shot.then"))
+                : lines(
+                    name(n),
+                    tl(lang, c, "shot.alive"),
+                    BLANK,
+                    tl(lang, OK, "shot.click", "player", n)),
             "aim:" + target);
       }
     }
   }
 
+  /** A plaque whose content is not chosen yet: its name, why it is empty, what to do. */
+  private static Entry empty(int raw, String icon, Line... lines) {
+    return new Entry(raw, null, icon, 1, false, List.of(lines), null);
+  }
+
   private static void bottom(
-      WerewolfGame game, Kind kind, UUID viewer, Map<UUID, String> names, List<Entry> out) {
+      WerewolfGame game,
+      Kind kind,
+      UUID viewer,
+      Map<UUID, String> names,
+      List<Entry> out,
+      Lang lang) {
     Map<String, String> can = game.abilities(viewer);
     switch (kind) {
       case VOTE -> {
@@ -322,8 +375,16 @@ public final class WerewolfMenus {
                   null,
                   1,
                   false,
-                  lines(name(who(names, mine)), new Line("Your vote", VOTE)),
+                  lines(name(who(names, mine)), tl(lang, VOTE, "vote.box_mine")),
                   "select:" + mine));
+        else
+          out.add(
+              empty(
+                  box(1),
+                  "tag",
+                  tl(lang, VOTE, "vote.box_mine"),
+                  tl(lang, INK_MUTED, "vote.box_mine_none"),
+                  tl(lang, INK_DIM, "vote.box_mine_hint")));
         Map<UUID, Integer> votes = game.votes(viewer);
         int top = votes.values().stream().mapToInt(Integer::intValue).max().orElse(0);
         List<UUID> leaders =
@@ -341,7 +402,7 @@ public final class WerewolfMenus {
                   false,
                   lines(
                       name(who(names, leaders.getFirst())),
-                      new Line(top + (top == 1 ? " vote" : " votes") + " · leading", VOTE)),
+                      tl(lang, VOTE, top == 1 ? "vote.leading_one" : "vote.leading_many", "count", top)),
                   null));
         else if (top > 0)
           out.add(
@@ -351,8 +412,15 @@ public final class WerewolfMenus {
                   "skip",
                   1,
                   false,
-                  lines(new Line("Tie", 0xffffff), new Line("A tie eliminates nobody", INK_MUTED)),
+                  lines(tl(lang, 0xffffff, "vote.tie"), tl(lang, INK_MUTED, "vote.tie_info")),
                   null));
+        else
+          out.add(
+              empty(
+                  box(4),
+                  "star",
+                  tl(lang, VOTE, "vote.box_leading"),
+                  tl(lang, INK_MUTED, "vote.none")));
         boolean skipped = game.abstained(viewer);
         out.add(
             new Entry(
@@ -362,15 +430,12 @@ public final class WerewolfMenus {
                 1,
                 skipped,
                 skipped
-                    ? lines(
-                        new Line("You skip this vote", 0xffffff),
-                        BLANK,
-                        new Line("Click: vote after all", OK))
+                    ? lines(tl(lang, 0xffffff, "vote.skip_on"), BLANK, tl(lang, OK, "vote.skip_back"))
                     : lines(
-                        new Line("Skip the vote", 0xffffff),
-                        new Line("Vote for nobody this time", INK_MUTED),
+                        tl(lang, 0xffffff, "vote.skip"),
+                        tl(lang, INK_MUTED, "vote.skip_info"),
                         BLANK,
-                        new Line("Click: skip", OK)),
+                        tl(lang, OK, "vote.skip_click")),
                 "use:skip"));
       }
       case HUNT -> {
@@ -383,8 +448,16 @@ public final class WerewolfMenus {
                   null,
                   1,
                   false,
-                  lines(name(who(names, prey)), new Line("Your prey", WEREWOLF)),
+                  lines(name(who(names, prey)), tl(lang, WEREWOLF, "hunt.box_prey")),
                   "select:" + prey));
+        else
+          out.add(
+              empty(
+                  box(1),
+                  "target",
+                  tl(lang, WEREWOLF, "hunt.box_prey"),
+                  tl(lang, INK_MUTED, "hunt.box_prey_none"),
+                  tl(lang, INK_DIM, "hunt.box_prey_hint")));
         List<UUID> pack = game.pack(viewer);
         for (int i = 0; i < pack.size() && i < 3; i++) {
           UUID wolf = pack.get(i), choice = game.ballot(wolf);
@@ -397,9 +470,10 @@ public final class WerewolfMenus {
                   false,
                   lines(
                       name(who(names, wolf)),
-                      new Line(
-                          choice == null ? "Has not chosen yet" : "Hunts " + who(names, choice),
-                          WEREWOLF)),
+                      tl(lang, INK_MUTED, "hunt.box_pack"),
+                      choice == null
+                          ? tl(lang, WEREWOLF, "hunt.waiting")
+                          : tl(lang, WEREWOLF, "hunt.hunts", "player", who(names, choice))),
                   null));
         }
         if (pack.isEmpty())
@@ -410,7 +484,7 @@ public final class WerewolfMenus {
                   "mark-wolf",
                   1,
                   false,
-                  lines(new Line("You hunt alone", 0xffffff)),
+                  lines(tl(lang, 0xffffff, "hunt.box_pack"), tl(lang, INK_MUTED, "hunt.alone")),
                   null));
       }
       case VISION -> {
@@ -427,7 +501,8 @@ public final class WerewolfMenus {
                   null,
                   1,
                   false,
-                  lines(name(n), new Line("✦ " + role, SEER)),
+                  lines(
+                      name(n), tl(lang, SEER, "vision.box_role", "role", role), tl(lang, INK_DIM, "vision.box")),
                   null));
           out.add(
               new Entry(
@@ -438,9 +513,17 @@ public final class WerewolfMenus {
                   false,
                   lines(
                       new Line(role, WerewolfPresentation.color(v.getValue())),
-                      new Line(n + " is " + article(v.getValue()) + role, INK_MUTED)),
+                      tl(lang, INK_MUTED, "vision.box_is", "player", n, "role", role)),
                   null));
         }
+        if (last.isEmpty())
+          out.add(
+              empty(
+                  box(1),
+                  "card-back",
+                  tl(lang, SEER, "vision.box"),
+                  tl(lang, INK_MUTED, "vision.box_none"),
+                  tl(lang, INK_DIM, "vision.box_hint")));
       }
       case POTIONS -> {
         UUID victim = game.victim(viewer);
@@ -454,15 +537,13 @@ public final class WerewolfMenus {
                 false,
                 life
                     ? lines(
-                        new Line("LIFE", VOTE),
-                        new Line("Save " + who(names, victim) + ", the wolves' victim", INK_MUTED),
+                        tl(lang, VOTE, "potions.life"),
+                        tl(lang, INK_MUTED, "potions.life_save", "player", who(names, victim)),
                         BLANK,
-                        new Line("Click: drink the life potion", OK))
+                        tl(lang, OK, "potions.life_click"))
                     : lines(
-                        new Line("LIFE", VOTE),
-                        new Line(
-                            game.lifePotion(viewer) ? "Nobody to save tonight" : "Already used",
-                            NO)),
+                        tl(lang, VOTE, "potions.life"),
+                        tl(lang, NO, game.lifePotion(viewer) ? "potions.life_nobody" : "potions.used")),
                 life ? "use:heal" : null));
         boolean death = can.containsKey("poison");
         List<UUID> aim = game.aims(viewer);
@@ -475,14 +556,13 @@ public final class WerewolfMenus {
                 false,
                 death
                     ? lines(
-                        new Line("DEATH", WITCH),
-                        new Line("Poison " + who(names, aim.getFirst()), INK_MUTED),
+                        tl(lang, WITCH, "potions.death"),
+                        tl(lang, INK_MUTED, "potions.death_poison", "player", who(names, aim.getFirst())),
                         BLANK,
-                        new Line("Click: pour the death potion", OK))
+                        tl(lang, OK, "potions.death_click"))
                     : lines(
-                        new Line("DEATH", WITCH),
-                        new Line(
-                            game.deathPotion(viewer) ? "Pick a head first" : "Already used", NO)),
+                        tl(lang, WITCH, "potions.death"),
+                        tl(lang, NO, game.deathPotion(viewer) ? "potions.death_first" : "potions.used")),
                 death ? "use:poison" : null));
         out.add(
             new Entry(
@@ -492,10 +572,10 @@ public final class WerewolfMenus {
                 1,
                 false,
                 lines(
-                    new Line("SLEEP", INK_DIM),
-                    new Line("End your turn", INK_MUTED),
+                    tl(lang, INK_DIM, "potions.sleep"),
+                    tl(lang, INK_MUTED, "potions.sleep_info"),
                     BLANK,
-                    new Line("Click: go back to sleep", OK)),
+                    tl(lang, OK, "potions.sleep_click")),
                 "use:sleep"));
       }
       case GUARD -> {
@@ -509,9 +589,16 @@ public final class WerewolfMenus {
                   1,
                   false,
                   lines(
-                      name(last.equals(viewer) ? "You" : who(names, last)),
-                      new Line("Protected last night", WerewolfPresentation.GUARD)),
+                      name(last.equals(viewer) ? t(lang, "guard.you") : who(names, last)),
+                      tl(lang, WerewolfPresentation.GUARD, "guard.last")),
                   null));
+        else
+          out.add(
+              empty(
+                  box(1),
+                  "mark-last",
+                  tl(lang, WerewolfPresentation.GUARD, "guard.box_last"),
+                  tl(lang, INK_MUTED, "guard.box_last_none")));
         boolean self = can.containsKey("protect-self");
         out.add(
             new Entry(
@@ -522,13 +609,12 @@ public final class WerewolfMenus {
                 false,
                 self
                     ? lines(
-                        new Line("PROTECT ME", WerewolfPresentation.GUARD),
-                        new Line("Guard yourself tonight", INK_MUTED),
+                        tl(lang, WerewolfPresentation.GUARD, "guard.self"),
+                        tl(lang, INK_MUTED, "guard.self_info"),
                         BLANK,
-                        new Line("Click: protect yourself (final)", OK))
+                        tl(lang, OK, "guard.self_click"))
                     : lines(
-                        new Line("PROTECT ME", WerewolfPresentation.GUARD),
-                        new Line("Not two nights in a row", NO)),
+                        tl(lang, WerewolfPresentation.GUARD, "guard.self"), tl(lang, NO, "guard.self_no")),
                 self ? "use:protect-self" : null));
       }
       case LOVERS -> {
@@ -541,9 +627,36 @@ public final class WerewolfMenus {
                   null,
                   1,
                   false,
-                  lines(name(who(names, picks.get(i))), new Line("Lover #" + (i + 1), CUPID)),
+                  lines(name(who(names, picks.get(i))), tl(lang, CUPID, "lovers.number", "number", i + 1)),
                   "aim:" + picks.get(i)));
-        out.add(new Entry(box(2), null, "heart", 1, false, lines(new Line("♥", CUPID)), null));
+        for (int i = picks.size(); i < 2; i++)
+          out.add(
+              empty(
+                  box(1 + 2 * i),
+                  "tag",
+                  tl(lang, CUPID, "lovers.number", "number", i + 1),
+                  tl(lang, INK_MUTED, "lovers.box_none"),
+                  tl(lang, INK_DIM, "lovers.box_hint")));
+        out.add(
+            new Entry(
+                box(2),
+                null,
+                "heart",
+                1,
+                false,
+                picks.size() == 2
+                    ? lines(
+                        tl(lang, CUPID, "lovers.box"),
+                        tl(
+                            lang,
+                            INK_MUTED,
+                            "lovers.bind_pair",
+                            "first",
+                            who(names, picks.get(0)),
+                            "second",
+                            who(names, picks.get(1))))
+                    : lines(tl(lang, CUPID, "lovers.box"), tl(lang, INK_MUTED, "lovers.box_hint")),
+                null));
         boolean bind = can.containsKey("bind");
         out.add(
             new Entry(
@@ -554,12 +667,18 @@ public final class WerewolfMenus {
                 bind,
                 bind
                     ? lines(
-                        new Line("BIND", CUPID),
-                        new Line(
-                            who(names, picks.get(0)) + " ♥ " + who(names, picks.get(1)), INK_MUTED),
+                        tl(lang, CUPID, "lovers.bind"),
+                        tl(
+                            lang,
+                            INK_MUTED,
+                            "lovers.bind_pair",
+                            "first",
+                            who(names, picks.get(0)),
+                            "second",
+                            who(names, picks.get(1))),
                         BLANK,
-                        new Line("Click: unite them (final)", OK))
-                    : lines(new Line("BIND", CUPID), new Line("Pick two lovers first", NO)),
+                        tl(lang, OK, "lovers.bind_click"))
+                    : lines(tl(lang, CUPID, "lovers.bind"), tl(lang, NO, "lovers.bind_first")),
                 bind ? "use:bind" : null));
       }
       case SHOT -> {
@@ -572,8 +691,16 @@ public final class WerewolfMenus {
                   null,
                   1,
                   false,
-                  lines(name(who(names, aim.getFirst())), new Line("Your target", HUNTER)),
+                  lines(name(who(names, aim.getFirst())), tl(lang, HUNTER, "shot.target")),
                   "aim:" + aim.getFirst()));
+        else
+          out.add(
+              empty(
+                  box(1),
+                  "tag",
+                  tl(lang, HUNTER, "shot.target"),
+                  tl(lang, INK_MUTED, "shot.target_none"),
+                  tl(lang, INK_DIM, "shot.target_hint")));
         boolean shoot = can.containsKey("shoot");
         out.add(
             new Entry(
@@ -584,11 +711,11 @@ public final class WerewolfMenus {
                 shoot,
                 shoot
                     ? lines(
-                        new Line("SHOOT", HUNTER),
-                        new Line("Shoot " + who(names, aim.getFirst()), INK_MUTED),
+                        tl(lang, HUNTER, "shot.shoot"),
+                        tl(lang, INK_MUTED, "shot.shoot_info", "player", who(names, aim.getFirst())),
                         BLANK,
-                        new Line("Click: fire (final)", OK))
-                    : lines(new Line("SHOOT", HUNTER), new Line("Pick your target first", NO)),
+                        tl(lang, OK, "shot.shoot_click"))
+                    : lines(tl(lang, HUNTER, "shot.shoot"), tl(lang, NO, "shot.shoot_first")),
                 shoot ? "use:shoot" : null));
       }
     }
@@ -611,6 +738,18 @@ public final class WerewolfMenus {
       String arena,
       long secondsLeft,
       boolean leaveLocked) {
+    return village(game, viewer, names, arena, secondsLeft, leaveLocked, Lang.EN);
+  }
+
+  /** The village overview in the viewer's language. */
+  public static List<Entry> village(
+      WerewolfGame game,
+      UUID viewer,
+      Map<UUID, String> names,
+      String arena,
+      long secondsLeft,
+      boolean leaveLocked,
+      Lang lang) {
     List<Entry> out = new ArrayList<>();
     if (game == null) {
       List<UUID> waiting =
@@ -628,11 +767,12 @@ public final class WerewolfMenus {
                 waiting.get(i).equals(viewer),
                 lines(
                     name(
-                        who(names, waiting.get(i))
-                            + (waiting.get(i).equals(viewer) ? " (you)" : "")),
-                    new Line("Ready", VILLAGER),
+                        waiting.get(i).equals(viewer)
+                            ? t(lang, "village.you_suffix", "player", who(names, waiting.get(i)))
+                            : who(names, waiting.get(i))),
+                    tl(lang, VILLAGER, "village.ready"),
                     BLANK,
-                    new Line("The game starts when an administrator is ready", INK_DIM)),
+                    tl(lang, INK_DIM, "village.ready_info")),
                 null));
       out.add(
           new Entry(
@@ -642,9 +782,10 @@ public final class WerewolfMenus {
               1,
               false,
               withRules(
+                  lang,
                   arena,
-                  new Line("Waiting", VILLAGER),
-                  new Line("Roles are dealt when the game starts", INK_MUTED)),
+                  tl(lang, VILLAGER, "village.waiting"),
+                  tl(lang, INK_MUTED, "village.waiting_info")),
               null));
       out.add(
           new Entry(
@@ -653,7 +794,7 @@ public final class WerewolfMenus {
               "heart",
               Math.max(1, names.size()),
               false,
-              lines(new Line(names.size() + " in the village", 0xffffff)),
+              lines(tl(lang, 0xffffff, "village.count", "count", names.size())),
               null));
       out.add(
           new Entry(
@@ -662,11 +803,9 @@ public final class WerewolfMenus {
               "card-back",
               1,
               false,
-              lines(
-                  new Line("Your card", INK),
-                  new Line("Dealt face down when the game starts", INK_MUTED)),
+              lines(tl(lang, INK, "village.card"), tl(lang, INK_MUTED, "village.card_info")),
               null));
-      timerAndLock(secondsLeft, leaveLocked, out);
+      timerAndLock(secondsLeft, leaveLocked, out, lang);
       out.removeIf(e -> e.raw() == TIMER); // No turn runs yet.
       return out;
     }
@@ -683,15 +822,19 @@ public final class WerewolfMenus {
         UUID p = living.get(i);
         Line state =
             p.equals(viewer)
-                ? new Line(
-                    "You · " + roleName(game.selfRoleName(p)), WerewolfPresentation.color(game.selfRoleName(p)))
+                ? tl(
+                    lang,
+                    WerewolfPresentation.color(game.selfRoleName(p)),
+                    "village.you",
+                    "role",
+                    roleName(game.selfRoleName(p)))
                 : pack.contains(p)
-                    ? new Line("A wolf of your pack", WEREWOLF)
+                    ? tl(lang, WEREWOLF, "hunt.packmate")
                     : p.equals(partner)
-                        ? new Line("♥ Your lover", CUPID)
+                        ? tl(lang, CUPID, "village.lover")
                         : seen.containsKey(p)
-                            ? new Line("✦ Seen: " + roleName(seen.get(p)), SEER)
-                            : new Line("Alive", VILLAGER);
+                            ? tl(lang, SEER, "vision.seen", "role", roleName(seen.get(p)))
+                            : tl(lang, VILLAGER, "shot.alive");
         out.add(
             new Entry(
                 ring[i], p, null, 1, p.equals(viewer), lines(name(who(names, p)), state), null));
@@ -707,8 +850,9 @@ public final class WerewolfMenus {
               1,
               false,
               withRules(
+                  lang,
                   arena,
-                  new Line((night ? "☾ Night " : "☀ Day ") + game.round(), night ? SEER : VILLAGER),
+                  tl(lang, night ? SEER : VILLAGER, night ? "village.night" : "village.day", "round", game.round()),
                   new Line(view.phase(), INK_MUTED),
                   new Line(view.instruction(), INK)),
               null));
@@ -721,13 +865,13 @@ public final class WerewolfMenus {
               Math.max(1, alive),
               false,
               lines(
-                  new Line(alive + " / " + all + " alive", 0xffffff),
-                  new Line(
-                      all - alive == 0 ? "Nobody has died yet" : (all - alive) + " dead",
-                      INK_MUTED)),
+                  tl(lang, 0xffffff, "village.alive", "alive", alive, "all", all),
+                  all - alive == 0
+                      ? tl(lang, INK_MUTED, "village.no_dead")
+                      : tl(lang, INK_MUTED, "village.dead", "count", all - alive)),
               null));
       List<Line> roles = new ArrayList<>();
-      roles.add(new Line("Roles in the deal", 0xffffff));
+      roles.add(tl(lang, 0xffffff, "village.roles"));
       int count = 0;
       for (var e : game.composition().entrySet()) {
         count += e.getValue();
@@ -747,23 +891,23 @@ public final class WerewolfMenus {
                 null,
                 1,
                 false,
-                lines(name(who(names, partner)), new Line("♥ Your lover", CUPID)),
+                lines(name(who(names, partner)), tl(lang, CUPID, "village.lover")),
                 null));
-      out.add(card(game, viewer, names));
-      timerAndLock(phase.equals("FINISHED") ? 0 : secondsLeft, leaveLocked, out);
+      out.add(card(game, viewer, names, lang));
+      timerAndLock(phase.equals("FINISHED") ? 0 : secondsLeft, leaveLocked, out, lang);
       return out;
     }
   }
 
   /** The game's lines, then the arena's rules: the overview's only reading matter. */
-  private static List<Line> withRules(String arena, Line... head) {
+  private static List<Line> withRules(Lang lang, String arena, Line... head) {
     List<Line> out = new ArrayList<>(List.of(head));
     out.add(BLANK);
     out.add(new Line(arena, 0xffffff));
-    out.add(new Line("The village wins once every wolf is dead", INK_MUTED));
-    out.add(new Line("The wolves win once no villager is left", INK_MUTED));
-    out.add(new Line("A tie eliminates nobody", INK_MUTED));
-    out.add(new Line("Your own items are stored until you leave", INK_DIM));
+    out.add(tl(lang, INK_MUTED, "village.rule_village"));
+    out.add(tl(lang, INK_MUTED, "village.rule_wolves"));
+    out.add(tl(lang, INK_MUTED, "village.rule_tie"));
+    out.add(tl(lang, INK_DIM, "village.rule_items"));
     return List.copyOf(out);
   }
 
@@ -778,12 +922,14 @@ public final class WerewolfMenus {
       Map<UUID, String> names,
       long secondsLeft,
       boolean leaveLocked,
-      List<Entry> out) {
-    out.add(card(game, viewer, names));
-    timerAndLock(secondsLeft, leaveLocked, out);
+      List<Entry> out,
+      Lang lang) {
+    out.add(card(game, viewer, names, lang));
+    timerAndLock(secondsLeft, leaveLocked, out, lang);
   }
 
-  private static void timerAndLock(long secondsLeft, boolean leaveLocked, List<Entry> out) {
+  private static void timerAndLock(
+      long secondsLeft, boolean leaveLocked, List<Entry> out, Lang lang) {
     out.add(
         new Entry(
             TIMER,
@@ -792,8 +938,8 @@ public final class WerewolfMenus {
             (int) Math.max(1, Math.min(99, secondsLeft)),
             false,
             lines(
-                new Line(clock(secondsLeft) + " left", VOTE),
-                new Line("The turn ends when the timer runs out", INK_MUTED)),
+                tl(lang, VOTE, "hotbar.left", "clock", clock(secondsLeft)),
+                tl(lang, INK_MUTED, "hotbar.timer_info")),
             null));
     out.add(
         leaveLocked
@@ -803,9 +949,7 @@ public final class WerewolfMenus {
                 "lock",
                 1,
                 false,
-                lines(
-                    new Line("Leave locked", 0xffffff),
-                    new Line("You cannot leave while the game is running", INK_MUTED)),
+                lines(tl(lang, 0xffffff, "hotbar.locked"), tl(lang, INK_MUTED, "hotbar.locked_info")),
                 null)
             : new Entry(
                 LOCK,
@@ -814,22 +958,27 @@ public final class WerewolfMenus {
                 1,
                 false,
                 lines(
-                    new Line("Leave the arena", 0xffffff),
-                    new Line("Get your items, stats and position back", INK_MUTED),
+                    tl(lang, 0xffffff, "hotbar.leave"),
+                    tl(lang, INK_MUTED, "hotbar.leave_info"),
                     BLANK,
-                    new Line("Click: leave", OK)),
+                    tl(lang, OK, "hotbar.leave_click")),
                 "leave"));
   }
 
   /** The viewer's role card: its name in the role colour, the team, then how to play it. */
   public static Entry card(WerewolfGame game, UUID viewer, Map<UUID, String> names) {
+    return card(game, viewer, names, Lang.EN);
+  }
+
+  /** The card in the viewer's language (the role's name, team and help are role data, in English). */
+  public static Entry card(WerewolfGame game, UUID viewer, Map<UUID, String> names, Lang lang) {
     String role = game.selfRoleName(viewer);
     String help = game.help(viewer);
     for (var entry : names.entrySet())
       help = help.replace(entry.getKey().toString(), entry.getValue());
     List<Line> l = new ArrayList<>();
     l.add(new Line(roleName(role), WerewolfPresentation.color(role)));
-    l.add(new Line(game.isMinion(viewer) ? "Wolf side" : team(role), INK));
+    l.add(game.isMinion(viewer) ? tl(lang, INK, "hotbar.wolf_side") : new Line(team(role), INK));
     l.add(BLANK);
     for (String part : wrap(help, 40)) l.add(new Line(part, INK_MUTED));
     return new Entry(

@@ -7,8 +7,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.IntSupplier;
+import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
@@ -45,6 +48,10 @@ final class WorldSelector implements Listener {
     private static final int SURVIVAL_SLOT = 15;
     private static final int LOBBY_SLOT = 22;
     private static final int CLOSE_SLOT = 26;
+    private static final int WEREWOLF_SLOT = 29;
+    private static final int VALOBLOCK_SLOT = 33;
+    /** A {@link Game} destination, {@code server:id}. Outside the enum: its constants are built before its own statics. */
+    private static final Pattern GAME_ARENA = Pattern.compile("(lobby|creative|survival):[a-z0-9][a-z0-9_-]{0,39}");
 
     static Component text(String content, TextColor color) {
         return Component.text(content, color).decoration(TextDecoration.ITALIC, false);
@@ -70,11 +77,28 @@ final class WorldSelector implements Listener {
         return item;
     }
 
-    // Painted layout: Creative and Survival are 3x3 arches; the 3x2 card between them is Skyblock, with the lobby link under it.
+    // Painted layout (render.py lobby): rows 0-2 are the worlds. Creative and Survival are 3x3 arches; the 3x2 card
+    // between them is Skyblock, with the lobby link under it. Rows 3-5 are the games: Werewolf on columns 0-3,
+    // ValoBlock on columns 5-8, column 4 is decoration.
     static final int[] CREATIVE_AREA = {0, 1, 2, 9, 10, 11, 18, 19, 20};
     static final int[] SURVIVAL_AREA = {6, 7, 8, 15, 16, 17, 24, 25, 26};
     static final int[] LOBBY_AREA = {21, 22, 23};
     static final int[] SKYBLOCK_AREA = {3, 4, 5, 12, 13, 14};
+    static final int[] WEREWOLF_AREA = {27, 28, 29, 30, 36, 37, 38, 39, 45, 46, 47, 48};
+    static final int[] VALOBLOCK_AREA = {32, 33, 34, 35, 41, 42, 43, 44, 50, 51, 52, 53};
+
+    /** The text of the game cards in the viewer's language: a lang key to a line (lang/*.yml, MiniMessage). */
+    @FunctionalInterface
+    interface Words {
+        Component get(String key);
+
+        /** Shows the keys themselves: tests and a plugin whose translations failed to load. */
+        Words KEYS = Component::text;
+
+        static Words of(Map<String, String> texts) {
+            return key -> MiniMessage.miniMessage().deserialize(texts.getOrDefault(key, key));
+        }
+    }
 
     private static boolean in(int[] area, int slot) {
         for (int candidate : area) if (candidate == slot) return true;
@@ -94,16 +118,22 @@ final class WorldSelector implements Listener {
          * @param online players online on the network, or a negative number when unknown
          */
         Menu(boolean skinned, boolean routing, int online) {
+            this(skinned, routing, online, Words.KEYS);
+        }
+
+        Menu(boolean skinned, boolean routing, int online, Words words) {
             this.skinned = skinned;
             if (skinned) {
-                inventory = Bukkit.createInventory(this, 27, MenuPack.title(MenuPack.LOBBY, MenuPack.ROWS_27, Component.empty()));
+                inventory = Bukkit.createInventory(this, 54, MenuPack.title(MenuPack.LOBBY, MenuPack.ROWS_54, Component.empty()));
                 fill(CREATIVE_AREA, creativeCard());
                 fill(SURVIVAL_AREA, survivalCard());
                 fill(LOBBY_AREA, lobbyCard());
                 fill(SKYBLOCK_AREA, skyblockCard(routing, online));
+                fill(WEREWOLF_AREA, gameCard(Game.WEREWOLF, words));
+                fill(VALOBLOCK_AREA, gameCard(Game.VALOBLOCK, words));
                 return;
             }
-            inventory = Bukkit.createInventory(this, 27, brand());
+            inventory = Bukkit.createInventory(this, 36, brand());
             ItemStack dark = item(Material.BLACK_STAINED_GLASS_PANE, Component.empty());
             ItemStack wine = item(Material.RED_STAINED_GLASS_PANE, Component.empty());
             ItemStack ivory = item(Material.WHITE_STAINED_GLASS_PANE, Component.empty());
@@ -112,7 +142,7 @@ final class WorldSelector implements Listener {
                 inventory.setItem(slot, dark);
             }
             // A symmetrical red frame, with pale accents around the two world cards.
-            for (int slot : new int[] {0, 1, 2, 6, 7, 8, 9, 17, 18, 19, 20, 24, 25, 26}) {
+            for (int slot : new int[] {0, 1, 2, 6, 7, 8, 9, 17, 18, 19, 20, 24, 25, 26, 27, 35}) {
                 inventory.setItem(slot, wine);
             }
             for (int slot : new int[] {3, 5, 21, 23}) {
@@ -128,6 +158,22 @@ final class WorldSelector implements Listener {
             inventory.setItem(CLOSE_SLOT, item(Material.BARRIER,
                     text("Close menu", ROSE),
                     text("Stay in your current world.", MUTED)));
+            inventory.setItem(WEREWOLF_SLOT, gameCard(Game.WEREWOLF, words));
+            inventory.setItem(VALOBLOCK_SLOT, gameCard(Game.VALOBLOCK, words));
+        }
+
+        /** A game card: its name, a pitch and how a game starts, all from the lang files (worlds.<game>.*). */
+        static ItemStack gameCard(Game game, Words words) {
+            String base = "worlds." + game.key + ".";
+            List<Component> lore = new ArrayList<>();
+            for (String line : new String[] {"tagline", "", "lore1", "lore2", "players", "", "click"}) {
+                lore.add(line.isEmpty() ? Component.empty() : plain(words.get(line.equals("click") ? "worlds.games.click" : base + line)));
+            }
+            return item(game.icon, plain(words.get(base + "name")), lore.toArray(Component[]::new));
+        }
+
+        private static Component plain(Component line) {
+            return line.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
         }
 
         private void fill(int[] area, ItemStack card) {
@@ -225,7 +271,7 @@ final class WorldSelector implements Listener {
         this.online = Objects.requireNonNull(supplier);
     }
 
-    /** {@code /menu [creative|survival|skyblock|lobby] [island]}: the menu, or straight to a world. */
+    /** {@code /menu [creative|survival|skyblock|lobby|werewolf|valoblock] [island]}: the menu, or straight to a world or game. */
     private boolean command(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Use this command in game.");
@@ -235,10 +281,15 @@ final class WorldSelector implements Listener {
             open(player);
             return true;
         }
+        Game game = Game.parse(args[0]);
+        if (game != null && args.length == 1) {
+            play(player, game);
+            return true;
+        }
         Target target = Target.parse(args[0]);
         SkyblockRoute.Dest dest = args.length > 1 ? parseDest(args[1]) : SkyblockRoute.Dest.SKYBLOCK;
         if (target == null || args.length > 2 || (args.length == 2 && (target != Target.SKYBLOCK || dest == null))) {
-            player.sendMessage(prefix().append(text("Usage: /menu [creative|survival|skyblock|lobby] [island]", ROSE)));
+            player.sendMessage(prefix().append(text("Usage: /menu [creative|survival|skyblock|lobby|werewolf|valoblock] [island]", ROSE)));
             return true;
         }
         travel(player, target, dest);
@@ -247,7 +298,7 @@ final class WorldSelector implements Listener {
 
     private List<String> complete(CommandSender sender, Command command, String alias, String[] args) {
         String prefix = args.length == 0 ? "" : args[args.length - 1].toLowerCase(Locale.ROOT);
-        List<String> options = args.length == 1 ? List.of("creative", "survival", "skyblock", "lobby")
+        List<String> options = args.length == 1 ? List.of("creative", "survival", "skyblock", "lobby", "werewolf", "valoblock")
                 : args.length == 2 && "skyblock".equalsIgnoreCase(args[0]) ? List.of("island") : List.of();
         return options.stream().filter(option -> option.startsWith(prefix)).toList();
     }
@@ -285,8 +336,23 @@ final class WorldSelector implements Listener {
     private void open(Player player) {
         boolean local = "survival".equals(server) && !Bukkit.getMessenger()
             .getIncomingChannelRegistrations(SkyblockHandoff.CHANNEL).isEmpty();
-        player.openInventory(new Menu(pack != null && pack.active(player), local || handoff.available(), online.getAsInt()).getInventory());
+        player.openInventory(new Menu(pack != null && pack.active(player), local || handoff.available(), online.getAsInt(), words(player)).getInventory());
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.35f, 1.1f);
+    }
+
+    private Words words(Player player) {
+        var i18n = plugin instanceof NetworkDisplay display ? display.i18n() : null;
+        return i18n == null ? Words.KEYS : key -> i18n.msg(player, key);
+    }
+
+    /** Joins the game's waiting room through the arena plugin (/arena join server:id, which also crosses servers). */
+    void play(Player player, Game game) {
+        if (!player.isOnline()) return;
+        if (Bukkit.getPluginCommand("arena") == null) {
+            player.sendMessage(prefix().append(words(player).get("worlds.games.unavailable")));
+            return;
+        }
+        player.performCommand("arena join " + game.arena());
     }
 
     @EventHandler
@@ -304,6 +370,14 @@ final class WorldSelector implements Listener {
         }
         Target target = destination(menu.skinned, slot);
         SkyblockRoute.Dest dest = destFor(event.getClick());
+        Game game = game(menu.skinned, slot);
+        if (game != null && dest != null) {
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                player.closeInventory();
+                play(player, game);
+            });
+            return;
+        }
         if (target == null || dest == null) {
             return;
         }
@@ -340,6 +414,39 @@ final class WorldSelector implements Listener {
         }
     }
 
+    /**
+     * A game card and the arena it joins. The arena is {@code server:id} for /arena join; the env var overrides the
+     * default (WEREWOLF_ARENA, VALOBLOCK_ARENA), for a network whose arenas live elsewhere.
+     */
+    enum Game {
+        WEREWOLF("werewolf", Material.BONE, "WEREWOLF_ARENA", "creative:werewolf"),
+        VALOBLOCK("valoblock", Material.CROSSBOW, "VALOBLOCK_ARENA", "creative:valoblock");
+
+        final String key;
+        final Material icon;
+        private final String arena;
+
+        Game(String key, Material icon, String env, String fallback) {
+            this.key = key;
+            this.icon = icon;
+            this.arena = arena(System.getenv(env), fallback);
+        }
+
+        /** The configured destination when it is a valid {@code server:id}, else the default. */
+        static String arena(String configured, String fallback) {
+            return configured != null && GAME_ARENA.matcher(configured.trim()).matches() ? configured.trim() : fallback;
+        }
+
+        String arena() {
+            return arena;
+        }
+
+        static Game parse(String word) {
+            for (Game game : values()) if (game.key.equalsIgnoreCase(word)) return game;
+            return null;
+        }
+    }
+
     /** The BungeeCord "Connect" message body. */
     static byte[] connectMessage(String server) throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -372,6 +479,14 @@ final class WorldSelector implements Listener {
                 : slot == SURVIVAL_SLOT ? Target.SURVIVAL
                 : slot == SKYBLOCK_SLOT ? Target.SKYBLOCK
                 : slot == LOBBY_SLOT ? Target.LOBBY : null;
+    }
+
+    /** Maps a clicked top-inventory slot to a game card, or null. */
+    static Game game(boolean skinned, int slot) {
+        if (skinned) {
+            return in(WEREWOLF_AREA, slot) ? Game.WEREWOLF : in(VALOBLOCK_AREA, slot) ? Game.VALOBLOCK : null;
+        }
+        return slot == WEREWOLF_SLOT ? Game.WEREWOLF : slot == VALOBLOCK_SLOT ? Game.VALOBLOCK : null;
     }
 
     @EventHandler

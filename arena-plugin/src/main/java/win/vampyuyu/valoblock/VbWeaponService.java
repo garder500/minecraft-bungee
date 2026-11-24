@@ -630,7 +630,7 @@ public final class VbWeaponService implements WeaponService, Listener {
     }
   }
 
-  /** Releasing right-click on the Watcher's Eye fires it (the stop-using-item event, like a bow). */
+  /** Releasing right-click on the HX-50 Sovereign fires it (the stop-using-item event, like a bow). */
   @EventHandler(priority = EventPriority.HIGH)
   public void release(io.papermc.paper.event.player.PlayerStopUsingItemEvent e) {
     Player p = e.getPlayer();
@@ -743,7 +743,7 @@ public final class VbWeaponService implements WeaponService, Listener {
     String id = WeaponItems.id(stack);
     VbWeapon w = id == null ? null : VbData.weapons().get(id);
     if (!WeaponItems.isVb(stack) || w == null || w.free() || !w.isGun()) {
-      e.setCancelled(true); // Pip, the knife and the Armory stay
+      e.setCancelled(true); // the SP-9 Sentry, the knife and the Armory stay
       return;
     }
     Gear g = gear(p.getUniqueId());

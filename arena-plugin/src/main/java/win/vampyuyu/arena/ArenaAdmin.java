@@ -480,9 +480,23 @@ public final class ArenaAdmin implements Listener {
   }
 
   private void confirm(Player p, String title, Action yes, Action no) {
+    // The background paints no word: the title names the action, the two buttons say the rest.
+    ArenaLang.Lang lang = ArenaLang.of(p);
     Menu m = new Menu(p, Kind.CONFIRM, title);
-    m.area(new int[] {23, 24, 25}, Material.RED_WOOL, "trash", "Confirm: " + title, yes);
-    m.area(new int[] {19, 20, 21}, Material.ARROW, "back", "Cancel", no);
+    m.area(
+        new int[] {23, 24, 25},
+        Material.RED_WOOL,
+        "trash",
+        ArenaLang.tr(lang, "menu.confirm.confirm", "action", title),
+        yes,
+        ArenaLang.tr(lang, "menu.confirm.warning"));
+    m.area(
+        new int[] {19, 20, 21},
+        Material.ARROW,
+        "back",
+        ArenaLang.tr(lang, "menu.confirm.cancel"),
+        no,
+        ArenaLang.tr(lang, "menu.confirm.cancel_info"));
     show(p, m);
   }
 

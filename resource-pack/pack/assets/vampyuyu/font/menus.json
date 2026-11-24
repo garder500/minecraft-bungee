@@ -13,7 +13,7 @@
    "type": "bitmap",
    "file": "vampyuyu:font/menu_lobby_00.png",
    "ascent": 13,
-   "height": 42,
+   "height": 37,
    "chars": [
     "\ue100"
    ]
@@ -22,7 +22,7 @@
    "type": "bitmap",
    "file": "vampyuyu:font/menu_lobby_01.png",
    "ascent": 13,
-   "height": 42,
+   "height": 37,
    "chars": [
     "\ue101"
    ]
@@ -31,7 +31,7 @@
    "type": "bitmap",
    "file": "vampyuyu:font/menu_lobby_02.png",
    "ascent": 13,
-   "height": 42,
+   "height": 37,
    "chars": [
     "\ue102"
    ]
@@ -40,7 +40,7 @@
    "type": "bitmap",
    "file": "vampyuyu:font/menu_lobby_03.png",
    "ascent": 13,
-   "height": 42,
+   "height": 37,
    "chars": [
     "\ue103"
    ]
@@ -48,8 +48,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/menu_lobby_10.png",
-   "ascent": -29,
-   "height": 42,
+   "ascent": -24,
+   "height": 37,
    "chars": [
     "\ue104"
    ]
@@ -57,8 +57,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/menu_lobby_11.png",
-   "ascent": -29,
-   "height": 42,
+   "ascent": -24,
+   "height": 37,
    "chars": [
     "\ue105"
    ]
@@ -66,8 +66,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/menu_lobby_12.png",
-   "ascent": -29,
-   "height": 42,
+   "ascent": -24,
+   "height": 37,
    "chars": [
     "\ue106"
    ]
@@ -75,8 +75,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/menu_lobby_13.png",
-   "ascent": -29,
-   "height": 42,
+   "ascent": -24,
+   "height": 37,
    "chars": [
     "\ue107"
    ]
@@ -84,8 +84,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/menu_lobby_20.png",
-   "ascent": -71,
-   "height": 42,
+   "ascent": -61,
+   "height": 37,
    "chars": [
     "\ue108"
    ]
@@ -93,8 +93,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/menu_lobby_21.png",
-   "ascent": -71,
-   "height": 42,
+   "ascent": -61,
+   "height": 37,
    "chars": [
     "\ue109"
    ]
@@ -102,8 +102,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/menu_lobby_22.png",
-   "ascent": -71,
-   "height": 42,
+   "ascent": -61,
+   "height": 37,
    "chars": [
     "\ue10a"
    ]
@@ -111,8 +111,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/menu_lobby_23.png",
-   "ascent": -71,
-   "height": 42,
+   "ascent": -61,
+   "height": 37,
    "chars": [
     "\ue10b"
    ]
@@ -120,8 +120,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/menu_lobby_30.png",
-   "ascent": -113,
-   "height": 42,
+   "ascent": -98,
+   "height": 37,
    "chars": [
     "\ue10c"
    ]
@@ -129,8 +129,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/menu_lobby_31.png",
-   "ascent": -113,
-   "height": 42,
+   "ascent": -98,
+   "height": 37,
    "chars": [
     "\ue10d"
    ]
@@ -138,8 +138,8 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/menu_lobby_32.png",
-   "ascent": -113,
-   "height": 42,
+   "ascent": -98,
+   "height": 37,
    "chars": [
     "\ue10e"
    ]
@@ -147,10 +147,82 @@
   {
    "type": "bitmap",
    "file": "vampyuyu:font/menu_lobby_33.png",
-   "ascent": -113,
-   "height": 42,
+   "ascent": -98,
+   "height": 37,
    "chars": [
     "\ue10f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/menu_lobby_40.png",
+   "ascent": -135,
+   "height": 37,
+   "chars": [
+    "\ue110"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/menu_lobby_41.png",
+   "ascent": -135,
+   "height": 37,
+   "chars": [
+    "\ue111"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/menu_lobby_42.png",
+   "ascent": -135,
+   "height": 37,
+   "chars": [
+    "\ue112"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/menu_lobby_43.png",
+   "ascent": -135,
+   "height": 37,
+   "chars": [
+    "\ue113"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/menu_lobby_50.png",
+   "ascent": -172,
+   "height": 37,
+   "chars": [
+    "\ue114"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/menu_lobby_51.png",
+   "ascent": -172,
+   "height": 37,
+   "chars": [
+    "\ue115"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/menu_lobby_52.png",
+   "ascent": -172,
+   "height": 37,
+   "chars": [
+    "\ue116"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/menu_lobby_53.png",
+   "ascent": -172,
+   "height": 37,
+   "chars": [
+    "\ue117"
    ]
   },
   {

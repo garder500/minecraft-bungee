@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """ValoBlock agent select sprites (stdlib only, reuses the PNG encoder of valoblock_items.py).
 
-The single source is arena-plugin/src/main/resources/valoblock/agents/*.json: each agent has a face
-(8x8 palette letters, the colour plan of the design's VB-Agents sheet). Per agent three 32x32 items are
-written: agent_<id> (the face on its role tint), agent_<id>_dim (35 % alpha: taken or filtered out) and
-agent_<id>_ring (a yellow frame: the current pick). Also agent_empty (a grey orb: still choosing),
-role_<name> (a coloured square per role), lock_in (green) and random (grey orb with a pip).
+The agents come from arena-plugin/src/main/resources/valoblock/agents/*.json; the art is the painted bust of
+valoblock_portraits.py (built from the same colour plan as the in-game skin). Per agent three 32x32 items are
+written: agent_<id> (the bust's head on its menu colour), agent_<id>_dim (35 % alpha: taken or filtered out) and
+agent_<id>_ring (a yellow frame: the current pick). Also agent_empty (the unlit bust of an empty seat),
+role_<name> (the role's glyph in its colour), lock_in (a padlock: the green button is in the background) and random (a die);
+those four come from valoblock_menukit.py.
 Pure art, no lettering: every word is a window title or an item tooltip.
 
     models/item/valoblock/<name>.json, items/valoblock/<name>.json, textures/item/valoblock/<name>.png
@@ -16,65 +17,18 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import valoblock_items as vi  # noqa: E402
+import valoblock_menukit as kit  # noqa: E402
+import valoblock_portraits as portraits  # noqa: E402
 
 AGENTS = vi.ROOT.parent / "arena-plugin/src/main/resources/valoblock/agents"
 SIZE = 32
-FACE = 24  # 8 pixels x 3
 DIM_ALPHA = 0.35
 RING = (0xFF, 0xE9, 0x4A)
 
 
-def tint(hex6, a=1.0):
-    r, g, b = vi.rgb(hex6.lstrip("#"))
-    return (r, g, b, round(255 * a))
-
-
-def blank():
-    return [[(0, 0, 0, 0)] * SIZE for _ in range(SIZE)]
-
-
 def face_sprite(agent, alpha=1.0, ring=False):
-    img = blank()
-    bg = tint(agent["menuColor"], alpha)
-    for y in range(SIZE):
-        for x in range(SIZE):
-            img[y][x] = bg
-    off = (SIZE - FACE) // 2
-    pal = agent["face"]["palette"]
-    for y, row in enumerate(agent["face"]["rows"]):
-        for x, ch in enumerate(row):
-            px = tint(pal[ch], alpha)
-            for dy in range(3):
-                for dx in range(3):
-                    img[off + y * 3 + dy][off + x * 3 + dx] = px
-    if ring:
-        for i in range(SIZE):
-            for t in (0, 1):
-                for (yy, xx) in ((t, i), (SIZE - 1 - t, i), (i, t), (i, SIZE - 1 - t)):
-                    img[yy][xx] = (*RING, 255)
-    return img
-
-
-def orb(color, radius=8, pip=None):
-    img = blank()
-    c = (SIZE - 1) / 2
-    for y in range(SIZE):
-        for x in range(SIZE):
-            if (x - c) ** 2 + (y - c) ** 2 <= radius * radius:
-                img[y][x] = tint(color)
-    if pip:
-        for y in range(14, 18):
-            for x in range(14, 18):
-                img[y][x] = tint(pip)
-    return img
-
-
-def square(color, inset=4):
-    img = blank()
-    for y in range(inset, SIZE - inset):
-        for x in range(inset, SIZE - inset):
-            img[y][x] = tint(color)
-    return img
+    """The head of the agent's painted bust on its menu colour (valoblock_portraits.py)."""
+    return portraits.tile(agent, alpha, RING if ring else None)
 
 
 def agents():
@@ -93,13 +47,13 @@ def main():
         vi.write_item("agent_" + a["id"] + "_dim", face_sprite(a, DIM_ALPHA))
         vi.write_item("agent_" + a["id"] + "_ring", face_sprite(a, 1.0, ring=True))
         n += 3
-    vi.write_item("agent_empty", orb("#3a3f4c"))
+    vi.write_item("agent_empty", kit.seat_glyph())
     index = json.loads((AGENTS / "index.json").read_text())
     for r in index["roles"]:
-        vi.write_item("role_" + r["name"].lower(), square(r["color"]))
+        vi.write_item("role_" + r["name"].lower(), kit.role_glyph(r["name"].lower(), kit.col(r["color"])))
         n += 1
-    vi.write_item("lock_in", square("#5ad07a", 3))
-    vi.write_item("random", orb("#9aa3b5", 9, "#ffffff"))
+    vi.write_item("lock_in", kit.lock_glyph())
+    vi.write_item("random", kit.die_glyph())
     n += 3
     print(f"wrote {n} items under {vi.PACK}")
 

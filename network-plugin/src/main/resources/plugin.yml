@@ -22,7 +22,7 @@ commands:
     description: Adjust network currency
     permission: vampyuyu.money.admin
   menu:
-    description: Choose Lobby, Creative, Survival or Skyblock from any world
+    description: Choose Lobby, Creative, Survival, Skyblock, Werewolf or ValoBlock from any world
     usage: /menu
   fly:
     description: Toggle your own flight when your role permits it

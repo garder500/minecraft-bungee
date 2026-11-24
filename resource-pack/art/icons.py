@@ -122,20 +122,27 @@ def magick():
 
 def main():
     assert sorted(SVG) == sorted(layout.BASE_ICONS), "art/icons.py and layout.BASE_ICONS must list the same icons"
-    tool = magick()
+    tool = None  # ImageMagick is only needed for the icons that are not a role's (the role medallions are renders)
+    sys.path.insert(0, str(ART))
+    import werewolf_art
     (ART / "icons").mkdir(exist_ok=True)
     out = PACK / "textures" / "font" / "icon"
     out.mkdir(parents=True, exist_ok=True)
     providers = []
     for index, name in enumerate(layout.ICONS):
         svg = ART / "icons" / f"{name}.svg"
+        medal = werewolf_art.medal_png(name)  # a role's medallion: the head render from werewolf/skins_src
         if name in SVG:  # the base icons are drawn here; the other roles' SVGs are files of their own
             svg.write_text(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">{SVG[name]}</svg>\n')
         elif not svg.exists():
             svg = ART / "icons" / "villager.svg"
-        subprocess.run([tool, "-background", "none", "-density", str(72 * layout.ICON_PX // 32),
-                        str(svg), "-resize", f"{layout.ICON_PX}x{layout.ICON_PX}", "-strip",
-                        f"PNG32:{out / (name + '.png')}"], check=True)
+        if medal:
+            (out / (name + ".png")).write_bytes(medal)
+        else:
+            tool = tool or magick()
+            subprocess.run([tool, "-background", "none", "-density", str(72 * layout.ICON_PX // 32),
+                            str(svg), "-resize", f"{layout.ICON_PX}x{layout.ICON_PX}", "-strip",
+                            f"PNG32:{out / (name + '.png')}"], check=True)
         providers.append({"type": "bitmap", "file": f"vampyuyu:font/icon/{name}.png",
                           "ascent": layout.ICON_ASCENT, "height": layout.ICON_HEIGHT,
                           "chars": [chr(layout.ICON_BASE + index)]})

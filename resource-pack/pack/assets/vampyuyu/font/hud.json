@@ -20,29 +20,11 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/card/villager-dead.png",
-   "ascent": 30,
-   "height": 32,
-   "chars": [
-    "\ue011"
-   ]
-  },
-  {
-   "type": "bitmap",
    "file": "vampyuyu:font/card/werewolf.png",
    "ascent": 30,
    "height": 32,
    "chars": [
     "\ue002"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/card/werewolf-dead.png",
-   "ascent": 30,
-   "height": 32,
-   "chars": [
-    "\ue012"
    ]
   },
   {
@@ -56,29 +38,11 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/card/seer-dead.png",
-   "ascent": 30,
-   "height": 32,
-   "chars": [
-    "\ue013"
-   ]
-  },
-  {
-   "type": "bitmap",
    "file": "vampyuyu:font/card/cupid.png",
    "ascent": 30,
    "height": 32,
    "chars": [
     "\ue004"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/card/cupid-dead.png",
-   "ascent": 30,
-   "height": 32,
-   "chars": [
-    "\ue014"
    ]
   },
   {
@@ -92,29 +56,11 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/card/hunter-dead.png",
-   "ascent": 30,
-   "height": 32,
-   "chars": [
-    "\ue015"
-   ]
-  },
-  {
-   "type": "bitmap",
    "file": "vampyuyu:font/card/witch.png",
    "ascent": 30,
    "height": 32,
    "chars": [
     "\ue006"
-   ]
-  },
-  {
-   "type": "bitmap",
-   "file": "vampyuyu:font/card/witch-dead.png",
-   "ascent": 30,
-   "height": 32,
-   "chars": [
-    "\ue016"
    ]
   },
   {
@@ -128,11 +74,659 @@
   },
   {
    "type": "bitmap",
-   "file": "vampyuyu:font/card/guard-dead.png",
+   "file": "vampyuyu:font/card/alpha_wolf.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue008"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/apprentice_seer.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue009"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/aura_seer.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue00a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/bear_tamer.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue00b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/cult_leader.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue00c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/cursed.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue00d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/diseased.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue00e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/doppelganger.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue00f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/drunk.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue010"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/ghost.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue011"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/hoodlum.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue012"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/idiot.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue013"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/infector.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue014"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/lone_wolf.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue015"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/lycan.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue016"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/martyr.png",
    "ascent": 30,
    "height": 32,
    "chars": [
     "\ue017"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/mason.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue018"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/mayor.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue019"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/minion.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue01a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/old_hag.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue01b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/old_man.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue01c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/pacifist.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue01d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/pi.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue01e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/priest.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue01f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/prince.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue020"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/scapegoat.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue021"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/sorcerer.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue022"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/spellcaster.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue023"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/tanner.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue024"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/tough_guy.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue025"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/troublemaker.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue026"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/vampire.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue027"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/wolf_cub.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue028"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/villager-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue041"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/werewolf-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue042"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/seer-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue043"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/cupid-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue044"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/hunter-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue045"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/witch-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue046"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/guard-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue047"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/alpha_wolf-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue048"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/apprentice_seer-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue049"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/aura_seer-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue04a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/bear_tamer-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue04b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/cult_leader-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue04c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/cursed-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue04d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/diseased-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue04e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/doppelganger-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue04f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/drunk-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue050"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/ghost-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue051"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/hoodlum-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue052"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/idiot-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue053"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/infector-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue054"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/lone_wolf-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue055"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/lycan-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue056"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/martyr-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue057"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/mason-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue058"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/mayor-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue059"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/minion-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue05a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/old_hag-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue05b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/old_man-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue05c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/pacifist-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue05d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/pi-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue05e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/priest-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue05f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/prince-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue060"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/scapegoat-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue061"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/sorcerer-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue062"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/spellcaster-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue063"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/tanner-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue064"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/tough_guy-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue065"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/troublemaker-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue066"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/vampire-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue067"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/card/wolf_cub-dead.png",
+   "ascent": 30,
+   "height": 32,
+   "chars": [
+    "\ue068"
    ]
   }
  ]

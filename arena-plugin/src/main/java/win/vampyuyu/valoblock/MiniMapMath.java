@@ -3,12 +3,17 @@ package win.vampyuyu.valoblock;
 import java.util.List;
 
 /**
- * The minimap's picture, no Bukkit: a vanilla map is 128 x 128 pixels, the 30 x 30 plan takes 4 px a cell (120 px, centred). The base
+ * The minimap's picture, no Bukkit: a vanilla map is 128 x 128 pixels, but the client draws a map held in the off hand big, so the
+ * plan only takes the {@link #AREA} x {@link #AREA} top-left corner (2 px a cell for a 30 x 30 plan) and every other pixel is
+ * {@link #CLEAR} (the transparent map colour; the ValoBlock pack also blanks the paper background): the map looks a quarter of its
+ * old size and stays clear of the health plate below it. The base
  * layer (walls, floor, sites, spawns) is the same for everyone; the markers are drawn over it. Colours are 0xRRGGBB and the service
  * maps them to the nearest map colour. No lettering: shapes only (a site is magenta with one white dot for A and two for B).
  */
 final class MiniMapMath {
   static final int SIZE = 128;
+  static final int AREA = 64, MARGIN = 2;   // the corner the plan is drawn in
+  static final int CLEAR = -1;              // not a colour: the service writes the transparent map colour
   static final int FLOOR = 0x2b303c, FLOOR2 = 0x262a35, WALL = 0x8d95a8, WALL_LO = 0x636b7d, HIGH = 0x4a5573, SITE = 0xa63fc0, FEATURE = 0xd9b23c,
       CRATE = 0x7a5a32, FOLIAGE = 0x2f6a3d, WATER = 0x1f3f73, ATTACK = 0xc9782e, DEFEND = 0x3f86bd, EDGE = 0x0b0d12, DOT = 0xffffff;
   static final int SELF = 0xffffff, ALLY = 0x5ad07a, DEAD = 0xe8636f, ENEMY = 0xff3030, SEED = 0xff4a8a;
@@ -28,21 +33,22 @@ final class MiniMapMath {
 
   /** Pixels a plan cell takes. */
   static int cellPx(VbMap map) {
-    return Math.max(1, SIZE / Math.max(map.plan().get(0).length(), map.plan().size()));
+    return Math.max(1, AREA / Math.max(map.plan().get(0).length(), map.plan().size()));
   }
 
   /** Where the plan's top-left corner is in the picture. */
   static int[] origin(VbMap map) {
     int c = cellPx(map);
-    return new int[] {(SIZE - c * map.plan().get(0).length()) / 2, (SIZE - c * map.plan().size()) / 2};
+    return new int[] {MARGIN + (AREA - c * map.plan().get(0).length()) / 2, MARGIN + (AREA - c * map.plan().size()) / 2};
   }
 
-  /** The pixel (x, y) of a point in blocks from the map corner, or null when it is outside the picture. */
+  /** The pixel (x, y) of a point in blocks from the map corner, or null when it is outside the plan. */
   static int[] project(VbMap map, double x, double z) {
     int c = cellPx(map);
     int[] o = origin(map);
     int px = o[0] + (int) Math.floor(x / map.cell() * c), py = o[1] + (int) Math.floor(z / map.cell() * c);
-    return px < 0 || py < 0 || px >= SIZE || py >= SIZE ? null : new int[] {px, py};
+    int w = c * map.plan().get(0).length(), h = c * map.plan().size();
+    return px < o[0] || py < o[1] || px >= o[0] + w || py >= o[1] + h ? null : new int[] {px, py};
   }
 
   /** The unit vector a Minecraft yaw looks along on the ground plane (x, z): yaw 0 faces +z (south, down the picture), 90 faces -x. */
@@ -66,13 +72,14 @@ final class MiniMapMath {
     };
   }
 
-  /** The base layer: 128 x 128 colours, row by row. */
+  /** The base layer: 128 x 128 colours, row by row ({@link #CLEAR} outside the framed plan). */
   static int[] base(VbMap map) {
     int[] px = new int[SIZE * SIZE];
-    java.util.Arrays.fill(px, EDGE);
+    java.util.Arrays.fill(px, CLEAR);
     int c = cellPx(map);
     int[] o = origin(map);
     int cols = map.plan().get(0).length(), rows = map.plan().size();
+    rect(px, o[0] - 2, o[1] - 2, cols * c + 4, rows * c + 4, EDGE); // a 2 px dark frame round the plan
     for (int r = 0; r < rows; r++)
       for (int q = 0; q < cols; q++) {
         char ch = map.plan().get(r).charAt(q);

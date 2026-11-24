@@ -4,8 +4,10 @@
     python3 resource-pack/art/hud.py
 
 Sprites are drawn 1 texel per GUI pixel (the core shader scales them with the GUI). Role and
-phase icons come from art/icons.py's SVGs, drawn through ImageMagick. Also writes
-arena-plugin/src/main/resources/hud-sprites.txt, which tells the plugin the glyph of each sprite.
+phase icons come from art/icons.py's SVGs, drawn through ImageMagick. No word is painted here: the
+fonts of art/hud_font.py become one sprite per character and the plugin writes the text in the
+player's language. Also writes arena-plugin/src/main/resources/hud-sprites.txt, which tells the
+plugin the glyph of each sprite, the advance of each character and where each line of text goes.
 """
 import json, math, pathlib, struct, subprocess, sys, zlib
 
@@ -16,32 +18,14 @@ sys.path.insert(0, str(ART.parent))
 sys.path.insert(0, str(ART))
 import layout  # noqa: E402
 import icons  # noqa: E402
+import hud_font  # noqa: E402
+import hud_sheet  # noqa: E402  (its PNG reader)
 
 INK = (12, 9, 22)
 LIGHT = (250, 240, 218)
+MUTED = (176, 164, 210)
 DANGER = (255, 88, 72)
-FONT = {
-    "A": "01110 10001 10001 11111 10001 10001 10001", "B": "11110 10001 10001 11110 10001 10001 11110",
-    "C": "01110 10001 10000 10000 10000 10001 01110", "D": "11100 10010 10001 10001 10001 10010 11100",
-    "E": "11111 10000 10000 11110 10000 10000 11111", "F": "11111 10000 10000 11110 10000 10000 10000",
-    "G": "01110 10001 10000 10111 10001 10001 01111", "H": "10001 10001 10001 11111 10001 10001 10001",
-    "I": "01110 00100 00100 00100 00100 00100 01110", "J": "00111 00010 00010 00010 00010 10010 01100",
-    "K": "10001 10010 10100 11000 10100 10010 10001", "L": "10000 10000 10000 10000 10000 10000 11111",
-    "M": "10001 11011 10101 10101 10001 10001 10001", "N": "10001 11001 10101 10011 10001 10001 10001",
-    "O": "01110 10001 10001 10001 10001 10001 01110", "P": "11110 10001 10001 11110 10000 10000 10000",
-    "Q": "01110 10001 10001 10001 10101 10010 01101", "R": "11110 10001 10001 11110 10100 10010 10001",
-    "S": "01111 10000 10000 01110 00001 00001 11110", "T": "11111 00100 00100 00100 00100 00100 00100",
-    "U": "10001 10001 10001 10001 10001 10001 01110", "V": "10001 10001 10001 10001 10001 01010 00100",
-    "W": "10001 10001 10001 10101 10101 10101 01010", "X": "10001 10001 01010 00100 01010 10001 10001",
-    "Y": "10001 10001 01010 00100 00100 00100 00100", "Z": "11111 00001 00010 00100 01000 10000 11111",
-    "0": "01110 10001 10011 10101 11001 10001 01110", "1": "00100 01100 00100 00100 00100 00100 01110",
-    "2": "01110 10001 00001 00010 00100 01000 11111", "3": "11110 00001 00001 01110 00001 00001 11110",
-    "4": "00010 00110 01010 10010 11111 00010 00010", "5": "11111 10000 11110 00001 00001 10001 01110",
-    "6": "00110 01000 10000 11110 10001 10001 01110", "7": "11111 00001 00010 00100 01000 01000 01000",
-    "8": "01110 10001 10001 01110 10001 10001 01110", "9": "01110 10001 10001 01111 00001 00010 01100",
-    ":": "00000 00100 00000 00000 00000 00100 00000", ".": "00000 00000 00000 00000 00000 01100 01100", "/": "00001 00010 00010 00100 01000 01000 10000",
-    "-": "00000 00000 00000 11111 00000 00000 00000", " ": "00000 00000 00000 00000 00000 00000 00000",
-}
+FONT_TINT = {"h": LIGHT, "b": LIGHT, "m": MUTED}
 
 
 def mix(a, b, t):
@@ -103,29 +87,36 @@ class Canvas:
                 if (fill and d <= r) or (not fill and r - width < d <= r):
                     self.set(i, j, c, a)
 
-    def text(self, x, y, word, color, scale=1, outline=True, shadow=True):
-        """Pixel text with an outline; (x, y) is the top left of the outlined box."""
-        cell = []
-        cx = 0
-        for ch in word:
-            for r, row in enumerate(FONT[ch].split()):
-                for c, bit in enumerate(row):
-                    if bit == "1":
-                        cell.append((cx + c, r))
-            cx += 6
-        pts = {(px * scale + dx, py * scale + dy) for px, py in cell for dx in range(scale) for dy in range(scale)}
-        o = 1  # outline thickness, whatever the scale
-        if outline:
-            for px, py in pts:
-                for dx in range(-o, o + 1):
-                    for dy in range(-o, o + 1):
-                        self.set(x + o + px + dx, y + o + py + dy, INK)
+    def ink(self, x, y, rows, color, shadow=True, tall=None):
+        """Draws a bitmap ("0"/"1" rows) at (x, y) with a dark outline all around, a soft shadow under it and a
+        slight top-to-bottom shade. `tall` is the height the shade runs over (the capital's, for a glyph with an
+        accent)."""
+        pts = [(c, r) for r, row in enumerate(rows) for c, bit in enumerate(row) if bit == "1"]
+        for px, py in pts:
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    self.set(x + px + dx, y + py + dy, INK)
         if shadow:
             for px, py in pts:
-                self.set(x + o + px, y + o + py + 1, mix(INK, color, 0.35))
+                self.set(x + px, y + py + 1, mix(INK, color, 0.35))
         bottom = mix(color, (0, 0, 0), 0.22)
+        tall = tall or len(rows)
         for px, py in pts:
-            self.set(x + o + px, y + o + py, mix(color, bottom, py / (7 * scale)))
+            self.set(x + px, y + py, mix(color, bottom, max(0, min(1, py / tall))))
+
+    def art(self, x, y, rows, tones):
+        """Draws a small pixel drawing: one letter per pixel, `tones` maps the letters to colours ('.' is empty)."""
+        for r, row in enumerate(rows):
+            for c, ch in enumerate(row):
+                if ch != ".":
+                    self.set(x + c, y + r, tones[ch])
+
+    def anchor(self):
+        """Makes the sprite as wide as its file for the game: a bitmap glyph advances by its ink, cut at the last
+        column that is not empty, so a nearly transparent pixel (the shader drops it) goes in the last column.
+        The negative advance after every sprite is then exactly -(width + 1) and the action bar stays centred."""
+        if not any(self.px[y][self.w - 1][3] for y in range(self.h)):
+            self.px[self.h - 1][self.w - 1] = (0, 0, 0, 1)
 
     def png(self, path):
         raw = b"".join(b"\x00" + b"".join(bytes(p) for p in row) for row in self.px)
@@ -150,7 +141,7 @@ def rounded(w, h, r):
     return inside
 
 
-def plate(w, h, color, radius=5):
+def plate(w, h, color, radius=4):
     """A glassy dark plate: gradient, role-coloured rim, inner glow, corner brackets and a top gleam."""
     c = Canvas(w, h)
     inside = rounded(w, h, radius)
@@ -159,22 +150,21 @@ def plate(w, h, color, radius=5):
         for x in range(w):
             if inside(x, y):
                 edge = min(x, y, w - 1 - x, h - 1 - y)
-                if 1 <= edge <= 5:
-                    c.set(x, y, color, int(46 * (1 - (edge - 1) / 5)))
+                if 1 <= edge <= 4:
+                    c.set(x, y, color, int(46 * (1 - (edge - 1) / 4)))
     for y in range(h):  # rim
         for x in range(w):
             if inside(x, y) and not (inside(x - 1, y) and inside(x + 1, y) and inside(x, y - 1) and inside(x, y + 1)):
                 c.set(x, y, color, 255)
     for y in range(h):  # second, darker rim just inside
         for x in range(w):
-            if inside(x, y) and not (inside(x - 2, y) and inside(x + 2, y) and inside(x, y - 2) and inside(x, y + 2)) \
-                    and c.get(x, y)[3] and (x, y) != (-1, -1):
+            if inside(x, y) and not (inside(x - 2, y) and inside(x + 2, y) and inside(x, y - 2) and inside(x, y + 2)):
                 if inside(x - 1, y) and inside(x + 1, y) and inside(x, y - 1) and inside(x, y + 1):
                     c.set(x, y, dim(color, 0.42), 255)
     for x in range(radius, w - radius):  # gleam
         c.set(x, 2, (255, 255, 255), 26)
     bright = lift(color, 0.45)
-    for k in range(4):  # corner brackets
+    for k in range(3):  # corner brackets
         for (sx, sy, dx, dy) in ((3, 3, 1, 1), (w - 4, 3, -1, 1), (3, h - 4, 1, -1), (w - 4, h - 4, -1, -1)):
             c.set(sx + dx * k, sy, bright, 255)
             c.set(sx, sy + dy * k, bright, 255)
@@ -189,40 +179,62 @@ def medallion(c, cx, cy, r, color):
     c.circle(cx - r * 0.35, cy - r * 0.45, r * 0.18, (255, 255, 255), 70)
 
 
+def well(c, x, y, w, h, color):
+    """A dark recess with a lit top edge: the clock's, the ballots' and the time bar's track."""
+    c.rect(x, y, w, h, (6, 4, 12), 180)
+    c.rect(x, y, w, 1, color, 120)
+    c.rect(x, y + h - 1, w, 1, color, 60)
+
+
+def box_of(element):
+    """(x, y) of an element inside its plate: the top plate, the role panel or the vote plate."""
+    boxes = {e[0]: e for e in layout.HUD_ELEMENTS}
+    owner = "frame" if boxes[element][1] == 0 else "vframe" if element[0] == "v" else "pframe"
+    return boxes[element][2] - boxes[owner][2], boxes[element][3] - boxes[owner][3]
+
+
 def top_plate(color):
-    c = plate(250, 44, color)
-    medallion(c, 22, 22, 15, color)
-    # round badge (the digit sprite sits on it)
-    c.circle(33, 33, 6, (8, 6, 16), 255)
-    c.circle(33, 33, 6, color, 255, fill=False, width=1)
-    # timer well
-    c.rect(188, 6, 54, 26, (6, 4, 12), 180)
-    c.rect(188, 6, 54, 1, color, 120)
-    c.rect(188, 31, 54, 1, color, 60)
+    """Phase medallion with the round on its rim, the label over the time bar, the clock in its well."""
+    c = plate(188, 34, color)
+    ix, iy = box_of("icon")
+    medallion(c, ix + 10, iy + 10, 13, color)
+    rx, ry = box_of("round")   # the round's digit sits on a small disc
+    c.circle(rx + 3.5, ry + 4.5, 5.5, (8, 6, 16), 255)
+    c.circle(rx + 3.5, ry + 4.5, 5.5, color, 255, fill=False, width=1)
+    fx, fy = box_of("fill")
+    c.rect(fx - 1, fy - 1, 106, 5, (6, 4, 12), 200)
+    c.rect(fx, fy, 104, 3, dim(color, 0.28), 255)
+    tx, _ = box_of("t1")
+    well(c, tx - 4, 6, 36, 22, color)
     return c
 
 
+PERSON = ["..aaa..", "..aba..", "..aaa..", ".......", ".aaaaa.", "aabaaaa", "aaaaaaa"]
+
+
 def right_panel(color):
-    c = plate(128, 108, color)
-    medallion(c, 28, 28, 18, color)
-    # divider and the static caption
-    for x in range(8, 120):
-        c.set(x, 52, dim(color, 0.55), 255)
-        c.set(x, 53, (255, 255, 255), 14)
-    c.text(5, 56, "ALIVE", mix(color, (255, 255, 255), 0.35), shadow=False)
+    """Role medallion, the head count and the badge row beside it; under the divider the role, the team and
+    the table strip."""
+    c = plate(96, 78, color)
+    ix, iy = box_of("picon")
+    medallion(c, ix + 12, iy + 12, 14, color)
+    tone = lift(color, 0.35)
+    c.art(39, 8, PERSON, {"a": tone, "b": lift(color, 0.75)})   # "players alive", without a word
+    for x in range(6, 90):
+        c.set(x, 38, dim(color, 0.55), 255)
+        c.set(x, 39, (255, 255, 255), 14)
     return c
 
 
 def vote_plate(color):
-    """The "votes against you" plate: caption on the left, the big digits are separate sprites."""
-    c = plate(128, 30, color)
-    c.text(7, 6, "VOTES", mix(color, (255, 255, 255), 0.35), shadow=False)
-    c.text(7, 16, "AGAINST YOU", LIGHT, shadow=False)
-    c.rect(84, 6, 40, 20, (6, 4, 12), 170)
+    """The "votes against you" plate: the caption is text, the big digits are separate sprites."""
+    c = plate(96, 26, color)
+    vx, vy = box_of("v1")
+    well(c, vx - 2, vy - 1, 21, 16, color)
     return c
 
 
-def fill_bar(color, w=8, h=4):
+def fill_bar(color, w=8, h=3):
     c = Canvas(w, h)
     c.vgrad(0, 0, w, h, lift(color, 0.5), dim(color, 0.62), 255)
     c.rect(0, 0, w, 1, lift(color, 0.75), 255)
@@ -230,47 +242,99 @@ def fill_bar(color, w=8, h=4):
 
 
 def dot(kind):
-    """One seat of the table strip: alive, dead, the viewer, their ballot, a pack mate / lover."""
-    c = Canvas(5, 8)
-    fill, edge = {
-        "alive": ((255, 246, 214), INK),
-        "dead": ((52, 44, 78), (0, 0, 0)),
-        "me": ((120, 235, 255), (10, 60, 90)),
-        "ballot": ((255, 211, 110), (110, 60, 0)),
-        "mate": ((255, 110, 120), (90, 10, 30)),
-    }[kind]
-    c.rect(0, 1, 4, 6, edge, 150 if kind == "dead" else 255)
-    c.rect(1, 2, 2, 4, fill, 255)
-    if kind in ("me", "ballot", "mate"):  # a pointer over the seat so it stands out
-        c.rect(1, 0, 2, 1, fill, 255)
+    """One seat of the table strip (3 px wide, 1 px apart): alive, dead, the viewer, their ballot, a pack mate
+    or lover."""
+    c = Canvas(4, 7)
+    fill = {"alive": (255, 246, 214), "dead": (74, 64, 104), "me": (120, 235, 255), "ballot": (255, 211, 110),
+            "mate": (255, 110, 120)}[kind]
+    if kind == "dead":       # a short dim stub
+        c.rect(0, 4, 3, 3, fill, 255)
+        c.rect(0, 6, 3, 1, dim(fill, 0.6), 255)
+        return c
+    top = 0 if kind in ("me", "ballot", "mate") else 2   # the seats that matter to the viewer stand taller
+    c.rect(0, top, 3, 7 - top, fill, 255)
+    c.rect(0, top, 3, 1, lift(fill, 0.5), 255)
+    c.rect(0, 6, 3, 1, dim(fill, 0.6), 255)
+    c.rect(2, top + 1, 1, 5 - top, dim(fill, 0.82), 255)
     return c
 
 
+# Status badges: a 13 px chip like the medallions (dark disc, ring in the status colour) around a 7 x 7 drawing.
+# Letters: a the status colour, b its light, c its shade, w white, r red.
 BADGES = {
-    "lover": ((255, 143, 192), ["01100110", "11111111", "11111111", "01111110", "00111100", "00011000"]),
-    "life": ((111, 220, 140), ["00111100", "00011000", "00111100", "01111110", "01111110", "00111100"]),
-    "death": ((190, 120, 255), ["00111100", "00011000", "00111100", "01111110", "01111110", "00111100"]),
-    "infect": ((150, 190, 90), ["00111100", "01111110", "11011011", "11111111", "01100110", "00111100"]),
-    "guard": ((108, 198, 255), ["11111111", "11111111", "11111111", "01111110", "00111100", "00011000"]),
-    "mayor": ((255, 211, 110), ["10100101", "11111111", "11111111", "01111110", "01111110", "01111110"]),
-    "silenced": ((190, 178, 220), ["01111110", "11011011", "11111111", "10000001", "11111111", "01111110"]),
+    "lover": ((255, 143, 192), [".aa.aa.", "abaaaaa", "abaaaaa", "aaaaaac", ".aaaac.", "..aac..", "...c..."]),
+    "life": ((111, 220, 140), ["..www..", "...b...", "..aaa..", ".aawaa.", ".awwwa.", ".aawac.", "..ccc.."]),
+    "death": ((190, 120, 255), ["..www..", "...b...", "..aaa..", ".awawa.", ".aawaa.", ".awawc.", "..ccc.."]),
+    "infect": ((150, 200, 90), ["...a...", ".a.a.a.", "..aba..", "aabbbaa", "..aba..", ".a.a.a.", "...a..."]),
+    "guard": ((108, 198, 255), ["aaaaaaa", "abawaac", "awwwwwc", "aaawaac", ".aawac.", "..awc..", "...c..."]),
+    "mayor": ((255, 211, 110), [".......", "a..b..a", "a.aba.a", "abababa", "aaaaaaa", "awawawa", "ccccccc"]),
+    "silenced": ((190, 178, 220), [".aaaaa.", "abaaaaa", "aaaaaaa", "aaaaaac", ".aaaac.", ".ac....", ".c....."]),
 }
 
 
 def badge(kind):
-    """A 12x12 status badge: a dark chip with a small bitmap in the status colour."""
     color, rows = BADGES[kind]
-    c = Canvas(12, 12)
-    c.rect(1, 0, 10, 12, (8, 6, 16), 255)
-    c.rect(0, 1, 12, 10, (8, 6, 16), 255)
-    c.rect(1, 1, 10, 10, mix((26, 20, 46), color, 0.25), 255)
-    for y, row in enumerate(rows):
-        for x, ch in enumerate(row):
-            if ch == "1":
-                c.set(2 + x, 3 + y, color, 255)
-    if kind == "death":  # the death potion is the same bottle in purple with a pale cross
-        c.rect(5, 6, 2, 1, (255, 255, 255), 255)
+    c = Canvas(13, 13)
+    c.circle(6.5, 6.5, 6.5, (8, 6, 16), 255)
+    c.circle(6.5, 6.5, 5.5, mix((26, 20, 46), color, 0.2), 255)
+    c.circle(6.5, 6.5, 6.5, color, 255, fill=False, width=1)
+    c.art(3, 3, rows, {"a": color, "b": lift(color, 0.6), "c": dim(color, 0.6), "w": (255, 255, 255)})
+    if kind == "silenced":   # struck through, like a no-entry sign
+        for k in range(9):
+            c.set(10 - k, 2 + k, (255, 72, 72))
+            c.set(9 - k, 2 + k, (150, 24, 40))
     return c
+
+
+def char_cell(font, ch):
+    """One character in its font's cell: the ink starts one pixel in (the outline) and two rows down (the accents)."""
+    above, rows, below = hud_font.glyph(font, ch)
+    c = Canvas(*layout.HUD_FONT_CELLS[font])
+    assert len(rows[0]) + 2 <= c.w and len(rows) + hud_font.ABOVE + 3 == c.h, f"{font} {ch!r} does not fit its cell"
+    c.ink(1, 1, above + rows + [below], FONT_TINT[font], tall=len(rows) + hud_font.ABOVE)
+    return c
+
+
+def clock_cell(ch, color, w, h):
+    c = Canvas(w, h)
+    c.ink(1, 1, hud_font.CLOCK[ch].split(), color)
+    return c
+
+
+def round_digit(d):
+    c = Canvas(7, 9)
+    c.ink(1, 1, hud_font.REGULAR[d].split(), LIGHT, shadow=False)
+    return c
+
+
+def medal_rows(icon, w, h):
+    """w x h RGBA rows of a role's medallion, area-averaged (premultiplied) from its 256 px head render; None for the
+    icons that are not a role's (moon, sun...), which stay drawn from their SVG."""
+    import werewolf_art
+    role = werewolf_art.icon_roles().get(icon)
+    src = werewolf_art.SRC / f"medal_{role}.png" if role else None
+    if not src or not src.exists():
+        return None
+    rows = werewolf_art.load(src)
+    sh, sw = len(rows), len(rows[0])
+    out = []
+    for y in range(h):
+        y0, y1 = y * sh / h, (y + 1) * sh / h
+        line = []
+        for x in range(w):
+            x0, x1 = x * sw / w, (x + 1) * sw / w
+            r = g = b = a = n = 0
+            for yy in range(int(y0), min(sh, int(y1 + 0.999))):
+                for xx in range(int(x0), min(sw, int(x1 + 0.999))):
+                    pr, pg, pb, pa = rows[yy][xx]
+                    r += pr * pa
+                    g += pg * pa
+                    b += pb * pa
+                    a += pa
+                    n += 1
+            line.append((0, 0, 0, 0) if a == 0 else (round(r / a), round(g / a), round(b / a), 255 if a / n >= 128 else 0))
+        out.append(line)
+    return out
 
 
 def main():
@@ -291,6 +355,8 @@ def main():
             c = fill_bar(rgb(layout.HUD_PALETTES[rest]), w, h)
         elif name.startswith("pframe_"):
             c = right_panel(rgb(layout.HUD_PALETTES[rest]))
+        elif name.startswith(("icon_", "picon_")) and medal_rows(rest, w, h):
+            c.px = medal_rows(rest, w, h)   # a role: its Minecraft-skin head render (werewolf_art, from Blockbench)
         elif name.startswith(("icon_", "picon_")):
             svg = ART / "icons" / f"{rest}.svg"
             if not svg.exists():  # a role whose icon is not drawn yet shows the villager's
@@ -298,26 +364,27 @@ def main():
                 svg = ART / "icons" / "villager.svg"
             subprocess.run([magick, "-background", "none", "-density", str(72 * w * 2 // 32), str(svg),
                             "-resize", f"{w}x{h}", "-strip", f"PNG32:{out / (name + '.png')}"], check=True)
+            pw, ph, rows = hud_sheet.png_read(out / f"{name}.png")
+            assert (pw, ph) == (w, h), name
+            if not any(row[(w - 1) * 4 + 3] for row in rows):   # same anchor pixel as the drawn sprites
+                c.px = [[tuple(row[x * 4:x * 4 + 4]) for x in range(w)] for row in rows]
+                c.anchor()
+                c.png(out / f"{name}.png")
             continue
-        elif name.startswith("label_"):
-            c.text(0, 0, rest.replace("_", " ").upper(), LIGHT, scale=2)
-        elif name.startswith(("plabel_", "pteam_")):
-            tint = LIGHT if name.startswith("plabel_") else (176, 164, 210)
-            c.text(0, 0, rest.replace("_", " ").upper(), tint)
+        elif kind in ("fh", "fb", "fm"):
+            c = char_cell(kind[1], chr(int(rest, 16)))
+        elif name in ("dcolon", "xcolon"):
+            c = clock_cell(":", DANGER if name[0] == "x" else LIGHT, w, h)
         elif name[0] in "dx" and name[1:].isdigit():
-            c.text(0, 0, name[1:], DANGER if name[0] == "x" else LIGHT, scale=2)
-        elif name == "dcolon":
-            c.text(-1, 0, ":", LIGHT, scale=2)
-        elif name == "xcolon":
-            c.text(-1, 0, ":", DANGER, scale=2)
-        elif name == "dslash":
-            c.text(-1, 0, "/", (190, 178, 220), scale=2)
+            c = clock_cell(name[1:], DANGER if name[0] == "x" else LIGHT, w, h)
         elif name[0] == "s" and name[1:].isdigit():
-            c.text(0, 0, name[1:], LIGHT)
+            c = round_digit(name[1:])
         elif name.startswith("dot_"):
             c = dot(rest)
         elif name.startswith("badge_"):
             c = badge(rest)
+        assert (c.w, c.h) == (w, h), name
+        c.anchor()
         c.png(out / f"{name}.png")
     providers, advances, lines = [], {}, []
     for index, (name, w, h) in enumerate(sprites):
@@ -330,6 +397,13 @@ def main():
     (PACK / "font" / "hud2.json").write_text(json.dumps({"providers": providers}, indent=1) + "\n")
     for index, element in enumerate(layout.HUD_ELEMENTS):
         lines.append(f"element {index} {element[0]}")
+    # the text: each character's advance, each font's space, each line's font, alignment and widest width
+    for font in layout.HUD_FONT_CELLS:
+        lines.append(f"space {hud_font.SPACE[font]} {font}")
+        for ch in layout.HUD_CHARS:
+            lines.append(f"advance {hud_font.advance(font, ch)} {hud_font.sprite(font, ch)}")
+    for name, (font, align, limit) in layout.HUD_TEXT.items():
+        lines.append(f"text {name} {font} {align} {limit}")
     res = ROOT / "arena-plugin" / "src" / "main" / "resources" / "hud-sprites.txt"
     res.write_text("\n".join(lines) + "\n")
     print("drew", len(sprites), "HUD sprites")

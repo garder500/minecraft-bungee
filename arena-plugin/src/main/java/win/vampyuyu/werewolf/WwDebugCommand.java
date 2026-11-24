@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 import win.vampyuyu.arena.NexusArenaEngine;
 import win.vampyuyu.werewolf.ambience.AmbienceProfile;
 import win.vampyuyu.werewolf.hud.CustomHud;
+import win.vampyuyu.werewolf.hud.HudLang;
 import win.vampyuyu.werewolf.hud.HudPreview;
 import win.vampyuyu.werewolf.sky.PlatformLayout;
 
@@ -188,7 +189,8 @@ final class WwDebugCommand {
                     reporter.sendMessage(Component.text((index + 1) + "/" + entries.size() + " " + entry.id() + ": " + entry.title(), NamedTextColor.GRAY));
                   }
                   long into = announce ? elapsed - index * stepSeconds * 1000L : elapsed;
-                  p.sendActionBar(hud.render(entry.at(into / 1000), mode != null ? mode : CustomHud.mode(plugin.hudSize(p))));
+                  p.sendActionBar(
+                      hud.render(entry.at(into / 1000), mode != null ? mode : CustomHud.mode(plugin.hudSize(p)), HudLang.of(p)));
                 },
                 () -> shows.remove(p.getUniqueId()),
                 1L,
