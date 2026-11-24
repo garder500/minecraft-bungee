@@ -15,7 +15,7 @@ import org.bukkit.permissions.PermissionDefault;
 import win.vampyuyu.survival.core.Core;
 import win.vampyuyu.survival.core.Msg;
 
-/** {@code /bastion [list|info <id>|enter <id>|leave]} and {@code /bastion admin <list|abort|reload>}. */
+/** {@code /bastion [list|info <id>|enter <id>|leave]} and {@code /bastion admin <list|seals|abort|reload>}. */
 public final class BastionCommand implements CommandExecutor, TabCompleter {
     public static final String ENTER = "vampyuyu.sb.bastion.enter";
     private final Core core;
@@ -126,6 +126,13 @@ public final class BastionCommand implements CommandExecutor, TabCompleter {
                 List<String> runs = service.describeRuns();
                 core.msg().info(sender, runs.isEmpty() ? "No Bastion is running." : String.join("\n", runs));
             }
+            case "seals" -> {
+                for (SealDoors.Site site : SealDoors.sites()) {
+                    String target = service.cfg().seals.get(site.realm().id());
+                    core.msg().info(sender, "seal " + site.realm().id() + " " + site.world() + " " + site.x() + " " + site.y() + " "
+                        + site.z() + " face " + site.faceX() + " " + site.faceZ() + " above " + site.above() + " opens " + (target == null ? "nothing" : target));
+                }
+            }
             case "abort" -> core.msg().ok(sender, "Closed " + service.abort(args.length > 2 && !args[2].equals("all") ? args[2] : null)
                 + " Bastion(s).");
             case "reload" -> {
@@ -153,7 +160,7 @@ public final class BastionCommand implements CommandExecutor, TabCompleter {
                 }
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("admin") && sender.hasPermission(BastionListener.ADMIN)) {
-            out.addAll(List.of("list", "abort", "reload"));
+            out.addAll(List.of("list", "seals", "abort", "reload"));
         }
         String prefix = args.length == 0 ? "" : args[args.length - 1].toLowerCase(Locale.ROOT);
         out.removeIf(s -> !s.toLowerCase(Locale.ROOT).startsWith(prefix));

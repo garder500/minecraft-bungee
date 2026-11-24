@@ -98,6 +98,7 @@ public final class CitadelRealm implements Listener {
 
     public void start() {
         gates.setDestination(Realm.CITADEL, player -> ready ? spawn() : null);
+        gates.setReturnArch(Realm.CITADEL, () -> ready ? spawn() : null);
         core.listen(this);
         task = core.scheduler().repeating(20L, 20L, this::tick);
         World world = world();
@@ -118,6 +119,7 @@ public final class CitadelRealm implements Listener {
             task = null;
         }
         gates.setDestination(Realm.CITADEL, null);
+        gates.setReturnArch(Realm.CITADEL, null);
     }
 
     /** Builds the Citadel again over the old one (plan change, admin). */

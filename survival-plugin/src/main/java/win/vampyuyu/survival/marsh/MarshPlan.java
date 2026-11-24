@@ -3,7 +3,10 @@ package win.vampyuyu.survival.marsh;
 import java.util.List;
 import java.util.Random;
 import org.bukkit.Material;
+import win.vampyuyu.survival.api.Realm;
 import win.vampyuyu.survival.island.BlockPlan;
+import win.vampyuyu.survival.island.ReturnArch;
+import win.vampyuyu.survival.island.SealDoor;
 import win.vampyuyu.survival.island.ShapeKit;
 
 /**
@@ -14,7 +17,7 @@ import win.vampyuyu.survival.island.ShapeKit;
  */
 public final class MarshPlan {
     /** Bump when the layout changes so an existing Marsh is rebuilt (the marker file stores it). */
-    public static final int VERSION = 1;
+    public static final int VERSION = 3;
     public static final int ORIGIN_Y = 100;
     public static final int MAIN_RADIUS = 22;
     public static final int ISLET_ORBIT = 40;
@@ -30,7 +33,17 @@ public final class MarshPlan {
     /** The Rot Vats: right-click one with expired items to salvage them. */
     public static final List<Spot> VATS = List.of(new Spot(7, 1, 12), new Spot(-7, 1, 12), new Spot(0, 1, -2));
 
+    /** Index of the islet with the Overflow Pit, and the offset of its sealed door from the islet centre. */
+    private static final int PIT_ISLET = 3;
+    private static final int SEAL_DZ = 5;
+
     private MarshPlan() {}
+
+    /** The seal block of the Overflow Pit door (plan coordinates): right-click it with the Marsh Bastion Key. */
+    public static int[] sealBlock() {
+        int[] c = isletCenter(PIT_ISLET);
+        return SealDoor.sealCell(c[0], 1, c[1] + SEAL_DZ);
+    }
 
     /** Centre of an islet (x, z), on a circle around the main island. */
     public static int[] isletCenter(int index) {
@@ -65,8 +78,8 @@ public final class MarshPlan {
         ShapeKit.disc(plan, SPAWN[0], 0, SPAWN[2] - 1, 4.5, Material.MUD_BRICKS);
         ShapeKit.ring(plan, SPAWN[0], 0, SPAWN[2] - 1, 3.2, 4.4, Material.PACKED_MUD);
         plan.set(SPAWN[0], 0, SPAWN[2] - 1, Material.SHROOMLIGHT);
-        plan.sign(SPAWN[0] + 2, 1, SPAWN[2], Material.MANGROVE_SIGN, "rotation=0", "Putrid Marshes", "/hub to leave", "Rot Vats: salvage",
-            "expired items");
+        plan.sign(SPAWN[0] + 2, 1, SPAWN[2], Material.MANGROVE_SIGN, "rotation=0", "Rot Vats", "nearby salvage", "expired items", "");
+        ReturnArch.build(plan, Realm.MARSHES, SPAWN[0], SPAWN[1], SPAWN[2]);
         plan.anchor("spawn", SPAWN[0], SPAWN[1], SPAWN[2]);
         plan.biome(-MAIN_RADIUS - 60, -20, -MAIN_RADIUS - 60, MAIN_RADIUS + 60, 30, MAIN_RADIUS + 60, "minecraft:mangrove_swamp");
         return plan;
@@ -135,7 +148,10 @@ public final class MarshPlan {
                 ShapeKit.disc(plan, cx, 0, cz, 2.8, Material.SLIME_BLOCK);
                 ShapeKit.ring(plan, cx, 1, cz, 3.0, 4.4, Material.IRON_BARS);
                 plan.set(cx, 1, cz, Material.SCULK_CATALYST);
-                plan.sign(cx, 2, cz + 6, Material.MANGROVE_SIGN, "rotation=0", "Overflow Pit", "Sealed. Enter the", "Marsh Bastion", "(/bastion)");
+                // the sealed door on the pit's south side (it also clears the cell of the old standing sign on a rebuild)
+                // an apron of mud bricks in front of the door: room to stand and read the sign (the pit islet is narrow)
+                plan.fill(cx - 2, 0, cz + SEAL_DZ + 1, cx + 2, 0, cz + SEAL_DZ + 4, Material.MUD_BRICKS);
+                SealDoor.build(plan, Realm.MARSHES, cx, 1, cz + SEAL_DZ);
             }
         }
         plan.set(cx + 4, 1, cz, Material.SHROOMLIGHT);

@@ -143,9 +143,11 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi, w
             }
             Map<Pos, MachineData> all = store.all(worldName);
             Map<Pos, MachineData> live = new LinkedHashMap<>();
+            java.util.Set<Pos> unloaded = new java.util.HashSet<>();
             for (Map.Entry<Pos, MachineData> entry : all.entrySet()) {
                 Pos p = entry.getKey();
                 if (!world.isChunkLoaded(p.x() >> 4, p.z() >> 4)) {
+                    unloaded.add(p);
                     continue;
                 }
                 MachineType type = entry.getValue().kind();
@@ -199,7 +201,7 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi, w
                 }
             };
             for (List<Pos> group : EnergyNetwork.components(live.keySet())) {
-                if (touchesUnloaded(group, all, live)) {
+                if (touchesUnloaded(group, unloaded)) {
                     continue; // a part of this network is in an unloaded chunk: do not run half of it
                 }
                 Map<Pos, MachineData> network = new LinkedHashMap<>();
@@ -425,10 +427,15 @@ final class MachineService implements win.vampyuyu.survival.api.MinerBoostApi, w
         return online;
     }
 
-    private static boolean touchesUnloaded(List<Pos> group, Map<Pos, MachineData> all, Map<Pos, MachineData> live) {
+    /**
+     * True when a machine of the network touches a machine in an unloaded chunk. Only the chunk counts: a Spring Stone or a
+     * Fountain is never in a network either, and treating it as "unloaded" stopped every Spring Wheel (it needs a Spring Stone
+     * against it) and every Miner set against a Fountain.
+     */
+    static boolean touchesUnloaded(List<Pos> group, java.util.Set<Pos> unloaded) {
         for (Pos p : group) {
             for (Pos n : p.neighbours()) {
-                if (all.containsKey(n) && !live.containsKey(n)) {
+                if (unloaded.contains(n)) {
                     return true;
                 }
             }

@@ -176,6 +176,15 @@ public class EnergyNetworkTest {
             assertEquals(org.bukkit.Material.STONE, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.COBBLESTONE)).getType());
             assertEquals(org.bukkit.Material.GLASS, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.SAND)).getType());
             assertEquals(org.bukkit.Material.PACKED_ICE, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.PACKED_ICE)).getType());
+            assertEquals(org.bukkit.Material.COPPER_INGOT, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.RAW_COPPER, 3)).getType());
+            assertEquals(3, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.RAW_COPPER, 3)).getAmount());
+            assertEquals(org.bukkit.Material.IRON_INGOT, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.RAW_IRON)).getType());
+            assertEquals(org.bukkit.Material.GOLD_INGOT, MachineModule.smelt(new org.bukkit.inventory.ItemStack(org.bukkit.Material.RAW_GOLD)).getType());
+            org.bukkit.inventory.ItemStack bronzite = new org.bukkit.inventory.ItemStack(org.bukkit.Material.RAW_COPPER); // a custom item on a raw ore base
+            org.bukkit.inventory.meta.ItemMeta meta = bronzite.getItemMeta();
+            meta.setDisplayName("Bronzite");
+            bronzite.setItemMeta(meta);
+            assertEquals(org.bukkit.Material.RAW_COPPER, MachineModule.smelt(bronzite).getType());
         } finally {
             org.mockbukkit.mockbukkit.MockBukkit.unmock();
         }

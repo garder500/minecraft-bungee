@@ -41,4 +41,14 @@ public class ItemRendererTest {
         CustomItemDef tiered = CustomItemDef.builder("t3", "T3", Rarity.RARE, Material.IRON_HELMET).tier(3).build();
         assertEquals("Tier 3", text(ItemRenderer.lastLine(tiered, Rarity.RARE, false)));
     }
+
+    @Test
+    public void aWeaponShowsItsDamageFirstAndOtherItemsDoNot() {
+        CustomItemDef sword = CustomItemDef.builder("t4", "T4", Rarity.MYTHIC, Material.NETHERITE_SWORD).type("SWORD")
+            .pdc("damage", 320.0).stat(Stat.MIGHT, 5).build();
+        List<Component> lore = ItemRenderer.lore(sword, Map.of());
+        assertEquals("Damage: +320 ✦", text(lore.get(0)));
+        CustomItemDef helmet = CustomItemDef.builder("t5", "T5", Rarity.RARE, Material.IRON_HELMET).stat(Stat.WARD, 4).build();
+        assertFalse(ItemRenderer.lore(helmet, Map.of()).stream().anyMatch(c -> text(c).startsWith("Damage")));
+    }
 }

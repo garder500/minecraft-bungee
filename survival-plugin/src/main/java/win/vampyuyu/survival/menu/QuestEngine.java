@@ -366,7 +366,8 @@ public final class QuestEngine {
      * Re-reads the current value of every active absolute quest (levels, island ownership) and completes the ones
      * that are already satisfied, repeating while completions unlock further quests. {@code probe} returns the
      * current value for a definition, empty when unknown (a feature is off). Forge quests also take what was forged
-     * before they unlocked: a forged item costs hours and rare materials, so it is not asked for a second time.
+     * before they unlocked: a forged item costs hours and rare materials, so it is not asked for a second time. Boss quests
+     * (one named boss) take the kills the probe reports: a Guardian beaten before the quest existed or unlocked is not fought again.
      */
     public List<Completion> sync(QuestData data, Function<QuestDef, OptionalInt> probe) {
         return sync(data, probe, Scope.ALL);
@@ -416,12 +417,13 @@ public final class QuestEngine {
     private List<Completion> creditForged(QuestData data, Function<QuestDef, OptionalInt> probe, Scope scope) {
         List<Completion> done = new ArrayList<>();
         for (QuestDef def : activeTutorial(data, scope)) {
-            if (def.type() != QuestType.FORGE_ITEM) {
+            boolean boss = def.type() == QuestType.BOSS_KILL && !def.target().isEmpty();
+            if (def.type() != QuestType.FORGE_ITEM && !boss) {
                 continue;
             }
             int made = probe.apply(def).orElse(0);
             for (java.util.Map.Entry<String, Integer> entry : data.forged.entrySet()) {
-                if (QuestMatcher.matches(def.target(), entry.getKey())) {
+                if (!boss && QuestMatcher.matches(def.target(), entry.getKey())) {
                     made = Math.max(made, entry.getValue());
                 }
             }

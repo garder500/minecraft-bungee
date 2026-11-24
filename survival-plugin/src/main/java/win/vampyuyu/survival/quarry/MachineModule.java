@@ -58,18 +58,36 @@ enum MachineModule {
         }
     }
 
-    /** What an Ember module's smelting makes of a mined block; the same item when it does not smelt. */
+    /**
+     * What an Ember module's smelting makes of a mined block or raw ore; the same item when it does not smelt.
+     * Only plain stacks smelt: a custom item on a vanilla base (Bronzite is RAW_COPPER) carries meta and stays itself.
+     */
     static ItemStack smelt(ItemStack stack) {
+        if (!plain(stack)) {
+            return stack;
+        }
         Material out = switch (stack.getType()) {
             case COBBLESTONE -> Material.STONE;
             case SAND, RED_SAND -> Material.GLASS;
             case NETHERRACK -> Material.NETHER_BRICK;
+            case RAW_COPPER -> Material.COPPER_INGOT;
+            case RAW_IRON -> Material.IRON_INGOT;
+            case RAW_GOLD -> Material.GOLD_INGOT;
             default -> stack.getType();
         };
         if (out == stack.getType()) {
             return stack;
         }
         return stack.getAmount() == 1 ? new ItemStack(out) : new ItemStack(out, stack.getAmount());
+    }
+
+    /** A vanilla stack: no name and no plugin data (custom items carry their id in the data container). */
+    private static boolean plain(ItemStack stack) {
+        if (!stack.hasItemMeta()) {
+            return true;
+        }
+        org.bukkit.inventory.meta.ItemMeta meta = stack.getItemMeta();
+        return !meta.hasDisplayName() && !meta.hasItemName() && meta.getPersistentDataContainer().isEmpty();
     }
 
     /** Packed ice a Cryo module gathers with one cycle (0 most of the time). */

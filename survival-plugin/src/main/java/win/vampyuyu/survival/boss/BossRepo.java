@@ -56,7 +56,10 @@ public final class BossRepo {
         List<String> errors = new ArrayList<>();
         double bossSeconds = settings.getDouble("settings.target-seconds", 180);
         double hpFactor = Math.max(0.01, settings.getDouble("settings.hp-factor", 0.5));
-        Map<String, BossDefinition> bosses = readBosses(c, errors, curve, bossSeconds, hpFactor);
+        // boss.settings.hp-factor.<id> overrides the factor for one boss (the Echo flies: fewer hits land on it)
+        java.util.function.ToDoubleFunction<String> hpFactorOf =
+            id -> Math.max(0.01, settings.getDouble("settings.hp-factor." + id, hpFactor));
+        Map<String, BossDefinition> bosses = readBosses(c, errors, curve, bossSeconds, hpFactorOf);
         Map<String, SlayerDefinition> slayers = SlayerParser.loadAll(c, errors, curve, settings.getDouble("slayer.target-seconds", 90));
         for (SlayerDefinition slayer : slayers.values()) {
             for (SlayerDefinition.Tier tier : slayer.tiers()) {
@@ -80,7 +83,7 @@ public final class BossRepo {
     // ---------------------------------------------------------------- bosses
 
     private static Map<String, BossDefinition> readBosses(Connection c, List<String> errors, PowerCurve curve, double seconds,
-            double hpFactor) throws SQLException {
+            java.util.function.ToDoubleFunction<String> hpFactorOf) throws SQLException {
         Map<String, Map<String, List<AbilityRaw>>> abilities = readAbilities(c, "boss_ability", "boss_id", "boss_ability_param",
             "phase || ':' || role");
         Map<String, List<double[]>> phaseNumbers = new HashMap<>();
@@ -123,7 +126,7 @@ public final class BossRepo {
             BossDefinition def = assemble(rs, id, abilities.getOrDefault(id, Map.of()), phaseText.getOrDefault(id, List.of()),
                 phaseNumbers.getOrDefault(id, List.of()), equipment.getOrDefault(id, List.of()),
                 ranks.getOrDefault(id, List.of()), drops.getOrDefault(id, List.of()), summons.get(id),
-                altarMissing.getOrDefault(id, false), errors, curve, seconds, hpFactor);
+                altarMissing.getOrDefault(id, false), errors, curve, seconds, hpFactorOf.applyAsDouble(id));
             if (def != null) {
                 result.put(id, def);
             }

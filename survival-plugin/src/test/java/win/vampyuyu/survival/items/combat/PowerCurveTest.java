@@ -79,7 +79,9 @@ public class PowerCurveTest {
      * Temporal Pharaoh is written to want Frost and resist Ember, the tier's own element (docs/skyblock-notes/citadel.md).
      */
     private static boolean onTheLadder(BossDefinition boss) {
-        return boss.kind() == BossDefinition.Kind.BOSS && !boss.id().equals("hell_gao") && !boss.id().equals("temporal_pharaoh");
+        // the Devourer is the final Raid, paced on its own (boss.settings.hp-factor.devourer), not a step of the ladder
+        return boss.kind() == BossDefinition.Kind.BOSS && !boss.id().equals("hell_gao") && !boss.id().equals("temporal_pharaoh")
+            && !boss.id().equals("devourer");
     }
 
     /** Share of the time a player really lands hits (GDD 8.7 factor 0.5), read from the data. */
@@ -90,7 +92,23 @@ public class PowerCurveTest {
     /** Seconds one player with the GDD reference weapon of {@code swordTier} needs (no Might, {@link #uptime()} of the time). */
     private static double seconds(BossDefinition boss, int swordTier) {
         PowerCurve.Tier tier = curve.tier(swordTier);
-        return simulate(boss.health(), curve.referenceWeaponOf(swordTier), 0, multiplier(tier.element(), boss)) / uptime();
+        return simulate(boss.health() / flyerShare(boss), curve.referenceWeaponOf(swordTier), 0, multiplier(tier.element(), boss))
+            / uptime();
+    }
+
+    /** Health factor of one boss: {@code boss.settings.hp-factor.<id>} when set, else the shared 0.5. */
+    private static double hpFactor(BossDefinition boss) {
+        Settings s = Settings.load(db, "boss");
+        return s.getDouble("settings.hp-factor." + boss.id(), s.getDouble("settings.hp-factor", 0.5));
+    }
+
+    /**
+     * A boss with its own, lower factor is one that cannot be hit as often as the reference (the Echo flies and only
+     * lands now and then): the time rules below apply to the hits that really land, so its health is read back at the
+     * shared factor.
+     */
+    private static double flyerShare(BossDefinition boss) {
+        return hpFactor(boss) / Settings.load(db, "boss").getDouble("settings.hp-factor", 0.5);
     }
 
     @Test
@@ -125,6 +143,73 @@ public class PowerCurveTest {
     }
 
     @Test
+    public void aTierWithSeveralArmorSetsCountsOneSet() {
+        // tier 5 has Starcore and three Realm sidegrades: a player wears one of them, so the dps (and every health pool
+        // sized on it: dungeon floor 7, tier-5 slayers) counts one set's Might
+        double might = db.read(c -> win.vampyuyu.survival.data.Db.query(c,
+            "SELECT AVG(s.value) FROM item_def d JOIN item_stat s ON s.item_id = d.id WHERE d.owner = 'quarry' AND d.tier = 5 "
+                + "AND d.equip_slot IS NOT NULL AND s.stat = 'might' GROUP BY d.equip_slot", rs -> rs.getDouble(1)))
+            .stream().mapToDouble(Double::doubleValue).sum();
+        assertTrue("one set, not four: " + might, might > 50 && might < 120);
+        assertEquals(might, curve.tier(5).might(), 1e-6);
+        assertTrue(curve.tier(5).might() < 2 * curve.tier(4).might());
+        // and is hit like a player wearing one set: same health as the stat engine gives a full Starcore set
+        double vitality = db.read(c -> win.vampyuyu.survival.data.Db.query(c,
+            "SELECT AVG(s.value) FROM item_def d JOIN item_stat s ON s.item_id = d.id WHERE d.owner = 'quarry' AND d.tier = 5 "
+                + "AND d.equip_slot IS NOT NULL AND s.stat = 'vitality' GROUP BY d.equip_slot", rs -> rs.getDouble(1)))
+            .stream().mapToDouble(Double::doubleValue).sum();
+        assertEquals(20 + vitality / 5, curve.playerHealth(5), 1e-6);
+        assertTrue("a tier-5 boss hit grows with the tier like the others, not 11x",
+            curve.bossHitDamage(5) / curve.bossHitDamage(4) < 3);
+    }
+
+    /**
+     * A boss hit is sized so that the player of its tier (full set) loses about a tenth of its health once Ward AND the
+     * vanilla armor of the base materials (chainmail 12, iron 15, diamond 20 / 8, netherite 20 / 12, Starcore 25 / 16 with its bonus rows) have acted. Before
+     * 2026-11-23 only Ward was counted and the game measured 2 to 4 % per hit (5 times too soft).
+     */
+    @Test
+    public void aTierMatchedPlayerLosesAboutATenthOfItsHealthPerBossHit() {
+        double[] armor = {12, 15, 20, 20, 25};
+        double[] toughness = {0, 0, 8, 12, 16};
+        for (int tier = 1; tier <= 5; tier++) {
+            assertEquals("vanilla armor of tier " + tier, armor[tier - 1], curve.vanillaArmor(tier), 1.0); // tier 5: mean of Starcore and its sidegrades (24.25)
+            assertEquals("toughness of tier " + tier, toughness[tier - 1], curve.vanillaToughness(tier), 1.0);
+            double share = curve.bossHitShare(tier);
+            assertTrue("tier " + tier + " loses " + share + " of its health per hit", share >= 0.08 && share <= 0.12);
+        }
+    }
+
+    /**
+     * The monster twin: a plain dungeon monster hit (dungeon.mobs.hits-to-down 60, floor damage 0.75 to 1.05) costs a
+     * tier-matched player 1 to 2 % of its health on every floor, whatever the tier.
+     */
+    @Test
+    public void aTierMatchedPlayerLosesOneToTwoPercentPerPlainMonsterHit() {
+        double[] floorDamage = {0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.05};
+        int[] floorTier = {1, 1, 2, 2, 3, 4, 5};
+        for (int floor = 1; floor <= 7; floor++) {
+            int tier = floorTier[floor - 1];
+            double share = curve.hitShare(tier, curve.hitDamage(tier, 1.0 / 60) * floorDamage[floor - 1]);
+            assertTrue("floor " + floor + " loses " + share + " per plain hit", share >= 0.01 && share <= 0.02);
+        }
+        assertEquals("the boss hit is the same maths with 1 / hitsToDown", curve.bossHitDamage(3), curve.hitDamage(3, 0.1), 1e-9);
+    }
+
+    @Test
+    public void anUnderGearedPlayerIsPunishedHarderThanATierMatchedOne() {
+        for (int tier = 2; tier <= 5; tier++) {
+            double bare = curve.bossHitDamage(tier) / 20.0; // no armor, no Ward, 20 health
+            assertTrue("a bare player takes " + bare + " per tier-" + tier + " hit vs " + curve.bossHitShare(tier),
+                bare > 2 * curve.bossHitShare(tier));
+        }
+        // a bronze player (chainmail, a third of the Ward) under a tier-5 hit
+        double inBronze = PowerCurve.afterVanillaArmor(curve.bossHitDamage(5) / 2.0, curve.vanillaArmor(1),
+            curve.vanillaToughness(1)) / curve.playerHealth(1);
+        assertTrue("a tier-1 player takes " + inBronze + " of its health per tier-5 hit", inBronze > 0.5);
+    }
+
+    @Test
     public void everyBossIsAutoScaledFromItsTier() {
         assertEquals(11, config.bosses().values().stream().filter(b -> b.kind() == BossDefinition.Kind.BOSS).count());
         for (BossDefinition boss : config.bosses().values()) {
@@ -134,18 +219,32 @@ public class PowerCurveTest {
             assertTrue(boss.id(), boss.tier() >= 1);
             assertNotNull(boss.id() + " has a weakness", boss.weakness());
             assertNotNull(boss.id() + " has a resistance", boss.resistance());
-            assertEquals(boss.id(), curve.bossHealth(boss.tier(), 180, 0.5), boss.health(), 0);
+            assertEquals(boss.id(), curve.bossHealth(boss.tier(), 180, hpFactor(boss)), boss.health(), 0);
         }
         // bosses of the same tier share the health, a higher tier has more
         assertEquals(config.bosses().get("frost_revenant").health(), config.bosses().get("sylvan_matriarch").health(), 0);
         assertTrue(config.bosses().get("voidwyrm").health() > config.bosses().get("abyssal_leviathan").health());
+        assertTrue("only the flying Echo and the final Raid have their own factor", config.bosses().values().stream()
+            .filter(b -> hpFactor(b) != 0.5).map(BossDefinition::id).allMatch(id -> id.equals("voidwyrm") || id.equals("devourer")));
         assertTrue(config.bosses().get("abyssal_leviathan").health() > config.bosses().get("frost_revenant").health());
     }
 
     @Test
-    public void theVoidwyrmHasAboutFiftyTwoThousandHealthAtTierFive() {
+    public void theFinalRaidLastsMinutesNotSeconds() {
+        BossDefinition devourer = config.bosses().get("devourer");
+        // 10 Guardian pools of tier 5, fixed whatever the group: a flawless tier-5 player (35 s on one pool) needs ~6 min
+        assertEquals(curve.bossHealth(5, 180, 0.5) * 10, devourer.health(), 1);
+        assertTrue(devourer.health() > 300_000);
+        assertEquals(540, devourer.arena().enrageSeconds());
+        assertEquals(3.0, BossMath.hpMultiplier(5, devourer.arena().minPlayers(), devourer.arena().scalePerPlayer(),
+            devourer.arena().scaleCap()), 1e-9);
+    }
+
+    @Test
+    public void theVoidwyrmHasAboutFortyFourThousandHealthAtTierFive() {
         BossDefinition wyrm = config.bosses().get("voidwyrm");
-        assertEquals(52_000, wyrm.health(), 520); // GDD 8.7: DPS_ref(5) 576 x 180 s x 0.5
+        // GDD 8.7: DPS_ref(5) 576 x 180 s x 0.5, then 85 % because it flies (boss.settings.hp-factor.voidwyrm 0.425)
+        assertEquals(52_000 * 0.85, wyrm.health(), 520);
         assertEquals(576, curve.referenceDps(5), 1e-6);
         assertEquals(1.0, BossSettings.parse(Settings.load(db, "boss")).hpScale(), 0); // no second halving on top
     }
@@ -183,7 +282,7 @@ public class PowerCurveTest {
 
     @Test
     public void readabilityRulesHoldPhasesAtMostOnePointFourAndAbilitiesAtMostAThirdOfTheReferencePlayer() {
-        double hitsToDown = Settings.load(db, "boss").getInt("settings.hits-to-down", 8);
+        double hitsToDown = Settings.load(db, "boss").getInt("settings.hits-to-down", 10);
         double damageScale = Settings.load(db, "boss").getDouble("settings.damage-scale", 1);
         for (BossDefinition boss : config.bosses().values()) {
             if (boss.kind() != BossDefinition.Kind.BOSS) {
@@ -194,7 +293,10 @@ public class PowerCurveTest {
                 for (var ability : java.util.stream.Stream.concat(phase.enter().stream(), phase.abilities().stream()).toList()) {
                     // a boss hit takes 1/hitsToDown of the reference player's health, then the global and phase multipliers
                     double share = ability.damage() * phase.damageMult() * damageScale / hitsToDown;
-                    assertTrue(boss.id() + " " + ability.type() + " takes " + share, share <= 0.35);
+                    // 2026-11-23: damage-scale went 0.6 -> 1.0 and hits-to-down 8 -> 10 (the curve now counts vanilla armor, so
+                    // a plain hit really is a tenth of the health). The Echo's telegraphed dive bomb (x3.5) is a third of
+                    // the health of a tier-matched player, 0.35, and the limit is 0.4 (about three of them to go down).
+                    assertTrue(boss.id() + " " + ability.type() + " takes " + share, share <= 0.4);
                 }
             }
         }

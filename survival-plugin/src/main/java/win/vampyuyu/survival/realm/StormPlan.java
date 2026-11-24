@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import org.bukkit.Material;
+import win.vampyuyu.survival.api.Realm;
 import win.vampyuyu.survival.island.BlockPlan;
+import win.vampyuyu.survival.island.ReturnArch;
 import win.vampyuyu.survival.island.ShapeKit;
 
 /**
@@ -15,7 +17,7 @@ import win.vampyuyu.survival.island.ShapeKit;
  */
 public final class StormPlan {
     /** Bump to rebuild existing worlds when the layout changes. */
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
     /** World y of the landing surface. */
     public static final int ORIGIN_Y = 120;
     public static final int LANDING_RADIUS = 13;
@@ -80,6 +82,11 @@ public final class StormPlan {
 
     /** The seal of the Sarcophagus: right-click it to enter the Tempest Bastion. */
     public static final int[] SEAL = {232, 21, 11 - 13};
+
+    /** The seal block itself, the lodestone in front of the crying obsidian wall (plan coordinates). */
+    public static int[] sealBlock() {
+        return new int[] {SEAL[0], SEAL[1], SEAL[2] + 1};
+    }
 
     public static Islet at(String id) {
         for (Islet islet : ISLETS) {
@@ -225,7 +232,8 @@ public final class StormPlan {
             plan.set(d[0], 0, d[1], Material.SEA_LANTERN);
         }
         plan.set(0, 1, 0, Material.LODESTONE);
-        plan.sign(0, 1, 3, Material.OAK_SIGN, "rotation=0", "Gate 6", "Tempestuous Archipelago", "Gale Landing", "/quai to return");
+        plan.air(0, 1, 3); // the old standing sign of the landing
+        ReturnArch.build(plan, Realm.ARCHIPELAGO, SPAWN[0], SPAWN[1], SPAWN[2]);
     }
 
     private static void vane(BlockPlan plan, Islet at) {
@@ -298,7 +306,8 @@ public final class StormPlan {
         plan.fill(sx - 1, at.y() + 2, sz, sx + 1, at.y() + 4, sz, Material.WAXED_OXIDIZED_CUT_COPPER);
         plan.set(sx, SEAL[1], sz + 1, Material.LODESTONE);
         plan.set(sx, at.y() + 5, sz, Material.LIGHTNING_ROD, "facing=up");
-        plan.sign(sx - 2, at.y() + 1, sz + 2, Material.OAK_SIGN, "rotation=0", "Sealed", "The Thunder Dragon", "sleeps. Right-click", "the seal with a key.");
+        java.util.List<String> lines = win.vampyuyu.survival.island.SealDoor.signLines(win.vampyuyu.survival.api.Realm.ARCHIPELAGO);
+        plan.sign(sx - 2, at.y() + 1, sz + 2, Material.OAK_SIGN, "rotation=0", lines.get(0), lines.get(1), lines.get(2), lines.get(3));
         plan.anchor("seal", sx, SEAL[1], sz + 1);
     }
 

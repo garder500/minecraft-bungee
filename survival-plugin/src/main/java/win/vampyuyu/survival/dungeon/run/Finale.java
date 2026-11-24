@@ -77,6 +77,7 @@ final class Finale {
         Map<UUID, List<RewardTable.Drop>> drops = new LinkedHashMap<>();
         Map<UUID, double[]> paid = new LinkedHashMap<>();
         Map<UUID, int[]> levels = new LinkedHashMap<>();
+        Map<UUID, int[]> delivered = new LinkedHashMap<>(); // items {in the inventory, waiting for /dungeon claim}
         final long catacombsGain = ok ? Catacombs.gain(cfg, xp) : 0;
         Random rng = new Random();
         for (RunPlayer rp : run.players.values()) {
@@ -123,11 +124,15 @@ final class Finale {
             if (myXp > 0 && p != null) {
                 run.ctx.skills().ifPresent(s -> s.addXp(p, Skill.COMBAT, myXp, "dungeon:floor" + run.floorNumber()));
             }
+            int[] where = new int[2];
             for (RewardTable.Drop d : mine) {
-                RewardDelivery.give(run.ctx.core, rp.id, p, d.item(), d.amount());
+                int waiting = RewardDelivery.give(run.ctx.core, rp.id, p, d.item(), d.amount());
+                where[1] += waiting;
+                where[0] += Math.max(0, d.amount() - waiting);
             }
+            delivered.put(rp.id, where);
         }
-        announce(ok, reason, score, millis, coins, xp, paid, levels);
+        announce(ok, reason, score, millis, coins, xp, paid, levels, delivered);
         if (ok) {
             // the board writes a file: off the main thread, the rank is announced when it is known
             final ScoreCalculator.Score s = score;
@@ -149,8 +154,21 @@ final class Finale {
         return new Result(score, drops, coins, xp);
     }
 
+    /** Where the reward items went, for the recap line: inventory, the /dungeon claim list, or none rolled. */
+    static String itemsNote(int inInventory, int waiting) {
+        if (inInventory + waiting <= 0) {
+            return " (no item this time)";
+        }
+        String inv = inInventory + (inInventory == 1 ? " item" : " items") + " in your inventory";
+        if (waiting <= 0) {
+            return " (" + inv + ")";
+        }
+        String wait = waiting + (waiting == 1 ? " item waits" : " items wait") + ": <yellow>/dungeon claim<gray>";
+        return inInventory > 0 ? " (" + inv + ", " + wait + ")" : " (" + wait + ")";
+    }
+
     private void announce(boolean ok, String reason, ScoreCalculator.Score score, long millis, double coins, double xp,
-            Map<UUID, double[]> paid, Map<UUID, int[]> levels) {
+            Map<UUID, double[]> paid, Map<UUID, int[]> levels, Map<UUID, int[]> delivered) {
         Grade g = score.grade();
         run.each(p -> {
             p.sendMessage(Msg.component("<dark_gray><strikethrough>                                                  "));
@@ -168,8 +186,9 @@ final class Finale {
                 double[] mine = paid.get(p.getUniqueId());
                 double myCoins = mine == null ? coins : mine[0];
                 double myXp = mine == null ? xp : mine[1];
+                int[] where = delivered.getOrDefault(p.getUniqueId(), new int[2]);
                 p.sendMessage(Msg.component("<gray>  Reward: <gold>" + Msg.coins(myCoins) + "<gray> and <aqua>" + Msg.number(myXp)
-                    + " Combat XP<gray> (the items are in your inventory)"));
+                    + " Combat XP<gray>" + itemsNote(where[0], where[1])));
                 if (mine != null && mine[2] > 0) {
                     p.sendMessage(Msg.component("<gray>  Crypt Depths level bonus: <green>+" + String.format("%.0f", mine[2]) + "%"));
                 }

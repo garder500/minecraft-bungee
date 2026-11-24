@@ -6,14 +6,14 @@ import static win.vampyuyu.survival.data.TestDb.count;
 
 import org.junit.Test;
 
-/** The menu seed against the former menu.yml (without its quests, which are the quests seeds): 17 commands with 38 aliases, 4 default zones, 4 zones, 5 sounds, 39 single settings. */
+/** The menu seed against the former menu.yml (without its quests, which are the quests seeds): 17 commands with 38 aliases, 4 default zones (plus 10 since: the eight Realms, the Astral Interiority and the Bastions), 4 zones, 5 sounds, 39 single settings. */
 public class MenuSeedTest {
     @Test
     public void theConvertedSeedKeepsTheCountsOfTheOldYaml() {
         try (Db db = TestDb.seeded()) {
             assertEquals(18, count(db, "SELECT COUNT(*) FROM menu_command"));
             assertEquals(39, count(db, "SELECT COUNT(*) FROM menu_command_alias"));
-            assertEquals(4, count(db, "SELECT COUNT(*) FROM menu_default_zone"));
+            assertEquals(14, count(db, "SELECT COUNT(*) FROM menu_default_zone"));
             assertEquals(4, count(db, "SELECT COUNT(*) FROM menu_zone"));
             assertEquals(5, count(db, "SELECT COUNT(*) FROM menu_sound"));
             assertEquals(0, count(db, "SELECT COUNT(*) FROM menu_warp"));

@@ -275,6 +275,44 @@ public class DungeonRunTest {
     }
 
     @Test
+    public void aFractureRunSendsThePlayerBackToTheRealmItWasOpenedFromNotTheHub() {
+        asyncHub(false);
+        World grove = server.addSimpleWorld("sb_realm_grove");
+        org.bukkit.Location entry = new org.bukkit.Location(grove, 12.5, 70, -4.5);
+        svc.runs.returnAfterRun(alice.getUniqueId(), entry);
+        running();
+        RunManager.sendOut(svc.ctx, alice);
+        assertEquals("back in the Realm, no hub request", 0, hubCalls.get());
+        assertEquals(grove, alice.getWorld());
+        assertEquals(12.5, alice.getLocation().getX(), 1e-9);
+        // used once: the next exit (a normal run) goes to the hub again
+        svc.ctx.teleport(alice, world.getSpawnLocation());
+        RunManager.sendOut(svc.ctx, alice);
+        assertEquals(1, hubCalls.get());
+    }
+
+    @Test
+    public void aSoloLeaveDoesNotSendTheRealmReturnToTheHubOnTheNextTick() {
+        asyncHub(false);
+        World grove = server.addSimpleWorld("sb_realm_grove");
+        svc.runs.returnAfterRun(alice.getUniqueId(), new org.bukkit.Location(grove, 3, 70, 3));
+        running();
+        svc.ctx.teleport(bob, server.getWorld("main_world").getSpawnLocation());
+        run.leave(bob.getUniqueId(), false);
+        // Alice leaves last: the run closes at once (moving her) and the leave's own send-out fires a tick later
+        svc.runs.leave(alice);
+        server.getScheduler().performTicks(80);
+        assertEquals(grove, alice.getWorld());
+        assertEquals("nobody asked the hub for a player who was already out", 0, hubCalls.get());
+    }
+
+    @Test
+    public void aReturnPointInsideADungeonWorldIsIgnored() {
+        svc.runs.returnAfterRun(alice.getUniqueId(), world.getSpawnLocation());
+        assertFalse(svc.ctx.returnTo.containsKey(alice.getUniqueId()));
+    }
+
+    @Test
     public void quitAndShutdownMoveThePlayerAtOnceWithoutWaitingForTheHub() {
         asyncHub(false);
         running();
@@ -398,7 +436,54 @@ public class DungeonRunTest {
         var hit = new org.bukkit.event.entity.EntityDamageByEntityEvent(mob(3.0), alice,
             EntityDamageEvent.DamageCause.ENTITY_ATTACK, 4.0);
         server.getPluginManager().callEvent(hit);
-        assertEquals("items formula (10) first, then the floor multiplier (x3)", 30.0, hit.getDamage(), 0.001);
+        assertEquals("without a power curve (no fixed hit) the old rule stays: items formula (10) first, then the multiplier (x3)", 30.0,
+            hit.getDamage(), 0.001);
+    }
+
+    /** What the event carried after LOW (the fixed hit) and what a Ward stand-in at HIGH makes of it (half). */
+    private double[] seenAtNormal = new double[1];
+
+    private void wardHalvesWhatLowSet() {
+        server.getPluginManager().registerEvents(new org.bukkit.event.Listener() {
+            @org.bukkit.event.EventHandler(priority = org.bukkit.event.EventPriority.NORMAL)
+            public void seen(org.bukkit.event.entity.EntityDamageByEntityEvent e) {
+                seenAtNormal[0] = e.getDamage();
+            }
+
+            @org.bukkit.event.EventHandler(priority = org.bukkit.event.EventPriority.HIGH)
+            public void ward(org.bukkit.event.entity.EntityDamageByEntityEvent e) {
+                e.setDamage(seenAtNormal[0] / 2); // replaces whatever the real items formula did, like Ward does
+            }
+        }, plugin);
+    }
+
+    @Test
+    public void aMonsterWithAFixedHitDealsItBeforeWardWhateverItsWeaponSays() {
+        running();
+        wardHalvesWhatLowSet();
+        alice.setHealth(20);
+        var z = mob(3.0);
+        z.getPersistentDataContainer().set(svc.ctx.keys.hit, org.bukkit.persistence.PersistentDataType.DOUBLE, 8.0);
+        var hit = new org.bukkit.event.entity.EntityDamageByEntityEvent(z, alice,
+            EntityDamageEvent.DamageCause.ENTITY_ATTACK, 11.0); // the vanilla weapon hit is irrelevant
+        server.getPluginManager().callEvent(hit);
+        assertEquals("the absolute hit is in place before Ward (HIGH)", 8.0, seenAtNormal[0], 0.001);
+        assertEquals("Ward halves it, and the x3 multiplier does not come after", 4.0, hit.getDamage(), 0.001);
+    }
+
+    @Test
+    public void theSameFixedHitFromTwoDifferentWeaponsIsTheSame() {
+        running();
+        wardHalvesWhatLowSet();
+        alice.setHealth(20);
+        var z = mob(1.0);
+        z.getPersistentDataContainer().set(svc.ctx.keys.hit, org.bukkit.persistence.PersistentDataType.DOUBLE, 1.5);
+        var weak = new org.bukkit.event.entity.EntityDamageByEntityEvent(z, alice, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 2.0);
+        var strong = new org.bukkit.event.entity.EntityDamageByEntityEvent(z, alice, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 14.0);
+        server.getPluginManager().callEvent(weak);
+        server.getPluginManager().callEvent(strong);
+        assertEquals(weak.getDamage(), strong.getDamage(), 1e-9);
+        assertEquals(0.75, weak.getDamage(), 1e-9);
     }
 
     @Test
@@ -698,6 +783,30 @@ public class DungeonRunTest {
         assertFalse("ghosts may spectate a teammate in the same dungeon", spectate.isCancelled());
         assertTrue(svc.ctx.teleport(alice, away));
         assertEquals("the feature's own teleport is let through", "elsewhere", alice.getWorld().getName());
+    }
+
+    @Test
+    public void aGhostCannotSpectateItsWayOutAndAnyEscapeIsBroughtBack() {
+        running();
+        World elsewhere = server.addSimpleWorld("elsewhere");
+        PlayerTeleportEvent spectate = new PlayerTeleportEvent(alice, alice.getLocation(), new Location(elsewhere, 0, 70, 0),
+            PlayerTeleportEvent.TeleportCause.SPECTATE);
+        server.getPluginManager().callEvent(spectate);
+        assertTrue("the spectator menu lists players of every world", spectate.isCancelled());
+        // a way out nobody foresaw: the player lands in another world while still in the run
+        alice.setLocation(new Location(elsewhere, 0, 70, 0));
+        server.getPluginManager().callEvent(new org.bukkit.event.player.PlayerChangedWorldEvent(alice, world));
+        server.getScheduler().performTicks(2);
+        assertEquals("brought back into the dungeon", world, alice.getWorld());
+        assertTrue(run.isParticipant(alice.getUniqueId()));
+    }
+
+    @Test
+    public void leavingTheRunIsNotBroughtBack() {
+        running();
+        run.leave(alice.getUniqueId(), true);
+        server.getScheduler().performTicks(80);
+        assertNotEquals(world, alice.getWorld());
     }
 
     @Test

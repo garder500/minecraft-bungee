@@ -10,6 +10,21 @@ import win.vampyuyu.survival.api.PlayerClass;
 
 public class ClassPureTest {
     @Test
+    public void theAetherBarShowsTheReserveOnlyInSkyblockWithNoMenuOpen() {
+        assertEquals(73, AetherBar.level(73.6));
+        assertEquals(0.5f, AetherBar.progress(50, 100), 1e-6);
+        assertEquals("a full reserve does not roll over to the next level", 0.999f, AetherBar.progress(120, 120), 1e-6);
+        assertEquals(0f, AetherBar.progress(5, 0), 0);
+        var survival = org.bukkit.GameMode.SURVIVAL;
+        var none = org.bukkit.event.inventory.InventoryType.CRAFTING;
+        assertTrue(AetherBar.eligible("sb_hub", survival, none));
+        assertTrue(AetherBar.eligible("sb_dungeon_3", org.bukkit.GameMode.ADVENTURE, none));
+        assertFalse("the anvil spends the real levels", AetherBar.eligible("sb_world", survival, org.bukkit.event.inventory.InventoryType.CHEST));
+        assertFalse(AetherBar.eligible("lobby", survival, none));
+        assertFalse(AetherBar.eligible("sb_world", org.bukkit.GameMode.CREATIVE, none));
+    }
+
+    @Test
     public void everyClassStaysInsideTheMetaCaps() {
         for (PlayerClass c : PlayerClass.values()) {
             ClassBudget.Bonus b = ClassBudget.of(c);

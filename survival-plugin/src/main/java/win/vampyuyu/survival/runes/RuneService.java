@@ -40,6 +40,8 @@ public final class RuneService implements RuneApi {
     private final Core core;
     private volatile RuneConfig config;
     private final Map<UUID, Long> verdantReady = new HashMap<>();
+    private final Map<UUID, Long> rewindReady = new HashMap<>();
+    private final Map<UUID, Long> undertowReady = new HashMap<>();
 
     public RuneService(Core core, RuneConfig config) {
         this.core = core;
@@ -132,20 +134,31 @@ public final class RuneService implements RuneApi {
         List<Component> out = new ArrayList<>();
         out.add(line(Component.text("Runes (" + engraved.size() + "/" + slots + ")", NamedTextColor.LIGHT_PURPLE)));
         engraved.forEach((id, rank) -> config.rune(id).ifPresent(rune -> {
-            String what = rune.realm() ? effectText(rune) : "+" + config.value(rank) + " " + rune.stat().displayName();
+            String what = rune.realm() ? effectText(rune, config) : "+" + config.value(rank) + " " + rune.stat().displayName();
             out.add(line(Component.text(" ✧ " + rune.name() + (rune.realm() ? "" : " " + Rune.roman(rank)) + ": ", NamedTextColor.GRAY)
                 .append(Component.text(what, rune.realm() ? NamedTextColor.GOLD : NamedTextColor.AQUA))));
         }));
         return out;
     }
 
-    private String effectText(Rune rune) {
+    /** What a Realm rune does, in a few words (item lore, menu, engraved lines). */
+    static String effectText(Rune rune, RuneConfig config) {
         return switch (rune.id()) {
             case "scorch" -> "your Surge sets the target ablaze";
             case "verdant" -> "taking a hit grants Regeneration";
             case "stasis" -> "your Surge slows and freezes the target";
+            case "rewind" -> "below " + pct(config.effects().rewindBelow()) + " health, the sands turn back: +"
+                + pct(config.effects().rewindHeal()) + " (" + config.effects().rewindCooldownSeconds() + " s)";
+            case "blight" -> "your Surge rots the target (Wither)";
+            case "tempest" -> "your Surge chains lightning to " + config.effects().tempestChains() + " more foes";
+            case "undertow" -> "taking a hit throws your attackers back";
+            case "soulbind" -> "each monster you slay gives back " + pct(config.effects().soulbindHeal()) + " health";
             default -> "a Realm effect";
         };
+    }
+
+    private static String pct(double share) {
+        return Math.round(share * 100) + " %";
     }
 
     private static Component line(Component component) {
@@ -250,7 +263,37 @@ public final class RuneService implements RuneApi {
 
     @Override
     public void onSurge(Player attacker, LivingEntity target, ItemStack weapon) {
+        onSurge(attacker, target, weapon, 0);
+    }
+
+    @Override
+    public void onSurge(Player attacker, LivingEntity target, ItemStack weapon, double hit) {
         var runes = runesOf(weapon);
+        RuneConfig.Effects fx = config.effects();
+        if (runes.containsKey("blight")) {
+            target.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, fx.blightTicks(), 0, true, true));
+            target.getWorld().spawnParticle(Particle.SPORE_BLOSSOM_AIR, target.getLocation().add(0, target.getHeight() * 0.5, 0), 16, 0.3, 0.4, 0.3, 0);
+        }
+        if (runes.containsKey("tempest")) {
+            try {
+                target.getWorld().strikeLightningEffect(target.getLocation()); // a flash and thunder, no damage, no fire
+            } catch (RuntimeException e) {
+                // the test server has no lightning: the chain below still runs
+            }
+            int left = fx.tempestChains();
+            for (org.bukkit.entity.Entity e : target.getNearbyEntities(fx.tempestRadius(), fx.tempestRadius(), fx.tempestRadius())) {
+                if (left <= 0) {
+                    break;
+                }
+                if (e instanceof LivingEntity other && other instanceof org.bukkit.entity.Enemy && other != attacker && !other.isDead()) {
+                    left--;
+                    other.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, other.getLocation().add(0, other.getHeight() * 0.5, 0), 20, 0.3, 0.5, 0.3, 0.1);
+                    if (hit > 0) {
+                        other.damage(hit * fx.tempestShare()); // no source: it must not start another Surge (and chain)
+                    }
+                }
+            }
+        }
         if (runes.containsKey("scorch")) {
             target.setFireTicks(Math.max(target.getFireTicks(), config.burnTicks()));
             target.getWorld().spawnParticle(Particle.FLAME, target.getLocation().add(0, target.getHeight() * 0.5, 0), 14, 0.25, 0.3, 0.25, 0.02);
@@ -259,6 +302,84 @@ public final class RuneService implements RuneApi {
             target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, config.stasisTicks(), 2, true, true));
             target.setFreezeTicks(Math.max(target.getFreezeTicks(), Math.min(target.getMaxFreezeTicks(), config.stasisTicks() * 2)));
             target.getWorld().spawnParticle(Particle.SNOWFLAKE, target.getLocation().add(0, target.getHeight() * 0.5, 0), 18, 0.3, 0.4, 0.3, 0.02);
+        }
+    }
+
+    /** Realm armor runes when a hit lands: Verdant, Rewind and Undertow. */
+    public void onHurt(Player victim, org.bukkit.event.entity.EntityDamageEvent event) {
+        onHurt(victim);
+        RuneConfig.Effects fx = config.effects();
+        // the attacker test comes first: ready() arms the cooldown, and a fall or a Wither tick must not spend it
+        if (event instanceof org.bukkit.event.entity.EntityDamageByEntityEvent by && worn(victim, "undertow")
+                && ready(undertowReady, victim.getUniqueId(), fx.undertowCooldownSeconds())) {
+            org.bukkit.entity.Entity source = by.getDamager();
+            if (source instanceof org.bukkit.entity.Projectile p && p.getShooter() instanceof org.bukkit.entity.Entity shooter) {
+                source = shooter;
+            }
+            java.util.List<LivingEntity> pushed = new java.util.ArrayList<>();
+            if (source instanceof LivingEntity attacker && attacker != victim) {
+                pushed.add(attacker);
+            }
+            for (org.bukkit.entity.Entity e : victim.getNearbyEntities(fx.undertowRadius(), fx.undertowRadius(), fx.undertowRadius())) {
+                if (e instanceof LivingEntity l && l instanceof org.bukkit.entity.Enemy && !pushed.contains(l)) {
+                    pushed.add(l);
+                }
+            }
+            for (LivingEntity l : pushed) {
+                org.bukkit.util.Vector away = l.getLocation().toVector().subtract(victim.getLocation().toVector()).setY(0);
+                if (away.lengthSquared() > 0.01) {
+                    l.setVelocity(away.normalize().multiply(fx.undertowPush()).setY(0.4));
+                }
+                l.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, fx.undertowSlowTicks(), 1, true, true));
+            }
+            victim.getWorld().spawnParticle(Particle.BUBBLE_POP, victim.getLocation().add(0, 1, 0), 40, fx.undertowRadius() / 2, 0.5, fx.undertowRadius() / 2, 0.05);
+        }
+        if (worn(victim, "rewind")) {
+            core.scheduler().nextTick(() -> {
+                var max = victim.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+                if (!victim.isValid() || victim.isDead() || max == null || victim.getHealth() >= max.getValue() * fx.rewindBelow()
+                        || !ready(rewindReady, victim.getUniqueId(), fx.rewindCooldownSeconds())) {
+                    return;
+                }
+                victim.setHealth(Math.min(max.getValue(), victim.getHealth() + max.getValue() * fx.rewindHeal()));
+                victim.getWorld().spawnParticle(Particle.FALLING_DUST, victim.getLocation().add(0, 1.2, 0), 30, 0.4, 0.6, 0.4, 0,
+                    org.bukkit.Material.SAND.createBlockData());
+                victim.playSound(victim.getLocation(), org.bukkit.Sound.BLOCK_SAND_BREAK, 1f, 0.6f);
+                core.msg().info(victim, "The sands turn back: your Rewind rune mends you.");
+            });
+        }
+    }
+
+    /** Soulbind: a monster killed with the weapon gives some health back. */
+    public void onKill(Player killer, LivingEntity victim) {
+        if (!(victim instanceof org.bukkit.entity.Enemy) || !runesOf(killer.getInventory().getItemInMainHand()).containsKey("soulbind")) {
+            return;
+        }
+        var max = killer.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+        if (max != null && !killer.isDead()) {
+            killer.setHealth(Math.min(max.getValue(), killer.getHealth() + max.getValue() * config.effects().soulbindHeal()));
+            victim.getWorld().spawnParticle(Particle.SOUL, victim.getLocation().add(0, victim.getHeight() * 0.5, 0), 10, 0.3, 0.4, 0.3, 0.02);
+        }
+    }
+
+    private boolean worn(Player player, String rune) {
+        for (ItemStack piece : player.getInventory().getArmorContents()) {
+            if (piece != null && runesOf(piece).containsKey(rune)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** True (and arms the cooldown) when the effect may trigger now. */
+    private static boolean ready(Map<UUID, Long> until, UUID player, int cooldownSeconds) {
+        long now = System.currentTimeMillis();
+        synchronized (until) {
+            if (until.getOrDefault(player, 0L) > now) {
+                return false;
+            }
+            until.put(player, now + cooldownSeconds * 1000L);
+            return true;
         }
     }
 
@@ -288,6 +409,12 @@ public final class RuneService implements RuneApi {
     public void forget(UUID player) {
         synchronized (verdantReady) {
             verdantReady.remove(player);
+        }
+        synchronized (rewindReady) {
+            rewindReady.remove(player);
+        }
+        synchronized (undertowReady) {
+            undertowReady.remove(player);
         }
     }
 }

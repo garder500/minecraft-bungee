@@ -37,8 +37,8 @@ public class RuneRulesTest {
         assertEquals(List.of(1, 2, 3, 4, 4), config.slots());
         assertEquals(8, config.powder());
         assertEquals(3, config.fuse());
-        assertEquals(7, config.runes().size());
-        assertEquals(3, config.runes().stream().filter(Rune::realm).count());
+        assertEquals(12, config.runes().size());
+        assertEquals("one per Realm", 8, config.runes().stream().filter(Rune::realm).count());
     }
 
     @Test

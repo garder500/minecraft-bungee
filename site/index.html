@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vampyuyu</title>
+  <meta name="description" content="A Minecraft network run by a colony of bats: Werewolf, ValoBlock, Creative, Survival, and the Isles (Skyblock).">
+  <link rel="icon" href="assets/img/icon.png">
+  <link rel="preload" href="assets/fonts/GrenzeGotisch.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/Figtree.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="home">
+  <a class="skip" href="#main">Skip to content</a>
+  <header id="site-header"></header>
+
+  <main id="main">
+    <!-- Night over the roost -->
+    <section class="hero" id="top">
+      <div class="bats" aria-hidden="true">
+        <svg class="bat" viewBox="0 0 24 11"><use href="#bat"/></svg>
+        <svg class="bat" viewBox="0 0 24 11"><use href="#bat"/></svg>
+        <svg class="bat" viewBox="0 0 24 11"><use href="#bat"/></svg>
+      </div>
+      <div class="wrap hero-row">
+        <div class="hero-text">
+          <p class="kicker" data-i18n="hero.kicker">A Minecraft network for night owls</p>
+          <h1 class="wordmark">Vampyuyu</h1>
+          <p class="hero-lead" data-i18n="hero.lead"></p>
+          <div class="ip">
+            <div class="plaque">
+              <span class="label" data-i18n="hero.ip">Server address</span>
+              <code>play.vampyuyu.win</code>
+            </div>
+            <button type="button" class="btn btn-gilt" data-copy-ip data-i18n="hero.copy">Copy address</button>
+          </div>
+          <p class="hero-sub">
+            <span data-i18n="hero.free">Free to play on Java Edition 26.3.</span>
+            <a href="https://discord.gg/F9uXnh3yzs" rel="noopener" data-i18n="hero.discord">Join the Discord</a>
+          </p>
+        </div>
+        <div class="hero-art">
+          <div class="moon" aria-hidden="true"></div>
+          <img class="roost" src="assets/img/lobby.png" width="925" height="705" alt="" data-i18n-alt="mode.lb.cap">
+        </div>
+      </div>
+
+      <nav class="wrap doors" id="games" aria-label="Games">
+        <a class="door" href="#werewolf"><img src="assets/img/pack/werewolf.png" alt=""><span><strong data-i18n="mode.ww.name">Werewolf</strong><small data-i18n="door.ww">Bluff and vote</small></span></a>
+        <a class="door" href="#valoblock"><img class="hd" src="assets/img/vb/flux_rifle.png" alt=""><span><strong data-i18n="mode.vb.name">ValoBlock</strong><small data-i18n="door.vb">Tactical shooter</small></span></a>
+        <a class="door" href="#build"><img src="assets/img/icon.png" alt=""><span><strong data-i18n="mode.cr.name">Creative</strong><small data-i18n="door.cr">Your own plot</small></span></a>
+        <a class="door" href="#build"><img src="assets/img/pack/villager.png" alt=""><span><strong data-i18n="mode.sv.name">Survival</strong><small data-i18n="door.sv">A shared world</small></span></a>
+        <a class="door" href="#isles"><img src="assets/img/pack/starcore_sword.png" alt=""><span><strong data-i18n="door.islesName">The Isles</strong><small data-i18n="door.isles">Our Skyblock</small></span></a>
+      </nav>
+    </section>
+
+    <!-- How to join -->
+    <section class="join" id="join" aria-labelledby="join-title">
+      <div class="wrap join-row">
+        <div class="join-text">
+          <h2 id="join-title" data-i18n="join.title">Join the colony in three steps</h2>
+          <p data-i18n="join.body"></p>
+        </div>
+        <ol class="steps">
+          <li><span class="num">1</span><span><strong data-i18n="join.s1t">Copy the address</strong><small data-i18n="join.s1b"></small></span></li>
+          <li><span class="num">2</span><span><strong data-i18n="join.s2t">Join the Discord</strong><small data-i18n="join.s2b"></small></span></li>
+          <li><span class="num">3</span><span><strong data-i18n="join.s3t">Pick a game</strong><small data-i18n="join.s3b"></small></span></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Werewolf: the deck -->
+    <section class="ww" id="werewolf" aria-labelledby="ww-title">
+      <div class="wrap ww-inner">
+        <h2 id="ww-title" class="big" data-i18n="mode.ww.name">Werewolf</h2>
+        <p class="ww-lead" data-i18n="mode.ww.body"></p>
+        <ul class="deck" aria-label="Role cards">
+          <li style="--i:-3"><img src="assets/img/pack/villager.png" alt=""><span data-i18n="role.villager">Villager</span></li>
+          <li style="--i:-2"><img src="assets/img/pack/seer.png" alt=""><span data-i18n="role.seer">Seer</span></li>
+          <li style="--i:-1"><img src="assets/img/pack/witch.png" alt=""><span data-i18n="role.witch">Witch</span></li>
+          <li style="--i:0" class="wolf"><img src="assets/img/pack/werewolf.png" alt=""><span data-i18n="role.werewolf">Werewolf</span></li>
+          <li style="--i:1"><img src="assets/img/pack/hunter.png" alt=""><span data-i18n="role.hunter">Hunter</span></li>
+          <li style="--i:2"><img src="assets/img/pack/cupid.png" alt=""><span data-i18n="role.cupid">Cupid</span></li>
+          <li style="--i:3"><img src="assets/img/pack/guard.png" alt=""><span data-i18n="role.guard">Guard</span></li>
+        </ul>
+        <figure class="ww-shot">
+          <img src="assets/img/ww-night.jpg" width="854" height="480" alt="" data-i18n-alt="mode.ww.cap">
+          <figcaption data-i18n="mode.ww.cap"></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ValoBlock: the armory -->
+    <section class="vb" id="valoblock" aria-labelledby="vb-title">
+      <div class="wrap vb-row">
+        <div class="vb-text">
+          <h2 id="vb-title" class="big" data-i18n="mode.vb.name">ValoBlock</h2>
+          <p data-i18n="mode.vb.body"></p>
+          <p class="vb-fair"><strong data-i18n="vb.fairT">Fair by design.</strong> <span data-i18n="vb.fairB"></span></p>
+        </div>
+        <ul class="rack">
+          <li><img src="assets/img/vb/flux_rifle.png" width="568" height="270" alt=""><span>Flux Rifle</span></li>
+          <li><img src="assets/img/vb/gnat.png" width="568" height="404" alt=""><span>Gnat</span></li>
+          <li><img src="assets/img/vb/gravebell.png" width="568" height="414" alt=""><span>Gravebell</span></li>
+          <li><img src="assets/img/vb/watchers_eye.png" width="568" height="233" alt=""><span>Watcher's Eye</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Creative and Survival -->
+    <section class="build" id="build">
+      <div class="wrap arches">
+        <article class="arch">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 21l3-1 11-11-2-2L4 18l-1 3z"/><path d="M14 6l2-2 4 4-2 2"/></svg>
+          <h2 data-i18n="mode.cr.name">Creative</h2>
+          <p data-i18n="mode.cr.body"></p>
+        </article>
+        <article class="arch">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M5 20V11l7-6 7 6v9"/><path d="M10 20v-5h4v5"/></svg>
+          <h2 data-i18n="mode.sv.name">Survival</h2>
+          <p data-i18n="mode.sv.body"></p>
+        </article>
+      </div>
+    </section>
+
+    <!-- The Isles: another world -->
+    <section class="isles" id="isles" aria-labelledby="isles-title">
+      <div class="wrap">
+        <div class="isles-head">
+          <div>
+            <h2 id="isles-title" class="big" data-i18n="isles.title">The Isles</h2>
+            <p class="isles-lead" data-i18n="isles.lead"></p>
+          </div>
+          <p class="apart" data-i18n="isles.apart"></p>
+        </div>
+        <div class="polaroids">
+          <figure style="--r:-2deg"><img src="assets/img/sb-citadel.jpg" width="577" height="305" alt="" data-i18n-alt="isles.cap1"><figcaption data-i18n="isles.cap1"></figcaption></figure>
+          <figure style="--r:1.5deg" class="low"><img src="assets/img/sb-bastion.jpg" width="627" height="290" alt="" data-i18n-alt="isles.cap2"><figcaption data-i18n="isles.cap2"></figcaption></figure>
+          <figure style="--r:-1deg"><img src="assets/img/sb-heights.jpg" width="577" height="305" alt="" data-i18n-alt="isles.cap3"><figcaption data-i18n="isles.cap3"></figcaption></figure>
+        </div>
+        <div class="realms-head">
+          <h3 data-i18n="isles.realms">Eight Realms, eight Guardians</h3>
+          <div class="blades" aria-hidden="true">
+            <img src="assets/img/pack/ember_sword.png" alt="">
+            <img src="assets/img/pack/rimeblade.png" alt="">
+            <img src="assets/img/pack/starcore_sword.png" alt="">
+            <img src="assets/img/pack/void_sword.png" alt="">
+          </div>
+        </div>
+        <ol class="realms">
+          <li><strong>Cracked Ashes</strong><span>Lava Colossus</span></li>
+          <li><strong>Whispering Grove</strong><span>Mycelial Queen</span></li>
+          <li><strong>Frozen Heights</strong><span>Boreal Watcher</span></li>
+          <li><strong>Citadel of Golden Sands</strong><span>Temporal Pharaoh</span></li>
+          <li><strong>Putrid Marshes</strong><span>Mire Abomination</span></li>
+          <li><strong>Tempestuous Archipelago</strong><span>Thunder Dragon</span></li>
+          <li><strong>Abyssal Depths</strong><span>Chained Leviathan</span></li>
+          <li><strong>Ethereal Necropolis</strong><span>Judge of Lost Souls</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Promise -->
+    <section class="promise-band" aria-labelledby="fair-title">
+      <div class="wrap promise-row">
+        <div>
+          <h2 id="fair-title" class="big gold" data-i18n="fair.title">Looks, never power</h2>
+          <p data-i18n="fair.body"></p>
+          <a class="btn btn-main" href="shop.html" data-i18n="fair.shop">Visit the shop</a>
+        </div>
+        <div class="never-box">
+          <h3 data-i18n="prices.never.title">Never for sale</h3>
+          <ul class="never" id="never-list"></ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="bat" viewBox="0 0 24 11"><path d="M0 6C3 2 6 2 8 5C9 3 10 2 11 3L12 1L13 3C14 2 15 3 16 5C18 2 21 2 24 6C21 5 19 6 18 8C16 7 14 8 12 10C10 8 8 7 6 8C5 6 3 5 0 6Z"/></symbol>
+  </svg>
+  <script src="assets/i18n.js"></script>
+  <script src="assets/shop-data.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

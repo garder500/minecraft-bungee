@@ -110,6 +110,7 @@ public final class DepthsRealm implements Listener {
         registerCommand();
         islands = core.service(IslandApi.class).filter(IslandService.class::isInstance).map(IslandService.class::cast).orElse(null);
         core.service(SkyGateApi.class).ifPresent(gates -> gates.setDestination(Realm.DEPTHS, p -> ready ? spawn() : null));
+        core.service(SkyGateApi.class).ifPresent(gates -> gates.setReturnArch(Realm.DEPTHS, () -> ready ? spawn() : null));
         core.scheduler().nextTick(this::setupWorld);
         tasks.add(core.scheduler().repeating(40L, 40L, this::pressureTick));
         tasks.add(core.scheduler().repeating(20L, 20L, this::discoverTick));
@@ -121,6 +122,7 @@ public final class DepthsRealm implements Listener {
         tasks.forEach(Scheduler.Handle::cancel);
         tasks.clear();
         core.service(SkyGateApi.class).ifPresent(gates -> gates.setDestination(Realm.DEPTHS, null));
+        core.service(SkyGateApi.class).ifPresent(gates -> gates.setReturnArch(Realm.DEPTHS, null));
         try {
             core.store().write(DepthsProgress.FILE, progress.toDoc());
         } catch (IOException e) {
@@ -245,11 +247,7 @@ public final class DepthsRealm implements Listener {
         if (gates == null || !gates.light(id, Realm.DEPTHS)) {
             return false;
         }
-        Player player = Bukkit.getPlayer(id);
-        if (player != null) {
-            core.msg().ok(player, "Gate 7 of the Quai des Huit lights: the Abyssal Depths are open.");
-        }
-        return true;
+        return true; // the Quai title and chat line come from SkyGates.light
     }
 
     // ---------------------------------------------------------------- pressure and breath

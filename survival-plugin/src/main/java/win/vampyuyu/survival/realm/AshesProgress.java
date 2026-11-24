@@ -25,6 +25,13 @@ public final class AshesProgress {
     public static final int VENT_COINS = 150;
     public static final int FINISH_COINS = 600;
 
+    /** Quest event keys (see {@code scripts/gen_quests.py}, category {@code ashes}). */
+    public static final String KEY_ENTER = "ashes_enter";
+    public static final String KEY_EXPLORED = "ashes_explored";
+    public static final String KEY_GATHERED = "ashes_gathered";
+    public static final String KEY_VENT = "ashes_vent";
+    public static final String KEY_ATTUNED = "ashes_attuned";
+
     /** One player. */
     public static final class Entry {
         public Set<String> discovered = new LinkedHashSet<>();
@@ -116,6 +123,42 @@ public final class AshesProgress {
             }
         }
         return list;
+    }
+
+    /** Quest event keys (EVENT quests of the {@code ashes} category) for a landmark just discovered. */
+    public static List<String> discoverKeys(String landmark, boolean exploreDone) {
+        List<String> keys = new ArrayList<>();
+        keys.add("ashes_landmark:" + landmark);
+        if (exploreDone) {
+            keys.add(KEY_EXPLORED);
+        }
+        return keys;
+    }
+
+    /**
+     * Every quest event key the player's saved progress justifies. Each key names a state reached (not an action), so it
+     * can be announced again, whenever the player arrives in the Realm: a player who did it before the quests existed
+     * still completes them.
+     */
+    public List<String> questKeys(UUID player) {
+        Entry entry = peek(player);
+        List<String> keys = new ArrayList<>();
+        for (String landmark : entry.discovered) {
+            keys.add("ashes_landmark:" + landmark);
+        }
+        if (exploreDone(player)) {
+            keys.add(KEY_EXPLORED);
+        }
+        if (entry.harvested >= GATHER_GOAL) {
+            keys.add(KEY_GATHERED);
+        }
+        if (!entry.vents.isEmpty()) {
+            keys.add(KEY_VENT);
+        }
+        if (attuned(player)) {
+            keys.add(KEY_ATTUNED);
+        }
+        return keys;
     }
 
     public void reset(UUID player) {

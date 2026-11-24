@@ -11,6 +11,8 @@ Feature `breath` (`survival-plugin/.../breath/`), data in `db/seed/breath.sql` (
   (damage of hostile mobs to players, not in dungeons or Bastions), `route:` shuts a Sky Gate (`SkyGateApi.addTravelGuard`).
 - **Fractures**: `/breath fracture` in the Realm named by the event starts a dungeon run (`DungeonApi.startRun`, floor and seed of the event, same layout for everyone).
   Clearing it (`DungeonClearEvent`, seed match) pays Memory Shards once per player and Fracture, plus a Fragment chance.
+  When the run ends (cleared, failed or `/dungeon leave`) everyone goes back where they stood in the Realm, not to the hub
+  (`RunContext.returnTo`, set by `DungeonApiImpl.startRun`, used once).
 - **Stellar Invasions**: immune cells (`breath.invasion.*`) spawn around players in the Hub or the named Realm only, never on islands; they cannot
   break blocks or doors or explode, drop nothing, and are removed when the event ends. Kills pay a few Memory Shards (capped per pulsation) and a rare Fragment.
 - **Interpulsation Fragments**: at most one per player per pulsation, `fragments.per-key` (5) make a key. `BreathApi.keys / consumeKey` are what the Hell Gao arena reads.

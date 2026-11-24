@@ -142,6 +142,7 @@ public final class AstralRealm implements Listener, AstralApi {
         }
     }
 
+    @Override
     public boolean ready() {
         return ready;
     }
@@ -272,6 +273,7 @@ public final class AstralRealm implements Listener, AstralApi {
     }
 
     /** The Devourer's mouth: sends the player in, with the account of what the victory caused (GDD 4.4). */
+    @Override
     public void enter(Player player, boolean force) {
         Location spawn = ready ? spawn() : null;
         if (spawn == null) {

@@ -31,7 +31,17 @@ public final class DungeonApiImpl implements DungeonApi {
             return "Dungeons are not available.";
         }
         var party = parties.ensure(leader.getUniqueId(), leader.getName());
-        return runs.startAsAdmin(party, leader.getUniqueId(), floor, seed);
+        String problem = runs.startAsAdmin(party, leader.getUniqueId(), floor, seed);
+        if (problem == null) {
+            // a Fracture is opened in a Realm: everyone goes back where they stood, not to the hub
+            for (java.util.UUID m : party.members()) {
+                Player p = org.bukkit.Bukkit.getPlayer(m);
+                if (p != null) {
+                    runs.returnAfterRun(m, p.getLocation());
+                }
+            }
+        }
+        return problem;
     }
 
     @Override

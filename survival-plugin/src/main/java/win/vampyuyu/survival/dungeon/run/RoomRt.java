@@ -24,6 +24,11 @@ final class RoomRt {
     int wave;
     long nextWaveAtTick;
     int spawnedTotal;
+    /** Ambush rooms: nothing spawns before this run tick (the warning), when the current wave started, where it comes in. */
+    long telegraphUntil;
+    long waveStartTick;
+    long lastSpawnTick;
+    final ArrayDeque<win.vampyuyu.survival.dungeon.gen.Pos> spots = new ArrayDeque<>();
     BossBar bar;
     PuzzleRuntime puzzle;
     boolean fairyUsed;

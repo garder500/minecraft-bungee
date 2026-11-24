@@ -24,7 +24,8 @@ Keep all panel interface copy in English. Use the Vampyuyu reference palette: de
 | Panel | Go API, SQLite sessions/audit/player roles, embedded React production UI, private role bridge | Local development: loopback 8080; bridge 8083 is never published |
 | Frontend | Vite development server, API proxy | Local development: loopback 5173 |
 | Controller | Fixed Docker lifecycle/log operations and private RCON | None |
-| Traefik (external stack, `/home/ubuntu/traefik`) | Cloudflare origin TLS and panel reverse proxy, routed by the `traefik.*` labels on `panel` | Production: TCP 443 |
+| Traefik (external stack, `/home/ubuntu/traefik`) | Cloudflare origin TLS and reverse proxy, routed by the `traefik.*` labels on `panel` and `site` | Production: TCP 443 |
+| Site | The public showcase (`site/`), static files served read-only by nginx (`infra/site-nginx.conf`) on `vampyuyu.win` and `www.vampyuyu.win` | None (Traefik only) |
 | Tools | Offline secrets, ZIP inspection/import, forwarding configuration | None |
 
 Only the controller mounts the Docker socket. Its API requires a secret and accepts only the four fixed server IDs, fixed actions, and containers bearing this stack's two labels. Docker socket access still grants host-level authority if the controller is compromised; run this on a dedicated trusted host. The panel cannot create containers, mount host paths, or execute host shell commands.
@@ -177,9 +178,10 @@ docker compose -f compose.prod.yaml run --rm --no-deps tools secrets
 # Inspect/import the archive and configure as above, substituting compose.prod.yaml.
 ```
 
-Generate a Cloudflare Origin CA certificate covering `panel.vampyuyu.win`. Save its PEM certificate to `secrets/tls/origin.pem` and private key to `secrets/tls/origin-key.pem` (or the configured `TLS_DIR`). Keep the private key mode `600`. The shared Traefik stack mounts this folder (`dynamic/certs.yml`); the files never enter an image. Then configure:
+Generate a Cloudflare Origin CA certificate covering `panel.vampyuyu.win`, `vampyuyu.win` and `www.vampyuyu.win` (the public site; `*.vampyuyu.win` plus `vampyuyu.win` also works). Save its PEM certificate to `secrets/tls/origin.pem` and private key to `secrets/tls/origin-key.pem` (or the configured `TLS_DIR`). Keep the private key mode `600`. The shared Traefik stack mounts this folder (`dynamic/certs.yml`); the files never enter an image. Then configure:
 
 - Cloudflare `panel` A record → host IP, **proxied**; SSL/TLS mode **Full (strict)**.
+- Cloudflare `vampyuyu.win` (`@`) and `www` A records → host IP, **proxied**: the `site` service. With Full (strict), the origin certificate must cover both names, or Cloudflare answers 526.
 - Cloudflare `play` A record → host IP, **DNS-only**. Ordinary Cloudflare HTTP proxying does not carry Minecraft Java TCP.
 - Add AAAA records only if IPv6 routing and firewall rules are configured.
 - Host/provider firewall: allow TCP 25565 for players; allow TCP 443 from current Cloudflare IP ranges; restrict SSH to trusted sources. Account for Docker's firewall chains: ordinary UFW rules alone may not restrict published Docker ports. Do not expose 8080, 8081, 8083, 25575, or backend ports. No port 80 is required for the Origin CA setup.

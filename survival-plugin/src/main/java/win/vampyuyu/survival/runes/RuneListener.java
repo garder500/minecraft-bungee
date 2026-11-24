@@ -90,7 +90,15 @@ final class RuneListener implements Listener {
     public void onHurt(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player player && event.getFinalDamage() > 0
                 && SkyblockWorlds.isSkyblock(player.getWorld().getName())) {
-            service.onHurt(player);
+            service.onHurt(player, event);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onKill(org.bukkit.event.entity.EntityDeathEvent event) {
+        Player killer = event.getEntity().getKiller();
+        if (killer != null && SkyblockWorlds.isSkyblock(killer.getWorld().getName())) {
+            service.onKill(killer, event.getEntity());
         }
     }
 

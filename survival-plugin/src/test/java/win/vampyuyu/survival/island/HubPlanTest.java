@@ -67,7 +67,7 @@ public class HubPlanTest {
 
     @Test
     public void versionIsBumpedAndTheOldWipeSquareLeavesTheQuaiBridge() {
-        assertEquals(3, HubPlan.VERSION);
+        assertEquals(4, HubPlan.VERSION);
         HubManager.Marker old = new HubManager.Marker();
         old.version = 2;
         old.complete = true;

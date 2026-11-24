@@ -198,7 +198,7 @@ public final class RunListener implements Listener {
         Entity victim = event.getEntity();
         if (victim instanceof Player) {
             LivingEntity mob = mobOf(event.getDamager());
-            Double mult = mob == null ? null : ctx.keys.damageOf(mob);
+            Double mult = mob == null || fixedHit(event, mob) != null ? null : ctx.keys.damageOf(mob); // a fixed hit was set at LOW
             if (mult != null) {
                 event.setDamage(event.getDamage() * mult);
             }
@@ -213,6 +213,28 @@ public final class RunListener implements Listener {
                 ctx.scheduler().nextTick(() -> VirtualHp.sync(ctx.keys, (LivingEntity) victim));
             }
         }
+    }
+
+    /**
+     * A monster hits for a fixed share of a tier-matched player's health, whatever its weapon or the floor's gear: the
+     * absolute hit is set at LOW, BEFORE Ward (items feature, HIGH) and vanilla armor, which both still act on it. Setting
+     * it at HIGHEST would have erased Ward.
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    public void onMobHit(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player) || !dungeonWorld(event.getEntity().getWorld())) {
+            return;
+        }
+        LivingEntity mob = mobOf(event.getDamager());
+        Double hit = mob == null ? null : fixedHit(event, mob);
+        if (hit != null) {
+            event.setDamage(hit);
+        }
+    }
+
+    /** The fixed hit of a monster for this event: melee and arrows only (a witch's splash is magic: armor cannot reduce it). */
+    private Double fixedHit(EntityDamageByEntityEvent event, LivingEntity mob) {
+        return event.getCause() == EntityDamageEvent.DamageCause.MAGIC ? null : ctx.keys.hitOf(mob);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -600,6 +622,32 @@ public final class RunListener implements Listener {
         if (toDungeon && (run == null || run.world != event.getTo().getWorld())) {
             event.setCancelled(true); // only the feature itself brings people in
         }
+    }
+
+    /**
+     * Safety net: a participant of a run in progress who ends up in another world without leaving the run (a teleport
+     * the rules above did not foresee) is brought back: a ghost to its body, the others to their last safe spot. Leaving
+     * the run marks the player as gone before sending them out, so the normal exit is not caught here.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onWorldChange(org.bukkit.event.player.PlayerChangedWorldEvent event) {
+        Player p = event.getPlayer();
+        DungeonRun run = active(p);
+        if (run == null || !run.state.active() || run.world == null || event.getFrom() != run.world
+                || p.getWorld() == run.world || admin(p) || ctx.teleporting() || ctx.exiting.containsKey(p.getUniqueId())) {
+            return; // the feature's own teleports, and an exit (the hub teleport may land a few ticks later)
+        }
+        ctx.scheduler().nextTick(() -> {
+            RunPlayer rp = run.player(p.getUniqueId());
+            if (!p.isOnline() || rp == null || !run.isParticipant(p.getUniqueId()) || !run.state.active()
+                    || p.getWorld() == run.world || ctx.exiting.containsKey(p.getUniqueId())) {
+                return;
+            }
+            org.bukkit.Location back = rp.ghost && rp.body != null ? rp.body.clone().add(0, 1, 0)
+                : rp.lastSafe != null ? rp.lastSafe : run.loc(run.built.spawn());
+            ctx.teleport(p, back);
+            run.say(p, "<red>You cannot leave the dungeon that way. <gray>Use /dungeon leave to abandon the run.");
+        });
     }
 
     @EventHandler(ignoreCancelled = true)

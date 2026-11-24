@@ -70,11 +70,9 @@ public final class ModeTravel implements Listener {
     public static boolean sky(World world) {
         return world != null && SkyblockWorlds.isSkyblock(world.getName());
     }
+    /** A Skyblock world nobody may enter or stay in any more (see {@link SkyblockWorlds#isRetired}). */
     public static boolean retired(World world) {
-        return world != null && sky(world) && !SkyblockWorlds.HUB.equals(world.getName())
-            && !SkyblockWorlds.WORLD.equals(world.getName())
-            && !SkyblockWorlds.NETHER.equals(world.getName()) && !SkyblockWorlds.END.equals(world.getName())
-            && !SkyblockWorlds.isDungeon(world.getName());
+        return world != null && SkyblockWorlds.isRetired(world.getName());
     }
 
     /** Used only by the explicit mode selector and island-home entry. No asynchronous permit can leak. */
@@ -402,6 +400,9 @@ public final class ModeTravel implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
+        if (core.service(win.vampyuyu.survival.api.BastionApi.class).map(b -> b.inArena(player.getUniqueId())).orElse(false)) {
+            return; // a Bastion member has lives: the Bastion's own handler (HIGH) already put them back in the arena
+        }
         boolean skyblock = sky(player.getWorld());
         Location nativeTarget = event.getRespawnLocation();
         Point saved = skyblock ? points(player).skyblock : points(player).survival;

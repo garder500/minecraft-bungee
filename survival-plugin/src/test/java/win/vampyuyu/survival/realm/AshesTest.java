@@ -181,6 +181,42 @@ public class AshesTest {
     }
 
     @Test
+    public void questKeysNameStatesAndAreReannouncedFromSavedProgress() {
+        AshesProgress progress = new AshesProgress();
+        UUID p = UUID.randomUUID();
+        assertTrue(progress.questKeys(p).isEmpty());
+        progress.discover(p, "needle");
+        assertEquals(List.of("ashes_landmark:needle"), progress.questKeys(p));
+        assertEquals(List.of("ashes_landmark:needle", "ashes_explored"), AshesProgress.discoverKeys("needle", true));
+        for (AshesPlan.Landmark mark : AshesPlan.LANDMARKS) {
+            progress.discover(p, mark.id());
+        }
+        for (int i = 0; i < AshesProgress.GATHER_GOAL; i++) {
+            progress.harvest(p);
+        }
+        progress.stabilise(p, AshesPlan.VENTS.get(0).id());
+        List<String> keys = progress.questKeys(p);
+        assertTrue(keys.containsAll(List.of("ashes_explored", "ashes_gathered", "ashes_vent")));
+        assertFalse(keys.contains("ashes_attuned"));
+        AshesPlan.VENTS.forEach(v -> progress.stabilise(p, v.id()));
+        assertTrue(progress.questKeys(p).contains("ashes_attuned"));
+    }
+
+    @Test
+    public void everyAshesQuestEventIsOneTheRealmFires() throws Exception {
+        java.util.Set<String> fired = new HashSet<>(List.of(AshesProgress.KEY_ENTER, AshesProgress.KEY_EXPLORED,
+            AshesProgress.KEY_GATHERED, AshesProgress.KEY_VENT, AshesProgress.KEY_ATTUNED));
+        AshesPlan.LANDMARKS.forEach(m -> fired.add("ashes_landmark:" + m.id()));
+        var db = win.vampyuyu.survival.data.Db.memory();
+        win.vampyuyu.survival.data.Seeds.sync(db, win.vampyuyu.survival.data.ContentDomains.ALL, null);
+        var catalog = win.vampyuyu.survival.menu.QuestRepo.load(db);
+        long events = catalog.tutorial().stream().filter(d -> d.category().equals("ashes")
+            && d.type() == win.vampyuyu.survival.menu.QuestType.EVENT).peek(d -> assertTrue(d.target(), fired.contains(d.target()))).count();
+        db.close();
+        assertTrue(events >= 5);
+    }
+
+    @Test
     public void gatheringPaysAtTheGoalOnlyOnce() {
         AshesProgress progress = new AshesProgress();
         UUID p = UUID.randomUUID();

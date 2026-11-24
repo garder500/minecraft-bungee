@@ -50,7 +50,7 @@ under `vampyuyu:boss/<id>`.
 are the Guardians of the two phase 2 Realms. The technical ids stay (quests, profiles); everything visible uses the canon.
 Their extra rules live in `boss.guardian.*` setting rows of `db/seed/boss.sql`, read into `Guardians`:
 
-* **Health** follows the GDD 8.7 curve like every boss (`hp_auto`, tier 2 / tier 3), group scaling 0.5 per player capped x3,
+* **Health** follows the GDD 8.7 curve like every boss (`hp_auto`, tier 2 / tier 3), fixed whatever the number of attackers (no group scaling since 2026-11-23),
   enrage 9 min. `GuardianTest` re-checks the readability rules (phase x1.4 at most, an ability takes at most 35 percent of the
   reference player).
 * **Spoken lines** (`intro`, `phase1`, `phase2`, `death`, `first-clear`): sent in chat to everyone around the fight, a random
@@ -180,7 +180,74 @@ take the boss away while players walk to it.
 * The summon item cooldown is not re-armed when a boss vanishes after damage (the item is not refunded, which is the
   deterrent).
 * Hub world bosses stand on the hub plaza (spawn pad area): abilities hit every targetable player within radius + 8,
-  including AFK players and new arrivals.
+  including AFK players and new arrivals. Only the world boss events can do that now (`boss.world.enabled`, off by default):
+  the Echo of the Rift no longer wakes in the Hub. Its Echo Key is a Bastion key, so at the Rift altar `SummonListener` opens
+  the `echo_rift` Bastion (an instance for the party, see `bastion.md`) instead of summoning it in the shared world.
+* Boss models were redrawn on 2026-11-20 (`resource-pack/art/boss_skins.py`, class `Painted`): every face has its own
+  painted texture at 2 texels per model unit (plates with rivets, cracked rock with lava veins, scales, bone, cloth folds,
+  faceted ice, bark, membranes), with a lit top, a dark underside, occlusion toward the bottom and bevelled edges, on
+  muted palettes (they were 4x4-pixel flat tiles stretched over each box). New pieces: the Colossus's knee guards, belt
+  and brow, the Watcher's fur mantle and helm band, the Queen's mushroom caps, the Leviathan's chains, the Judge's
+  robe, hood and scales of judgement, the Echo's snout and brow. Second pass the same day, new silhouettes: a hunched
+  Colossus with fists on the ground and a basalt crest, the Watcher with both hands on his planted greatsword, the Queen
+  as a woman rising from a mushroom-grown spider with jointed legs, the Leviathan rearing out of its coil with open jaws
+  and a broken collar chain, the Judge floating in a deep hood with an ornate sceptre, the Echo with a stepped neck, a
+  crown of horns, open jaws and a bladed tail. `resource-pack/art/preview_boss_skins.py` renders them offline (12 s).
+  Third pass after two reviews by a second model (Fable): softer bevel on large faces only and rounded scales (the hard
+  bevel outlined every cuboid like a toy brick), a knuckle-walking Colossus with its heart as three fissures, the
+  Watcher's real greatsword held at the pommel, the Queen's pale face and fanned legs, the Leviathan's S-curve, ringed
+  coil and gaping jaw, the Judge floating with the scales held out, the Echo's raised neck and jointed wings. x-axis
+  rotations follow Minecraft's convention (a positive angle tilts +y toward +z); several were the wrong way round.
+* **Voiced lines (2026-11-23).** Every spoken boss line has a recorded voice: the 8 Guardians (`boss.guardian.<id>.<event>`)
+  and the ultimate bosses, which now speak too without being Guardians (`boss.speech.ids` = voidwyrm, devourer, hell_gao;
+  `boss.speech.<id>.speaker` and `.<event>` lists, read by `Guardians.parse` into a speech-only map, no Guardian loot).
+  `Guardians.say` returns the chat line and its sound `vampyuyu:voice.<boss>.<event>.<n>` (n = position in the list);
+  `BossSession.say` and the death / first-clear lines in `BossRewards` play it on the VOICE channel to the same players.
+  Clips: ElevenLabs library voices, one per boss (`resource-pack/art/boss_voices.py` VOICES), generated from
+  `resource-pack/voices/manifest.json` (`boss_voices.py manifest`), mono Ogg in `pack/assets/vampyuyu/sounds/voice/`,
+  registered by `boss_voices.py sounds`. A line edited in the panel keeps its old clip until it is recorded again:
+  `boss_voices.py check` and `test_pack` list such lines. The Devourer's lines follow the lore (a world-eater that wanted
+  to be loved, not a villain with a speech).
+* Skinned bosses show their name and health on a text display over the model (`BossSkinService.tags`, 2 x scale + 0.25
+  above the feet): the mob's own name tag sat inside the model. The Queen's spider is now hidden like the Echo's dragon
+  (a spider's eyes glow through invisibility); `HiddenBossMelee` hits a hidden plain mob on its hit box.
+* Boss models faced backwards until 2026-11-20: `BossSkinService.Look.yawOffset` was 180 for the mob bosses and 0 for
+  the Echo; measured in game, a mob's yaw is where it looks and the vanilla dragon's yaw is 180 degrees from its heading,
+  so it is now 0 for the mobs and 180 for the Echo (`ShippedConfigTest.bossModelsFaceWhereTheBossLooks`).
+* Tier-5 boss hits were sized for a player wearing four armor sets at once (`PowerCurve` summed Starcore and its three
+  Realm sidegrades). Measured in game: the Echo took 55 % of a full-Starcore player's 96 health per contact hit. With one
+  set per slot it took 2 %, like a tier-2 or tier-3 boss on a player of its tier (2 to 4 %).
+* Hits too soft, fixed (2026-11-23, real client). The missing layer was the VANILLA ARMOR of the base materials: the items
+  feature (which zeroes it) is not loaded in production, so a ladder player keeps chainmail 12, iron 15, diamond 20 / 8,
+  netherite 20 / 12 and Starcore 25 / 16 (base material plus the `extra_armor` / `extra_toughness` pdc rows), measured
+  with `attribute E2EBot minecraft:armor get`. `PowerCurve.bossHitDamage` now solves for the hit that loses
+  `1 / hits-to-down` of the health AFTER Ward and vanilla armor (`afterVanillaArmor`, bisection: vanilla's formula
+  depends on the damage). `boss.settings.hits-to-down` is now a seed row at 10 (was 8 in code, GDD says 8 to 12) and
+  `boss.settings.damage-scale` 0.6 -> 1.0 (it was hiding the same gap the other way). Tier 5 uses the per-slot mean of
+  Starcore and its sidegrades (armor 24.25), the wearer of plain Starcore (25 / 16) takes a bit less.
+  Measured, a full tier set against its boss, one plain hit (mult 1.0), before -> after, % of max health:
+
+  | tier | boss | player (max hp, armor/tough) | before | after |
+  |---|---|---|---|---|
+  | 1 | Crypt Lord | bronze (30, 12/0) | 3.4 | 10.0 |
+  | 2 | Magma Warden | rime (40, 15/0) | 2 to 4 | 9.7 |
+  | 3 | Frost Revenant | ember (54, 20/8) | 1 | 10.0 |
+  | 5 | Echo of the Rift | starcore (96, 25/16) | 1.5 | 8.6 |
+
+  Abilities with a lower multiplier hurt less (0.7 to 5 %), the Echo's x3.5 dive bomb about a third, as the seed
+  intends (`PowerCurveTest` readability limit now 0.4). A bare or under-geared player takes far more
+  (`PowerCurveTest.anUnderGearedPlayerIsPunishedHarderThanATierMatchedOne`). Tests: `aTierMatchedPlayerLosesAboutATenth
+  OfItsHealthPerBossHit` pins 8 to 12 % for every tier. Not measured: tier 4 (the bot died before its run).
+* The Echo's flight (2026-11-20, real client): the vanilla dragon ignores speed attributes and cruises at about 22
+  blocks/s. `BossSession.slowFlight` caps its velocity each tick at `speed` x 1.1 blocks/tick (voidwyrm 0.45: about
+  10 blocks/s measured); scaling the velocity instead compounds with the dragon's drag (0.55 gave 2.5 blocks/s). The
+  `perch` ability (all three phases, 4-6 s) and the `stun` parameter of `dive_bomb` (3 s) pin it on the ground in a
+  sitting phase (no wing knockback, no contact push, `[STUNNED]` on the bar, dazed bonus damage): the melee window.
+  Its health uses `boss.settings.hp-factor.voidwyrm` 0.425 (85 % of the curve; `PowerCurveTest` reads it back as fewer
+  landed hits). A landed vanilla dragon still shoves everyone near its wings every tick (only the wing damage stops when
+  it sits): `BossListener.onPushed`/`onKnockback` cancel the pushes of a grounded boss. Checked in game: landing title,
+  cruise speed, a player beside the landed Echo stays put (pushed 8 blocks a second before the fix) and a Starcore sword
+  hit counts.
 * Non-participants can still build or throw pearls inside a summoned boss's arena until their first hit (the arena rules
   bind the summoner and the players in the ledger). Two summons of the same boss cannot share an altar anchor.
 * The ability-hit damage path is covered by a flag test; the end-to-end test through `Player.damage` is skipped when
@@ -197,3 +264,7 @@ take the boss away while players walk to it.
   lock pearls and building in the hub; edit `summon.worlds` to change it.
 * No custom sounds or translated names (pack rules): vanilla sounds only.
 * Slayers run only in island worlds (`sb_world`, `sb_nether`, `sb_end`); `sb_hub` was removed from `slayers.*.worlds` (design principle, docs/skyblock-design.md section 13). World boss spots stay on the hub plaza (special event).
+
+* **Land-locked Guardian**: the Chained Leviathan is an Elder Guardian, and every Bastion arena (and the hub) is dry. Vanilla makes a Guardian out of water flop
+  (a hop and a random sideways push at every landing), so it wandered off and fell from small platforms with its model. `BossSession.keepWaterMobOnLand` turns its AI
+  off while it is not in water (abilities are the session's own and keep running), faces it toward the nearest player and gives the AI back in water.

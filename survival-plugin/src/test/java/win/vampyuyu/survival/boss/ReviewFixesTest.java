@@ -225,7 +225,7 @@ public class ReviewFixesTest {
     // ---------------------------------------------------------------- hp scaling
 
     @Test
-    public void altAccountsDoNotGrowTheBoss() {
+    public void noNumberOfAttackersGrowsTheBoss() { // boss health is fixed (owner decision 2026-11-23)
         BossSession session = spawn("voidwyrm");
         double before = session.maxHp();
         for (int i = 0; i < 8; i++) {
@@ -238,7 +238,7 @@ public class ReviewFixesTest {
         PlayerMock second = server.addPlayer();
         session.applyHit(real, before * 0.02);
         session.applyHit(second, before * 0.02);
-        assertTrue("two real fighters do", session.maxHp() > before);
+        assertEquals("real fighters do not grow it either", before, session.maxHp(), 1e-9);
         session.end(BossSession.End.ADMIN, null);
     }
 
@@ -341,7 +341,7 @@ public class ReviewFixesTest {
     }
 
     @Test
-    public void theEchoIsSummonedAtTheRiftAltarOfTheHubOnly() {
+    public void theEchoKeyAtTheRiftAltarOpensABastionInsteadOfWakingTheEchoInTheHub() {
         WorldMock hub = (WorldMock) org.bukkit.Bukkit.getWorld("sb_hub");
         if (hub == null) {
             hub = server.addSimpleWorld("sb_hub");
@@ -354,16 +354,14 @@ public class ReviewFixesTest {
         BossDefinition def = manager.config().definition("voidwyrm").orElseThrow();
         SummonListener listener = new SummonListener(plugin.core(), manager);
         String denial = listener.summon(p, def, EquipmentSlot.HAND);
-        assertNull("the Rift altar accepts it: " + denial, denial);
-        BossSession session = manager.active().iterator().next();
-        assertEquals(-26.5, session.anchor().getX(), 1e-9);
-        assertEquals(0.5, session.anchor().getZ(), 1e-9);
-        PlayerMock second = server.addPlayer();
-        second.teleport(at);
-        assertNotNull("a second player cannot stack another one on the same altar",
-            listener.summon(second, def, EquipmentSlot.HAND));
-        session.end(BossSession.End.ADMIN, null);
+        // without the key the Bastion refuses: the altar sent the player to the Bastion, not to a summon in the Hub
+        assertNotNull(denial);
+        assertTrue("the Bastion answered: " + denial, denial.contains("Rift of the Echo"));
+        WorldMock shared = hub;
+        assertTrue("no Echo wakes in the shared Hub", manager.active().stream().noneMatch(s -> shared.equals(s.world)));
         p.teleport(new Location(hub, 1000, 101, 1000));
-        assertNotNull("far from every altar", listener.summon(p, def, EquipmentSlot.HAND));
+        String far = listener.summon(p, def, EquipmentSlot.HAND);
+        assertTrue("far from every altar: " + far, far != null && far.contains("too far"));
+        assertTrue(manager.active().isEmpty());
     }
 }

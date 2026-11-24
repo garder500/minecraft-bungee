@@ -25,7 +25,7 @@
  },
  "cat:end": {
   "name": "L'End et le Vide",
-  "description": "La Void Lens ouvre /island end. L'Écho de la Faille hante le Vide."
+  "description": "La Void Lens ouvre /island end. Affronte de nouveau l'Écho de la Faille à l'autel du Hub."
  },
  "cat:farm": {
   "name": "Agriculture et nourriture",
@@ -481,7 +481,7 @@
  },
  "q095": {
   "name": "Void Sigil",
-  "description": "Récupère un Void Sigil à la Forge (/forge)."
+  "description": "Forge un Void Sigil (/forge), trophée de la Faille. Il n'invoque plus l'Écho : c'est l'Echo Key qui s'en charge."
  },
  "q097": {
   "name": "L'Écho de la Faille, encore",
@@ -904,12 +904,12 @@
   "description": "Vaincs le Chained Leviathan 3 fois."
  },
  "q242": {
-  "name": "Crypt Lord",
-  "description": "Vaincs le Crypt Lord, le boss des étages du donjon (/dungeon)."
+  "name": "Juge des âmes perdues",
+  "description": "Vaincs le Juge des âmes perdues, Gardien de la Nécropole éthérée (/bastion)."
  },
  "q243": {
-  "name": "Crypt Lord ×3",
-  "description": "Vaincs le Crypt Lord 3 fois."
+  "name": "Juge des âmes perdues ×3",
+  "description": "Vaincs le Juge des âmes perdues 3 fois."
  },
  "q244": {
   "name": "N'importe quel boss ×50",
@@ -1570,5 +1570,41 @@
  "forge_starcore_shovel": {
   "name": "Starcore Shovel",
   "description": "Récupère à la Forge (/forge) : Starcore Shovel."
+ },
+ "cat:ashes": {
+  "name": "Les Cendres fissurées",
+  "description": "Royaume 1. Un monde refroidi, fendu de veines de scories, qui respire encore. Le Colosse de lave garde en ordre le feu du Dévoreur, et il vacille."
+ },
+ "ashes_01": {
+  "name": "Par le Portail de cendre",
+  "description": "Au-delà du premier Portail, la pierre est refroidie, mais la fissure dessous ne l'est pas. Franchis le Portail 1 au Quai des Huit (/quai). La chute de l'Écho l'a allumé pour toi."
+ },
+ "ashes_02": {
+  "name": "L'Aiguille",
+  "description": "Traverse le premier pont depuis l'Ember Landing et rejoins l'Aiguille, la flèche de basalte du premier îlot."
+ },
+ "ashes_03": {
+  "name": "Cartographier les Cendres",
+  "description": "Visite les cinq lieux des Cendres fissurées : l'Aiguille, la Fonderie de scories, l'Ember Tarn, la Côte du Colosse et le Bord de la Caldeira (/ashes les liste)."
+ },
+ "ashes_04": {
+  "name": "Cinderheart",
+  "description": "Taille 12 Cinderheart dans les nœuds de blackstone doré avec une pioche. Il est encore tiède."
+ },
+ "ashes_05": {
+  "name": "Calmer un évent",
+  "description": "Fais un clic droit sur un évent de chaleur avec 3 Cinderheart dans ton sac pour le calmer."
+ },
+ "ashes_06": {
+  "name": "Accord de cendre",
+  "description": "Calme les trois évents (Fonderie de scories, Ember Tarn, Bord de la Caldeira). La chaleur te laisse une marque que tu peux porter."
+ },
+ "ashes_07": {
+  "name": "Un cœur de scories",
+  "description": "Le Colosse ne répond pas à un coup à la porte. Il répond à une clé taillée dans ses propres scories (12 Frostium, 8 blocs de magma et 4 bâtons de blaze, une heure à la Forge). Récupère une Clé du Bastion des Cendres à la Forge (/forge)."
+ },
+ "ashes_08": {
+  "name": "Réveiller le Colosse de lave",
+  "description": "Vaincs le Colosse de lave, Gardien des Cendres fissurées, dans le Bastion des Cendres (/bastion). Sa chute allume le Portail 2."
  }
 }

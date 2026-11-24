@@ -77,6 +77,18 @@ glow colour per place.
 The old `fairy_souls` pad (Wisp Guide) is gone together with the mechanic. NPCs face the centre (`hubPads`), so the
 ruins stand behind them on the outer side.
 
+## The Breach (plan version 4)
+
+The hub is a safe zone (`IslandTracker` cancels every player damage in `sb_hub`), so immune cells walking among the NPCs
+were no challenge. The **Breach** (`HubBreach`, pure data) is the one place of the hub where players can be hurt: a torn
+islet north-west of the fragment (centre `(-62, -30)`, radius 13), dark deepslate split by crying obsidian, a tear of
+amethyst at its centre with violet shards above, four broken pillars with soul lanterns. A railed bridge leaves the rim
+near the Archivist; a sign at each end warns "No sanctuary". When a Celestial Breath invasion targets the hub
+(`invade:hub`), its immune cells spawn on the islet only, for the players standing on it (`breath/BreachSpawns`), and a
+cell that leaves it (onto the bridge or the hub) is removed within a second. Death there (checked in game): inventory kept
+(`keep_inventory`), the purse penalty applies, respawn on the player's island (the Skyblock respawn point of `ModeTravel`),
+`/back` offered. Cells only come during an invasion event; the islet is empty the rest of the time.
+
 ## Travel
 
 Spawn on the Landing; `/hub` and falling back from a Realm land there too. Island: Island Gatekeeper (`/island`).

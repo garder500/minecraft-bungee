@@ -129,7 +129,7 @@ public class SkyGatesTest {
             // standing room in front of the opening
             assertTrue(plan.get(gate.x(), 0, gate.z()) != null);
         }
-        assertEquals(8, plan.signs().size());
+        assertEquals("eight gate signs and the sign of the mouth", 9, plan.signs().size());
         assertNotNull(plan.anchor("spawn"));
         assertEquals(Material.QUARTZ_BRICKS, plan.get(0, 0, QuaiPlan.SPAWN_Z));
         // the bridge reaches the hub ring road
@@ -196,6 +196,25 @@ public class SkyGatesTest {
         assertTrue(api.litRealms(id).isEmpty());
         // the Quai des Huit is reached from the hub
         assertNotNull(api.quaiSpawn());
+    }
+
+    @Test
+    public void gatesLitInTheSameTickShareOneTitleAndOneChatLine() {
+        SurvivalPlugin plugin = MockBukkit.load(SurvivalPlugin.class);
+        SkyGateApi api = plugin.core().service(SkyGateApi.class).orElseThrow();
+        var player = server.addPlayer();
+        while (player.nextComponentMessage() != null) {
+            // drop the join messages
+        }
+        for (Realm realm : new Realm[] {Realm.DEPTHS, Realm.HEIGHTS, Realm.CITADEL, Realm.MARSHES, Realm.ARCHIPELAGO}) {
+            assertTrue(api.light(player.getUniqueId(), realm));
+        }
+        server.getScheduler().performTicks(2);
+        net.kyori.adventure.text.Component chat = player.nextComponentMessage();
+        assertNotNull("one chat line", chat);
+        assertTrue(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(chat)
+            .contains("5 Gates wake on the Quai: Frozen Heights"));
+        assertNull("not one chat line per Gate", player.nextComponentMessage());
     }
 
     @Test

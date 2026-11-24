@@ -121,10 +121,10 @@ final class FightDirector {
                 if (run.witherKeys > 0) {
                     run.witherKeys--;
                     openDoor(i);
-                    run.sayAll("<dark_gray>" + p.getName() + " <gray>unlocked a <dark_gray>Wither Door<gray>. Keys left: <white>"
+                    run.sayAll("<dark_gray>" + p.getName() + " <gray>unlocked a <dark_gray>Barrow Door<gray>. Keys left: <white>"
                         + run.witherKeys);
                 } else {
-                    run.say(p, "<gray>This door is sealed by <dark_gray>Wither<gray> magic. Clear a mob room to claim a <white>Wither Key<gray>.");
+                    run.say(p, "<gray>This door is sealed by <dark_gray>barrow<gray> magic. Clear a mob room to claim a <white>Barrow Key<gray>.");
                     run.sound(run.built.doors.get(i).blocks().get(0), Sound.BLOCK_CHAIN_PLACE, 1f, 0.6f);
                 }
             }
@@ -133,7 +133,7 @@ final class FightDirector {
                     openBloodDoor();
                 } else {
                     int left = guardsLeft();
-                    run.say(p, "<red>The blood door is sealed. <gray>The Watcher's guards still live (<white>" + left + "<gray> left).");
+                    run.say(p, "<red>The ossuary door is sealed. <gray>The Warden's guards still live (<white>" + left + "<gray> left).");
                 }
             }
             case OPEN -> run.say(p, "<gray>The doors are locked until the fight is over.");
@@ -234,8 +234,8 @@ final class FightDirector {
         for (int i = 0; i < now; i++) {
             spawnGuard(run.layout.entrance().index);
         }
-        run.sayAll("<gray>The <dark_red>Watcher<gray> has sent <white>" + guardsTotal
-            + "<gray> guards to find you. Slay them all to forge the <red>blood key<gray>.");
+        run.sayAll("<gray>The <dark_red>Barrow Warden<gray> has sent <white>" + guardsTotal
+            + "<gray> guards to find you. Slay them all to forge the <red>ossuary key<gray>.");
     }
 
     private void spawnGuard(int room) {
@@ -274,7 +274,7 @@ final class FightDirector {
     private void checkBloodKey() {
         if (guardsStarted && !bloodKey && guardsSpawned >= guardsTotal && guards.isEmpty()) {
             bloodKey = true;
-            run.sayAll("<red><bold>The blood key is forged!</bold> <gray>Open the blood door next to the blood room.");
+            run.sayAll("<red><bold>The ossuary key is forged!</bold> <gray>Open the ossuary door next to the ossuary room.");
             run.soundAll(Sound.BLOCK_BEACON_ACTIVATE, 1f, 0.5f);
             RoomRt blood = run.rooms.get(run.layout.blood().index);
             if (blood != null && blood.visited) {
@@ -291,7 +291,7 @@ final class FightDirector {
             if (d.kind == DoorKind.BLOOD) {
                 bloodOpened = true;
                 openDoor(run.layout.doors().indexOf(d));
-                run.sayAll("<red>The blood door grinds open...");
+                run.sayAll("<red>The ossuary door grinds open...");
                 run.soundAll(Sound.ENTITY_WITHER_SPAWN, 0.4f, 0.6f);
             }
         }
@@ -322,9 +322,9 @@ final class FightDirector {
             case BLOOD -> {
                 spawnRemainingGuards(plan.index);
                 if (rt.build.bloodSign != null) {
-                    run.spawnLabel(run.loc(rt.build.bloodSign).add(0, 0.5, 0), "<red><bold>BLOOD DOOR");
+                    run.spawnLabel(run.loc(rt.build.bloodSign).add(0, 0.5, 0), "<red><bold>OSSUARY DOOR");
                 }
-                run.say(p, "<red>The air is thick with blood. <gray>Slay the Watcher's guards, then open the door.");
+                run.say(p, "<red>The air is thick with grave dust. <gray>Slay the Warden's guards, then open the door.");
                 if (bloodKey) {
                     openBloodDoor();
                 }
@@ -396,7 +396,8 @@ final class FightDirector {
             case AMBUSH -> {
                 List<MobSpec> all = new ArrayList<>();
                 waves.forEach(all::addAll);
-                waves = List.of(new ArrayList<>(all.subList(0, Math.min(cap, all.size()))));
+                // same enemies as before, in waves: the cap of enemies alive at once keeps each wave readable
+                waves = AmbushPacing.split(new ArrayList<>(all.subList(0, Math.min(cap, all.size()))), run.ctx.cfg.ambushWaves);
             }
             case ELITE -> {
                 MobSpec base = MobRoster.pick(run.floorNumber(), run.rng());
@@ -411,7 +412,10 @@ final class FightDirector {
         }
         startFight(rt, waves, false);
         switch (style) {
-            case AMBUSH -> run.titleAll("<red><bold>AMBUSH!", "<gray>They all come at once");
+            case AMBUSH -> {
+                run.titleAll("<red><bold>AMBUSH!", "<gray>They come in from the walls");
+                telegraph(rt);
+            }
             case ELITE -> run.titleAll("<gold><bold>ELITE", "<gray>Bring down the glowing one");
             case HOLD -> {
                 run.titleAll("<green><bold>HOLD THE RING", "<white>Stay in the green ring for " + run.ctx.cfg.holdSeconds + " seconds");
@@ -422,10 +426,58 @@ final class FightDirector {
         }
     }
 
+    /** Alive enemies of an ambush room at once for this party (see {@link AmbushPacing#cap}). */
+    int ambushCap() {
+        var c = run.ctx.cfg;
+        return AmbushPacing.cap(c.ambushSimultaneousBase, c.ambushSimultaneousPerExtra, run.partySize(), c.maxMobsPerRoom);
+    }
+
+    /** Where a wave of an ambush room comes in: spots along the walls, away from the players, marked before they spawn. */
+    private void pickSpots(RoomRt rt) {
+        List<double[]> at = new ArrayList<>();
+        for (RunPlayer rp : run.players.values()) {
+            Player p = rp.alive() ? Bukkit.getPlayer(rp.id) : null;
+            if (p != null && p.getWorld() == run.world) {
+                at.add(new double[] {p.getLocation().getX(), p.getLocation().getZ()});
+            }
+        }
+        rt.spots.clear();
+        rt.spots.addAll(AmbushPacing.edgeSpots(rt.build.mobSpawns, rt.build.spawn, at, run.ctx.cfg.ambushMinDistance,
+            Math.max(1, Math.min(rt.queue.size(), ambushCap())), run.rng()));
+    }
+
+    /** The warning before a wave: nothing spawns until {@code telegraphUntil}; the spots are marked meanwhile. */
+    private void telegraph(RoomRt rt) {
+        rt.telegraphUntil = run.tick + run.ctx.cfg.ambushTelegraphSeconds * 20L;
+        rt.waveStartTick = rt.telegraphUntil;
+        pickSpots(rt);
+        run.soundAll(Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 0.8f);
+    }
+
+    private void markSpots(RoomRt rt) {
+        for (Pos p : rt.spots) {
+            run.world.spawnParticle(Particle.SOUL_FIRE_FLAME, run.loc(p).add(0, 1, 0), 10, 0.3, 0.9, 0.3, 0.01);
+        }
+    }
+
+    /** The place of the next enemy of an ambush: the marked spot, or a fresh one if a player stands there now. */
+    private Location ambushSpot(RoomRt rt) {
+        Pos p = rt.spots.poll();
+        if (p != null) {
+            Player near = nearestAlive(run.loc(p));
+            if (near == null || near.getLocation().distanceSquared(run.loc(p)) >= Math.pow(run.ctx.cfg.ambushMinDistance, 2)) {
+                return run.loc(p);
+            }
+        }
+        pickSpots(rt);
+        p = rt.spots.poll();
+        return p == null ? null : run.loc(p);
+    }
+
     /** The same monster, much tougher and easy to tell apart. */
     private MobSpec elite(MobSpec base) {
         return new MobSpec("elite_" + base.id(), "Elite " + base.name(), base.type(), base.health() * run.ctx.cfg.eliteHealthPercent / 100.0,
-            base.damage() * 1.25, base.speed(), base.weapon(), base.armored(), false, base.minFloor(), 0, "<gold>");
+            base.damage() * 2.0, base.speed(), base.weapon(), base.armored(), false, base.minFloor(), 0, "<gold>");
     }
 
     /** A Hold room: the time only runs with someone in the ring, and enemies keep coming until it is over. */
@@ -483,6 +535,8 @@ final class FightDirector {
         rt.queue.clear();
         rt.queue.addAll(waves.get(0));
         rt.spawnedTotal = 0;
+        rt.telegraphUntil = 0;
+        rt.spots.clear();
         rt.level = mini ? 1 : 0;
         int total = 0;
         for (List<MobSpec> w : waves) {
@@ -525,6 +579,19 @@ final class FightDirector {
         return best;
     }
 
+    /** The plain monster hit before Ward and armor on this floor's tier, or 0 without a curve (the old rule). */
+    private double baseHit(String kind) {
+        var curve = run.ctx.curve();
+        int tier = run.floor.tier();
+        if (curve == null || !curve.has(tier)) {
+            return 0;
+        }
+        // the floor's own boss keeps the boss hit (a tenth of the health, party scale only): the floor's damage factor,
+        // which the factory multiplies in, is divided out again
+        return kind.equals("boss") ? curve.bossHitDamage(tier) / Math.max(0.1, run.floor.damage())
+            : curve.hitDamage(tier, 1.0 / run.ctx.cfg.mobHitsToDown);
+    }
+
     /** Spawns one monster of a room fight (or a guard). */
     LivingEntity spawn(RoomRt rt, MobSpec spec, String kind, Location where) {
         Location at = where;
@@ -551,7 +618,7 @@ final class FightDirector {
         LivingEntity e = run.ctx.mobFactory.spawn(run.world, at, spec, run.id, rt.index(), kind, run.floorNumber(),
             run.floor.mobLevel(), DungeonHp.health(run.ctx.curve(), run.floor.tier(), run.ctx.cfg.mobTargetSeconds,
                 run.ctx.cfg.mobBaseHealth, spec.health(), run.floor.hp(), party),
-            run.floor.damage() * dmgParty, nearestAlive(at), run.floor);
+            run.floor.damage() * dmgParty, baseHit(kind), nearestAlive(at), run.floor);
         if (e == null) {
             return null;
         }
@@ -609,13 +676,33 @@ final class FightDirector {
                 }
             }
         }
-        // staggered spawning, within the caps
-        int budget = rt.style == FightStyle.AMBUSH ? 6 : 2;
-        while (budget-- > 0 && !rt.queue.isEmpty() && rt.mobs.size() < run.ctx.cfg.maxMobsPerRoom
+        boolean ambush = rt.style == FightStyle.AMBUSH;
+        if (ambush && AmbushPacing.telegraphOver(run.tick, rt.telegraphUntil) && rt.wave + 1 < rt.waves.size()
+                && AmbushPacing.nextWaveDue(rt.mobs.size(), rt.queue.size(), run.tick, rt.waveStartTick,
+                    run.ctx.cfg.ambushNextWaveLeft, run.ctx.cfg.ambushNextWaveSeconds * 20L)) {
+            rt.wave++;
+            rt.queue.addAll(rt.waves.get(rt.wave));
+            run.sayAll("<red>Reinforcements! <gray>(wave " + (rt.wave + 1) + "/" + rt.waves.size() + ")");
+            run.titleAll("<red><bold>MORE COME", "<gray>Watch the walls");
+            telegraph(rt);
+        }
+        if (ambush && !AmbushPacing.telegraphOver(run.tick, rt.telegraphUntil)) {
+            markSpots(rt); // the warning: nobody spawns yet
+        }
+        // staggered spawning, within the caps (an ambush: after its warning, and a smaller number alive at once)
+        int budget = ambush ? 6 : 2;
+        if (ambush && run.ctx.cfg.ambushSpawnIntervalTicks > 0) {
+            // one enemy at a time, a beat apart: they walk in from the walls instead of landing together
+            budget = run.tick - rt.lastSpawnTick >= run.ctx.cfg.ambushSpawnIntervalTicks ? 1 : 0;
+        }
+        int roomCap = ambush ? Math.min(run.ctx.cfg.maxMobsPerRoom, ambushCap()) : run.ctx.cfg.maxMobsPerRoom;
+        while (budget-- > 0 && !rt.queue.isEmpty() && rt.mobs.size() < roomCap
+                && (!ambush || AmbushPacing.telegraphOver(run.tick, rt.telegraphUntil))
                 && liveMobs() < run.ctx.cfg.maxMobsPerRun) {
             MobSpec spec = rt.queue.poll();
+            rt.lastSpawnTick = run.tick;
             boolean mini = rt.level == 1 && spec == MobRoster.WARLORD;
-            LivingEntity e = spawn(rt, spec, mini ? "miniboss" : "mob", null);
+            LivingEntity e = spawn(rt, spec, mini ? "miniboss" : "mob", ambush ? ambushSpot(rt) : null);
             if (e != null) {
                 rt.mobs.add(e.getUniqueId());
                 rt.spawnedTotal++;
@@ -665,7 +752,7 @@ final class FightDirector {
         run.sayAll("<green>Room cleared!");
         if (rt.build.plan.keyCarrier) {
             run.witherKeys++;
-            run.sayAll("<dark_gray><bold>A Wither Key</bold> <gray>drops from the last enemy! Keys: <white>" + run.witherKeys);
+            run.sayAll("<dark_gray><bold>A Barrow Key</bold> <gray>drops from the last enemy! Keys: <white>" + run.witherKeys);
             run.soundAll(Sound.ENTITY_ITEM_PICKUP, 1f, 0.6f);
         }
     }

@@ -181,7 +181,7 @@ public final class MenuConfig {
             case SkyblockWorlds.WORLD -> "world";
             case SkyblockWorlds.NETHER -> "nether";
             case SkyblockWorlds.END -> "end";
-            default -> worldName;
+            default -> SkyblockWorlds.isBastion(worldName) ? "bastion" : worldName;
         };
     }
 

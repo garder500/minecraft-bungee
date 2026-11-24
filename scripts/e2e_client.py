@@ -1555,8 +1555,8 @@ def skyblock_scenario(ctx):
         failures.append(f"Survival death missed the independent Survival bed: {normal_respawn}, bed={normal_bed}")
     shot(tools, shots / "sb-6-survival-bed-respawn.png")
     if any((base / name).exists() for base in (server, server / "world/dimensions/minecraft")
-           for name in ("sb_hub", "sb_end")):
-        failures.append("retired Skyblock hub or End was generated")
+           for name in ("sb_end",)):
+        failures.append("retired Skyblock End was generated")
     rcon.command("gamemode creative E2EBot")
     say(f"skyblock: two beds checked; Skyblock={sky_respawn}, Survival={normal_respawn}")
 
@@ -2883,9 +2883,1065 @@ def bosses_scenario(ctx):
     rcon.command("boss kill all")
 
 
+def machines_scenario(ctx):
+    """The newer machines with a real client: the visible break of a working Miner (seen through a glass wall), a Miner I
+    with an Ember Module, a Miner II powered only by a Spring Wheel (Spring Stone cell, Bronzite Blocks: activation then
+    overload) and the three stations (Alembic, Crucible, Ranch) placed and opened."""
+    import math, re as _re
+    tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
+    xdo, rcon = tools["xdotool"], Rcon()
+
+    def typed(text, wait=1.5):
+        subprocess.run([xdo, "key", "t"], env=env)
+        time.sleep(0.8)
+        subprocess.run([xdo, "type", "--delay", "20", "/" + text], env=env)
+        time.sleep(0.3)
+        subprocess.run([xdo, "key", "Return"], env=env)
+        time.sleep(wait)
+
+    def as_bot(text):
+        return rcon.command("execute as E2EBot at E2EBot run " + text)
+
+    def stand(x, y, z, yaw, pitch):
+        as_bot(f"tp @s {x} {y} {z} {yaw} {pitch}")
+        time.sleep(1.2)
+
+    def holding(item, amount=1):
+        rcon.command("clear E2EBot")
+        rcon.command(f"sbgive {item} {amount} E2EBot" if not item.startswith("minecraft:") else f"give E2EBot {item} {amount}")
+        subprocess.run([xdo, "key", "1"], env=env)
+        time.sleep(0.6)
+
+    def click(x, y, z, yaw, pitch, times=1):
+        stand(x, y, z, yaw, pitch)
+        for _ in range(times):
+            subprocess.run([xdo, "click", "3"], env=env)
+            time.sleep(0.8)
+
+    def place(item, bx, y, bz):
+        """Places on the floor block (bx, y-1, bz): standing 2.5 blocks south, looking down at 39 degrees."""
+        holding(item)
+        click(bx + 0.5, y, bz + 2.5, 180, 39)
+
+    def on_top(bx, y, bz):
+        """Right-clicks the top face of the block at (bx, y, bz), from 2 blocks south over a 1-high block in between."""
+        click(bx + 0.5, y, bz + 2.5, 180, 17)
+
+    def south_face(bx, y, bz):
+        """Right-clicks the south face of the machine at (bx, y, bz) from 2 blocks away."""
+        click(bx + 0.5, y, bz + 2.5, 180, 25)
+
+    def block_is(x, y, z, name):
+        return "passed" in rcon.command(f"execute in minecraft:sb_world if block {x} {y} {z} minecraft:{name}").lower()
+
+    def left_in_inventory():
+        """Items the bot still holds: what a click did not take (machines.json is only written now and then)."""
+        found = _re.findall(r"count: ([0-9]+)", rcon.command("execute if items entity E2EBot container.* *"), _re.I)
+        return int(found[0]) if found else 0
+
+    def barrel(x, y, z):
+        return rcon.command(f"execute in minecraft:sb_world run data get block {x} {y} {z} Items")
+
+    def cobble_generator(ox, y, cz, glass=False):
+        """The quarry scenario's generator: the spot (ox+1, y, cz) between a walled lava source above and water east."""
+        as_bot(f"fill {ox-1} {y} {cz-1} {ox+3} {y} {cz-1} stone")
+        if glass:  # the visible break is watched from the north, through the spot's wall and the lava's wall above it
+            as_bot(f"setblock {ox+1} {y} {cz-1} glass")
+        as_bot(f"setblock {ox-1} {y} {cz} stone")
+        as_bot(f"setblock {ox} {y} {cz} stone")
+        as_bot(f"setblock {ox+3} {y} {cz} stone")
+        for dx, dz in ((0, 0), (2, 0), (1, -1), (1, 1)):
+            as_bot(f"setblock {ox+dx} {y+1} {cz+dz} {'glass' if glass and (dx, dz) == (1, -1) else 'stone'}")
+        # the Miner goes at (ox+1, y, cz+1), under the lava's south wall: its barrel stands east of it (it also keeps the
+        # water from spreading south) and its south face stays free for the clicks
+        as_bot(f"setblock {ox+2} {y} {cz+1} barrel[facing=up]")
+
+    def fluids(ox, y, cz):
+        as_bot(f"setblock {ox+1} {y+1} {cz} lava")
+        as_bot(f"setblock {ox+2} {y} {cz} water")
+
+    rcon.command("op E2EBot")
+    rcon.command("gamerule spawn_mobs false")
+    typed("menu skyblock")
+    for _ in range(150):
+        if "sb_world" in rcon.command("data get entity E2EBot Dimension"):
+            break
+        time.sleep(1)
+    else:
+        failures.append("never reached sb_world")
+        return
+    time.sleep(8)
+    rcon.command("gamemode survival E2EBot")
+    rcon.command("effect give E2EBot minecraft:resistance 900 4 true")
+    rcon.command("execute in minecraft:sb_world run time set day")
+    pos = player_state(rcon)["pos"]
+    cx, y, cz = math.floor(pos[0]) + 6, math.floor(pos[1]), math.floor(pos[2])
+    as_bot(f"fill {cx-6} {y-1} {cz-6} {cx+16} {y-1} {cz+14} stone")
+    as_bot(f"fill {cx-6} {y} {cz-6} {cx+16} {y+5} {cz+14} air")
+
+    # A. Miner I with an Ember Module and a coal generator, the spot behind a glass wall
+    cobble_generator(cx, y, cz, glass=True)
+    place("coal_generator", cx, y, cz + 1)
+    place("miner_1", cx + 1, y, cz + 1)
+    holding("minecraft:coal", 16)
+    south_face(cx, y, cz + 1)
+    holding("ember_module")
+    south_face(cx + 1, y, cz + 1)
+    shot(tools, shots / "mc-0-ember-installed.png")
+    if not block_is(cx + 1, y, cz + 1, "barrier"):  # a machine is a barrier block under its 3D display
+        failures.append(f"no Miner I at {cx+1},{y},{cz+1}")
+    elif left_in_inventory():
+        failures.append("the Ember Module was not taken by the Miner I")
+
+    # B. Miner II powered only by a Spring Wheel, 8 blocks east
+    ox = cx + 8
+    cobble_generator(ox, y, cz)
+    place("spring_stone", ox - 1, y, cz + 1)
+    place("spring_wheel", ox, y, cz + 1)
+    place("miner_2", ox + 1, y, cz + 1)
+    holding("bronzite_block", 5)
+    stand(ox + 0.5, y, cz + 3.5, 180, 25)
+    for _ in range(5):  # one activates it, three overload it, the fifth must be refused
+        subprocess.run([xdo, "click", "3"], env=env)
+        time.sleep(0.8)
+    shot(tools, shots / "mc-1-spring-wheel-blocks.png")
+    if not block_is(ox, y, cz + 1, "barrier"):
+        failures.append(f"no Spring Wheel at {ox},{y},{cz+1}")
+    elif left_in_inventory() != 1:
+        failures.append(f"the Spring Wheel should take 4 Bronzite Blocks (1 + 3 overload) and refuse the 5th: {left_in_inventory()} left")
+    rcon.command("clear E2EBot")
+    stand(ox + 0.5, y + 1, cz + 5.5, 180, 25)
+    shot(tools, shots / "mc-1-spring-wheel.png")
+
+    # C. The stations, placed in a row and opened
+    for i, (station, block) in enumerate((("alembic", "brewing_stand"), ("crucible", "cauldron"), ("ranch", "composter"))):
+        place(station, cx - 4 + 3 * i, y, cz + 9)
+        if not block_is(cx - 4 + 3 * i, y, cz + 9, block):
+            failures.append(f"the {station} was not placed")
+    rcon.command("clear E2EBot")
+    stand(cx - 1.5, y + 1, cz + 13.5, 180, 20)
+    shot(tools, shots / "mc-2-stations.png")
+    for i, station in enumerate(("alembic", "crucible", "ranch")):
+        click(cx - 4 + 3 * i + 0.5, y, cz + 11.5, 180, 30)
+        time.sleep(1.5)
+        shot(tools, shots / f"mc-3-{station}-menu.png")
+        subprocess.run([xdo, "key", "Escape"], env=env)
+        time.sleep(1)
+
+    # D. Run both Miners: the visible break through the glass, then what landed in the barrels
+    fluids(cx, y, cz)
+    fluids(ox, y, cz)
+    for i in range(6):
+        stand(cx + 1.5, y, cz - 1.7, 0, 27)
+        time.sleep(0.5 + 0.3 * i)
+        shot(tools, shots / f"mc-4-crack-{i}.png")
+    time.sleep(40)
+    stand(cx + 4.5, y + 2, cz + 6.5, 180, 30)
+    shot(tools, shots / "mc-5-both-miners.png")
+    rcon.command("clear E2EBot")
+    for name, mx in (("miner1", cx + 1), ("miner2", ox + 1)):  # an empty-hand click shows the Miner's state in chat
+        south_face(mx, y, cz + 1)
+        shot(tools, shots / f"mc-6-{name}-status.png")
+    first, second = barrel(cx + 2, y, cz + 1), barrel(ox + 2, y, cz + 1)
+    say("machines: Ember barrel " + first.strip()[-400:])
+    say("machines: Spring Wheel barrel " + second.strip()[-400:])
+    if "id:" not in first:  # (the Ember Module smelts cobble, sand and netherrack: the cobble draw's ores stay as they are)
+        failures.append("the Ember Miner I put nothing in its barrel: " + first.strip()[-120:])
+    if "id:" not in second:
+        failures.append("the Miner II on the Spring Wheel alone put nothing in its barrel: " + second.strip()[-120:])
+    log = (server / "console.log").read_text(errors="replace")
+    for line in log.splitlines():
+        if ("Exception" in line or "SEVERE" in line) and " WARN]" not in line and "VampyuyuSurvival" in line:
+            failures.append("server error: " + line[:160])
+            break
+    rcon.command("gamemode creative E2EBot")
+
+
+def endgame_scenario(ctx):
+    """The late game with a real client: Realm runes engraved by clicking and then triggered by hits (Blight, Tempest,
+    Soulbind, Undertow, Rewind), the Raid of the Devourer (refusal, death inside it, the whole fight to the kill and its
+    rewards), a Celestial Breath Fracture entered by a normal player, and floor 7 of the Catacombs. Bot HP is protected
+    (resistance, regeneration) only where a kill time is measured; the damage a Starcore bot takes unprotected is measured
+    separately. The Raid is opened by clearing its requirement rows in the database, which stands in for eight Bastion clears
+    (the refusal itself is checked first, as a normal player).
+    E2E_EG_STEPS=floor7 runs only the floor 7 step (about 5 min instead of 12): the Starcore set is given, no runes."""
+    import re as _re, sqlite3
+    tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
+    xdo, rcon = tools["xdotool"], Rcon()
+    clog = WORK / "prism" / "instances" / INSTANCE / "minecraft" / "logs" / "latest.log"
+    strip = lambda text: _re.sub("§x(§[0-9a-f]){6}|§.", "", text).strip()
+
+    def typed(cmd, wait=1.0):
+        subprocess.run([xdo, "key", "t"], env=env)
+        time.sleep(0.8)
+        subprocess.run([xdo, "type", "--delay", "20", "/" + cmd], env=env)
+        time.sleep(0.3)
+        subprocess.run([xdo, "key", "Return"], env=env)
+        time.sleep(wait)
+
+    def as_bot(cmd):
+        return rcon.command(f"execute as E2EBot at @s run {cmd}")
+
+    def dimension():
+        return rcon.command("data get entity E2EBot Dimension")
+
+    def wait_world(name, seconds=60):
+        deadline = time.time() + seconds
+        while time.time() < deadline:
+            if f'"minecraft:{name}' in dimension():
+                return True
+            time.sleep(1)
+        return False
+
+    def chat():
+        """The chat lines the client received (client log), without the command noise."""
+        if not clog.exists():
+            return []
+        return [l.split("[CHAT] ", 1)[1] for l in clog.read_text(errors="replace").splitlines()
+                if "[CHAT] " in l and "Teleported" not in l]
+
+    def chat_has(text, since=0):
+        return any(text in l for l in chat()[since:])
+
+    def hp(target="E2EBot"):
+        found = _re.findall(r"([0-9.]+)f", rcon.command(f"data get entity {target} Health"))
+        return float(found[0]) if found else None
+
+    def mouse(x, y):
+        subprocess.run([xdo, "mousemove", str(x), str(y)], env=env)
+        time.sleep(0.4)
+
+    def click():
+        subprocess.run([xdo, "click", "1"], env=env)
+
+    def respawn_click():
+        """The death screen: the Respawn button of the 1280x720 screen."""
+        mouse(638, 403)
+        click()
+        time.sleep(2.5)
+        mouse(640, 300)
+
+    def stats(label, found, want="", note=""):
+        say(f"endgame: {label}: {found}" + (f" (want {want})" if want else "") + (" " + note if note else ""))
+
+    def floor7():
+        """Floor 7 (seed 11), the first ambush room. Two runs: a passive bot (no potion effects, standing still: the time
+        until it falls and becomes a ghost, 96 max health in full Starcore) and a fighting bot (it faces the nearest enemy
+        and clicks, healed now and then: the time to 'Room cleared!'), then the boss room. E2E_EG_PASSIVE_SECONDS (75) is
+        how long the passive bot is watched, E2E_EG_MODES=passive|fight picks one of the two runs, E2E_EG_BOT
+        =strike adds /damage hits (the dungeon does not count them as weapon hits: nothing dies, do not use)."""
+        watch = int(os.environ.get("E2E_EG_PASSIVE_SECONDS", "75"))
+        modes = os.environ.get("E2E_EG_MODES", "passive,fight").split(",")
+        strike = os.environ.get("E2E_EG_BOT", "click") == "strike"  # strike: also hits by /damage (the dungeon ignores it: no kills); click: real clicks only
+
+        def start_run():
+            rcon.command("dungeon admin abort all")
+            time.sleep(3)
+            rcon.command("op E2EBot")
+            typed("menu skyblock") if "sb_" not in dimension() else None
+            time.sleep(2)
+            typed("dungeon admin start 7 11", 1.0)
+            if not wait_world("sb_dungeon", 120):
+                failures.append("floor 7 did not start: " + dimension()[:80])
+                return False
+            time.sleep(15)
+            rcon.command("effect clear E2EBot")
+            rcon.command("effect give E2EBot minecraft:instant_health 1 10 true")
+            time.sleep(1)
+            return True
+
+        def gamemode():
+            found = _re.findall(r"data: (\d+)", rcon.command("data get entity E2EBot playerGameType"))
+            return found[0] if found else None
+
+        # exc is defined once here: real enemies only (not players, markers, displays), not the Watcher's roaming guards
+        exc = "type=!player,type=!item_display,type=!text_display,type=!armor_stand,type=!interaction,type=!block_display,type=!marker,type=!item,name=!\"Warden Guard\""
+
+        def alive():
+            found = _re.findall(r"count: (\d+)", rcon.command(f"execute as E2EBot at @s if entity @e[distance=..40,{exc}]"), _re.I)
+            return int(found[0]) if found else 0
+
+        def alive_of(kind):
+            found = _re.findall(r"count: (\d+)", rcon.command(f"execute as E2EBot at @s if entity @e[distance=..40,type={kind}]"), _re.I)
+            return int(found[0]) if found else 0
+
+        if "passive" in modes:
+            if not start_run():
+                return
+            stats("floor 7 passive bot max health / health",
+                  f"{_re.findall(r'is ([0-9.]+)', rcon.command('attribute E2EBot minecraft:max_health get'))} / {hp()}", "96")
+            typed("dungeon admin goto MOB AMBUSH", 0.5)
+            began = time.time()
+            trace, ghost_at, last_h, drops = [], None, None, []
+            while time.time() - began < watch:
+                t = time.time() - began
+                trace.append((int(t), None if hp() is None else round(hp()), alive()))
+                if gamemode() == "3":
+                    ghost_at = t
+                    break
+                if int(t) in (3, 8):  # the health pool of a real monster: BukkitValues carries dungeon_hp_max / dungeon_hp / dungeon_hit
+                    for kind in ("zombie", "wither_skeleton", "vindicator"):
+                        stats(f"floor 7 monster {kind} data at {int(t)} s",
+                              rcon.command(f"data get entity @e[type={kind},name=!\"Warden Guard\",limit=1,sort=nearest] BukkitValues")[:400],
+                              "", rcon.command(f"attribute @e[type={kind},limit=1,sort=nearest] minecraft:max_health get")[:80])
+                if int(t) in (6, 12):
+                    kinds = {k: alive_of(k) for k in ("zombie", "skeleton", "wither_skeleton", "witch", "vindicator", "iron_golem", "enderman", "phantom", "vex")}
+                    eff = _re.findall(r'id: "minecraft:([a-z_]+)"', rcon.command("data get entity E2EBot active_effects"))
+                    stats(f"floor 7 passive bot at {int(t)} s: enemies by type, effects on the bot", {k: v for k, v in kinds.items() if v}, "", str(eff))
+                if int(t) in (1, 2, 6, 15, 30) and not (shots / f"eg-6-floor7-passive-{int(t)}.png").exists():
+                    shot(tools, shots / f"eg-6-floor7-passive-{int(t)}.png")
+                for _ in range(5):  # 0.2 s samples: every drop is one or more hits (health before / after)
+                    h2 = hp()
+                    if h2 is not None and last_h is not None and h2 < last_h - 0.05:
+                        drops.append(round(last_h - h2, 2))
+                    last_h = h2 if h2 is not None else last_h
+                    time.sleep(0.2)
+            stats("floor 7 passive bot damage drops per 0.2 s sample (a hit each, 96 max health)", drops[:60])
+            survived = ghost_at if ghost_at is not None else float(watch)
+            stats("floor 7 passive bot in the first ambush room (unprotected, standing still)",
+                  f"ghost after {ghost_at:.0f} s" if ghost_at is not None else f"alive after {watch} s", "about 30 s")
+            stats("floor 7 passive bot health trace (s, hp, enemies alive)", [x for x in trace if x[0] % 3 == 0])
+            stats("floor 7 passive bot most enemies alive at once", max([x[2] for x in trace] or [0]))
+            shot(tools, shots / "eg-6-floor7-passive-end.png")
+            if survived < 30:
+                failures.append(f"floor 7 ambush: the passive bot was a ghost after {survived:.0f} s (want at least 30 s; measured 44 s on 2026-11-23)")
+
+        if "fight" not in modes:
+            return
+        if not start_run():
+            return
+        typed("dungeon admin goto MOB AMBUSH", 0.5)
+        began = time.time()
+        cleared, ghosts, last_heal, hp_low, series, pool_trace, now_shots = False, 0, 0, 999.0, [], [], 0
+        while time.time() - began < 180:
+            # walk up to an enemy that is out of reach, face the nearest one, swing (a full charge: 0.7 s)
+            as_bot(f"facing entity @e[distance=3.5..18,{exc},limit=1,sort=nearest] eyes run tp @s ^ ^ ^2.5")
+            as_bot(f"facing entity @e[distance=..18,{exc},limit=1,sort=nearest] eyes run tp @s ~ ~ ~ ~ ~")
+            click()
+            if now_shots < 3:  # the AMBUSH title lives 2 s: a few shots back to back right after the goto
+                shot(tools, shots / f"eg-6-floor7-fight-title-{now_shots}.png")
+                now_shots += 1
+            if len(pool_trace) < 60:  # a Zombie Knight's virtual pool (dungeon_hp / dungeon_hp_max) and entity health: hits to kill
+                knight = ('@e[distance=..12,type=zombie,limit=1,sort=nearest,'
+                          'nbt={BukkitValues:{"vampyuyusurvival:dungeon_mob":"zombie_knight"}}]')
+                def knight_data(path):
+                    return as_bot(f'data get entity {knight} {path}')
+                last = lambda text: (_re.findall(r"(-?[0-9.]+)[df]?$", text.strip()) or ["-"])[0]
+                pool_trace.append((round(time.time() - began, 1), last(knight_data('BukkitValues."vampyuyusurvival:dungeon_hp"')),
+                                   last(knight_data('BukkitValues."vampyuyusurvival:dungeon_hp_max"')), last(knight_data("Health")),
+                                   last(knight_data("UUID[0]"))))
+            if strike:  # one full-charge Starcore hit on the nearest enemy in reach, like a player who lands every swing
+                as_bot(f"damage @e[distance=..6,{exc},limit=1,sort=nearest] 100000 minecraft:player_attack by E2EBot")
+            time.sleep(0.7)
+            now = int(time.time() - began)
+            series.append((now, alive()))
+            h = hp()
+            if h is not None:
+                hp_low = min(hp_low, h)
+                if h < 30 and now - last_heal >= 3:  # the bot is a poor dodger: a flask now and then (counted)
+                    rcon.command("effect give E2EBot minecraft:instant_health 1 10 true")
+                    last_heal = now
+                    ghosts += 1
+            if now in (1, 3, 10) and not (shots / f"eg-6-floor7-fight-{now}.png").exists():
+                shot(tools, shots / f"eg-6-floor7-fight-{now}.png")
+            if chat_has("Room cleared!"):
+                cleared = True
+                break
+        stats("floor 7 ambush room (level 50), fighting bot",
+              f"cleared={cleared} in {int(time.time() - began)} s, lowest health {hp_low:.0f}, heals {ghosts}, most alive at once {max([x[1] for x in series] or [0])}", "")
+        stats("floor 7 fighting bot nearest enemy pool trace (s, dungeon_hp, dungeon_hp_max, entity health)", pool_trace)
+        stats("floor 7 fighting bot enemies alive (s, n)", [x for x in series if x[0] % 10 == 0 or x[0] < 4][:40])
+        shot(tools, shots / "eg-6-floor7-room.png")
+        if not cleared:
+            failures.append("floor 7 ambush room was not cleared by the fighting bot in 180 s")
+        typed("dungeon admin goto BOSS", 0.5)
+        time.sleep(8)
+        shot(tools, shots / "eg-6-floor7-boss.png")
+        if "Hollow Star" not in rcon.command("execute as E2EBot at @s run data get entity @e[type=wither_skeleton,limit=1,sort=nearest] CustomName"):
+            failures.append("the floor 7 boss (The Hollow Star) did not appear")
+        typed("dungeon leave", 1.0)
+
+        # nothing may stay open
+        rcon.command("breath stop")
+        rcon.command("bastion admin abort all")
+        rcon.command("dungeon admin abort all")
+        rcon.command("gamemode creative E2EBot")
+
+    rcon.command("op E2EBot")
+    rcon.command("gamemode survival E2EBot")
+    rcon.command("gamerule send_command_feedback false")
+    rcon.command("gamerule log_admin_commands false")
+    rcon.command("gamerule spawn_mobs false")
+    rcon.command("difficulty hard")
+    typed("menu skyblock")
+    if not wait_world("sb_world", 150):
+        failures.append("never reached sb_world")
+        return
+    time.sleep(6)
+    rcon.command("clear E2EBot")
+    if os.environ.get("E2E_EG_STEPS", "") == "floor7":
+        # only the floor 7 step: the full Starcore set (no runes), the sword in the first hotbar slot
+        for item in ("starcore_sword", "starcore_chestplate", "starcore_leggings", "starcore_helmet", "starcore_boots"):
+            rcon.command(f"sbgive {item} 1 E2EBot")
+        time.sleep(1)
+        for slot_name, src in (("chest", "hotbar.1"), ("legs", "hotbar.2"), ("head", "hotbar.3"), ("feet", "hotbar.4")):
+            rcon.command(f"item replace entity E2EBot armor.{slot_name} from entity E2EBot {src}")
+        time.sleep(1)
+        for src in ("hotbar.1", "hotbar.2", "hotbar.3", "hotbar.4"):
+            rcon.command(f"item replace entity E2EBot {src} with minecraft:air")
+        subprocess.run([xdo, "key", "1"], env=env)
+        floor7()
+        return
+
+    # 1. Realm runes: engraved with real clicks in the inventory, then triggered by real hits and hits taken.
+    for item in ("starcore_sword", "rune_blight", "rune_tempest", "rune_soulbind", "starcore_chestplate", "starcore_leggings",
+                 "rune_rewind", "rune_undertow", "starcore_helmet", "starcore_boots"):
+        rcon.command(f"sbgive {item} 1 E2EBot")
+    time.sleep(1)
+    subprocess.run([xdo, "key", "e"], env=env)
+    time.sleep(1.5)
+    slot = lambda i: 495 + 36 * i  # hotbar slot centres of the player inventory screen (1280x720, GUI scale 2)
+
+    def engrave(src, dst):
+        mouse(slot(src), 494)
+        click()
+        time.sleep(0.5)
+        mouse(slot(dst), 494)
+        click()
+        time.sleep(0.8)
+
+    engrave(1, 0)
+    engrave(2, 0)
+    engrave(3, 0)
+    engrave(6, 4)
+    engrave(7, 5)
+    mouse(slot(0), 494)
+    time.sleep(1.5)
+    shot(tools, shots / "eg-1-sword-runes.png")
+    mouse(slot(5), 494)
+    time.sleep(1.5)
+    shot(tools, shots / "eg-1-legs-undertow.png")
+    subprocess.run([xdo, "key", "Escape"], env=env)
+    time.sleep(1)
+
+    def runes_of(path):
+        return strip(rcon.command(f'data get entity E2EBot {path}.components."minecraft:custom_data".PublicBukkitValues."vampyuyu:runes"'))
+
+    for path, want in (("Inventory[{Slot:0b}]", ("blight", "tempest", "soulbind")), ("Inventory[{Slot:4b}]", ("rewind",)),
+                       ("Inventory[{Slot:5b}]", ("undertow",))):
+        got = runes_of(path)
+        stats("engraved " + path, got, ", ".join(want))
+        for rune in want:
+            if rune not in got:
+                failures.append(f"{rune} was not engraved by clicking it onto the item ({got[:80]})")
+    for slot_name, src in (("head", "hotbar.8"), ("chest", "hotbar.4"), ("legs", "hotbar.5"), ("feet", "inventory.0")):
+        rcon.command(f"item replace entity E2EBot armor.{slot_name} from entity E2EBot {src}")
+    time.sleep(2)
+    for src in ("hotbar.4", "hotbar.5", "hotbar.8", "inventory.0"):
+        rcon.command(f"item replace entity E2EBot {src} with minecraft:air")
+    maxhp = _re.findall(r"is ([0-9.]+)", rcon.command("attribute E2EBot minecraft:max_health get"))
+    stats("full Starcore set max health", maxhp, "96")
+    subprocess.run([xdo, "key", "1"], env=env)
+
+    # Rewind: a hit that leaves the player under 30 % heals 30 %
+    rcon.command("effect clear E2EBot")
+    seq = [hp()]
+    for _ in range(30):
+        rcon.command("effect give E2EBot minecraft:instant_damage 1 2 true")
+        time.sleep(0.35)
+        seq.append(hp())
+        if seq[-1] is not None and len(seq) > 3 and seq[-1] > seq[-2]:
+            break
+    stats("Rewind health trace", [round(v, 1) for v in seq if v is not None][-6:])
+    if not any(b > a + 10 for a, b in zip(seq, seq[1:]) if a is not None and b is not None):
+        failures.append("Rewind did not heal after a hit under 30 %: " + str(seq))
+    shot(tools, shots / "eg-3-rewind.png")
+    rcon.command("effect clear E2EBot")
+    rcon.command("effect give E2EBot minecraft:instant_health 1 10 true")
+    time.sleep(1)
+
+    # Surge (every 5th full hit): Blight's Wither, Tempest's chain, Soulbind's heal. Husks: they do not burn in daylight.
+    nb = ('NoAI:1b,Silent:1b,PersistenceRequired:1b,attributes:[{id:"minecraft:max_health",base:1000}],Health:1000f')
+    x, y, z = [float(v) for v in _re.findall(r"(-?[0-9.]+)d", rcon.command("data get entity E2EBot Pos"))[:3]]
+
+    def target_hp(tag):
+        found = _re.findall(r"([0-9.]+)f", rcon.command(f"data get entity @e[tag={tag},limit=1,sort=nearest] Health"))
+        return float(found[0]) if found else None
+
+    rcon.command("kill @e[tag=e2e_target]")
+    as_bot(f"tp @s {x} {y} {z} 180 10")
+    for tag, dx, dz in (("main", 0, -2), ("chain", 1.5, -3), ("chain", -1.5, -3)):
+        as_bot(f'summon husk {x + dx} {y} {z + dz} {{{nb},Tags:["e2e_target","{tag}"]}}')
+    # Resistance III: the Surge hit (about twice a plain one) must not kill a 1000 health target in one blow
+    rcon.command("effect give @e[tag=e2e_target] minecraft:resistance 999 3 true")
+    seen = {}
+    for i in range(1, 6):
+        as_bot(f"tp @e[tag=main] {x} {y} {z - 2}")
+        rcon.command("execute as @e[tag=e2e_target] run data modify entity @s Health set value 1000f")
+        time.sleep(1.3)  # a full charge
+        before_chain = [target_hp("chain")]
+        click()
+        time.sleep(0.4)
+        dealt = 1000 - (target_hp("main") or 1000)
+        # asked for the one effect: the whole list is cut short by the reply of a long data get
+        withered = "has the following entity data" in rcon.command('data get entity @e[tag=main,limit=1] active_effects[{id:"minecraft:wither"}].id')
+        seen[i] = (dealt, "wither" if withered else "")
+        if i == 5:
+            shot(tools, shots / "eg-2-surge.png")
+            chain_hp = rcon.command("execute as @e[tag=chain] run data get entity @s Health")
+            chained = [float(v) for v in _re.findall(r"([0-9.]+)f", chain_hp)]
+            seen["chain"] = chained
+    stats("hit damage 1..5", {k: round(v[0]) for k, v in seen.items() if k != "chain"})
+    if "wither" not in seen[5][1]:
+        failures.append("Blight: no Wither on the target after the 5th hit: " + seen[5][1][:100])
+    if "wither" in seen[1][1]:
+        failures.append("Blight: Wither after a plain hit")
+    if seen[5][0] < 1.5 * seen[1][0]:
+        failures.append(f"the 5th hit is not a Surge: {seen[5][0]} vs {seen[1][0]}")
+    chained = seen.get("chain", [])
+    stats("Tempest chained husks (health)", chained)
+    if len([c for c in chained if c < 1000]) < 2:
+        failures.append(f"Tempest did not chain to both other husks: {chained}")
+    rcon.command("kill @e[tag=e2e_target]")
+    as_bot(f"tp @s {x} {y} {z} 180 10")
+    for _ in range(6):  # about 6 each: well above the Rewind line, room left for the 8 % Soulbind heal
+        rcon.command("effect give E2EBot minecraft:instant_damage 1 2 true")
+        time.sleep(0.6)
+    time.sleep(1)
+    low = hp()
+    as_bot(f'summon husk {x} {y} {z - 2} {{NoAI:1b,Silent:1b,PersistenceRequired:1b,Tags:["e2e_target"],Health:5f}}')
+    time.sleep(1.4)
+    click()
+    time.sleep(0.8)
+    after = hp()
+    stats("Soulbind kill heal", f"{low} -> {after}", "+8 % of 96 = +7.7")
+    if low is None or after is None or after - low < 6.5:
+        failures.append(f"Soulbind did not heal on a kill: {low} -> {after}")
+
+    # Undertow after damage that has no attacker (the bug found with this scenario: the cooldown was spent by it)
+    rcon.command("kill @e[tag=e2e_target]")
+    rcon.command("effect give E2EBot minecraft:instant_damage 1 0 true")  # no attacker
+    time.sleep(0.5)
+    as_bot(f'summon husk {x} {y} {z - 1.2} {{PersistenceRequired:1b,Tags:["e2e_target"],attributes:[{{id:"minecraft:attack_damage",base:60}},{{id:"minecraft:max_health",base:500}}],Health:500f}}')
+    pushed = False
+    for _ in range(40):
+        time.sleep(0.2)
+        found = _re.findall(r"(-?[0-9.]+)d", rcon.command("data get entity @e[tag=e2e_target,limit=1] Pos"))
+        effects = rcon.command("data get entity @e[tag=e2e_target,limit=1] active_effects")
+        if "slowness" in effects and found and float(found[2]) < z - 2.5:
+            pushed = True
+            break
+    shot(tools, shots / "eg-3-undertow.png")
+    stats("Undertow threw the attacker back after an attackerless hit", pushed)
+    if not pushed:
+        failures.append("Undertow did not trigger on a husk hit that came after damage without an attacker")
+    rcon.command("kill @e[tag=e2e_target]")
+
+    # 2. The Raid of the Devourer. A normal player first.
+    if (hp() or 0) <= 0:  # the Rewind check can end with a death screen
+        respawn_click()
+    rcon.command("sbgive devourer_sigil 1 E2EBot")
+    rcon.command("deop E2EBot")
+    before = len(chat())
+    typed("bastion enter devourer_raid", 1.5)
+    shot(tools, shots / "eg-4-raid-refused.png")
+    if not chat_has("has not cleared", before):
+        failures.append("a player who cleared no Bastion was not refused by the Raid")
+    # the stand-in for eight clears: empty requirement rows, reloaded
+    db = sqlite3.connect(server / "plugins" / "VampyuyuSurvival" / "skyblock.db", timeout=20)
+    db.execute("DELETE FROM setting_item WHERE setting_id='bastion.raid.requires'")
+    db.execute("UPDATE setting SET origin='panel' WHERE id='bastion.raid.requires'")
+    db.commit()
+    db.close()
+    rcon.command("bastion admin reload")
+    rcon.command("op E2EBot")  # the bot teleports itself around the boss: a Bastion refuses that to a normal player
+    rcon.command("gamemode survival E2EBot")
+    typed("bastion enter devourer_raid", 2.0)
+    if not wait_world("sb_bastion_", 30):
+        failures.append("the Raid did not open an instance: " + dimension()[:80])
+        return
+    fought = False
+    for _ in range(40):
+        time.sleep(1)
+        if "fighting" in strip(rcon.command("bastion admin list")):
+            fought = True
+            break
+    shot(tools, shots / "eg-4-raid-wakes.png")
+    if not fought:
+        failures.append("the Devourer never woke")
+        return
+    # Dying inside the Raid must respawn the player in the arena (it has lives), not on the island
+    rcon.command("kill E2EBot")
+    time.sleep(2)
+    shot(tools, shots / "eg-4-raid-death.png")
+    respawn_click()
+    in_arena = "sb_bastion_" in dimension()
+    stats("respawn after a death in the Raid", dimension().strip()[-24:], "sb_bastion_N")
+    if not in_arena:
+        failures.append("a death inside the Raid respawned the player outside the arena: " + dimension().strip()[-30:])
+        rcon.command("bastion admin abort all")
+        return
+    unprotected = []
+    for _ in range(6):  # a bot that stands still in front of the Devourer: the damage it takes, unprotected
+        p = _re.findall(r"(-?[0-9.]+)d", rcon.command("execute as E2EBot at @s run data get entity @e[type=warden,limit=1,sort=nearest] Pos"))
+        if len(p) >= 3:
+            as_bot(f"tp @s {p[0]} {p[1]} {float(p[2]) + 4} facing {p[0]} {float(p[1]) + 1.5} {p[2]}")
+        time.sleep(1.5)
+        unprotected.append(hp())
+    stats("unprotected health beside the Devourer, every 1.5 s", [round(v) for v in unprotected if v is not None], "")
+    # the kill, protected, with real sword hits
+    rcon.command("effect give E2EBot minecraft:resistance 900 4 true")
+    rcon.command("effect give E2EBot minecraft:regeneration 900 4 true")
+    subprocess.run([xdo, "key", "1"], env=env)
+    began = time.time()
+    shot_at = {20: False}
+    killed = False
+    while time.time() - began < 480:  # the Raid pool is 7 Guardian pools (boss.settings.hp-factor.devourer)
+        out = rcon.command("execute as E2EBot at @s run data get entity @e[type=warden,limit=1,sort=nearest] Pos")
+        p = [float(v) for v in _re.findall(r"(-?[0-9.]+)d", out)[:3]]
+        if len(p) < 3:
+            killed = True
+            break
+        as_bot(f"tp @s {p[0]} {p[1]} {p[2] + 2.6} facing {p[0]} {p[1] + 1.5} {p[2]}")
+        click()
+        elapsed = int(time.time() - began)
+        if elapsed >= 20 and not shot_at[20]:
+            shot_at[20] = True
+            shot(tools, shots / "eg-4-raid-phase.png")
+        time.sleep(0.55)
+    took = int(time.time() - began)
+    time.sleep(3)
+    shot(tools, shots / "eg-4-raid-cleared.png")
+    stats("Devourer kill time with real hits (protected bot)", f"{took} s", "about 4 min, under the 9 min enrage")
+    if not killed:
+        failures.append("the Devourer was not killed in 480 s")
+    for line in ("The Devourer defeated!", "First clear of the Raid: +4000 coins", "Raid of the Devourer cleared in"):
+        if not chat_has(line):
+            failures.append(f"the Raid kill did not show '{line}'")
+    spoken = [l for l in chat() if l.startswith("The Devourer \u00bb ")]
+    stats("Devourer voiced lines", len(spoken), "at least 3 (wake, phases, death)")
+    if len(spoken) < 3:
+        failures.append(f"the Devourer only spoke {len(spoken)} lines during the fight")
+    if not chat_has("the arena is falling apart"):
+        failures.append("the Raid never reached its last phase (the arena falling apart)")
+    bad = [l for l in clog.read_text(errors="replace").splitlines() if "ERROR" in l and ("sound" in l.lower() or "Missing" in l)]
+    if bad:
+        failures.append("client sound errors: " + bad[0][:160])
+    rcon.command("bastion admin abort all")
+    time.sleep(3)
+    rcon.command("effect clear E2EBot")
+
+    # 3. A Celestial Breath Fracture, entered by a normal player in its Realm
+    typed("menu skyblock") if "sb_" not in dimension() else None
+    rcon.command("op E2EBot")
+    rcon.command("breath start grove_fracture")
+    time.sleep(2)
+    shot(tools, shots / "eg-5-fracture-banner.png")
+    rcon.command("gateadmin light E2EBot all")
+    rcon.command("gateadmin travel E2EBot grove")
+    if not wait_world("sb_grove", 40):
+        failures.append("the Gate did not reach the Grove: " + dimension()[:80])
+    else:
+        time.sleep(5)
+        rcon.command("deop E2EBot")
+        time.sleep(1)
+        typed("breath fracture", 1.5)
+        if not wait_world("sb_dungeon", 90):
+            failures.append("/breath fracture did not start the run: " + dimension()[:80])
+        else:
+            time.sleep(14)
+            shot(tools, shots / "eg-5-fracture-run.png")
+            say("endgame: Fracture run started in " + dimension().strip()[-24:])
+            typed("dungeon leave", 2.0)
+            time.sleep(5)
+            say("endgame: after leaving the Fracture the bot is in " + dimension().strip()[-24:])
+            if "sb_grove" not in dimension():
+                failures.append("leaving the Fracture did not bring the bot back to the Grove: " + dimension().strip()[-30:])
+    rcon.command("breath stop")
+    rcon.command("dungeon admin abort all")
+    time.sleep(2)
+
+    # 4. Floor 7: the first ambush room (passive, then fighting), then the boss room
+    floor7()
+
+
+# Realm id -> its world (api/Realm, core/SkyblockWorlds); the Gate order of the Quai des Huit.
+REALM_WORLDS = [("ashes", "sb_ashes"), ("grove", "sb_grove"), ("heights", "sb_heights"), ("citadel", "sb_citadel"),
+                ("marshes", "sb_marsh"), ("archipelago", "sb_storm"), ("depths", "sb_depths"), ("necropolis", "sb_necropolis")]
+HUB_Y = 100  # island.hub.y of the seed: the surface of the hub plaza and of the Quai
+
+
+def realms_scenario(ctx):
+    """Phase 2 to final with a real client: the Hub, the Quai des Huit (gates dark, then lit), a walk through the Ashes
+    Gate, every Realm reached by its Gate (spawn, behind, above), the Astral Interiority and a Bastion with its Guardian.
+    E2E_REALMS=ashes,grove limits the Realm tour; E2E_SKIP=astral,bastion,seal,reveal skips those parts (reveal = a Guardian clear wakes Gates, title, chat, the Quai sequence); E2E_SEAL=all|a,b picks the Realms whose
+    seal the bot right-clicks (default ashes,grove); E2E_ARCH=all|a,b picks the
+    Realms whose return arch the bot walks into (default ashes,grove,depths)."""
+    import math, re as _re
+    tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
+    xdo, rcon = tools["xdotool"], Rcon()
+    wanted = {r for r in os.environ.get("E2E_REALMS", "").split(",") if r}
+    skip = {r for r in os.environ.get("E2E_SKIP", "").split(",") if r}
+    # Realms where the bot also walks into the return arch (E2E_ARCH=all for the eight): one per group of landings
+    arch_env = os.environ.get("E2E_ARCH", "ashes,grove,depths")
+    arch_walk = {r for r, _ in REALM_WORLDS} if arch_env == "all" else {r for r in arch_env.split(",") if r}
+    strip = lambda text: _re.sub("§x(§[0-9a-f]){6}|§.", "", text).strip()
+
+    def typed(cmd, wait=1.0):
+        subprocess.run([xdo, "key", "t"], env=env)
+        time.sleep(0.8)
+        subprocess.run([xdo, "type", "--delay", "20", "/" + cmd], env=env)
+        time.sleep(0.3)
+        subprocess.run([xdo, "key", "Return"], env=env)
+        time.sleep(wait)
+
+    def as_bot(cmd):
+        return rcon.command(f"execute as E2EBot at @s run {cmd}")
+
+    def dimension():
+        return rcon.command("data get entity E2EBot Dimension")
+
+    def wait_world(name, seconds=60):
+        deadline = time.time() + seconds
+        while time.time() < deadline:
+            if f'"minecraft:{name}' in dimension():
+                return True
+            time.sleep(1)
+        return False
+
+    def tail():
+        lines = (server / "console.log").read_text(errors="replace").splitlines()
+        return " | ".join(l for l in lines[-200:] if "WARN" in l or "ERROR" in l)[-600:]
+
+    def on_ground(world):
+        """Creative players do not fall: look for a block under the feet instead. From the console, not "as" the bot:
+        with send_command_feedback off the bot's own test result never reaches RCON."""
+        x, y, z = player_state(rcon)["pos"]
+        return any("failed" in rcon.command(f"execute in minecraft:{world} if block {math.floor(x)} {math.floor(y) - d} "
+                                            f"{math.floor(z)} minecraft:air").lower() for d in (1, 2))
+
+    def perch(world, x, y, z, yaw, pitch):
+        """A view from the air: a creative bot that is not flying falls before the shot, so it stands on a barrier block
+        (invisible) for the time of the shot. Returns the undo."""
+        bx, by, bz = math.floor(x), math.floor(y) - 1, math.floor(z)
+        rcon.command(f"execute in minecraft:{world} run setblock {bx} {by} {bz} minecraft:barrier")
+        as_bot(f"tp @s {x} {y} {z} {yaw} {pitch}")
+        return lambda: rcon.command(f"execute in minecraft:{world} run setblock {bx} {by} {bz} minecraft:air")
+
+    def items():
+        """Occupied inventory slots, read from the player data (the reply of `execute if items` is not a stable format)."""
+        return len(_re.findall(r"Slot: ?-?[0-9]+b", rcon.command("data get entity E2EBot Inventory")))
+
+    rcon.command("op E2EBot")
+    rcon.command("gamemode creative E2EBot")
+    rcon.command("gamerule send_command_feedback false")
+    typed("menu skyblock")
+    if not wait_world("sb_world", 150):
+        failures.append("never reached sb_world")
+        return
+    time.sleep(6)
+
+    # 1. The Hub
+    typed("hub")
+    if not wait_world("sb_hub"):
+        failures.append("/hub did not reach sb_hub: " + dimension()[:80])
+        return
+    time.sleep(5)
+    shot(tools, shots / "rl-0-hub-landing.png")
+    undo = perch("sb_hub", 0.5, HUB_Y + 18, 0.5, 180, 25)
+    time.sleep(3)
+    shot(tools, shots / "rl-0-hub-above.png")
+    undo()
+
+    # 2. The Quai des Huit, dark then lit (the lit look is client-side blocks, resent every second near the Quai)
+    typed("quai")
+    time.sleep(4)
+    # high above the hub end of the bridge (lower, the ruined arch of the bridge fills the view), down on the ring
+    undo = perch("sb_hub", 0.5, HUB_Y + 32, 46.5, 0, 51)  # inside the 48 blocks the Quai view is kept up in
+    time.sleep(3)
+    shot(tools, shots / "rl-1-quai-dark.png")
+    rcon.command("gateadmin dark E2EBot all")
+    lit = strip(rcon.command("gateadmin light E2EBot all"))
+    say("realms: " + lit)
+    time.sleep(16)  # the reveal: a 2 s wait, then one Gate per second (island.quai.reveal-*-ticks)
+    subprocess.run([xdo, "key", "F1"], env=env)  # hide the HUD: eight "Gate lit" lines would cover the ring
+    time.sleep(1)
+    shot(tools, shots / "rl-1-quai-lit.png")
+    subprocess.run([xdo, "key", "F1"], env=env)
+    undo()
+
+    # 2b. A Guardian clear that wakes Gates: title and chat where the bot stands, then the Gates light one by one on its next
+    # visit to the Quai (E2E_SKIP=reveal skips it). The Mycelial Queen lights five Gates; the bot is made to kill her with
+    # damage commands, and when that does not credit the kill the five Gates are lit by hand (said in the log).
+    if "reveal" not in skip:
+        typed("hub")
+        wait_world("sb_hub", 20)
+        time.sleep(4)
+        queen = ("heights", "citadel", "marshes", "archipelago", "depths")  # the gates of island.*.gate-boss = sylvan_matriarch
+        for realm in queen:
+            rcon.command(f"gateadmin dark E2EBot {realm}")
+        time.sleep(1)
+        x, y, z = player_state(rcon)["pos"]
+        out = strip(rcon.command(f"boss spawn sylvan_matriarch {x + 6:.1f} {y:.1f} {z:.1f} sb_hub"))
+        say("realms: reveal: spawn the Queen: " + out[:120])
+        time.sleep(3)
+        lit_now = 0
+        for hit in range(12):
+            reply = strip(rcon.command("execute as E2EBot at @s as @e[type=!minecraft:player,distance=..30] run damage @s "
+                                       "100000 minecraft:player_attack by E2EBot"))
+            if hit == 0:
+                say("realms: reveal: damage reply: " + reply[:160])
+            time.sleep(0.5)
+            lit_now = strip(rcon.command("gateadmin list E2EBot")).count("  lit")
+            if lit_now >= 8:
+                break
+        if lit_now < 8:
+            say(f"realms: reveal: NOT VERIFIED with a real kill ({lit_now} Gates lit): waking the five with one command")
+            rcon.command("gateadmin light E2EBot all")  # one command = one tick = one batch, like the Queen's five handlers
+        else:
+            say("realms: reveal: the Queen's kill woke the five Gates (real kill)")
+        time.sleep(0.6)
+        shot(tools, shots / "rl-1b-wake-title.png")
+        time.sleep(1.5)
+        shot(tools, shots / "rl-1b-wake-chat.png")
+        rcon.command("boss kill all")
+        typed("quai")  # what the chat line's click does
+        undo = perch("sb_hub", 0.5, HUB_Y + 32, 46.5, 0, 51)
+        t0 = time.time()
+        for i, at in enumerate((1.0, 3.0, 4.2, 5.4, 6.6, 8.0, 11.0)):
+            time.sleep(max(0, at - (time.time() - t0)))
+            shot(tools, shots / f"rl-1b-reveal-{i}.png")
+        undo()
+        gates_file = next((server / "plugins").glob("*/island/gates.json"), None)
+        seen = json.loads(gates_file.read_text()).get("seen", {}) if gates_file else {}
+        if not any(set(queen) <= set(v) for v in seen.values()):
+            failures.append(f"the reveal did not mark the five Gates seen: {seen}")
+        else:
+            say("realms: reveal: the five Gates are saved as seen")
+        rcon.command("gateadmin light E2EBot all")  # the walk below needs the Ashes Gate
+        time.sleep(1)
+
+    # 3. Walk into the lit Ashes Gate (ordinal 0 on the ring of radius 15 around the Quai centre, QuaiPlan.buildGates)
+    angle = math.radians(22.5)
+    ox, oz = math.sin(angle), -math.cos(angle)
+    gx, gz = round(15 * ox), 72 + round(15 * oz)
+    yaw = math.degrees(math.atan2(-ox, oz))
+    as_bot(f"tp @s {gx + 0.5 - 3 * ox:.2f} {HUB_Y + 1} {gz + 0.5 - 3 * oz:.2f} {yaw:.1f} 0")
+    time.sleep(2)
+    shot(tools, shots / "rl-2-ashes-gate-close.png")
+    subprocess.run([xdo, "keydown", "w"], env=env)
+    time.sleep(2.5)
+    subprocess.run([xdo, "keyup", "w"], env=env)
+    if wait_world("sb_ashes", 15):
+        say("realms: walked through the Ashes Gate")
+    else:
+        failures.append("walking into the lit Ashes Gate did not reach sb_ashes: " + dimension()[:80] + " " + tail())
+
+    # 4. Every Realm through its Gate (the command skips the walk, not the Gate rules). Night vision: several Realms are
+    # dark on purpose, and the shots are there to show what was built.
+    rcon.command("effect give E2EBot minecraft:night_vision 900 0 true")
+    for realm, world in REALM_WORLDS:
+        if wanted and realm not in wanted:
+            continue
+        reply = strip(rcon.command(f"gateadmin travel E2EBot {realm}"))
+        if not wait_world(world, 30):
+            failures.append(f"the {realm} Gate did not reach {world}: '{reply}', in {dimension().strip()[-30:]} {tail()}")
+            shot(tools, shots / f"rl-3-{realm}-failed.png")
+            continue
+        time.sleep(4)  # the travel blindness, then the chunks
+        x, y, z = player_state(rcon)["pos"]
+        if not on_ground(world):
+            failures.append(f"{realm}: the Gate spawn at {x} {y} {z} has nothing under the feet")
+        say(f"realms: {realm} spawn {x} {y} {z}")
+        shot(tools, shots / f"rl-3-{realm}-spawn.png")
+        as_bot(f"tp @s {x} {y} {z} ~180 10")
+        time.sleep(2)
+        shot(tools, shots / f"rl-3-{realm}-behind.png")
+        # straight above the landing: farther out, the Realm's edge rule carries the player back to it
+        undo = perch(world, x, y + 14, z + 8, 180, 45)
+        time.sleep(3)
+        shot(tools, shots / f"rl-3-{realm}-above.png")
+        undo()
+
+        # The return arch (ReturnArch): two blocks behind the arrival spot, veil on the south side. Stand 3 blocks from
+        # the glass facing it (yaw 0 = south), take the shot, walk into it, and expect the Quai (the hub world).
+        if realm in arch_walk:
+            bx, bz = math.floor(x), math.floor(z)
+            if realm == "grove":  # the Grove arch stands east of the landing (ReturnArch.side): its bridge leaves south
+                as_bot(f"tp @s {bx + 0.5 - 1.0} {y} {bz + 0.5} -90 4")
+            else:
+                as_bot(f"tp @s {bx + 0.5} {y} {bz + 0.5 - 1.0} 0 4")
+            time.sleep(3)
+            shot(tools, shots / f"rl-3-{realm}-arch.png")
+            subprocess.run([xdo, "keydown", "w"], env=env)
+            time.sleep(2.5)
+            subprocess.run([xdo, "keyup", "w"], env=env)
+            if wait_world("sb_hub", 15):
+                time.sleep(3)
+                say(f"realms: walked back from {realm} through its arch to the Quai")
+                shot(tools, shots / f"rl-3-{realm}-arch-quai.png")
+            else:
+                failures.append(f"{realm}: walking into the return arch did not reach sb_hub: {dimension().strip()[-40:]} {tail()}")
+                shot(tools, shots / f"rl-3-{realm}-arch-failed.png")
+
+    # 4b. The seals (bastion.SealDoors): right-click the seal of a Realm's sealed door, first without the key (the Bastion's own
+    # refusal names the key), then with it (the bot lands in an sb_bastion_ world), then abort. E2E_SEAL=all|a,b picks the
+    # Realms (default ashes,grove); the seal coordinates come from `bastion admin seals`, so the script writes none.
+    seal_env = os.environ.get("E2E_SEAL", "ashes,grove")
+    seal_realms = [r for r, _ in REALM_WORLDS] if seal_env == "all" else [r for r in seal_env.split(",") if r]
+    if seal_realms and "seal" not in skip:
+        clog = WORK / "prism" / "instances" / INSTANCE / "minecraft" / "logs" / "latest.log"
+
+        def chat():
+            """The chat lines the client received (client log), without the command noise."""
+            if not clog.exists():
+                return []
+            return [l.split("[CHAT] ", 1)[1] for l in clog.read_text(errors="replace").splitlines()
+                    if "[CHAT] " in l and "Teleported" not in l]
+
+        seals = {}
+        for line in strip(rcon.command("bastion admin seals")).splitlines():
+            m = _re.search(r"seal (\w+) (\w+) (-?\d+) (-?\d+) (-?\d+) face (-?\d+) (-?\d+) above (-?\d+) opens (\w+)", line.strip())
+            if m:
+                seals[m.group(1)] = (m.group(2), *map(int, m.group(3, 4, 5, 6, 7, 8)), m.group(9))
+        say("realms: seals " + str(seals))
+        if len(seals) != 8:
+            failures.append(f"`bastion admin seals` listed {len(seals)} seals instead of 8: {list(seals)}")
+        seal_blocks = {"ashes": "respawn_anchor", "grove": "shroomlight", "heights": "pearlescent_froglight", "citadel": "gold_block",
+                       "marshes": "ochre_froglight", "archipelago": "lodestone", "depths": "sea_lantern", "necropolis": "verdant_froglight"}
+        seal_keys = {"ashes": ("magma_core", "Ashes Bastion Key"), "grove": ("matriarch_egg", "Grove Bastion Key"),
+                     "heights": ("frost_heart", "Heights Bastion Key"), "citadel": ("pharaoh_scarab", "Citadel Bastion Key"),
+                     "marshes": ("mire_cyst", "Marsh Bastion Key"), "archipelago": ("tempest_key", "Tempest Bastion Key"),
+                     "depths": ("leviathan_scale", "Abyss Bastion Key"), "necropolis": ("judge_seal", "Necropolis Bastion Key")}
+
+        def stand_before(seal, dist, mode):
+            world, sx, sy, sz, fx, fz, above, _ = seal  # above: the seal's height over the standing level
+            px, py, pz = sx + 0.5 + fx * dist, sy - above, sz + 0.5 + fz * dist
+            yaw = math.degrees(math.atan2(fx, -fz))
+            pitch = -math.degrees(math.atan2((sy + 0.5) - (py + 1.62), dist))
+            rcon.command(f"gamemode {mode} E2EBot")
+            rcon.command(f"execute in minecraft:{world} run tp E2EBot {px:.2f} {py} {pz:.2f} {yaw:.1f} {pitch:.1f}")
+
+        for realm in seal_realms:
+            world = dict(REALM_WORLDS).get(realm)
+            seal = seals.get(realm)
+            if seal is None:
+                failures.append(f"seal {realm}: `bastion admin seals` did not list it: {list(seals)}")
+                continue
+            key, key_name = seal_keys[realm]
+            rcon.command("gamemode creative E2EBot")
+            rcon.command("effect give E2EBot minecraft:night_vision 900 0 true")
+            reply = strip(rcon.command(f"gateadmin travel E2EBot {realm}"))
+            if not wait_world(world, 30):
+                failures.append(f"seal {realm}: the Gate did not reach {world}: '{reply}' {tail()}")
+                continue
+            time.sleep(4)
+            _, sx, sy, sz = seal[:4]
+            if "failed" in rcon.command(f"execute in minecraft:{world} if block {sx} {sy} {sz} minecraft:{seal_blocks[realm]}").lower():
+                failures.append(f"seal {realm}: no minecraft:{seal_blocks[realm]} at {sx} {sy} {sz} (the plan and the world differ)")
+            stand_before(seal, 3 if realm == "marshes" else 5, "creative")  # the Marsh islet ends 3 blocks in front of its door
+            time.sleep(3)
+            shot(tools, shots / f"rl-6-seal-{realm}-door.png")
+            rcon.command("clear E2EBot")
+            rcon.command("effect give E2EBot minecraft:resistance 900 4 true")
+            rcon.command("effect give E2EBot minecraft:regeneration 900 4 true")
+            stand_before(seal, 2, "survival")
+            time.sleep(2)
+            shot(tools, shots / f"rl-6-seal-{realm}-close.png")
+            before = len(chat())
+            subprocess.run([xdo, "click", "3"], env=env)
+            time.sleep(1.5)
+            shot(tools, shots / f"rl-6-seal-{realm}-refused.png")
+            refusal = f"You need a {key_name}"
+            if not any(refusal in l for l in chat()[before:]):
+                failures.append(f"seal {realm}: no refusal naming '{key_name}' in the chat: {chat()[before:][-4:]}")
+            if f'"minecraft:{world}' not in dimension():
+                failures.append(f"seal {realm}: the bot left {world} without a key: {dimension()[:80]}")
+            rcon.command(f"sbgive {key} 1 E2EBot")
+            time.sleep(1)
+            stand_before(seal, 2, "survival")
+            time.sleep(1)
+            before = len(chat())
+            subprocess.run([xdo, "click", "3"], env=env)
+            if wait_world("sb_bastion_", 30):
+                say(f"realms: seal {realm} opened a Bastion for the bot")
+                time.sleep(2)
+                shot(tools, shots / f"rl-6-seal-{realm}-opened.png")
+                if any("This is a Bastion key" in l for l in chat()[before:]):
+                    failures.append(f"seal {realm}: the key in the hand also drew the summon refusal: {chat()[before:][-4:]}")
+            else:
+                failures.append(f"seal {realm}: right-clicking it with {key} did not open a Bastion: {dimension()[:80]} {tail()}")
+                shot(tools, shots / f"rl-6-seal-{realm}-no-bastion.png")
+            rcon.command("bastion admin abort all")
+            deadline = time.time() + 45
+            while time.time() < deadline and "sb_bastion_" in dimension():
+                time.sleep(2)
+            if "sb_bastion_" in dimension():
+                failures.append(f"seal {realm}: the bot was not taken out of the aborted Bastion")
+            rcon.command("clear E2EBot")
+        rcon.command("gamemode creative E2EBot")
+
+    # 5. The Astral Interiority (the way in is the command for now)
+    if "astral" not in skip:
+        typed("astral go force", 2)
+        if wait_world("sb_astral", 30):
+            time.sleep(4)
+            shot(tools, shots / "rl-4-astral-spawn.png")
+            x, y, z = player_state(rcon)["pos"]
+            undo = perch("sb_astral", x, y + 14, z + 8, 180, 45)
+            time.sleep(3)
+            shot(tools, shots / "rl-4-astral-above.png")
+            undo()
+        else:
+            failures.append("/astral go force did not reach sb_astral: " + dimension()[:80] + " " + tail())
+            shot(tools, shots / "rl-4-astral-failed.png")
+
+    # 6. A Bastion: the key is spent when the countdown ends and the Guardian wakes
+    if "bastion" not in skip:
+        typed("hub")
+        wait_world("sb_hub")
+        time.sleep(3)
+        rcon.command("clear E2EBot")
+        rcon.command("gamemode survival E2EBot")
+        rcon.command("effect give E2EBot minecraft:resistance 600 4 true")
+        rcon.command("effect give E2EBot minecraft:regeneration 600 4 true")
+        rcon.command("sbgive magma_core 1 E2EBot")
+        time.sleep(1)
+        if items() != 1:
+            failures.append(f"sbgive magma_core: {items()} items in the inventory instead of the key")
+        typed("bastion enter ashes_bastion", 2)
+        if not wait_world("sb_bastion_", 30):
+            failures.append("/bastion enter ashes_bastion did not open an instance: " + dimension()[:80] + " " + tail())
+            shot(tools, shots / "rl-5-bastion-failed.png")
+        else:
+            time.sleep(2)
+            shot(tools, shots / "rl-5-bastion-countdown.png")
+            if items() != 1:
+                failures.append(f"the Ashes Bastion key left the inventory before the countdown ended ({items()} items)")
+            time.sleep(10)
+            if items() != 0:  # the leader's key is spent when the countdown ends and the Guardian wakes
+                failures.append(f"the Ashes Bastion key was not spent when the Guardian woke ({items()} items left)")
+            active = strip(rcon.command("boss active"))
+            say("realms: bastion boss: " + active[:120])
+            if "magma_warden" not in active:
+                failures.append("no Guardian in the Ashes Bastion: " + active[:120])
+            entry = player_state(rcon)["pos"]
+            as_bot(f"tp @s {entry[0]} {entry[1] + 2} {entry[2] + 4} 180 12")  # the entry faces the arena; step back
+            time.sleep(2)
+            shot(tools, shots / "rl-5-bastion-guardian.png")
+            rcon.command("bastion admin abort all")
+            time.sleep(4)
+            shot(tools, shots / "rl-5-bastion-aborted.png")
+            time.sleep(16)  # exit-delay-seconds (15) before the party is sent back
+            shot(tools, shots / "rl-5-bastion-after.png")
+            if "sb_bastion_" in dimension():
+                failures.append("the bot was not taken out of the aborted Bastion")
+        rcon.command("gamemode creative E2EBot")
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock", "vbhold", "sbhold", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "dev"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -2895,7 +3951,7 @@ def main():
         return dev_server()
     global WITH_SURVIVAL, VALOBLOCK
     VALOBLOCK = args.scenario in ("valoblock", "vbhold")
-    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "sbhold")
+    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "sbhold")
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
@@ -2918,7 +3974,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock", "vbhold", "sbhold"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -2949,7 +4005,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "valoblock", "vbhold", "sbhold"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -3006,6 +4062,12 @@ def main():
             start_scenario(ctx)
         elif args.scenario == "craft":
             craft_scenario(ctx)
+        elif args.scenario == "realms":
+            realms_scenario(ctx)
+        elif args.scenario == "machines":
+            machines_scenario(ctx)
+        elif args.scenario == "endgame":
+            endgame_scenario(ctx)
         elif args.scenario == "valoblock":
             valoblock_scenario(ctx)
         elif args.scenario in ("vbhold", "sbhold"):

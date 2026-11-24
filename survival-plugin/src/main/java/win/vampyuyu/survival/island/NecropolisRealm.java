@@ -45,7 +45,12 @@ public final class NecropolisRealm implements Listener {
     public static final String MARKER_FILE = "island/necropolis-build.json";
     public static final int SURFACE_Y = 100;
     private static final String LANE = "hub";
-    private static final int HAZE_TICKS = 100;
+    /** Length of one fading of the memories (Darkness), in ticks: about 4 seconds. */
+    static final int HAZE_TICKS = 80;
+    /** A fading starts every this many seconds (the tick of {@link #tick} is one second): the Realm is dark, not blind. */
+    static final int HAZE_PERIOD = 24;
+    /** The landing stays readable: no fading within this many blocks (flat) of it, so a newcomer can see where to go. */
+    static final double HAZE_SAFE_RADIUS = 24;
     private static final int DEFAULT_RECALL_KILLS = 10;
     private static final Set<EntityType> UNDEAD = EnumSet.of(EntityType.ZOMBIE, EntityType.ZOMBIE_VILLAGER, EntityType.HUSK,
         EntityType.DROWNED, EntityType.SKELETON, EntityType.STRAY, EntityType.BOGGED, EntityType.WITHER_SKELETON,
@@ -104,6 +109,7 @@ public final class NecropolisRealm implements Listener {
     public void start() {
         affinity = NecropolisAffinity.fromDoc(core.store().read(NecropolisAffinity.FILE, NecropolisAffinity.Doc.class, NecropolisAffinity.Doc::new));
         gates.setDestination(Realm.NECROPOLIS, player -> ready ? spawn() : null);
+        gates.setReturnArch(Realm.NECROPOLIS, () -> ready ? spawn() : null);
         core.listen(this);
         task = core.scheduler().repeating(20L, 20L, this::tick);
         World world = world();
@@ -124,6 +130,7 @@ public final class NecropolisRealm implements Listener {
             task = null;
         }
         gates.setDestination(Realm.NECROPOLIS, null);
+        gates.setReturnArch(Realm.NECROPOLIS, null);
         save();
     }
 
@@ -198,12 +205,36 @@ public final class NecropolisRealm implements Listener {
                 world.spawnParticle(Particle.ASH, at.clone().add(0, 1.2, 0), 8, 5, 2, 5, 0);
             }
             if (affinity.tier(player.getUniqueId()) < 1) {
-                player.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, HAZE_TICKS, 0, true, false, false));
+                if (hazeNow(tick, player.getUniqueId().hashCode(), flatDistance(at, spawn()))) {
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, HAZE_TICKS, 0, true, false, false));
+                }
                 if (tick % 30 == 0) {
                     core.msg().info(player, "The memories here fade your sight. Lay the restless dead to rest to earn Lucidity.");
                 }
             }
         }
+    }
+
+    /**
+     * True when a fading of the memories starts this second. It used to be refreshed every second: the Darkness effect
+     * then never fades and never pulses, the sky and everything past a few blocks stay black and Night Vision does not
+     * help (seen from 14 blocks above the landing). Now it comes in short waves, each player on its own phase, and not at
+     * all near the landing.
+     */
+    static boolean hazeNow(int second, int phase, double distanceToLanding) {
+        if (distanceToLanding <= HAZE_SAFE_RADIUS) {
+            return false;
+        }
+        return Math.floorMod(second + phase, HAZE_PERIOD) == 0;
+    }
+
+    private static double flatDistance(Location a, Location b) {
+        if (b == null) {
+            return Double.MAX_VALUE;
+        }
+        double dx = a.getX() - b.getX();
+        double dz = a.getZ() - b.getZ();
+        return Math.sqrt(dx * dx + dz * dz);
     }
 
     @EventHandler

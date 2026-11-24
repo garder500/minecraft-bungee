@@ -543,7 +543,7 @@ public final class DungeonRun {
         state = RunState.RUNNING;
         startMillis = System.currentTimeMillis();
         fights.unlockRoom(layout.entrance().index);
-        titleAll("<red><bold>GO!", "<gray>Find the blood key and slay " + boss.name());
+        titleAll("<red><bold>GO!", "<gray>Find the ossuary key and slay " + boss.name());
         soundAll(Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 1.2f);
         fights.spawnInitialGuards();
     }
@@ -780,8 +780,8 @@ public final class DungeonRun {
         lines.add(Msg.component("<gray>Rooms: <white>" + roomsVisited + "<dark_gray>/<white>" + layout.rooms().size()));
         lines.add(Msg.component("<gray>Secrets: <white>" + secretsFound + "<dark_gray>/<white>" + layout.totalSecrets()));
         lines.add(Msg.component("<gray>Puzzles: <white>" + puzzlesSolved + "<dark_gray>/<white>" + layout.puzzleCount()));
-        lines.add(Msg.component("<gray>Wither keys: <white>" + witherKeys));
-        lines.add(Msg.component("<gray>Blood key: " + fights.bloodStatus()));
+        lines.add(Msg.component("<gray>Barrow keys: <white>" + witherKeys));
+        lines.add(Msg.component("<gray>Ossuary key: " + fights.bloodStatus()));
         lines.add(Component.empty());
         for (RunPlayer rp : players.values()) {
             if (lines.size() >= 13) {

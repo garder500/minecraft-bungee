@@ -31,10 +31,14 @@ public final class BastionFeature implements Feature {
         core.permissions().register(BastionListener.ADMIN, "Bastion administration", PermissionDefault.OP);
         service = new BastionService(core, cfg, worlds);
         core.listen(new BastionListener(core, service));
+        SealDoors seals = new SealDoors(service::cfg, () -> core.service(BastionApi.class).orElse(null),
+            (player, text) -> core.msg().warn(player, text));
+        core.listen(seals);
+        core.scheduler().repeating(20, 20, seals::glow);
         new BastionCommand(core, service).register();
         core.scheduler().repeating(10, 10, service::tick);
         core.register(BastionService.class, service);
-        core.register(BastionApi.class, new BastionApiImpl(service));
+        core.register(BastionApi.class, new BastionApiImpl(service, seals));
     }
 
     @Override

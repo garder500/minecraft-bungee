@@ -1,0 +1,893 @@
+[
+ {
+  "key": "voice.abyssal_leviathan.death.0",
+  "boss": "abyssal_leviathan",
+  "voice": "wXvR48IpOq9HACltTmt7",
+  "voice_name": "Ancient Monster",
+  "text": "The chains fall. The sea may rise as it pleases.",
+  "prompt": "[deep, slow] [weakening] The chains fall. The sea may rise as it pleases.",
+  "file": "voice/abyssal_leviathan/death_0.ogg"
+ },
+ {
+  "key": "voice.abyssal_leviathan.death.1",
+  "boss": "abyssal_leviathan",
+  "voice": "wXvR48IpOq9HACltTmt7",
+  "voice_name": "Ancient Monster",
+  "text": "Gravity was a promise. Keep it better than I did.",
+  "prompt": "[deep, slow] [weakening] Gravity was a promise. Keep it better than I did.",
+  "file": "voice/abyssal_leviathan/death_1.ogg"
+ },
+ {
+  "key": "voice.abyssal_leviathan.first-clear.0",
+  "boss": "abyssal_leviathan",
+  "voice": "wXvR48IpOq9HACltTmt7",
+  "voice_name": "Ancient Monster",
+  "text": "The Depths let you through for the first time: take this Pressure Pearl.",
+  "prompt": "[deep, slow] [quietly] The Depths let you through for the first time: take this Pressure Pearl.",
+  "file": "voice/abyssal_leviathan/first-clear_0.ogg"
+ },
+ {
+  "key": "voice.abyssal_leviathan.intro.0",
+  "boss": "abyssal_leviathan",
+  "voice": "wXvR48IpOq9HACltTmt7",
+  "voice_name": "Ancient Monster",
+  "text": "Each sea you drink is a sea I hold in place. Do not wade into mine.",
+  "prompt": "[deep, slow] Each sea you drink is a sea I hold in place. Do not wade into mine.",
+  "file": "voice/abyssal_leviathan/intro_0.ogg"
+ },
+ {
+  "key": "voice.abyssal_leviathan.intro.1",
+  "boss": "abyssal_leviathan",
+  "voice": "wXvR48IpOq9HACltTmt7",
+  "voice_name": "Ancient Monster",
+  "text": "The chains are old. I am older. Come closer.",
+  "prompt": "[deep, slow] The chains are old. I am older. Come closer.",
+  "file": "voice/abyssal_leviathan/intro_1.ogg"
+ },
+ {
+  "key": "voice.abyssal_leviathan.phase1.0",
+  "boss": "abyssal_leviathan",
+  "voice": "wXvR48IpOq9HACltTmt7",
+  "voice_name": "Ancient Monster",
+  "text": "Feel the pull. It is the whole world, asking you to stay.",
+  "prompt": "[deep, slow] Feel the pull. It is the whole world, asking you to stay.",
+  "file": "voice/abyssal_leviathan/phase1_0.ogg"
+ },
+ {
+  "key": "voice.abyssal_leviathan.phase1.1",
+  "boss": "abyssal_leviathan",
+  "voice": "wXvR48IpOq9HACltTmt7",
+  "voice_name": "Ancient Monster",
+  "text": "Break my anchors, if you can swim against a planet.",
+  "prompt": "[deep, slow] Break my anchors, if you can swim against a planet.",
+  "file": "voice/abyssal_leviathan/phase1_1.ogg"
+ },
+ {
+  "key": "voice.abyssal_leviathan.phase2.0",
+  "boss": "abyssal_leviathan",
+  "voice": "wXvR48IpOq9HACltTmt7",
+  "voice_name": "Ancient Monster",
+  "text": "The weight is slipping... the tide has no one to tell it where down is!",
+  "prompt": "[deep, slow] [intense] The weight is slipping... the tide has no one to tell it where down is!",
+  "file": "voice/abyssal_leviathan/phase2_0.ogg"
+ },
+ {
+  "key": "voice.abyssal_leviathan.phase2.1",
+  "boss": "abyssal_leviathan",
+  "voice": "wXvR48IpOq9HACltTmt7",
+  "voice_name": "Ancient Monster",
+  "text": "DOWN. ALL OF YOU. DOWN.",
+  "prompt": "[deep, slow] [intense] DOWN. ALL OF YOU. DOWN.",
+  "file": "voice/abyssal_leviathan/phase2_1.ogg"
+ },
+ {
+  "key": "voice.crypt_lord.death.0",
+  "boss": "crypt_lord",
+  "voice": "1BfrkuYXmEwp8AWqSLWk",
+  "voice_name": "Declan Graves",
+  "text": "The scales are still. Someone remembers me. That is enough.",
+  "prompt": "[raspy, solemn] [weakening] The scales are still. Someone remembers me. That is enough.",
+  "file": "voice/crypt_lord/death_0.ogg"
+ },
+ {
+  "key": "voice.crypt_lord.death.1",
+  "boss": "crypt_lord",
+  "voice": "1BfrkuYXmEwp8AWqSLWk",
+  "voice_name": "Declan Graves",
+  "text": "Take my seal. Judge the Devourer more kindly than I judged the lost.",
+  "prompt": "[raspy, solemn] [weakening] Take my seal. Judge the Devourer more kindly than I judged the lost.",
+  "file": "voice/crypt_lord/death_1.ogg"
+ },
+ {
+  "key": "voice.crypt_lord.first-clear.0",
+  "boss": "crypt_lord",
+  "voice": "1BfrkuYXmEwp8AWqSLWk",
+  "voice_name": "Declan Graves",
+  "text": "The Necropolis lets you through for the first time: take this Soul Ash.",
+  "prompt": "[raspy, solemn] [quietly] The Necropolis lets you through for the first time: take this Soul Ash.",
+  "file": "voice/crypt_lord/first-clear_0.ogg"
+ },
+ {
+  "key": "voice.crypt_lord.intro.0",
+  "boss": "crypt_lord",
+  "voice": "1BfrkuYXmEwp8AWqSLWk",
+  "voice_name": "Declan Graves",
+  "text": "State your name. No? Then I will read it from your memory.",
+  "prompt": "[raspy, solemn] State your name. No? Then I will read it from your memory.",
+  "file": "voice/crypt_lord/intro_0.ogg"
+ },
+ {
+  "key": "voice.crypt_lord.intro.1",
+  "boss": "crypt_lord",
+  "voice": "1BfrkuYXmEwp8AWqSLWk",
+  "voice_name": "Declan Graves",
+  "text": "Every soul that was lost comes before me. Today, so do you.",
+  "prompt": "[raspy, solemn] Every soul that was lost comes before me. Today, so do you.",
+  "file": "voice/crypt_lord/intro_1.ogg"
+ },
+ {
+  "key": "voice.crypt_lord.phase1.0",
+  "boss": "crypt_lord",
+  "voice": "1BfrkuYXmEwp8AWqSLWk",
+  "voice_name": "Declan Graves",
+  "text": "The ledger is long. The dead have gathered to witness.",
+  "prompt": "[raspy, solemn] The ledger is long. The dead have gathered to witness.",
+  "file": "voice/crypt_lord/phase1_0.ogg"
+ },
+ {
+  "key": "voice.crypt_lord.phase1.1",
+  "boss": "crypt_lord",
+  "voice": "1BfrkuYXmEwp8AWqSLWk",
+  "voice_name": "Declan Graves",
+  "text": "I find the accused... persistent.",
+  "prompt": "[raspy, solemn] I find the accused... persistent.",
+  "file": "voice/crypt_lord/phase1_1.ogg"
+ },
+ {
+  "key": "voice.crypt_lord.phase2.0",
+  "boss": "crypt_lord",
+  "voice": "1BfrkuYXmEwp8AWqSLWk",
+  "voice_name": "Declan Graves",
+  "text": "Sentence. SENTENCE. LET NOTHING BE FORGOTTEN.",
+  "prompt": "[raspy, solemn] [intense] Sentence. SENTENCE. LET NOTHING BE FORGOTTEN.",
+  "file": "voice/crypt_lord/phase2_0.ogg"
+ },
+ {
+  "key": "voice.crypt_lord.phase2.1",
+  "boss": "crypt_lord",
+  "voice": "1BfrkuYXmEwp8AWqSLWk",
+  "voice_name": "Declan Graves",
+  "text": "Your memories will feed the court, one by one!",
+  "prompt": "[raspy, solemn] [intense] Your memories will feed the court, one by one!",
+  "file": "voice/crypt_lord/phase2_1.ogg"
+ },
+ {
+  "key": "voice.devourer.death.0",
+  "boss": "devourer",
+  "voice": "d3qrd1ge6zWDvUxIeXiH",
+  "voice_name": "Final Boss",
+  "text": "Not dead. Only quiet. Wake me gently.",
+  "prompt": "[vast, sorrowful] [weakening] Not dead. Only quiet. Wake me gently.",
+  "file": "voice/devourer/death_0.ogg"
+ },
+ {
+  "key": "voice.devourer.death.1",
+  "boss": "devourer",
+  "voice": "d3qrd1ge6zWDvUxIeXiH",
+  "voice_name": "Final Boss",
+  "text": "I will sleep. I always sleep. Tell me, before I do... was it loved?",
+  "prompt": "[vast, sorrowful] [weakening] I will sleep. I always sleep. Tell me, before I do... was it loved?",
+  "file": "voice/devourer/death_1.ogg"
+ },
+ {
+  "key": "voice.devourer.first-clear.0",
+  "boss": "devourer",
+  "voice": "d3qrd1ge6zWDvUxIeXiH",
+  "voice_name": "Final Boss",
+  "text": "You stayed until the end. No one ever stays until the end.",
+  "prompt": "[vast, sorrowful] [quietly] You stayed until the end. No one ever stays until the end.",
+  "file": "voice/devourer/first-clear_0.ogg"
+ },
+ {
+  "key": "voice.devourer.intro.0",
+  "boss": "devourer",
+  "voice": "d3qrd1ge6zWDvUxIeXiH",
+  "voice_name": "Final Boss",
+  "text": "You are inside me now. Everything I ever ate is listening.",
+  "prompt": "[vast, sorrowful] You are inside me now. Everything I ever ate is listening.",
+  "file": "voice/devourer/intro_0.ogg"
+ },
+ {
+  "key": "voice.devourer.intro.1",
+  "boss": "devourer",
+  "voice": "d3qrd1ge6zWDvUxIeXiH",
+  "voice_name": "Final Boss",
+  "text": "Be quiet. I am trying to remember what warmth was.",
+  "prompt": "[vast, sorrowful] Be quiet. I am trying to remember what warmth was.",
+  "file": "voice/devourer/intro_1.ogg"
+ },
+ {
+  "key": "voice.devourer.phase1.0",
+  "boss": "devourer",
+  "voice": "d3qrd1ge6zWDvUxIeXiH",
+  "voice_name": "Final Boss",
+  "text": "I keep the fire. I keep the growth. I keep all of them now. Do you love these faces better?",
+  "prompt": "[vast, sorrowful] I keep the fire. I keep the growth. I keep all of them now. Do you love these faces better?",
+  "file": "voice/devourer/phase1_0.ogg"
+ },
+ {
+  "key": "voice.devourer.phase1.1",
+  "boss": "devourer",
+  "voice": "d3qrd1ge6zWDvUxIeXiH",
+  "voice_name": "Final Boss",
+  "text": "Look. I wear their faces. They were tired. So am I.",
+  "prompt": "[vast, sorrowful] Look. I wear their faces. They were tired. So am I.",
+  "file": "voice/devourer/phase1_1.ogg"
+ },
+ {
+  "key": "voice.devourer.phase2.0",
+  "boss": "devourer",
+  "voice": "d3qrd1ge6zWDvUxIeXiH",
+  "voice_name": "Final Boss",
+  "text": "There is no floor here. There never was.",
+  "prompt": "[vast, sorrowful] [intense] There is no floor here. There never was.",
+  "file": "voice/devourer/phase2_0.ogg"
+ },
+ {
+  "key": "voice.devourer.phase2.1",
+  "boss": "devourer",
+  "voice": "d3qrd1ge6zWDvUxIeXiH",
+  "voice_name": "Final Boss",
+  "text": "Hold on to something. Anything. I could not.",
+  "prompt": "[vast, sorrowful] [intense] Hold on to something. Anything. I could not.",
+  "file": "voice/devourer/phase2_1.ogg"
+ },
+ {
+  "key": "voice.frost_revenant.death.0",
+  "boss": "frost_revenant",
+  "voice": "ZaovTqhD16YvmEG2nDUD",
+  "voice_name": "Kall",
+  "text": "The cold lets go of me. Time moves again.",
+  "prompt": "[cold, measured] [weakening] The cold lets go of me. Time moves again.",
+  "file": "voice/frost_revenant/death_0.ogg"
+ },
+ {
+  "key": "voice.frost_revenant.death.1",
+  "boss": "frost_revenant",
+  "voice": "ZaovTqhD16YvmEG2nDUD",
+  "voice_name": "Kall",
+  "text": "Take my core. Make a brake that does not stop the living.",
+  "prompt": "[cold, measured] [weakening] Take my core. Make a brake that does not stop the living.",
+  "file": "voice/frost_revenant/death_1.ogg"
+ },
+ {
+  "key": "voice.frost_revenant.first-clear.0",
+  "boss": "frost_revenant",
+  "voice": "ZaovTqhD16YvmEG2nDUD",
+  "voice_name": "Kall",
+  "text": "The Heights let you through for the first time: take this Stasis Crystal.",
+  "prompt": "[cold, measured] [quietly] The Heights let you through for the first time: take this Stasis Crystal.",
+  "file": "voice/frost_revenant/first-clear_0.ogg"
+ },
+ {
+  "key": "voice.frost_revenant.intro.0",
+  "boss": "frost_revenant",
+  "voice": "ZaovTqhD16YvmEG2nDUD",
+  "voice_name": "Kall",
+  "text": "Do not hurry. Nothing here has ever hurried.",
+  "prompt": "[cold, measured] Do not hurry. Nothing here has ever hurried.",
+  "file": "voice/frost_revenant/intro_0.ogg"
+ },
+ {
+  "key": "voice.frost_revenant.intro.1",
+  "boss": "frost_revenant",
+  "voice": "ZaovTqhD16YvmEG2nDUD",
+  "voice_name": "Kall",
+  "text": "I hold the world still so that it cannot be eaten. Do not make it move.",
+  "prompt": "[cold, measured] I hold the world still so that it cannot be eaten. Do not make it move.",
+  "file": "voice/frost_revenant/intro_1.ogg"
+ },
+ {
+  "key": "voice.frost_revenant.phase1.0",
+  "boss": "frost_revenant",
+  "voice": "ZaovTqhD16YvmEG2nDUD",
+  "voice_name": "Kall",
+  "text": "The Sarcophagus brakes. Feel it slow you.",
+  "prompt": "[cold, measured] The Sarcophagus brakes. Feel it slow you.",
+  "file": "voice/frost_revenant/phase1_0.ogg"
+ },
+ {
+  "key": "voice.frost_revenant.phase1.1",
+  "boss": "frost_revenant",
+  "voice": "ZaovTqhD16YvmEG2nDUD",
+  "voice_name": "Kall",
+  "text": "Stand in the warm light, small ones.",
+  "prompt": "[cold, measured] Stand in the warm light, small ones.",
+  "file": "voice/frost_revenant/phase1_1.ogg"
+ },
+ {
+  "key": "voice.frost_revenant.phase2.0",
+  "boss": "frost_revenant",
+  "voice": "ZaovTqhD16YvmEG2nDUD",
+  "voice_name": "Kall",
+  "text": "Too still... the brake locks...",
+  "prompt": "[cold, measured] [intense] Too still... the brake locks...",
+  "file": "voice/frost_revenant/phase2_0.ogg"
+ },
+ {
+  "key": "voice.frost_revenant.phase2.1",
+  "boss": "frost_revenant",
+  "voice": "ZaovTqhD16YvmEG2nDUD",
+  "voice_name": "Kall",
+  "text": "FREEZE. ALL OF IT. FREEZE.",
+  "prompt": "[cold, measured] [intense] FREEZE. ALL OF IT. FREEZE.",
+  "file": "voice/frost_revenant/phase2_1.ogg"
+ },
+ {
+  "key": "voice.hell_gao.death.0",
+  "boss": "hell_gao",
+  "voice": "QzD8JR9v8A4kqCDL8XD4",
+  "voice_name": "Gorex",
+  "text": "Another pulse comes. I fold back into it.",
+  "prompt": "[unsettlingly calm] [weakening] Another pulse comes. I fold back into it.",
+  "file": "voice/hell_gao/death_0.ogg"
+ },
+ {
+  "key": "voice.hell_gao.death.1",
+  "boss": "hell_gao",
+  "voice": "QzD8JR9v8A4kqCDL8XD4",
+  "voice_name": "Gorex",
+  "text": "You will hear me in the silence. Every time.",
+  "prompt": "[unsettlingly calm] [weakening] You will hear me in the silence. Every time.",
+  "file": "voice/hell_gao/death_1.ogg"
+ },
+ {
+  "key": "voice.hell_gao.first-clear.0",
+  "boss": "hell_gao",
+  "voice": "QzD8JR9v8A4kqCDL8XD4",
+  "voice_name": "Gorex",
+  "text": "Say my name to the sky between two stars. It will not answer. I will.",
+  "prompt": "[unsettlingly calm] [quietly] Say my name to the sky between two stars. It will not answer. I will.",
+  "file": "voice/hell_gao/first-clear_0.ogg"
+ },
+ {
+  "key": "voice.hell_gao.intro.0",
+  "boss": "hell_gao",
+  "voice": "QzD8JR9v8A4kqCDL8XD4",
+  "voice_name": "Gorex",
+  "text": "Between one heartbeat and the next, there is me.",
+  "prompt": "[unsettlingly calm] Between one heartbeat and the next, there is me.",
+  "file": "voice/hell_gao/intro_0.ogg"
+ },
+ {
+  "key": "voice.hell_gao.intro.1",
+  "boss": "hell_gao",
+  "voice": "QzD8JR9v8A4kqCDL8XD4",
+  "voice_name": "Gorex",
+  "text": "You counted the pulses. You forgot to count the silence.",
+  "prompt": "[unsettlingly calm] You counted the pulses. You forgot to count the silence.",
+  "file": "voice/hell_gao/intro_1.ogg"
+ },
+ {
+  "key": "voice.hell_gao.phase1.0",
+  "boss": "hell_gao",
+  "voice": "QzD8JR9v8A4kqCDL8XD4",
+  "voice_name": "Gorex",
+  "text": "Your Vocation. I know its face. I wore it once.",
+  "prompt": "[unsettlingly calm] Your Vocation. I know its face. I wore it once.",
+  "file": "voice/hell_gao/phase1_0.ogg"
+ },
+ {
+  "key": "voice.hell_gao.phase1.1",
+  "boss": "hell_gao",
+  "voice": "QzD8JR9v8A4kqCDL8XD4",
+  "voice_name": "Gorex",
+  "text": "Again. Show me the faces you left behind.",
+  "prompt": "[unsettlingly calm] Again. Show me the faces you left behind.",
+  "file": "voice/hell_gao/phase1_1.ogg"
+ },
+ {
+  "key": "voice.hell_gao.phase2.0",
+  "boss": "hell_gao",
+  "voice": "QzD8JR9v8A4kqCDL8XD4",
+  "voice_name": "Gorex",
+  "text": "No pulse now. Only the gap. Only me.",
+  "prompt": "[unsettlingly calm] [intense] No pulse now. Only the gap. Only me.",
+  "file": "voice/hell_gao/phase2_0.ogg"
+ },
+ {
+  "key": "voice.hell_gao.phase2.1",
+  "boss": "hell_gao",
+  "voice": "QzD8JR9v8A4kqCDL8XD4",
+  "voice_name": "Gorex",
+  "text": "The stars look away. They always look away.",
+  "prompt": "[unsettlingly calm] [intense] The stars look away. They always look away.",
+  "file": "voice/hell_gao/phase2_1.ogg"
+ },
+ {
+  "key": "voice.magma_warden.death.0",
+  "boss": "magma_warden",
+  "voice": "KTAbPR4QFlhaTpde6md8",
+  "voice_name": "Bloodgrin",
+  "text": "The heat leaves me. It is quiet at last.",
+  "prompt": "[deep, rumbling] [weakening] The heat leaves me. It is quiet at last.",
+  "file": "voice/magma_warden/death_0.ogg"
+ },
+ {
+  "key": "voice.magma_warden.death.1",
+  "boss": "magma_warden",
+  "voice": "KTAbPR4QFlhaTpde6md8",
+  "voice_name": "Bloodgrin",
+  "text": "Take my core. Make something that does not burn the sky.",
+  "prompt": "[deep, rumbling] [weakening] Take my core. Make something that does not burn the sky.",
+  "file": "voice/magma_warden/death_1.ogg"
+ },
+ {
+  "key": "voice.magma_warden.first-clear.0",
+  "boss": "magma_warden",
+  "voice": "KTAbPR4QFlhaTpde6md8",
+  "voice_name": "Bloodgrin",
+  "text": "The Ashes let you through for the first time: take this Cinderheart.",
+  "prompt": "[deep, rumbling] [quietly] The Ashes let you through for the first time: take this Cinderheart.",
+  "file": "voice/magma_warden/first-clear_0.ogg"
+ },
+ {
+  "key": "voice.magma_warden.intro.0",
+  "boss": "magma_warden",
+  "voice": "KTAbPR4QFlhaTpde6md8",
+  "voice_name": "Bloodgrin",
+  "text": "You climb toward my heat. Do you know what you wake?",
+  "prompt": "[deep, rumbling] You climb toward my heat. Do you know what you wake?",
+  "file": "voice/magma_warden/intro_0.ogg"
+ },
+ {
+  "key": "voice.magma_warden.intro.1",
+  "boss": "magma_warden",
+  "voice": "KTAbPR4QFlhaTpde6md8",
+  "voice_name": "Bloodgrin",
+  "text": "I keep the Devourer's fire in order. Do not make it burn.",
+  "prompt": "[deep, rumbling] I keep the Devourer's fire in order. Do not make it burn.",
+  "file": "voice/magma_warden/intro_1.ogg"
+ },
+ {
+  "key": "voice.magma_warden.phase1.0",
+  "boss": "magma_warden",
+  "voice": "KTAbPR4QFlhaTpde6md8",
+  "voice_name": "Bloodgrin",
+  "text": "The Sarcophagus is heating. Feel it.",
+  "prompt": "[deep, rumbling] The Sarcophagus is heating. Feel it.",
+  "file": "voice/magma_warden/phase1_0.ogg"
+ },
+ {
+  "key": "voice.magma_warden.phase1.1",
+  "boss": "magma_warden",
+  "voice": "KTAbPR4QFlhaTpde6md8",
+  "voice_name": "Bloodgrin",
+  "text": "Stand on the black stone, small ones.",
+  "prompt": "[deep, rumbling] Stand on the black stone, small ones.",
+  "file": "voice/magma_warden/phase1_1.ogg"
+ },
+ {
+  "key": "voice.magma_warden.phase2.0",
+  "boss": "magma_warden",
+  "voice": "KTAbPR4QFlhaTpde6md8",
+  "voice_name": "Bloodgrin",
+  "text": "Too hot... the regulation fails...",
+  "prompt": "[deep, rumbling] [intense] Too hot... the regulation fails...",
+  "file": "voice/magma_warden/phase2_0.ogg"
+ },
+ {
+  "key": "voice.magma_warden.phase2.1",
+  "boss": "magma_warden",
+  "voice": "KTAbPR4QFlhaTpde6md8",
+  "voice_name": "Bloodgrin",
+  "text": "MELT. ALL OF IT. MELT.",
+  "prompt": "[deep, rumbling] [intense] MELT. ALL OF IT. MELT.",
+  "file": "voice/magma_warden/phase2_1.ogg"
+ },
+ {
+  "key": "voice.mire_abomination.death.0",
+  "boss": "mire_abomination",
+  "voice": "1KFdM0QCwQn4rmn5nn9C",
+  "voice_name": "Parasyte",
+  "text": "Take what is left. Use it again.",
+  "prompt": "[gurgling, twisted] [weakening] Take what is left. Use it again.",
+  "file": "voice/mire_abomination/death_0.ogg"
+ },
+ {
+  "key": "voice.mire_abomination.death.1",
+  "boss": "mire_abomination",
+  "voice": "1KFdM0QCwQn4rmn5nn9C",
+  "voice_name": "Parasyte",
+  "text": "I was only ever the bin of a hungry god.",
+  "prompt": "[gurgling, twisted] [weakening] I was only ever the bin of a hungry god.",
+  "file": "voice/mire_abomination/death_1.ogg"
+ },
+ {
+  "key": "voice.mire_abomination.first-clear.0",
+  "boss": "mire_abomination",
+  "voice": "1KFdM0QCwQn4rmn5nn9C",
+  "voice_name": "Parasyte",
+  "text": "The Marshes let you through for the first time: take this Rot Resin.",
+  "prompt": "[gurgling, twisted] [quietly] The Marshes let you through for the first time: take this Rot Resin.",
+  "file": "voice/mire_abomination/first-clear_0.ogg"
+ },
+ {
+  "key": "voice.mire_abomination.intro.0",
+  "boss": "mire_abomination",
+  "voice": "1KFdM0QCwQn4rmn5nn9C",
+  "voice_name": "Parasyte",
+  "text": "You bring clean things into my heap. How rude.",
+  "prompt": "[gurgling, twisted] You bring clean things into my heap. How rude.",
+  "file": "voice/mire_abomination/intro_0.ogg"
+ },
+ {
+  "key": "voice.mire_abomination.intro.1",
+  "boss": "mire_abomination",
+  "voice": "1KFdM0QCwQn4rmn5nn9C",
+  "voice_name": "Parasyte",
+  "text": "I keep what the Devourer throws away. I will keep you.",
+  "prompt": "[gurgling, twisted] I keep what the Devourer throws away. I will keep you.",
+  "file": "voice/mire_abomination/intro_1.ogg"
+ },
+ {
+  "key": "voice.mire_abomination.phase1.0",
+  "boss": "mire_abomination",
+  "voice": "1KFdM0QCwQn4rmn5nn9C",
+  "voice_name": "Parasyte",
+  "text": "Everything rots. Everything feeds me.",
+  "prompt": "[gurgling, twisted] Everything rots. Everything feeds me.",
+  "file": "voice/mire_abomination/phase1_0.ogg"
+ },
+ {
+  "key": "voice.mire_abomination.phase1.1",
+  "boss": "mire_abomination",
+  "voice": "1KFdM0QCwQn4rmn5nn9C",
+  "voice_name": "Parasyte",
+  "text": "Breathe. The air is mine.",
+  "prompt": "[gurgling, twisted] Breathe. The air is mine.",
+  "file": "voice/mire_abomination/phase1_1.ogg"
+ },
+ {
+  "key": "voice.mire_abomination.phase2.0",
+  "boss": "mire_abomination",
+  "voice": "1KFdM0QCwQn4rmn5nn9C",
+  "voice_name": "Parasyte",
+  "text": "Too full... it overflows... it OVERFLOWS!",
+  "prompt": "[gurgling, twisted] [intense] Too full... it overflows... it OVERFLOWS!",
+  "file": "voice/mire_abomination/phase2_0.ogg"
+ },
+ {
+  "key": "voice.mire_abomination.phase2.1",
+  "boss": "mire_abomination",
+  "voice": "1KFdM0QCwQn4rmn5nn9C",
+  "voice_name": "Parasyte",
+  "text": "Nothing is wasted. NOTHING. IS. LOST.",
+  "prompt": "[gurgling, twisted] [intense] Nothing is wasted. NOTHING. IS. LOST.",
+  "file": "voice/mire_abomination/phase2_1.ogg"
+ },
+ {
+  "key": "voice.sylvan_matriarch.death.0",
+  "boss": "sylvan_matriarch",
+  "voice": "fhNley3gMN1oXT2fQZjN",
+  "voice_name": "Grizzy",
+  "text": "The codes were never mine to hoard.",
+  "prompt": "[whispering] [weakening] The codes were never mine to hoard.",
+  "file": "voice/sylvan_matriarch/death_0.ogg"
+ },
+ {
+  "key": "voice.sylvan_matriarch.death.1",
+  "boss": "sylvan_matriarch",
+  "voice": "fhNley3gMN1oXT2fQZjN",
+  "voice_name": "Grizzy",
+  "text": "Carry a seed of me. Let something grow.",
+  "prompt": "[whispering] [weakening] Carry a seed of me. Let something grow.",
+  "file": "voice/sylvan_matriarch/death_1.ogg"
+ },
+ {
+  "key": "voice.sylvan_matriarch.first-clear.0",
+  "boss": "sylvan_matriarch",
+  "voice": "fhNley3gMN1oXT2fQZjN",
+  "voice_name": "Grizzy",
+  "text": "The Grove lets you through for the first time: take this Heartwood.",
+  "prompt": "[whispering] [quietly] The Grove lets you through for the first time: take this Heartwood.",
+  "file": "voice/sylvan_matriarch/first-clear_0.ogg"
+ },
+ {
+  "key": "voice.sylvan_matriarch.intro.0",
+  "boss": "sylvan_matriarch",
+  "voice": "fhNley3gMN1oXT2fQZjN",
+  "voice_name": "Grizzy",
+  "text": "Little roots, little feet. You walk in my Grove.",
+  "prompt": "[whispering] Little roots, little feet. You walk in my Grove.",
+  "file": "voice/sylvan_matriarch/intro_0.ogg"
+ },
+ {
+  "key": "voice.sylvan_matriarch.intro.1",
+  "boss": "sylvan_matriarch",
+  "voice": "fhNley3gMN1oXT2fQZjN",
+  "voice_name": "Grizzy",
+  "text": "I remember every living thing the Devourer ate. I will not forget you.",
+  "prompt": "[whispering] I remember every living thing the Devourer ate. I will not forget you.",
+  "file": "voice/sylvan_matriarch/intro_1.ogg"
+ },
+ {
+  "key": "voice.sylvan_matriarch.phase1.0",
+  "boss": "sylvan_matriarch",
+  "voice": "fhNley3gMN1oXT2fQZjN",
+  "voice_name": "Grizzy",
+  "text": "The Grove listens to me. It listens now.",
+  "prompt": "[whispering] The Grove listens to me. It listens now.",
+  "file": "voice/sylvan_matriarch/phase1_0.ogg"
+ },
+ {
+  "key": "voice.sylvan_matriarch.phase1.1",
+  "boss": "sylvan_matriarch",
+  "voice": "fhNley3gMN1oXT2fQZjN",
+  "voice_name": "Grizzy",
+  "text": "Hold still. My children are hungry.",
+  "prompt": "[whispering] Hold still. My children are hungry.",
+  "file": "voice/sylvan_matriarch/phase1_1.ogg"
+ },
+ {
+  "key": "voice.sylvan_matriarch.phase2.0",
+  "boss": "sylvan_matriarch",
+  "voice": "fhNley3gMN1oXT2fQZjN",
+  "voice_name": "Grizzy",
+  "text": "Wake, spores. Wake, all of you.",
+  "prompt": "[whispering] [intense] Wake, spores. Wake, all of you.",
+  "file": "voice/sylvan_matriarch/phase2_0.ogg"
+ },
+ {
+  "key": "voice.sylvan_matriarch.phase2.1",
+  "boss": "sylvan_matriarch",
+  "voice": "fhNley3gMN1oXT2fQZjN",
+  "voice_name": "Grizzy",
+  "text": "If I wilt, the old codes wilt with me!",
+  "prompt": "[whispering] [intense] If I wilt, the old codes wilt with me!",
+  "file": "voice/sylvan_matriarch/phase2_1.ogg"
+ },
+ {
+  "key": "voice.temporal_pharaoh.death.0",
+  "boss": "temporal_pharaoh",
+  "voice": "HAvvFKatz0uu0Fv55Riy",
+  "voice_name": "Ancient Sage",
+  "text": "The sands fall at last. How strange, to feel them fall.",
+  "prompt": "[regal, ancient] [weakening] The sands fall at last. How strange, to feel them fall.",
+  "file": "voice/temporal_pharaoh/death_0.ogg"
+ },
+ {
+  "key": "voice.temporal_pharaoh.death.1",
+  "boss": "temporal_pharaoh",
+  "voice": "HAvvFKatz0uu0Fv55Riy",
+  "voice_name": "Ancient Sage",
+  "text": "Take my core. Spend the hours better than I did.",
+  "prompt": "[regal, ancient] [weakening] Take my core. Spend the hours better than I did.",
+  "file": "voice/temporal_pharaoh/death_1.ogg"
+ },
+ {
+  "key": "voice.temporal_pharaoh.first-clear.0",
+  "boss": "temporal_pharaoh",
+  "voice": "HAvvFKatz0uu0Fv55Riy",
+  "voice_name": "Ancient Sage",
+  "text": "The Citadel lets you through for the first time: take this Chrono Sand.",
+  "prompt": "[regal, ancient] [quietly] The Citadel lets you through for the first time: take this Chrono Sand.",
+  "file": "voice/temporal_pharaoh/first-clear_0.ogg"
+ },
+ {
+  "key": "voice.temporal_pharaoh.intro.0",
+  "boss": "temporal_pharaoh",
+  "voice": "HAvvFKatz0uu0Fv55Riy",
+  "voice_name": "Ancient Sage",
+  "text": "Every grain here is an hour you will not get back.",
+  "prompt": "[regal, ancient] Every grain here is an hour you will not get back.",
+  "file": "voice/temporal_pharaoh/intro_0.ogg"
+ },
+ {
+  "key": "voice.temporal_pharaoh.intro.1",
+  "boss": "temporal_pharaoh",
+  "voice": "HAvvFKatz0uu0Fv55Riy",
+  "voice_name": "Ancient Sage",
+  "text": "I keep the Devourer's years in order. Do not spill them.",
+  "prompt": "[regal, ancient] I keep the Devourer's years in order. Do not spill them.",
+  "file": "voice/temporal_pharaoh/intro_1.ogg"
+ },
+ {
+  "key": "voice.temporal_pharaoh.phase1.0",
+  "boss": "temporal_pharaoh",
+  "voice": "HAvvFKatz0uu0Fv55Riy",
+  "voice_name": "Ancient Sage",
+  "text": "Time is a river. Watch it run uphill.",
+  "prompt": "[regal, ancient] Time is a river. Watch it run uphill.",
+  "file": "voice/temporal_pharaoh/phase1_0.ogg"
+ },
+ {
+  "key": "voice.temporal_pharaoh.phase1.1",
+  "boss": "temporal_pharaoh",
+  "voice": "HAvvFKatz0uu0Fv55Riy",
+  "voice_name": "Ancient Sage",
+  "text": "Faster. Everything is faster now.",
+  "prompt": "[regal, ancient] Faster. Everything is faster now.",
+  "file": "voice/temporal_pharaoh/phase1_1.ogg"
+ },
+ {
+  "key": "voice.temporal_pharaoh.phase2.0",
+  "boss": "temporal_pharaoh",
+  "voice": "HAvvFKatz0uu0Fv55Riy",
+  "voice_name": "Ancient Sage",
+  "text": "The hour stops. Only I may move.",
+  "prompt": "[regal, ancient] [intense] The hour stops. Only I may move.",
+  "file": "voice/temporal_pharaoh/phase2_0.ogg"
+ },
+ {
+  "key": "voice.temporal_pharaoh.phase2.1",
+  "boss": "temporal_pharaoh",
+  "voice": "HAvvFKatz0uu0Fv55Riy",
+  "voice_name": "Ancient Sage",
+  "text": "Break the glass, little ones. IF. YOU. CAN.",
+  "prompt": "[regal, ancient] [intense] Break the glass, little ones. IF. YOU. CAN.",
+  "file": "voice/temporal_pharaoh/phase2_1.ogg"
+ },
+ {
+  "key": "voice.thunder_dragon.death.0",
+  "boss": "thunder_dragon",
+  "voice": "A921zklid24OpyVy1Elb",
+  "voice_name": "Draconius",
+  "text": "The wind stops. How quiet it is.",
+  "prompt": "[snarling] [weakening] The wind stops. How quiet it is.",
+  "file": "voice/thunder_dragon/death_0.ogg"
+ },
+ {
+  "key": "voice.thunder_dragon.death.1",
+  "boss": "thunder_dragon",
+  "voice": "A921zklid24OpyVy1Elb",
+  "voice_name": "Draconius",
+  "text": "Take my core. Let it power something that does not tear the sky.",
+  "prompt": "[snarling] [weakening] Take my core. Let it power something that does not tear the sky.",
+  "file": "voice/thunder_dragon/death_1.ogg"
+ },
+ {
+  "key": "voice.thunder_dragon.first-clear.0",
+  "boss": "thunder_dragon",
+  "voice": "A921zklid24OpyVy1Elb",
+  "voice_name": "Draconius",
+  "text": "The Archipelago lets you through for the first time: take this Thunder Quartz.",
+  "prompt": "[snarling] [quietly] The Archipelago lets you through for the first time: take this Thunder Quartz.",
+  "file": "voice/thunder_dragon/first-clear_0.ogg"
+ },
+ {
+  "key": "voice.thunder_dragon.intro.0",
+  "boss": "thunder_dragon",
+  "voice": "A921zklid24OpyVy1Elb",
+  "voice_name": "Draconius",
+  "text": "You climb into my storm. I keep it in order; do not make it break.",
+  "prompt": "[snarling] You climb into my storm. I keep it in order; do not make it break.",
+  "file": "voice/thunder_dragon/intro_0.ogg"
+ },
+ {
+  "key": "voice.thunder_dragon.intro.1",
+  "boss": "thunder_dragon",
+  "voice": "A921zklid24OpyVy1Elb",
+  "voice_name": "Draconius",
+  "text": "The winds obey me. I only wish they did not have to.",
+  "prompt": "[snarling] The winds obey me. I only wish they did not have to.",
+  "file": "voice/thunder_dragon/intro_1.ogg"
+ },
+ {
+  "key": "voice.thunder_dragon.phase1.0",
+  "boss": "thunder_dragon",
+  "voice": "A921zklid24OpyVy1Elb",
+  "voice_name": "Draconius",
+  "text": "The rods are my tether. Break them and the storm loosens.",
+  "prompt": "[snarling] The rods are my tether. Break them and the storm loosens.",
+  "file": "voice/thunder_dragon/phase1_0.ogg"
+ },
+ {
+  "key": "voice.thunder_dragon.phase1.1",
+  "boss": "thunder_dragon",
+  "voice": "A921zklid24OpyVy1Elb",
+  "voice_name": "Draconius",
+  "text": "Faster, small ones. The sky is coming apart.",
+  "prompt": "[snarling] Faster, small ones. The sky is coming apart.",
+  "file": "voice/thunder_dragon/phase1_1.ogg"
+ },
+ {
+  "key": "voice.thunder_dragon.phase2.0",
+  "boss": "thunder_dragon",
+  "voice": "A921zklid24OpyVy1Elb",
+  "voice_name": "Draconius",
+  "text": "I cannot hold it... the lightning is no longer mine to aim...",
+  "prompt": "[snarling] [intense] I cannot hold it... the lightning is no longer mine to aim...",
+  "file": "voice/thunder_dragon/phase2_0.ogg"
+ },
+ {
+  "key": "voice.thunder_dragon.phase2.1",
+  "boss": "thunder_dragon",
+  "voice": "A921zklid24OpyVy1Elb",
+  "voice_name": "Draconius",
+  "text": "STAY. OFF. THE. GROUND.",
+  "prompt": "[snarling] [intense] STAY. OFF. THE. GROUND.",
+  "file": "voice/thunder_dragon/phase2_1.ogg"
+ },
+ {
+  "key": "voice.voidwyrm.death.0",
+  "boss": "voidwyrm",
+  "voice": "2tTjAGX0n5ajDmazDcWk",
+  "voice_name": "Ezekiel Wren",
+  "text": "Quiet... the hunger is quiet...",
+  "prompt": "[hungry whisper] [weakening] Quiet... the hunger is quiet...",
+  "file": "voice/voidwyrm/death_0.ogg"
+ },
+ {
+  "key": "voice.voidwyrm.death.1",
+  "boss": "voidwyrm",
+  "voice": "2tTjAGX0n5ajDmazDcWk",
+  "voice_name": "Ezekiel Wren",
+  "text": "Go on, then. The rest of me waits beyond the Gates.",
+  "prompt": "[hungry whisper] [weakening] Go on, then. The rest of me waits beyond the Gates.",
+  "file": "voice/voidwyrm/death_1.ogg"
+ },
+ {
+  "key": "voice.voidwyrm.first-clear.0",
+  "boss": "voidwyrm",
+  "voice": "2tTjAGX0n5ajDmazDcWk",
+  "voice_name": "Ezekiel Wren",
+  "text": "The first Gate wakes. It heard me fall.",
+  "prompt": "[hungry whisper] [quietly] The first Gate wakes. It heard me fall.",
+  "file": "voice/voidwyrm/first-clear_0.ogg"
+ },
+ {
+  "key": "voice.voidwyrm.intro.0",
+  "boss": "voidwyrm",
+  "voice": "2tTjAGX0n5ajDmazDcWk",
+  "voice_name": "Ezekiel Wren",
+  "text": "Hungry. Always so hungry. You smell of a world.",
+  "prompt": "[hungry whisper] Hungry. Always so hungry. You smell of a world.",
+  "file": "voice/voidwyrm/intro_0.ogg"
+ },
+ {
+  "key": "voice.voidwyrm.intro.1",
+  "boss": "voidwyrm",
+  "voice": "2tTjAGX0n5ajDmazDcWk",
+  "voice_name": "Ezekiel Wren",
+  "text": "I am the part that was torn away. I still remember being fed.",
+  "prompt": "[hungry whisper] I am the part that was torn away. I still remember being fed.",
+  "file": "voice/voidwyrm/intro_1.ogg"
+ },
+ {
+  "key": "voice.voidwyrm.phase1.0",
+  "boss": "voidwyrm",
+  "voice": "2tTjAGX0n5ajDmazDcWk",
+  "voice_name": "Ezekiel Wren",
+  "text": "The Rift answers me. Break its crystals, if you can reach them.",
+  "prompt": "[hungry whisper] The Rift answers me. Break its crystals, if you can reach them.",
+  "file": "voice/voidwyrm/phase1_0.ogg"
+ },
+ {
+  "key": "voice.voidwyrm.phase1.1",
+  "boss": "voidwyrm",
+  "voice": "2tTjAGX0n5ajDmazDcWk",
+  "voice_name": "Ezekiel Wren",
+  "text": "Closer. Let the hunger look at you.",
+  "prompt": "[hungry whisper] Closer. Let the hunger look at you.",
+  "file": "voice/voidwyrm/phase1_1.ogg"
+ },
+ {
+  "key": "voice.voidwyrm.phase2.0",
+  "boss": "voidwyrm",
+  "voice": "2tTjAGX0n5ajDmazDcWk",
+  "voice_name": "Ezekiel Wren",
+  "text": "Nothing holds me back now. Nothing ever could.",
+  "prompt": "[hungry whisper] [intense] Nothing holds me back now. Nothing ever could.",
+  "file": "voice/voidwyrm/phase2_0.ogg"
+ },
+ {
+  "key": "voice.voidwyrm.phase2.1",
+  "boss": "voidwyrm",
+  "voice": "2tTjAGX0n5ajDmazDcWk",
+  "voice_name": "Ezekiel Wren",
+  "text": "I will eat the sky you came from.",
+  "prompt": "[hungry whisper] [intense] I will eat the sky you came from.",
+  "file": "voice/voidwyrm/phase2_1.ogg"
+ }
+]

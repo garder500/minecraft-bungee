@@ -4,7 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import org.bukkit.Material;
+import win.vampyuyu.survival.api.Realm;
 import win.vampyuyu.survival.island.BlockPlan;
+import win.vampyuyu.survival.island.ReturnArch;
+import win.vampyuyu.survival.island.SealDoor;
 import win.vampyuyu.survival.island.ShapeKit;
 
 /**
@@ -15,7 +18,7 @@ import win.vampyuyu.survival.island.ShapeKit;
  */
 public final class AshesPlan {
     /** Bump to rebuild existing worlds when the layout changes. */
-    public static final int VERSION = 1;
+    public static final int VERSION = 3;
     /** World y of the landing surface (the Nether ceiling is 128, the tallest structure is 22 above). */
     public static final int ORIGIN_Y = 96;
     public static final int LANDING_RADIUS = 13;
@@ -211,7 +214,8 @@ public final class AshesPlan {
             plan.set(d[0], 0, d[1], Material.SHROOMLIGHT);
         }
         plan.set(0, 1, 0, Material.LODESTONE);
-        plan.sign(0, 1, 3, Material.OAK_SIGN, "rotation=0", "Gate 1", "Cracked Ashes", "Ember Landing", "/quai to return");
+        plan.air(0, 1, 3); // the old standing sign of the landing
+        ReturnArch.build(plan, Realm.ASHES, SPAWN[0], SPAWN[1], SPAWN[2]);
     }
 
     private static void needle(BlockPlan plan, Islet at) {
@@ -262,16 +266,19 @@ public final class AshesPlan {
         ShapeKit.disc(plan, at.x(), -1, at.z(), 9, Material.MAGMA_BLOCK);
         ShapeKit.ring(plan, at.x(), 0, at.z(), 8, 9.5, Material.OBSIDIAN);
         ShapeKit.ring(plan, at.x(), 1, at.z(), 8.5, 9.5, Material.OBSIDIAN);
-        // the sealed door of the Sarcophagus on the far side (Colossus fight: a later phase)
-        int dz = -14;
-        plan.fill(at.x() - 3, 1, at.z() + dz, at.x() + 3, 6, at.z() + dz, Material.CRYING_OBSIDIAN);
-        for (int x = -1; x <= 1; x++) {
-            for (int y = 1; y <= 4; y++) {
-                plan.set(at.x() + x, y, at.z() + dz, Material.RESPAWN_ANCHOR, "charges=4");
-            }
-        }
-        plan.sign(at.x(), 1, at.z() + dz + 2, Material.OAK_SIGN, "rotation=0", "Sealed", "The Lava Colossus", "still sleeps.", "");
-        plan.anchor("sarcophagus", at.x(), 1, at.z() + dz + 1);
+        // the sealed door of the Sarcophagus on the far side: a wall of crying obsidian with the seal door in it
+        plan.fill(at.x() - 3, 1, at.z() + SEAL_DZ, at.x() + 3, 6, at.z() + SEAL_DZ, Material.CRYING_OBSIDIAN);
+        SealDoor.build(plan, Realm.ASHES, at.x(), 1, at.z() + SEAL_DZ);
+        plan.anchor("sarcophagus", at.x(), 1, at.z() + SEAL_DZ + 1);
+    }
+
+    /** Offset of the Sarcophagus wall from the centre of the caldera islet. */
+    private static final int SEAL_DZ = -14;
+
+    /** The seal block of the Sarcophagus door (plan coordinates): right-click it with the Ashes Bastion Key. */
+    public static int[] sealBlock() {
+        Islet caldera = at("caldera");
+        return SealDoor.sealCell(caldera.x(), 1, caldera.z() + SEAL_DZ);
     }
 
     // ---------------------------------------------------------------- layout helpers

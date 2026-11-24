@@ -152,5 +152,896 @@
       }
     ],
     "subtitle": "subtitles.vampyuyu.werewolf.ambience_finale"
+  },
+  "voice.abyssal_leviathan.death.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/abyssal_leviathan/death_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.abyssal_leviathan.death.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/abyssal_leviathan/death_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.abyssal_leviathan.first-clear.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/abyssal_leviathan/first-clear_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.abyssal_leviathan.intro.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/abyssal_leviathan/intro_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.abyssal_leviathan.intro.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/abyssal_leviathan/intro_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.abyssal_leviathan.phase1.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/abyssal_leviathan/phase1_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.abyssal_leviathan.phase1.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/abyssal_leviathan/phase1_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.abyssal_leviathan.phase2.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/abyssal_leviathan/phase2_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.abyssal_leviathan.phase2.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/abyssal_leviathan/phase2_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.crypt_lord.death.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/crypt_lord/death_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.crypt_lord.death.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/crypt_lord/death_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.crypt_lord.first-clear.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/crypt_lord/first-clear_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.crypt_lord.intro.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/crypt_lord/intro_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.crypt_lord.intro.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/crypt_lord/intro_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.crypt_lord.phase1.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/crypt_lord/phase1_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.crypt_lord.phase1.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/crypt_lord/phase1_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.crypt_lord.phase2.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/crypt_lord/phase2_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.crypt_lord.phase2.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/crypt_lord/phase2_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.devourer.death.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/devourer/death_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.devourer.death.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/devourer/death_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.devourer.first-clear.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/devourer/first-clear_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.devourer.intro.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/devourer/intro_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.devourer.intro.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/devourer/intro_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.devourer.phase1.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/devourer/phase1_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.devourer.phase1.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/devourer/phase1_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.devourer.phase2.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/devourer/phase2_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.devourer.phase2.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/devourer/phase2_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.frost_revenant.death.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/frost_revenant/death_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.frost_revenant.death.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/frost_revenant/death_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.frost_revenant.first-clear.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/frost_revenant/first-clear_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.frost_revenant.intro.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/frost_revenant/intro_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.frost_revenant.intro.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/frost_revenant/intro_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.frost_revenant.phase1.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/frost_revenant/phase1_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.frost_revenant.phase1.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/frost_revenant/phase1_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.frost_revenant.phase2.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/frost_revenant/phase2_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.frost_revenant.phase2.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/frost_revenant/phase2_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.hell_gao.death.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/hell_gao/death_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.hell_gao.death.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/hell_gao/death_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.hell_gao.first-clear.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/hell_gao/first-clear_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.hell_gao.intro.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/hell_gao/intro_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.hell_gao.intro.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/hell_gao/intro_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.hell_gao.phase1.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/hell_gao/phase1_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.hell_gao.phase1.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/hell_gao/phase1_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.hell_gao.phase2.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/hell_gao/phase2_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.hell_gao.phase2.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/hell_gao/phase2_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.magma_warden.death.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/magma_warden/death_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.magma_warden.death.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/magma_warden/death_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.magma_warden.first-clear.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/magma_warden/first-clear_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.magma_warden.intro.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/magma_warden/intro_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.magma_warden.intro.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/magma_warden/intro_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.magma_warden.phase1.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/magma_warden/phase1_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.magma_warden.phase1.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/magma_warden/phase1_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.magma_warden.phase2.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/magma_warden/phase2_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.magma_warden.phase2.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/magma_warden/phase2_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.mire_abomination.death.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/mire_abomination/death_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.mire_abomination.death.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/mire_abomination/death_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.mire_abomination.first-clear.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/mire_abomination/first-clear_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.mire_abomination.intro.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/mire_abomination/intro_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.mire_abomination.intro.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/mire_abomination/intro_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.mire_abomination.phase1.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/mire_abomination/phase1_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.mire_abomination.phase1.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/mire_abomination/phase1_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.mire_abomination.phase2.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/mire_abomination/phase2_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.mire_abomination.phase2.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/mire_abomination/phase2_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.sylvan_matriarch.death.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/sylvan_matriarch/death_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.sylvan_matriarch.death.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/sylvan_matriarch/death_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.sylvan_matriarch.first-clear.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/sylvan_matriarch/first-clear_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.sylvan_matriarch.intro.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/sylvan_matriarch/intro_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.sylvan_matriarch.intro.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/sylvan_matriarch/intro_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.sylvan_matriarch.phase1.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/sylvan_matriarch/phase1_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.sylvan_matriarch.phase1.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/sylvan_matriarch/phase1_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.sylvan_matriarch.phase2.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/sylvan_matriarch/phase2_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.sylvan_matriarch.phase2.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/sylvan_matriarch/phase2_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.temporal_pharaoh.death.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/temporal_pharaoh/death_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.temporal_pharaoh.death.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/temporal_pharaoh/death_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.temporal_pharaoh.first-clear.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/temporal_pharaoh/first-clear_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.temporal_pharaoh.intro.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/temporal_pharaoh/intro_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.temporal_pharaoh.intro.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/temporal_pharaoh/intro_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.temporal_pharaoh.phase1.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/temporal_pharaoh/phase1_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.temporal_pharaoh.phase1.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/temporal_pharaoh/phase1_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.temporal_pharaoh.phase2.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/temporal_pharaoh/phase2_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.temporal_pharaoh.phase2.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/temporal_pharaoh/phase2_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.thunder_dragon.death.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/thunder_dragon/death_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.thunder_dragon.death.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/thunder_dragon/death_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.thunder_dragon.first-clear.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/thunder_dragon/first-clear_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.thunder_dragon.intro.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/thunder_dragon/intro_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.thunder_dragon.intro.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/thunder_dragon/intro_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.thunder_dragon.phase1.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/thunder_dragon/phase1_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.thunder_dragon.phase1.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/thunder_dragon/phase1_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.thunder_dragon.phase2.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/thunder_dragon/phase2_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.thunder_dragon.phase2.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/thunder_dragon/phase2_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.voidwyrm.death.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/voidwyrm/death_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.voidwyrm.death.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/voidwyrm/death_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.voidwyrm.first-clear.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/voidwyrm/first-clear_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.voidwyrm.intro.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/voidwyrm/intro_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.voidwyrm.intro.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/voidwyrm/intro_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.voidwyrm.phase1.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/voidwyrm/phase1_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.voidwyrm.phase1.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/voidwyrm/phase1_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.voidwyrm.phase2.0": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/voidwyrm/phase2_0",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "voice.voidwyrm.phase2.1": {
+    "sounds": [
+      {
+        "name": "vampyuyu:voice/voidwyrm/phase2_1",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.voice"
   }
 }

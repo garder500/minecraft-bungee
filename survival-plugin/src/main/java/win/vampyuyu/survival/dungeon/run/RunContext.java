@@ -24,6 +24,11 @@ public final class RunContext {
     public volatile DungeonConfig cfg;
     /** Players with a hub teleport in flight (uuid -> start millis): see {@link RunManager#sendOut}. */
     final java.util.Map<java.util.UUID, Long> exiting = new java.util.concurrent.ConcurrentHashMap<>();
+    /**
+     * Where a player goes back to when their run ends, instead of the hub (uuid -> location). Set for a run opened from
+     * elsewhere than the dungeon entrance (a Fracture of the Breath, from a Realm), consumed by {@link RunManager#sendOut}.
+     */
+    public final java.util.Map<java.util.UUID, Location> returnTo = new java.util.concurrent.ConcurrentHashMap<>();
     /** Set while the feature itself teleports a player, so the teleport guard lets it through. */
     private boolean teleporting;
 

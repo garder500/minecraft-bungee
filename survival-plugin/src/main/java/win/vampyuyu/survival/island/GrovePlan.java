@@ -2,6 +2,7 @@ package win.vampyuyu.survival.island;
 
 import java.util.Random;
 import org.bukkit.Material;
+import win.vampyuyu.survival.api.Realm;
 
 /**
  * The Whispering Grove (GDD 3.1), relative coordinates, surface at y = 0: a living island of moss and grass held up
@@ -11,13 +12,16 @@ import org.bukkit.Material;
  */
 public final class GrovePlan {
     /** Bump when the layout changes so an existing Grove is rebuilt (the marker file stores it). */
-    public static final int VERSION = 1;
+    public static final int VERSION = 3;
     public static final int MAIN_RADIUS = 24;
     public static final int ISLET_COUNT = 6;
     public static final int ISLET_ORBIT = 44;
     public static final int ISLET_RADIUS = 9;
     public static final int BORDER = 120;
     private static final long SEED = 0x6120_0030L;
+
+    /** The seal block of the Guardian's door (plan coordinates): right-click it with the Bastion key. */
+    public static final int[] SEAL = SealDoor.sealCell(0, 1, -12);
 
     private GrovePlan() {}
 
@@ -69,8 +73,11 @@ public final class GrovePlan {
         ShapeKit.disc(plan, s[0], 0, s[2], 4.5, Material.MOSS_BLOCK);
         ShapeKit.ring(plan, s[0], 0, s[2], 3.2, 4.4, Material.MUD_BRICKS);
         plan.set(s[0], 0, s[2], Material.SHROOMLIGHT);
-        plan.sign(s[0] + 2, 1, s[2] + 1, Material.MANGROVE_SIGN, "rotation=0", "Whispering Grove", "/hub to leave", "/island to go home", "");
+        // the return arch and its sign (it also clears the cell of the old standing sign on a rebuild)
+        ReturnArch.build(plan, Realm.GROVE, s[0], s[1], s[2]);
         plan.anchor("spawn", s[0], s[1], s[2]);
+        // the sealed door where the exploration ends: right-click the seal with the Bastion key
+        SealDoor.build(plan, Realm.GROVE, SEAL[0], 1, SEAL[2]);
         plan.anchor("queen", 0, 1, -6);
         plan.biome(-MAIN_RADIUS - 4, -20, -MAIN_RADIUS - 4, MAIN_RADIUS + 4, 12, MAIN_RADIUS + 4, "minecraft:lush_caves");
         return plan;

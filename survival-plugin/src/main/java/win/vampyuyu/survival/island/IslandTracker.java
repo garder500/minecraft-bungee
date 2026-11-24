@@ -358,8 +358,8 @@ public final class IslandTracker implements Listener {
             }
             return;
         }
-        if (SkyblockWorlds.HUB.equals(name)) {
-            event.setCancelled(true); // the hub is a safe zone
+        if (SkyblockWorlds.HUB.equals(name) && !HubBreach.contains(player.getLocation(), cfg.hubY)) {
+            event.setCancelled(true); // the hub is a safe zone, except the Breach where the immune cells come through
         }
     }
 

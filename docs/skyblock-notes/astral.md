@@ -9,7 +9,8 @@ Progress in `realms/astral.json` (`AstralProgress`). No SQL table, no migration.
 `/astral go` checks `BossApi.kills` of each Guardian of `boss.guardian.*` (each one names its Realm) and lists the Realms
 that are missing. `/astral go force` (permission `vampyuyu.sb.astral.admin`) skips the check, and the setting
 `realm.astral.require-guardians` (false) opens it to everyone. There is no Sky Gate: the Gates are the eight Realms.
-The way in is the command for now (a mouth in the Quai after the Great Disillusion, GDD 4.4, is a later step).
+The way in is `/astral go` or the **mouth in the Quai** (GDD 4.4; `island/QuaiMouth`, see `quai.md`): sealed until `canEnter`,
+then open for that player, and walking into it calls `AstralApi.enter`. `AstralApi` now also exposes `ready()` and `enter(player, force)`.
 `AstralApi.canEnter` / `survived` are published for the Raid. Sitting on the Throne calls `ParagonApi.markAstralCleared` (the Paragon feature, #52).
 
 ## Regions (`AstralLayout`, west to east, relative to y = 100)

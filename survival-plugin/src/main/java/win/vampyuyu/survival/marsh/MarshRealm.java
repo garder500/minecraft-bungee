@@ -108,6 +108,7 @@ public final class MarshRealm implements Listener {
         core.listen(this);
         islands = core.service(IslandApi.class).filter(IslandService.class::isInstance).map(IslandService.class::cast).orElse(null);
         core.service(SkyGateApi.class).ifPresent(gates -> gates.setDestination(Realm.MARSHES, p -> ready ? spawn() : null));
+        core.service(SkyGateApi.class).ifPresent(gates -> gates.setReturnArch(Realm.MARSHES, () -> ready ? spawn() : null));
         core.scheduler().nextTick(this::setupWorld);
         tasks.add(core.scheduler().repeating(20L, 20L, this::tick));
         tasks.add(core.scheduler().repeating(600L, 600L, this::flush));
@@ -117,6 +118,7 @@ public final class MarshRealm implements Listener {
         tasks.forEach(Scheduler.Handle::cancel);
         tasks.clear();
         core.service(SkyGateApi.class).ifPresent(gates -> gates.setDestination(Realm.MARSHES, null));
+        core.service(SkyGateApi.class).ifPresent(gates -> gates.setReturnArch(Realm.MARSHES, null));
         dirty = true;
         flushNow();
     }

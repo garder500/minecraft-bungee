@@ -15,7 +15,7 @@ import win.vampyuyu.survival.api.Realm;
  */
 public final class QuaiPlan {
     /** Bump when the layout changes so an existing Quai is rebuilt (the marker file stores it). */
-    public static final int VERSION = 3;
+    public static final int VERSION = 4;
     public static final int RADIUS = 22;
     /** Hub world Z of the platform centre: the hub border is +-100, the hub ring road ends at z = 44. */
     public static final int CENTER_Z = 72;
@@ -104,6 +104,11 @@ public final class QuaiPlan {
     }
 
     public static BlockPlan build(int cap) {
+        return build(cap, true);
+    }
+
+    /** {@code withMouth} false gives the platform and the Gates alone (the tests check the mouth does not touch them). */
+    static BlockPlan build(int cap, boolean withMouth) {
         BlockPlan plan = new BlockPlan(cap);
         deck(plan);
         paths(plan);
@@ -112,6 +117,9 @@ public final class QuaiPlan {
             gate(plan, gate);
         }
         bridge(plan);
+        if (withMouth) {
+            QuaiMouth.build(plan);
+        }
         underside(plan);
         plan.anchor("spawn", 0, 1, SPAWN_Z);
         for (Gate gate : GATES) {

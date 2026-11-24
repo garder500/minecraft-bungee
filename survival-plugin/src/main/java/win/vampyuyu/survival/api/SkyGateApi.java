@@ -38,6 +38,13 @@ public interface SkyGateApi {
     Location quaiSpawn();
 
     /**
+     * Where the return arch of a Realm stands: the supplier gives the arrival spot of its landing (the one the Gate
+     * leads to; null while the Realm is not ready). Walking into the veil of the arch takes the player back to the
+     * Quai with the Gate's transition. Pass null to remove it.
+     */
+    default void setReturnArch(Realm realm, java.util.function.Supplier<Location> arrivalSpot) {}
+
+    /**
      * A refusal rule for the Gates: it gets the player and the Realm and returns the reason a Gate stays shut, or null
      * to let the player through (the storms of the Celestial Breath close some routes). Several guards may be added.
      */

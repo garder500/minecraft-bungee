@@ -29,7 +29,7 @@ public class CitadelTest {
         assertEquals(a.size(), b.size());
         assertTrue(a.count(Material.GOLD_BLOCK) > 10);
         assertTrue(a.count(Material.YELLOW_STAINED_GLASS) > 40);
-        assertEquals(1, a.signs().size());
+        assertEquals("the return arch sign and the seal sign", 2, a.signs().size());
         assertEquals("one column of dust each", 4, CitadelPlan.dustColumns().length);
         for (int[] c : CitadelPlan.dustColumns()) {
             assertTrue(a.solidAt(c[0], 12, c[1]));
@@ -42,7 +42,11 @@ public class CitadelTest {
         int[] p = plan.anchor("pharaoh");
         assertTrue("floor under the Pharaoh", plan.solidAt(p[0], 0, p[2]) || plan.get(p[0], 1, p[2]) == Material.GOLD_BLOCK);
         assertEquals(Material.AIR, plan.get(2, 2, p[2] + 2));
-        assertEquals("the gate is open", Material.AIR, plan.get(0, 1, p[2] + 8));
+        assertEquals("the gate is sealed, behind the Pharaoh's seal door", SealDoor.palette(win.vampyuyu.survival.api.Realm.CITADEL).fill(), plan.get(0, 1, p[2] + 7)); // the fill is recessed one block behind the door plane
+        for (int z = CitadelPlan.SEAL[2] - 4; z < CitadelPlan.SEAL[2]; z++) {
+            assertTrue("the corridor is plugged at " + z, plan.solidAt(0, 1, z) && plan.solidAt(0, 2, z));
+        }
+        assertEquals(Material.GOLD_BLOCK, plan.get(CitadelPlan.SEAL[0], CitadelPlan.SEAL[1], CitadelPlan.SEAL[2]));
     }
 
     @Test

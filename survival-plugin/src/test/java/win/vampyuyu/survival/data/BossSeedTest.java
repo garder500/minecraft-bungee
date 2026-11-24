@@ -22,8 +22,8 @@ public class BossSeedTest {
         expected.put("boss", 11);
         expected.put("boss_equipment", 15);
         expected.put("boss_phase", 36);
-        expected.put("boss_ability", 127);
-        expected.put("boss_ability_param", 284);
+        expected.put("boss_ability", 130); // + the Echo's three landings
+        expected.put("boss_ability_param", 289); // + their length and the stun after two dives
         expected.put("boss_rank_bonus", 30);
         expected.put("boss_drop", 38);
         expected.put("boss_summon", 8);
@@ -47,7 +47,7 @@ public class BossSeedTest {
         expected.put("boss_world_spot", 2);
         expected.put("boss_world_pool", 0);
         expected.forEach((table, rows) -> assertEquals(table, rows.longValue(), count(db, table, "")));
-        assertEquals(136, count(db, "setting", "id GLOB 'boss.*'"));
+        assertEquals(158, count(db, "setting", "id GLOB 'boss.*'")); // + hp-factor.voidwyrm, + 19 speech rows, + hits-to-down, + hp-factor.devourer
         assertEquals(3, count(db, "setting_item", "setting_id = 'boss.world.announce-before-seconds'"));
     }
 
@@ -60,7 +60,7 @@ public class BossSeedTest {
         assertEquals(11, count(db, "dungeon_reward", ""));
         assertEquals(7, count(db, "dungeon_trade", ""));
         assertEquals(11, count(db, "dungeon_trade_cost", ""));
-        assertEquals(52, count(db, "setting", "id GLOB 'dungeon.*'"));
+        assertEquals(61, count(db, "setting", "id GLOB 'dungeon.*'")); // + hits-to-down, + 8 dungeon.rooms.ambush-* (waves, cap, telegraph)
         assertEquals(11, count(db, "setting_item", "setting_id = 'dungeon.rules.allowed-commands'"));
     }
 

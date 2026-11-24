@@ -87,6 +87,8 @@ ore/bronzite_bar
 ore/cinderheart
 ore/frostium_bar
 ore/heartwood
+ore/pressure_pearl
+ore/soul_ash
 ore/starcore_bar
 ore/stasis_crystal
 ore/sunstone_bar

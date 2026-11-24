@@ -66,6 +66,10 @@ public final class SummonListener implements Listener {
             return;
         }
         BossDefinition def = byItem.get(id.get());
+        if (event.getClickedBlock() != null && core.service(win.vampyuyu.survival.api.BastionApi.class)
+                .map(b -> b.isSeal(event.getClickedBlock())).orElse(false)) {
+            return; // a key against its seal is the seal's business (SealDoors): no "take it to a gate" refusal
+        }
         if (def == null) {
             if (BossItems.byId().containsKey(id.get()) && BossItems.byId().get(id.get()).type().equals("SUMMON ITEM")) {
                 event.setCancelled(true);
@@ -84,7 +88,27 @@ public final class SummonListener implements Listener {
         }
     }
 
-    /** Tries a summon; returns the English refusal, or null when the boss appeared and the item was consumed. */
+    /** The refusal when the player is not at the altar (in its world and within its radius), or null. */
+    private static @Nullable String awayFromAltar(Player player, BossDefinition.@Nullable Altar altar) {
+        if (altar == null || !player.getWorld().getName().equals(altar.world())) {
+            return "You must be at the altar to use this.";
+        }
+        if (Fx.flat(player.getLocation(), altarCentre(player, altar)) > altar.radius()) {
+            return "You are too far from the altar. Stand within " + (int) altar.radius() + " blocks of it.";
+        }
+        return null;
+    }
+
+    /** The altar centre closest to the player (every island has its own altar in its End cell). */
+    private static Location altarCentre(Player player, BossDefinition.Altar altar) {
+        double[] xz = altar.centreNear(player.getLocation().getX(), player.getLocation().getZ());
+        return new Location(player.getWorld(), xz[0], altar.y(), xz[1]);
+    }
+
+    /**
+     * Tries a summon; returns the English refusal, or null when the boss appeared and the item was consumed, or (a Bastion key
+     * at its altar) when the Bastion is opening: the key is then spent when the Guardian wakes.
+     */
     @Nullable String summon(Player player, BossDefinition def, EquipmentSlot hand) {
         BossDefinition.Summon rules = def.summon();
         if (rules == null) {
@@ -96,26 +120,31 @@ public final class SummonListener implements Listener {
         if (core.service(DungeonApi.class).map(d -> d.inDungeon(player)).orElse(false)) {
             return "You cannot summon this inside a dungeon.";
         }
-        if (core.service(win.vampyuyu.survival.api.BastionApi.class).map(b -> b.isKey(rules.item())).orElse(false)) {
-            return "This is a Bastion key. Take it to a Bastion gate and open it with /bastion.";
-        }
         World world = player.getWorld();
+        Optional<win.vampyuyu.survival.api.BastionApi> bastions = core.service(win.vampyuyu.survival.api.BastionApi.class);
+        Optional<String> bastion = bastions.flatMap(b -> b.bastionOfKey(rules.item()));
+        if (bastion.isPresent()) {
+            // A Bastion key never wakes its boss in a shared world, where the attacks would hit every player around.
+            // At its altar (the Echo Key at the Rift altar of the Hub) it opens the Bastion, an instance for the party.
+            if (!rules.mode().equals("altar")) {
+                return "This is a Bastion key. Take it to a Bastion gate and open it with /bastion.";
+            }
+            if (!rules.worlds().isEmpty() && !rules.worlds().contains(world.getName())) {
+                return "This item does not work in this world.";
+            }
+            String away = awayFromAltar(player, rules.altar());
+            return away != null ? away : bastions.get().enter(player, bastion.get());
+        }
         if (rules.worlds().isEmpty() ? !SkyblockWorlds.isSkyblock(world.getName()) : !rules.worlds().contains(world.getName())) {
             return "This item does not work in this world.";
         }
         Location spawn = player.getLocation();
         if (rules.mode().equals("altar")) {
-            BossDefinition.Altar altar = rules.altar();
-            if (altar == null || !world.getName().equals(altar.world())) {
-                return "You must be at the altar to use this.";
+            String away = awayFromAltar(player, rules.altar());
+            if (away != null) {
+                return away;
             }
-            // every island has its own altar in its End cell: use the one closest to the player
-            double[] xz = altar.centreNear(player.getLocation().getX(), player.getLocation().getZ());
-            Location centre = new Location(world, xz[0], altar.y(), xz[1]);
-            if (Fx.flat(player.getLocation(), centre) > altar.radius()) {
-                return "You are too far from the altar. Stand within " + (int) altar.radius() + " blocks of it.";
-            }
-            spawn = centre;
+            spawn = altarCentre(player, rules.altar());
         } else {
             spawn = freeSpot(player);
         }

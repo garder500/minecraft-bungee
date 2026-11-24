@@ -28,20 +28,16 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
-import win.vampyuyu.survival.api.BastionApi;
 import win.vampyuyu.survival.api.IslandApi;
 import win.vampyuyu.survival.api.Realm;
 import win.vampyuyu.survival.api.SkyGateApi;
@@ -70,12 +66,11 @@ import win.vampyuyu.survival.island.WorldSetup;
  * generic Realm resource feature ({@link RealmService}). The Lightning Rod machine that burns it is in the quarry feature.
  *
  * <p><b>Opening and fight</b>: defeating the boss named by {@code island.storm.gate-boss} lights Gate 6; the seal on the
- * Eyrie opens the Tempest Bastion ({@link BastionApi}) for a player holding its key.
+ * Eyrie opens the Tempest Bastion for a player holding its key (the shared {@code bastion.SealDoors}).
  */
 public final class StormRealm implements Listener {
     public static final String WORLD = SkyblockWorlds.STORM;
     public static final String DEFAULT_GATE_BOSS = "sylvan_matriarch";
-    public static final String BASTION = "tempest_bastion";
     public static final String THUNDER_QUARTZ = RealmItems.THUNDER_QUARTZ;
     public static final String MARKER_FILE = "realms/storm-world.json";
     public static final String ADMIN = "vampyuyu.sb.storm.admin";
@@ -144,6 +139,7 @@ public final class StormRealm implements Listener {
         registerCommand();
         islands = core.service(IslandApi.class).filter(IslandService.class::isInstance).map(IslandService.class::cast).orElse(null);
         core.service(SkyGateApi.class).ifPresent(gates -> gates.setDestination(Realm.ARCHIPELAGO, p -> ready ? spawn() : null));
+        core.service(SkyGateApi.class).ifPresent(gates -> gates.setReturnArch(Realm.ARCHIPELAGO, () -> ready ? spawn() : null));
         core.scheduler().nextTick(this::setupWorld);
         tasks.add(core.scheduler().repeating(1L, 1L, this::platformTick));
         tasks.add(core.scheduler().repeating(4L, 4L, this::padTick));
@@ -156,6 +152,7 @@ public final class StormRealm implements Listener {
         tasks.forEach(Scheduler.Handle::cancel);
         tasks.clear();
         core.service(SkyGateApi.class).ifPresent(gates -> gates.setDestination(Realm.ARCHIPELAGO, null));
+        core.service(SkyGateApi.class).ifPresent(gates -> gates.setReturnArch(Realm.ARCHIPELAGO, null));
         World world = world();
         if (world != null) {
             for (Mover mover : movers) {
@@ -288,11 +285,7 @@ public final class StormRealm implements Listener {
         if (gates == null || !gates.light(id, Realm.ARCHIPELAGO)) {
             return false;
         }
-        Player player = Bukkit.getPlayer(id);
-        if (player != null) {
-            core.msg().ok(player, "Gate 6 of the Quai des Huit lights: the Tempestuous Archipelago is open.");
-        }
-        return true;
+        return true; // the Quai title and chat line come from SkyGates.light
     }
 
     // ---------------------------------------------------------------- moving platforms
@@ -662,32 +655,6 @@ public final class StormRealm implements Listener {
                 block.setType(Material.CHISELED_QUARTZ_BLOCK, false);
             }
         });
-    }
-
-    // ---------------------------------------------------------------- the seal
-
-    @EventHandler(ignoreCancelled = false)
-    public void onInteract(PlayerInteractEvent event) {
-        Block block = event.getClickedBlock();
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getHand() != EquipmentSlot.HAND || block == null
-                || !inRealm(block.getWorld())) {
-            return;
-        }
-        if (block.getX() != StormPlan.SEAL[0] || block.getY() - StormPlan.ORIGIN_Y != StormPlan.SEAL[1]
-                || block.getZ() != StormPlan.SEAL[2] + 1) {
-            return;
-        }
-        event.setCancelled(true);
-        Player player = event.getPlayer();
-        BastionApi api = core.service(BastionApi.class).orElse(null);
-        if (api == null) {
-            core.msg().warn(player, "The seal does not answer: Bastions are not available.");
-            return;
-        }
-        String refusal = api.enter(player, BASTION);
-        if (refusal != null) {
-            core.msg().warn(player, refusal);
-        }
     }
 
     // ---------------------------------------------------------------- /storm

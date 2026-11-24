@@ -51,6 +51,22 @@ public class ShippedConfigTest {
     }
 
     @Test
+    public void theEchoLandsInEveryPhaseFliesSlowerAndHasEightyFivePercentOfTheCurveHealth() throws Exception {
+        BossDefinition def;
+        win.vampyuyu.survival.items.combat.PowerCurve curve;
+        try (var db = win.vampyuyu.survival.data.TestDb.seeded()) { // every domain: the health comes from the power curve
+            curve = win.vampyuyu.survival.items.combat.PowerCurve.load(db);
+            def = BossRepo.load(db).bosses().get("voidwyrm");
+        }
+        for (BossDefinition.Phase phase : def.phases()) {
+            assertTrue(phase.name() + " has a landing (the melee window)",
+                phase.abilities().stream().anyMatch(a -> a.type() == AbilityType.PERCH && a.num("seconds", 0) >= 4));
+        }
+        assertTrue("slower than the vanilla dragon", def.speed() < 1.0);
+        assertEquals(curve.bossHealth(5, 180, 0.5) * 0.85, def.health(), curve.bossHealth(5, 180, 0.5) * 0.01);
+    }
+
+    @Test
     public void cryptLordHasNoSummonItem() throws Exception {
         assertNull(shipped().bosses().get("crypt_lord").summon());
     }
@@ -131,6 +147,15 @@ public class ShippedConfigTest {
         }
         assertEquals("every Skyblock boss has a custom look", 6, BossSkinService.LOOKS.size());
         assertTrue("the dragon ignores invisibility, so it is hidden", BossSkinService.LOOKS.get("voidwyrm").hide());
+    }
+
+    @Test
+    public void bossModelsFaceWhereTheBossLooks() {
+        // checked in game 2026-11-20: a mob's yaw is where it looks, the vanilla dragon's yaw is 180 degrees from its heading
+        for (var entry : BossSkinService.LOOKS.entrySet()) {
+            float expected = entry.getKey().equals("voidwyrm") ? 180f : 0f;
+            assertEquals(entry.getKey(), expected, entry.getValue().yawOffset(), 0f);
+        }
     }
 
     @Test

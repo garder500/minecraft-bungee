@@ -11,7 +11,11 @@ reuses the instance, party, key, lives, time limit and reward plumbing of `docs/
 * Arena: `sb_bastion_<n>`, palette `singularity` (radius 40, up to 5 players, 3 lives each, 25 min). Same void rescue as every Bastion.
 * The key is spent when the Devourer wakes, returned on a server fault, like every Bastion key.
 
-## The fight (health about 52 000 at tier 5, x(1 + 0.5 (p - 1)) capped x3, enrage after 9 min, phase damage x1.0 / x1.2 / x1.4)
+## The fight (health about 520 000, fixed, enrage after 9 min, phase damage x1.0 / x1.2 / x1.4)
+Health is 10 tier-5 Guardian pools (`boss.settings.hp-factor.devourer` 5.0 instead of 0.5) and does NOT grow with the number of
+attackers (owner decision 2026-11-23, true for every boss). At the shared factor a tier-5 player hitting without a miss killed one
+pool in 35 s (real client); now a flawless solo player needs about 6 min (under the enrage), a real group of four about 3.
+
 1. **Event Horizon** (100 %): manipulation of time and distance. `time_echo` marks where each target stands (cyan: the past) and where
    they are walking (violet: the future); both strike after the telegraph. `vacuum` pulls everyone in, then detonates. `ground_slam`.
 2. **Metamorphic Assimilation** (66 %): it wears the eight Guardians' mechanics, one form each: fire ring (Ashes), webs (Grove), bone

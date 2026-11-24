@@ -6,6 +6,9 @@ INSERT INTO bastion (id, position, realm, name, tagline, guardian, key_item, pal
 INSERT INTO bastion (id, position, realm, name, tagline, guardian, key_item, palette, radius, min_players, max_players, time_limit_seconds, deaths_allowed) VALUES ('citadel_bastion', 4, 'Citadel of Golden Sands', 'Citadel Bastion', 'The Temporal Pharaoh counts the hours the Devourer stole.', 'temporal_pharaoh', 'pharaoh_scarab', 'citadel', 30, 1, 5, 1200, 3);
 INSERT INTO bastion (id, position, realm, name, tagline, guardian, key_item, palette, radius, min_players, max_players, time_limit_seconds, deaths_allowed) VALUES ('tempest_bastion', 5, 'Tempestuous Archipelago', 'Tempest Bastion', 'The Thunder Dragon turns the winds of a world that is gone.', 'thunder_dragon', 'tempest_key', 'storm', 36, 1, 5, 1200, 3);
 INSERT INTO bastion (id, position, realm, name, tagline, guardian, key_item, palette, radius, min_players, max_players, time_limit_seconds, deaths_allowed) VALUES ('hell_gao_bastion', 99, 'Between Two Pulses', 'Interpulse Rift', 'Something stands where the world holds its breath.', 'hell_gao', 'interpulse_key', 'rift', 40, 2, 5, 1500, 2);
+-- The Echo of the Rift (dungeon 0, GDD 4.1): the Echo Key at the Rift altar of the Hub opens this instance (SummonListener), so the
+-- fight never runs in the shared Hub where its attacks would hit every player around. Not part of the Raid's eight.
+INSERT INTO bastion (id, position, realm, name, tagline, guardian, key_item, palette, radius, min_players, max_players, time_limit_seconds, deaths_allowed) VALUES ('echo_rift', -1, 'The Hub', 'Rift of the Echo', 'A fragment of the Devourer''s hunger screams where the sky tore.', 'voidwyrm', 'echo_key', 'rift', 40, 1, 5, 1200, 3);
 INSERT INTO setting (id, type, value, note) VALUES ('bastion.enabled', 'bool', 'true', 'Bastions can be entered');
 INSERT INTO setting (id, type, value, note) VALUES ('bastion.max-concurrent', 'int', '4', 'Bastion instances alive at once on this server');
 INSERT INTO setting (id, type, value, note) VALUES ('bastion.countdown-seconds', 'int', '8', 'Time between the arrival of the party and the Guardian waking');
@@ -29,3 +32,12 @@ INSERT INTO setting_item (setting_id, position, value) VALUES ('bastion.raid.req
 INSERT INTO setting (id, type, value, note) VALUES ('bastion.raid.first-clear-coins', 'real', '4000', 'Coins each member gets the first time they clear the Raid, on top of the boss coins (GDD 16.2: at most 5 000 in all). A guess to measure.');
 INSERT INTO setting (id, type, value, note) VALUES ('bastion.raid.collapse-phase', 'int', '2', 'Phase index (0 = first) from which the arena falls ring by ring.');
 INSERT INTO setting (id, type, value, note) VALUES ('bastion.raid.collapse-seconds', 'int', '3', 'Seconds between two rings of the arena falling in the last phase.');
+-- The seal of each Realm (the sealed door next to its Guardian) opens this Bastion: right-click it with the key, like /bastion enter. Realm ids, not world names.
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.seal.ashes', 'text', 'ashes_bastion', 'Bastion opened by the seal of the ashes Realm (empty = the seal does nothing).');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.seal.grove', 'text', 'grove_bastion', 'Bastion opened by the seal of the grove Realm (empty = the seal does nothing).');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.seal.heights', 'text', 'heights_bastion', 'Bastion opened by the seal of the heights Realm (empty = the seal does nothing).');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.seal.citadel', 'text', 'citadel_bastion', 'Bastion opened by the seal of the citadel Realm (empty = the seal does nothing).');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.seal.marshes', 'text', 'marsh_bastion', 'Bastion opened by the seal of the marshes Realm (empty = the seal does nothing).');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.seal.archipelago', 'text', 'tempest_bastion', 'Bastion opened by the seal of the archipelago Realm (empty = the seal does nothing).');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.seal.depths', 'text', 'depths_bastion', 'Bastion opened by the seal of the depths Realm (empty = the seal does nothing).');
+INSERT INTO setting (id, type, value, note) VALUES ('bastion.seal.necropolis', 'text', 'necropolis_bastion', 'Bastion opened by the seal of the necropolis Realm (empty = the seal does nothing).');

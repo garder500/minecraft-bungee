@@ -16,4 +16,9 @@ public interface RuneApi {
 
     /** Called by the combat code when {@code attacker} lands a Surge on {@code target} with {@code weapon}. */
     void onSurge(Player attacker, LivingEntity target, ItemStack weapon);
+
+    /** Same, knowing the damage of the Surge hit (the Tempest rune chains a share of it). */
+    default void onSurge(Player attacker, LivingEntity target, ItemStack weapon, double hit) {
+        onSurge(attacker, target, weapon);
+    }
 }

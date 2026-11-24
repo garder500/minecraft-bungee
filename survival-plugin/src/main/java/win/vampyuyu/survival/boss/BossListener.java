@@ -89,6 +89,35 @@ public final class BossListener implements Listener {
         }
     }
 
+    // ---------------------------------------------------------------- stunned flyer
+
+    /**
+     * A landed (stunned) dragon still shoves everything near its wings away every tick (vanilla pushes even in a sitting
+     * phase; only the wing damage stops). Measured in game: a player beside the landed Echo was pushed 8 blocks in a
+     * second, so a sword never reached it. While the boss is grounded its pushes are cancelled.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onPushed(io.papermc.paper.event.entity.EntityPushedByEntityAttackEvent event) {
+        if (event.getEntity() instanceof Player && groundedBoss(event.getPushedBy())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onKnockback(org.bukkit.event.entity.EntityKnockbackByEntityEvent event) {
+        if (event.getEntity() instanceof Player && groundedBoss(event.getSourceEntity())) {
+            event.setCancelled(true);
+        }
+    }
+
+    private boolean groundedBoss(@Nullable Entity source) {
+        if (source instanceof org.bukkit.entity.ComplexEntityPart part) {
+            source = part.getParent();
+        }
+        BossSession session = source == null ? null : manager.sessionOfBoss(source);
+        return session != null && session.grounded();
+    }
+
     // ---------------------------------------------------------------- damage
 
     @EventHandler(priority = EventPriority.HIGHEST)

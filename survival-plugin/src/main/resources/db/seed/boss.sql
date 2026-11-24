@@ -1,8 +1,11 @@
 -- Bosses, slayers, summon recipes and world boss spots; the global knobs are 'boss.*' setting rows.
 -- Converted from the former boss.yml by scripts/yaml_to_seed_boss.py; edit it in the panel.
 -- Loot balance: pity is +0.1 percentage point per dry kill, capped at +1.5 points.
+INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-factor.voidwyrm', 'real', '0.425', 'Health factor of the Echo of the Rift instead of boss.settings.hp-factor (85 %: a flyer takes fewer hits, even with its landings).');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-factor.devourer', 'real', '5.0', 'Health factor of the Devourer (the final Raid) instead of boss.settings.hp-factor: x10 the Guardian pool, fixed whatever the group size. Measured in game: a tier-5 player hitting without a miss killed one Guardian pool in 35 s; with 5.0 a flawless solo needs about 6 min (enrage 9), a real group of four about 3.');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-scale', 'real', '1.0', 'Multiplies every boss health pool (1 = the GDD 8.7 curve as is).');
-INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.damage-scale', 'real', '0.6', 'Multiplies every hit bosses deal to players.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.damage-scale', 'real', '1.0', 'Multiplies every hit bosses deal to players. 1.0 = the hit PowerCurve.bossHitDamage sizes (hits-to-down hits for a tier-matched player); the old 0.6 hid the missing vanilla-armor layer.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hits-to-down', 'int', '10', 'A player in the full armor of the boss tier goes down after this many plain boss hits (Ward and vanilla armor counted): 10 hits = 10 % of the health per hit, GDD 8 to 12. Measured in game.');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.incoming-damage-scale', 'real', '1.0', 'Multiplies every hit players deal to bosses (calibrate to the items damage formula).');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.target-seconds', 'real', '180', 'GDD 8.7: boss health = reference DPS of the tier x this many seconds x hp-factor (reference weapon alone, hitting the weakness).');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hp-factor', 'real', '0.5', 'GDD 8.7: share of the time a player really lands hits. Halves the health, so a player of the tier needs about target-seconds.');
@@ -18,7 +21,7 @@ INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.visual-health
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.hit-iframes', 'int', '6', 'Invulnerability ticks of a boss between two hits.');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.magic-find-cap', 'int', '1000', 'Fortune above this is ignored.');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.purge-orphans', 'bool', 'true', 'Remove tagged boss entities left behind (bosses never persist across a restart).');
-INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.scale-min-share', 'real', '0.01', 'A player grows the boss health pool only after dealing this fraction of its base health.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.scale-min-share', 'real', '0.01', 'Unused: boss health is fixed and no longer grows with the number of attackers (2026-11-23).');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.repeat-window-minutes', 'int', '60', 'Kills of the same boss inside this window lower the next payout (coins and combat xp)...');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.repeat-decay', 'real', '0.2', '...by this fraction per earlier kill...');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.repeat-floor', 'real', '0.25', '...down to this fraction (0 decay turns the damper off).');
@@ -40,11 +43,14 @@ INSERT INTO setting (id, type, value, note) VALUES ('boss.world.duration-minutes
 INSERT INTO setting (id, type, value, note) VALUES ('boss.world.retry-minutes', 'int', '5', '');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.world.leaderboard-size', 'int', '5', '');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.world.history-size', 'int', '10', '');
-INSERT INTO boss (id, kind, tier, name, description, entity, health, damage, armor, scale, speed, knockback_resistance, bar_color, bar_overlay, arena_radius, arena_leash, arena_projectile_range, arena_no_fly, arena_no_build, arena_no_teleport, arena_min_players, arena_scale_per_player, arena_scale_cap, arena_enrage_seconds, arena_enrage_damage, arena_enrage_growth, arena_idle_despawn_seconds, arena_time_limit_seconds, arena_max_minions, option_size, option_baby, option_glow, option_contact_radius, loot_coins, loot_combat_xp, loot_min_share, loot_share_floor, loot_wings_min_share, loot_announce_below, hp_auto, weakness, resistance) VALUES ('voidwyrm', 'boss', 5, '<gradient:#8a2be2:#e0b0ff><bold>Echo of the Rift</bold></gradient>', 'A fragment of the Devourer''s hunger, torn loose at the Rift. Dodge the dives, shatter the crystals, stay out of the breath.', 'ENDER_DRAGON', 51840.0, 14.0, 0.0, 1.0, 1.0, 1.0, 'PURPLE', 'NOTCHED_10', 80.0, 110.0, 90.0, 0, 1, 1, 1, 0.5, 3.0, 540, 1.5, 0.25, 90, 900, 10, NULL, NULL, 0, 9.0, 4000.0, 60000.0, 0.01, 0.25, 0.05, 0.02, 1, 'ASTRAL', 'EARTH');
+INSERT INTO boss (id, kind, tier, name, description, entity, health, damage, armor, scale, speed, knockback_resistance, bar_color, bar_overlay, arena_radius, arena_leash, arena_projectile_range, arena_no_fly, arena_no_build, arena_no_teleport, arena_min_players, arena_scale_per_player, arena_scale_cap, arena_enrage_seconds, arena_enrage_damage, arena_enrage_growth, arena_idle_despawn_seconds, arena_time_limit_seconds, arena_max_minions, option_size, option_baby, option_glow, option_contact_radius, loot_coins, loot_combat_xp, loot_min_share, loot_share_floor, loot_wings_min_share, loot_announce_below, hp_auto, weakness, resistance) VALUES ('voidwyrm', 'boss', 5, '<gradient:#8a2be2:#e0b0ff><bold>Echo of the Rift</bold></gradient>', 'A fragment of the Devourer''s hunger, torn loose at the Rift. Dodge the dives, shatter the crystals, stay out of the breath.', 'ENDER_DRAGON', 51840.0, 14.0, 0.0, 1.0, 0.45, 1.0, 'PURPLE', 'NOTCHED_10', 80.0, 110.0, 90.0, 0, 1, 1, 1, 0.5, 3.0, 540, 1.5, 0.25, 90, 900, 10, NULL, NULL, 0, 9.0, 4000.0, 60000.0, 0.01, 0.25, 0.05, 0.02, 1, 'ASTRAL', 'EARTH');
 INSERT INTO boss_phase (boss_id, position, name, at, title, subtitle, damage, speed) VALUES ('voidwyrm', 0, 'Circling', 1.0, '', '', 1.0, 1.0);
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 0, 'cast', 0, 'breath_cloud', 14.0, 1.5, 0.8, 'random', 1);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 0, 'cast', 0, 'count', 3.0, NULL);
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 0, 'cast', 1, 'dive_bomb', 18.0, 2.0, 2.2, 'random', 1);
+INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 0, 'cast', 1, 'stun', 3.0, NULL);
+INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 0, 'cast', 2, 'perch', 24.0, 2.5, 1.0, 'nearest', 1);
+INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 0, 'cast', 2, 'seconds', 6.0, NULL);
 INSERT INTO boss_phase (boss_id, position, name, at, title, subtitle, damage, speed) VALUES ('voidwyrm', 1, 'Shielded', 0.7, '<light_purple><bold>THE ECHO SCREAMS', '<gray>The Rift answers. Destroy the end crystals!', 1.15, 1.0);
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 1, 'enter', 0, 'shield_crystals', 12.0, 0.0, 1.0, 'nearest', 1);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'enter', 0, 'count', 4.0, NULL);
@@ -57,12 +63,15 @@ INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) 
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 1, 'cast', 0, 'breath_cloud', 12.0, 1.5, 0.9, 'random', 1);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'cast', 0, 'count', 4.0, NULL);
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 1, 'cast', 1, 'dive_bomb', 16.0, 1.8, 2.4, 'top', 1);
+INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'cast', 1, 'stun', 3.0, NULL);
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 1, 'cast', 2, 'summon_minions', 25.0, 0.0, 1.0, 'nearest', 1);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'cast', 2, 'entity', NULL, 'ENDERMITE');
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'cast', 2, 'count', 4.0, NULL);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'cast', 2, 'health', 60.0, NULL);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'cast', 2, 'radius', 8.0, NULL);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'cast', 2, 'name', NULL, '<dark_purple>Void Mite');
+INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 1, 'cast', 3, 'perch', 22.0, 2.5, 1.0, 'nearest', 1);
+INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 1, 'cast', 3, 'seconds', 5.0, NULL);
 INSERT INTO boss_phase (boss_id, position, name, at, title, subtitle, damage, speed) VALUES ('voidwyrm', 2, 'Unbound', 0.35, '<dark_purple><bold>THE HUNGER UNBOUND', '<gray>The Echo stops holding back.', 1.35, 1.2);
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 2, 'cast', 0, 'void_zones', 12.0, 1.5, 0.8, 'all', 1);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 2, 'cast', 0, 'count', 5.0, NULL);
@@ -71,6 +80,8 @@ INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) 
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 2, 'cast', 2, 'dive_bomb', 12.0, 1.5, 2.6, 'top', 1);
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 2, 'cast', 3, 'lightning_strikes', 16.0, 1.4, 1.6, 'all', 1);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 2, 'cast', 3, 'count', 6.0, NULL);
+INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('voidwyrm', 2, 'cast', 4, 'perch', 20.0, 2.0, 1.0, 'nearest', 1);
+INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('voidwyrm', 2, 'cast', 4, 'seconds', 4.0, NULL);
 INSERT INTO boss_rank_bonus (boss_id, rank, multiplier) VALUES ('voidwyrm', 1, 1.5);
 INSERT INTO boss_rank_bonus (boss_id, rank, multiplier) VALUES ('voidwyrm', 2, 1.25);
 INSERT INTO boss_rank_bonus (boss_id, rank, multiplier) VALUES ('voidwyrm', 3, 1.1);
@@ -1040,3 +1051,55 @@ INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) 
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('hell_gao', 5, 'cast', 3, 'lightning_strikes', 8.0, 1.0, 1.4, 'all', 1);
 INSERT INTO boss_ability_param (boss_id, phase, role, ability, name, num, text) VALUES ('hell_gao', 5, 'cast', 3, 'count', 8.0, NULL);
 INSERT INTO boss_ability (boss_id, phase, role, position, type, cooldown, telegraph, damage, target, from_tier) VALUES ('hell_gao', 5, 'cast', 4, 'teleport_behind', 10.0, 0.9, 1.8, 'top', 1);
+
+-- Spoken lines of the bosses that are not Guardians (the Echo, the Devourer, Hell Gao): lines only, no Guardian loot.
+-- Each line has a recorded voice in the pack (vampyuyu:voice.<boss>.<event>.<n>, resource-pack/voices/manifest.json).
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.ids', 'list', '', 'Boss ids that speak without being Guardians.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.ids', 0, 'voidwyrm');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.voidwyrm.speaker', 'text', '<gradient:#8a2be2:#e0b0ff><bold>Echo of the Rift</bold></gradient>', 'Name shown before its spoken lines (MiniMessage).');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.voidwyrm.intro', 'list', '', 'Spoken when the fight starts.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.voidwyrm.intro', 0, 'Hungry. Always so hungry. You smell of a world.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.voidwyrm.intro', 1, 'I am the part that was torn away. I still remember being fed.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.voidwyrm.phase1', 'list', '', 'Spoken when the second phase starts.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.voidwyrm.phase1', 0, 'The Rift answers me. Break its crystals, if you can reach them.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.voidwyrm.phase1', 1, 'Closer. Let the hunger look at you.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.voidwyrm.phase2', 'list', '', 'Spoken when the third phase starts.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.voidwyrm.phase2', 0, 'Nothing holds me back now. Nothing ever could.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.voidwyrm.phase2', 1, 'I will eat the sky you came from.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.voidwyrm.death', 'list', '', 'Spoken to the participants when it dies.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.voidwyrm.death', 0, 'Quiet... the hunger is quiet...');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.voidwyrm.death', 1, 'Go on, then. The rest of me waits beyond the Gates.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.voidwyrm.first-clear', 'list', '', 'Spoken the first time a player defeats it.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.voidwyrm.first-clear', 0, 'The first Gate wakes. It heard me fall.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.ids', 1, 'devourer');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.devourer.speaker', 'text', '<gradient:#3b0a57:#c77dff><bold>The Devourer</bold></gradient>', 'Name shown before its spoken lines (MiniMessage).');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.devourer.intro', 'list', '', 'Spoken when the fight starts.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.devourer.intro', 0, 'You are inside me now. Everything I ever ate is listening.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.devourer.intro', 1, 'Be quiet. I am trying to remember what warmth was.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.devourer.phase1', 'list', '', 'Spoken when the second phase starts.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.devourer.phase1', 0, 'I keep the fire. I keep the growth. I keep all of them now. Do you love these faces better?');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.devourer.phase1', 1, 'Look. I wear their faces. They were tired. So am I.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.devourer.phase2', 'list', '', 'Spoken when the third phase starts.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.devourer.phase2', 0, 'There is no floor here. There never was.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.devourer.phase2', 1, 'Hold on to something. Anything. I could not.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.devourer.death', 'list', '', 'Spoken to the participants when it dies.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.devourer.death', 0, 'Not dead. Only quiet. Wake me gently.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.devourer.death', 1, 'I will sleep. I always sleep. Tell me, before I do... was it loved?');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.devourer.first-clear', 'list', '', 'Spoken the first time a player defeats it.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.devourer.first-clear', 0, 'You stayed until the end. No one ever stays until the end.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.ids', 2, 'hell_gao');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.hell_gao.speaker', 'text', '<gradient:#1a0010:#ff2a6d><bold>Hell Gao</bold></gradient>', 'Name shown before its spoken lines (MiniMessage).');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.hell_gao.intro', 'list', '', 'Spoken when the fight starts.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.hell_gao.intro', 0, 'Between one heartbeat and the next, there is me.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.hell_gao.intro', 1, 'You counted the pulses. You forgot to count the silence.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.hell_gao.phase1', 'list', '', 'Spoken when the second phase starts.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.hell_gao.phase1', 0, 'Your Vocation. I know its face. I wore it once.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.hell_gao.phase1', 1, 'Again. Show me the faces you left behind.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.hell_gao.phase2', 'list', '', 'Spoken when the third phase starts.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.hell_gao.phase2', 0, 'No pulse now. Only the gap. Only me.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.hell_gao.phase2', 1, 'The stars look away. They always look away.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.hell_gao.death', 'list', '', 'Spoken to the participants when it dies.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.hell_gao.death', 0, 'Another pulse comes. I fold back into it.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.hell_gao.death', 1, 'You will hear me in the silence. Every time.');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.speech.hell_gao.first-clear', 'list', '', 'Spoken the first time a player defeats it.');
+INSERT INTO setting_item (setting_id, position, value) VALUES ('boss.speech.hell_gao.first-clear', 0, 'Say my name to the sky between two stars. It will not answer. I will.');

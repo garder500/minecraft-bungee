@@ -226,6 +226,25 @@ class PackTest(unittest.TestCase):
         self.assertIn("vampyuyu:werewolf.music", profile)  # the bed loops are chosen by the ambience profile
         self.assertTrue(sounds["werewolf.music"]["sounds"][0]["stream"])
 
+    def test_every_boss_line_has_its_recorded_voice(self):
+        """Each Guardian / ultimate boss line (boss.sql) plays vampyuyu:voice.<boss>.<event>.<n>: the clip must exist and
+        be the recording of the current text (resource-pack/art/boss_voices.py check)."""
+        sys.path.insert(0, str(ROOT / "resource-pack" / "art"))
+        import boss_voices
+        sounds = json.loads((PACK / "assets/vampyuyu/sounds.json").read_text())
+        subtitles = json.loads((PACK / "assets/vampyuyu/lang/en_us.json").read_text())
+        manifest = {e["key"]: e for e in json.loads(boss_voices.MANIFEST.read_text())}
+        lines = boss_voices.entries()
+        self.assertGreaterEqual(len(lines), 99)
+        for e in lines:
+            self.assertIn(e["key"], manifest, e["key"] + ": new line, record it")
+            self.assertEqual(manifest[e["key"]]["text"], e["text"], e["key"] + ": text changed, record it again")
+            entry = sounds.get(e["key"])
+            self.assertIsNotNone(entry, e["key"])
+            self.assertIn(entry["subtitle"], subtitles)
+            path = PACK / "assets/vampyuyu/sounds" / e["file"]
+            self.assertEqual(path.read_bytes()[:4], b"OggS", path)
+
     def test_every_ambience_sound_is_in_sounds_json_and_the_built_pack(self):
         profile = json.loads((ROOT / "arena-plugin/src/main/resources/werewolf/ambience.json").read_text())
         sounds = json.loads((PACK / "assets/vampyuyu/sounds.json").read_text())
@@ -268,7 +287,8 @@ class PackTest(unittest.TestCase):
             self.assertEqual(hashlib.sha1(first.read_bytes()).hexdigest(), digest)
             self.assertEqual(first.read_bytes(), second.read_bytes())
             self.assertRegex((pathlib.Path(a) / "vampyuyu-menus.sha1").read_text().strip(), r"^[0-9a-f]{40}$")
-            self.assertLess(first.stat().st_size, 8 << 20, "keep the optional pack small")
+            # 8 MB until the boss voices (99 mono Vorbis clips, about 2.3 MB at 24 kHz); keep it small all the same
+            self.assertLess(first.stat().st_size, 10 << 20, "keep the optional pack small")
 
 def walk_models(node):
     """Every model reference of an item definition tree (model, select cases and fallback)."""

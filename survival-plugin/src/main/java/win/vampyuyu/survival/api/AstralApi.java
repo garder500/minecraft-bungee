@@ -1,6 +1,7 @@
 package win.vampyuyu.survival.api;
 
 import java.util.UUID;
+import org.bukkit.entity.Player;
 
 /**
  * The Astral Interiority (GDD 4.5), Act III. Implemented by the {@code astral} feature. The Paragon (GDD 19.1) is open to the
@@ -12,4 +13,10 @@ public interface AstralApi {
 
     /** True when the player defeated the Guardian of every Realm, so the Devourer's mouth opens for them. */
     boolean canEnter(UUID player);
+
+    /** True once the world {@code sb_astral} is built. */
+    boolean ready();
+
+    /** Sends the player in (the Quai's mouth calls this); unless {@code force}, tells them what is missing. */
+    void enter(Player player, boolean force);
 }

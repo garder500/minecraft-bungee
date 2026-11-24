@@ -1,7 +1,11 @@
 package win.vampyuyu.survival.depths;
 
+import java.util.List;
 import org.bukkit.Material;
+import win.vampyuyu.survival.api.Realm;
 import win.vampyuyu.survival.island.BlockPlan;
+import win.vampyuyu.survival.island.ReturnArch;
+import win.vampyuyu.survival.island.SealDoor;
 import win.vampyuyu.survival.island.ShapeKit;
 
 /**
@@ -66,7 +70,8 @@ public final class DepthsPlan {
             plan.set(d[0], 0, d[1], Material.SEA_LANTERN);
         }
         plan.set(0, 1, 0, Material.LODESTONE);
-        plan.sign(0, 1, 3, Material.OAK_SIGN, "rotation=0", "Gate 7", "Abyssal Depths", "Pressure Landing", "/quai to return");
+        plan.air(0, 1, 3); // the old standing sign of the landing
+        ReturnArch.build(plan, Realm.DEPTHS, DepthsLayout.SPAWN[0], DepthsLayout.SPAWN[1], DepthsLayout.SPAWN[2]);
     }
 
     /** A bowl of water in a shell, with a walkable rim and sea lanterns shining into the water. */
@@ -114,8 +119,25 @@ public final class DepthsPlan {
             }
         }
         plan.fill(x - 1, 8, z - 3, x - 1, 8, z + 3, Material.IRON_BARS);
-        plan.sign(x - 2, 1, z, Material.OAK_SIGN, "rotation=4", "Sealed", "The Chained", "Leviathan still", "pulls the sea.");
+        // the seal: a sea lantern knotted into the middle chain, at eye height
+        plan.set(x - 1, SEAL_Y, z, SealDoor.palette(Realm.DEPTHS).seal());
+        List<String> lines = SealDoor.signLines(Realm.DEPTHS);
+        plan.sign(x - 2, 1, z, Material.OAK_SIGN, "rotation=4", lines.get(0), lines.get(1), lines.get(2), lines.get(3));
         plan.anchor("sarcophagus", x - 2, 1, z);
+        plan.anchor("seal", x - 1, SEAL_Y, z);
+    }
+
+    /** Height of the seal block on the Sarcophagus (plan coordinates). */
+    private static final int SEAL_Y = 3;
+
+    /** The seal block of the Sarcophagus (plan coordinates): right-click it from the west with the Abyss Bastion Key. */
+    public static int[] sealBlock() {
+        for (DepthsLayout.Dome dome : DepthsLayout.DOMES) {
+            if (dome.id().equals("chain")) {
+                return new int[] {dome.x() + dome.radius() + DepthsLayout.RIM + 3 - 1, SEAL_Y, dome.z()};
+            }
+        }
+        throw new IllegalStateException("no chain dome");
     }
 
     private static void bell(BlockPlan plan) {

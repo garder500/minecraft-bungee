@@ -37,6 +37,7 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import win.vampyuyu.survival.api.AstralApi;
 import win.vampyuyu.survival.api.Realm;
 import win.vampyuyu.survival.api.SkyGateApi;
 import win.vampyuyu.survival.core.Cooldowns;
@@ -57,6 +58,8 @@ public final class SkyGates implements SkyGateApi, Listener {
     private static final String HUB_LANE = "hub";
     private static final int TRAVEL_FADE_TICKS = 24;
     private static final double VIEW_RANGE = 48;
+    /** Server ticks between two runs of {@link #tick}. */
+    private static final int TICK_PERIOD = 10;
 
     private final Core core;
     private final IslandService service;
@@ -66,8 +69,25 @@ public final class SkyGates implements SkyGateApi, Listener {
     private final Map<Realm, Function<Player, Location>> destinations = new EnumMap<>(Realm.class);
     private final Map<Realm, CompletableFuture<Location>> landings = new EnumMap<>(Realm.class);
     private final Set<UUID> travelling = new HashSet<>();
+    /** The return arch of each Realm: where its landing's arrival spot is (null while the Realm is not ready). */
+    private final Map<Realm, java.util.function.Supplier<Location>> returnArches = new EnumMap<>(Realm.class);
+    /** Arch sites by world name, resolved on first use (the worlds are not all loaded when the Realms register). */
+    private final Map<String, ArchSite> archSites = new HashMap<>();
+    /** Worlds with no arch (islands, the hub...) and when that was last checked: a move there costs one lookup. */
+    private final Map<String, Long> noArch = new HashMap<>();
+
+    /** A Realm's arrival spot as block coordinates, the reference of {@link ReturnArch}. */
+    private record ArchSite(Realm realm, int x, int y, int z) {}
     /** Gates currently shown lit to a player, so a gate put out is restored. */
     private final Map<UUID, Set<Realm>> shown = new HashMap<>();
+    /** Players who are shown the Devourer's mouth open, and the last answer of the access check (it is not free). */
+    private final Set<UUID> mouthShown = new HashSet<>();
+    private final Map<UUID, long[]> mouthAccess = new HashMap<>();
+    private static final long MOUTH_CACHE_MS = 3000;
+    /** Gates that woke this tick per player: one title and one chat line for the whole batch (the Queen wakes five). */
+    private final Map<UUID, Set<Realm>> waking = new HashMap<>();
+    /** The pace of the reveal on the Quai, per player near it. */
+    private final Map<UUID, GateReveal.Pacer> pacers = new HashMap<>();
     private SkyGateState state = new SkyGateState();
     private Scheduler.Handle viewTask;
     private int viewTick;
@@ -91,7 +111,7 @@ public final class SkyGates implements SkyGateApi, Listener {
         core.listen(this);
         registerCommands();
         quai.start();
-        viewTask = core.scheduler().repeating(10L, 10L, this::tick);
+        viewTask = core.scheduler().repeating(TICK_PERIOD, TICK_PERIOD, this::tick);
     }
 
     public void close() {
@@ -132,9 +152,14 @@ public final class SkyGates implements SkyGateApi, Listener {
         save();
         Player online = Bukkit.getPlayer(player);
         if (online != null) {
-            refreshView(online, true);
-            core.msg().ok(online, "The Sky Gate to the " + realm.title() + " is lit.");
-            online.playSound(online, Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.4f);
+            // the Gate stays dark in the view until its reveal on the Quai (tick); the title batches what woke this tick
+            Set<Realm> batch = waking.get(player);
+            if (batch == null) {
+                batch = new HashSet<>();
+                waking.put(player, batch);
+                core.scheduler().nextTick(() -> announce(player));
+            }
+            batch.add(realm);
         }
         return true;
     }
@@ -145,11 +170,45 @@ public final class SkyGates implements SkyGateApi, Listener {
             return false;
         }
         save();
+        Set<Realm> batch = waking.get(player);
+        if (batch != null) {
+            batch.remove(realm);
+        }
         Player online = Bukkit.getPlayer(player);
         if (online != null) {
             refreshView(online, true);
         }
         return true;
+    }
+
+    /**
+     * The beat when Guardian kills (or an admin) light Gates: a title naming them, a sound, and a chat line that takes the
+     * player to the Quai. The Guardian's own first-clear voice line is played by the boss rewards, not here. The Gates
+     * themselves light on the Quai ({@link #reveal}).
+     */
+    private void announce(UUID id) {
+        Set<Realm> batch = waking.remove(id);
+        Player player = Bukkit.getPlayer(id);
+        if (batch == null || batch.isEmpty() || player == null) {
+            return;
+        }
+        List<Realm> woke = new ArrayList<>();
+        for (Realm realm : Realm.values()) {
+            if (batch.contains(realm) && state.isLit(id, realm)) {
+                woke.add(realm);
+            }
+        }
+        if (woke.isEmpty()) {
+            return;
+        }
+        GateReveal.Announce text = GateReveal.announce(woke, win.vampyuyu.survival.core.Lang.language(player));
+        player.showTitle(Title.title(Component.text(text.title(), NamedTextColor.GOLD), Component.text(text.subtitle(), NamedTextColor.WHITE),
+            Title.Times.times(java.time.Duration.ofMillis(300), java.time.Duration.ofMillis(3200), java.time.Duration.ofMillis(800))));
+        player.playSound(player, Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.4f);
+        player.playSound(player, Sound.BLOCK_AMETHYST_BLOCK_RESONATE, 1.0f, 0.8f);
+        player.sendMessage(Component.text(text.chat() + " ", NamedTextColor.GOLD).append(Component.text(text.click(), NamedTextColor.AQUA)
+            .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(Component.text(text.hover())))
+            .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/quai"))));
     }
 
     @Override
@@ -159,6 +218,17 @@ public final class SkyGates implements SkyGateApi, Listener {
         } else {
             destinations.put(realm, destination);
         }
+    }
+
+    @Override
+    public void setReturnArch(Realm realm, java.util.function.Supplier<Location> arrivalSpot) {
+        if (arrivalSpot == null) {
+            returnArches.remove(realm);
+        } else {
+            returnArches.put(realm, arrivalSpot);
+        }
+        archSites.values().removeIf(site -> site.realm() == realm);
+        noArch.clear();
     }
 
     @Override
@@ -264,16 +334,32 @@ public final class SkyGates implements SkyGateApi, Listener {
     public void onMove(PlayerMoveEvent event) {
         Location to = event.getTo();
         Location from = event.getFrom();
-        if (to == null || to.getBlockX() == from.getBlockX() && to.getBlockZ() == from.getBlockZ()
-                && to.getBlockY() == from.getBlockY()) {
+        if (to == null) {
             return;
         }
         World world = to.getWorld();
-        if (world == null || !SkyblockWorlds.HUB.equals(world.getName())) {
+        if (world == null) {
+            return;
+        }
+        if (!SkyblockWorlds.HUB.equals(world.getName())) {
+            // not filtered by block: the veil is touched from the block in front of it, a step within that block counts
+            if (to.getX() != from.getX() || to.getY() != from.getY() || to.getZ() != from.getZ()) {
+                ArchSite arch = archSite(world);
+                if (arch != null && ReturnArch.inVeil(arch.realm(), to.getX(), to.getY(), to.getZ(), arch.x(), arch.y(), arch.z())) {
+                    returnToQuai(event.getPlayer(), arch.realm());
+                }
+            }
+            return;
+        }
+        if (to.getBlockX() == from.getBlockX() && to.getBlockZ() == from.getBlockZ() && to.getBlockY() == from.getBlockY()) {
             return;
         }
         Player player = event.getPlayer();
         Realm gate = gateAt(to.getX(), to.getY() - cfg.hubY, to.getZ());
+        if (gate == null && QuaiMouth.inMouth(to.getX(), to.getY() - cfg.hubY, to.getZ() - QuaiPlan.CENTER_Z)) {
+            enterMouth(player);
+            return;
+        }
         if (gate == null || travelling.contains(player.getUniqueId())) {
             return;
         }
@@ -282,6 +368,70 @@ public final class SkyGates implements SkyGateApi, Listener {
         } else {
             notice(player, "The Sky Gate to the " + gate.title() + " is dormant.", false);
         }
+    }
+
+    /** The return arch of a Realm world, or null (cheap: a map lookup once the site is known). */
+    private ArchSite archSite(World world) {
+        ArchSite known = archSites.get(world.getName());
+        if (known != null || returnArches.isEmpty()) {
+            return known;
+        }
+        long now = System.currentTimeMillis();
+        Long checked = noArch.get(world.getName());
+        if (checked != null && now - checked < 5000) {
+            return null; // looked a moment ago (a Realm still building is looked at again after 5 s)
+        }
+        for (var entry : returnArches.entrySet()) {
+            Location spot = entry.getValue().get();
+            if (spot != null && spot.getWorld() != null && spot.getWorld().equals(world)) {
+                ArchSite site = new ArchSite(entry.getKey(), spot.getBlockX(), spot.getBlockY(), spot.getBlockZ());
+                archSites.put(world.getName(), site);
+                noArch.remove(world.getName());
+                return site;
+            }
+        }
+        noArch.put(world.getName(), now);
+        return null;
+    }
+
+    /**
+     * Walking into the veil of a return arch: the same beat as a Gate (blindness, a title, then the teleport), to the
+     * Quai. No travel guard applies to the way home.
+     */
+    void returnToQuai(Player player, Realm from) {
+        UUID id = player.getUniqueId();
+        if (travelling.contains(id)) {
+            return;
+        }
+        if (service.inDungeon(player)) {
+            notice(player, "You cannot leave a dungeon run like that.", false);
+            return;
+        }
+        if (quai.spawn() == null || !quai.ready()) {
+            notice(player, "The Quai des Huit is not built yet. Try again in a moment.", false);
+            return;
+        }
+        travelling.add(id);
+        World origin = player.getWorld();
+        player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, TRAVEL_FADE_TICKS + 26, 0, false, false, false));
+        player.playSound(player, Sound.BLOCK_PORTAL_TRAVEL, 0.5f, 0.8f);
+        player.showTitle(Title.title(Component.text("Quai des Huit", NamedTextColor.GOLD),
+            Component.text("Back from " + ReturnArch.signName(from), NamedTextColor.WHITE),
+            Title.Times.times(java.time.Duration.ofMillis(200), java.time.Duration.ofMillis(1400), java.time.Duration.ofMillis(500))));
+        core.scheduler().later(TRAVEL_FADE_TICKS, () -> {
+            travelling.remove(id);
+            if (!player.isOnline() || !player.getWorld().equals(origin)) {
+                return;
+            }
+            Location spawn = quai.spawn();
+            if (spawn == null || !quai.ready()) {
+                player.removePotionEffect(PotionEffectType.BLINDNESS);
+                core.msg().warn(player, "The way back is not open right now. Try /quai in a moment.");
+                return;
+            }
+            player.teleport(spawn, PlayerTeleportEvent.TeleportCause.PLUGIN);
+            player.playSound(player, Sound.BLOCK_END_PORTAL_SPAWN, 0.3f, 1.8f);
+        });
     }
 
     /**
@@ -315,16 +465,126 @@ public final class SkyGates implements SkyGateApi, Listener {
         }
     }
 
+    // ---------------------------------------------------------------- the Devourer's mouth
+
+    private AstralApi astral() {
+        return core.service(AstralApi.class).orElse(null);
+    }
+
+    /** Whether the mouth is open for the player (cached a few seconds: the check reads settings and boss kills). */
+    private boolean mouthOpen(Player player) {
+        long now = System.currentTimeMillis();
+        long[] cached = mouthAccess.get(player.getUniqueId());
+        if (cached != null && now - cached[0] < MOUTH_CACHE_MS) {
+            return cached[1] == 1;
+        }
+        AstralApi astral = astral();
+        boolean open = astral != null && astral.canEnter(player.getUniqueId());
+        mouthAccess.put(player.getUniqueId(), new long[] {now, open ? 1 : 0});
+        return open;
+    }
+
+    /** Walking into the mouth: sealed tells the player what is missing, open fades out and calls {@link AstralApi#enter}. */
+    private void enterMouth(Player player) {
+        UUID id = player.getUniqueId();
+        AstralApi astral = astral();
+        if (travelling.contains(id) || astral == null || !notices.tryUse(id, "mouth", 2500)) {
+            return;
+        }
+        if (service.inDungeon(player)) {
+            core.msg().warn(player, "You cannot leave a dungeon run like that.");
+            return;
+        }
+        if (!astral.canEnter(id)) {
+            mouthAccess.remove(id);
+            astral.enter(player, false);
+            return;
+        }
+        if (!astral.ready()) {
+            core.msg().error(player, "The Astral Interiority is not built yet.");
+            return;
+        }
+        travelling.add(id);
+        player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, TRAVEL_FADE_TICKS + 40, 0, false, false, false));
+        player.playSound(player, Sound.BLOCK_PORTAL_TRAVEL, 0.5f, 0.6f);
+        core.scheduler().later(TRAVEL_FADE_TICKS, () -> {
+            travelling.remove(id);
+            if (player.isOnline()) {
+                astral.enter(player, false);
+            }
+        });
+    }
+
+    /** Opens or seals the mouth in the player's view; {@code resend} repeats the open state (a reloaded chunk forgets it). */
+    void refreshMouth(Player player, boolean resend) {
+        World hub = quai.hub();
+        if (hub == null || !hub.equals(player.getWorld())) {
+            return;
+        }
+        boolean open = mouthOpen(player);
+        UUID id = player.getUniqueId();
+        if (open && (resend || !mouthShown.contains(id))) {
+            showMouth(player, hub, true);
+            mouthShown.add(id);
+        } else if (!open && mouthShown.remove(id)) {
+            showMouth(player, hub, false);
+        }
+    }
+
+    private void showMouth(Player player, World hub, boolean open) {
+        Map<Location, BlockData> changes = new HashMap<>();
+        BlockData membrane = (open ? QuaiMouth.OPEN_MEMBRANE : QuaiMouth.SEALED).createBlockData();
+        BlockData backing = (open ? QuaiMouth.OPEN_LIGHT : QuaiMouth.SEALED).createBlockData();
+        for (int[] cell : QuaiMouth.MEMBRANE) {
+            changes.put(new Location(hub, cell[0], cfg.hubY + cell[1], QuaiPlan.CENTER_Z + cell[2]), membrane);
+        }
+        for (int[] cell : QuaiMouth.BACKING) {
+            changes.put(new Location(hub, cell[0], cfg.hubY + cell[1], QuaiPlan.CENTER_Z + cell[2]), backing);
+        }
+        player.sendMultiBlockChange(changes);
+        Block block = hub.getBlockAt(QuaiMouth.SIGN[0], cfg.hubY + 1, QuaiPlan.CENTER_Z + QuaiMouth.SIGN[1]);
+        if (block.getState() instanceof Sign sign) {
+            sign.getSide(Side.FRONT).line(3, Component.text(open ? "Open" : "Sealed"));
+            player.sendBlockUpdate(block.getLocation(), sign);
+        }
+    }
+
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
+        mouthShown.remove(event.getPlayer().getUniqueId());
+        mouthAccess.remove(event.getPlayer().getUniqueId());
         shown.remove(event.getPlayer().getUniqueId());
+        pacers.remove(event.getPlayer().getUniqueId());
+        waking.remove(event.getPlayer().getUniqueId());
         travelling.remove(event.getPlayer().getUniqueId());
     }
 
     // ---------------------------------------------------------------- what a player sees
 
+    /** A few particles in the veil of each return arch, for the players near it. */
+    private void archParticles() {
+        for (var entry : returnArches.entrySet()) {
+            Location spot = entry.getValue().get();
+            if (spot == null || spot.getWorld() == null) {
+                continue;
+            }
+            double[] c = ReturnArch.veilCentre(entry.getKey(), spot.getBlockX(), spot.getBlockY(), spot.getBlockZ());
+            Location at = new Location(spot.getWorld(), c[0], c[1], c[2]);
+            boolean alongZ = ReturnArch.side(entry.getKey()) == ReturnArch.Side.EAST; // the veil runs north-south
+            double wx = alongZ ? 0.15 : 0.8;
+            double wz = alongZ ? 0.8 : 0.15;
+            for (Player player : spot.getWorld().getPlayers()) {
+                if (player.getLocation().distanceSquared(at) < 24 * 24) {
+                    player.spawnParticle(Particle.PORTAL, at, 20, wx, 1.0, wz, 0.3);
+                    player.spawnParticle(Particle.END_ROD, at, 2, wx, 1.0, wz, 0.01);
+                }
+            }
+        }
+    }
+
     private void tick() {
         viewTick++;
+        archParticles();
         World hub = quai.hub();
         if (hub == null) {
             return;
@@ -333,9 +593,20 @@ public final class SkyGates implements SkyGateApi, Listener {
         for (Player player : hub.getPlayers()) {
             if (player.getLocation().distanceSquared(center) > VIEW_RANGE * VIEW_RANGE) {
                 shown.remove(player.getUniqueId());
+                mouthShown.remove(player.getUniqueId());
+                GateReveal.Pacer away = pacers.get(player.getUniqueId());
+                if (away != null) {
+                    away.leave();
+                }
                 continue;
             }
-            Set<Realm> lit = state.litRealms(player.getUniqueId());
+            reveal(player, hub);
+            refreshMouth(player, viewTick % 2 == 0);
+            if (mouthShown.contains(player.getUniqueId())) {
+                Location mouth = new Location(hub, 0.5, cfg.hubY + 4, QuaiPlan.CENTER_Z + QuaiMouth.Z - 0.5);
+                player.spawnParticle(Particle.REVERSE_PORTAL, mouth, 10, 1.4, 2, 0.3, 0.05);
+            }
+            List<Realm> lit = state.revealed(player.getUniqueId());
             if (lit.isEmpty() && !shown.containsKey(player.getUniqueId())) {
                 continue;
             }
@@ -349,13 +620,45 @@ public final class SkyGates implements SkyGateApi, Listener {
         }
     }
 
+    /**
+     * The next Gate of a player's reveal, when they are on the Quai: the newly lit Gates light one at a time (a burst, a chime
+     * rising with each, then the Gate stays lit and is marked seen so it plays once). The first waits a moment after they
+     * arrive, not while they travel. Settings {@code quai.reveal-start-ticks} and {@code quai.reveal-gap-ticks}.
+     */
+    private void reveal(Player player, World hub) {
+        UUID id = player.getUniqueId();
+        List<Realm> unseen = state.unseen(id);
+        GateReveal.Pacer pacer = pacers.computeIfAbsent(id, k -> new GateReveal.Pacer());
+        if (unseen.isEmpty() || travelling.contains(id) || waking.containsKey(id)) {
+            pacer.poll(List.of(), viewTick, 0, 1);
+            return;
+        }
+        var settings = win.vampyuyu.survival.data.Settings.load(core.data(), "island");
+        int start = GateReveal.steps(settings.getInt("quai.reveal-start-ticks", 40), TICK_PERIOD);
+        int gap = GateReveal.steps(settings.getInt("quai.reveal-gap-ticks", 20), TICK_PERIOD);
+        Realm realm = pacer.poll(unseen, viewTick, start, gap);
+        if (realm == null || !state.markSeen(id, realm)) {
+            return;
+        }
+        save();
+        refreshView(player, false);
+        QuaiPlan.Gate gate = QuaiPlan.gate(realm);
+        Location at = new Location(hub, gate.x() + 0.5, cfg.hubY + 3, QuaiPlan.CENTER_Z + gate.z() + 0.5);
+        int index = Math.max(0, pacer.fired() - 1); // the chime rises with each Gate of the sequence
+        player.spawnParticle(Particle.END_ROD, at, 50, 0.9, 1.6, 0.9, 0.12);
+        player.spawnParticle(Particle.TOTEM_OF_UNDYING, at, 30, 0.9, 1.6, 0.9, 0.3);
+        float pitch = (float) Math.min(2.0, 0.7 + 0.12 * index);
+        player.playSound(at, Sound.BLOCK_BEACON_POWER_SELECT, 1.2f, pitch);
+        player.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.5f, pitch);
+    }
+
     /** Sends the lit gates, and restores the ones that went out since the last call. {@code resend}: lit ones too. */
     void refreshView(Player player, boolean resend) {
         World hub = quai.hub();
         if (hub == null || !hub.equals(player.getWorld())) {
             return;
         }
-        Set<Realm> lit = state.litRealms(player.getUniqueId());
+        List<Realm> lit = state.revealed(player.getUniqueId());
         Set<Realm> was = shown.computeIfAbsent(player.getUniqueId(), k -> new HashSet<>());
         for (Realm realm : Realm.values()) {
             boolean isLit = lit.contains(realm);

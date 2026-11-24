@@ -7,7 +7,9 @@ A complete Realm: zone + local resource + system + Bastion + Guardian.
   dais arch of the Judge, soul sand field, landing). Marker `island/necropolis-build.json`; bump `NecropolisPlan.VERSION` to rebuild.
 - **Gate**: `SkyGateApi.setDestination(Realm.NECROPOLIS, ...)`. Lights for the players who fought the boss of the setting
   `island.necropolis.gate-boss` (default `abyssal_leviathan`, a guess: the Guardian of the Realm before it). `/gateadmin light <player> necropolis` works.
-- **Mechanics**: the fading of the memories (Darkness pulses, no damage) until affinity tier 1 *Lucidity*; affinity points =
+- **Mechanics**: the fading of the memories (Darkness waves, no damage) until affinity tier 1 *Lucidity*: a 4 s wave every 24 s per player (own phase), never within
+  24 blocks of the landing (`NecropolisRealm.hazeNow`). It used to be refreshed every second, which makes Darkness permanent (no pulse, black sky,
+  Night Vision useless: seen from 14 blocks above the landing); affinity points =
   undead killed in the Necropolis (40 -> Lucidity, 200 -> *Recall*: one Memory Shard every `island.necropolis.recall-kills` = 10 undead kills,
   via `ResonanceApi.grantShards`). Void rescue to the landing. Quest events: `necropolis_enter`, `necropolis_affinity:1|2` (no quest uses them yet).
 - **Soul Ash** (GDD 3.2, name still to validate): `realm_resource` row `soul_ash` (6 % / 12 / 36 like the other two), from soul sand, soul soil, bone
@@ -18,8 +20,8 @@ A complete Realm: zone + local resource + system + Bastion + Guardian.
   (technical id kept, now named *Judge of Lost Souls*), key `judge_seal` (forge: 4 Soul Ash + 8 Starcore + 8 bone blocks). The Guardian has
   its Guardian rows (spoken lines, Soul Ash 2-4 per kill, 6 more on the first clear, component `judge_core` with the hard pity). The Resonance
   row `crypt_lord|necropolis|lord_bone|25` already existed. The dungeon's own Crypt Lord (MobRoster) is unchanged.
-- **Sprites**: `judge_core` and `judge_seal` come from `art/boss_items.py`. `soul_ash` is a hand-drawn placeholder (the ElevenLabs image could not
-  be downloaded from this sandbox): redo it from a concept sheet with `import_textures.py` when possible.
+- **Sprites**: `judge_core` and `judge_seal` come from `art/boss_items.py`. `soul_ash` is a 32x32 procedural drawing (`art/realm32.py`, listed in
+  `imported.txt` so `quarry_items.py` keeps it).
 
 ## Not verified
 Written without Paper or Docker (no compile, no tests run, nothing seen in game). To run: `make plugin-test PLUGIN=survival

@@ -49,9 +49,8 @@ final class RunecraftMenu {
         for (Rune rune : config.runes()) {
             int base = (rune.realm() ? realmRow : statRow) * 9;
             if (rune.realm()) {
-                // Realm runes fill the right half (columns 5 and 6): the stat runes keep the left
-                gui.set(base + 5, Guis.icon(Material.ECHO_SHARD, "<light_purple>" + rune.name() + " Rune", describe(rune, config)));
-                gui.set(base + 6, button(rune, 0), click -> craft(rune, 0));
+                // Realm runes: one button each, three columns on the right (5 to 7); the stat runes keep the left
+                gui.set((realmRow / 3) * 9 + 5 + realmRow % 3, button(rune, 0), click -> craft(rune, 0));
                 realmRow++;
             } else {
                 gui.set(base, Guis.icon(Material.AMETHYST_CLUSTER, "<light_purple>" + rune.name() + " Rune", describe(rune, config)));
@@ -108,6 +107,13 @@ final class RunecraftMenu {
 
     private ItemStack button(Rune rune, int rank) {
         List<String> lore = new ArrayList<>();
+        if (rune.realm()) {
+            for (String line : describe(rune, service.config())) {
+                lore.add(line);
+            }
+            lore.add("<gold>" + RuneService.effectText(rune, service.config()));
+            lore.add("");
+        }
         lore.add("<gray>Needs:");
         boolean affordable = true;
         for (Cost cost : service.costs(rune, rank)) {

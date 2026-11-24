@@ -49,11 +49,14 @@ public final class MobFactory {
      * Spawns a monster.
      *
      * @param hp the monster's health (see {@link DungeonHp}); above the vanilla cap it becomes a virtual pool
-     * @param dmgMult floor multiplier times party scale (applied to every hit it deals, see the listener)
+     * @param dmgMult floor multiplier times party scale
+     * @param baseHit the hit of a plain monster before Ward and armor ({@code PowerCurve.hitDamage}); 0 keeps the old rule
+     *     (the vanilla hit times the multiplier). Otherwise every hit it deals is {@code baseHit x spec
+     *     damage x dmgMult}, whatever its weapon (the listener sets it before Ward).
      * @return the entity, or null when the spawn was refused
      */
     public LivingEntity spawn(World world, Location at, MobSpec spec, String runId, int room, String kind, int floor,
-            int level, double hp, double dmgMult, Player target, DungeonConfig.Floor traits) {
+            int level, double hp, double dmgMult, double baseHit, Player target, DungeonConfig.Floor traits) {
         Entity raw;
         try {
             raw = world.spawnEntity(at, spec.type(), CreatureSpawnEvent.SpawnReason.CUSTOM);
@@ -65,7 +68,7 @@ public final class MobFactory {
             return null;
         }
         try {
-            configure(e, spec, runId, room, kind, floor, level, hp, dmgMult, target, traits);
+            configure(e, spec, runId, room, kind, floor, level, hp, dmgMult, baseHit, target, traits);
         } catch (RuntimeException ex) {
             e.remove(); // never leave a half configured monster behind
             return null;
@@ -74,7 +77,7 @@ public final class MobFactory {
     }
 
     private void configure(LivingEntity e, MobSpec spec, String runId, int room, String kind, int floor, int level,
-            double health, double dmgMult, Player target, DungeonConfig.Floor traits) {
+            double health, double dmgMult, double baseHit, Player target, DungeonConfig.Floor traits) {
         double hp = Math.max(1, health);
         AttributeInstance maxHealth = e.getAttribute(Attribute.MAX_HEALTH);
         if (maxHealth != null) {
@@ -122,6 +125,11 @@ public final class MobFactory {
         pdc.set(keys.mob, PersistentDataType.STRING, spec.id());
         pdc.set(keys.kind, PersistentDataType.STRING, kind);
         pdc.set(keys.damage, PersistentDataType.DOUBLE, Math.max(0.1, spec.damage() * dmgMult));
+        if (baseHit > 0) {
+            // the boss's own factor (Crypt Lord 2.0) is not applied: its baseHit is already the boss hit
+            double kindFactor = kind.equals("boss") ? 1.0 : spec.damage();
+            pdc.set(keys.hit, PersistentDataType.DOUBLE, baseHit * kindFactor * dmgMult);
+        }
         pdc.set(keys.level, PersistentDataType.INTEGER, level);
         if (e instanceof Mob mob && target != null) {
             mob.setTarget(target);

@@ -19,11 +19,13 @@ recipes is needed from this simulation.
 2. **The Echo quest sits at the end of the main chain** (`end` category: tier III unlock, End, Void Sigil which needs
    the three other bosses' drops and a 6 h Forge job). Reaching it takes tens of hours, far above 5 h. The A13 fight must
    be reachable with the Bronze set (the Echo as dungeon 0, #23) and the old `end` quests should become later content.
-3. Boss HP is still on the old curve (#20), so the fight length cannot be estimated; `--echo` is a flat 25 min guess.
-4. Hub, Quai des Huit and the Novice class (#21, #22, #25) do not exist yet: `--hub` is a flat guess.
+3. ~~Boss HP is still on the old curve (#20)~~ Done: boss health follows the GDD 8.7 curve (`boss.hp_auto`, see `items.md`, `boss.md`). The fight
+   length is still not measured, so `--echo` stays a flat 25 min guess.
+4. ~~Hub, Quai des Huit and the Novice class (#21, #22, #25) do not exist yet~~ Done: the Hub (`hub.md`), the Quai des Huit (`quai.md`) and
+   the classes with the Novice rank (`classes.md`, `promotion.md`) exist. `--hub` is still a flat guess until a timed playtest.
 
 ## Not verified
-Nothing was compiled or run in game (no Docker, Paper repository unreachable from this sandbox). Speed of the player,
+The simulation was written without compiling or running anything in game (no Docker, Paper repository unreachable from the sandbox at the time). Speed of the player,
 tutorial and build time are guesses to be replaced by a timed playtest with `e2e_client.py --scenario start`.
 
 ## Update (#60): A9-A13 and the Echo moved up

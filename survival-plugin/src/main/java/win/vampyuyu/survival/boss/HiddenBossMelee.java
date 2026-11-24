@@ -12,7 +12,8 @@ import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
 /**
- * A boss that is hidden from the clients (the Voidwyrm: its vanilla dragon is replaced by a custom model) cannot be
+ * A boss that is hidden from the clients (the Voidwyrm and the Mycelial Queen: their vanilla dragon and spider would
+ * still show through the custom model, the dragon because it ignores invisibility, the spider by its glowing eyes) cannot be
  * targeted by the client, so a melee swing that would have landed on one of its parts is turned into a real attack here.
  * Arrows and spells already hit the server-side hit box.
  */
@@ -39,9 +40,16 @@ final class HiddenBossMelee implements Listener {
         Vector direction = player.getEyeLocation().getDirection();
         for (BossSession session : manager.active()) {
             LivingEntity boss = session.entity();
-            if (!(boss instanceof ComplexLivingEntity complex) || boss.isVisibleByDefault()
-                    || boss.getWorld() != player.getWorld()
+            if (boss == null || boss.isVisibleByDefault() || boss.getWorld() != player.getWorld()
                     || boss.getLocation().distanceSquared(player.getLocation()) > RANGE_SQUARED) {
+                continue;
+            }
+            if (!(boss instanceof ComplexLivingEntity complex)) {
+                // a hidden plain mob (the Mycelial Queen's spider: its eyes glow even when invisible) is hit on its box
+                if (boss.getBoundingBox().expand(0.2).rayTrace(eye, direction, 3.5) != null) {
+                    player.attack(boss);
+                    return;
+                }
                 continue;
             }
             for (ComplexEntityPart part : complex.getParts()) {
