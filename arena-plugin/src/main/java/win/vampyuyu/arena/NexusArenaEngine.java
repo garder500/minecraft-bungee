@@ -17,6 +17,7 @@ import win.vampyuyu.werewolf.WerewolfModule;
 public final class NexusArenaEngine extends JavaPlugin {
   public ArenaManager arenas;
   public CompassGUI gui;
+  public WaitingHotbar waitingHotbar;
   /** The Werewolf game: its preset, hooks, scenery and command (see WerewolfModule). */
   public WerewolfModule werewolf;
 
@@ -78,9 +79,11 @@ public final class NexusArenaEngine extends JavaPlugin {
               .toList();
       arenas = new ArenaManager(this);
       gui = new CompassGUI(this);
+      waitingHotbar = new WaitingHotbar(this);
       werewolf = new WerewolfModule(this);
       werewolf.prepareSky();
       valoblock = new ValoBlockModule(this);
+      valoblock.enableMaps();
       admin = new ArenaAdmin(this);
       skin = MenuSkin.load(this);
       tools = new ArenaTools(this);
@@ -89,7 +92,17 @@ public final class NexusArenaEngine extends JavaPlugin {
       arenas.registerPreset(werewolf.preset());
       arenas.registerPreset(valoblock.preset());
       arenas.reload();
+      if ("creative".equals(serverId)) {
+        WaitingHubs.install(
+            arenas,
+            getLogger(),
+            werewolf.stage.world().loaded(),
+            werewolf.preset().defaultOptions(),
+            valoblock.map.world(),
+            valoblock.preset().defaultOptions());
+      }
       getServer().getPluginManager().registerEvents(gui, this);
+      getServer().getPluginManager().registerEvents(waitingHotbar, this);
       getServer().getPluginManager().registerEvents(werewolf.controls, this);
       getServer().getPluginManager().registerEvents(new ArenaProtectionListener(this), this);
       getServer().getPluginManager().registerEvents(bridge, this);
@@ -118,7 +131,6 @@ public final class NexusArenaEngine extends JavaPlugin {
       valoblock.registerCommand();
       valoblock.enableWeapons();
       valoblock.enableAgents();
-      valoblock.enableMaps();
       valoblock.enableHud();
       valoblock.enableBots();
       valoblock.enableSeeds();

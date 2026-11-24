@@ -73,6 +73,14 @@ public final class ValoBlockModule {
     return preset;
   }
 
+  /** Ensures the waiting-room map vote is open and opens the ballot window for {@code p}. */
+  public String openMapVote(org.bukkit.entity.Player p, win.vampyuyu.arena.ArenaSession s) {
+    VbMapVoteService service = votes;
+    if (service == null) return "The map vote is not running";
+    service.ensureOpen(s);
+    return service.open(p, s);
+  }
+
   /** Routes match events to the services. */
   VbEvents events() {
     return new VbEvents() {
