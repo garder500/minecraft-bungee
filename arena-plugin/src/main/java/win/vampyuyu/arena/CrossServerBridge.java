@@ -193,7 +193,13 @@ public final class CrossServerBridge implements Listener {
         id = parts.length == 2 ? parts[1] : token;
     if (parts.length > 2 || !SERVERS.contains(server) || !id.matches("[a-z0-9][a-z0-9_-]{0,39}"))
       throw new IllegalArgumentException("Invalid arena destination");
-    if (server.equals(plugin.serverId)) return plugin.arenas.joinArena(p, id);
+    if (server.equals(plugin.serverId)) {
+      ArenaSession cur = plugin.arenas.session(p.getUniqueId());
+      if (cur != null && cur.game == null && !cur.config.id().equals(id)) {
+        return plugin.arenas.leaveArena(p).thenCompose(v -> plugin.arenas.joinArena(p, id));
+      }
+      return plugin.arenas.joinArena(p, id);
+    }
     requireRedis();
     CompletableFuture<Void> leave =
         plugin.arenas.locked(p.getUniqueId())
