@@ -134,10 +134,36 @@ public final class ArenaManager {
 
   /**
    * Provisions a built-in arena (e.g. ValoBlock / Werewolf waiting hub) when no arena with that id
-   * exists yet, without overwriting an administrator's custom configuration.
+   * exists yet, or migrates a legacy overworld ({@code "world"}) arena of the same id/preset into
+   * its dedicated void waiting hub while keeping custom rules and rewards.
    */
   public synchronized boolean ensureBuiltin(ArenaConfig config) throws IOException {
-    if (sessions.containsKey(config.id())) return false;
+    ArenaSession existing = sessions.get(config.id());
+    if (existing != null) {
+      ArenaConfig old = existing.config;
+      if (!old.preset().equals(config.preset()) || !"world".equals(old.worldName())) return false;
+      ArenaConfig migrated =
+          new ArenaConfig(
+              old.id(),
+              old.name(),
+              config.worldName(),
+              old.preset(),
+              config.bounds(),
+              config.spawn(),
+              old.allowedBreakBlocks(),
+              old.allowedPlaceBlocks(),
+              old.allowPvP(),
+              old.allowChests(),
+              old.allowDoors(),
+              old.gameMode(),
+              old.durationSeconds(),
+              old.minPlayers(),
+              old.maxPlayers(),
+              old.rewards(),
+              old.options());
+      save(migrated);
+      return true;
+    }
     save(config);
     return true;
   }

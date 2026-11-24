@@ -146,6 +146,10 @@ public final class ValoBlockModule {
   public void enableMaps() {
     if (refuse()) return;
     VbMapService service = new VbMapService(plugin);
+    if ("creative".equals(plugin.serverId)) {
+      String err = service.createWorld();
+      if (err != null) plugin.getLogger().warning("ValoBlock: " + err);
+    }
     service.start();
     map = service;
     VbMapVoteService vote = new VbMapVoteService(plugin);
