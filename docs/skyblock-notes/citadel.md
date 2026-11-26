@@ -17,7 +17,7 @@ GDD 3.1: "Des fleuves de poussière d'or coulent à l'envers. Le temps local est
   Nothing is paid back during a stall. Numbers: `quarry.machines.module.chrono.*`. The buffer is `MachineData.buffer`.
 - **Sandglass** ("recettes à durée"): right-click, consumed, the Forge job with the most time left loses half of what remains
   (`QuarryService.accelerate`). Forged from 2 Chrono Sand + glass + gold.
-- **Temporal Pharaoh** (`boss.sql`, id `temporal_pharaoh`, husk, tier 3 like the other Guardians, weakness Frost, resists Ember):
+- **Temporal Pharaoh** (`boss.sql`, id `temporal_pharaoh`, an invisible 3.6x husk under its own rigged model (`boss.md`, "The last four models"), tier 3 like the other Guardians, weakness Frost, resists Ember):
   void rifts (`void_zones`), time skips (`teleport_behind`), mummies, a hourglass shield (`shield_crystals`) in the last phase.
   Key `pharaoh_scarab` (Citadel Bastion Key; forged at the Forge from Bronzite, gold and clocks), component `temporal_core` (hard pity), material `pharaoh_linen` (Resonance forge, Crucible).
 - **Citadel Bastion**: `citadel_bastion`, palette `citadel`, Resonance row `temporal_pharaoh|citadel|pharaoh_linen|28`.

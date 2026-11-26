@@ -49,10 +49,14 @@ def clamp(v):
 # ---------------------------------------------------------------------------------------------------------------- bosses
 # The Lava Colossus (a knuckle-walking basalt brute), the Boreal Watcher (a gaunt knight on his planted greatsword), the
 # Mycelial Queen (a woman of bark rising from a mushroom-grown spider), the Chained Leviathan (a sea serpent rising out
-# of its coil), the Judge of Lost Souls (a hooded lich holding the scales), the Echo of the Rift (a dragon) and Hell Gao,
-# the Anomaly (the secret post-game superboss).
+# of its coil), the Judge of Lost Souls (a hooded lich holding the scales), the Echo of the Rift (a dragon), Hell Gao,
+# the Anomaly (the secret post-game superboss), the Primordial Thunder Dragon (a wingless sky serpent coiled on a storm
+# cloud inside its ring of lightning rods), the Temporal Pharaoh (a linen-wrapped king with an hourglass in his chest and
+# a broken hour ring), the Mire Abomination (a heap of thrown-away things with a rib-toothed belly) and the Devourer (a
+# titan of void flesh around a singularity, the eight Guardian faces on its belt, the world it ate on its shoulders).
 SOURCES = bbmodel.ROOT / "bosses"
-BOSSES = ("magma_warden", "frost_revenant", "sylvan_matriarch", "abyssal_leviathan", "crypt_lord", "voidwyrm", "hell_gao")
+BOSSES = ("magma_warden", "frost_revenant", "sylvan_matriarch", "abyssal_leviathan", "crypt_lord", "voidwyrm", "hell_gao",
+          "thunder_dragon", "temporal_pharaoh", "mire_abomination", "devourer")
 
 
 RIGS = ART.parent.parent / "survival-plugin/src/main/resources/boss/rigs"

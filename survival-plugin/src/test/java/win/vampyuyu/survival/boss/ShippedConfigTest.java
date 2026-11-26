@@ -145,7 +145,11 @@ public class ShippedConfigTest {
             assertTrue(entry.getValue().model().startsWith("vampyuyu:boss/skin/"));
             assertTrue(entry.getValue().scale() > 0);
         }
-        assertEquals("every Skyblock boss has a custom look", 7, BossSkinService.LOOKS.size());
+        assertEquals("every Skyblock boss has a custom look", 11, BossSkinService.LOOKS.size());
+        assertTrue("a dragon too", BossSkinService.LOOKS.get("thunder_dragon").hide());
+        for (String id : List.of("thunder_dragon", "temporal_pharaoh", "mire_abomination", "devourer")) {
+            assertTrue(id + " is rigged", BossRig.of(id).isPresent());
+        }
         assertTrue("the enderman's eyes glow through invisibility, so it is hidden", BossSkinService.LOOKS.get("hell_gao").hide());
         assertTrue("the dragon ignores invisibility, so it is hidden", BossSkinService.LOOKS.get("voidwyrm").hide());
     }
@@ -154,7 +158,8 @@ public class ShippedConfigTest {
     public void bossModelsFaceWhereTheBossLooks() {
         // checked in game 2026-11-20: a mob's yaw is where it looks, the vanilla dragon's yaw is 180 degrees from its heading
         for (var entry : BossSkinService.LOOKS.entrySet()) {
-            float expected = entry.getKey().equals("voidwyrm") ? 180f : 0f;
+            boolean dragon = entry.getKey().equals("voidwyrm") || entry.getKey().equals("thunder_dragon");
+            float expected = dragon ? 180f : 0f;
             assertEquals(entry.getKey(), expected, entry.getValue().yawOffset(), 0f);
         }
     }

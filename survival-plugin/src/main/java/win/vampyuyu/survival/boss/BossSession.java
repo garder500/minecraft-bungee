@@ -1132,7 +1132,10 @@ public final class BossSession {
             case "crypt_lord" -> BossVfx.SOUL;
             case "voidwyrm" -> BossVfx.VOID;
             case "hell_gao" -> BossVfx.RIFT;
-            default -> BossVfx.GOLD;
+            case "thunder_dragon" -> BossVfx.STORM;
+            case "mire_abomination" -> BossVfx.TOXIC;
+            case "devourer" -> BossVfx.VOID;
+            default -> BossVfx.GOLD;   // the Temporal Pharaoh too
         };
     }
 

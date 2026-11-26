@@ -301,3 +301,25 @@ No boss ability shows a vanilla particle or lays a vanilla potion any more (owne
 * **Not done**: the vanilla mobs under the bosses still make their own ambient, hurt and death sounds; the dungeon floor bosses
   (`dungeon/run/BossDirector`), slayers, the Breath events, the Astral realm and the Raid still use vanilla particles and sounds
   outside `boss/`.
+
+## The last four models (2026-11-26)
+
+The three Guardians that still showed a vanilla mob and the Devourer got their own rigged Blockbench models, built like the
+seven others (`resource-pack/art/blockbench/bosses/<id>.bbmodel`, Generic Model format, one painted face atlas at 2 texels
+per unit, `boss_skins.py`, one item display per bone, `BossSkinService.LOOKS`). All eleven Skyblock bosses now have a look.
+
+| boss | mob under it | look scale | bones / clips | design |
+|---|---|---|---|---|
+| `thunder_dragon` | hidden 0.8x ender dragon, yaw offset 180 | 3.4 | 25 / 12 | a wingless sky serpent coiled on a storm cloud: copper lightning-rod antlers, glowing whiskers, a copper band at every joint, a dynamo core in the chest, a tuning-fork tail, six chained lightning rods turning around it |
+| `temporal_pharaoh` | invisible 3.6x husk | 3.5 | 21 / 12 | a linen-wrapped king in a gold mask and striped headcloth, an hourglass in his chest, a broken twelve-hour ring with two turning hands behind his head, a gnomon sceptre, a sandglass floating over his palm, four hour tablets in orbit |
+| `mire_abomination` | invisible 4x zombie | 3.8 | 19 / 12 | a lopsided heap of mud and junk: a beast skull, a belly that opens into a rib-toothed maw over glowing ichor, a club arm made of a column and a boulder, a thin clawed bone arm, a cart wheel, a gravestone, a caged lantern and a barrel on its back |
+| `devourer` | invisible 3x warden | 4.4 | 24 / 21 | a titan of star-flecked void flesh: a chest maw of stone teeth around a singularity with two rings, two small arms cradling it, a pale weeping mask under a broken crown, the eight Guardian faces on its belt, a ruined tower, an arch and a tree on its shoulders, fragments of Aethelgard around its feet |
+
+* Clips: idle, walk, attack, hurt, ability, phase, death (hold) and one per ability type of the boss's phases in `boss.sql`
+  (the Devourer has all fourteen). The Thunder Dragon's `walk` is its flight (the dragon always moves); the Devourer's death is
+  falling asleep (it kneels and folds its arms around the singularity), as its lore says.
+* The parts that turn all the time (hour hands and tablets, lightning rods, accretion rings, crown, islets) make whole turns
+  inside the looping clips; a one-shot clip restarts them from zero, so they whirl for two ticks when a cast starts or ends.
+* Dark parts cannot be black: the pack check refuses shown texels under 25 % grey, so the Devourer's void is a deep violet and the
+  singularity reads dark only against its glowing rings.
+* Real check: `E2E_BOSSES=thunder_dragon,temporal_pharaoh,mire_abomination,devourer python3 scripts/e2e_client.py --scenario bosses`.

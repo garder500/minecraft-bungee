@@ -1,0 +1,87 @@
+{
+ "textures": {
+  "0": "vampyuyu:item/boss/skin/thunder_dragon",
+  "particle": "vampyuyu:item/boss/skin/thunder_dragon"
+ },
+ "elements": [
+  {
+   "from": [
+    1.626,
+    26.272,
+    -9.448
+   ],
+   "to": [
+    1.986,
+    26.632,
+    -3.948
+   ],
+   "shade": false,
+   "faces": {
+    "north": {
+     "uv": [
+      7.9688,
+      3.3438,
+      8.0,
+      3.375
+     ],
+     "texture": "#0"
+    },
+    "east": {
+     "uv": [
+      3.625,
+      3.3438,
+      3.9688,
+      3.375
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      7.9688,
+      3.3438,
+      8.0,
+      3.375
+     ],
+     "texture": "#0"
+    },
+    "west": {
+     "uv": [
+      3.625,
+      3.3438,
+      3.9688,
+      3.375
+     ],
+     "texture": "#0"
+    },
+    "up": {
+     "uv": [
+      6.1562,
+      1.9688,
+      6.1875,
+      2.3125
+     ],
+     "texture": "#0"
+    },
+    "down": {
+     "uv": [
+      6.1562,
+      1.9688,
+      6.1875,
+      2.3125
+     ],
+     "texture": "#0"
+    }
+   },
+   "light_emission": 15,
+   "rotation": {
+    "angle": -12,
+    "axis": "y",
+    "origin": [
+     1.806,
+     26.452,
+     -9.448
+    ]
+   }
+  }
+ ]
+}
