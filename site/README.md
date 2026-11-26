@@ -6,7 +6,8 @@ Static showcase and shop preview: plain HTML, CSS and JS, no build step, nothing
   ValoBlock armory, Creative and Survival, a teaser for the Isles, "never for sale"), `isles.html` (the whole Skyblock:
   Aethelgard, the island start, Hub and Quai des Huit, the eight Realms, Bastions, the Guardians and their effects, the Raid
   of the Devourer, the Astral Interiority, Hell Gao as a teaser, vocations, runes, wings, armour, Catacombs; styles in
-  `assets/isles.css`), `shop.html` ("The Locker":
+  `assets/isles.css`), `valoblock.html` (a round, the eight agents with their portraits, the Armory and Shards,
+  the three maps with their tactical plans; `assets/valoblock.css`, text in `assets/i18n-valoblock.js`), `shop.html` ("The Locker":
   preview, two separate shops and carts, never for sale, box odds, parents), `parents.html`, `legal.html`.
   The design comes from the Design canvas "Vampyuyu, refonte de la vitrine".
 - Offers and prices: `assets/shop-data.js` only (euro cents, `status: "soon"` = announced, not sold,
