@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ValoBlock | Vampyuyu</title>
+  <meta name="description" content="ValoBlock, the 5 vs 5 tactical shooter of Vampyuyu: eight agents from the Realms of Aethelgard, real 3D weapons, three maps with their own rules.">
+  <link rel="icon" href="assets/img/icon.png">
+  <link rel="preload" href="assets/fonts/GrenzeGotisch.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/Figtree.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/style.css?v=2">
+  <link rel="stylesheet" href="assets/isles.css?v=2">
+  <link rel="stylesheet" href="assets/valoblock.css?v=2">
+</head>
+<body data-page="valoblock" data-title="vb.pageTitle">
+  <a class="skip" href="#main">Skip to content</a>
+  <header id="site-header"></header>
+
+  <main id="main" class="il vbp">
+    <nav class="il-chapters" aria-label="Sections of the ValoBlock page" data-i18n-aria="vbp.nav.label"><div class="wrap">
+      <a href="#round" data-i18n="vbp.nav.round">A round</a><a href="#agents" data-i18n="vbp.nav.agents">Agents</a><a href="#armory" data-i18n="vbp.nav.armory">Armory</a><a href="#maps" data-i18n="vbp.nav.maps">Maps</a><a href="#fair" data-i18n="vbp.nav.fair">Fair play</a>
+    </div></nav>
+
+    <section class="vbp-hero" id="top">
+      <div class="wrap il-2">
+        <div class="il-stack">
+          <p class="il-kick" data-i18n="vbp.hero.kicker">Tactical shooter on Vampyuyu</p>
+          <h1>ValoBlock</h1>
+          <p class="il-lead big-lead" data-i18n="vbp.hero.lead">Five against five. One team carries the Rift Seed, the other seals it. Eight agents from the Realms of Aethelgard, real 3D weapons, and three maps that each change how you play.</p>
+          <div class="ip">
+            <div class="plaque"><span class="label" data-i18n="hero.ip">Server address</span><code>play.vampyuyu.win</code></div>
+            <button type="button" class="btn btn-gilt" data-copy-ip data-i18n="hero.copy">Copy address</button>
+          </div>
+          <p class="il-row"><a class="btn il-ghost" href="#round" data-i18n="vbp.hero.cta">How a round works</a></p>
+          <p class="il-note" data-i18n="vbp.hero.note">Free on Java Edition 26.3. The server sends the ValoBlock pack when you join a match and removes it when you leave.</p>
+        </div>
+        <figure class="shot tilt"><img src="assets/img/vb/play-combat.jpg" width="854" height="480" loading="eager" decoding="async" alt="A round on Hourfall: the combat HUD, abilities and a 3D sidearm." data-i18n-alt="vbp.hero.cap"><figcaption data-i18n="vbp.hero.cap">A round on Hourfall: the combat HUD, abilities and a 3D sidearm.</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="vbp-round" id="round">
+      <div class="wrap il-stack">
+        <div class="il-2 end"><h2 class="il-h2 ice" data-i18n="vbp.round.title">One round, three phases</h2><p class="il-lead" data-i18n="vbp.round.lead">Seedbearers attack, Sealers defend. First team to 7 rounds wins; sides swap after round 6.</p></div>
+        <ol class="il-steps vbp-steps">
+          <li><span class="num">1</span><span><strong data-i18n="vbp.round.s1t">Pick an agent</strong><small data-i18n="vbp.round.s1b">60 seconds to lock one of eight agents. An empty seat is taken by a bot.</small></span></li>
+          <li><span class="num">2</span><span><strong data-i18n="vbp.round.s2t">Buy</strong><small data-i18n="vbp.round.s2b">25 seconds in the Armory to spend your Shards on guns, shields and abilities.</small></span></li>
+          <li><span class="num">3</span><span><strong data-i18n="vbp.round.s3t">Fight</strong><small data-i18n="vbp.round.s3b">100 seconds. Plant the Rift Seed on site A or B, or stop the team that carries it.</small></span></li>
+        </ol>
+        <div class="il-2">
+          <div class="il-card vbp-seed"><h3 data-i18n="vbp.round.seedT">The Rift Seed</h3><p data-i18n="vbp.round.seedB">Hold to plant it for 4 seconds. Once it is in the ground the fuse burns for 40 seconds, and the Sealers need 7 seconds to seal it, with a checkpoint halfway.</p>
+            <p class="chips"><span class="chip" data-i18n="vbp.round.c1">5 vs 5</span><span class="chip" data-i18n="vbp.round.c2">First to 7</span><span class="chip" data-i18n="vbp.round.c3">100 HP, shields up to 50</span><span class="chip" data-i18n="vbp.round.c4">Bots fill empty seats</span></p></div>
+          <div class="il-pair"><figure class="shot "><img src="assets/img/vb/play-agents.jpg" width="854" height="480" loading="lazy" decoding="async" alt="Agent select." data-i18n-alt="vbp.round.cap1"><figcaption data-i18n="vbp.round.cap1">Agent select.</figcaption></figure><figure class="shot "><img src="assets/img/vb/play-armory.jpg" width="854" height="480" loading="lazy" decoding="async" alt="The Armory during the buy phase." data-i18n-alt="vbp.round.cap2"><figcaption data-i18n="vbp.round.cap2">The Armory during the buy phase.</figcaption></figure></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="vbp-agents" id="agents">
+      <div class="wrap il-stack">
+        <div class="il-2 end"><h2 class="il-h2 ice" data-i18n="vbp.agents.title">Eight agents, four roles</h2><p class="il-lead" data-i18n="vbp.agents.lead">Each agent comes from one of the eight Realms of Aethelgard and carries four abilities: two bought each round, a free signature, and an ultimate that charges up.</p></div>
+        <ul class="vbp-roles"><li style="--c:#ff7a59"><strong>Vanguard</strong><span data-i18n="vbp.role.Vanguard">Opens the site, takes the first duel.</span></li><li style="--c:#7fd8ff"><strong>Warden</strong><span data-i18n="vbp.role.Warden">Holds ground, slows pushes, anchors a site.</span></li><li style="--c:#c9a8ff"><strong>Seer</strong><span data-i18n="vbp.role.Seer">Finds enemies before anyone sees them.</span></li><li style="--c:#8fe08a"><strong>Weaver</strong><span data-i18n="vbp.role.Weaver">Cuts sightlines with smokes and zones.</span></li></ul>
+        <ul class="vbp-agent-grid">
+        <li class="agent" style="--c:#ff7a59">
+          <img src="assets/img/vb/agent-cinder.png" width="192" height="256" loading="lazy" alt="Cinder">
+          <div>
+            <h3>Cinder</h3>
+            <p class="who"><span class="role">Vanguard</span> · <span data-i18n="vbp.agent.cinder.realm">Cracked Ashes</span></p>
+            <p class="quote" data-i18n="vbp.agent.cinder.q">&quot;The Colossus taught me: keep moving or cool down.&quot;</p>
+            <ul class="abil"><li><strong>Slag Pot</strong><span data-i18n="vbp.agent.cinder.a0">Thrown pot. A magma pool for 6 s, 30 damage per second.</span></li><li><strong>Heat Shimmer</strong><span data-i18n="vbp.agent.cinder.a1">6 s of Speed I and silent footsteps.</span></li><li><strong>Ember Dash</strong><span data-i18n="vbp.agent.cinder.a2">Short dash leaving a 3 s fire trail. Recharges after 2 kills.</span></li><li><strong>Colossus Step</strong><span data-i18n="vbp.agent.cinder.a3">Leap and slam: knockback ring, 60 damage at the centre.</span></li></ul>
+          </div>
+        </li>
+        <li class="agent" style="--c:#ff7a59">
+          <img src="assets/img/vb/agent-gale.png" width="192" height="256" loading="lazy" alt="Gale">
+          <div>
+            <h3>Gale</h3>
+            <p class="who"><span class="role">Vanguard</span> · <span data-i18n="vbp.agent.gale.realm">Tempestuous Archipelago</span></p>
+            <p class="quote" data-i18n="vbp.agent.gale.q">&quot;The wind always finds a door. I just follow it.&quot;</p>
+            <ul class="abil"><li><strong>Wind Pad</strong><span data-i18n="vbp.agent.gale.a0">Places an Archipelago wind pad: anyone who steps on it is launched. 20 s.</span></li><li><strong>Static Orb</strong><span data-i18n="vbp.agent.gale.a1">Bouncing orb. On its second bounce it flashes everyone facing it.</span></li><li><strong>Charged Slide</strong><span data-i18n="vbp.agent.gale.a2">Low slide under fire; reload is instant during it. Recharges after 2 kills.</span></li><li><strong>Storm Call</strong><span data-i18n="vbp.agent.gale.a3">Marks 3 spots. Lightning hits each after 1.5 s for 90 damage.</span></li></ul>
+          </div>
+        </li>
+        <li class="agent" style="--c:#7fd8ff">
+          <img src="assets/img/vb/agent-thorn.png" width="192" height="256" loading="lazy" alt="Thorn">
+          <div>
+            <h3>Thorn</h3>
+            <p class="who"><span class="role">Warden</span> · <span data-i18n="vbp.agent.thorn.realm">Whispering Grove</span></p>
+            <p class="quote" data-i18n="vbp.agent.thorn.q">&quot;Roots remember every footstep.&quot;</p>
+            <ul class="abil"><li><strong>Root Snare</strong><span data-i18n="vbp.agent.thorn.a0">Hidden tripwire. The first enemy through is slowed and revealed.</span></li><li><strong>Spore Mend</strong><span data-i18n="vbp.agent.thorn.a1">Spore zone: 40 HP over 4 s to anyone inside.</span></li><li><strong>Bark Wall</strong><span data-i18n="vbp.agent.thorn.a2">A 5-wide wooden wall for 12 s. Breakable by gunfire.</span></li><li><strong>Overgrowth</strong><span data-i18n="vbp.agent.thorn.a3">Vines cover the site for 10 s. Enemies who touch them are slowed and revealed.</span></li></ul>
+          </div>
+        </li>
+        <li class="agent" style="--c:#7fd8ff">
+          <img src="assets/img/vb/agent-rime.png" width="192" height="256" loading="lazy" alt="Rime">
+          <div>
+            <h3>Rime</h3>
+            <p class="who"><span class="role">Warden</span> · <span data-i18n="vbp.agent.rime.realm">Frozen Heights</span></p>
+            <p class="quote" data-i18n="vbp.agent.rime.q">&quot;Hold still. I will hold it for you.&quot;</p>
+            <ul class="abil"><li><strong>Frost Mine</strong><span data-i18n="vbp.agent.rime.a0">Proximity mine: Slowness II for 4 s.</span></li><li><strong>Stasis Pane</strong><span data-i18n="vbp.agent.rime.a1">An ice pane that stops 3 bullets, then shatters.</span></li><li><strong>Hold the Moment</strong><span data-i18n="vbp.agent.rime.a2">Freeze yourself for 2 s: no damage taken, no action.</span></li><li><strong>Glacial Hour</strong><span data-i18n="vbp.agent.rime.a3">A 12-block dome for 8 s: enemies inside are slowed and cannot reload.</span></li></ul>
+          </div>
+        </li>
+        <li class="agent" style="--c:#c9a8ff">
+          <img src="assets/img/vb/agent-vesper.png" width="192" height="256" loading="lazy" alt="Vesper">
+          <div>
+            <h3>Vesper</h3>
+            <p class="who"><span class="role">Seer</span> · <span data-i18n="vbp.agent.vesper.realm">Ethereal Necropolis</span></p>
+            <p class="quote" data-i18n="vbp.agent.vesper.q">&quot;The dead tell me where the living hide.&quot;</p>
+            <ul class="abil"><li><strong>Echo Step</strong><span data-i18n="vbp.agent.vesper.a0">A ghost of you walks forward. Whoever shoots it is revealed.</span></li><li><strong>Judgment</strong><span data-i18n="vbp.agent.vesper.a1">Soul flare. Blinds every player looking at it for 1.5 s.</span></li><li><strong>Soul Lantern</strong><span data-i18n="vbp.agent.vesper.a2">Placed lantern pulses twice; enemies inside glow for 3 s.</span></li><li><strong>Verdict</strong><span data-i18n="vbp.agent.vesper.a3">Every enemy glows through walls for 4 s.</span></li></ul>
+          </div>
+        </li>
+        <li class="agent" style="--c:#c9a8ff">
+          <img src="assets/img/vb/agent-nacre.png" width="192" height="256" loading="lazy" alt="Nacre">
+          <div>
+            <h3>Nacre</h3>
+            <p class="who"><span class="role">Seer</span> · <span data-i18n="vbp.agent.nacre.realm">Abyssal Depths</span></p>
+            <p class="quote" data-i18n="vbp.agent.nacre.q">&quot;Down there, you learn to listen.&quot;</p>
+            <ul class="abil"><li><strong>Ink Burst</strong><span data-i18n="vbp.agent.nacre.a0">Short black cloud that blinds and muffles footsteps inside it.</span></li><li><strong>Pressure Bubble</strong><span data-i18n="vbp.agent.nacre.a1">A dome that pushes players out for 4 s. Good for breaking a seal.</span></li><li><strong>Sonar Pearl</strong><span data-i18n="vbp.agent.nacre.a2">Thrown pearl. One sonar ring reveals enemies within 12 blocks.</span></li><li><strong>Undertow</strong><span data-i18n="vbp.agent.nacre.a3">8 s field that drags enemies toward its centre.</span></li></ul>
+          </div>
+        </li>
+        <li class="agent" style="--c:#8fd0a0">
+          <img src="assets/img/vb/agent-sahrin.png" width="192" height="256" loading="lazy" alt="Sahrin">
+          <div>
+            <h3>Sahrin</h3>
+            <p class="who"><span class="role">Weaver</span> · <span data-i18n="vbp.agent.sahrin.realm">Citadel of Golden Sands</span></p>
+            <p class="quote" data-i18n="vbp.agent.sahrin.q">&quot;Time is a wall, if you stack it right.&quot;</p>
+            <ul class="abil"><li><strong>Rewind</strong><span data-i18n="vbp.agent.sahrin.a0">Marks your position. Return to it any time in the next 8 s.</span></li><li><strong>Hourglass Trap</strong><span data-i18n="vbp.agent.sahrin.a1">Sand zone that slows and reveals whoever walks in.</span></li><li><strong>Sand Veil</strong><span data-i18n="vbp.agent.sahrin.a2">Thrown at range: a 15 s sand cloud that blocks sight. Grains rise upward.</span></li><li><strong>Time Tide</strong><span data-i18n="vbp.agent.sahrin.a3">Allies in a wide area: Speed I and reload x1.5 for 8 s.</span></li></ul>
+          </div>
+        </li>
+        <li class="agent" style="--c:#8fd0a0">
+          <img src="assets/img/vb/agent-murk.png" width="192" height="256" loading="lazy" alt="Murk">
+          <div>
+            <h3>Murk</h3>
+            <p class="who"><span class="role">Weaver</span> · <span data-i18n="vbp.agent.murk.realm">Putrid Marshes</span></p>
+            <p class="quote" data-i18n="vbp.agent.murk.q">&quot;Breathe in. You will stop soon.&quot;</p>
+            <ul class="abil"><li><strong>Leech Pool</strong><span data-i18n="vbp.agent.murk.a0">Puddle: slows and drains 10 HP per second, never below 1.</span></li><li><strong>Rot Cloud</strong><span data-i18n="vbp.agent.murk.a1">Small poison cloud, 10 s. Blocks sight.</span></li><li><strong>Miasma Wall</strong><span data-i18n="vbp.agent.murk.a2">A long gas wall Murk switches on and off. Fuel refills between rounds.</span></li><li><strong>Bog Tide</strong><span data-i18n="vbp.agent.murk.a3">The marsh spreads in a cone: enemies inside are slowed and revealed to Murk.</span></li></ul>
+          </div>
+        </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="vbp-armory" id="armory">
+      <div class="wrap il-stack">
+        <div class="il-2 end"><h2 class="il-h2 ice" data-i18n="vbp.armory.title">The Armory</h2><p class="il-lead" data-i18n="vbp.armory.lead">Fifteen items, each a real 3D model with its own sound, recoil and range. Prices are in Shards, the match currency: nothing carries over between matches.</p></div>
+        <ul class="rack vbp-rack"><li><img src="assets/img/vb/flux_rifle.png" width="568" height="270" loading="lazy" alt=""><span>AR-77 Tempest</span></li><li><img src="assets/img/vb/gnat.png" width="568" height="404" loading="lazy" alt=""><span>MX-7 Hornet</span></li><li><img src="assets/img/vb/gravebell.png" width="568" height="414" loading="lazy" alt=""><span>R-454 Undertaker</span></li><li><img src="assets/img/vb/watchers_eye.png" width="568" height="233" loading="lazy" alt=""><span>HX-50 Sovereign</span></li></ul>
+        <div class="il-card vbp-econ"><h3 data-i18n="vbp.armory.econT">Shards</h3><p data-i18n="vbp.armory.econB">800 Shards on the pistol round. A won round pays 3,000, a lost one 1,900 to 2,900 as the losses pile up. +200 per kill, +300 to the team for a plant. Capped at 9,000.</p></div>
+        <div class="vbp-groups"><h3 class="vb-gh"><span data-i18n="vbp.group.sidearm">Sidearms</span></h3><div class="vb-table"><table><tbody><tr><th scope="row">SP-9 Sentry</th><td><span data-i18n="vbp.kind.Pistol">Pistol</span></td><td class="price"><span data-i18n="vbp.armory.free">free</span></td><td><span data-i18n="vbp.w.pip">Everyone spawns with it. Sneak for a tight first shot.</span></td></tr><tr><th scope="row">BX-3 Ratchet</th><td><span data-i18n="vbp.kind.Burst pistol">Burst pistol</span></td><td class="price">500 Shards</td><td><span data-i18n="vbp.w.tickhand">Three-round burst on each click. Strong at close range, weak past 20 blocks.</span></td></tr><tr><th scope="row">R-454 Undertaker</th><td><span data-i18n="vbp.kind.Revolver">Revolver</span></td><td class="price">800 Shards</td><td><span data-i18n="vbp.w.gravebell">One headshot kills an unshielded player. Rings a bell sound on a kill.</span></td></tr></tbody></table></div><h3 class="vb-gh"><span data-i18n="vbp.group.primary">Primary weapons</span></h3><div class="vb-table"><table><tbody><tr><th scope="row">MX-7 Hornet</th><td><span data-i18n="vbp.kind.SMG">SMG</span></td><td class="price">900 Shards</td><td><span data-i18n="vbp.w.gnat">Fastest fire rate, worst range. A buy for saving rounds.</span></td></tr><tr><th scope="row">KR-45 Vesper</th><td><span data-i18n="vbp.kind.SMG">SMG</span></td><td class="price">1,600 Shards</td><td><span data-i18n="vbp.w.mistral">Accurate while moving. The anti-rush gun for Sealers.</span></td></tr><tr><th scope="row">PX-12 Breacher</th><td><span data-i18n="vbp.kind.Pump shotgun">Pump shotgun</span></td><td class="price">1,000 Shards</td><td><span data-i18n="vbp.w.scrapper">8 pellets. One-shot up close, useless past 10 blocks.</span></td></tr><tr><th scope="row">AS-20 Mauler</th><td><span data-i18n="vbp.kind.Auto shotgun">Auto shotgun</span></td><td class="price">1,850 Shards</td><td><span data-i18n="vbp.w.mire_maw">Holds a corner. Each pellet slows the target a little.</span></td></tr><tr><th scope="row">TR-16 Lancer</th><td><span data-i18n="vbp.kind.Rifle, semi-auto">Rifle, semi-auto</span></td><td class="price">2,100 Shards</td><td><span data-i18n="vbp.w.bronzite_carbine">Tap-fire rifle. Two headshots, perfect first shot, little recoil.</span></td></tr><tr><th scope="row">AR-77 Tempest</th><td><span data-i18n="vbp.kind.Rifle, full auto">Rifle, full auto</span></td><td class="price">2,900 Shards</td><td><span data-i18n="vbp.w.flux_rifle">The recoil climbs, then drifts right.</span></td></tr><tr><th scope="row">DM-10 Longbow</th><td><span data-i18n="vbp.kind.Marksman">Marksman</span></td><td class="price">1,100 Shards</td><td><span data-i18n="vbp.w.longwind">Cheap scope. Sneak to zoom x2.</span></td></tr><tr><th scope="row">HX-50 Sovereign</th><td><span data-i18n="vbp.kind.Bolt sniper">Bolt sniper</span></td><td class="price">4,500 Shards</td><td><span data-i18n="vbp.w.watchers_eye">One body shot kills. Hold right-click to aim, release to fire.</span></td></tr><tr><th scope="row">RK-90 Thresher</th><td><span data-i18n="vbp.kind.LMG">LMG</span></td><td class="price">3,200 Shards</td><td><span data-i18n="vbp.w.grinder">Spins up: the first 0.5 s fire at half rate. Wall-penetrating.</span></td></tr></tbody></table></div><h3 class="vb-gh"><span data-i18n="vbp.group.shield">Shields</span></h3><div class="vb-table"><table><tbody><tr><th scope="row">Light Ward</th><td><span data-i18n="vbp.kind.Shield">Shield</span></td><td class="price">400 Shards</td><td><span data-i18n="vbp.w.light_ward">Absorbs damage until broken. 25 points.</span></td></tr><tr><th scope="row">Heavy Ward</th><td><span data-i18n="vbp.kind.Shield">Shield</span></td><td class="price">1,000 Shards</td><td><span data-i18n="vbp.w.heavy_ward">Absorbs damage until broken. 50 points, shown as the chestplate.</span></td></tr></tbody></table></div><h3 class="vb-gh"><span data-i18n="vbp.group.melee">Melee</span></h3><div class="vb-table"><table><tbody><tr><th scope="row">Talon Knife</th><td><span data-i18n="vbp.kind.Melee">Melee</span></td><td class="price"><span data-i18n="vbp.armory.free">free</span></td><td><span data-i18n="vbp.w.shard_knife">Left-click. 150 from behind. Holding it gives the fastest run speed.</span></td></tr></tbody></table></div></div>
+      </div>
+    </section>
+
+    <section class="vbp-maps" id="maps">
+      <div class="wrap il-stack">
+        <div class="il-2 end"><h2 class="il-h2 ice" data-i18n="vbp.maps.title">Three maps, three rules</h2><p class="il-lead" data-i18n="vbp.maps.lead">Every map is set in a Realm of Aethelgard and has a feature that changes the round. The next map is chosen by vote.</p></div>
+        <ul class="vbp-map-grid">
+        <li class="map">
+          <figure class="shot "><img src="assets/img/vb/map-hourfall.jpg" width="854" height="480" loading="lazy" decoding="async" alt="Hourfall in a real match." data-i18n-alt="vbp.map.hourfall.cap"><figcaption data-i18n="vbp.map.hourfall.cap">Hourfall in a real match.</figcaption></figure>
+          <div class="map-body">
+            <img class="plan" src="assets/img/vb/plan-hourfall.png" width="180" height="180" loading="lazy" alt="" title="Tactical plan">
+            <div><h3>Hourfall</h3><p class="who"><span data-i18n="vbp.map.hourfall.realm">Citadel of Golden Sands</span> · <span data-i18n="vbp.map.hourfall.f">Time Tide gates</span></p><p data-i18n="vbp.map.hourfall.t">Four sand gates ring the Hourglass tower in mid. They open and close in pairs every 30 s on the Citadel clock, with a bell 3 s before. A closed gate forces a long rotation through the side halls.</p></div>
+          </div>
+        </li>
+        <li class="map">
+          <figure class="shot "><img src="assets/img/vb/map-rootvault.jpg" width="854" height="480" loading="lazy" decoding="async" alt="Rootvault in a real match." data-i18n-alt="vbp.map.rootvault.cap"><figcaption data-i18n="vbp.map.rootvault.cap">Rootvault in a real match.</figcaption></figure>
+          <div class="map-body">
+            <img class="plan" src="assets/img/vb/plan-rootvault.png" width="180" height="180" loading="lazy" alt="" title="Tactical plan">
+            <div><h3>Rootvault</h3><p class="who"><span data-i18n="vbp.map.rootvault.realm">Whispering Grove</span> · <span data-i18n="vbp.map.rootvault.f">Canopy and one-way roots</span></p><p data-i18n="vbp.map.rootvault.t">A canopy bridge loops above mid. Hanging roots drop you from the canopy straight into a site but can never be climbed: fast entries, no retreat. Leaves block sight, not bullets.</p></div>
+          </div>
+        </li>
+        <li class="map">
+          <figure class="shot "><img src="assets/img/vb/map-stormbreak.jpg" width="854" height="480" loading="lazy" decoding="async" alt="Stormbreak in a real match." data-i18n-alt="vbp.map.stormbreak.cap"><figcaption data-i18n="vbp.map.stormbreak.cap">Stormbreak in a real match.</figcaption></figure>
+          <div class="map-body">
+            <img class="plan" src="assets/img/vb/plan-stormbreak.png" width="180" height="180" loading="lazy" alt="" title="Tactical plan">
+            <div><h3>Stormbreak</h3><p class="who"><span data-i18n="vbp.map.stormbreak.realm">Tempestuous Archipelago</span> · <span data-i18n="vbp.map.stormbreak.f">Wind pads and gusts</span></p><p data-i18n="vbp.map.stormbreak.t">Islands joined by narrow bridges. Wind pads launch players from island to island in 2 s; every 45 s a gust shoves everyone on a bridge sideways. Falling into the sea is death.</p></div>
+          </div>
+        </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="vbp-fair" id="fair">
+      <div class="wrap il-stack center">
+        <h2 class="il-h2 ice" data-i18n="vbp.fair.title">Fair by design</h2>
+        <p class="il-lead" data-i18n="vbp.fair.b1">Agents are never sold, and nothing in the shop changes damage, recoil, sound or what you see.</p>
+        <p class="il-quiet" data-i18n="vbp.fair.b2">A weapon skin changes how a gun looks, never how it sounds, hits or reads on screen.</p>
+        <h2 class="il-h2 sm" data-i18n="vbp.join.title">Ready for the first round?</h2>
+        <p class="il-lead" data-i18n="vbp.join.lead">Join on Java Edition 26.3 and walk to the ValoBlock door in the roost, or open the menu with the compass.</p>
+        <div class="ip">
+          <div class="plaque"><span class="label" data-i18n="hero.ip">Server address</span><code>play.vampyuyu.win</code></div>
+          <button type="button" class="btn btn-gilt" data-copy-ip data-i18n="hero.copy">Copy address</button>
+        </div>
+        <p class="il-row"><a class="btn btn-main" href="https://discord.gg/F9uXnh3yzs" rel="noopener" data-i18n="hero.discord">Join the Discord</a> <a class="btn il-ghost" href="shop.html" data-i18n="fair.shop">Visit the shop</a></p>
+      </div>
+    </section>
+  </main>
+
+  <footer id="site-footer"></footer>
+  <script src="assets/i18n.js?v=2"></script>
+  <script src="assets/i18n-isles.js?v=2"></script>
+  <script src="assets/i18n-valoblock.js?v=2"></script>
+  <script src="assets/shop-data.js"></script>
+  <script src="assets/app.js?v=2"></script>
+</body>
+</html>

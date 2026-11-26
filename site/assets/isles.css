@@ -1,0 +1,127 @@
+/* The Isles page (isles.html): one long descent from the daylight sky of the islands to the void under them.
+   The colours follow the journey: sky and sand (island), dusk (Hub and Quai), plum (Realms, Guardians), violet night
+   (the Devourer), the magenta of Hell Gao, ember (Catacombs). Tokens come from style.css. */
+
+.il { --il-ink: var(--isle-ink); --il-quiet: var(--isle-quiet); --violet: #c9a2ff; --gao: #ff4fd8; --ember: #ff8a55; }
+.il section { padding: 88px 0; }
+.il-stack { display: flex; flex-direction: column; gap: 32px; }
+.il-stack.sm { gap: 16px; }
+.il-stack.lg { gap: 72px; }
+.il-stack.center { align-items: center; text-align: center; }
+.il-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 32px 48px; align-items: center; }
+.il-2.end { align-items: end; }
+.il-2.start { align-items: start; }
+.il-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px; }
+.il-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 18px; }
+.il-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (min-width: 900px) { .il-2.flip > :first-child { order: 2; } }
+@media (max-width: 520px) { .il-pair { grid-template-columns: 1fr; } .il section { padding: 64px 0; } }
+
+.il-ch { font-family: var(--display); font-size: 24px; opacity: .8; margin-bottom: 6px; }
+.il-kick { font-size: 13px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.il-h2 { font-size: clamp(46px, 6.4vw, 88px); line-height: .92; }
+.il-h2.sm { font-size: clamp(38px, 4.8vw, 64px); }
+.il-h3 { font-size: clamp(34px, 3.4vw, 46px); }
+.il-lead { font-size: clamp(17px, 1.6vw, 20px); max-width: 52ch; }
+.il-lead.big-lead { font-size: clamp(19px, 2vw, 24px); max-width: 34ch; }
+.il-note, .il-quiet { font-size: 15px; opacity: .82; }
+.il-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: inherit; }
+.il-stack.center .il-row, .il-stack.center .ip { justify-content: center; }
+.rose { color: var(--rose); } .gold { color: var(--candle-2); } .violet { color: var(--violet); } .ember { color: var(--ember); }
+
+.il-ghost { border-color: currentColor; color: inherit; background: transparent; }
+.il-ghost:hover { color: inherit; background: rgba(255, 255, 255, .12); }
+
+/* screenshots: real game captures, pixel art kept sharp */
+.shot { margin: 0; position: relative; border-radius: 12px; overflow: hidden; background: #0b0614; box-shadow: 0 18px 44px rgba(0, 0, 0, .3); }
+.shot img, .shot video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; image-rendering: pixelated; }
+.shot figcaption { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; padding: 26px 14px 10px; font-size: 14px; line-height: 1.35; color: var(--bone); background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, .72)); }
+.shot.tilt { transform: rotate(1.4deg); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
+.chip { font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .22); }
+.num { flex: none; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font: 800 21px/1 var(--display); }
+
+/* chapter bar under the site header */
+.il-chapters { position: sticky; top: 63px; z-index: 30; background: rgba(14, 7, 12, .86); border-bottom: 1px solid var(--line); backdrop-filter: blur(6px); }
+.il-chapters .wrap { display: flex; gap: 4px 20px; overflow-x: auto; white-space: nowrap; padding: 10px 0; scrollbar-width: none; }
+.il-chapters a { color: var(--mist); font-size: 14px; font-weight: 600; text-decoration: none; }
+.il-chapters a:hover { color: var(--bone); }
+.il section[id] { scroll-margin-top: 104px; }
+/* phone: the site header wraps on two rows and stays pinned, so the chapter bar scrolls away with the page */
+@media (max-width: 860px) { .il-chapters { position: static; } .il section[id] { scroll-margin-top: var(--il-head, 120px); } }
+
+/* day */
+.il-hero { color: var(--il-ink); background: linear-gradient(#6f9be0, var(--sky) 55%, #dbe8fb); }
+.il-hero h1 { font-size: clamp(64px, 9.5vw, 132px); line-height: .85; }
+.il-hero .plaque { background: rgba(255, 255, 255, .7); border-color: #b98a2e; box-shadow: none; }
+.il-hero .plaque code { color: var(--il-ink); }
+.il-hero .plaque .label { color: var(--il-quiet); }
+.il-world { color: var(--il-ink); background: #dbe8fb; }
+.il-card { padding: 20px; border-radius: 16px; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .14); display: flex; flex-direction: column; gap: 10px; }
+.il-card h3 { font-size: 32px; }
+.il-card.light { background: #fff; border-color: #c8d6ee; }
+.il-island { color: var(--il-ink); background: linear-gradient(#dbe8fb, var(--sand)); }
+.il-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 18px; }
+.il-steps li { display: flex; gap: 14px; align-items: flex-start; }
+.il-steps .num { background: var(--il-ink); color: var(--sand); }
+.il-steps strong { display: block; font-size: 18px; }
+.il-steps small { display: block; font-size: 15px; line-height: 1.5; color: var(--il-quiet); }
+
+/* dusk */
+.il-quai { color: var(--bone); background: linear-gradient(var(--sand), #e7a77b 22%, #5b3a6e 62%, #2a1838); }
+.il-quai > .wrap > div:first-child { color: var(--il-ink); }
+
+/* plum */
+.il-realms { color: var(--bone); background: #2a1838; }
+.il-realms-grid, .il-boss-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; }
+.realm, .boss { display: flex; flex-direction: column; border-radius: 14px; overflow: hidden; background: #140d22; }
+.realm { border-top: 4px solid var(--c); }
+.realm img, .boss img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; image-rendering: pixelated; }
+.realm > div, .boss > div { padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.realm h3 { font-size: 28px; color: var(--c); }
+.boss h3 { font-size: 30px; }
+.who { font-size: 14px; color: var(--mist); }
+.realm p:not(.who):not(.chips), .boss p:not(.who):not(.chips) { font-size: 15px; line-height: 1.5; }
+.il-bastion { color: var(--bone); background: linear-gradient(#2a1838, #1a0f24); }
+.il-bosses { color: var(--bone); background: #1a0f24; }
+.boss { border: 1px solid #2c2140; }
+.il-boss-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+.il-vfx { color: var(--bone); background: #120a1b; }
+.veils { max-width: 760px; }
+
+/* night */
+.il-raid { color: var(--bone); background: linear-gradient(#120a1b, #0b0614); }
+.il-phases { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.il-phases li { display: flex; gap: 14px; align-items: center; }
+.il-phases .num { background: #3a0ca3; color: #fff; font-size: 17px; }
+.il-gao { color: var(--bone); background: radial-gradient(ellipse at 70% 50%, #3d0f3a, #0b0614 62%); padding: 110px 0 !important; }
+.il-kick.gao { color: var(--gao); }
+.il-h2.gao { background: linear-gradient(90deg, var(--gao), #6a2ec8); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.il-gao-art { margin: 0; justify-self: center; width: min(420px, 100%); border-radius: 18px; overflow: hidden; box-shadow: 0 0 90px rgba(255, 79, 216, .32); }
+.il-gao-art img { display: block; width: 100%; height: auto; filter: brightness(.7) contrast(1.2) saturate(1.1); transition: filter 1.2s ease; }
+.il-gao-art:hover img { filter: brightness(.85) contrast(1.1); }
+.il-gear { color: var(--bone); background: #150c1e; }
+.il-gear .shot { margin-bottom: 4px; }
+.il-gear .il-card p { font-size: 15px; line-height: 1.5; }
+
+/* ember */
+.il-cat { color: var(--bone); background: linear-gradient(#150c1e, #2a0d12); }
+.il-floors { list-style: none; margin: 0; padding: 0; counter-reset: floor; }
+.il-floors li { counter-increment: floor; display: grid; grid-template-columns: 48px 1fr; column-gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, .12); }
+.il-floors li::before { content: counter(floor); grid-row: span 2; font: 800 34px/1 var(--display); color: var(--candle); }
+.il-floors span { font-size: 15px; color: var(--mist); }
+.il-join { color: var(--bone); background: linear-gradient(#2a0d12, #0b0614 45%, #3b2a5a); }
+
+@media (prefers-reduced-motion: reduce) { .il-gao-art img { transition: none; } }
+
+/* home page teaser (index.html) */
+.isles-cta { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; flex: 0 1 360px; }
+.isles .btn-isles { background: var(--isle-ink); color: var(--sand); }
+.isles .btn-isles:hover { background: #2a3d60; color: var(--sand); }
+.isles-cta .apart { flex: none; }
+.polaroids.four { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.polaroids.four img { aspect-ratio: 16 / 10; object-fit: cover; }
+.shot.natural img { aspect-ratio: auto; object-fit: contain; }
+.shot.natural { background: transparent; box-shadow: none; border-radius: 10px; }
+.shot.natural img { border-radius: 10px; background: #0b0614; }
+.shot.natural figcaption { position: static; padding: 8px 2px 0; background: none; color: var(--mist); font-size: 13px; }
