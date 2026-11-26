@@ -1744,6 +1744,14 @@ def valoblock_scenario(ctx):
         return
     time.sleep(8)
     shot(tools, shots / "vb-01-agent-select.png")
+    xdo = tools["xdotool"]
+    for i, (hx, hy) in enumerate([(603, 189), (675, 190), (603, 262), (747, 226)]):  # hover a portrait: the left panel shows it
+        subprocess.run([xdo, "mousemove", str(hx - 3), str(hy), "mousemove", str(hx), str(hy)], env=ctx["env"])
+        time.sleep(1.5)
+        shot(tools, shots / f"vb-01-agent-hover{i}.png")
+    subprocess.run([xdo, "click", "1"], env=ctx["env"])  # lock the hovered agent in
+    time.sleep(1.5)
+    shot(tools, shots / "vb-01-agent-picked.png")
     say("where: " + vb(rcon, "debug where E2EBot"))
     out = vb(rcon, "debug where E2EBot")
     if "vb_arena" not in out:
@@ -1768,6 +1776,16 @@ def valoblock_scenario(ctx):
     say(vb(rcon, "debug armory E2EBot"))
     time.sleep(3)
     shot(tools, shots / "vb-03-armory.png")
+    xdo = tools["xdotool"]
+    for i, ty in enumerate((190, 226, 262, 298, 334, 370)):  # one capture per tab, cursor on the first card
+        subprocess.run([xdo, "mousemove", "495", str(ty), "click", "1"], env=ctx["env"])
+        time.sleep(1)
+        subprocess.run([xdo, "mousemove", "545", "205", "mousemove", "550", "207"], env=ctx["env"])
+        time.sleep(1)
+        shot(tools, shots / f"vb-03-armory-tab{i}.png")
+    subprocess.run([xdo, "mousemove", "550", "207", "click", "1"], env=ctx["env"])  # buy the hovered card (owned / bought state)
+    time.sleep(1.5)
+    shot(tools, shots / "vb-03-armory-bought.png")
     subprocess.run([tools["xdotool"], "key", "Escape"], env=ctx["env"])
     time.sleep(1)
     valoblock_overview(ctx, rcon, 150 if ctx.get("rules") == "map=stormbreak" else 120)

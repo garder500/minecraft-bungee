@@ -196,6 +196,17 @@ public final class VbWeaponService implements WeaponService, Listener {
     });
   }
 
+  /** Debug (/vb debug give): the weapon goes into its slot for free and is held. */
+  void debugGive(Player p, VbMatch m, VbWeapon w) {
+    sync(() -> {
+      Gear g = gear(p.getUniqueId());
+      g.loadout.set(w);
+      g.guns.clear();
+      deal(p, m, g);
+      p.getInventory().setHeldItemSlot(w.slot() == VbWeapon.Slot.PRIMARY ? SLOT_PRIMARY : w.slot() == VbWeapon.Slot.MELEE ? SLOT_MELEE : SLOT_SIDEARM);
+    });
+  }
+
   @Override
   public void clear(UUID player) {
     sync(

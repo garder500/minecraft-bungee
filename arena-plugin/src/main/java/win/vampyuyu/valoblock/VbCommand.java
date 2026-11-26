@@ -12,7 +12,7 @@ import win.vampyuyu.arena.NexusArenaEngine;
 /** /vb: operate ValoBlock arenas (start, stop, status, reload) and drive tests (debug). Admin only. */
 public final class VbCommand implements CommandExecutor, TabCompleter {
   private static final List<String> SUBS = List.of("help", "agent", "buy", "vote", "use", "start", "stop", "status", "reload", "level", "map", "debug");
-  private static final List<String> DEBUG = List.of("skip", "state", "win", "kill", "plant", "seal", "armory", "block", "where", "tp", "god", "notice", "tags", "agent", "buy", "charge", "cast", "wall");
+  private static final List<String> DEBUG = List.of("skip", "state", "win", "kill", "plant", "seal", "armory", "block", "where", "tp", "god", "notice", "tags", "agent", "buy", "charge", "cast", "wall", "give");
 
   private final NexusArenaEngine plugin;
   private final Map<String, String> selected = new HashMap<>();
@@ -388,6 +388,16 @@ public final class VbCommand implements CommandExecutor, TabCompleter {
         if (p == null) throw new IllegalArgumentException("Nobody called " + args[2] + " is online");
         Boolean on = svc.wallOn(p.getUniqueId());
         say(sender, "wall " + (on == null ? "none" : on ? "on" : "off"));
+      }
+      case "give" -> {
+        // /vb debug give <player> <weapon id>: puts the weapon in its slot without paying (screenshots of every gun class).
+        if (args.length < 4) throw new IllegalArgumentException("Usage: /vb debug give <player> <weapon id>");
+        Player p = plugin.getServer().getPlayerExact(args[2]);
+        VbWeapon w = VbData.weapons().get(args[3]);
+        if (p == null || w == null) throw new IllegalArgumentException("No such player or weapon");
+        if (!(plugin.valoblock.weapons instanceof VbWeaponService ws)) throw new IllegalArgumentException("Weapons are not active");
+        ws.debugGive(p, m, w);
+        say(sender, "gave " + w.name() + " to " + p.getName());
       }
       case "where" -> {
         Player p = args.length >= 3 ? plugin.getServer().getPlayerExact(args[2]) : sender instanceof Player self ? self : null;
