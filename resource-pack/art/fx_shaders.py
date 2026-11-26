@@ -3,7 +3,9 @@
 
 The plugin appends a glyph of font vampyuyu:fx coloured (78, 92, id) to the action bar; the text
 vertex shader stretches it over the whole screen and the fragment shader paints the effect.
-id 1 = night, 2 = dawn, 3 = fading dawn. Text shadows are Color / 4: (19, 23, 0|1), collapsed.
+id 1 = night, 2 = dawn, 3 = fading dawn, 4 = asleep; the Skyblock boss statuses (BossStatus, through the HUD line):
+5 = void (blinded), 6 = frost, 7 = decay or withering, 8 = burn, 9 = warped (slowed, rooted, floating, lifted).
+Text shadows are Color / 4: (19, 23, 0|1|2), collapsed.
 
 Target: Minecraft 26.3 only (pack format 97): core/text.*, #include, explicit locations, OIT.
 """
@@ -50,12 +52,12 @@ COMMON_VS = f"""    int fx = 0;
         vec2 px = anchor + (isText ? floor(box.xy * f + 0.5) + floor(corner * f + 0.5) : floor((box.xy + corner) * f + 0.5));
         clip = ProjMat * ModelViewMat * vec4(px, Position.z, 1.0);
         fx = 10 + e;
-    }} else if (rgb.r == 78 && rgb.g == 92 && rgb.b >= 1 && rgb.b <= 4) {{
+    }} else if (rgb.r == 78 && rgb.g == 92 && rgb.b >= 1 && rgb.b <= 9) {{
         fx = rgb.b;
         vec2 corner = CORNERS[gl_VertexIndex % 4];
         uv = corner * 0.5 + 0.5;
         clip = vec4(corner * clip.w, clip.z, clip.w);
-    }} else if (rgb.r >= 19 && rgb.r <= 20 && ((rgb.g == 23 && rgb.b <= 1) || (rgb.g >= {layout.HUD_ID_BASE // 4} && rgb.g <= {(layout.HUD_ID_BASE + HUD_N - 1) // 4 + 1}))) {{
+    }} else if (rgb.r >= 19 && rgb.r <= 20 && ((rgb.g == 23 && rgb.b <= 2) || (rgb.g >= {layout.HUD_ID_BASE // 4} && rgb.g <= {(layout.HUD_ID_BASE + HUD_N - 1) // 4 + 1}))) {{
         clip = vec4(2.0, 2.0, 2.0, 1.0);
     }}
     gl_Position = clip;
@@ -76,6 +78,29 @@ EFFECT = """vec4 werewolf_fx(int id, vec2 uv) {
     }
     if (id == 1) { // night: deep blue grade, vignette
         return vec4(mix(vec3(0.02, 0.03, 0.12), vec3(0.01, 0.01, 0.06), edge), (0.14 + 0.46 * edge) * keep);
+    }
+    float d = length(uv - 0.5) * 1.6;
+    float grain = fract(sin(dot(floor(uv * vec2(64.0, 36.0)), vec2(12.9898, 78.233))) * 43758.5453);
+    if (id == 5) { // void (a boss blinded you): the world shrinks to a small hole of sight with a magenta rim
+        float dark = smoothstep(0.10, 0.34, d);
+        float rim = smoothstep(0.08, 0.13, d) * (1.0 - smoothstep(0.13, 0.22, d));
+        return vec4(mix(vec3(0.03, 0.0, 0.06), vec3(0.95, 0.25, 0.85), rim * 0.8), max(dark * 0.96, rim * 0.55));
+    }
+    if (id == 6) { // frost: crystals creep in from the edges
+        float f = smoothstep(0.45, 1.0, d + grain * 0.22);
+        return vec4(mix(vec3(0.62, 0.84, 1.0), vec3(0.95, 0.99, 1.0), grain), f * 0.78 * keep);
+    }
+    if (id == 7) { // decay, withering: a sick green-violet bloom at the edges
+        float f = smoothstep(0.35, 1.0, d + grain * 0.12);
+        return vec4(mix(vec3(0.30, 0.78, 0.22), vec3(0.32, 0.12, 0.40), grain * 0.6), f * 0.6 * keep);
+    }
+    if (id == 8) { // burn: heat climbing from the bottom edge
+        float f = smoothstep(0.40, 1.0, d + (1.0 - uv.y) * 0.35 + grain * 0.1);
+        return vec4(mix(vec3(1.0, 0.32, 0.05), vec3(1.0, 0.75, 0.25), grain), f * 0.62 * keep);
+    }
+    if (id == 9) { // warped by a boss (slowed, rooted, floating, lifted): a thin magenta ring at the rim
+        float f = smoothstep(0.62, 1.0, d) * (0.7 + 0.3 * grain);
+        return vec4(0.88, 0.22, 0.80, f * 0.5 * keep);
     }
     float k = id == 2 ? 1.0 : 0.5; // dawn: warm wash, strong then fading
     return vec4(1.0, 0.68, 0.38, k * (0.16 + 0.2 * edge) * keep);
@@ -196,17 +221,123 @@ void main() {{
 }}
 """
 
+# The item core shader (26.3 vanilla core/item.fsh plus the glow). Item displays draw the Skyblock bosses and the boss VFX:
+# a texel whose alpha is exactly 251 (bbmodel.GLOW_ALPHA, set by boss_skins.py on glowing faces and by fx_models.py on every
+# primitive) is opaque and burns: it pulses, a slow wave runs across it and its brightest values go white-hot. Every other
+# texel is drawn exactly as vanilla draws it. A real bloom halo needs a post pass, which the pack cannot add: a texel of
+# alpha 96 (the halo shells of fx_models.py) becomes a breathing translucent haze instead.
+ITEM_FSH_263 = """#version 330
+#extension GL_ARB_separate_shader_objects : require
+
+#include <minecraft:globals.glsl>
+#include <minecraft:fog.glsl>
+#include <minecraft:dynamictransforms.glsl>
+#include <minecraft:oit.glsl>
+
+uniform sampler2D Sampler0;
+
+#ifdef GLINT
+uniform sampler2D GlintSampler;
+#endif
+
+#ifndef OIT_ALPHA_ONLY
+layout(location = 0) in float sphericalVertexDistance;
+layout(location = 1) in float cylindricalVertexDistance;
+#endif
+layout(location = 2) in vec4 vertexColor;
+#ifndef OIT_ALPHA_ONLY
+layout(location = 3) in vec4 lightMapColor;
+layout(location = 4) in vec4 overlayColor;
+#endif
+layout(location = 5) in vec2 texCoord0;
+#ifdef GLINT
+layout(location = 6) in vec2 texCoordGlint;
+#endif
+
+#ifndef OIT_ALPHA_ONLY
+layout(location = 0) out vec4 fragColor;
+#endif
+
+// vampyuyu: the burning texels (alpha 251)
+vec3 vampyuyu_glow(vec3 c, vec2 uv) {
+    float t = GameTime * 1200.0;                                   // seconds of the day cycle
+    float wave = 0.5 + 0.5 * sin(t * 3.0 - (uv.x + uv.y) * 600.0); // a wave running across the sprite
+    float flick = 0.5 + 0.5 * sin(t * 13.0 + uv.y * 2400.0);       // a fast shimmer
+    float peak = max(max(c.r, c.g), c.b);
+    vec3 hot = c * (1.18 + 0.38 * wave + 0.07 * flick);
+    hot += vec3(1.0, 0.94, 0.86) * peak * peak * peak * (0.18 + 0.32 * wave);
+    return hot;
+}
+
+#ifndef OIT_ALPHA_ONLY
+vec4 calculateFinalColor(vec4 color) {
+    color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
+    color *= lightMapColor;
+
+    #ifdef GLINT
+    vec4 glintColor = GlintAlpha * texture(GlintSampler, texCoordGlint);
+    color.rgb += glintColor.rgb * glintColor.rgb;
+    #endif
+
+    #ifdef OIT_ACCUMULATE
+    color = sampleColorForAccumulation(color);
+    vec4 fogColor = vec4(FogColor.rgb * color.a, FogColor.a);
+    #else
+    vec4 fogColor = FogColor;
+    #endif
+
+    return apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, FogRenderDistanceStart, FogRenderDistanceEnd, fogColor);
+}
+#endif
+
+void main() {
+    vec4 color = texture(Sampler0, texCoord0);
+    bool glow = abs(color.a * 255.0 - 251.0) < 0.5;
+    bool halo = abs(color.a * 255.0 - 96.0) < 0.5;   // a halo shell texel (bbmodel.HALO_ALPHA)
+    if (glow) {
+        color.a = 1.0;
+    }
+    #ifdef ALPHA_CUTOUT
+    if (color.a < ALPHA_CUTOUT) {
+        discard;
+    }
+    #endif
+
+    color *= vertexColor * ColorModulator;
+    if (glow) {
+        color.rgb = vampyuyu_glow(color.rgb, texCoord0);
+    }
+    if (halo) {   // a translucent haze round the effect that breathes: the stand-in for a bloom halo
+        float t = GameTime * 1200.0;
+        float breath = 0.5 + 0.5 * sin(t * 4.0 - (texCoord0.x + texCoord0.y) * 300.0);
+        color.rgb = color.rgb * (1.25 + 0.3 * breath);
+        color.a = 0.22 + 0.2 * breath;
+    }
+
+    #ifdef GLINT
+    color.a = max(color.a, GlintAlpha);
+    #endif
+
+    #ifdef OIT_ALPHA_ONLY
+    executeAlphaOnlyPhase(gl_FragCoord.z, color.a);
+    #else
+    fragColor = calculateFinalColor(color);
+    #endif
+}
+"""
+
 def main():
     out = PACK / "assets" / "minecraft" / "shaders" / "core"
     out.mkdir(parents=True, exist_ok=True)
     (out / "text.vsh").write_text(VSH_263)
     (out / "text.fsh").write_text(FSH_263)
+    (out / "item.fsh").write_text(ITEM_FSH_263)
     meta_path = PACK / "pack.mcmeta"
     meta = json.loads(meta_path.read_text())
     meta.pop("overlays", None)
     meta["pack"]["min_format"] = 97
     meta_path.write_text(json.dumps(meta, indent=2) + "\n")
-    print("wrote the 26.3 text shaders")
+    print("wrote the 26.3 text shaders and the item glow shader")
 
 if __name__ == "__main__":
     main()

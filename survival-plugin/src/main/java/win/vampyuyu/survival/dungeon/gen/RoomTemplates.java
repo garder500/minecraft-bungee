@@ -83,7 +83,78 @@ final class RoomTemplates {
             c.fill(k[0], 0, k[1], k[0] + 1, top - 1, k[1] + 1, p.pillar());
             c.occupy(k[0], k[1], k[0] + 1, k[1] + 1);
         }
+        architecture(c);
         // doorways are drawn by DungeonBuilder (it needs both neighbours)
+    }
+
+    /** The glow of a floor theme: set in the column bands and the ceiling coffers. */
+    static String glow(Palette p) {
+        return switch (p.name()) {
+            case "nether", "crimson", "blackstone" -> "shroomlight";
+            case "deepslate" -> "verdant_froglight";
+            case "end" -> "pearlescent_froglight";
+            default -> "sea_lantern";
+        };
+    }
+
+    /**
+     * What turns a box into a crypt hall: half-columns flanking every doorway lane on all four walls (whether or not a
+     * door opens there) with a glowing band, vault ribs across the ceiling over them, glowing coffers between the ribs,
+     * an inlaid border and a rosette in the floor. The floor stays flat: nothing here stands where players walk except
+     * the eight columns against the walls, which are marked occupied.
+     */
+    static void architecture(Ctx c) {
+        Palette p = c.pal;
+        int top = c.h;
+        String glow = glow(p);
+        for (int a : new int[] {12, 19}) {
+            c.fill(a, 0, 1, a, top - 1, 1, p.pillar());
+            c.fill(a, 0, 30, a, top - 1, 30, p.pillar());
+            c.fill(1, 0, a, 1, top - 1, a, p.pillar());
+            c.fill(30, 0, a, 30, top - 1, a, p.pillar());
+            c.put(a, 3, 1, glow);
+            c.put(a, 3, 30, glow);
+            c.put(1, 3, a, glow);
+            c.put(30, 3, a, glow);
+            c.occupy(a, 1, a, 1);
+            c.occupy(a, 30, a, 30);
+            c.occupy(1, a, 1, a);
+            c.occupy(30, a, 30, a);
+        }
+        for (int i = 1; i < 31; i++) {
+            for (int a : new int[] {12, 19}) {
+                c.put(a, top - 1, i, p.pillar());
+                c.put(i, top - 1, a, p.pillar());
+            }
+        }
+        for (int[] g : new int[][] {{6, 6}, {25, 6}, {6, 25}, {25, 25}, {15, 6}, {6, 15}, {25, 15}, {15, 25}}) {
+            c.put(g[0], top, g[1], glow);
+        }
+        for (int dx = 15; dx <= 16; dx++) {
+            for (int dz = 15; dz <= 16; dz++) {
+                c.put(dx, top, dz, glow);
+            }
+        }
+        for (int i = 3; i <= 28; i++) {
+            c.put(i, -1, 3, p.floorAlt());
+            c.put(i, -1, 28, p.floorAlt());
+            c.put(3, -1, i, p.floorAlt());
+            c.put(28, -1, i, p.floorAlt());
+        }
+        for (int dx = -3; dx <= 3; dx++) {
+            for (int dz = -3; dz <= 3; dz++) {
+                int d = Math.abs(dx) + Math.abs(dz);
+                if (d == 3 || d == 1) {
+                    c.put(15 + dx + (dx > 0 ? 1 : 0), -1, 15 + dz + (dz > 0 ? 1 : 0), p.floorAlt());
+                } else if (d == 0) {
+                    for (int ex = 15; ex <= 16; ex++) {
+                        for (int ez = 15; ez <= 16; ez++) {
+                            c.put(ex, -1, ez, p.pillar()); // not the accent: a magma accent would burn whoever stands at the centre
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private static String wallBlock(Ctx c) {

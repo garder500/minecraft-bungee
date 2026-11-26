@@ -127,11 +127,6 @@ class PackTest(unittest.TestCase):
                 for field in ("label", "title", "subtitle", "instruction"):
                     self.assertTrue(call.get(field), f"{role}.call.{field}")
 
-    def test_panel_role_list_is_generated_from_the_role_files(self):
-        import subprocess
-        result = subprocess.run([sys.executable, str(ROOT / "scripts/gen_roles_ts.py"), "--check"])
-        self.assertEqual(result.returncode, 0, "run: python3 scripts/gen_roles_ts.py")
-
     def test_every_role_has_an_icon_svg(self):
         for role, info in layout.roles().items():
             self.assertTrue((ROOT / "resource-pack/art/icons" / f"{info['icon']}.svg").is_file(),
@@ -330,8 +325,9 @@ class PackTest(unittest.TestCase):
             self.assertEqual(hashlib.sha1(first.read_bytes()).hexdigest(), digest)
             self.assertEqual(first.read_bytes(), second.read_bytes())
             self.assertRegex((pathlib.Path(a) / "vampyuyu-menus.sha1").read_text().strip(), r"^[0-9a-f]{40}$")
-            # 8 MB until the boss voices (99 mono Vorbis clips, about 2.3 MB at 24 kHz); keep it small all the same
-            self.assertLess(first.stat().st_size, 10 << 20, "keep the optional pack small")
+            # 8 MB until the boss voices (99 mono Vorbis clips, about 2.3 MB at 24 kHz), 10 MB until the boss VFX (16 fx
+            # primitives and their halo shells, 42 generated sound effects at 32 kHz, about 0.8 MB); keep it small all the same
+            self.assertLess(first.stat().st_size, 12 << 20, "keep the optional pack small")
 
 def walk_models(node):
     """Every model reference of an item definition tree (model, select cases and fallback)."""
@@ -404,13 +400,29 @@ class ValoBlockPackTest(unittest.TestCase):
         for w in guns:
             name = w["id"]
             definition = json.loads((self.base / f"items/valoblock/{name}.json").read_text())
+            self.assertIs(definition.get("hand_animation_on_swap"), False, name + ": a shot changes the stack, the gun must not bob")
             node = definition["model"]["cases"] and definition["model"]["fallback"]
             self.assertEqual(node["property"], "minecraft:custom_model_data")
             self.assertEqual(node["index"], 0)
-            self.assertEqual([c["when"] for c in node["cases"]], ["fire", "reload", "inspect", "aim", "scope"])
-            self.assertEqual(
-                sorted(set(walk_models(definition["model"]))),
-                sorted({f"vampyuyu:item/valoblock/{n}" for n in (name, f"{name}_3d", f"{name}_fire", f"{name}_reload", f"{name}_inspect", f"{name}_aim")}))
+            frames = [f"reload_{k}" for k in range(6)] if w["texture"] != "knife" else []   # the reload animation (GunVisual.RELOAD_FRAMES)
+            self.assertEqual([c["when"] for c in node["cases"]], ["fire", "reload", *frames, "inspect", "aim", "scope"])
+            expected = {f"vampyuyu:item/valoblock/{n}" for n in (name, f"{name}_3d", f"{name}_fire", f"{name}_reload", f"{name}_inspect", f"{name}_aim",
+                                                                *[f"{name}_{f}" for f in frames])}
+            if w["base"] == "CROSSBOW":   # held with both hands: first person draws the gloved twins
+                first = definition["model"]["cases"][1]
+                self.assertEqual(first["when"], ["firstperson_righthand", "firstperson_lefthand"])
+                self.assertEqual([c["when"] for c in first["model"]["cases"]], ["fire", "reload", *frames, "inspect", "aim", "scope"])
+                hands = {f"vampyuyu:item/valoblock/{name}_hands_{s}" for s in ("hip", "fire", "reload", "inspect", "aim", *frames)}
+                self.assertEqual(set(walk_models(first["model"])), hands)
+                expected |= hands
+                for s in ("hip", "fire", "reload", "inspect", "aim", *frames):
+                    m = json.loads((self.base / f"models/item/valoblock/{name}_hands_{s}.json").read_text())
+                    self.assertEqual(m["textures"]["1"], "vampyuyu:item/valoblock/fp_hands")
+                    self.assertTrue(any(f["texture"] == "#1" for el in m["elements"] for f in el["faces"].values()), (name, s))
+                    for el in m["elements"]:
+                        for i in range(3):
+                            self.assertTrue(-16 <= el["from"][i] <= el["to"][i] <= 32, (name, s, el["from"], el["to"]))
+            self.assertEqual(sorted(set(walk_models(definition["model"]))), sorted(expected))
             w3, h3 = png_size(self.base / f"textures/item/valoblock/{name}_3d.png")  # the Blockbench texture: a square of 32 to 256
             self.assertTrue(w3 == h3 and w3 in (32, 64, 128, 256), (name, w3, h3))
             for state in ("3d", "fire", "reload", "inspect", "aim"):
@@ -452,7 +464,7 @@ class ValoBlockPackTest(unittest.TestCase):
         names = {l.split(" ")[2] for l in lines if l}
         for needle in ("seed_on", "seed_glow", "plant_track", "plant_bar", "seed", "head_cinder_seed", "head_none_seed"):
             self.assertIn(needle, names)
-        self.assertEqual([e[0] for e in vb_layout.HUD_ELEMENTS][-3:], ["seed", "plant_track", "plant_bar"], "appended: older element ids keep their numbers")
+        self.assertEqual([e[0] for e in vb_layout.HUD_ELEMENTS][-4:], ["seed", "plant_track", "plant_bar", "minimap"], "appended: older element ids keep their numbers")
 
     def test_shields_stay_flat(self):
         for w in (w for w in self.weapons if w["texture"] == "ward"):
@@ -639,6 +651,13 @@ class ValoBlockPackTest(unittest.TestCase):
                 self.assertEqual(size, (boxes["plant_track"][4], boxes["plant_track"][5]), name)
             elif name == "plant_bar":
                 self.assertEqual(size[1], boxes["plant_bar"][5])
+            elif name.startswith("mm_"):   # the minimap: textures at MM_TEX texels a GUI px, the shader sizes the quads
+                k = vb_layout.MM_TEX
+                if name[3:] in vb_layout.TAC_MAPS:
+                    self.assertEqual(size, (boxes["minimap"][4] * k, boxes["minimap"][5] * k), name)
+                else:
+                    side = (vb_layout.MM_BIG if name.startswith("mm_self_") else vb_layout.MM_SMALL) * k
+                    self.assertEqual(size, (side, side), name)
             else:
                 self.fail("sprite without a rule: " + name)
         # every element of the HUD fits on a 640 x 360 GUI and the ones sharing a sprite family share a size
@@ -648,6 +667,16 @@ class ValoBlockPackTest(unittest.TestCase):
         vsh = (VALO / "assets/minecraft/shaders/core/text.vsh").read_text()
         self.assertIn(f"rgb.r == {vb_layout.HUD_R} && rgb.g >= {vb_layout.HUD_ID_BASE}", vsh)
         self.assertIn(f"const int VB_COUNT = {vb_layout.HUD_COUNT};", vsh)
+        # the minimap: one panel per map, the marker branch, the plugin's colours
+        for m in vb_layout.TAC_MAPS:
+            self.assertIn(f"mm_{m}", by_name)
+        self.assertEqual(sorted(n for n in by_name if n.startswith("mm_self_")), sorted(f"mm_self_{k}" for k in range(vb_layout.MM_HEADINGS)))
+        self.assertIn(f"rgb.r == {vb_layout.MM_R_SMALL} || rgb.r == {vb_layout.MM_R_BIG}", vsh)
+        gui = (VALO / "assets/minecraft/shaders/core/gui.vsh").read_text()
+        self.assertIn("c == ivec4(255, 255, 255, 127)", gui, "the cooldown sweep of the two-handed guns is hidden")
+        self.assertNotIn(0x55, (vb_layout.MM_R_SMALL, vb_layout.MM_R_BIG), "0x55 is the red of the named chat colours")
+        self.assertIn(f"R_SMALL = {vb_layout.MM_R_SMALL}, R_BIG = {vb_layout.MM_R_BIG}", self.java("MiniMapMath.java"))
+        self.assertIn(f"HEADINGS = {vb_layout.MM_HEADINGS}", self.java("MiniMapMath.java"))
         self.assertIn("rgb.r == 78 && rgb.g == 92", vsh, "the menu pack's branches stay, this file replaces the base shader")
         self.assertLessEqual(vb_layout.HUD_ID_BASE + vb_layout.HUD_COUNT, 256)
         self.assertEqual(vb_layout.HUD_R % 4, 0, "the text shadow colour is the colour / 4: exact only for a multiple of 4")

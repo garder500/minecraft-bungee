@@ -79,11 +79,34 @@ public final class SealDoors implements Listener {
         return new Site(realm, world, cell[0], originY + cell[1], cell[2], faceX, faceZ, above);
     }
 
+    /** The rune lock in front of each seal (display models), by Realm. */
+    private final java.util.Map<Realm, win.vampyuyu.survival.island.StructureModels> sigils = new java.util.EnumMap<>(Realm.class);
+
+    /** The rune lock of one seal: spawned while players are near, turning slowly ({@code SealDoor.sigil}). */
+    private void sigil(Site site, org.bukkit.World world) {
+        win.vampyuyu.survival.island.StructureModels models = sigils.get(site.realm());
+        if (models == null) {
+            try {
+                models = new win.vampyuyu.survival.island.StructureModels(
+                    org.bukkit.plugin.java.JavaPlugin.getProvidingPlugin(SealDoors.class), "seal:" + site.realm().id(), world, 0, 0, 0,
+                    win.vampyuyu.survival.island.SealDoor.sigil(site.realm(), site.x(), site.y(), site.z(), site.faceX(), site.faceZ()));
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                return; // no providing plugin (tests)
+            }
+            sigils.put(site.realm(), models);
+        }
+        models.tick(20);
+    }
+
     /** A slow shimmer on each seal for the players near it, so the block to click is the one that is alive. */
     public void glow() {
         for (Site site : sites) {
             org.bukkit.World world = org.bukkit.Bukkit.getWorld(site.world());
-            if (world == null || world.getPlayers().isEmpty()) {
+            if (world == null) {
+                continue;
+            }
+            sigil(site, world);
+            if (world.getPlayers().isEmpty()) {
                 continue;
             }
             org.bukkit.Location at = new org.bukkit.Location(world, site.x() + 0.5 + site.faceX() * 0.6, site.y() + 0.5,

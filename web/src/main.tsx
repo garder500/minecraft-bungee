@@ -8,7 +8,6 @@ import { ServerTools } from "./ServerTools";
 import { Console } from "./Console";
 import { Backups } from "./Backups";
 import { SkyblockData } from "./SkyblockData";
-import { WerewolfSessions } from "./WerewolfSessions";
 import { Zones } from "./Zones";
 import { Operations, Activity } from "./Operations";
 
@@ -42,8 +41,7 @@ function App() {
     | "skyblock"
     | "settings"
     | "activity"
-    | "zones"
-    | "werewolf";
+    | "zones";
   const readView = (): View => {
     const raw = window.location.hash.slice(1);
     const value = raw === "arenas" ? "zones" : raw; // old bookmarks
@@ -56,7 +54,6 @@ function App() {
       "settings",
       "activity",
       "zones",
-      "werewolf",
     ].includes(value)
       ? (value as View)
       : "overview";
@@ -237,7 +234,6 @@ function App() {
           {(
             [
               ["zones", "✦", "Zones"],
-              ["werewolf", "☾", "Werewolf"],
               ["plugins", "♧", "Plugins"],
               ["backups", "▣", "Backups"],
               ["skyblock", "❖", "Game data"],
@@ -301,7 +297,6 @@ function App() {
             {
               {
                 zones: "Zones",
-                werewolf: "Werewolf",
                 overview: "Overview",
                 players: "Players & roles",
                 plugins: "Plugins",
@@ -325,7 +320,6 @@ function App() {
               {
                 {
                   zones: "Zones & mini-games",
-                  werewolf: "Werewolf sessions",
                   overview: "Network overview",
                   players: "Players & roles",
                   plugins: "Server plugins",
@@ -343,8 +337,6 @@ function App() {
                 : {
                     zones:
                       "Define a play area. Gather your players. Start a game.",
-                    werewolf:
-                      "Choose the cast, the timers and the rules. Tell a new story.",
                     players:
                       "Inventories, game modes, roles and care for your community.",
                     plugins: "Install and manage the plugins for each world.",
@@ -373,8 +365,6 @@ function App() {
         )}
         {view === "zones" ? (
           <Zones csrf={session.csrf} onError={report} />
-        ) : view === "werewolf" ? (
-          <WerewolfSessions csrf={session.csrf} onError={report} />
         ) : view === "players" ? (
           <Players csrf={session.csrf} onError={report} />
         ) : view === "activity" ? (

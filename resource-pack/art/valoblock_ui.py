@@ -26,6 +26,7 @@ import fx_shaders  # noqa: E402
 import layout  # noqa: E402
 import valoblock_ability_icons as icons  # noqa: E402
 import valoblock_items as vi  # noqa: E402
+import valoblock_minimap as minimap  # noqa: E402
 import valoblock_menukit as kit  # noqa: E402
 import valoblock_portraits as portraits  # noqa: E402
 import valoblock_seed as vs  # noqa: E402
@@ -136,8 +137,7 @@ def hide_vanilla():
     base = PACK / "assets/minecraft/textures/gui/sprites"
     for name, w, h in vb.hidden_sprites():
         write_png(base / f"{name}.png", canvas(w, h))
-    # The minimap is a map held in the off hand, which the client draws big: no paper behind it, so only the small framed plan
-    # MiniMapMath paints in the map's top-left corner shows (the rest of the map is the transparent colour).
+    # No paper behind a map held during a match (the minimap itself is the "minimap" HUD element, valoblock_minimap.py).
     for name in vb.HIDDEN_MAP_TEXTURES:
         write_png(PACK / f"assets/minecraft/textures/map/{name}.png", canvas(64, 64))
     return len(vb.hidden_sprites()) + len(vb.HIDDEN_MAP_TEXTURES)
@@ -380,6 +380,8 @@ def hud_sprites():
     frame(track, 0, 0, 52, 7, col("0b0d12", 217), col("3a1a6a"))
     out += [("seed_on", vs.seed_pixels(16)), ("seed_glow", vs.seed_pixels(16, glow=True)), ("plant_track", track),
             ("plant_bar", canvas(8, 3, col("ff4a8a")))]
+    # The minimap (appended: older ids stay): one framed plan per map, the markers (valoblock_minimap.py).
+    out += minimap.sprites()
     return out
 
 
@@ -468,6 +470,8 @@ int vbCorner(vec2 gui) {
 def shader_sources():
     """The base pack's text shader with a second HUD branch: red 84, green 160 + element, blue the bar width."""
     anchors = ", ".join(str(e[1]) for e in vb.HUD_ELEMENTS)
+    MM = [e[0] for e in vb.HUD_ELEMENTS].index("minimap")  # noqa: N806
+    assert vb.HUD_ELEMENTS[MM][1] == vb.TL
     boxes = ",\n    ".join(f"vec4({e[2]}.0, {e[3]}.0, {e[4]}.0, {e[5]}.0)" for e in vb.HUD_ELEMENTS)
     stretch = ", ".join(str(e[6]) for e in vb.HUD_ELEMENTS)
     table = (f"const int VB_COUNT = {vb.HUD_COUNT};\nconst int VB_ANCHOR[VB_COUNT] = int[]({anchors});\n"
@@ -487,6 +491,17 @@ def shader_sources():
         vec2 corner = vec2((k == 2 || k == 3) ? w : 0.0, (k == 1 || k == 2) ? box.w : 0.0);
         clip = ProjMat * ModelViewMat * vec4(vec2(ax, ay) + box.xy + corner, Position.z, 1.0);
         fx = 10;
+    }} else if (rgb.r == {vb.MM_R_SMALL} || rgb.r == {vb.MM_R_BIG}) {{
+        // A minimap marker: centred on the point (green, blue) / 255 of the plan inside the minimap element ({vb.MM_INSET} GUI px in
+        // from its edge), {vb.MM_SMALL} or {vb.MM_BIG} GUI px square. Sent with no text shadow.
+        vec2 gui = vec2(2.0 / ProjMat[0][0], -2.0 / ProjMat[1][1]);
+        vec4 box = VB_BOX[{MM}];
+        vec2 plan = box.xy + {vb.MM_INSET}.0 + vec2(float(rgb.g), float(rgb.b)) / 255.0 * (box.zw - {2 * vb.MM_INSET}.0);
+        float size = rgb.r == {vb.MM_R_SMALL} ? {vb.MM_SMALL}.0 : {vb.MM_BIG}.0;
+        int k = vbCorner(gui);
+        vec2 corner = vec2((k == 2 || k == 3) ? size : 0.0, (k == 1 || k == 2) ? size : 0.0);
+        clip = ProjMat * ModelViewMat * vec4(floor(plan - size * 0.5 + 0.5) + corner, Position.z, 1.0);
+        fx = 10;
     }} else if (rgb.r == {vb.HUD_R // 4} && rgb.g >= {vb.HUD_ID_BASE // 4 - 1} && rgb.g <= {(vb.HUD_ID_BASE + vb.HUD_COUNT) // 4 + 1}) {{
         clip = vec4(2.0, 2.0, 2.0, 1.0); // the text shadow of a HUD glyph (colour / 4)
 """
@@ -497,12 +512,49 @@ def shader_sources():
     return vsh, fx_shaders.FSH_263
 
 
+# The gui core shader (flat-colour GUI fills), client 26.3's own plus one rule: the white 50 % sweep an item on cooldown gets over its
+# slot (GuiGraphicsExtractor fills 0x7FFFFFFF) is dropped. The two-handed guns sit on a permanent cooldown so the client does not
+# play the crossbow's use at each shot (WeaponItems.GUN_COOLDOWN); this pack is only loaded during a match.
+GUI_VSH = """#version 330
+#extension GL_ARB_separate_shader_objects : require
+
+// Can't moj_import in things used during startup, when resource packs don't exist.
+// This is a copy of dynamicimports.glsl and projection.glsl
+layout(std140) uniform DynamicTransforms {
+    mat4 ModelViewMat;
+    mat4 TextureMat;
+    vec4 ColorModulator;
+    vec3 ModelOffset;
+};
+layout(std140) uniform Projection {
+    mat4 ProjMat;
+};
+
+layout(location = 0) in vec3 Position;
+layout(location = 1) in vec4 Color;
+
+layout(location = 0) out vec4 vertexColor;
+
+void main() {
+    gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
+    // ValoBlock: the item cooldown sweep (white, alpha 127) is not drawn.
+    ivec4 c = ivec4(round(Color * 255.0));
+    if (c == ivec4(255, 255, 255, 127)) {
+        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+    }
+
+    vertexColor = Color;
+}
+"""
+
+
 def write_shaders():
     out = PACK / "assets/minecraft/shaders/core"
     out.mkdir(parents=True, exist_ok=True)
     vsh, fsh = shader_sources()
     (out / "text.vsh").write_text(vsh)
     (out / "text.fsh").write_text(fsh)
+    (out / "gui.vsh").write_text(GUI_VSH)
 
 
 # ------------------------------------------------------------------ items

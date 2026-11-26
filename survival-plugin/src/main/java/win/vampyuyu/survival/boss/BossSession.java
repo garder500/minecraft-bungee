@@ -203,8 +203,9 @@ public final class BossSession {
         }
         bar = BossBar.bossBar(barTitle(), 1f, BossBar.Color.valueOf(def.barColor()),
             BossBar.Overlay.valueOf(def.barOverlay()));
-        Fx.sound(world, anchor, Sound.ENTITY_WITHER_SPAWN, 2f, 0.7f);
-        Fx.particle(world, Particle.EXPLOSION_EMITTER, anchor, 1, 0, 0, 0, 0);
+        Fx.sfx(world, anchor, "boss_rise", 2f, 1f);
+        BossVfx.impact(anchor, theme(), 6);
+        BossVfx.column(anchor, "pillar", theme(), 4, 8, 4, 10);
         BossDefinition.Phase first = def.phases().get(0);
         announcePhase(first, true);
         speak(Guardians.INTRO);
@@ -633,14 +634,14 @@ public final class BossSession {
         boolean tooLow = at.getY() < anchor.getY() - 48 && !(entity instanceof EnderDragon);
         if (far || tooLow || (!(entity instanceof EnderDragon) && at.getBlock().getType().isOccluding()
             && at.clone().add(0, 1, 0).getBlock().getType().isOccluding())) {
-            Fx.particle(world, Particle.PORTAL, at, 40, 0.5, 1, 0.5, 0.5);
+            BossVfx.burst(at.clone().add(0, 1, 0), "shard", theme(), 2.5, 8);
             Location back = anchor.clone();
             back.setYaw(at.getYaw());
             entity.teleport(back);
             entity.setFallDistance(0);
             entity.setVelocity(new Vector(0, 0, 0));
-            Fx.particle(world, Particle.PORTAL, back, 40, 0.5, 1, 0.5, 0.5);
-            Fx.sound(world, back, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 0.6f);
+            BossVfx.burst(back.clone().add(0, 1, 0), "burst", theme(), 2.5, 8);
+            Fx.sfx(world, back, "blink", 1f, 1f);
         }
     }
 
@@ -663,7 +664,7 @@ public final class BossSession {
         if (!enraged && left <= 0) {
             enraged = true;
             broadcastNearby(MINI.deserialize("<red><bold>" + plain(def.name()) + " is ENRAGED! <gray>Finish it fast."));
-            Fx.sound(world, location(), Sound.ENTITY_ENDER_DRAGON_GROWL, 3f, 0.5f);
+            Fx.sfx(world, location(), "roar", 3f, 1f);
             retune();
         } else if (left > 0 && left <= 600 && enrageNotified < 1) {
             enrageNotified = 1;
@@ -754,22 +755,33 @@ public final class BossSession {
     // ---------------------------------------------------------------- shield
 
     /** Spawns the crystals of a shield or of the anchors, evenly around the arena centre; they are tracked in {@link #crystals}. */
-    private void spawnCrystals(int count, double radius, double height, int hitsPerCrystal) {
+    private void spawnCrystals(int count, double radius, double height, int hitsPerCrystal, org.bukkit.Color look) {
         crystals.clear();
         for (int i = 0; i < count; i++) {
             double angle = 2 * Math.PI * i / count + random.nextDouble() * 0.3;
             Location at = anchor.clone().add(Math.cos(angle) * radius, height, Math.sin(angle) * radius);
             try {
-                EnderCrystal crystal = (EnderCrystal) world.spawnEntity(at, EntityType.END_CRYSTAL);
-                crystal.setShowingBottom(false);
+                // the hit box: an invisible, silent, still slime (melee and arrows both land on it); the look is ours, a
+                // glowing shard turning over it (BossVfx), never the vanilla End crystal
+                org.bukkit.entity.Slime crystal = world.spawn(at, org.bukkit.entity.Slime.class, sl -> {
+                    sl.setSize(2);
+                    sl.setInvisible(true);
+                    sl.setSilent(true);
+                    sl.setAI(false);
+                    sl.setGravity(false);
+                    sl.setCollidable(false);
+                    sl.setRemoveWhenFarAway(false);
+                });
                 crystal.setPersistent(false);
+                BossVfx.attached(crystal, new Vector(0, 0.5, 0), "shard", look,
+                    2.2, 20 * 120);
                 crystal.getPersistentDataContainer().set(Tags.MINION, PersistentDataType.STRING, sessionId.toString());
                 crystals.put(crystal.getUniqueId(), hitsPerCrystal);
                 manager.registerAux(crystal.getUniqueId(), this);
                 if (owner != null) {
                     hideFromEveryoneButOwner(crystal);
                 }
-                Fx.particle(world, Particle.END_ROD, at, 20, 0.3, 0.3, 0.3, 0.05);
+                BossVfx.burst(at, "burst", BossVfx.RIFT, 1.8, 8);
             } catch (RuntimeException e) {
                 core.debug("crystal spawn failed: " + e.getMessage());
             }
@@ -786,14 +798,14 @@ public final class BossSession {
         shieldDeadline = ticks + seconds * 20L;
         shieldHealPerTick = healPerSecond / 20.0;
         shieldNovaDamage = novaDamage;
-        spawnCrystals(count, radius, height, hitsPerCrystal);
+        spawnCrystals(count, radius, height, hitsPerCrystal, BossVfx.RIFT);
         if (crystals.isEmpty()) {
             shielded = false;
             return;
         }
         broadcastNearby(MINI.deserialize("<light_purple><bold>" + plain(def.name())
             + " is shielded! <gray>Destroy the " + crystals.size() + " crystals!"));
-        Fx.sound(world, location(), Sound.BLOCK_BEACON_ACTIVATE, 3f, 0.6f);
+        Fx.sfx(world, location(), "power_up", 3f, 1f);
     }
 
     /**
@@ -805,7 +817,7 @@ public final class BossSession {
         if (shielded || anchored || ended) {
             return;
         }
-        spawnCrystals(count, radius, height, hitsPerAnchor);
+        spawnCrystals(count, radius, height, hitsPerAnchor, BossVfx.TIDE);
         if (crystals.isEmpty()) {
             return;
         }
@@ -815,7 +827,7 @@ public final class BossSession {
         anchorNovaMult = novaMult;
         broadcastNearby(MINI.deserialize("<dark_aqua><bold>" + plain(def.name())
             + " drags you in! <gray>Destroy the " + crystals.size() + " anchors!"));
-        Fx.sound(world, location(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, 3f, 0.5f);
+        Fx.sfx(world, location(), "abyss_call", 3f, 1f);
     }
 
     private void updateAnchors() {
@@ -830,7 +842,9 @@ public final class BossSession {
                 dead.add(id);
                 continue;
             }
-            Fx.line(world, anchor.getLocation(), boss, Particle.BUBBLE, 1.2);
+            if (ticks % 10 == 0) {   // the chain to the boss, redrawn every half second as both move
+                BossVfx.beam(anchor.getLocation().add(0, 1, 0), boss, "beam", BossVfx.TIDE, 0.35, 11);
+            }
         }
         dead.forEach(crystals::remove);
         if (crystals.isEmpty()) {
@@ -867,12 +881,12 @@ public final class BossSession {
             vulnerableUntil = ticks + 160;
             broadcastNearby(MINI.deserialize("<green><bold>The chains snap! <gray>" + plain(def.name())
                 + " is dazed and takes " + Math.round((vulnerableMult - 1) * 100) + "% more damage."));
-            Fx.sound(world, location(), Sound.ENTITY_ELDER_GUARDIAN_HURT, 3f, 0.6f);
+            Fx.sfx(world, location(), "chains_snap", 3f, 1f);
         } else {
             broadcastNearby(MINI.deserialize("<red><bold>The anchors overload!"));
             Location at = location();
-            Fx.particle(world, Particle.EXPLOSION_EMITTER, at, 3, 3, 1, 3, 0);
-            Fx.sound(world, at, Sound.ENTITY_GENERIC_EXPLODE, 3f, 0.6f);
+            BossVfx.impact(at, BossVfx.TIDE, 8);
+            Fx.sfx(world, at, "explosion", 3f, 1f);
             for (Player p : players()) {
                 hit(p, anchorNovaMult);
             }
@@ -891,7 +905,9 @@ public final class BossSession {
                 dead.add(id);
                 continue;
             }
-            Fx.line(world, crystal.getLocation(), boss, Particle.END_ROD, 1.2);
+            if (ticks % 10 == 0) {   // the crystal feeding the shield, redrawn every half second
+                BossVfx.beam(crystal.getLocation().add(0, 1, 0), boss, "beam", BossVfx.RIFT, 0.3, 11);
+            }
         }
         dead.forEach(crystals::remove);
         hp = Math.min(maxHp, hp + maxHp * shieldHealPerTick * settings.tickPeriod() * crystals.size());
@@ -904,6 +920,11 @@ public final class BossSession {
         }
     }
 
+    /** True for the hit box of one of this fight's crystals or anchors. */
+    boolean isCrystal(UUID id) {
+        return crystals.containsKey(id);
+    }
+
     void crystalHit(UUID crystalId, @Nullable Player by) {
         Integer left = crystals.get(crystalId);
         if (left == null) {
@@ -913,16 +934,16 @@ public final class BossSession {
         if (left > 1) {
             crystals.put(crystalId, left - 1);
             if (crystal != null) {
-                Fx.particle(world, Particle.CRIT, crystal.getLocation(), 20, 0.4, 0.4, 0.4, 0.3);
-                Fx.sound(world, crystal.getLocation(), Sound.BLOCK_GLASS_BREAK, 1f, 1.6f);
+                BossVfx.burst(crystal.getLocation().add(0, 1, 0), "shard", BossVfx.RIFT, 1.6, 6);
+                Fx.sfx(world, crystal.getLocation(), "crystal_hit", 1f, 1f);
             }
             return;
         }
         crystals.remove(crystalId);
         manager.unregisterAux(crystalId);
         if (crystal != null) {
-            Fx.particle(world, Particle.EXPLOSION, crystal.getLocation(), 3, 0.3, 0.3, 0.3, 0);
-            Fx.sound(world, crystal.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 1.3f);
+            BossVfx.impact(crystal.getLocation(), BossVfx.RIFT, 2.5);
+            Fx.sfx(world, crystal.getLocation(), "explosion", 1.5f, 1f);
             crystal.remove();
         }
         if (by != null) {
@@ -945,13 +966,13 @@ public final class BossSession {
             vulnerableUntil = ticks + 160;
             broadcastNearby(MINI.deserialize("<green><bold>The shield shatters! <gray>" + plain(def.name())
                 + " is dazed and takes " + Math.round((vulnerableMult - 1) * 100) + "% more damage."));
-            Fx.sound(world, location(), Sound.ENTITY_ENDER_DRAGON_HURT, 3f, 0.6f);
-            Fx.particle(world, Particle.FLASH, location(), 1, 0, 0, 0, 0);
+            Fx.sfx(world, location(), "shield_break", 3f, 1f);
+            BossVfx.impact(location(), BossVfx.GOLD, 6);
         } else {
             broadcastNearby(MINI.deserialize("<red><bold>The crystals overload!"));
             Location at = location();
-            Fx.particle(world, Particle.EXPLOSION_EMITTER, at, 3, 3, 1, 3, 0);
-            Fx.sound(world, at, Sound.ENTITY_GENERIC_EXPLODE, 3f, 0.6f);
+            BossVfx.impact(at, BossVfx.RIFT, 8);
+            Fx.sfx(world, at, "explosion", 3f, 1f);
             for (Player p : players()) {
                 hit(p, shieldNovaDamage);
             }
@@ -1094,10 +1115,28 @@ public final class BossSession {
         announcePhase(phase, false);
         speak(Guardians.phaseEvent(index));
         retune();
-        Fx.sound(world, location(), Sound.ENTITY_ENDER_DRAGON_GROWL, 3f, 0.8f);
-        Fx.particle(world, Particle.EXPLOSION_EMITTER, location(), 1, 0, 0, 0, 0);
+        Fx.sfx(world, location(), "roar", 3f, 1f);
+        BossVfx.impact(location(), theme(), 7);   // the phase change: a shockwave and a column of its colour
+        BossVfx.column(location(), "pillar", theme(), 3, 10, 4, 12);
         gcdUntil = ticks + 30;
         castEnter(phase);
+    }
+
+    /** The colour of this boss's own effects (spawn, phase, death, leash): its element. */
+    org.bukkit.Color theme() {
+        return switch (def.id()) {
+            case "magma_warden" -> BossVfx.EMBER;
+            case "frost_revenant" -> BossVfx.FROST;
+            case "sylvan_matriarch" -> BossVfx.TOXIC;
+            case "abyssal_leviathan" -> BossVfx.TIDE;
+            case "crypt_lord" -> BossVfx.SOUL;
+            case "voidwyrm" -> BossVfx.VOID;
+            case "hell_gao" -> BossVfx.RIFT;
+            case "thunder_dragon" -> BossVfx.STORM;
+            case "mire_abomination" -> BossVfx.TOXIC;
+            case "devourer" -> BossVfx.VOID;
+            default -> BossVfx.GOLD;   // the Temporal Pharaoh too
+        };
     }
 
     /** A Guardian's spoken line to everybody around the fight; nothing for a boss that is not a Guardian. */
@@ -1243,16 +1282,18 @@ public final class BossSession {
         }
         ended = true;
         endReason = reason;
+        BossStatus.clear(players());   // no slow, float or damage tick outlives the fight
         handles.forEach(Scheduler.Handle::cancel);
         handles.clear();
         Location at = location();
         if (reason == End.KILLED) {
             BossCues.cue(entity, "death");   // before the mob goes: its displays keep playing the death clip
-            Fx.sound(world, at, Sound.ENTITY_ENDER_DRAGON_DEATH, 4f, 0.8f);
-            Fx.particle(world, Particle.EXPLOSION_EMITTER, at, 4, 2, 1, 2, 0);
-            Fx.particle(world, Particle.TOTEM_OF_UNDYING, at.clone().add(0, 1, 0), 120, 2, 2, 2, 0.4);
+            Fx.sfx(world, at, "boss_death", 4f, 1f);
+            BossVfx.impact(at, theme(), 10);
+            BossVfx.column(at, "pillar", theme(), 5, 16, 6, 30);
+            BossVfx.spin(at, "vortex", theme(), 5, 6, 60, 4, null);
         } else {
-            Fx.particle(world, Particle.POOF, at, 40, 1, 1, 1, 0.1);
+            BossVfx.burst(at.clone().add(0, 1, 0), "burst", theme(), 3, 8);
         }
         removeSpawned();
         releaseChunks();

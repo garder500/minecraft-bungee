@@ -106,8 +106,14 @@ public class SkyGatesTest {
             for (int[] cell : gate.membrane()) {
                 assertTrue("membrane cells are never shared by two gates", cells.add(BlockPlan.key(cell[0], cell[1], cell[2])));
             }
-            // the opening is 5 high and no wider than the gate
-            assertEquals(0, gate.membrane().size() % 5);
+            // the opening: rows 1 to OPENING_TOP, at least 5 wide at the bottom, a single cell at the point of the arch
+            long bottom = gate.membrane().stream().filter(c -> c[1] == 1).count();
+            long top = gate.membrane().stream().filter(c -> c[1] == QuaiPlan.OPENING_TOP).count();
+            assertTrue("bottom row " + bottom, bottom >= 5 && bottom <= 7);
+            assertTrue("top row " + top, top >= 1 && top < bottom);
+            for (int[] cell : gate.membrane()) {
+                assertTrue(cell[1] >= 1 && cell[1] <= QuaiPlan.OPENING_TOP && cell[1] < gate.crown()[1]);
+            }
         }
         // the bridge arrives between gate 1 and gate 8, so no gate stands at the entrance
         for (QuaiPlan.Gate gate : QuaiPlan.GATES) {
@@ -117,8 +123,8 @@ public class SkyGatesTest {
 
     @Test
     public void planBuildsGatesDarkAndHasSpawnAndSigns() {
-        BlockPlan plan = QuaiPlan.build(30000);
-        assertTrue(plan.size() > 2000 && plan.size() < 30000);
+        BlockPlan plan = QuaiPlan.build(45000);
+        assertTrue(plan.size() + " blocks", plan.size() > 2000 && plan.size() < 40000);
         for (QuaiPlan.Gate gate : QuaiPlan.GATES) {
             for (int[] cell : gate.membrane()) {
                 assertEquals(QuaiPlan.DARK_MEMBRANE, plan.get(cell[0], cell[1], cell[2]));
@@ -135,6 +141,42 @@ public class SkyGatesTest {
         // the bridge reaches the hub ring road
         assertNotNull(plan.get(0, 0, QuaiPlan.BRIDGE_FROM));
         assertNull(plan.get(0, 0, QuaiPlan.BRIDGE_FROM - 3));
+    }
+
+    @Test
+    public void theBeaconShinesThroughTheArmillaryAndEveryGateHasTwoHalos() {
+        BlockPlan plan = QuaiPlan.build(45000);
+        assertEquals(Material.BEACON, plan.get(0, 3, 0));
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                assertEquals(Material.GOLD_BLOCK, plan.get(x, 2, z));
+            }
+        }
+        for (int y = 4; y < 320; y++) {
+            assertNull("the beam is blocked at y " + y, plan.get(0, y, 0));
+        }
+        long rings = plan.models().stream().filter(m -> m.item().startsWith("structure/quai_armillary")).count();
+        assertEquals(4, rings);
+        for (QuaiPlan.Gate gate : QuaiPlan.GATES) {
+            String id = gate.realm().id();
+            BlockPlan.Model dark = plan.models().stream().filter(m -> m.key().equals("halo:" + id)).findFirst().orElseThrow();
+            BlockPlan.Model lit = plan.models().stream().filter(m -> m.key().equals("halo_lit:" + id)).findFirst().orElseThrow();
+            assertFalse("the dormant halo is seen by everybody", dark.hidden());
+            assertTrue("the lit halo is seen only by the Gate's owner", lit.hidden());
+            assertEquals(QuaiPlan.haloColor(gate.realm()), lit.color());
+            assertTrue("the halo floats over the keystone", lit.y() - 2.6 * 1.6 > gate.crown()[1] + 0.5);
+        }
+    }
+
+    @Test
+    public void thePiersAndTheKeelStayInsideTheHubBorderAndClearOfTheHub() {
+        BlockPlan plan = QuaiPlan.build(45000);
+        for (long key : plan.blocks().keySet()) {
+            int x = BlockPlan.keyX(key);
+            int z = BlockPlan.keyZ(key) + QuaiPlan.CENTER_Z;
+            assertTrue("outside the border at " + x + "," + z, Math.abs(x) < 100 && Math.abs(z) < 100);
+            assertTrue("in the hub at " + x + "," + z, z >= QuaiPlan.CENTER_Z + QuaiPlan.BRIDGE_FROM - 1);
+        }
     }
 
     @Test

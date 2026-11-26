@@ -51,6 +51,8 @@ public final class BossListener implements Listener {
 
     private final Core core;
     private final BossManager manager;
+    /** When each boss last played its hurt sound (throttle). */
+    private final java.util.Map<java.util.UUID, Long> lastHurtSound = new java.util.HashMap<>();
     private final Cooldowns notices = new Cooldowns();
 
     public BossListener(Core core, BossManager manager) {
@@ -134,6 +136,12 @@ public final class BossListener implements Listener {
             bossHurt(event, boss);
             if (!event.isCancelled()) {
                 BossCues.cue(boss.entity(), "hurt");
+                // the boss's own pain sound (its vanilla mob is silent), at most twice a second whatever the number of hits
+                long nowMs = System.currentTimeMillis();
+                if (nowMs - lastHurtSound.getOrDefault(boss.entity().getUniqueId(), 0L) >= 500) {
+                    lastHurtSound.put(boss.entity().getUniqueId(), nowMs);
+                    Fx.sfx(boss.world, boss.location(), "boss_hurt", 2.5f, 0.9f + (float) Math.random() * 0.2f);
+                }
             }
             return;
         }
@@ -149,7 +157,7 @@ public final class BossListener implements Listener {
             return;
         }
         Player player = event instanceof EntityDamageByEntityEvent by ? attacker(by.getDamager()) : null;
-        if (victim instanceof EnderCrystal) {
+        if (owner.isCrystal(victim.getUniqueId())) {   // a crystal or anchor hit box (an invisible slime)
             event.setCancelled(true);
             if (player != null && Fx.targetable(player) && (owner.owner() == null || owner.owner().equals(player.getUniqueId()))) {
                 owner.crystalHit(victim.getUniqueId(), player);
@@ -183,7 +191,7 @@ public final class BossListener implements Listener {
         }
         if (session.isShielded()) {
             event.setCancelled(true);
-            Fx.sound(session.world, session.location(), org.bukkit.Sound.BLOCK_ANVIL_PLACE, 0.6f, 1.8f);
+            Fx.sfx(session.world, session.location(), "shield_block", 0.6f, 1f);
             notice(player, "boss-shield", "The shield absorbs your attacks. Destroy the crystals!");
             return;
         }

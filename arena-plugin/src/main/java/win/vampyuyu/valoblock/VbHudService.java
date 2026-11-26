@@ -277,9 +277,23 @@ public final class VbHudService implements VbHud {
   private void action(Player p, Viewer v, VbMatch m, UUID id, VbPhase phase, long wall) {
     var input = input(m, id, p, v, wall);
     var glyphs = VbHudState.glyphs(input);
-    Component c = input.alive() ? VbGlyphs.get().glyphs(glyphs) : VbNotice.eliminated();
-    // The colours carry the element and the bar width, so the key is the glyph list itself, not its text.
-    String key = glyphs + "|" + (input.alive() ? "" : "dead");
+    // The minimap (top left): the map's framed plan, then its markers. Only while alive: the "eliminated" line is plain text centred
+    // in the action bar, and a glyph run beside it would no longer start at the middle of the screen (the shader needs that).
+    MiniMapService mini = plugin.valoblock.minimap;
+    String base = input.alive() && mini != null ? mini.base(m) : null;
+    List<MiniMapMath.Mark> marks = base == null ? List.of() : mini.marks(p, m);
+    Component c;
+    if (input.alive()) {
+      VbGlyphs g = VbGlyphs.get();
+      c = Component.empty();
+      if (base != null && g.hasSprite(base)) {
+        c = c.append(g.glyph(new VbGlyphs.Glyph("minimap", base, 0)));
+        for (MiniMapMath.Mark mk : marks) c = c.append(g.mark(mk));
+      }
+      c = c.append(g.glyphs(glyphs));
+    } else c = VbNotice.eliminated();
+    // The colours carry the element, the bar width and the marker positions, so the key is the glyph lists, not the text.
+    String key = glyphs + "|" + base + marks + "|" + (input.alive() ? "" : "dead");
     if (key.equals(v.lastAction) && wall - v.lastActionAt < RESEND_MS) return;
     v.lastAction = key;
     v.lastActionAt = wall;

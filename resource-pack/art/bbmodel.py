@@ -8,7 +8,7 @@ outliner groups that the converters may read (a group name tags its cubes). The 
 wings_art.py, ...) read them with Source and write the pack files; edit the shapes in Blockbench, never in Python.
 
 Rules the checks enforce (scripts/test_blockbench_models.py): every face textured, every shown texel above 25 % grey
-(the old "renders black" bug), one rotation axis per element, coordinates within -16..32, and no two overlapping boxes
+(the old "renders black" bug), face uvs inside the texture, one rotation axis per element, coordinates within -16..32, and no two overlapping boxes
 with the same rotation sharing a face plane (they would flicker).
 """
 import base64
@@ -145,9 +145,53 @@ class Source:
                       "texture": "#" + texture}
                 if face.get("rotation"):
                     jf["rotation"] = face["rotation"]
+                if isinstance(face.get("tint"), int) and face["tint"] >= 0:
+                    jf["tintindex"] = face["tint"]   # recoloured by the item's tint (the boss VFX primitives)
                 j["faces"][f] = jf
             out.append(j)
         return out
+
+
+GLOW_ALPHA = 251   # the alpha that marks a glowing texel for the item core shader (fx_shaders.py, item.fsh)
+HALO_ALPHA = 96    # the alpha of a halo shell texel: translucent haze the item shader makes breathe
+
+
+def glow_png(src, everything=False):
+    """The source's texture with every texel of a glowing face (a cube with light_emission) marked by alpha GLOW_ALPHA,
+    or every opaque texel when {everything} (the VFX primitives glow whole). The item core shader makes the marked texels
+    pulse and burn white-hot; to the eye the alpha is opaque. Deterministic, the source is not touched."""
+    rows = [list(r) for r in src.tex]
+    h, w = len(rows), len(rows[0])
+    su, sv = w / src.res[0], h / src.res[1]
+    rects = []
+    if not everything:
+        for _, el in src.elements:
+            if not el.get("light_emission"):
+                continue
+            for face in el["faces"].values():
+                if face and face.get("texture") is not None:
+                    u0, v0, u1, v1 = face["uv"]
+                    rects.append((int(min(u0, u1) * su), int(min(v0, v1) * sv),
+                                  max(int(min(u0, u1) * su) + 1, math.ceil(max(u0, u1) * su - 1e-6)),
+                                  max(int(min(v0, v1) * sv) + 1, math.ceil(max(v0, v1) * sv - 1e-6))))
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = rows[y][x]
+            if a < 200:
+                continue
+            if everything or any(x0 <= x < x1 and y0 <= y < y1 for x0, y0, x1, y1 in rects):
+                rows[y][x] = (r, g, b, GLOW_ALPHA)
+    return png(rows)
+
+
+def halo_png(src):
+    """The source's texture as a halo shell: every opaque texel lifted toward white and given alpha HALO_ALPHA (a
+    translucent haze drawn round the effect by the item shader). Deterministic."""
+    rows = []
+    for row in src.tex:
+        rows.append([(min(255, r + (255 - r) // 3), min(255, g + (255 - g) // 3), min(255, b + (255 - b) // 3),
+                      HALO_ALPHA if a >= 200 else 0) for r, g, b, a in row])
+    return png(rows)
 
 
 def states(src):
@@ -192,6 +236,9 @@ def problems(label, elements, tex):
             out.append(f"{label}: element {q['from']}-{q['to']} leaves -16..32")
         for f in q["faces"].values():
             u0, v0, u1, v1 = f["uv"]
+            if min(u0, v0, u1, v1) < -1e-6 or max(u0, v0, u1, v1) > 16 + 1e-6:
+                # the client refuses the whole model once its texture has translucent texels (the glow marker)
+                out.append(f"{label}: element {q['from']}-{q['to']} has a face whose uv leaves the texture")
             for y in range(int(min(v0, v1) * h / 16), max(int(min(v0, v1) * h / 16) + 1, math.ceil(max(v0, v1) * h / 16 - 1e-6))):
                 for x in range(int(min(u0, u1) * w / 16), max(int(min(u0, u1) * w / 16) + 1, math.ceil(max(u0, u1) * w / 16 - 1e-6))):
                     r, g, b, a = tex[min(y, h - 1)][min(x, w - 1)]

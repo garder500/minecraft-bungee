@@ -49,6 +49,8 @@ public final class BossFeature implements Feature {
             slayer = new SlayerManager(core, manager);
             core.listen(slayer);
             SlayerGui gui = new SlayerGui(core, slayer);
+            BossStatus.install(core);
+            BossVfx.install(core);
             skins = new BossSkinService(core, manager);
             skins.start();
             core.listen(new HiddenBossMelee(manager));
@@ -108,6 +110,7 @@ public final class BossFeature implements Feature {
         try {
             for (World world : Bukkit.getWorlds()) {
                 manager.purge(world.getEntities().stream().filter(Tags::isOurs).toList());
+                BossVfx.purge(world);
             }
         } catch (RuntimeException e) {
             core.getPlugin().getLogger().log(Level.WARNING, "Boss orphan purge failed", e);
@@ -116,6 +119,8 @@ public final class BossFeature implements Feature {
 
     @Override
     public void disable() {
+        BossStatus.uninstall();
+        BossVfx.uninstall();
         if (skins != null) {
             skins.stop();
             skins = null;

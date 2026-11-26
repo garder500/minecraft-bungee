@@ -9,6 +9,99 @@
      "type": "minecraft:model",
      "model": "vampyuyu:item/valoblock/bronzite_carbine"
     }
+   },
+   {
+    "when": [
+     "firstperson_righthand",
+     "firstperson_lefthand"
+    ],
+    "model": {
+     "type": "minecraft:select",
+     "property": "minecraft:custom_model_data",
+     "index": 0,
+     "cases": [
+      {
+       "when": "fire",
+       "model": {
+        "type": "minecraft:model",
+        "model": "vampyuyu:item/valoblock/bronzite_carbine_hands_fire"
+       }
+      },
+      {
+       "when": "reload",
+       "model": {
+        "type": "minecraft:model",
+        "model": "vampyuyu:item/valoblock/bronzite_carbine_hands_reload"
+       }
+      },
+      {
+       "when": "reload_0",
+       "model": {
+        "type": "minecraft:model",
+        "model": "vampyuyu:item/valoblock/bronzite_carbine_hands_reload_0"
+       }
+      },
+      {
+       "when": "reload_1",
+       "model": {
+        "type": "minecraft:model",
+        "model": "vampyuyu:item/valoblock/bronzite_carbine_hands_reload_1"
+       }
+      },
+      {
+       "when": "reload_2",
+       "model": {
+        "type": "minecraft:model",
+        "model": "vampyuyu:item/valoblock/bronzite_carbine_hands_reload_2"
+       }
+      },
+      {
+       "when": "reload_3",
+       "model": {
+        "type": "minecraft:model",
+        "model": "vampyuyu:item/valoblock/bronzite_carbine_hands_reload_3"
+       }
+      },
+      {
+       "when": "reload_4",
+       "model": {
+        "type": "minecraft:model",
+        "model": "vampyuyu:item/valoblock/bronzite_carbine_hands_reload_4"
+       }
+      },
+      {
+       "when": "reload_5",
+       "model": {
+        "type": "minecraft:model",
+        "model": "vampyuyu:item/valoblock/bronzite_carbine_hands_reload_5"
+       }
+      },
+      {
+       "when": "inspect",
+       "model": {
+        "type": "minecraft:model",
+        "model": "vampyuyu:item/valoblock/bronzite_carbine_hands_inspect"
+       }
+      },
+      {
+       "when": "aim",
+       "model": {
+        "type": "minecraft:model",
+        "model": "vampyuyu:item/valoblock/bronzite_carbine_hands_aim"
+       }
+      },
+      {
+       "when": "scope",
+       "model": {
+        "type": "minecraft:empty"
+       }
+      }
+     ],
+     "fallback": {
+      "type": "minecraft:model",
+      "model": "vampyuyu:item/valoblock/bronzite_carbine_hands_hip"
+     }
+    }
    }
   ],
   "fallback": {
@@ -28,6 +121,48 @@
      "model": {
       "type": "minecraft:model",
       "model": "vampyuyu:item/valoblock/bronzite_carbine_reload"
+     }
+    },
+    {
+     "when": "reload_0",
+     "model": {
+      "type": "minecraft:model",
+      "model": "vampyuyu:item/valoblock/bronzite_carbine_reload_0"
+     }
+    },
+    {
+     "when": "reload_1",
+     "model": {
+      "type": "minecraft:model",
+      "model": "vampyuyu:item/valoblock/bronzite_carbine_reload_1"
+     }
+    },
+    {
+     "when": "reload_2",
+     "model": {
+      "type": "minecraft:model",
+      "model": "vampyuyu:item/valoblock/bronzite_carbine_reload_2"
+     }
+    },
+    {
+     "when": "reload_3",
+     "model": {
+      "type": "minecraft:model",
+      "model": "vampyuyu:item/valoblock/bronzite_carbine_reload_3"
+     }
+    },
+    {
+     "when": "reload_4",
+     "model": {
+      "type": "minecraft:model",
+      "model": "vampyuyu:item/valoblock/bronzite_carbine_reload_4"
+     }
+    },
+    {
+     "when": "reload_5",
+     "model": {
+      "type": "minecraft:model",
+      "model": "vampyuyu:item/valoblock/bronzite_carbine_reload_5"
      }
     },
     {
@@ -56,5 +191,6 @@
     "model": "vampyuyu:item/valoblock/bronzite_carbine_3d"
    }
   }
- }
+ },
+ "hand_animation_on_swap": false
 }

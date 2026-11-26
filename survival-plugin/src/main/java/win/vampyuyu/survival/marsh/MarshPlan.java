@@ -17,7 +17,7 @@ import win.vampyuyu.survival.island.ShapeKit;
  */
 public final class MarshPlan {
     /** Bump when the layout changes so an existing Marsh is rebuilt (the marker file stores it). */
-    public static final int VERSION = 3;
+    public static final int VERSION = 4; // 4: the monumental return arch and sealed door
     public static final int ORIGIN_Y = 100;
     public static final int MAIN_RADIUS = 22;
     public static final int ISLET_ORBIT = 40;
@@ -79,9 +79,11 @@ public final class MarshPlan {
         ShapeKit.ring(plan, SPAWN[0], 0, SPAWN[2] - 1, 3.2, 4.4, Material.PACKED_MUD);
         plan.set(SPAWN[0], 0, SPAWN[2] - 1, Material.SHROOMLIGHT);
         plan.sign(SPAWN[0] + 2, 1, SPAWN[2], Material.MANGROVE_SIGN, "rotation=0", "Rot Vats", "nearby salvage", "expired items", "");
+        win.vampyuyu.survival.island.RealmLandmarks.landing(plan, Realm.MARSHES, SPAWN[0], SPAWN[1], SPAWN[2]); // the arrival plaza
         ReturnArch.build(plan, Realm.MARSHES, SPAWN[0], SPAWN[1], SPAWN[2]);
         plan.anchor("spawn", SPAWN[0], SPAWN[1], SPAWN[2]);
         plan.biome(-MAIN_RADIUS - 60, -20, -MAIN_RADIUS - 60, MAIN_RADIUS + 60, 30, MAIN_RADIUS + 60, "minecraft:mangrove_swamp");
+        win.vampyuyu.survival.island.RealmLandmarks.build(plan, Realm.MARSHES); // the floating monument and its relic, last
         return plan;
     }
 

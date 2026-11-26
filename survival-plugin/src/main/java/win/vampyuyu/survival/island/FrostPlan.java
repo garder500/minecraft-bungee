@@ -12,7 +12,7 @@ import win.vampyuyu.survival.api.Realm;
  */
 public final class FrostPlan {
     /** Bump when the layout changes so an existing zone is rebuilt (the marker file stores it). */
-    public static final int VERSION = 3;
+    public static final int VERSION = 4; // 4: the monumental return arch and sealed door
     public static final int MAIN_RADIUS = 24;
     public static final int PEAK_COUNT = 6;
     public static final int PEAK_ORBIT = 44;
@@ -69,12 +69,14 @@ public final class FrostPlan {
         ShapeKit.ring(plan, s[0], 0, s[2], 3.2, 4.4, Material.STONE_BRICKS);
         plan.set(s[0], 0, s[2], Material.SEA_LANTERN);
         // the return arch and its sign (it also clears the cell of the old standing sign on a rebuild)
+        RealmLandmarks.landing(plan, Realm.HEIGHTS, s[0], s[1], s[2]); // the arrival plaza
         ReturnArch.build(plan, Realm.HEIGHTS, s[0], s[1], s[2]);
         plan.anchor("spawn", s[0], s[1], s[2]);
         // the sealed door where the exploration ends: right-click the seal with the Bastion key
         SealDoor.build(plan, Realm.HEIGHTS, SEAL[0], 1, SEAL[2]);
         plan.anchor("watcher", 0, 1, -6);
         plan.biome(-MAIN_RADIUS - 4, -20, -MAIN_RADIUS - 4, MAIN_RADIUS + 4, 12, MAIN_RADIUS + 4, "minecraft:frozen_peaks");
+        RealmLandmarks.build(plan, Realm.HEIGHTS); // the floating monument and its relic, last
         return plan;
     }
 

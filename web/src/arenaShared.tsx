@@ -2,11 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { useConfirm } from "./ConfirmDialog";
 import type { FreeplayRules } from "./FreeplayRulesEditor";
-import type { WerewolfRules } from "./WerewolfRulesEditor";
 
 /**
- * Pieces shared by the Zones view and the Werewolf view: the config / state types,
- * the polling hook, and the panels that both views show (host toolbar, participants).
+ * Pieces of the Zones view: the config / state types, the polling hook, and its panels
+ * (host toolbar, participants). Werewolf sessions are run in game, not from the panel.
  */
 export type Spawn = {
   x: number;
@@ -54,7 +53,8 @@ export type Config = {
   rewards?: { participation: number; victory: number };
   /** Opaque game-specific settings owned by the plugin; always round-tripped untouched. */
   options?: Record<string, unknown>;
-  werewolf?: WerewolfRules;
+  /** Werewolf rules of a session set up in game; round-tripped untouched. */
+  werewolf?: unknown;
   freeplay?: FreeplayRules;
 };
 export type Arena = {
@@ -89,18 +89,14 @@ type RawState = {
 export type State = {
   /** Generic zones (every preset except Werewolf). */
   zones: Arena[];
-  /** Werewolf sessions. */
-  sessions: Arena[];
-  /** Zones and sessions together, to find who is already in a game. */
+  /** Zones and Werewolf sessions together, to find who is already in a game and which IDs are taken. */
   all: Arena[];
-  /** True when the plugin reports the split lists, so the ww-* actions exist. */
-  split: boolean;
   redisConnected: boolean;
   worlds: World[];
   bans: Record<string, string>;
   onlinePlayers: { uuid: string; name: string }[];
 };
-export const isWerewolf = (a: Arena) => a.config.preset === "werewolf";
+const isWerewolf = (a: Arena) => a.config.preset === "werewolf";
 /** Reads the new split lists, or the legacy arenas[] of an older plugin. */
 export function normalizeState(raw: RawState): State {
   const legacy = raw.arenas || [];
@@ -108,9 +104,7 @@ export function normalizeState(raw: RawState): State {
   const zones = (raw.zones ?? legacy).filter((a) => !isWerewolf(a));
   return {
     zones,
-    sessions,
     all: [...zones, ...sessions],
-    split: !!raw.werewolfSessions,
     redisConnected: raw.redisConnected,
     worlds: raw.worlds || [],
     bans: raw.bans || {},

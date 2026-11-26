@@ -12,7 +12,7 @@
    "metalName": "Bronzite",
    "texture": "pistol",
    "slot": "sidearm",
-   "base": "STICK",
+   "base": "CROSSBOW",
    "menu": [
     0,
     0
@@ -52,7 +52,7 @@
    "metalName": "Sunstone",
    "texture": "pistol",
    "slot": "sidearm",
-   "base": "STICK",
+   "base": "CROSSBOW",
    "menu": [
     1,
     0
@@ -93,7 +93,7 @@
    "metalName": "Necropolis bone",
    "texture": "revolver",
    "slot": "sidearm",
-   "base": "STICK",
+   "base": "CROSSBOW",
    "menu": [
     2,
     0
@@ -174,7 +174,7 @@
    "metalName": "Marsh iron",
    "texture": "smg",
    "slot": "primary",
-   "base": "STICK",
+   "base": "CROSSBOW",
    "menu": [
     0,
     2
@@ -214,7 +214,7 @@
    "metalName": "Storm glass",
    "texture": "smg",
    "slot": "primary",
-   "base": "STICK",
+   "base": "CROSSBOW",
    "menu": [
     1,
     2
@@ -254,7 +254,7 @@
    "metalName": "Bronzite",
    "texture": "shotgun",
    "slot": "primary",
-   "base": "STICK",
+   "base": "CROSSBOW",
    "menu": [
     0,
     3
@@ -294,7 +294,7 @@
    "metalName": "Marsh iron",
    "texture": "shotgun",
    "slot": "primary",
-   "base": "STICK",
+   "base": "CROSSBOW",
    "menu": [
     1,
     3
@@ -335,7 +335,7 @@
    "metalName": "Bronzite",
    "texture": "rifle",
    "slot": "primary",
-   "base": "STICK",
+   "base": "CROSSBOW",
    "menu": [
     0,
     5
@@ -375,7 +375,7 @@
    "metalName": "Sunstone + Flux",
    "texture": "rifle",
    "slot": "primary",
-   "base": "STICK",
+   "base": "CROSSBOW",
    "menu": [
     1,
     5
@@ -415,7 +415,7 @@
    "metalName": "Frostium",
    "texture": "sniper",
    "slot": "primary",
-   "base": "STICK",
+   "base": "CROSSBOW",
    "menu": [
     0,
     6
@@ -498,7 +498,7 @@
    "metalName": "Voidglass",
    "texture": "lmg",
    "slot": "primary",
-   "base": "STICK",
+   "base": "CROSSBOW",
    "menu": [
     0,
     7

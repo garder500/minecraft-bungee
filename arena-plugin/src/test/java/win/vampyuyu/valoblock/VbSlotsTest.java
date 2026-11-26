@@ -11,8 +11,7 @@ import org.junit.Test;
 public class VbSlotsTest {
   private static VbSlots.Box box(int slot) {
     int[] f = VbSlots.footprint(VbData.maps().values());
-    VbMap any = VbData.maps().values().iterator().next();
-    return VbSlots.box(slot, VbMapService.SPACING, VbMapService.FEET_Y, f[0], f[1], any.lowestY(), any.highestY());
+    return VbSlots.box(slot, VbMapService.SPACING, VbMapService.FEET_Y, f[0], f[1]);
   }
 
   @Test

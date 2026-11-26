@@ -67,9 +67,73 @@ public final class BossCommand implements CommandExecutor, TabCompleter {
                     }
                 }
             }
+            case "cast" -> {
+                if (admin(sender)) {
+                    if (args.length < 2) {
+                        core.msg().error(sender, "Usage: /boss cast <ability id>");
+                    } else {
+                        core.msg().ok(sender, "Cast " + args[1] + " on " + cast(args[1].toLowerCase(Locale.ROOT)) + " boss(es).");
+                    }
+                }
+            }
+            case "status" -> {
+                if (admin(sender) && sender instanceof Player player) {
+                    StatusKind kind = null;
+                    try {
+                        kind = args.length < 2 ? null : StatusKind.valueOf(args[1].toUpperCase(Locale.ROOT));
+                    } catch (IllegalArgumentException e) {
+                        kind = null;
+                    }
+                    if (args.length >= 2 && args[1].equalsIgnoreCase("clear")) {
+                        BossStatus.clear(List.of(player));
+                        core.msg().ok(sender, "Statuses cleared.");
+                    } else if (kind == null) {
+                        core.msg().error(sender, "Usage: /boss status <" + String.join("|", java.util.Arrays.stream(StatusKind.values())
+                            .map(k -> k.name().toLowerCase(Locale.ROOT)).toList()) + "|clear> [seconds]");
+                    } else {
+                        int seconds = args.length >= 3 ? Math.max(1, Math.min(120, parseInt(args[2], 8))) : 8;
+                        BossStatus.apply(player, kind, seconds * 20, 1);
+                        core.msg().ok(sender, kind.name().toLowerCase(Locale.ROOT) + " for " + seconds + " s.");
+                    }
+                }
+            }
             default -> help(sender);
         }
         return true;
+    }
+
+    /** Casts the first ability of that type found in each running fight's definition (any phase): the e2e VFX checks. */
+    private int cast(String id) {
+        int n = 0;
+        for (BossSession session : manager.active()) {
+            AbilitySpec found = null;
+            for (BossDefinition.Phase phase : session.definition().phases()) {
+                for (AbilitySpec spec : concat(phase.enter(), phase.abilities())) {
+                    if (found == null && spec.type().id().equals(id)) {
+                        found = spec;
+                    }
+                }
+            }
+            if (found != null) {
+                session.cast(found);
+                n++;
+            }
+        }
+        return n;
+    }
+
+    private static List<AbilitySpec> concat(List<AbilitySpec> a, List<AbilitySpec> b) {
+        List<AbilitySpec> out = new ArrayList<>(a);
+        out.addAll(b);
+        return out;
+    }
+
+    private static int parseInt(String s, int fallback) {
+        try {
+            return Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
     }
 
     private boolean admin(CommandSender sender) {
@@ -90,6 +154,8 @@ public final class BossCommand implements CommandExecutor, TabCompleter {
             core.msg().info(sender, "/boss kill [id|all] - remove bosses, no rewards");
             core.msg().info(sender, "/boss active - running fights");
             core.msg().info(sender, "/boss reload - re-read the boss data");
+            core.msg().info(sender, "/boss cast <ability> - cast an ability of every running fight now");
+            core.msg().info(sender, "/boss status <status|clear> [seconds] - lay a boss status on yourself");
         }
     }
 
@@ -246,7 +312,7 @@ public final class BossCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             out.addAll(List.of("list", "info", "claim"));
             if (admin) {
-                out.addAll(List.of("spawn", "kill", "active", "reload", "anim"));
+                out.addAll(List.of("spawn", "kill", "active", "reload", "anim", "cast", "status"));
             }
         } else if (args.length == 2) {
             switch (args[0].toLowerCase(Locale.ROOT)) {
@@ -261,6 +327,20 @@ public final class BossCommand implements CommandExecutor, TabCompleter {
                     if (admin) {
                         out.add("all");
                         manager.active().forEach(s -> out.add(s.definition().id()));
+                    }
+                }
+                case "cast" -> {
+                    if (admin) {
+                        manager.active().forEach(se -> se.definition().phases().forEach(ph ->
+                            concat(ph.enter(), ph.abilities()).forEach(sp -> out.add(sp.type().id()))));
+                    }
+                }
+                case "status" -> {
+                    if (admin) {
+                        for (StatusKind k : StatusKind.values()) {
+                            out.add(k.name().toLowerCase(Locale.ROOT));
+                        }
+                        out.add("clear");
                     }
                 }
                 default -> { }

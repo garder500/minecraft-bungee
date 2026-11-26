@@ -54,8 +54,8 @@ public final class VbQuickActions {
     };
   }
 
-  /** The held item is not an ability placed on the map: the minimap is the map to read. */
-  public static final String MAP_HINT = "Hold an ability that is placed on the map; otherwise the minimap in your hotbar is enough";
+  /** The held item is not an ability placed on the map: the minimap (top-left corner of the HUD) is the map to read. */
+  public static final String MAP_HINT = "Hold an ability that is placed on the map; otherwise the minimap in the top-left corner is enough";
 
   // ------------------------------------------------------------------ datapack
 

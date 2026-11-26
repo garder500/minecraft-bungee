@@ -107,12 +107,12 @@ void main() {
         vec2 px = anchor + (isText ? floor(box.xy * f + 0.5) + floor(corner * f + 0.5) : floor((box.xy + corner) * f + 0.5));
         clip = ProjMat * ModelViewMat * vec4(px, Position.z, 1.0);
         fx = 10 + e;
-    } else if (rgb.r == 78 && rgb.g == 92 && rgb.b >= 1 && rgb.b <= 4) {
+    } else if (rgb.r == 78 && rgb.g == 92 && rgb.b >= 1 && rgb.b <= 9) {
         fx = rgb.b;
         vec2 corner = CORNERS[gl_VertexIndex % 4];
         uv = corner * 0.5 + 0.5;
         clip = vec4(corner * clip.w, clip.z, clip.w);
-    } else if (rgb.r >= 19 && rgb.r <= 20 && ((rgb.g == 23 && rgb.b <= 1) || (rgb.g >= 25 && rgb.g <= 36))) {
+    } else if (rgb.r >= 19 && rgb.r <= 20 && ((rgb.g == 23 && rgb.b <= 2) || (rgb.g >= 25 && rgb.g <= 36))) {
         clip = vec4(2.0, 2.0, 2.0, 1.0);
     }
     gl_Position = clip;

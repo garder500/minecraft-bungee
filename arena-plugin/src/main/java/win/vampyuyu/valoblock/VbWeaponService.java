@@ -196,6 +196,17 @@ public final class VbWeaponService implements WeaponService, Listener {
     });
   }
 
+  /** Debug (/vb debug give): the weapon goes into its slot for free and is held. */
+  void debugGive(Player p, VbMatch m, VbWeapon w) {
+    sync(() -> {
+      Gear g = gear(p.getUniqueId());
+      g.loadout.set(w);
+      g.guns.clear();
+      deal(p, m, g);
+      p.getInventory().setHeldItemSlot(w.slot() == VbWeapon.Slot.PRIMARY ? SLOT_PRIMARY : w.slot() == VbWeapon.Slot.MELEE ? SLOT_MELEE : SLOT_SIDEARM);
+    });
+  }
+
   @Override
   public void clear(UUID player) {
     sync(
@@ -252,6 +263,9 @@ public final class VbWeaponService implements WeaponService, Listener {
       Gear g = e.getValue();
       Location l = p.getLocation();
       g.history.record(now, l.getX(), l.getY(), l.getZ(), p.isSneaking());
+      // The two-handed guns stay on their (invisible) cooldown: the client then sends each right-click without playing the
+      // crossbow's use, so the gun does not dip in first person at every shot (see WeaponItems.holdWithBothHands).
+      if (p.getCooldown(WeaponItems.GUN_COOLDOWN) < WeaponItems.GUN_COOLDOWN_TICKS / 2) p.setCooldown(WeaponItems.GUN_COOLDOWN, WeaponItems.GUN_COOLDOWN_TICKS);
       VbWeapon w = held(p);
       // Walk speed: the knife is the fastest thing to hold.
       String id = w == null ? "" : w.id();
@@ -291,7 +305,7 @@ public final class VbWeaponService implements WeaponService, Listener {
     boolean sneaking = p.isSneaking();
     boolean scoped = ScopeInput.scoped(w, sneaking, usingMain(p), gs.reloading());
     // A hold scope aims with the held button, not with sneaking: the scoped look hides the gun, the sneak pose is not used.
-    String want = GunVisual.state(gs.reloading(), gs.sinceShot(now), ScopeInput.holdScope(w) ? scoped : sneaking, now < g.inspectUntil, w.zoom());
+    String want = GunVisual.state(gs.reloadProgress(now), gs.reloading(), gs.sinceShot(now), ScopeInput.holdScope(w) ? scoped : sneaking, now < g.inspectUntil, w.zoom());
     if (!want.equals(g.look)) {
       g.look = want;
       WeaponItems.setState(p.getInventory().getItemInMainHand(), want);
@@ -575,6 +589,12 @@ public final class VbWeaponService implements WeaponService, Listener {
   }
 
   // ------------------------------------------------------------------ events
+
+  /** Backstop of the two-handed hold: the guns are charged crossbows (WeaponItems.holdWithBothHands) and must never shoot their arrow. */
+  @EventHandler(priority = EventPriority.LOWEST)
+  public void crossbowShot(org.bukkit.event.entity.EntityShootBowEvent e) {
+    if (WeaponItems.isVb(e.getBow())) e.setCancelled(true);
+  }
 
   @EventHandler(priority = EventPriority.HIGH)
   public void interact(PlayerInteractEvent e) {

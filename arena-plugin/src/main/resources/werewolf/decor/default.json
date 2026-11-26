@@ -1,16 +1,36 @@
 {
   "version": 1,
   "maxBlocks": 18000,
-  "floor": { "inner": "spruce_planks", "outer": "stone_bricks", "innerMargin": 2.5 },
+  "floor": {
+    "inner": "polished_andesite",
+    "outer": "stone_bricks",
+    "innerMargin": 2.5,
+    "accent": "polished_deepslate",
+    "hearth": "polished_blackstone_bricks"
+  },
   "campfire": { "block": "campfire" },
   "bench": { "blocks": ["stripped_spruce_log", "spruce_log"] },
   "railing": { "block": "spruce_fence" },
   "lanterns": { "block": "lantern", "everySeats": 2 },
+  "menhirs": { "block": "tuff", "top": "soul_lantern" },
   "underside": {
     "blocks": ["stone", "andesite", "cobblestone", "mossy_cobblestone", "tuff"],
-    "depthFactor": 0.6,
-    "minDepth": 4,
-    "maxDepth": 14
+    "shell": true,
+    "depthFactor": 0.75,
+    "minDepth": 10,
+    "maxDepth": 24
   },
-  "village": { "width": 16 }
+  "village": {
+    "width": 16,
+    "wall": "spruce_planks",
+    "log": "dark_oak_log",
+    "upper": "calcite",
+    "window": "redstone_lamp",
+    "roof": "deepslate_tiles",
+    "roofStairs": "deepslate_tile_stairs",
+    "stone": "stone_bricks",
+    "spire": "deepslate_tiles",
+    "landmarks": true,
+    "models": true
+  }
 }

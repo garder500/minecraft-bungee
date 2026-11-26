@@ -603,6 +603,11 @@ public final class BastionService {
             }
             r.tickCount += TICK_PERIOD;
             advanceCollapse(r);
+            try {
+                BastionArena.tickModels(core.getPlugin(), r.world, r.bastion.palette(), r.bastion.radius(), TICK_PERIOD);
+            } catch (RuntimeException e) {
+                // a server without displays (tests)
+            }
             Location arrival = RaidRules.safeSpot(r.world, r.bastion.radius(), r.collapseRadius);
             for (Player p : r.world.getPlayers()) {
                 if (p.getLocation().getY() < BastionArena.VOID_Y) {

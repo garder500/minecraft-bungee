@@ -3,6 +3,7 @@ package win.vampyuyu.werewolf.sky;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,6 +29,29 @@ public final class SkyInstance {
   /** Writes one block; only ever called from inside a {@link ChunkRunner} task for that block's chunk. */
   public interface BlockWriter {
     void set(int x, int y, int z, Material material);
+
+    /** A block with properties (stairs facing, a light level...), {@code state} like "facing=north,half=top". */
+    default void set(int x, int y, int z, Material material, String state) {
+      set(x, y, z, material);
+    }
+  }
+
+  /** Shows and hides the display models of a platform (none in the tests). */
+  public interface ModelHost {
+    ModelHost NONE =
+        new ModelHost() {
+          @Override
+          public void show(SkySlot slot, double ox, double oy, double oz, List<DecorConfig.Model> models) {}
+
+          @Override
+          public void hide(SkySlot slot) {}
+        };
+
+    /** Spawns the models around this origin (the campfire block's centre at floor level). */
+    void show(SkySlot slot, double ox, double oy, double oz, List<DecorConfig.Model> models);
+
+    /** Removes the slot's models; harmless when there are none. */
+    void hide(SkySlot slot);
   }
 
   /** An absolute block position that {@link #build} wrote. */
@@ -36,27 +60,59 @@ public final class SkyInstance {
   private final World world;
   private final ChunkRunner runner;
   private final BlockWriter writer;
+  private final ModelHost models;
   private volatile DecorConfig decor;
   private final Map<Integer, List<Pos>> placed = new ConcurrentHashMap<>();
 
   public SkyInstance(World world, ChunkRunner runner, BlockWriter writer, DecorConfig decor) {
+    this(world, runner, writer, ModelHost.NONE, decor);
+  }
+
+  public SkyInstance(World world, ChunkRunner runner, BlockWriter writer, ModelHost models, DecorConfig decor) {
     this.world = world;
     this.runner = runner;
     this.writer = writer;
+    this.models = models;
     this.decor = decor;
   }
 
-  /** The production wiring: region scheduler per chunk, plain setType without physics. */
   /** Decor for the platforms built from now on; the ones standing are not touched. */
   public void setDecor(DecorConfig decor) {
     this.decor = decor;
   }
 
+  /** The production wiring: region scheduler per chunk, plain setType without physics, item display models. */
   public static SkyInstance forPlugin(Plugin plugin, World world, DecorConfig decor) {
+    Set<String> badStates = ConcurrentHashMap.newKeySet();
     ChunkRunner runner =
         (cx, cz, task) -> Bukkit.getRegionScheduler().run(plugin, world, cx, cz, scheduled -> task.run());
-    BlockWriter writer = (x, y, z, m) -> world.getBlockAt(x, y, z).setType(m, false);
-    return new SkyInstance(world, runner, writer, decor);
+    BlockWriter writer =
+        new BlockWriter() {
+          @Override
+          public void set(int x, int y, int z, Material m) {
+            world.getBlockAt(x, y, z).setType(m, false);
+          }
+
+          @Override
+          public void set(int x, int y, int z, Material m, String state) {
+            if (state == null) {
+              set(x, y, z, m);
+              return;
+            }
+            org.bukkit.block.data.BlockData data;
+            try {
+              data = Bukkit.createBlockData(m, "[" + state + "]");
+            } catch (IllegalArgumentException e) {
+              // A property this server does not know (a decor override, a renamed state): the plain block is better than a hole.
+              if (badStates.add(m + "[" + state + "]"))
+                plugin.getLogger().warning("Sky decor: " + m + "[" + state + "] is not a valid block state, placed without it");
+              set(x, y, z, m);
+              return;
+            }
+            world.getBlockAt(x, y, z).setBlockData(data, false);
+          }
+        };
+    return new SkyInstance(world, runner, writer, new DecorModels(plugin, world, runner), decor);
   }
 
   /**
@@ -71,6 +127,7 @@ public final class SkyInstance {
 
   /** Same, reporting the share of chunk tasks done (0..1) every time one finishes. */
   public CompletableFuture<Void> build(SkySlot slot, int players, java.util.function.DoubleConsumer progress) {
+    DecorConfig decor = this.decor;
     List<DecorConfig.Placement> decorBlocks = decor.generate(players);
     List<Pos> positions = new ArrayList<>(decorBlocks.size());
     Map<Long, List<Runnable>> byChunk = new TreeMap<>();
@@ -78,15 +135,32 @@ public final class SkyInstance {
       Pos p = absolute(slot, b.dx(), b.dy(), b.dz());
       positions.add(p);
       Material m = b.material();
-      chunkTasks(byChunk, p).add(() -> writer.set(p.x(), p.y(), p.z(), m));
+      String state = b.state();
+      chunkTasks(byChunk, p).add(() -> writer.set(p.x(), p.y(), p.z(), m, state));
     }
     if (placed.putIfAbsent(slot.index(), positions) != null)
       throw new IllegalStateException("Sky slot " + slot.index() + " is already built");
-    return dispatch(byChunk, progress);
+    List<DecorConfig.Model> shown = decor.models(players);
+    return dispatch(byChunk, progress)
+        .thenRun(
+            () -> {
+              // Cosmetic: a model that fails to spawn must not fail the game's platform.
+              try {
+                if (!shown.isEmpty() && placed.containsKey(slot.index()))
+                  models.show(slot, slot.centreX() + 0.5, SkySlot.PLATFORM_Y, slot.centreZ() + 0.5, shown);
+              } catch (RuntimeException ignored) {
+                // nothing to undo
+              }
+            });
   }
 
   /** Removes every block {@link #build} placed for this slot; harmless when nothing was built. */
   public CompletableFuture<Void> clear(SkySlot slot) {
+    try {
+      models.hide(slot);
+    } catch (RuntimeException ignored) {
+      // The models are not persistent: a failed removal ends with the server at the latest.
+    }
     List<Pos> positions = placed.remove(slot.index());
     if (positions == null) return CompletableFuture.completedFuture(null);
     Map<Long, List<Runnable>> byChunk = new TreeMap<>();

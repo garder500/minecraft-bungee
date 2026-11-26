@@ -326,6 +326,15 @@ public final class VbMap {
     return -5;
   }
 
+  /**
+   * How far the scenery reaches beyond the invisible border, on every side (blocks). The scenery (ramparts, towers, the island
+   * under the map) is out of reach: the border stops players before it, so it only changes the look, never the play.
+   */
+  public static final int SCENERY_MARGIN = 28;
+
+  /** Height range of the scenery outside the border and under the map, relative to the floor level. */
+  public static final int SCENERY_LOW_Y = -34, SCENERY_HIGH_Y = 56;
+
   private static String text(JsonObject o, String key) {
     if (!o.has(key)) throw new IllegalArgumentException("map: missing '" + key + "'");
     return o.get(key).getAsString();

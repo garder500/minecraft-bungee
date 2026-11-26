@@ -18,7 +18,7 @@ import win.vampyuyu.survival.island.ShapeKit;
  */
 public final class AshesPlan {
     /** Bump to rebuild existing worlds when the layout changes. */
-    public static final int VERSION = 3;
+    public static final int VERSION = 4; // 4: the monumental return arch and sealed door
     /** World y of the landing surface (the Nether ceiling is 128, the tallest structure is 22 above). */
     public static final int ORIGIN_Y = 96;
     public static final int LANDING_RADIUS = 13;
@@ -137,6 +137,7 @@ public final class AshesPlan {
             plan.anchor("landmark:" + mark.id(), mark.x(), mark.y(), mark.z());
         }
         plan.anchor("spawn", SPAWN[0], SPAWN[1], SPAWN[2]);
+        win.vampyuyu.survival.island.RealmLandmarks.build(plan, Realm.ASHES); // the floating monument and its relic, last
         return plan;
     }
 
@@ -215,6 +216,7 @@ public final class AshesPlan {
         }
         plan.set(0, 1, 0, Material.LODESTONE);
         plan.air(0, 1, 3); // the old standing sign of the landing
+        win.vampyuyu.survival.island.RealmLandmarks.landing(plan, Realm.ASHES, SPAWN[0], SPAWN[1], SPAWN[2]); // the arrival plaza
         ReturnArch.build(plan, Realm.ASHES, SPAWN[0], SPAWN[1], SPAWN[2]);
     }
 

@@ -55,7 +55,8 @@
   var home = page === "home" ? "" : "index.html";
   var NAV = [
     [home + "#games", "nav.games", ""],
-    [home + "#isles", "nav.isles", ""],
+    ["valoblock.html", "nav.vb", "valoblock"],
+    ["isles.html", "nav.isles", "isles"],
     [home + "#join", "nav.join", ""],
     ["shop.html", "nav.shop", "shop"],
     ["parents.html", "nav.parents", "parents"]
@@ -114,6 +115,7 @@
     document.documentElement.lang = lang;
     document.querySelectorAll("[data-i18n]").forEach(function (n) { n.textContent = t(n.getAttribute("data-i18n")); });
     document.querySelectorAll("[data-i18n-alt]").forEach(function (n) { n.setAttribute("alt", t(n.getAttribute("data-i18n-alt"))); });
+    document.querySelectorAll("[data-i18n-aria]").forEach(function (n) { n.setAttribute("aria-label", t(n.getAttribute("data-i18n-aria"))); });
     var title = document.body.getAttribute("data-title");
     document.title = title ? t(title) + " | Vampyuyu" : "Vampyuyu";
   }
@@ -229,6 +231,14 @@
     window.SHOP.never.forEach(function (k) { ul.appendChild(el("li", { text: t("never." + k) })); });
   }
 
+  // ---------- clips (the Isles effects): still frames for people who asked for less motion ----------
+  function wireClips() {
+    var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.querySelectorAll("video[autoplay]").forEach(function (v) {
+      if (still) { v.removeAttribute("autoplay"); v.pause(); v.setAttribute("controls", ""); }
+    });
+  }
+
   function render() {
     renderHeader();
     renderFooter();
@@ -236,6 +246,7 @@
     wireCopy();
     renderShop();
     renderNever();
+    wireClips();
   }
 
   window.addEventListener("hashchange", renderShop);

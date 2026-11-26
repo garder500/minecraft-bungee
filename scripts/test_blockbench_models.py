@@ -12,6 +12,7 @@ PACK = ROOT / "resource-pack/pack/assets/vampyuyu"
 sys.path.insert(0, str(ART))
 import bbmodel  # noqa: E402
 import block_models  # noqa: E402
+import werewolf_models  # noqa: E402
 
 # family -> (source stem -> [(pack model path, mirror_x)])
 def outputs(path):
@@ -29,8 +30,18 @@ def outputs(path):
         if stem.endswith("_bow"):
             return [(PACK / f"models/item/tool/{stem}_{n}.json", n) for n in range(4)]
         return [(PACK / f"models/item/{stem}_3d.json", None)]   # reported missing
+    if family == "werewolf":
+        return [(PACK / f"models/item/werewolf/{model_id}.json", model_id) for model_id, _ in werewolf_models.outputs(bbmodel.Source(path))]
+    if family == "valoblock":   # ValoBlock map set pieces, in the second pack (valoblock_structures.py)
+        return [(ROOT / f"resource-pack/valoblock/assets/vampyuyu/models/item/valoblock/map/{stem}.json", False)]
+    if family == "hubs":   # the arena waiting hubs (hub_models.py)
+        return [(PACK / f"models/item/hub/{stem}.json", False)]
     if family == "bosses":
         return [(PACK / f"models/item/boss/skin/{stem}.json", False)]
+    if family == "fx":   # boss VFX primitives (fx_models.py), recoloured through their tint
+        return [(PACK / f"models/item/fx/{stem}.json", False)]
+    if family == "structures":   # world structure display models (structure_models.py): checked in main()
+        return []
     if stem.endswith("_helmet"):
         return [(PACK / f"models/item/armor/{stem}_3d.json", False)]
     if stem.startswith("wings_tier"):
@@ -49,16 +60,18 @@ def main():
             errors += bbmodel.problems(f"{path.parent.name}/{label}", elements, src.tex)
         for out, mirror in outputs(path):
             if not out.exists():
-                errors.append(f"{src.name}: {out.relative_to(PACK)} missing (run the converter)")
+                errors.append(f"{src.name}: {out.relative_to(ROOT)} missing (run the converter)")
                 continue
-            if isinstance(mirror, str):      # a cable model, by its label
+            if path.parent.name == "werewolf":   # a werewolf decor model, by its id
+                want = dict(werewolf_models.outputs(src))[mirror]
+            elif isinstance(mirror, str):      # a cable model, by its label
                 want = dict(block_models.cable_states(src))[mirror]
             elif isinstance(mirror, int) and not isinstance(mirror, bool):   # a bow stage
                 want = bbmodel.states(src)[mirror][1]
             else:
                 want = src.java(mirror_x=bool(mirror))
             if json.loads(out.read_text())["elements"] != want:
-                errors.append(f"{src.name}: {out.relative_to(PACK)} is not the conversion of its source (run the converter)")
+                errors.append(f"{src.name}: {out.relative_to(ROOT)} is not the conversion of its source (run the converter)")
     # rigged bosses (Generic Model format): a model per bone equal to the bone's cubes, the baked rig in the plugin's jar
     for path in sorted((bbmodel.ROOT / "bosses").glob("*.bbmodel")):
         src = bbmodel.Source(path)
@@ -80,6 +93,33 @@ def main():
         for need in ("idle", "death"):
             if need not in rig.animations:
                 errors.append(f"{src.name}: no {need} clip")
+    # the halo shells: one per primitive the converter lists, and the plugin's list (BossVfx.HALOS) is the same
+    import re
+    import fx_models
+    java = (ROOT / "survival-plugin/src/main/java/win/vampyuyu/survival/boss/BossVfx.java").read_text()
+    found = re.search(r"HALOS = java.util.Set.of\((.*?)\);", java, re.S)
+    if not found or set(re.findall(r'"([a-z_]+)"', found.group(1))) != set(fx_models.HALOS):
+        errors.append("BossVfx.HALOS and fx_models.HALOS differ")
+    for name in fx_models.HALOS:
+        if not (PACK / f"items/fx/{name}_halo.json").exists():
+            errors.append(f"fx/{name}_halo missing (run fx_models.py)")
+    # world structure display models: the pack matches the sources, and every model a plan names exists
+    import structure_models
+    for path in sorted((bbmodel.ROOT / "structures").glob("*.bbmodel")):
+        for model_id, _, _, elements, tinted in structure_models.outputs(bbmodel.Source(path)):
+            out = PACK / f"models/item/structure/{model_id}.json"
+            item = PACK / f"items/structure/{model_id}.json"
+            if not out.exists() or not item.exists():
+                errors.append(f"structure/{model_id} missing (run structure_models.py)")
+            elif json.loads(out.read_text())["elements"] != elements:
+                errors.append(f"structure/{model_id} is not the conversion of its source (run structure_models.py)")
+            elif tinted != ("tints" in json.loads(item.read_text())["model"]):
+                errors.append(f"structure/{model_id}: tint does not match")
+    plans = ROOT / "survival-plugin/src/main/java/win/vampyuyu/survival"
+    for java_file in plans.rglob("*.java"):
+        for model_id in re.findall(r'"structure/([a-z0-9_]+)"', java_file.read_text()):
+            if not (PACK / f"items/structure/{model_id}.json").exists():
+                errors.append(f"{java_file.name} names structure/{model_id}, which the pack does not have")
     for e in errors[:40]:
         print("FAIL", e)
     print(f"blockbench models: {n} sources checked, {len(errors)} problems")

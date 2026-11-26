@@ -41,16 +41,25 @@ final class BossSkinService {
         }
     }
 
-    static final Map<String, Look> LOOKS = Map.of(
+    static final Map<String, Look> LOOKS = Map.ofEntries(
         // the Ender Dragon ignores invisibility: it is hidden from every client instead, and HiddenBossMelee gives the
         // swings that would have hit it back to the players
-        "voidwyrm", new Look("vampyuyu:boss/skin/voidwyrm", 4.2f, true, 180f),
-        "magma_warden", new Look("vampyuyu:boss/skin/magma_warden", 2.4f),
-        "frost_revenant", new Look("vampyuyu:boss/skin/frost_revenant", 3.6f),
+        Map.entry("voidwyrm", new Look("vampyuyu:boss/skin/voidwyrm", 4.2f, true, 180f)),
+        Map.entry("magma_warden", new Look("vampyuyu:boss/skin/magma_warden", 2.4f)),
+        Map.entry("frost_revenant", new Look("vampyuyu:boss/skin/frost_revenant", 3.6f)),
         // the spider's eyes glow through invisibility: it is hidden too
-        "sylvan_matriarch", new Look("vampyuyu:boss/skin/sylvan_matriarch", 2.8f, true, 0f),
-        "abyssal_leviathan", new Look("vampyuyu:boss/skin/abyssal_leviathan", 2.8f),
-        "crypt_lord", new Look("vampyuyu:boss/skin/crypt_lord", 2.4f));
+        Map.entry("sylvan_matriarch", new Look("vampyuyu:boss/skin/sylvan_matriarch", 2.8f, true, 0f)),
+        Map.entry("abyssal_leviathan", new Look("vampyuyu:boss/skin/abyssal_leviathan", 2.8f)),
+        Map.entry("crypt_lord", new Look("vampyuyu:boss/skin/crypt_lord", 2.4f)),
+        // the enderman's eyes glow through invisibility, like the spider's: hidden too
+        Map.entry("hell_gao", new Look("vampyuyu:boss/skin/hell_gao", 3.4f, true, 0f)),
+        // a dragon again (0.8x): hidden, and its yaw points backwards like the Echo's
+        Map.entry("thunder_dragon", new Look("vampyuyu:boss/skin/thunder_dragon", 3.4f, true, 180f)),
+        // a 3.6x husk is 7 blocks tall, a 4x zombie 7.8
+        Map.entry("temporal_pharaoh", new Look("vampyuyu:boss/skin/temporal_pharaoh", 3.5f)),
+        Map.entry("mire_abomination", new Look("vampyuyu:boss/skin/mire_abomination", 3.8f)),
+        // a 3x warden is 8.7 blocks tall
+        Map.entry("devourer", new Look("vampyuyu:boss/skin/devourer", 4.4f)));
 
     private static final NamespacedKey MARK = new NamespacedKey("vampyuyu", "boss_skin");
 

@@ -24,7 +24,7 @@ public final class ValoBlockModule {
   public volatile VbHud hud = VbHud.NOOP;
   /** Name tags: allies only (a scoreboard team per squad for players, per-viewer displays for bots). */
   public final VbNameTags tags = new VbNameTags();
-  /** The tactical map menu (null until the agents are enabled) and the minimap items (null until the maps are enabled). */
+  /** The tactical map menu (null until the agents are enabled) and the HUD minimap's markers (null until the maps are enabled). */
   volatile TacMapService tacmap;
   volatile MiniMapService minimap;
   /** The Rift Seed service (null until enabled). */

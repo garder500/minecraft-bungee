@@ -128,7 +128,7 @@ public class SkyInstanceTest {
     assertEquals(9, seats.size());
     for (Location l : seats) {
       assertEquals(SkySlot.PLATFORM_Y + 1, l.getY(), 0);
-      assertEquals(Material.SPRUCE_PLANKS, blocks.get(l.getBlockX() + "," + (SkySlot.PLATFORM_Y) + "," + l.getBlockZ()));
+      assertNotNull("seat stands on the floor", blocks.get(l.getBlockX() + "," + (SkySlot.PLATFORM_Y) + "," + l.getBlockZ()));
       assertNull("seat is free of blocks", blocks.get(l.getBlockX() + "," + (SkySlot.PLATFORM_Y + 1) + "," + l.getBlockZ()));
     }
     Location spawn = sky.spawnPoint(slot, 9);

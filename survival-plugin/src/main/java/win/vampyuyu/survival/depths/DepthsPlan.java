@@ -54,6 +54,7 @@ public final class DepthsPlan {
             plan.anchor("landmark:" + mark.id(), mark.x(), mark.y(), mark.z());
         }
         plan.anchor("spawn", DepthsLayout.SPAWN[0], DepthsLayout.SPAWN[1], DepthsLayout.SPAWN[2]);
+        win.vampyuyu.survival.island.RealmLandmarks.build(plan, Realm.DEPTHS); // the floating monument and its relic, last
         return plan;
     }
 
@@ -71,6 +72,7 @@ public final class DepthsPlan {
         }
         plan.set(0, 1, 0, Material.LODESTONE);
         plan.air(0, 1, 3); // the old standing sign of the landing
+        win.vampyuyu.survival.island.RealmLandmarks.landing(plan, Realm.DEPTHS, DepthsLayout.SPAWN[0], DepthsLayout.SPAWN[1], DepthsLayout.SPAWN[2]); // the arrival plaza
         ReturnArch.build(plan, Realm.DEPTHS, DepthsLayout.SPAWN[0], DepthsLayout.SPAWN[1], DepthsLayout.SPAWN[2]);
     }
 

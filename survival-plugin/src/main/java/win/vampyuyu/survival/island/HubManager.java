@@ -30,6 +30,8 @@ public final class HubManager {
     private final Core core;
     private final IslandService service;
     private final IslandConfig cfg;
+    /** The crystal rings turning round the Memory Spire's tip (display models), once the hub stands. */
+    private StructureModels models;
 
     public HubManager(Core core, IslandService service) {
         this.core = core;
@@ -60,9 +62,15 @@ public final class HubManager {
             }
             return;
         }
+        core.scheduler().repeating(10L, 10L, () -> {
+            if (models != null) {
+                models.tick(10);
+            }
+        });
         Marker marker = core.store().read(MARKER_FILE, Marker.class, Marker::new);
         if (upToDate(marker, cfg.hubY) && padPresent(hub)) {
             service.hubState(true, true);
+            showModels(hub);
             return;
         }
         service.hubState(false, false);
@@ -113,6 +121,13 @@ public final class HubManager {
             });
     }
 
+    private void showModels(World hub) {
+        if (models != null) {
+            models.remove();
+        }
+        models = new StructureModels(core.getPlugin(), "hub", hub, 0, cfg.hubY, 0, HubPlan.build(cfg.hubMaxBlocks).models());
+    }
+
     private boolean padPresent(World hub) {
         try {
             return hub.getBlockAt(HubPlan.SPAWN_X, cfg.hubY, HubPlan.SPAWN_Z).getType() != Material.AIR;
@@ -130,6 +145,7 @@ public final class HubManager {
                     return;
                 }
                 service.hubState(true, true);
+                showModels(hub);
                 Marker marker = new Marker();
                 marker.version = HubPlan.VERSION;
                 marker.complete = true;

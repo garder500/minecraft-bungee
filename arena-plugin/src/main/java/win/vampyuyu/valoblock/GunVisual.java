@@ -17,6 +17,23 @@ final class GunVisual {
   /** The inspect pose after a weapon swap lasts one second. */
   static final long INSPECT_MS = 1000;
   static final String NONE = "";
+  /** The reload is shown as this many frames, reload_0 .. reload_5 (resource-pack/art/valoblock_models.py RELOAD_FRAMES). */
+  static final int RELOAD_FRAMES = 6;
+  /** Where each frame starts, as a fraction of the reload time: tilt in, magazine out, dropped, the new one brought, the slap, tilt back. */
+  static final double[] RELOAD_AT = {0, 0.12, 0.30, 0.50, 0.70, 0.86};
+
+  /** The reload frame at this point of the reload (0 to 1). */
+  static String reloadFrame(double progress) {
+    int k = 0;
+    for (int i = 0; i < RELOAD_AT.length; i++) if (progress >= RELOAD_AT[i]) k = i;
+    return RELOAD + "_" + k;
+  }
+
+  /** {@link #state(boolean, long, boolean, boolean, double)} with the reload shown frame by frame. */
+  static String state(double reloadProgress, boolean reloading, long sinceShotMs, boolean sneaking, boolean inspecting, double zoom) {
+    String s = state(reloading, sinceShotMs, sneaking, inspecting, zoom);
+    return s.equals(RELOAD) ? reloadFrame(reloadProgress) : s;
+  }
 
   private GunVisual() {}
 

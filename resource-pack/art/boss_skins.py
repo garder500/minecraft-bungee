@@ -7,7 +7,7 @@ The source of each boss is a Blockbench project, resource-pack/art/blockbench/bo
 Block/Item", one embedded 128x128 texture of 16x16 swatches, a material per row pair and a swatch per face orientation,
 painted in Blockbench; modelled there: edit them there, then run this script). For every boss it writes
   pack/assets/vampyuyu/models/item/boss/skin/<id>.json      (a model made of boxes, 16 units = 1 block)
-  pack/assets/vampyuyu/textures/item/boss/skin/<id>.png     (the Blockbench texture, byte for byte)
+  pack/assets/vampyuyu/textures/item/boss/skin/<id>.png     (the Blockbench texture, its glowing texels marked alpha 251)
   pack/assets/vampyuyu/items/boss/skin/<id>.json            (item model vampyuyu:boss/skin/<id>)
 A boss whose project is in the Generic Model format is rigged and animated (bbrig.py): it also gets one item model per bone
 (models/item/boss/skin/<id>/<bone>.json) and its baked animation clips for the plugin, written to
@@ -49,9 +49,14 @@ def clamp(v):
 # ---------------------------------------------------------------------------------------------------------------- bosses
 # The Lava Colossus (a knuckle-walking basalt brute), the Boreal Watcher (a gaunt knight on his planted greatsword), the
 # Mycelial Queen (a woman of bark rising from a mushroom-grown spider), the Chained Leviathan (a sea serpent rising out
-# of its coil), the Judge of Lost Souls (a hooded lich holding the scales) and the Echo of the Rift (a dragon).
+# of its coil), the Judge of Lost Souls (a hooded lich holding the scales), the Echo of the Rift (a dragon), Hell Gao,
+# the Anomaly (the secret post-game superboss), the Primordial Thunder Dragon (a wingless sky serpent coiled on a storm
+# cloud inside its ring of lightning rods), the Temporal Pharaoh (a linen-wrapped king with an hourglass in his chest and
+# a broken hour ring), the Mire Abomination (a heap of thrown-away things with a rib-toothed belly) and the Devourer (a
+# titan of void flesh around a singularity, the eight Guardian faces on its belt, the world it ate on its shoulders).
 SOURCES = bbmodel.ROOT / "bosses"
-BOSSES = ("magma_warden", "frost_revenant", "sylvan_matriarch", "abyssal_leviathan", "crypt_lord", "voidwyrm")
+BOSSES = ("magma_warden", "frost_revenant", "sylvan_matriarch", "abyssal_leviathan", "crypt_lord", "voidwyrm", "hell_gao",
+          "thunder_dragon", "temporal_pharaoh", "mire_abomination", "devourer")
 
 
 RIGS = ART.parent.parent / "survival-plugin/src/main/resources/boss/rigs"
@@ -92,7 +97,7 @@ def write(boss):
         path.write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8")
     out = PACK / "textures" / "item" / "boss" / "skin" / f"{boss}.png"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_bytes(src.png)
+    out.write_bytes(bbmodel.glow_png(src))   # glowing faces marked for the item shader (alpha 251)
     if src.free:
         bones, clips = write_rig(boss, src)
         print(f"  {boss}: rig of {bones} bones, clips {', '.join(clips)}")

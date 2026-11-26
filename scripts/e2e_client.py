@@ -9,9 +9,11 @@ or a missing glyph, and it checks on screenshots that the night effect really da
 Everything lives in the gitignored .e2e/ folder; nothing of the real stack is touched. Needs: java 25
 (JAVA25), Prism Launcher with an installed 26.3 instance (PRISM_DIR, PRISM_INSTANCE), Xvfb, and
 xdotool and ImageMagick (found on PATH or built through nix). EULA=TRUE must be set in .env.
+E2E_VIEW=<chunks> raises the server view distance and the client render distance (default 4): far views of a
+map or its scenery stay empty at 4 (slower client).
 """
 import argparse, shlex, hashlib, http.server, json, os, pathlib, re, shutil, socket, struct, subprocess, sys
-import threading, time, urllib.request, uuid
+import math, threading, time, urllib.request, uuid
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -168,7 +170,7 @@ def start_server(zip_path, sha1, plugin=False, pack_required=True):
     (server / "server.properties").write_text("\n".join([
         "online-mode=false", "white-list=false", "enforce-whitelist=false", "gamemode=creative", "force-gamemode=true", "level-type=minecraft:flat",
         "generate-structures=false",
-        'generator-settings={"biome":"minecraft:plains","layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}]}', "spawn-monsters=false", "spawn-protection=0", "view-distance=4",
+        'generator-settings={"biome":"minecraft:plains","layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}]}', "spawn-monsters=false", "spawn-protection=0", "view-distance=" + os.environ.get("E2E_VIEW", "4"),
         f"server-port={MC_PORT}", "enable-rcon=true", f"rcon.port={RCON_PORT}",
         f"rcon.password={RCON_PASSWORD}", "enforce-secure-profile=false",
         *([] if plugin else [
@@ -257,7 +259,7 @@ def prepare_client(tools):
     game.mkdir()
     (game / "options.txt").write_text("\n".join([
         "lang:" + os.environ.get("E2E_LANG", "en_us"), "onboardAccessibility:false", "tutorialStep:none", "joinedFirstServer:true",
-        "fullscreen:false", "maxFps:30", "renderDistance:4", "pauseOnLostFocus:false",
+        "fullscreen:false", "maxFps:30", "renderDistance:" + os.environ.get("E2E_VIEW", "4"), "pauseOnLostFocus:false",
         "skipMultiplayerWarning:true", "narrator:0", "hideServerAddress:true", ""]))
     return data, game
 
@@ -851,6 +853,75 @@ def worlds_scenario(ctx):
     say("worlds: menu, both game cards and the Werewolf join checked")
 
 
+# Camera views of the hubs scenario: (name, x, y, z, yaw, pitch) relative to the hub centre (WaitingHubs.HUB_X) and the
+# players' standing height; all inside the hub's +-40 world border and the client's 4-chunk view.
+HUB_VIEWS = [("close", 9, 7, 13, 145, 22), ("wide", 0.5, 16, 36, 180, 20), ("high", 30, 30, 30, 135, 35),
+             ("back", 0.5, 8, -27, 0, 12), ("under", 22, -14, 26, 140, -18)]
+
+
+def hubs_scenario(ctx):
+    """The two built-in waiting hubs (WaitingHubs; SERVER_ID=creative provisions their arenas): joins the valoblock
+    arena (the Staging Deck in vb_arena, fixed noon), then the werewolf one (the Moonlit Village in ww_sky, midnight for
+    waiting players). A hub is built when its first player joins, so the join is the real check: the spawn shot keeps the
+    HUD and hotbar, then a spectator camera with the HUD hidden takes the wide views. E2E_HUBS=vb or ww shortens it."""
+    tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
+    xdo = tools["xdotool"]
+    me = offline_uuid("E2EBot")
+    for _ in range(60):
+        try:
+            api("GET", "/arenas")
+            break
+        except Exception:
+            time.sleep(2)
+    else:
+        failures.append("the plugin's private API never answered")
+        return
+    rcon = Rcon()
+    which = os.environ.get("E2E_HUBS", "vb,ww").split(",")
+    hubs = [("vb", "valoblock", "vb_arena", 65, "day"), ("ww", "werewolf", "ww_sky", 100, "night")]
+    for key, arena, world, floor, label in hubs:
+        if key not in which:
+            continue
+        try:
+            api("POST", "/arenas/action", {"action": "arena-join", "arenaId": arena, "uuid": me})
+        except Exception as e:
+            failures.append(f"hubs: joining {arena} failed: {e}")
+            continue
+        time.sleep(10)
+        out = re.sub("\u00a7.", "", rcon.command("data get entity E2EBot Pos"))
+        if f"{-512 + 1}" not in out and "-511" not in out:
+            failures.append(f"hubs: E2EBot is not at the {arena} hub after the join: {out.strip()[:120]}")
+        if key == "vb":
+            subprocess.run([xdo, "key", "Escape"], env=env)  # the ValoBlock map vote opens on join
+            time.sleep(2)
+        shot(tools, shots / f"hub-{key}-{label}-spawn.png")
+        # The arena keeps its members in place: leave it (the hub stays built, its models stay up while anyone is
+        # near), then fly a spectator camera at the hub's own time of day.
+        api("POST", "/arenas/action", {"action": "arena-leave", "arenaId": arena, "uuid": me})
+        time.sleep(6)
+        rcon.command(f"execute in minecraft:{world} run time set " + ("18000" if label == "night" else "6000"))
+        subprocess.run([xdo, "key", "F1"], env=env)
+        rcon.command("gamemode spectator E2EBot")
+        for name, dx, dy, dz, yaw, pitch in HUB_VIEWS:
+            out = rcon.command(f"execute in minecraft:{world} run tp E2EBot {-512 + dx} {floor + dy} {dz} {yaw} {pitch}")
+            if "Teleported" not in out:
+                failures.append(f"hubs: tp into {world} failed: {out.strip()[:120]}")
+            time.sleep(5)
+            shot(tools, shots / f"hub-{key}-{label}-{name}.png")
+        subprocess.run([xdo, "key", "F1"], env=env)
+        rcon.command("gamemode creative E2EBot")
+        rcon.command("execute in minecraft:overworld run tp E2EBot 0 -60 0")
+        time.sleep(4)
+    console = (server / "console.log").read_text(errors="replace")
+    for hub in (["ValoBlock"] if "vb" in which else []) + (["Werewolf"] if "ww" in which else []):
+        if f"Built the {hub} waiting hub" not in console:
+            failures.append(f"hubs: the {hub} hub was not built on join (no 'Built the {hub} waiting hub' line)")
+    for line in console.splitlines():
+        if ("win.vampyuyu" in line or "NexusArena" in line) and ("Exception" in line or "SEVERE" in line):
+            failures.append("server: " + line.strip()[:200])
+    say("hubs: " + ", ".join(which) + " captured")
+
+
 def staffchat_scenario(ctx):
     """The private staff<->player channel through the network plugin's management API, with a real client:
     staff write to the bot, the bot answers by typing in the chat box, and /exitchat leaves."""
@@ -996,6 +1067,49 @@ def tooltip_scenario(ctx):
         failures.append("stored enchantment of the book missing")
 
 
+# Camera spots around a sky platform centre: dx, dy, dz, yaw, pitch (dy from the platform floor).
+PLATFORM_VIEWS = [("wide", -38, 24, 38, 225, 24), ("far", 0, 10, 62, 180, 6), ("low", 0, 3, 27, 180, 2),
+                  ("under", 30, -22, 30, 135, -18), ("high", 0, 48, 1, 180, 90),
+                  # eye level from a seat on the +z side, across the fire (a seated player's eye is about 1.6 up)
+                  ("seat", 0, 2.1, 3, 180, -8), ("seat-back", 0, 2.1, -3, 0, -8),
+                  # the display models: the moon over the belfry, the belfry's bell and vane, the mill's sails
+                  ("moon", 0, 6, 6, 180, -32), ("belfry", 0, 18, 2, 180, -6), ("mill", 0, 8, 0, 60, -2)]
+
+
+def platform_views(rcon, tools, shots, players=12, prefix="view"):
+    """E2E_WW_VIEWS=1: /ww debug decor builds a platform with no game on it, the player looks at it from around, at
+    noon and at midnight, then it is cleared. A player in a game cannot be teleported (the arena cancels it)."""
+    out = rcon.command(f"ww debug decor {players}")
+    for _ in range(30):
+        log = (WORK / "server" / "logs" / "latest.log").read_text(errors="replace")
+        found = re.findall(rf"Showcase platform for {players} players built: centre (-?\d+) (-?\d+) (-?\d+)", log)
+        if found:
+            break
+        time.sleep(1)
+    else:
+        say(f"decor showcase did not build: {out!r}")
+        return
+    cx, cy, cz = (int(v) + 0.5 for v in found[-1])
+    state = player_state(rcon)
+    mode = {"0": "survival", "1": "creative", "2": "adventure", "3": "spectator"}.get(state["mode"], "creative")
+    rcon.command("gamemode spectator E2EBot")
+    time.sleep(2)
+    say(f"decor models around the {players}-player platform: "
+        + rcon.command("execute in minecraft:ww_sky if entity @e[tag=ww_decor_model]").strip())
+    for kind, clock in (("day", "noon"), ("night", "midnight")):
+        rcon.command(f"execute in minecraft:ww_sky run time set {clock}")
+        for name, dx, dy, dz, yaw, pitch in PLATFORM_VIEWS:
+            rcon.command(f"execute in minecraft:ww_sky run tp E2EBot {cx + dx} {cy - 0.5 + dy} {cz + dz} {yaw} {pitch}")
+            time.sleep(3)
+            shot(tools, shots / f"{prefix}-{kind}-{name}.png")
+    rcon.command("ww debug decor clear")
+    x0, y0, z0 = state["pos"]
+    rcon.command(f"execute in minecraft:overworld run tp E2EBot {x0} {y0} {z0}")
+    rcon.command(f"gamemode {mode} E2EBot")
+    rcon.command("time set noon")
+    time.sleep(3)
+
+
 def werewolf_scenario(ctx):
     """A whole practice game (human idle, seven bots) driven through the plugin's private API."""
     tools, shots, client_log, failures, server = (ctx[k] for k in
@@ -1023,6 +1137,15 @@ def werewolf_scenario(ctx):
     time.sleep(2)
     shot(tools, shots / "ww-00-lobby.png")
     base = brightness(tools, shots / "ww-00-lobby.png")
+    if os.environ.get("E2E_WW_ROLE"):  # e.g. WEREWOLF: the human is awake at night, so the night shots show the decor
+        say(rcon.command(f"ww debug force E2EBot {os.environ['E2E_WW_ROLE']}").strip())
+    if os.environ.get("E2E_WW_VIEWS"):
+        # E2E_WW_VIEWS_PLAYERS=4,12,45: one set of views per table size (view-<n>-day-wide.png...); default 12.
+        sizes = os.environ.get("E2E_WW_VIEWS_PLAYERS", "12").split(",")
+        for n in sizes:
+            platform_views(rcon, tools, shots, int(n), "view" if len(sizes) == 1 else f"view-{n}")
+        if os.environ.get("E2E_WW_VIEWS") == "only":  # just the decor, no game
+            return
     rcon.command("tp E2EBot 12.5 -60 12.5")
     time.sleep(1)
     before = player_state(rcon)
@@ -1043,6 +1166,7 @@ def werewolf_scenario(ctx):
             shot(tools, shots / name)
             dark.setdefault(phase, []).append(brightness(tools, shots / name))
             say(f"phase {phase}: brightness {dark[phase][-1]:.3f}")
+            # E2E_WW_VIEWS=1: aerial views of the sky platform and its village, once by day and once by night.
         if phase in ("FINISHED", "WAITING") and len(seen) > 1:
             break
         time.sleep(2)
@@ -1243,7 +1367,7 @@ def valoblock_extras(ctx, rcon, map_id, failures):
             while "Phase COMBAT" not in vb(rcon, "status") and time.time() - t0 < 60:
                 time.sleep(1)  # the buy phase opens the Armory over the view
             tp(sx, 65, sz, 180, 0)
-            rcon.command(f'item replace entity E2EBot hotbar.0 with {w["base"].lower() if ":" in w["base"] else "minecraft:" + w["base"].lower()}[item_model="vampyuyu:valoblock/{w["id"]}"]')
+            rcon.command(f'item replace entity E2EBot hotbar.0 with {w["base"].lower() if ":" in w["base"] else "minecraft:" + w["base"].lower()}[item_model="vampyuyu:valoblock/{w["id"]}"' + (',charged_projectiles=[{id:"minecraft:arrow"}]' if w["base"] == "CROSSBOW" else "") + ']')  # charged like WeaponItems: the two-handed pose
             key("key", "1")
             time.sleep(1.5)
             shot(tools, shots / f"vb-40-{w['id']}-first.png")
@@ -1267,6 +1391,234 @@ def valoblock_extras(ctx, rcon, map_id, failures):
     shot(tools, shots / "vb-32-overview-side.png")
     rcon.command("gamemode adventure E2EBot")
     tp(sx, 65, sz, 180, 0)
+
+
+def valoblock_items(ctx, rcon, failures):
+    """--only items (Hourfall, the human is a god): what the player holds and wears. Round 1 combat: the hotbar with the
+    four ability items, the tooltip of one, an ability used (cooldown), the ultimate once the orbs filled it. Then rounds are
+    played (a bot squad wins, one then the other so the match does not end) until each of these has been seen: the Longwind
+    sniper scoped (the gun is not drawn), the Bronzite rifle aimed, the Seed on a teammate bot's back from behind (buy phase,
+    the bots stand still), the Seed carrier's HUD icon and hotbar item and the plant progress inside a site (rounds where
+    the human got the Seed: 1 in 5 per round, only while the human's squad is the Seedbearers, the first 6 rounds)."""
+    tools, shots, env = ctx["tools"], ctx["shots"], ctx["env"]
+    xdo = tools["xdotool"]
+    GUI, OX, OY = 2, 213, 120  # 854x480 game window centred in the 1280x720 Xvfb root: GUI scale 2
+    WANT = {"scope", "rifle", "back", "seed", "plant", "ult", "cooldown", "tooltip"}
+    SPAWN = (50.0, 65, 114.0)
+
+    def key(*k):
+        subprocess.run([xdo, *k], env=env)
+
+    def tp(x, y, z, yaw=0, pitch=0):
+        vb(rcon, f"debug tp E2EBot {x} {y} {z} {yaw} {pitch}")
+        time.sleep(1.2)
+
+    def inv():
+        return rcon.command("data get entity E2EBot Inventory")
+
+    def has(query):  # the whole Inventory dump is cut by RCON's 4 KB packets: ask for one thing
+        return "following entity data" in rcon.command("data get entity E2EBot " + query)
+
+    def carrying():
+        return has('Inventory[{id:"minecraft:echo_shard"}].id')
+
+    def ult_ready():
+        return "_ready" in rcon.command('data get entity E2EBot Inventory[{Slot:6b}].components."minecraft:item_model"')
+
+    def phase():
+        return re.search(r"Phase (\w+)", vb(rcon, "status")).group(1)
+
+    def wait_phase(name, seconds=40):
+        t0 = time.time()
+        while time.time() - t0 < seconds:
+            if phase() == name:
+                return True
+            time.sleep(0.5)
+        failures.append(f"items: the match never reached the {name} phase")
+        return False
+
+    def to_combat():
+        """Whatever the round is doing (the bots fight, a round can end by itself), get to a running combat phase."""
+        for _ in range(4):
+            ph = phase()
+            if ph in ("COMBAT", "PLANTED"):
+                return True
+            if ph == "BUY":
+                vb(rcon, "debug skip")
+                time.sleep(5)
+            else:
+                time.sleep(3)
+        return False
+
+    def next_buy(rnd):
+        """End the round (alternating winners: the match must not end) and wait for the next buy phase."""
+        if phase() in ("COMBAT", "PLANTED"):
+            vb(rcon, "debug win " + "ab"[rnd % 2])
+        return wait_phase("BUY")
+
+    def hotbar_tooltip(slot, name):  # inventory screen, mouse over hotbar slot (0-based)
+        key("key", "e")
+        time.sleep(1)
+        key("mousemove", str(OX + (125 + 8 + 18 * slot + 8) * GUI), str(OY + (37 + 142 + 8) * GUI))
+        time.sleep(1.2)
+        shot(tools, shots / name)
+        key("key", "Escape")
+        time.sleep(0.5)
+
+    def seed_back(tag):
+        """Buy phase: the Seed is on a bot's back (a display shown to the squad); stand 3 blocks behind that bot."""
+        out = rcon.command('data get entity @e[type=minecraft:item_display,nbt={item:{id:"minecraft:echo_shard"}},limit=1] Pos')
+        m = re.search(r"\[(-?[\d.]+)d, (-?[\d.]+)d, (-?[\d.]+)d\]", out)
+        say("seed back display: " + out.strip()[:200])
+        if not m:
+            return False
+        x, y, z = (float(v) for v in m.groups())
+        out = rcon.command(f"execute positioned {x} {y} {z} run data get entity @e[type=minecraft:mannequin,sort=nearest,limit=1] Pos")
+        b = re.search(r"\[(-?[\d.]+)d, (-?[\d.]+)d, (-?[\d.]+)d\]", out)
+        say("nearest bot: " + out.strip()[:200])
+        bx, bz = (float(b.group(1)), float(b.group(3))) if b else (x, z + 0.3)
+        dx, dz = x - bx, z - bz  # from the bot to its back
+        n = math.hypot(dx, dz) or 1.0
+        dx, dz = dx / n, dz / n
+        yaw = math.degrees(math.atan2(dx, -dz))  # looking at the bot from behind it
+        # The display sits behind the bot's server-side yaw; the mannequin's body may not agree, so shoot both sides.
+        for dist, name in ((3.0, "-display-side"), (2.0, "-display-side-close"), (-3.0, "-opposite-side")):
+            tp(round(bx + dx * dist, 2), 65, round(bz + dz * dist, 2), round((yaw + (180 if dist < 0 else 0)) % 360, 1), 6)
+            time.sleep(0.8)
+            shot(tools, shots / f"pt2-seed-back-{tag}{name}.png")
+        return True
+
+    def armory_buy(tab, card_slot, name, extra=()):
+        """Armory tab (column 0 row `tab`) then the card (slot = row * 9 + col), then the extra slots."""
+        vb(rcon, "debug armory E2EBot")
+        time.sleep(2)
+
+        def click(slot):
+            row, col = divmod(slot, 9)
+            key("mousemove", str(OX + (125 + 16 + 18 * col) * GUI), str(OY + (9 + 26 + 18 * row) * GUI))
+            time.sleep(0.4)
+            key("click", "1")
+            time.sleep(0.8)
+        if tab is not None:
+            click(tab * 9)
+            click(card_slot)
+        for slot in extra:
+            click(slot)
+        shot(tools, shots / f"pt2-armory-{name}.png")
+        key("key", "Escape")
+        time.sleep(1)
+
+    def orbs():
+        for ox, oz in ((30.0, 58.0), (90.0, 62.0)):
+            tp(ox, 65, oz, 0, 10)
+            time.sleep(0.8)
+
+    def ult_shots(done):
+        if "ult" in done or not ult_ready():
+            return
+        key("key", "7")
+        time.sleep(1)
+        shot(tools, shots / "pt2-ultimate-ready.png")
+        hotbar_tooltip(6, "pt2-ultimate-ready-tooltip.png")
+        done.add("ult")
+
+    def seed_shots(done):
+        """The human carries the Seed in a combat phase: HUD icon, hotbar item and tooltip, then the plant hold in site A."""
+        if "seed" not in done:
+            tp(*SPAWN, 180, 3)
+            key("key", "8")
+            time.sleep(1)
+            shot(tools, shots / "pt2-seed-carrier-hud.png")
+            hotbar_tooltip(7, "pt2-seed-tooltip.png")
+            done.add("seed")
+        if "plant" not in done and carrying():
+            key("key", "8")
+            tp(18.0, 65, 34.0, 180, 20)
+            key("mousemove", "427", "240")
+            subprocess.run([xdo, "mousedown", "3"], env=env)
+            for i in range(3):
+                time.sleep(1.0)
+                shot(tools, shots / f"pt2-plant-{i}.png")
+            say("plant status (held 3 s of 4): " + vb(rcon, "status"))
+            subprocess.run([xdo, "mouseup", "3"], env=env)
+            done.add("plant")
+
+    done = set()
+    rcon.command("gamemode adventure E2EBot")
+    say(vb(rcon, "debug god E2EBot on"))  # the bots would kill the human within seconds
+    # ---- round 1, combat: abilities
+    to_combat()
+    tp(*SPAWN, 180, 5)
+    key("key", "4")
+    time.sleep(1)
+    shot(tools, shots / "pt2-01-hotbar-abilities.png")
+    say("round 1: " + vb(rcon, "status") + (", the human carries the Seed" if carrying() else ""))
+    hotbar_tooltip(3, "pt2-02-ability-tooltip.png")
+    hotbar_tooltip(5, "pt2-02-ability-tooltip-signature.png")
+    hotbar_tooltip(6, "pt2-03-ultimate-tooltip-locked.png")
+    done.add("tooltip")
+    if to_combat():  # the signature ability has a free charge (4 and 5 are bought in the Armory)
+        key("key", "6")
+        time.sleep(0.4)
+        key("mousemove", "427", "240")
+        key("click", "3")
+        shot(tools, shots / "pt2-04-ability-cooldown-0.png")
+        shot(tools, shots / "pt2-04-ability-cooldown-1.png")
+        time.sleep(0.5)
+        shot(tools, shots / "pt2-04-ability-after.png")
+        done.add("cooldown")
+    if to_combat():
+        orbs()
+        shot(tools, shots / "pt2-05-after-orbs.png")
+        ult_shots(done)
+        if carrying():
+            seed_shots(done)
+
+    for rnd in range(2, 13):
+        if WANT <= done:
+            break
+        if not next_buy(rnd):
+            break
+        time.sleep(2)
+        rcon.command("gamemode adventure E2EBot")
+        vb(rcon, "debug god E2EBot on")  # the god flag is dropped with each round
+        mine = carrying()
+        say(f"round {rnd}: {vb(rcon, 'status')}; the human {'carries' if mine else 'does not carry'} the Seed; credits in the Armory title")
+        tp(*SPAWN, 180, 5)
+        if "scope" not in done:
+            armory_buy(4, 1, "longwind", extra=(42,))  # the Longwind sniper, then the first buyable ability
+        elif "rifle" not in done:
+            armory_buy(3, 1, "bronzite")
+        if not mine and "back" not in done and seed_back(f"r{rnd}"):
+            done.add("back")
+        tp(*SPAWN, 180, 5)
+        if not (WANT - done - {"back"}):
+            continue
+        vb(rcon, "debug skip")  # buy -> combat
+        time.sleep(8)
+        if not to_combat():
+            continue
+        tp(*SPAWN, 180, 3)
+        held = ("scope" not in done and "longwind") or ("rifle" not in done and "bronzite") or ""
+        if held and has('Inventory[{Slot:0b}]'):
+            key("key", "1")  # the primary
+            time.sleep(1)
+            shot(tools, shots / f"pt2-{held}-hip.png")
+            subprocess.run([xdo, "keydown", "shift"], env=env)
+            time.sleep(1.5)
+            shot(tools, shots / f"pt2-{held}-aimed.png")
+            subprocess.run([xdo, "keyup", "shift"], env=env)
+            done.add("scope" if held == "longwind" else "rifle")
+        if mine and to_combat():
+            seed_shots(done)
+        if "ult" not in done and to_combat():
+            orbs()
+            ult_shots(done)
+    say(f"items scenario done: {sorted(done)}")
+    for missing in sorted(WANT - done):
+        say("NOT captured: " + missing)
+    if phase() in ("COMBAT", "PLANTED", "BUY"):
+        tp(*SPAWN, 180, 0)
 
 
 def valoblock_overview(ctx, rcon, size=120):
@@ -1392,6 +1744,14 @@ def valoblock_scenario(ctx):
         return
     time.sleep(8)
     shot(tools, shots / "vb-01-agent-select.png")
+    xdo = tools["xdotool"]
+    for i, (hx, hy) in enumerate([(603, 189), (675, 190), (603, 262), (747, 226)]):  # hover a portrait: the left panel shows it
+        subprocess.run([xdo, "mousemove", str(hx - 3), str(hy), "mousemove", str(hx), str(hy)], env=ctx["env"])
+        time.sleep(1.5)
+        shot(tools, shots / f"vb-01-agent-hover{i}.png")
+    subprocess.run([xdo, "click", "1"], env=ctx["env"])  # lock the hovered agent in
+    time.sleep(1.5)
+    shot(tools, shots / "vb-01-agent-picked.png")
     say("where: " + vb(rcon, "debug where E2EBot"))
     out = vb(rcon, "debug where E2EBot")
     if "vb_arena" not in out:
@@ -1416,12 +1776,32 @@ def valoblock_scenario(ctx):
     say(vb(rcon, "debug armory E2EBot"))
     time.sleep(3)
     shot(tools, shots / "vb-03-armory.png")
-    subprocess.run([tools["xdotool"], "key", "Escape"], env=ctx["env"])
+    xdo = tools["xdotool"]
+    for i, ty in enumerate((190, 226, 262, 298, 334, 370)):  # one capture per tab, cursor on the first card
+        subprocess.run([xdo, "mousemove", "495", str(ty), "click", "1"], env=ctx["env"])
+        time.sleep(1)
+        subprocess.run([xdo, "mousemove", "545", "205", "mousemove", "550", "207"], env=ctx["env"])
+        time.sleep(1)
+        shot(tools, shots / f"vb-03-armory-tab{i}.png")
+    subprocess.run([xdo, "mousemove", "550", "207", "click", "1"], env=ctx["env"])  # buy the hovered card (owned / bought state)
+    time.sleep(1.5)
+    shot(tools, shots / "vb-03-armory-bought.png")
+    # Close the Armory only while it is still up: when the buy phase ran out during the captures the game already closed it,
+    # and Escape would open the pause menu over every later check.
+    if "Phase BUY" in vb(rcon, "status"):
+        subprocess.run([tools["xdotool"], "key", "Escape"], env=ctx["env"])
     time.sleep(1)
     valoblock_overview(ctx, rcon, 150 if ctx.get("rules") == "map=stormbreak" else 120)
     vb(rcon, "debug tp E2EBot %s 65 %s" % ((62.5, 142.5) if ctx.get("rules") == "map=stormbreak" else (50.0, 114.0)))
     time.sleep(2)
-    vb(rcon, "debug skip")  # buy -> combat
+    # buy -> combat. The Armory captures above take about as long as the buy phase (25 s): when it already ended by itself, a
+    # blind skip would skip round 1's combat instead and leave the next buy phase's Armory open over every later check.
+    if "Phase BUY" in vb(rcon, "status"):
+        vb(rcon, "debug skip")
+    t0 = time.time()
+    while "Phase COMBAT" not in vb(rcon, "status") and time.time() - t0 < 30:
+        time.sleep(1)
+    say("combat: " + vb(rcon, "status"))  # the phase change closes the Armory by itself (VbMenus.phaseChanged)
     time.sleep(8)
     if not ctx.get("rules") and "BARRIER" in vb(rcon, "debug block 60 65 106"):
         failures.append("the spawn barrier is still up in combat")
@@ -1452,7 +1832,10 @@ def valoblock_scenario(ctx):
         time.sleep(1.5)
         shot(tools, shots / f"vb-15-bot-tag-{i}.png")
     valoblock_rewind(ctx, rcon, failures)
-    valoblock_extras(ctx, rcon, ctx.get("rules", "map=hourfall").split("=", 1)[-1] or "hourfall", failures)
+    if ctx.get("only") == "items":  # --only items: the gear of the match (scope, rifle, abilities, Seed) instead of the Realm tour
+        valoblock_items(ctx, rcon, failures)
+    else:
+        valoblock_extras(ctx, rcon, ctx.get("rules", "map=hourfall").split("=", 1)[-1] or "hourfall", failures)
     time.sleep(10)
     shot(tools, shots / "vb-05-combat-later.png")
     say("where: " + vb(rcon, "debug where E2EBot"))
@@ -1516,6 +1899,90 @@ def hold_scenario(ctx):
     while not stop.exists() and time.time() < deadline:
         time.sleep(2)
     (WORK / "tour-ready").unlink(missing_ok=True)
+
+
+def vfx_scenario(ctx):
+    """The custom boss VFX and the potion-free status veils with a real client: Hell Gao on a flat floor at night, a
+    targetable unhurt bot in front of it, each ability cast with /boss cast and filmed (.e2e/vfx-videos/<ability>.mp4),
+    then each status veil laid with /boss status and shot. E2E_VFX=void_zones,laser_beam picks the abilities.
+    E2E_VFX_BOSS picks the boss (default hell_gao)."""
+    import math
+    tools, env, shots, failures = (ctx[k] for k in ("tools", "env", "shots", "failures"))
+    xdo, rcon = tools["xdotool"], Rcon()
+
+    def command(text, wait=3):
+        subprocess.run([xdo, "key", "slash"], env=env)
+        time.sleep(.5)
+        subprocess.run([xdo, "type", "--delay", "35", text], env=env)
+        subprocess.run([xdo, "key", "Return"], env=env)
+        time.sleep(wait)
+
+    def as_bot(text):
+        return rcon.command("execute as E2EBot at E2EBot run " + text)
+
+    rcon.command("op E2EBot")
+    command("menu skyblock")
+    for _ in range(150):
+        if "sb_world" in rcon.command("data get entity E2EBot Dimension"):
+            break
+        time.sleep(1)
+    else:
+        failures.append("never reached sb_world")
+        return
+    time.sleep(8)
+    pos = player_state(rcon)["pos"]
+    cx, y, cz = math.floor(pos[0]) + 8, math.floor(pos[1]), math.floor(pos[2])
+    # night shows the glow, but night spawns monsters: no spawning in this world, and every stray monster killed before a take
+    for rule in ("spawn_mobs", "spawn_monsters", "spawn_patrols", "spawn_phantoms"):
+        say(f"vfx: gamerule {rule}: " + as_bot(f"gamerule {rule} false")[:60])
+    hostiles = ",".join(f"type=!{t}" for t in ("player", "item_display", "text_display", "item", "enderman"))
+
+    def clear_monsters():
+        as_bot(f"kill @e[{hostiles},distance=..120]")
+    as_bot("time set midnight")
+    as_bot(f"fill {cx-40} {y-1} {cz-40} {cx+40} {y-1} {cz+40} deepslate_tiles")
+    for yy in range(y, y + 24):
+        as_bot(f"fill {cx-40} {yy} {cz-40} {cx+40} {yy} {cz+40} air")
+    as_bot("kill @e[type=!player,distance=..80]")
+    rcon.command("gamerule send_command_feedback false")
+    boss = os.environ.get("E2E_VFX_BOSS", "hell_gao")
+    abilities = [a for a in os.environ.get("E2E_VFX", "void_zones,lightning_strikes,laser_beam").split(",") if a]
+    out_dir = ROOT / ".e2e" / "vfx-videos"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    mob = "@e[type=!player,type=!item_display,type=!text_display,type=!item,distance=..30,sort=nearest,limit=1]"
+    subprocess.run([xdo, "key", "F1"], env=env)
+    for ability in abilities:
+        rcon.command("boss kill all")
+        clear_monsters()
+        time.sleep(1)
+        rcon.command(f"boss spawn {boss} {cx+0.5} {y} {cz+0.5} sb_world")
+        time.sleep(2)
+        as_bot(f"execute as {mob} run data merge entity @s {{NoAI:1b}}")
+        as_bot(f"tp {mob} {cx+0.5} {y} {cz+0.5} 0 0")
+        say(f"vfx: {boss} mob Silent: " + as_bot(f"data get entity {mob} Silent").strip()[-40:])
+        # the target: adventure (targetable), unhurt, 9 blocks in front of the boss, looking at it from a little above
+        rcon.command("gamemode adventure E2EBot")
+        rcon.command("effect give E2EBot minecraft:resistance infinite 255 true")
+        rcon.command("effect give E2EBot minecraft:regeneration infinite 255 true")
+        as_bot(f"tp @s {cx+0.5} {y} {cz+9.5} 180 12")
+        time.sleep(2)
+        say(f"vfx: {ability}: " + rcon.command(f"boss cast {ability}")[:120])
+        record(tools, out_dir / f"{boss}-{ability}.mp4", 7)
+        shot(tools, shots / f"vfx-{ability}-end.png")
+        say(f"vfx: {ability}: displays left after the clip: "
+            + rcon.command("execute if entity @e[type=item_display,distance=..60]")[:80])
+    rcon.command("boss kill all")
+    clear_monsters()
+    rcon.command("effect clear E2EBot")
+    rcon.command("gamemode survival E2EBot")   # the Skyblock HUD line (which carries the veils) is the survival player's
+    rcon.command("effect give E2EBot minecraft:resistance infinite 255 true")
+    subprocess.run([xdo, "key", "F1"], env=env)   # the HUD back on: the veil rides on the action bar
+    as_bot(f"tp @s {cx+0.5} {y} {cz+9.5} 180 0")
+    for status in ("blind", "frost", "decay", "burn", "lift"):
+        command(f"boss status {status} 6", 1.5)
+        time.sleep(1.5)
+        shot(tools, shots / f"veil-{status}.png")
+        command("boss status clear", 1.5)
 
 
 def dev_server():
@@ -2955,7 +3422,9 @@ def bosses_scenario(ctx):
     # boss -> plugin scale (BossSkinService.LOOKS): the model is 32 units high at most, 16 units = scale blocks
     only = [b for b in os.environ.get("E2E_BOSSES", "").split(",") if b]   # e.g. E2E_BOSSES=magma_warden
     for boss, scale in (("magma_warden", 2.4), ("frost_revenant", 3.6), ("sylvan_matriarch", 2.8),
-                        ("abyssal_leviathan", 2.8), ("crypt_lord", 2.4), ("voidwyrm", 4.2)):
+                        ("abyssal_leviathan", 2.8), ("crypt_lord", 2.4), ("voidwyrm", 4.2),
+                        ("hell_gao", 3.4), ("thunder_dragon", 3.4), ("temporal_pharaoh", 3.5),
+                        ("mire_abomination", 3.8), ("devourer", 4.4)):
         if only and boss not in only:
             continue
         rcon.command("boss kill all")
@@ -3834,6 +4303,21 @@ def realms_scenario(ctx):
     time.sleep(3)
     shot(tools, shots / "rl-0-hub-above.png")
     undo()
+    if os.environ.get("E2E_HUB_VIEWS"):  # the Hub from inside, from outside, from under, by day and by night, no HUD
+        views = [("spire", 0.5, HUB_Y + 1, 18.5, 180, -22), ("outside", 52.5, HUB_Y + 18, -40.5, 52, 12),
+                 ("keel", -40.5, HUB_Y - 26, 30.5, -128, -26), ("north-road", 0.5, HUB_Y + 3, -40.5, 0, -10)]
+        subprocess.run([xdo, "key", "F1"], env=env)
+        for when in ("day", "night"):
+            rcon.command(f"execute in minecraft:sb_hub run time set {'noon' if when == 'day' else 'midnight'}")
+            for label, vx, vy, vz, yaw, pitch in views:
+                if when == "night" and label in ("keel", "north-road"):
+                    continue
+                undo = perch("sb_hub", vx, vy, vz, yaw, pitch)
+                time.sleep(4)
+                shot(tools, shots / f"rl-0h-{label}-{when}.png")
+                undo()
+        rcon.command("execute in minecraft:sb_hub run time set noon")
+        subprocess.run([xdo, "key", "F1"], env=env)
 
     # 2. The Quai des Huit, dark then lit (the lit look is client-side blocks, resent every second near the Quai)
     typed("quai")
@@ -3851,6 +4335,25 @@ def realms_scenario(ctx):
     shot(tools, shots / "rl-1-quai-lit.png")
     subprocess.run([xdo, "key", "F1"], env=env)
     undo()
+
+    # 2a. E2E_QUAI_VIEWS=1: the Quai from where players see it (arrival, the hub, outside, under the keel, a lit Gate and
+    # its halo), by day and by night, without the HUD
+    if os.environ.get("E2E_QUAI_VIEWS"):
+        views = [("arrival", 0.5, HUB_Y + 1, 53.5, 0, -12), ("from-hub", 0.5, HUB_Y + 16, 16.5, 0, 14),
+                 ("outside", -46.5, HUB_Y + 16, 36.5, -52, 14), ("keel", 26.5, HUB_Y - 18, 96.5, 135, -24),
+                 ("gate-lit", 3.6, HUB_Y + 1, 65.1, -157.5, -32)]
+        subprocess.run([xdo, "key", "F1"], env=env)
+        for when in ("day", "night"):
+            rcon.command(f"execute in minecraft:sb_hub run time set {'noon' if when == 'day' else 'midnight'}")
+            for label, vx, vy, vz, yaw, pitch in views:
+                if when == "night" and label in ("from-hub", "keel"):
+                    continue
+                undo = perch("sb_hub", vx, vy, vz, yaw, pitch)
+                time.sleep(4)
+                shot(tools, shots / f"rl-1q-{label}-{when}.png")
+                undo()
+        rcon.command("execute in minecraft:sb_hub run time set noon")
+        subprocess.run([xdo, "key", "F1"], env=env)
 
     # 2b. A Guardian clear that wakes Gates: title and chat where the bot stands, then the Gates light one by one on its next
     # visit to the Quai (E2E_SKIP=reveal skips it). The Mycelial Queen lights five Gates; the bot is made to kill her with
@@ -3944,6 +4447,14 @@ def realms_scenario(ctx):
         time.sleep(3)
         shot(tools, shots / f"rl-3-{realm}-above.png")
         undo()
+        if os.environ.get("E2E_REALM_VIEWS"):  # the floating monument and its relic, from the landing and from afar
+            subprocess.run([xdo, "key", "F1"], env=env)
+            for label, dx, dy, dz, yaw, pitch in (("monument", 0, 0, 0, 180, -28), ("wide", 26, 18, 22, 140, -6)):
+                undo = perch(world, x + dx, y + dy, z + dz, yaw, pitch)
+                time.sleep(3)
+                shot(tools, shots / f"rl-3-{realm}-{label}.png")
+                undo()
+            subprocess.run([xdo, "key", "F1"], env=env)
 
         # The return arch (ReturnArch): two blocks behind the arrival spot, veil on the south side. Stand 3 blocks from
         # the glass facing it (yaw 0 = south), take the shot, walk into it, and expect the Quai (the hub world).
@@ -3955,6 +4466,18 @@ def realms_scenario(ctx):
                 as_bot(f"tp @s {bx + 0.5} {y} {bz + 0.5 - 1.0} 0 4")
             time.sleep(3)
             shot(tools, shots / f"rl-3-{realm}-arch.png")
+            if os.environ.get("E2E_ARCH_FAR"):  # the whole arch and the halo over it, from the far side of the landing
+                if realm == "grove":
+                    far_undo = perch(world, bx + 0.5 - 7.0, y + 1, bz + 0.5, -90, -14)
+                else:
+                    far_undo = perch(world, bx + 0.5, y + 1, bz + 0.5 - 7.0, 0, -14)
+                time.sleep(3)
+                subprocess.run([xdo, "key", "F1"], env=env)
+                shot(tools, shots / f"rl-3-{realm}-arch-far.png")
+                subprocess.run([xdo, "key", "F1"], env=env)
+                far_undo()
+                as_bot(f"tp @s {bx + 0.5 - (1.0 if realm == 'grove' else 0)} {y} {bz + 0.5 - (0 if realm == 'grove' else 1.0)} {-90 if realm == 'grove' else 0} 4")
+                time.sleep(1)
             subprocess.run([xdo, "keydown", "w"], env=env)
             time.sleep(2.5)
             subprocess.run([xdo, "keyup", "w"], env=env)
@@ -4074,6 +4597,16 @@ def realms_scenario(ctx):
             time.sleep(3)
             shot(tools, shots / "rl-4-astral-above.png")
             undo()
+            if os.environ.get("E2E_ASTRAL_VIEWS"):  # every region from where it reads best, no HUD
+                subprocess.run([xdo, "key", "F1"], env=env)
+                for label, vx, vy, vz, yaw, pitch in (("wound", 0.5, 102, 7.5, 180, -18), ("sea", 60.5, 126, -48.5, -24, 24),
+                                                      ("tree", 160.5, 142, -32.5, -47, -4), ("singularity", 252.5, 206, -38.5, -52, 6),
+                                                      ("throne", 308.5, 203, 7.5, -110, -14)):
+                    undo = perch("sb_astral", vx, vy, vz, yaw, pitch)
+                    time.sleep(10)  # a jump of a hundred blocks: let the chunks arrive
+                    shot(tools, shots / f"rl-4a-{label}.png")
+                    undo()
+                subprocess.run([xdo, "key", "F1"], env=env)
         else:
             failures.append("/astral go force did not reach sb_astral: " + dimension()[:80] + " " + tail())
             shot(tools, shots / "rl-4-astral-failed.png")
@@ -4111,6 +4644,17 @@ def realms_scenario(ctx):
             as_bot(f"tp @s {entry[0]} {entry[1] + 2} {entry[2] + 4} 180 12")  # the entry faces the arena; step back
             time.sleep(2)
             shot(tools, shots / "rl-5-bastion-guardian.png")
+            if os.environ.get("E2E_BASTION_VIEWS"):  # the arena itself (after the key check: the views take longer than the countdown)
+                bworld = _re.search(r'"minecraft:(sb_bastion_[0-9]+)', dimension())
+                if bworld:
+                    subprocess.run([xdo, "key", "F1"], env=env)
+                    for label, vx, vy, vz, yaw, pitch in (("over-entry", 0.5, 114, 34.5, 180, 24), ("outside", 52.5, 122, 52.5, 135, 18),
+                                                          ("floor", 0.5, 101, 20.5, 180, -8)):
+                        undo = perch(bworld.group(1), vx, vy, vz, yaw, pitch)
+                        time.sleep(3)
+                        shot(tools, shots / f"rl-5b-{label}.png")
+                        undo()
+                    subprocess.run([xdo, "key", "F1"], env=env)
             rcon.command("bastion admin abort all")
             time.sleep(4)
             shot(tools, shots / "rl-5-bastion-aborted.png")
@@ -4123,7 +4667,7 @@ def realms_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds", "dev", "vfx", "hubs"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -4133,7 +4677,9 @@ def main():
         return dev_server()
     global WITH_SURVIVAL, VALOBLOCK
     VALOBLOCK = args.scenario in ("valoblock", "vbhold")
-    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "sbhold")
+    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "sbhold", "vfx")
+    if args.scenario == "hubs":
+        os.environ.setdefault("E2E_SERVER_ID", "creative")  # WaitingHubs only builds on the creative server
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
@@ -4156,7 +4702,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds", "vfx", "hubs"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -4187,7 +4733,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds", "vfx", "hubs"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -4207,7 +4753,7 @@ def main():
             if needle in text:
                 failures.append(f"client log contains '{needle}'")
         ctx = dict(tools=tools, env=env, shots=shots, client_log=client_log, server=server,
-                   failures=failures, rules=args.rules)
+                   failures=failures, rules=args.rules, only=args.only)
         if args.scenario == "werewolf":
             werewolf_scenario(ctx)
         elif args.scenario == "roles":
@@ -4222,6 +4768,8 @@ def main():
             staffchat_scenario(ctx)
         elif args.scenario == "worlds":
             worlds_scenario(ctx)
+        elif args.scenario == "hubs":
+            hubs_scenario(ctx)
         elif args.scenario == "back":
             back_scenario(ctx)
         elif args.scenario == "skyblock":
@@ -4252,6 +4800,8 @@ def main():
             machines_scenario(ctx)
         elif args.scenario == "endgame":
             endgame_scenario(ctx)
+        elif args.scenario == "vfx":
+            vfx_scenario(ctx)
         elif args.scenario == "valoblock":
             valoblock_scenario(ctx)
         elif args.scenario in ("vbhold", "sbhold"):

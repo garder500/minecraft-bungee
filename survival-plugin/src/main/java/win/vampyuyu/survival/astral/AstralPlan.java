@@ -32,6 +32,10 @@ public final class AstralPlan {
         bridge(plan, px, pz, pr, 0, AstralLayout.TREE[0], AstralLayout.TREE[2], AstralLayout.TREE_BASE_RADIUS - 1);
         tree(plan);
         throne(plan);
+        spectacle(plan);
+        for (BlockPlan.Model model : models()) {
+            plan.model(model);
+        }
         for (AstralLayout.Landmark mark : AstralLayout.LANDMARKS) {
             plan.anchor("landmark:" + mark.id(), mark.x(), mark.y(), mark.z());
         }
@@ -207,7 +211,7 @@ public final class AstralPlan {
                 double d = Math.hypot(dx, dz);
                 if (d >= r + 1 && d <= 10) {
                     int h = Math.floorMod(dx * 7 + dz * 11, 5);
-                    plan.set(sx + dx, y, sz + dz, h == 0 ? Material.WHITE_CONCRETE : h < 3 ? Material.ORANGE_CONCRETE : Material.YELLOW_CONCRETE);
+                    plan.set(sx + dx, y, sz + dz, h == 0 ? Material.PEARLESCENT_FROGLIGHT : h < 3 ? Material.MAGMA_BLOCK : Material.OCHRE_FROGLIGHT);
                 }
             }
         }
@@ -242,6 +246,213 @@ public final class AstralPlan {
         plan.set(tx, y + 2, tz - 1, Material.QUARTZ_SLAB);
         plan.set(tx, y + 2, tz + 1, Material.QUARTZ_SLAB);
         plan.anchor("throne", tx, y + 1, tz);
+    }
+
+    // ---------------------------------------------------------------- spectacle (plan version 2)
+
+    private static int h(int x, int z, int salt) {
+        int n = x * 374761393 + z * 668265263 + salt * 1274126177;
+        n = (n ^ (n >>> 13)) * 1274126177;
+        return (n ^ (n >>> 16)) & 0x7fffffff;
+    }
+
+    private static void put(BlockPlan plan, int x, int y, int z, Material m) {
+        if (plan.get(x, y, z) == null) {
+            plan.set(x, y, z, m);
+        }
+    }
+
+    /**
+     * What makes the inside of the Devourer read as a place: the wound players came in through, standing behind the
+     * landing; flotsam of devoured ideas along the basin's curb and fragments drifting over the sea; veins and hanging
+     * roots on the Nervous Tree; a glowing accretion disc and a monumental Throne. Never on a walkway, a pad or a lift.
+     */
+    private static void spectacle(BlockPlan plan) {
+        riftWound(plan);
+        flotsam(plan);
+        drift(plan);
+        treeVeins(plan);
+        throneBack(plan);
+        nexusDebris(plan);
+    }
+
+    /** The tear behind the landing: an upright ellipse of obsidian, its inside hung with violet glass and amethyst. */
+    private static void riftWound(BlockPlan plan) {
+        int z = -AstralLayout.LANDING_RADIUS - 2;
+        double rx = 6.5;
+        double ry = 10;
+        double cy = 8;
+        for (int x = -9; x <= 9; x++) {
+            for (int y = -3; y <= 20; y++) {
+                double e = (x / rx) * (x / rx) + ((y - cy) / ry) * ((y - cy) / ry);
+                double eo = (x / (rx + 1.6)) * (x / (rx + 1.6)) + ((y - cy) / (ry + 1.6)) * ((y - cy) / (ry + 1.6));
+                if (eo <= 1 && e > 1) {
+                    plan.set(x, y, z, h(x, y, 61) % 3 == 0 ? Material.CRYING_OBSIDIAN : Material.OBSIDIAN);
+                    if (h(x, y, 62) % 4 == 0) {
+                        plan.set(x, y, z + 1, Material.CRYING_OBSIDIAN);
+                    }
+                } else if (e <= 1 && h(x, y, 63) % 100 < 60) {
+                    plan.set(x, y, z, h(x, y, 64) % 7 == 0 ? Material.AMETHYST_BLOCK : Material.PURPLE_STAINED_GLASS);
+                }
+            }
+        }
+    }
+
+    /** Stacks of what the Devourer swallowed along the curb, so the sea stops reading as a box. */
+    private static void flotsam(BlockPlan plan) {
+        int x0 = AstralLayout.SEA_MIN_X;
+        int x1 = AstralLayout.SEA_MAX_X;
+        int w = AstralLayout.SEA_HALF_WIDTH;
+        Material[] stuff = {Material.BOOKSHELF, Material.CHISELED_BOOKSHELF, Material.QUARTZ_PILLAR, Material.CRACKED_STONE_BRICKS,
+            Material.MOSSY_STONE_BRICKS, Material.CALCITE, Material.AMETHYST_BLOCK, Material.TINTED_GLASS};
+        java.util.List<int[]> curb = new java.util.ArrayList<>();
+        for (int x = x0; x <= x1; x++) {
+            curb.add(new int[] {x, -w});
+            curb.add(new int[] {x, w});
+        }
+        for (int z = -w; z <= w; z++) {
+            curb.add(new int[] {x0, z});
+            curb.add(new int[] {x1, z});
+        }
+        for (int[] c : curb) {
+            if (h(c[0], c[1], 65) % 3 != 0 || nearWalkway(plan, c[0], c[1])) {
+                continue;
+            }
+            int height = 1 + h(c[0], c[1], 66) % 6;
+            for (int y = 1; y <= height; y++) {
+                put(plan, c[0], y, c[1], stuff[h(c[0] + y, c[1], 67) % stuff.length]);
+            }
+            if (height >= 4 && h(c[0], c[1], 68) % 3 == 0) {
+                put(plan, c[0], height + 1, c[1], Material.SOUL_LANTERN);
+            }
+        }
+    }
+
+    private static boolean nearWalkway(BlockPlan plan, int x, int z) {
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                Material m = plan.get(x + dx, 0, z + dz);
+                if (m == Material.BLUE_STAINED_GLASS || m == Material.LIGHT_BLUE_STAINED_GLASS) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Fragments of swallowed places drifting over the sea, out of reach. */
+    private static void drift(BlockPlan plan) {
+        for (int i = 0; i < 22; i++) {
+            int x = AstralLayout.SEA_MIN_X + 8 + h(i, 1, 70) % (AstralLayout.SEA_MAX_X - AstralLayout.SEA_MIN_X - 16);
+            int z = -AstralLayout.SEA_HALF_WIDTH + 6 + h(i, 2, 71) % (2 * AstralLayout.SEA_HALF_WIDTH - 12);
+            int y = 9 + h(i, 3, 72) % 14;
+            int r = 2 + h(i, 4, 73) % 2;
+            for (int k = 0; k <= r + 1; k++) {
+                double rk = r * (1 - k / (r + 2.0));
+                int ri = (int) Math.ceil(rk);
+                for (int dx = -ri; dx <= ri; dx++) {
+                    for (int dz = -ri; dz <= ri; dz++) {
+                        if (Math.hypot(dx, dz) <= rk) {
+                            put(plan, x + dx, y - k, z + dz, k == 0 ? Material.MOSSY_STONE_BRICKS : Material.DEEPSLATE);
+                        }
+                    }
+                }
+            }
+            switch (i % 4) {
+                case 0 -> { put(plan, x, y + 1, z, Material.BOOKSHELF); put(plan, x, y + 2, z, Material.BOOKSHELF); put(plan, x, y + 3, z, Material.LANTERN); }
+                case 1 -> { put(plan, x, y + 1, z, Material.QUARTZ_PILLAR); put(plan, x, y + 2, z, Material.QUARTZ_PILLAR); put(plan, x, y + 3, z, Material.CHISELED_QUARTZ_BLOCK); }
+                case 2 -> { put(plan, x, y + 1, z, Material.AMETHYST_BLOCK); put(plan, x, y + 2, z, Material.AMETHYST_CLUSTER); }
+                default -> put(plan, x, y + 1, z, Material.SOUL_LANTERN);
+            }
+        }
+    }
+
+    /** Glowing veins up the trunk of the Nervous Tree and weeping roots under its base. */
+    private static void treeVeins(BlockPlan plan) {
+        int cx = AstralLayout.TREE[0];
+        int cz = AstralLayout.TREE[2];
+        int r = AstralLayout.TRUNK_RADIUS;
+        for (int y = 1; y < AstralLayout.CROWN_Y; y++) {
+            for (int v = 0; v < 4; v++) {
+                double a = Math.toRadians(v * 90 + y * 6);
+                int x = cx + (int) Math.round(Math.cos(a) * r);
+                int z = cz + (int) Math.round(Math.sin(a) * r);
+                if (plan.get(x, y, z) == Material.CRIMSON_HYPHAE) {
+                    plan.set(x, y, z, y % 3 == 0 ? Material.SHROOMLIGHT : Material.CRYING_OBSIDIAN);
+                }
+            }
+        }
+        int base = AstralLayout.TREE_BASE_RADIUS;
+        for (int i = 0; i < 28; i++) {
+            double a = Math.toRadians(i * 360.0 / 28);
+            int x = cx + (int) Math.round(Math.cos(a) * (base - 3));
+            int z = cz + (int) Math.round(Math.sin(a) * (base - 3));
+            int top = -4;
+            while (top > -10 && plan.get(x, top, z) != null) {
+                top--;
+            }
+            int len = 3 + h(x, z, 74) % 8;
+            for (int k = 0; k < len; k++) {
+                put(plan, x, top - k, z, k == len - 1 ? Material.WEEPING_VINES : Material.WEEPING_VINES_PLANT);
+            }
+        }
+    }
+
+    /** The Throne made monumental: a tall back of quartz banded in obsidian, two flanking spires, an amethyst crown. */
+    private static void throneBack(BlockPlan plan) {
+        int tx = AstralLayout.THRONE[0];
+        int tz = AstralLayout.THRONE[2];
+        int y = AstralLayout.THRONE[1];
+        for (int k = 5; k <= 14; k++) {
+            plan.set(tx + 1, y + k, tz, k % 4 == 0 ? Material.CHISELED_QUARTZ_BLOCK : Material.QUARTZ_PILLAR);
+        }
+        plan.set(tx + 1, y + 15, tz, Material.AMETHYST_BLOCK);
+        plan.set(tx + 1, y + 16, tz, Material.AMETHYST_CLUSTER);
+        for (int side : new int[] {-2, 2}) {
+            for (int k = 1; k <= 9; k++) {
+                plan.set(tx + 2, y + k, tz + side, k % 3 == 0 ? Material.CRYING_OBSIDIAN : Material.OBSIDIAN);
+            }
+            plan.set(tx + 2, y + 10, tz + side, Material.END_ROD);
+        }
+    }
+
+    /** Rubble the Nexus has pulled in, drifting round the singularity at a distance. */
+    private static void nexusDebris(BlockPlan plan) {
+        int sx = AstralLayout.SINGULARITY[0];
+        int sy = AstralLayout.SINGULARITY[1];
+        for (int i = 0; i < 14; i++) {
+            double a = Math.toRadians(i * 360.0 / 14 + 7);
+            double d = AstralLayout.ARC_RADIUS + 9 + h(i, 5, 75) % 8;
+            int x = sx + (int) Math.round(Math.cos(a) * d);
+            int z = (int) Math.round(Math.sin(a) * d);
+            int y = sy - 6 + h(i, 6, 76) % 18;
+            int r = 1 + h(i, 7, 77) % 2;
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dy = -r; dy <= r; dy++) {
+                    for (int dz = -r; dz <= r; dz++) {
+                        if (dx * dx + dy * dy + dz * dz <= r * r + 1) {
+                            put(plan, x + dx, y + dy, z + dz, h(dx + i, dz, 78) % 4 == 0 ? Material.CRYING_OBSIDIAN : Material.BLACKSTONE);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * The display models of the Interiority, relative to its plan origin: the accretion rings turning round the
+     * singularity, and a violet halo behind the Throne.
+     */
+    public static java.util.List<BlockPlan.Model> models() {
+        double sx = AstralLayout.SINGULARITY[0] + 0.5;
+        double sy = AstralLayout.SINGULARITY[1] + 0.5;
+        double sz = AstralLayout.SINGULARITY[2] + 0.5;
+        return java.util.List.of(
+            BlockPlan.Model.of("structure/quai_halo_lit", sx, sy, sz, 7f).tilt(90, 0, 0).spin(28, "z").color(0xFFB040),
+            BlockPlan.Model.of("structure/quai_halo_lit", sx, sy, sz, 8.5f).tilt(72, 0, 18).spin(-20, "z").color(0xFFFFFF),
+            BlockPlan.Model.of("structure/quai_halo_lit", sx, sy, sz, 10f).tilt(104, 30, 0).spin(14, "z").color(0xC27BFF),
+            BlockPlan.Model.of("structure/quai_halo_lit", AstralLayout.THRONE[0] + 1.5, AstralLayout.THRONE[1] + 9.5,
+                AstralLayout.THRONE[2] + 0.5, 3.2f).tilt(0, 90, 0).spin(10, "z").color(0xD060FF));
     }
 
     // ---------------------------------------------------------------- walkways

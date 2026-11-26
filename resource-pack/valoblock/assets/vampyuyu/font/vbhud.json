@@ -144,7 +144,30 @@
     "\uf08a": -17,
     "\uf08b": -17,
     "\uf08c": -53,
-    "\uf08d": -9
+    "\uf08d": -9,
+    "\uf08e": -161,
+    "\uf08f": -161,
+    "\uf090": -161,
+    "\uf091": -17,
+    "\uf092": -17,
+    "\uf093": -17,
+    "\uf094": -17,
+    "\uf095": -33,
+    "\uf096": -33,
+    "\uf097": -33,
+    "\uf098": -33,
+    "\uf099": -33,
+    "\uf09a": -33,
+    "\uf09b": -33,
+    "\uf09c": -33,
+    "\uf09d": -33,
+    "\uf09e": -33,
+    "\uf09f": -33,
+    "\uf0a0": -33,
+    "\uf0a1": -33,
+    "\uf0a2": -33,
+    "\uf0a3": -33,
+    "\uf0a4": -33
    }
   },
   {
@@ -1423,6 +1446,213 @@
    "height": 3,
    "chars": [
     "\ue08d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_hourfall.png",
+   "ascent": 160,
+   "height": 160,
+   "chars": [
+    "\ue08e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_rootvault.png",
+   "ascent": 160,
+   "height": 160,
+   "chars": [
+    "\ue08f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_stormbreak.png",
+   "ascent": 160,
+   "height": 160,
+   "chars": [
+    "\ue090"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_ally.png",
+   "ascent": 16,
+   "height": 16,
+   "chars": [
+    "\ue091"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_enemy.png",
+   "ascent": 16,
+   "height": 16,
+   "chars": [
+    "\ue092"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_dead.png",
+   "ascent": 16,
+   "height": 16,
+   "chars": [
+    "\ue093"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_seed.png",
+   "ascent": 16,
+   "height": 16,
+   "chars": [
+    "\ue094"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_self_0.png",
+   "ascent": 32,
+   "height": 32,
+   "chars": [
+    "\ue095"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_self_1.png",
+   "ascent": 32,
+   "height": 32,
+   "chars": [
+    "\ue096"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_self_2.png",
+   "ascent": 32,
+   "height": 32,
+   "chars": [
+    "\ue097"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_self_3.png",
+   "ascent": 32,
+   "height": 32,
+   "chars": [
+    "\ue098"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_self_4.png",
+   "ascent": 32,
+   "height": 32,
+   "chars": [
+    "\ue099"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_self_5.png",
+   "ascent": 32,
+   "height": 32,
+   "chars": [
+    "\ue09a"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_self_6.png",
+   "ascent": 32,
+   "height": 32,
+   "chars": [
+    "\ue09b"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_self_7.png",
+   "ascent": 32,
+   "height": 32,
+   "chars": [
+    "\ue09c"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_self_8.png",
+   "ascent": 32,
+   "height": 32,
+   "chars": [
+    "\ue09d"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_self_9.png",
+   "ascent": 32,
+   "height": 32,
+   "chars": [
+    "\ue09e"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_self_10.png",
+   "ascent": 32,
+   "height": 32,
+   "chars": [
+    "\ue09f"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_self_11.png",
+   "ascent": 32,
+   "height": 32,
+   "chars": [
+    "\ue0a0"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_self_12.png",
+   "ascent": 32,
+   "height": 32,
+   "chars": [
+    "\ue0a1"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_self_13.png",
+   "ascent": 32,
+   "height": 32,
+   "chars": [
+    "\ue0a2"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_self_14.png",
+   "ascent": 32,
+   "height": 32,
+   "chars": [
+    "\ue0a3"
+   ]
+  },
+  {
+   "type": "bitmap",
+   "file": "vampyuyu:font/vbhud_mm_self_15.png",
+   "ascent": 32,
+   "height": 32,
+   "chars": [
+    "\ue0a4"
    ]
   }
  ]

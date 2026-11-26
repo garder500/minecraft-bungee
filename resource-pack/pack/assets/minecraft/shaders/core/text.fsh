@@ -38,6 +38,29 @@ vec4 werewolf_fx(int id, vec2 uv) {
     if (id == 1) { // night: deep blue grade, vignette
         return vec4(mix(vec3(0.02, 0.03, 0.12), vec3(0.01, 0.01, 0.06), edge), (0.14 + 0.46 * edge) * keep);
     }
+    float d = length(uv - 0.5) * 1.6;
+    float grain = fract(sin(dot(floor(uv * vec2(64.0, 36.0)), vec2(12.9898, 78.233))) * 43758.5453);
+    if (id == 5) { // void (a boss blinded you): the world shrinks to a small hole of sight with a magenta rim
+        float dark = smoothstep(0.10, 0.34, d);
+        float rim = smoothstep(0.08, 0.13, d) * (1.0 - smoothstep(0.13, 0.22, d));
+        return vec4(mix(vec3(0.03, 0.0, 0.06), vec3(0.95, 0.25, 0.85), rim * 0.8), max(dark * 0.96, rim * 0.55));
+    }
+    if (id == 6) { // frost: crystals creep in from the edges
+        float f = smoothstep(0.45, 1.0, d + grain * 0.22);
+        return vec4(mix(vec3(0.62, 0.84, 1.0), vec3(0.95, 0.99, 1.0), grain), f * 0.78 * keep);
+    }
+    if (id == 7) { // decay, withering: a sick green-violet bloom at the edges
+        float f = smoothstep(0.35, 1.0, d + grain * 0.12);
+        return vec4(mix(vec3(0.30, 0.78, 0.22), vec3(0.32, 0.12, 0.40), grain * 0.6), f * 0.6 * keep);
+    }
+    if (id == 8) { // burn: heat climbing from the bottom edge
+        float f = smoothstep(0.40, 1.0, d + (1.0 - uv.y) * 0.35 + grain * 0.1);
+        return vec4(mix(vec3(1.0, 0.32, 0.05), vec3(1.0, 0.75, 0.25), grain), f * 0.62 * keep);
+    }
+    if (id == 9) { // warped by a boss (slowed, rooted, floating, lifted): a thin magenta ring at the rim
+        float f = smoothstep(0.62, 1.0, d) * (0.7 + 0.3 * grain);
+        return vec4(0.88, 0.22, 0.80, f * 0.5 * keep);
+    }
     float k = id == 2 ? 1.0 : 0.5; // dawn: warm wash, strong then fading
     return vec4(1.0, 0.68, 0.38, k * (0.16 + 0.2 * edge) * keep);
 }

@@ -19,7 +19,7 @@ Package `marsh/` (feature `marsh`, listed after `ashes`). Written without a Pape
 - **Module**: Recycler Module (`recycler_module`, forged from 3 Rot Resin + a Miner): speed x0.9, Flux x0.7, 15 % of cycles give
   a second copy of what was mined (`quarry.machines.module.recycler.*`).
 - **Bastion** `marsh_bastion` (palette `marsh`; the palette CHECK was already opened by the Heights migration V021) and **Guardian** `mire_abomination`
-  (Abomination Fangeuse, tier 3, 28 080 HP, three phases: poison and wither clouds, slams, acid zones, Rotlings). Key
+  (Abomination Fangeuse, an invisible 4x zombie under its own rigged model, see `boss.md`; tier 3, 28 080 HP, three phases: poison and wither clouds, slams, acid zones, Rotlings). Key
   `mire_cyst` (forged: 24 Bronzite, 4 Rot Resin, 16 slime balls, 32 rotten flesh), hard-pity component `mire_core`, resonance
   component `mire_ichor`, first clear and kill give Rot Resin like the other Guardians.
 - **Quests**: category `marsh` (`marsh_01`..`marsh_07`, `scripts/gen_quests.py`), events `marsh_enter`, `marsh_salvage`,

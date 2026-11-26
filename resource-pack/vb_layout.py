@@ -83,6 +83,9 @@ HUD_ELEMENTS = (
     # The Rift Seed (appended: the ids of the elements above keep their numbers). The icon sits right of the health plate and only
     # the carrier gets it; the planting bar (a track and a stretched fill) sits under the crosshair while the carrier holds.
     + [("seed", BL, 66, -24, 16, 16, 0), ("plant_track", CE, -26, 22, 52, 7, 0), ("plant_bar", CE, -24, 24, 48, 3, 1)]
+    # The minimap (appended, 2026-11-26): the framed plan of the map in the top-left corner, like a shooter's radar. Its markers are
+    # not elements: they carry their own position in the colour (see MM_* below).
+    + [("minimap", TL, 6, 6, 80, 80, 0)]
 )
 HUD_COUNT = len(HUD_ELEMENTS)
 BIG, SMALL = (7, 9), (4, 6)
@@ -90,7 +93,17 @@ TILE, ICON, PIP, PLATE, CROSS = (20, 24), (16, 16), (3, 2), (60, 22), (21, 21)
 SEED, PLANT_TRACK = (16, 16), (52, 7)
 HEAD = 10             # inline agent head, px
 
-# Map backgrounds the pack blanks (textures/map/<name>.png, 64 x 64): the off-hand minimap shows no paper.
+# Minimap markers (MiniMapGlyphs.java): a glyph coloured (MM_R_SMALL or MM_R_BIG, x, y) is centred on the point (x, y) / 255 of the
+# plan inside the "minimap" element (MM_INSET GUI px in from its edge), MM_SMALL or MM_BIG GUI px square. Red 86 and 87 are no named
+# chat colour (those use 0x55 = 85); the markers are sent with no text shadow. Every minimap texture is drawn at MM_TEX texels a GUI px.
+MM_R_SMALL, MM_R_BIG = 86, 87
+MM_SMALL, MM_BIG = 8, 16
+MM_INSET = 4
+MM_TEX = 2
+MM_HEADINGS = 16      # the self arrow is drawn turned to 16 headings (22.5 degrees apart), heading 0 = north (up)
+
+# Map backgrounds the pack blanks (textures/map/<name>.png, 64 x 64). The minimap is no longer a held map (it is the "minimap" HUD
+# element); the blanks stay so a map item held during a match draws no paper.
 HIDDEN_MAP_TEXTURES = ("map_background", "map_background_checkerboard")
 
 # Vanilla HUD sprites the pack hides: (path under textures/gui/sprites/, width, height)

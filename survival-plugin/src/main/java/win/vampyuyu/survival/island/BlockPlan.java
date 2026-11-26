@@ -26,11 +26,43 @@ public final class BlockPlan {
 
     public record BiomeBox(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, String biome) {}
 
+    /**
+     * A 3D pack model shown on an item display (no collision: the blocks stay the walkable shape). {@code item} is the
+     * item model id (namespace vampyuyu), the position is the model's centre (relative, may be fractional), {@code tilt}
+     * the fixed orientation (degrees around X, Y, Z, applied Y then X then Z), {@code scale} the size (1 = the model's
+     * own 16 px per block), {@code spin} degrees per second around the model's own {@code spinAxis} ("x", "y" or
+     * "z"), {@code color} the tint (-1: none), {@code key} a name for per-player visibility, {@code hidden} true when
+     * nobody sees it until shown ({@link StructureModels}).
+     */
+    public record Model(String item, double x, double y, double z, float[] tilt, float scale, float spin, String spinAxis,
+                        int color, String key, boolean hidden) {
+        public static Model of(String item, double x, double y, double z, float scale) {
+            return new Model(item, x, y, z, new float[3], scale, 0f, "y", -1, "", false);
+        }
+
+        public Model tilt(float rx, float ry, float rz) {
+            return new Model(item, x, y, z, new float[] {rx, ry, rz}, scale, spin, spinAxis, color, key, hidden);
+        }
+
+        public Model spin(float degreesPerSecond, String axis) {
+            return new Model(item, x, y, z, tilt, scale, degreesPerSecond, axis, color, key, hidden);
+        }
+
+        public Model color(int rgb) {
+            return new Model(item, x, y, z, tilt, scale, spin, spinAxis, rgb, key, hidden);
+        }
+
+        public Model key(String name, boolean hiddenByDefault) {
+            return new Model(item, x, y, z, tilt, scale, spin, spinAxis, color, name, hiddenByDefault);
+        }
+    }
+
     private final LinkedHashMap<Long, Blk> blocks = new LinkedHashMap<>();
     private final List<ChestFill> chests = new ArrayList<>();
     private final List<SignText> signs = new ArrayList<>();
     private final List<BiomeBox> biomes = new ArrayList<>();
     private final Map<String, int[]> anchors = new HashMap<>();
+    private final List<Model> models = new ArrayList<>();
     private final int cap;
 
     public BlockPlan() {
@@ -114,6 +146,12 @@ public final class BlockPlan {
         return this;
     }
 
+    /** Adds a display model (see {@link Model}); it does not count against the block cap. */
+    public BlockPlan model(Model model) {
+        models.add(model);
+        return this;
+    }
+
     public BlockPlan anchor(String name, int x, int y, int z) {
         anchors.put(name, new int[] {x, y, z});
         return this;
@@ -164,6 +202,10 @@ public final class BlockPlan {
 
     public Map<String, int[]> anchors() {
         return anchors;
+    }
+
+    public List<Model> models() {
+        return models;
     }
 
     /** Number of blocks of one material (tests). */

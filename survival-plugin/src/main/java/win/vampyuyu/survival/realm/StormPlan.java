@@ -17,7 +17,7 @@ import win.vampyuyu.survival.island.ShapeKit;
  */
 public final class StormPlan {
     /** Bump to rebuild existing worlds when the layout changes. */
-    public static final int VERSION = 2;
+    public static final int VERSION = 3; // 3: the monumental return arch
     /** World y of the landing surface. */
     public static final int ORIGIN_Y = 120;
     public static final int LANDING_RADIUS = 13;
@@ -190,6 +190,7 @@ public final class StormPlan {
             buildPad(plan, pad);
         }
         plan.anchor("spawn", SPAWN[0], SPAWN[1], SPAWN[2]);
+        win.vampyuyu.survival.island.RealmLandmarks.build(plan, Realm.ARCHIPELAGO); // the floating monument and its relic, last
         return plan;
     }
 
@@ -233,6 +234,7 @@ public final class StormPlan {
         }
         plan.set(0, 1, 0, Material.LODESTONE);
         plan.air(0, 1, 3); // the old standing sign of the landing
+        win.vampyuyu.survival.island.RealmLandmarks.landing(plan, Realm.ARCHIPELAGO, SPAWN[0], SPAWN[1], SPAWN[2]); // the arrival plaza
         ReturnArch.build(plan, Realm.ARCHIPELAGO, SPAWN[0], SPAWN[1], SPAWN[2]);
     }
 

@@ -1,0 +1,87 @@
+{
+ "textures": {
+  "0": "vampyuyu:item/boss/skin/temporal_pharaoh",
+  "particle": "vampyuyu:item/boss/skin/temporal_pharaoh"
+ },
+ "elements": [
+  {
+   "from": [
+    7.65,
+    25.6,
+    11.9
+   ],
+   "to": [
+    8.35,
+    29.6,
+    12.4
+   ],
+   "shade": false,
+   "faces": {
+    "north": {
+     "uv": [
+      9.25,
+      4.75,
+      9.3125,
+      5.25
+     ],
+     "texture": "#0"
+    },
+    "east": {
+     "uv": [
+      9.25,
+      4.75,
+      9.3125,
+      5.25
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      9.25,
+      4.75,
+      9.3125,
+      5.25
+     ],
+     "texture": "#0"
+    },
+    "west": {
+     "uv": [
+      9.25,
+      4.75,
+      9.3125,
+      5.25
+     ],
+     "texture": "#0"
+    },
+    "up": {
+     "uv": [
+      11.0,
+      6.875,
+      11.0625,
+      6.9375
+     ],
+     "texture": "#0"
+    },
+    "down": {
+     "uv": [
+      11.0,
+      6.875,
+      11.0625,
+      6.9375
+     ],
+     "texture": "#0"
+    }
+   },
+   "light_emission": 15,
+   "rotation": {
+    "angle": 100,
+    "axis": "z",
+    "origin": [
+     8.0,
+     25.6,
+     12.1
+    ]
+   }
+  }
+ ]
+}
