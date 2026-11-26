@@ -59,6 +59,7 @@ final class StormbreakTheme implements VbThemes.Theme {
     lighthouse(p, c, lighthouse);
     wreck(p, c, wreck);
     eyrie(p, c);
+    StormbreakScenery.build(p, c);
     // Storm lanterns on the island floors and a lamp over each pad, so nothing is dark in the rain.
     for (WindPads.Pad pad : WindPads.pads(p)) {
       int x = pad.col() * p.cell + p.cell / 2, z = pad.row() * p.cell + p.cell / 2;
@@ -82,10 +83,10 @@ final class StormbreakTheme implements VbThemes.Theme {
     int e = p.cell - 1, h = p.hash(x, 0, z, 9);
     String base = h == 0 ? "polished_deepslate" : h == 1 ? "tuff_bricks" : "deepslate_tiles";
     switch (ch) {
-      case 'R':
-        return (x + z) % 2 == 0 ? attack : base;
+      case 'R': // spawn rooms: a grid of team-colour lines (readable, not a checkerboard)
+        return lx == 0 || lz == 0 ? attack : (lx == 2 && lz == 2) ? "orange_glazed_terracotta" : base;
       case 'B':
-        return (x + z) % 2 == 0 ? defend : base;
+        return lx == 0 || lz == 0 ? defend : (lx == 2 && lz == 2) ? "light_blue_glazed_terracotta" : base;
       case 'A':
         {
           boolean border = (lx == 0 && !ThemeKit.is(p, col - 1, row, 'A')) || (lx == e && !ThemeKit.is(p, col + 1, row, 'A')) || (lz == 0 && !ThemeKit.is(p, col, row - 1, 'A')) || (lz == e && !ThemeKit.is(p, col, row + 1, 'A'));
@@ -131,7 +132,7 @@ final class StormbreakTheme implements VbThemes.Theme {
           for (int y = 0; y < p.wallTop(col, row); y++) c.set(x, y, z, "air");
           continue;
         }
-        for (int y = 0; y < h; y++) c.set(x, y, z, (y / 3) % 2 == 0 ? "white_concrete" : "red_concrete");
+        for (int y = 0; y < h; y++) c.set(x, y, z, (y / 3) % 2 == 0 ? "calcite" : "polished_deepslate");
         // lamp room: storm glass around a sea lantern, a copper roof
         for (int y = h; y < h + 3; y++) c.set(x, y, z, dx == mid && dz == mid ? "sea_lantern" : (dx == 0 || dx == e || dz == 0 || dz == e) ? "blue_stained_glass" : "tinted_glass");
         c.set(x, h + 3, z, "oxidized_cut_copper");

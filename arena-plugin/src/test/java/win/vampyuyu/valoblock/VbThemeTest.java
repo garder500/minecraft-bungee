@@ -37,7 +37,15 @@ public class VbThemeTest {
       Set<String> bad = new TreeSet<>();
       canvas(id).emit((x, y, z, d) -> {
         if (Material.matchMaterial(VbCanvas.material(d)) == null) bad.add(d);
-        assertTrue(id + " " + x + "," + y + "," + z, x >= -1 && x <= m.width() && z >= -1 && z <= m.depth() && y >= m.lowestY() && y <= m.highestY());
+        boolean play = x >= -1 && x <= m.width() && z >= -1 && z <= m.depth();
+        // inside the border: the clear box; beyond it (or under the floor): the scenery box, never on the border line itself
+        // (scenery may also hang high above the play: clouds, the World Tree's crown)
+        if (play && y >= -1 && y < SceneryKit.ABOVE_PLAY) assertTrue(id + " " + x + "," + y + "," + z, y <= m.highestY());
+        else {
+          int s = VbMap.SCENERY_MARGIN;
+          assertTrue(id + " scenery " + x + "," + y + "," + z, x >= -s && x < m.width() + s && z >= -s && z < m.depth() + s && y >= VbMap.SCENERY_LOW_Y && y <= VbMap.SCENERY_HIGH_Y);
+          if (y >= 0 && y < SceneryKit.ABOVE_PLAY && !d.equals("barrier")) assertTrue(id + " scenery touches the border at " + x + "," + y + "," + z, x < -2 || x > m.width() + 1 || z < -2 || z > m.depth() + 1);
+        }
         if (d.contains("leaves")) assertTrue("leaves must be persistent: " + d, d.contains("persistent=true"));
       });
       assertTrue(id + " unknown: " + bad, bad.isEmpty());
@@ -154,7 +162,7 @@ public class VbThemeTest {
       }
     }
     int sand = 0, gold = 0, banners = 0, lanterns = 0, inlay = 0;
-    for (String d : blocks(c)) {
+    for (String d : playBlocks(c, m)) {
       String mat = VbCanvas.material(d);
       if (mat.equals("SAND")) sand++;
       if (mat.equals("GOLD_BLOCK")) gold++;
@@ -202,7 +210,7 @@ public class VbThemeTest {
     for (WindPads.Pad pad : WindPads.pads(p)) assertEquals("sea_lantern", c.get(pad.col() * p.cell + 2, -1, pad.row() * p.cell + 2));
     Map<String, Integer> count = new HashMap<>();
     for (String d : blocks(c)) count.merge(VbCanvas.material(d), 1, Integer::sum);
-    for (String want : List.of("DEEPSLATE_BRICKS", "TUFF", "OXIDIZED_CUT_COPPER", "WAXED_OXIDIZED_COPPER", "TINTED_GLASS", "BLUE_STAINED_GLASS", "DARK_OAK_PLANKS", "WHITE_CONCRETE", "LIGHTNING_ROD", "WATER"))
+    for (String want : List.of("DEEPSLATE_BRICKS", "TUFF", "OXIDIZED_CUT_COPPER", "WAXED_OXIDIZED_COPPER", "TINTED_GLASS", "BLUE_STAINED_GLASS", "DARK_OAK_PLANKS", "CALCITE", "LIGHTNING_ROD", "WATER"))
       assertTrue(want, count.getOrDefault(want, 0) > 0);
     // the Lighthouse stands taller than any cliff, the Eyrie roost too
     assertTrue(c.solid(1 * p.cell + 2, 14, 4 * p.cell + 2));
@@ -214,4 +222,45 @@ public class VbThemeTest {
     c.emit((x, y, z, d) -> out.add(d));
     return out;
   }
+
+  /** The blocks inside the border (the scenery beyond it is counted apart). */
+  private static List<String> playBlocks(VbCanvas c, VbMap m) {
+    List<String> out = new ArrayList<>();
+    c.emit((x, y, z, d) -> {
+      if (x >= 0 && x < m.width() && z >= 0 && z < m.depth() && y >= -1) out.add(d);
+    });
+    return out;
+  }
+
+  @Test
+  public void everySceneryStandsBeyondTheBorderWithItsLandmarksAndModels() {
+    Map<String, Set<String>> models = Map.of(
+        "hourfall", Set.of("hourfall_hourglass", "hourfall_ring", "hourfall_scarab"),
+        "rootvault", Set.of("rootvault_heartseed", "rootvault_sporebloom"),
+        "stormbreak", Set.of("stormbreak_beam", "stormbreak_mast", "stormbreak_stormcore"));
+    for (String id : VbData.MAP_IDS) {
+      VbMap m = map(id);
+      VbCanvas c = canvas(id);
+      int[] count = new int[3];
+      c.emit((x, y, z, d) -> {
+        boolean out = x < -1 || x > m.width() || z < -1 || z > m.depth();
+        if (out) count[0]++;
+        if (y >= 20) count[1]++;
+        if (!out && y < -2) count[2]++;
+      });
+      assertTrue(id + ": scenery around the map: " + count[0], count[0] > 50_000);
+      assertTrue(id + ": landmarks rise high: " + count[1], count[1] > 2_000);
+      assertTrue(id + ": the island goes down under the map: " + count[2], count[2] > 5_000);
+      assertTrue(id + ": the whole build stays a few hundred thousand blocks: " + c.size(), c.size() < 500_000);
+      Set<String> ids = new TreeSet<>();
+      for (VbCanvas.Model md : c.models()) {
+        ids.add(md.id());
+        // set pieces hang above the high ground or stand beyond the border: never in a line of fire
+        boolean out = md.x() < -1 || md.x() > m.width() || md.z() < -1 || md.z() > m.depth();
+        assertTrue(id + " " + md.id() + " above the play", out || md.y() >= m.highY() + 8);
+      }
+      assertEquals(id, models.get(id), ids);
+    }
+  }
+
 }

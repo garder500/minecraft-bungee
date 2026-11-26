@@ -79,6 +79,7 @@ final class RootvaultTheme implements VbThemes.Theme {
     details(p, c, garden);
     // Four ladders up to the canopy (log trunks behind them).
     ThemeKit.ladders(p, c, 4, hy);
+    RootvaultScenery.build(p, c);
   }
 
   private static long key(int col, int row) {
@@ -93,10 +94,10 @@ final class RootvaultTheme implements VbThemes.Theme {
     int e = p.cell - 1, h = p.hash(x, 0, z, 10);
     String base = h == 0 ? "rooted_dirt" : h == 1 ? "podzol" : "moss_block";
     switch (ch) {
-      case 'R':
-        return (x + z) % 2 == 0 ? attack : base;
+      case 'R': // spawn rooms: a grid of team-colour lines (readable, not a checkerboard)
+        return lx == 0 || lz == 0 ? attack : (lx == 2 && lz == 2) ? "orange_glazed_terracotta" : base;
       case 'B':
-        return (x + z) % 2 == 0 ? defend : base;
+        return lx == 0 || lz == 0 ? defend : (lx == 2 && lz == 2) ? "light_blue_glazed_terracotta" : base;
       case 'A':
         {
           boolean border = (lx == 0 && !ThemeKit.is(p, col - 1, row, 'A')) || (lx == e && !ThemeKit.is(p, col + 1, row, 'A')) || (lz == 0 && !ThemeKit.is(p, col, row - 1, 'A')) || (lz == e && !ThemeKit.is(p, col, row + 1, 'A'));

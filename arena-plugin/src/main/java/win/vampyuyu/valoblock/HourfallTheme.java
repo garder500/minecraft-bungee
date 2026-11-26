@@ -61,16 +61,17 @@ final class HourfallTheme implements VbThemes.Theme {
       for (int dx = -1; dx <= 0; dx++) for (int dz = -1; dz <= 0; dz++) for (int i = 0; i < stack.length; i++) c.set(cx + dx, hy + i, cz + dz, stack[i]);
     }
     details(p, c);
+    HourfallScenery.build(p, c);
   }
 
   private static String floor(VbPlan p, char ch, int col, int row, int lx, int lz, int x, int z, String attack, String defend, String site) {
     int e = p.cell - 1;
     String base = p.hash(x, 0, z, 9) == 0 ? "cut_sandstone" : "smooth_sandstone";
     switch (ch) {
-      case 'R':
-        return (x + z) % 2 == 0 ? attack : base;
+      case 'R': // spawn rooms: a grid of team-colour lines on sandstone (readable, not a checkerboard)
+        return lx == 0 || lz == 0 ? attack : (lx == 2 && lz == 2) ? "orange_glazed_terracotta" : base;
       case 'B':
-        return (x + z) % 2 == 0 ? defend : base;
+        return lx == 0 || lz == 0 ? defend : (lx == 2 && lz == 2) ? "light_blue_glazed_terracotta" : base;
       case 'A':
         {
           boolean border = (lx == 0 && !ThemeKit.is(p, col - 1, row, 'A')) || (lx == e && !ThemeKit.is(p, col + 1, row, 'A')) || (lz == 0 && !ThemeKit.is(p, col, row - 1, 'A')) || (lz == e && !ThemeKit.is(p, col, row + 1, 'A'));
@@ -91,9 +92,8 @@ final class HourfallTheme implements VbThemes.Theme {
     for (int y = 0; y < top; y++) {
       String m;
       if (y == top - 1) m = (x + z) % 2 == 0 ? "chiseled_sandstone" : "cut_sandstone";
-      else if (y == top - 2 && ex) m = p.hash(x, y, z, 13) == 0 ? "gold_block" : "smooth_sandstone";
-      else if (y == 2 && ex && p.hash(x, y, z, 5) == 0) m = p.hash(x, 1, z, 2) == 0 ? "light_blue_terracotta" : "cyan_terracotta";
-      else if (y == 0) m = "sandstone";
+      else if (y == top - 2 && ex) m = Math.floorMod(x + z, 16) == 0 ? "gold_block" : Math.floorMod(x + z, 4) == 0 ? "cyan_terracotta" : "smooth_sandstone"; // a frieze
+      else if (y == 0) m = "cut_sandstone"; // base course
       else m = p.hash(x, y, z, 17) == 0 ? "sandstone" : "cut_sandstone";
       c.set(x, y, z, m);
     }

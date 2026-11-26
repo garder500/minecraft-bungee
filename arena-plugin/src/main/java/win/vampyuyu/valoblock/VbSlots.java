@@ -42,10 +42,11 @@ public final class VbSlots {
     return new int[] {w, d};
   }
 
-  /** The volume of a slot: x from the slot origin, z from 0, y around the floor level; covers every map and its border. */
-  public static Box box(int slot, int spacing, int feetY, int width, int depth, int lowestY, int highestY) {
-    int ox = slot * spacing;
-    return new Box(ox - MARGIN, feetY + lowestY - MARGIN, -MARGIN, ox + width + MARGIN, feetY + highestY + MARGIN, depth + MARGIN);
+  /** The volume of a slot: x from the slot origin, z from 0, y around the floor level; covers every map, its border and its scenery. */
+  public static Box box(int slot, int spacing, int feetY, int width, int depth) {
+    int ox = slot * spacing, s = VbMap.SCENERY_MARGIN + MARGIN;
+    int low = Math.min(VbMap.SCENERY_LOW_Y, -5), high = VbMap.SCENERY_HIGH_Y;
+    return new Box(ox - s, feetY + low - MARGIN, -s, ox + width + s, feetY + high + MARGIN, depth + s);
   }
 
   /** Whether two slots' boxes are disjoint (the wipe of one never eats another's map). */

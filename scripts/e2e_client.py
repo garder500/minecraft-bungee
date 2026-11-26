@@ -9,6 +9,8 @@ or a missing glyph, and it checks on screenshots that the night effect really da
 Everything lives in the gitignored .e2e/ folder; nothing of the real stack is touched. Needs: java 25
 (JAVA25), Prism Launcher with an installed 26.3 instance (PRISM_DIR, PRISM_INSTANCE), Xvfb, and
 xdotool and ImageMagick (found on PATH or built through nix). EULA=TRUE must be set in .env.
+E2E_VIEW=<chunks> raises the server view distance and the client render distance (default 4): far views of a
+map or its scenery stay empty at 4 (slower client).
 """
 import argparse, shlex, hashlib, http.server, json, os, pathlib, re, shutil, socket, struct, subprocess, sys
 import threading, time, urllib.request, uuid
@@ -168,7 +170,7 @@ def start_server(zip_path, sha1, plugin=False, pack_required=True):
     (server / "server.properties").write_text("\n".join([
         "online-mode=false", "white-list=false", "enforce-whitelist=false", "gamemode=creative", "force-gamemode=true", "level-type=minecraft:flat",
         "generate-structures=false",
-        'generator-settings={"biome":"minecraft:plains","layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}]}', "spawn-monsters=false", "spawn-protection=0", "view-distance=4",
+        'generator-settings={"biome":"minecraft:plains","layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}]}', "spawn-monsters=false", "spawn-protection=0", "view-distance=" + os.environ.get("E2E_VIEW", "4"),
         f"server-port={MC_PORT}", "enable-rcon=true", f"rcon.port={RCON_PORT}",
         f"rcon.password={RCON_PASSWORD}", "enforce-secure-profile=false",
         *([] if plugin else [
@@ -257,7 +259,7 @@ def prepare_client(tools):
     game.mkdir()
     (game / "options.txt").write_text("\n".join([
         "lang:" + os.environ.get("E2E_LANG", "en_us"), "onboardAccessibility:false", "tutorialStep:none", "joinedFirstServer:true",
-        "fullscreen:false", "maxFps:30", "renderDistance:4", "pauseOnLostFocus:false",
+        "fullscreen:false", "maxFps:30", "renderDistance:" + os.environ.get("E2E_VIEW", "4"), "pauseOnLostFocus:false",
         "skipMultiplayerWarning:true", "narrator:0", "hideServerAddress:true", ""]))
     return data, game
 

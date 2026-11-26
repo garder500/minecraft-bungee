@@ -32,6 +32,8 @@ def outputs(path):
         return [(PACK / f"models/item/{stem}_3d.json", None)]   # reported missing
     if family == "werewolf":
         return [(PACK / f"models/item/werewolf/{model_id}.json", model_id) for model_id, _ in werewolf_models.outputs(bbmodel.Source(path))]
+    if family == "valoblock":   # ValoBlock map set pieces, in the second pack (valoblock_structures.py)
+        return [(ROOT / f"resource-pack/valoblock/assets/vampyuyu/models/item/valoblock/map/{stem}.json", False)]
     if family == "bosses":
         return [(PACK / f"models/item/boss/skin/{stem}.json", False)]
     if family == "fx":   # boss VFX primitives (fx_models.py), recoloured through their tint
@@ -56,7 +58,7 @@ def main():
             errors += bbmodel.problems(f"{path.parent.name}/{label}", elements, src.tex)
         for out, mirror in outputs(path):
             if not out.exists():
-                errors.append(f"{src.name}: {out.relative_to(PACK)} missing (run the converter)")
+                errors.append(f"{src.name}: {out.relative_to(ROOT)} missing (run the converter)")
                 continue
             if path.parent.name == "werewolf":   # a werewolf decor model, by its id
                 want = dict(werewolf_models.outputs(src))[mirror]
@@ -67,7 +69,7 @@ def main():
             else:
                 want = src.java(mirror_x=bool(mirror))
             if json.loads(out.read_text())["elements"] != want:
-                errors.append(f"{src.name}: {out.relative_to(PACK)} is not the conversion of its source (run the converter)")
+                errors.append(f"{src.name}: {out.relative_to(ROOT)} is not the conversion of its source (run the converter)")
     # rigged bosses (Generic Model format): a model per bone equal to the bone's cubes, the baked rig in the plugin's jar
     for path in sorted((bbmodel.ROOT / "bosses").glob("*.bbmodel")):
         src = bbmodel.Source(path)

@@ -34,6 +34,9 @@ public final class VbMapService implements MapService {
     final VbMap map;
     volatile VbMatch match;
     final List<ItemDisplay> orbs = new ArrayList<>();
+    /** The set pieces of the build (item-display models), spawned once the blocks stand, removed with them. Server thread. */
+    final List<ItemDisplay> models = new ArrayList<>();
+    org.bukkit.scheduler.BukkitTask spin;
     volatile boolean barriersUp;
     /** Everything the themed build placed (set by {@link #build}); clearing sets the same blocks to air. */
     volatile VbCanvas canvas;
@@ -88,8 +91,7 @@ public final class VbMapService implements MapService {
   /** The volume a slot can touch: the largest map footprint, the build height range and a margin. */
   VbSlots.Box slotBox(int slot) {
     int[] f = VbSlots.footprint(VbData.maps().values());
-    VbMap any = VbData.maps().values().iterator().next();
-    return VbSlots.box(slot, SPACING, FEET_Y, f[0], f[1], any.lowestY(), any.highestY());
+    return VbSlots.box(slot, SPACING, FEET_Y, f[0], f[1]);
   }
 
   private boolean matchRunning() {
@@ -284,11 +286,11 @@ public final class VbMapService implements MapService {
     return f;
   }
 
-  /** Every chunk a map covers (one past each edge), the same set the tickets hold. */
+  /** Every chunk a map covers with its scenery (one past each edge), the same set the tickets hold. */
   private void forEachChunk(Instance in, java.util.function.BiConsumer<Integer, Integer> each) {
-    int ox = in.ox();
-    for (int cx = Math.floorDiv(ox - 1, 16); cx <= Math.floorDiv(ox + in.map.width() + 1, 16); cx++)
-      for (int cz = Math.floorDiv(-1, 16); cz <= Math.floorDiv(in.map.depth() + 1, 16); cz++) each.accept(cx, cz);
+    int ox = in.ox(), s = VbMap.SCENERY_MARGIN + 1;
+    for (int cx = Math.floorDiv(ox - s, 16); cx <= Math.floorDiv(ox + in.map.width() + s, 16); cx++)
+      for (int cz = Math.floorDiv(-s, 16); cz <= Math.floorDiv(in.map.depth() + s, 16); cz++) each.accept(cx, cz);
   }
 
   /**
@@ -336,6 +338,7 @@ public final class VbMapService implements MapService {
           }
           if (next >= todo.size()) {
             cancel();
+            spawnModels(w, in, canvas);
             done.complete(null);
           }
         } catch (Throwable t) {
@@ -373,13 +376,103 @@ public final class VbMapService implements MapService {
     });
   }
 
-  /** Sets every block the build placed to air (and the buy-phase barriers). */
-  private void erase(Instance in, World w) {
+  /** Seconds between two steps of a spinning set piece: each step interpolates over the whole interval, so the turn is smooth. */
+  private static final int SPIN_TICKS = 40;
+
+  /** Spawns the set pieces of the build (server thread, once the blocks stand) and the task that turns the spinning ones. */
+  private void spawnModels(World w, Instance in, VbCanvas canvas) {
+    removeModels(in);
+    if (in.released) return;
+    List<VbCanvas.Model> list = canvas.models();
+    if (list.isEmpty()) return;
+    int ox = in.ox();
+    for (VbCanvas.Model m : list) {
+      Location at = new Location(w, ox + m.x(), FEET_Y + m.y(), m.z());
+      ItemStack item = new ItemStack(Material.PAPER);
+      var meta = item.getItemMeta();
+      meta.setItemModel(new NamespacedKey("vampyuyu", "valoblock/map/" + m.id()));
+      item.setItemMeta(meta);
+      in.models.add(w.spawn(at, ItemDisplay.class, d -> {
+        d.setPersistent(false);
+        d.addScoreboardTag(VbSlotWiper.TAG);
+        d.setItemStack(item);
+        d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+        d.setViewRange(4f); // seen from the far side of the map
+        d.setBrightness(new org.bukkit.entity.Display.Brightness(15, 15)); // painted light: never in the shade of its own entity
+        d.setTransformation(modelPose(m, 0));
+      }));
+    }
+    in.spin = new org.bukkit.scheduler.BukkitRunnable() {
+      long step;
+
+      @Override
+      public void run() {
+        step++;
+        for (int i = 0; i < in.models.size() && i < list.size(); i++) {
+          VbCanvas.Model m = list.get(i);
+          ItemDisplay d = in.models.get(i);
+          if (m.spin() == 0 || !d.isValid()) continue;
+          d.setInterpolationDelay(0);
+          d.setInterpolationDuration(SPIN_TICKS);
+          d.setTransformation(modelPose(m, step));
+        }
+      }
+    }.runTaskTimer(plugin, SPIN_TICKS, SPIN_TICKS);
+  }
+
+  /** Pose of a set piece after {@code step} spin steps: its yaw plus the spin, its scale. */
+  static org.bukkit.util.Transformation modelPose(VbCanvas.Model m, long step) {
+    float deg = m.yaw() + m.spin() * (SPIN_TICKS / 20f) * step;
+    var rot = new org.joml.Quaternionf().rotateY((float) Math.toRadians(-deg));
+    return new org.bukkit.util.Transformation(new org.joml.Vector3f(), rot, new org.joml.Vector3f(m.scale(), m.scale(), m.scale()), new org.joml.Quaternionf());
+  }
+
+  private void removeModels(Instance in) {
+    if (in.spin != null) in.spin.cancel();
+    in.spin = null;
+    for (ItemDisplay d : in.models) if (d.isValid()) d.remove();
+    in.models.clear();
+  }
+
+  /**
+   * Sets every block the build placed to air (and the buy-phase barriers), {@link #BLOCKS_PER_TICK} a tick like the build: with its
+   * scenery a map is a few hundred thousand blocks, too many for one tick. Completes on the server thread.
+   */
+  private CompletableFuture<Void> erase(Instance in, World w) {
+    removeModels(in);
     int ox = in.ox();
     VbCanvas canvas = in.canvas;
     org.bukkit.block.data.BlockData air = Material.AIR.createBlockData();
-    if (canvas != null) canvas.emit((x, y, z, d) -> w.getBlockAt(ox + x, FEET_Y + y, z).setBlockData(air, false));
     in.map.barrierBlocks((x, y, z, k) -> w.getBlockAt(ox + x, FEET_Y + y, z).setBlockData(air, false));
+    CompletableFuture<Void> done = new CompletableFuture<>();
+    if (canvas == null) {
+      done.complete(null);
+      return done;
+    }
+    List<int[]> todo = new ArrayList<>(canvas.size());
+    canvas.emit((x, y, z, d) -> todo.add(new int[] {x, y, z}));
+    new org.bukkit.scheduler.BukkitRunnable() {
+      int next;
+
+      @Override
+      public void run() {
+        try {
+          int end = Math.min(todo.size(), next + BLOCKS_PER_TICK);
+          for (; next < end; next++) {
+            int[] b = todo.get(next);
+            w.getBlockAt(ox + b[0], FEET_Y + b[1], b[2]).setBlockData(air, false);
+          }
+          if (next >= todo.size()) {
+            cancel();
+            done.complete(null);
+          }
+        } catch (Throwable t) {
+          cancel();
+          done.completeExceptionally(t);
+        }
+      }
+    }.runTaskTimer(plugin, 0, 1);
+    return done;
   }
 
   private void clear(Instance in) {
@@ -395,12 +488,14 @@ public final class VbMapService implements MapService {
     // After the build (it may still be waiting for the wipe): the slot is free again only once its blocks are gone.
     whenReady(in, () -> {
       realm.stopNow(in); // gates open, effects off: the Realm rules never outlive the match
-      erase(in, w);
-      tickets(in, false);
-      markDirty(in.slot, false);
-      synchronized (this) {
-        used.clear(in.slot);
-      }
+      erase(in, w).whenComplete((v, e) -> {
+        if (e != null) plugin.getLogger().warning("ValoBlock: clearing slot " + in.slot + " failed (" + e + "); it stays marked dirty");
+        tickets(in, false);
+        if (e == null) markDirty(in.slot, false);
+        synchronized (this) {
+          used.clear(in.slot); // a dirty slot is wiped whole before its next build anyway
+        }
+      });
     });
   }
 
@@ -597,25 +692,23 @@ public final class VbMapService implements MapService {
     VbMap map = VbData.maps().get(mapId);
     if (map == null) throw new IllegalArgumentException("Unknown map " + mapId);
     Instance old = instances.remove("preview");
-    if (old != null) {
-      in_clear(old);
-    }
+    CompletableFuture<Void> gone = old != null ? in_clear(old) : CompletableFuture.completedFuture(null);
     Instance in = new Instance("preview", PREVIEW_SLOT, map);
     instances.put("preview", in);
     markDirty(PREVIEW_SLOT, true);
-    return buildAsync(in).thenApply(v -> {
+    // the old preview is erased first: its erase must not eat the new build
+    return gone.exceptionally(e -> null).thenCompose(v -> buildAsync(in)).thenApply(v -> {
       in.ready.complete(null);
       double[] at = map.spawn(VbSide.SEEDBEARERS, 0, in.ox(), FEET_Y, 0);
       return new Location(world(), at[0], at[1], at[2], 180f, 0f);
     });
   }
 
-  private void in_clear(Instance in) {
+  private CompletableFuture<Void> in_clear(Instance in) {
     World w = world();
-    if (w == null) return;
-    erase(in, w);
-    tickets(in, false);
-    markDirty(in.slot, false);
+    if (w == null) return CompletableFuture.completedFuture(null);
+    in.released = true;
+    return erase(in, w).thenRun(() -> tickets(in, false));
   }
 
   /** The preview's map and where a player stands in it (relative coordinates), or null when not in the preview. */
@@ -636,6 +729,7 @@ public final class VbMapService implements MapService {
     for (Instance in : instances.values()) {
       markDirty(in.slot, true); // stopped with the map standing: the next start wipes it
       clearOrbs(in);
+      removeModels(in);
       tickets(in, false);
     }
   }

@@ -1,7 +1,9 @@
 package win.vampyuyu.valoblock;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,6 +18,23 @@ public final class VbCanvas {
   }
 
   private final Map<Long, String> blocks = new HashMap<>();
+  private final List<Model> models = new ArrayList<>();
+
+  /**
+   * A set piece blocks cannot make: an item-display model of the ValoBlock pack ({@code vampyuyu:valoblock/map/<id>}), centred
+   * at (x, y, z) relative to the map origin, turned {@code yaw} degrees about Y, scaled, and spinning {@code spin} degrees a
+   * second about Y (0: still). Scenery only: no collision, and shots only test blocks and players.
+   */
+  public record Model(String id, double x, double y, double z, float yaw, float scale, float spin) {}
+
+  public void model(String id, double x, double y, double z, float yaw, float scale, float spin) {
+    models.add(new Model(id, x, y, z, yaw, scale, spin));
+  }
+
+  /** The set pieces, in the order the builder added them. */
+  public List<Model> models() {
+    return List.copyOf(models);
+  }
 
   private static long key(int x, int y, int z) {
     return ((long) (x + 4096) << 42) | ((long) (y + 1024) << 21) | (z + 4096);
