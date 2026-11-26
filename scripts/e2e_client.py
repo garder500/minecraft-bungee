@@ -1786,12 +1786,22 @@ def valoblock_scenario(ctx):
     subprocess.run([xdo, "mousemove", "550", "207", "click", "1"], env=ctx["env"])  # buy the hovered card (owned / bought state)
     time.sleep(1.5)
     shot(tools, shots / "vb-03-armory-bought.png")
-    subprocess.run([tools["xdotool"], "key", "Escape"], env=ctx["env"])
+    # Close the Armory only while it is still up: when the buy phase ran out during the captures the game already closed it,
+    # and Escape would open the pause menu over every later check.
+    if "Phase BUY" in vb(rcon, "status"):
+        subprocess.run([tools["xdotool"], "key", "Escape"], env=ctx["env"])
     time.sleep(1)
     valoblock_overview(ctx, rcon, 150 if ctx.get("rules") == "map=stormbreak" else 120)
     vb(rcon, "debug tp E2EBot %s 65 %s" % ((62.5, 142.5) if ctx.get("rules") == "map=stormbreak" else (50.0, 114.0)))
     time.sleep(2)
-    vb(rcon, "debug skip")  # buy -> combat
+    # buy -> combat. The Armory captures above take about as long as the buy phase (25 s): when it already ended by itself, a
+    # blind skip would skip round 1's combat instead and leave the next buy phase's Armory open over every later check.
+    if "Phase BUY" in vb(rcon, "status"):
+        vb(rcon, "debug skip")
+    t0 = time.time()
+    while "Phase COMBAT" not in vb(rcon, "status") and time.time() - t0 < 30:
+        time.sleep(1)
+    say("combat: " + vb(rcon, "status"))  # the phase change closes the Armory by itself (VbMenus.phaseChanged)
     time.sleep(8)
     if not ctx.get("rules") and "BARRIER" in vb(rcon, "debug block 60 65 106"):
         failures.append("the spawn barrier is still up in combat")
