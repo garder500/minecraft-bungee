@@ -87,7 +87,14 @@ what they read, the next platform uses the new decor.
 
 Every game builds a flying platform in `ww_sky` (`werewolf/sky/`, decor in
 `src/main/resources/werewolf/decor/default.json`, `DecorConfig.java`). `village.width` (0 disables) adds a
-ring of grass, cottages, trees and lamp posts around it; the block cap is `maxBlocks` (18000).
+hamlet around it (half-timbered houses, a belfry, a mill, an old oak, lit windows, lamp posts); `underside.shell`
+makes the keel a hollow shell; the block cap is `maxBlocks` (18000; about 13 700 at 45 players). Nothing solid stands
+inside the seat ring (tested). Placements carry block states (stairs facing, `lit`, `hanging`...); fences and walls
+are connected by the generator. Display models (red moon, mill sails, belfry bell and vane) come from
+`resource-pack/art/blockbench/werewolf/` via `art/werewolf_models.py`, spawned by `sky/DecorModels.java` (not
+persistent, chunk held by a plugin ticket, removed with the platform). `/ww debug decor <players>|clear` builds a
+platform with no game to look at; `E2E_WW_VIEWS=1|only E2E_WW_VIEWS_PLAYERS=4,12,45` films it in the werewolf
+scenario (a player in a game cannot be teleported), `E2E_WW_ROLE=WEREWOLF` keeps the human awake at night.
 
 ## Paper 26.x notes
 

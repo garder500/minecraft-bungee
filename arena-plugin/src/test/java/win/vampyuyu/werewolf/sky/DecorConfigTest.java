@@ -42,9 +42,10 @@ public class DecorConfigTest {
     int n = 12;
     var layout = PlatformLayout.of(n);
     var blocks = DecorConfig.loadDefault().generate(n);
-    long campfires = blocks.stream().filter(b -> b.material() == Material.CAMPFIRE).count();
-    assertEquals(1, campfires);
-    var fire = blocks.stream().filter(b -> b.material() == Material.CAMPFIRE).findFirst().orElseThrow();
+    // One campfire on the floor, in the middle; the others smoke on top of the chimneys.
+    var floorFires = blocks.stream().filter(b -> b.material() == Material.CAMPFIRE && b.dy() <= 2).toList();
+    assertEquals(1, floorFires.size());
+    var fire = floorFires.get(0);
     assertEquals(0, fire.dx());
     assertEquals(1, fire.dy());
     assertEquals(0, fire.dz());
@@ -54,12 +55,14 @@ public class DecorConfigTest {
     // One bench log behind every seat.
     long logs = blocks.stream().filter(b -> b.material() == Material.SPRUCE_LOG || b.material() == Material.STRIPPED_SPRUCE_LOG).count();
     assertEquals(n, logs);
-    // The underside tapers: it never reaches past the platform radius plus half the village ring (16 wide).
+    // The keel tapers under the whole island: it never reaches past the village rim (16 wide).
     for (var b : blocks.stream().filter(b -> b.dy() < 0).toList())
-      assertTrue(Math.hypot(b.dx(), b.dz()) <= layout.platformRadius() + 8);
-    // The village: cottages (oak planks, dark oak roofs) and trees stand around the platform.
-    assertTrue(blocks.stream().anyMatch(b -> b.material() == Material.DARK_OAK_PLANKS));
-    assertTrue(blocks.stream().anyMatch(b -> b.material() == Material.OAK_LEAVES));
+      assertTrue(Math.hypot(b.dx(), b.dz()) <= layout.platformRadius() + 16);
+    // The hamlet: half-timbered houses (plaster, slate stair roofs, lit windows) and trees around the platform.
+    assertTrue(blocks.stream().anyMatch(b -> b.material() == Material.DEEPSLATE_TILE_STAIRS && b.state().startsWith("facing=")));
+    assertTrue(blocks.stream().anyMatch(b -> b.material() == Material.CALCITE));
+    assertTrue(blocks.stream().anyMatch(b -> b.material() == Material.REDSTONE_LAMP && "lit=true".equals(b.state())));
+    assertTrue(blocks.stream().anyMatch(b -> b.material() == Material.OAK_LEAVES && "persistent=true".equals(b.state())));
     // No seat stands inside a block: the cell above the floor at each seat is free.
     Set<String> solid = new HashSet<>();
     for (var b : blocks) if (b.dy() >= 1) solid.add(b.dx() + "," + b.dz());
@@ -80,6 +83,78 @@ public class DecorConfigTest {
               .count();
       assertEquals("one bench per seat for " + n, n, logs);
     }
+  }
+
+  @Test
+  public void nothingStandsBetweenTheSeats() {
+    // Inside the seat ring only the floor and the campfire: a vote across the fire is never hidden.
+    DecorConfig decor = DecorConfig.loadDefault();
+    for (int n : new int[] {4, 12, 45}) {
+      double ring = PlatformLayout.of(n).ringRadius();
+      for (var b : decor.generate(n))
+        if (b.dy() >= 1 && Math.hypot(b.dx(), b.dz()) < ring + 0.5)
+          assertTrue(n + " players: " + b, b.dx() == 0 && b.dz() == 0 && b.material() == Material.CAMPFIRE);
+    }
+  }
+
+  @Test
+  public void blockStatesAreWellFormed() {
+    // MockBukkit does not know every property (lantern hanging...), so only the shape is checked here;
+    // the real server places a block whose state it refuses without the state, and logs it once.
+    for (int n : new int[] {4, 12, 45})
+      for (var b : DecorConfig.loadDefault().generate(n))
+        if (b.state() != null) assertTrue(b.toString(), b.state().matches("[a-z_]+=[a-z0-9_]+(,[a-z_]+=[a-z0-9_]+)*"));
+  }
+
+  @Test
+  public void landmarksAndModels() {
+    DecorConfig decor = DecorConfig.loadDefault();
+    var items = decor.models(12).stream().map(DecorConfig.Model::item).toList();
+    assertEquals(List.of("moon", "belfry_crown_bell", "belfry_crown_vane", "mill_sails"), items);
+    // The belfry's spire is the highest block; the island hangs deep under it.
+    var blocks = decor.generate(12);
+    assertTrue(blocks.stream().mapToInt(DecorConfig.Placement::dy).max().orElse(0) >= DecorConfig.BELFRY_TIP);
+    assertTrue(blocks.stream().mapToInt(DecorConfig.Placement::dy).min().orElse(0) <= -15);
+    // Models can be turned off, and an old override without the new keys still parses (no models, solid underside).
+    assertTrue(DecorConfig.parse(MINIMAL).models(12).isEmpty());
+  }
+
+  @Test
+  public void theKeelHasFangsRootsAndChains() {
+    for (int n : new int[] {4, 12, 45}) {
+      var blocks = DecorConfig.loadDefault().generate(n);
+      assertTrue(n + " fangs", blocks.stream().filter(b -> b.material() == Material.POINTED_DRIPSTONE).count() >= 4);
+      assertTrue(n + " roots", blocks.stream().filter(b -> b.material() == Material.HANGING_ROOTS).count() >= 10);
+      assertTrue(n + " chains", blocks.stream().anyMatch(b -> b.material() == Material.IRON_CHAIN));
+      // Every fang tip hangs under a block (it is attached to the keel).
+      Set<String> cells = new HashSet<>();
+      for (var b : blocks) cells.add(b.dx() + "," + b.dy() + "," + b.dz());
+      for (var b : blocks)
+        if (b.material() == Material.POINTED_DRIPSTONE) assertTrue(cells.contains(b.dx() + "," + (b.dy() + 1) + "," + b.dz()));
+    }
+  }
+
+  @Test
+  public void theFirstShippedDecorStillParses() {
+    // A production override may still be the first default.json: it parses, fits the cap, and gets the landmarks.
+    String old =
+        "{\"version\":1,\"maxBlocks\":18000,\"floor\":{\"inner\":\"spruce_planks\",\"outer\":\"stone_bricks\",\"innerMargin\":2.5},"
+            + "\"campfire\":{\"block\":\"campfire\"},\"bench\":{\"blocks\":[\"stripped_spruce_log\",\"spruce_log\"]},"
+            + "\"railing\":{\"block\":\"spruce_fence\"},\"lanterns\":{\"block\":\"lantern\",\"everySeats\":2},"
+            + "\"underside\":{\"blocks\":[\"stone\",\"andesite\",\"cobblestone\",\"mossy_cobblestone\",\"tuff\"],"
+            + "\"depthFactor\":0.6,\"minDepth\":4,\"maxDepth\":14},\"village\":{\"width\":16}}";
+    DecorConfig decor = DecorConfig.parse(old);
+    for (int n = PlatformLayout.MIN_PLAYERS; n <= PlatformLayout.MAX_PLAYERS; n++)
+      assertTrue(decor.generate(n).size() <= decor.maxBlocks());
+    assertEquals(4, decor.models(12).size());
+  }
+
+  @Test
+  public void blockBudget() {
+    DecorConfig decor = DecorConfig.loadDefault();
+    StringBuilder sizes = new StringBuilder();
+    for (int n : new int[] {4, 8, 12, 20, 30, 45}) sizes.append(n).append(':').append(decor.generate(n).size()).append(' ');
+    System.out.println("decor blocks per table size: " + sizes);
   }
 
   @Test

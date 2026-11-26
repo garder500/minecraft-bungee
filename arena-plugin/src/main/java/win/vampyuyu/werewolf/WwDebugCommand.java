@@ -26,7 +26,7 @@ final class WwDebugCommand {
   /** The test commands that used to live at /ww top level; WwCommand still runs them. */
   static final List<String> MOVED = List.of("practice", "force", "act", "click", "peek", "phase");
 
-  static final List<String> SUBS = List.of("help", "hud", "ambience", "sky", "practice", "force", "act", "click", "peek", "phase");
+  static final List<String> SUBS = List.of("help", "hud", "ambience", "sky", "decor", "practice", "force", "act", "click", "peek", "phase");
   static final List<String> SIZES = List.of("auto", "large", "medium", "small");
   static final int SHOW_SECONDS = 10, CYCLE_SECONDS = 4;
   private static final long PERIOD_TICKS = 5; // 4 refreshes a second
@@ -69,6 +69,7 @@ final class WwDebugCommand {
       case "hud" -> hud(sender, args);
       case "ambience" -> ambience(sender, args);
       case "sky" -> sky(sender, args);
+      case "decor" -> decor(sender, args);
       case "practice", "force", "act", "click", "peek", "phase" -> {
         String[] old = Arrays.copyOfRange(args, 1, args.length); // the old /ww <cmd> argument list
         switch (sub) {
@@ -92,6 +93,7 @@ final class WwDebugCommand {
             "/ww debug hud size auto|large|medium|small [player]   preview a size mode (keep one with /ww hud <size>)",
             "/ww debug ambience <phase> [player]   the resolved ambience entry, and its sting",
             "/ww debug sky <players>   the platform layout numbers for that many players",
+            "/ww debug decor <players>|clear   build a showcase platform (no game) to look at the decor",
             "/ww debug practice <bots> [player] · force <player|botN> <role>|clear · phase skip",
             "/ww debug act <player|botN> select|aim <target> | use <ability> · click <player> <target|ability:name> · peek",
             "The old /ww practice, force, act, click, peek and phase spellings still work."))
@@ -234,6 +236,48 @@ final class WwDebugCommand {
     say(sender, skySummary(Integer.parseInt(args[2])));
   }
 
+  /** A late answer (the build is asynchronous): to the sender, and to the log, where an RCON caller can read it. */
+  private void sayAndLog(CommandSender to, String text) {
+    say(to, text);
+    plugin.getLogger().info(text);
+  }
+
+  /** The showcase platform of /ww debug decor, or null. */
+  private volatile win.vampyuyu.werewolf.sky.PlatformHandle showcase;
+
+  /** Builds (or clears) a platform with no game on it, to look at the decor from anywhere in the sky world. */
+  private void decor(CommandSender sender, String[] args) {
+    if (args.length < 3 || !(args[2].equalsIgnoreCase("clear") || args[2].matches("\\d{1,3}")))
+      throw new IllegalArgumentException("Usage: /ww debug decor <players " + PlatformLayout.MIN_PLAYERS + "-" + PlatformLayout.MAX_PLAYERS + ">|clear");
+    var stage = plugin.werewolf.stage;
+    var old = showcase;
+    showcase = null;
+    var cleared = old == null ? java.util.concurrent.CompletableFuture.<Void>completedFuture(null) : stage.close(old);
+    if (args[2].equalsIgnoreCase("clear")) {
+      cleared.whenComplete((v, e) -> say(sender, e == null ? "Showcase platform cleared" : "Clear failed: " + e.getMessage()));
+      return;
+    }
+    int players = Integer.parseInt(args[2]);
+    String problem = stage.problem(players);
+    if (problem != null) throw new IllegalArgumentException(problem);
+    cleared
+        .thenCompose(v -> stage.open(players, h -> showcase = h))
+        .whenComplete(
+            (h, e) ->
+                sayAndLog(
+                    sender,
+                    e != null
+                        ? "Showcase build failed: " + e.getMessage()
+                        : String.format(
+                            Locale.ROOT,
+                            "Showcase platform for %d players built: centre %d %d %d in %s",
+                            players,
+                            h.slot().centreX(),
+                            win.vampyuyu.werewolf.sky.SkySlot.PLATFORM_Y,
+                            h.slot().centreZ(),
+                            win.vampyuyu.werewolf.sky.SkyWorld.NAME)));
+  }
+
   /** The layout numbers of a platform for that many players (pure, tested). */
   static String skySummary(int players) {
     PlatformLayout l = PlatformLayout.of(players);
@@ -272,6 +316,7 @@ final class WwDebugCommand {
     }
     if (sub.equals("ambience")) return args.length == 3 ? ambiencePhases() : args.length == 4 ? onlinePlayers() : List.of();
     if (sub.equals("sky")) return args.length == 3 ? List.of("4", "8", "12", "20", "30", "45") : List.of();
+    if (sub.equals("decor")) return args.length == 3 ? List.of("clear", "4", "12", "20", "45") : List.of();
     if (sub.equals("force") && args.length == 4) return WwCommand.roleNames();
     if (sub.equals("phase") && args.length == 3) return List.of("skip");
     if (sub.equals("act") && args.length == 4) return List.of("select", "aim", "use");

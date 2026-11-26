@@ -133,3 +133,7 @@ utility/rain_totem
 utility/satchel
 utility/skyhook
 utility/void_net
+werewolf/belfry_crown_bell
+werewolf/belfry_crown_vane
+werewolf/mill_sails
+werewolf/moon

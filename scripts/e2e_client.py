@@ -996,6 +996,49 @@ def tooltip_scenario(ctx):
         failures.append("stored enchantment of the book missing")
 
 
+# Camera spots around a sky platform centre: dx, dy, dz, yaw, pitch (dy from the platform floor).
+PLATFORM_VIEWS = [("wide", -38, 24, 38, 225, 24), ("far", 0, 10, 62, 180, 6), ("low", 0, 3, 27, 180, 2),
+                  ("under", 30, -22, 30, 135, -18), ("high", 0, 48, 1, 180, 90),
+                  # eye level from a seat on the +z side, across the fire (a seated player's eye is about 1.6 up)
+                  ("seat", 0, 2.1, 3, 180, -8), ("seat-back", 0, 2.1, -3, 0, -8),
+                  # the display models: the moon over the belfry, the belfry's bell and vane, the mill's sails
+                  ("moon", 0, 6, 6, 180, -32), ("belfry", 0, 18, 2, 180, -6), ("mill", 0, 8, 0, 60, -2)]
+
+
+def platform_views(rcon, tools, shots, players=12, prefix="view"):
+    """E2E_WW_VIEWS=1: /ww debug decor builds a platform with no game on it, the player looks at it from around, at
+    noon and at midnight, then it is cleared. A player in a game cannot be teleported (the arena cancels it)."""
+    out = rcon.command(f"ww debug decor {players}")
+    for _ in range(30):
+        log = (WORK / "server" / "logs" / "latest.log").read_text(errors="replace")
+        found = re.findall(rf"Showcase platform for {players} players built: centre (-?\d+) (-?\d+) (-?\d+)", log)
+        if found:
+            break
+        time.sleep(1)
+    else:
+        say(f"decor showcase did not build: {out!r}")
+        return
+    cx, cy, cz = (int(v) + 0.5 for v in found[-1])
+    state = player_state(rcon)
+    mode = {"0": "survival", "1": "creative", "2": "adventure", "3": "spectator"}.get(state["mode"], "creative")
+    rcon.command("gamemode spectator E2EBot")
+    time.sleep(2)
+    say(f"decor models around the {players}-player platform: "
+        + rcon.command("execute in minecraft:ww_sky if entity @e[tag=ww_decor_model]").strip())
+    for kind, clock in (("day", "noon"), ("night", "midnight")):
+        rcon.command(f"execute in minecraft:ww_sky run time set {clock}")
+        for name, dx, dy, dz, yaw, pitch in PLATFORM_VIEWS:
+            rcon.command(f"execute in minecraft:ww_sky run tp E2EBot {cx + dx} {cy - 0.5 + dy} {cz + dz} {yaw} {pitch}")
+            time.sleep(3)
+            shot(tools, shots / f"{prefix}-{kind}-{name}.png")
+    rcon.command("ww debug decor clear")
+    x0, y0, z0 = state["pos"]
+    rcon.command(f"execute in minecraft:overworld run tp E2EBot {x0} {y0} {z0}")
+    rcon.command(f"gamemode {mode} E2EBot")
+    rcon.command("time set noon")
+    time.sleep(3)
+
+
 def werewolf_scenario(ctx):
     """A whole practice game (human idle, seven bots) driven through the plugin's private API."""
     tools, shots, client_log, failures, server = (ctx[k] for k in
@@ -1023,6 +1066,15 @@ def werewolf_scenario(ctx):
     time.sleep(2)
     shot(tools, shots / "ww-00-lobby.png")
     base = brightness(tools, shots / "ww-00-lobby.png")
+    if os.environ.get("E2E_WW_ROLE"):  # e.g. WEREWOLF: the human is awake at night, so the night shots show the decor
+        say(rcon.command(f"ww debug force E2EBot {os.environ['E2E_WW_ROLE']}").strip())
+    if os.environ.get("E2E_WW_VIEWS"):
+        # E2E_WW_VIEWS_PLAYERS=4,12,45: one set of views per table size (view-<n>-day-wide.png...); default 12.
+        sizes = os.environ.get("E2E_WW_VIEWS_PLAYERS", "12").split(",")
+        for n in sizes:
+            platform_views(rcon, tools, shots, int(n), "view" if len(sizes) == 1 else f"view-{n}")
+        if os.environ.get("E2E_WW_VIEWS") == "only":  # just the decor, no game
+            return
     rcon.command("tp E2EBot 12.5 -60 12.5")
     time.sleep(1)
     before = player_state(rcon)
@@ -1043,6 +1095,7 @@ def werewolf_scenario(ctx):
             shot(tools, shots / name)
             dark.setdefault(phase, []).append(brightness(tools, shots / name))
             say(f"phase {phase}: brightness {dark[phase][-1]:.3f}")
+            # E2E_WW_VIEWS=1: aerial views of the sky platform and its village, once by day and once by night.
         if phase in ("FINISHED", "WAITING") and len(seen) > 1:
             break
         time.sleep(2)

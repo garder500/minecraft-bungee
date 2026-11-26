@@ -12,6 +12,7 @@ PACK = ROOT / "resource-pack/pack/assets/vampyuyu"
 sys.path.insert(0, str(ART))
 import bbmodel  # noqa: E402
 import block_models  # noqa: E402
+import werewolf_models  # noqa: E402
 
 # family -> (source stem -> [(pack model path, mirror_x)])
 def outputs(path):
@@ -29,6 +30,8 @@ def outputs(path):
         if stem.endswith("_bow"):
             return [(PACK / f"models/item/tool/{stem}_{n}.json", n) for n in range(4)]
         return [(PACK / f"models/item/{stem}_3d.json", None)]   # reported missing
+    if family == "werewolf":
+        return [(PACK / f"models/item/werewolf/{model_id}.json", model_id) for model_id, _ in werewolf_models.outputs(bbmodel.Source(path))]
     if family == "bosses":
         return [(PACK / f"models/item/boss/skin/{stem}.json", False)]
     if family == "fx":   # boss VFX primitives (fx_models.py), recoloured through their tint
@@ -55,7 +58,9 @@ def main():
             if not out.exists():
                 errors.append(f"{src.name}: {out.relative_to(PACK)} missing (run the converter)")
                 continue
-            if isinstance(mirror, str):      # a cable model, by its label
+            if path.parent.name == "werewolf":   # a werewolf decor model, by its id
+                want = dict(werewolf_models.outputs(src))[mirror]
+            elif isinstance(mirror, str):      # a cable model, by its label
                 want = dict(block_models.cable_states(src))[mirror]
             elif isinstance(mirror, int) and not isinstance(mirror, bool):   # a bow stage
                 want = bbmodel.states(src)[mirror][1]
