@@ -95,6 +95,145 @@ RELOAD = display((-1.0, 1.5, -9.0), (0, 90, 28), tp_r=(0, 90, 110))
 INSPECT = display((-3.0, 3.0, -9.0), (12, 35, -8), tp_r=(0, 90, 100))
 
 
+# ------------------------------------------------------------------ the two-handed hold (2026-11-26)
+# Every gun but the knife and the spyglass sniper is a charged CROSSBOW (WeaponItems.carried): the client then poses a player or a
+# bot holding it with both arms raised forward (the CROSSBOW_HOLD arm pose, the only two-armed pose a vanilla item can ask for). Two
+# side effects are undone here so the gun keeps the place it was tuned for:
+#   first person  a charged crossbow in the main hand is moved 0.641864 block toward the middle and turned 10 degrees about y before
+#                 its display transform (FirstPersonHandsAndItemsRenderer, client 26.3): crossbow_fp() applies the inverse;
+#   third person  the arm points forward (x rotation -90 + 5.7 degrees) instead of hanging at -18: crossbow_tp() turns the gun back
+#                 by the difference, in the hand's frame, levels it (TP_LEVEL) and moves it so the grip stays in the fist.
+# Matrices are 3 x 3 row lists; rotations follow the game: a display "rotation" is rotationXYZ (Rx . Ry . Rz), a model part ZYX.
+
+
+def _mul(a, b):
+    return [[sum(a[i][k] * b[k][j] for k in range(3)) for j in range(3)] for i in range(3)]
+
+
+def _apply(m, v):
+    return [sum(m[i][k] * v[k] for k in range(3)) for i in range(3)]
+
+
+def _t(m):
+    return [[m[j][i] for j in range(3)] for i in range(3)]
+
+
+def _rx(deg):
+    c, s = math.cos(math.radians(deg)), math.sin(math.radians(deg))
+    return [[1, 0, 0], [0, c, -s], [0, s, c]]
+
+
+def _ry(deg):
+    c, s = math.cos(math.radians(deg)), math.sin(math.radians(deg))
+    return [[c, 0, s], [0, 1, 0], [-s, 0, c]]
+
+
+def _rz(deg):
+    c, s = math.cos(math.radians(deg)), math.sin(math.radians(deg))
+    return [[c, -s, 0], [s, c, 0], [0, 0, 1]]
+
+
+def _xyz(r):
+    return _mul(_mul(_rx(r[0]), _ry(r[1])), _rz(r[2]))
+
+
+def _euler_xyz(m):
+    """(x, y, z) degrees with Rx(x) . Ry(y) . Rz(z) = m."""
+    y = math.degrees(math.asin(max(-1.0, min(1.0, m[0][2]))))
+    if abs(m[0][2]) < 0.99999:
+        x = math.degrees(math.atan2(-m[1][2], m[2][2]))
+        z = math.degrees(math.atan2(-m[0][1], m[0][0]))
+    else:  # gimbal lock: put it all on x
+        x, z = math.degrees(math.atan2(m[2][1], m[1][1])), 0.0
+    return [round(x, 2), round(y, 2), round(z, 2)]
+
+
+FP_SHIFT, FP_TURN = 0.641864 * 16, 10.0          # the charged-crossbow nudge, in display units and degrees (right hand)
+ARM_ITEM, ARM_HOLD = math.degrees(-math.pi / 10), math.degrees(-math.pi / 2 + 0.1)   # the arm's x rotation: ITEM, CROSSBOW_HOLD
+HAND_FRAME = _mul(_rx(-90), _ry(180))            # ItemInHandLayer: after the arm, before the display transform
+# The arm-pitch undo alone left the muzzle about 35 degrees high: the hip pose it preserves was a low carry, not level. Measured on
+# a row of mannequins holding the same rifle turned -90..+60 degrees about the hand's x axis (real client, 2026-11-26): -35 is level.
+TP_LEVEL = -35.0
+
+
+def crossbow_fp(entry):
+    """A firstperson_righthand entry for a charged crossbow that lands where `entry` landed for a plain item.
+    The game does T(-shift, 0, 0) . Ry(turn) . T(t) . R(r): so t' = Ry(-turn)(t + shift x), R' = Ry(-turn) . R."""
+    t = list(entry.get("translation", [0, 0, 0]))
+    r = entry.get("rotation", [0, 0, 0])
+    back = _ry(-FP_TURN)
+    t2 = _apply(back, [t[0] + FP_SHIFT, t[1], t[2]])
+    out = dict(entry)
+    out["translation"] = [round(v, 3) for v in t2]
+    out["rotation"] = _euler_xyz(_mul(back, _xyz(r)))
+    return out
+
+
+def crossbow_tp(entry, grip):
+    """A thirdperson_righthand entry for the CROSSBOW_HOLD arm: the same orientation in the world as `entry` on the ITEM arm (the
+    raised arm's pitch is undone in the hand frame), the translation moved so the grip point (model units) stays in the fist."""
+    r = entry.get("rotation", [0, 0, 0])
+    t = list(entry.get("translation", [0, 0, 0]))
+    s = entry.get("scale", [1, 1, 1])[0]
+    undo = _mul(_mul(_t(HAND_FRAME), _mul(_rx(-ARM_HOLD), _rx(ARM_ITEM))), HAND_FRAME)
+    r1, r2 = _xyz(r), _mul(_rx(TP_LEVEL), _mul(undo, _xyz(r)))
+    g = [(grip[i] - 8) * s for i in range(3)]
+    a, b = _apply(r1, g), _apply(r2, g)
+    out = dict(entry)
+    out["rotation"] = _euler_xyz(r2)
+    out["translation"] = [round(max(-80, min(80, t[i] + a[i] - b[i])), 3) for i in range(3)]
+    return out
+
+
+def two_handed(d, grip):
+    """A display block (both hands) for a gun held as a charged crossbow."""
+    out = dict(d)
+    out["firstperson_righthand"] = crossbow_fp(d["firstperson_righthand"])
+    out["thirdperson_righthand"] = crossbow_tp(d["thirdperson_righthand"], grip)
+    for k in [k for k in out if "lefthand" in k]:
+        del out[k]
+    return mirror(out)
+
+
+# ------------------------------------------------------------------ the reload animation (2026-11-26)
+# The plugin shows reload_0 .. reload_5 one after the other over the reload time (GunVisual.reloadFrame). Each frame is
+# (tilt, magazine, hand, jolt, side): tilt 0 = the hip pose, 1 = the reload pose (blended); magazine = the factor of the "mag" group's
+# offset; hand = how far the support hand follows the magazine (first person); jolt = degrees the muzzle kicks (the slap).
+RELOAD_FRAMES = {
+    "magazine": [(0.55, 0.0, 0.0, 0, 0), (1.0, 1.0, 0.0, 0, -1.5), (1.0, 2.2, 0.0, 0, -5.0), (1.0, 1.2, 1.0, 0, -3.5), (1.0, 0.0, 0.0, -6, 0),
+                 (0.45, 0.0, 0.0, 0, 0)],
+    "pump": [(0.4, 0.0, 0.0, 0, 0), (0.8, 1.0, 1.0, 0, 0), (0.8, 0.0, 0.0, -5, 0), (0.8, 1.0, 1.0, 0, 0), (0.8, 0.0, 0.0, -5, 0), (0.35, 0.0, 0.0, 0, 0)],
+    "cylinder": [(0.55, 0.0, 0.0, 0, 0), (1.0, 1.0, 0.0, 0, 0), (1.0, 1.0, 0.6, 3, 0), (1.0, 1.0, 0.6, 0, 0), (1.0, 0.0, 0.0, -6, 0), (0.45, 0.0, 0.0, 0, 0)],
+}
+# (the fifth number: how far, in model units, the magazine also moves to the gun's left, the side the camera sees)
+RELOAD_KIND = {"scrapper": "pump", "gravebell": "cylinder"}
+RELOAD_FRAME_COUNT = 6   # = GunVisual.RELOAD_FRAMES
+RELOAD_ROLL = {"magazine": -24.0, "cylinder": -16.0}   # degrees the gun turns about the line of sight while the magazine is out
+
+
+def _lerp(a, b, t):
+    return [round(a[i] + (b[i] - a[i]) * t, 3) for i in range(3)]
+
+
+def reload_frame(tilt, jolt, roll=0.0):
+    """The display block of a reload frame: HIP blended toward RELOAD by `tilt`, the muzzle kicked by `jolt` degrees, rolled `roll`
+    degrees about the line of sight (first person only)."""
+    out = {}
+    for k, hip in HIP.items():
+        rel = RELOAD.get(k, hip)
+        e = dict(hip)
+        for key in ("translation", "rotation"):
+            if key in hip or key in rel:
+                e[key] = _lerp(hip.get(key, [0, 0, 0]), rel.get(key, [0, 0, 0]), tilt)
+        if jolt and ("firstperson" in k or "thirdperson" in k):
+            e["rotation"] = [e["rotation"][0], e["rotation"][1], e["rotation"][2] + (jolt if "right" in k else -jolt)]
+        if roll and k == "firstperson_righthand":   # turned about the line of sight: the magazine well faces the support hand
+            e["rotation"] = _euler_xyz(_mul(_rz(roll), _xyz(e["rotation"])))
+            e["translation"] = [round(e["translation"][0] - 0.06 * abs(roll), 3), round(e["translation"][1] + 0.05 * abs(roll), 3), e["translation"][2]]
+        out[k] = e
+    return mirror({k: v for k, v in out.items() if "lefthand" not in k})
+
+
 def with_kick(d):
     """The recoil turn: the muzzle rises about 6 degrees (z rotation is the pitch of a +x model in hand)."""
     out = {}
@@ -109,19 +248,28 @@ def with_kick(d):
 
 
 
-def definition(name):
+def definition(name, hands=False, frames=False):
+    """gui: the flat sprite; first person (with hands): the *_hands_* twins; anything else: the states by custom_model_data."""
     ref = lambda m: {"type": "minecraft:model", "model": f"vampyuyu:item/valoblock/{m}"}  # noqa: E731
-    return {"model": {
-        "type": "minecraft:select", "property": "minecraft:display_context",
-        "cases": [{"when": "gui", "model": ref(name)}],
-        "fallback": {
+
+    def states(prefix):
+        return {
             "type": "minecraft:select", "property": "minecraft:custom_model_data", "index": 0,
-            "cases": [{"when": "fire", "model": ref(f"{name}_fire")},
-                      {"when": "reload", "model": ref(f"{name}_reload")},
-                      {"when": "inspect", "model": ref(f"{name}_inspect")},
-                      {"when": "aim", "model": ref(f"{name}_aim")},
+            "cases": [{"when": "fire", "model": ref(f"{prefix}_fire")},
+                      {"when": "reload", "model": ref(f"{prefix}_reload")},
+                      *[{"when": f"reload_{k}", "model": ref(f"{prefix}_reload_{k}")} for k in range(RELOAD_FRAME_COUNT if frames else 0)],
+                      {"when": "inspect", "model": ref(f"{prefix}_inspect")},
+                      {"when": "aim", "model": ref(f"{prefix}_aim")},
                       {"when": "scope", "model": {"type": "minecraft:empty"}}],  # scoped sniper: nothing in view
-            "fallback": ref(f"{name}_3d")}}}
+            "fallback": ref(f"{prefix}_hip" if prefix.endswith("_hands") else f"{prefix}_3d")}
+
+    cases = [{"when": "gui", "model": ref(name)}]
+    if hands:
+        cases.append({"when": ["firstperson_righthand", "firstperson_lefthand"], "model": states(f"{name}_hands")})
+    # hand_animation_on_swap false: every shot changes the stack (the rounds are its count, the look its custom_model_data) and the
+    # client would lower and raise the gun each time (FirstPersonHandsAndItems: a count change is a swap unless the model opts out).
+    return {"model": {"type": "minecraft:select", "property": "minecraft:display_context", "cases": cases, "fallback": states(name)},
+            "hand_animation_on_swap": False}
 
 
 def dump(path, data):
@@ -202,8 +350,13 @@ class Source:
                 out["xyz".index(k[1])] = float(v)
         return out
 
-    def java(self, state="base"):
-        """The element list of one state, in Java model form (uv in 0..16)."""
+    def mag_move(self):
+        """The (dx, dy, dz) of the "mag" group (0, 0, 0 without one)."""
+        return next((self.move(tag) for tag, _ in self.elements if tag.startswith("mag")), [0.0, 0.0, 0.0])
+
+    def java(self, state="base", mag=1.0, side=0.0):
+        """The element list of one state, in Java model form (uv in 0..16). In the reload state the "mag" group is moved by its
+        offset times `mag` (0 = in place, 1 = the offset of the group name, 3 = dropped well clear)."""
         su, sv = 16 / self.res[0], 16 / self.res[1]
         out = []
         for tag, el in self.elements:
@@ -211,7 +364,8 @@ class Source:
                 continue
             d = [0.0, 0.0, 0.0]
             if state == "reload" and tag.startswith("mag"):
-                d = self.move(tag)
+                d = [v * mag for v in self.move(tag)]
+                d[2] += side
             if state == "fire":
                 d[0] += KICK
             j = {"from": [round(el["from"][i] + d[i], 3) for i in range(3)],
@@ -303,26 +457,171 @@ def turn(x, y, deg, o):
     return o[0] + dx * math.cos(r) - dy * math.sin(r), o[1] + dx * math.sin(r) + dy * math.cos(r)
 
 
-def model_json(elements, disp, name):
+def model_json(elements, disp, name, hands=None):
     tex = f"vampyuyu:item/valoblock/{name}_3d"
-    return {"textures": {"0": tex, "particle": tex}, "gui_light": "front", "display": disp, "elements": elements}
+    textures = {"0": tex, "particle": tex}
+    if hands:
+        textures["1"] = HANDS_TEXTURE
+    return {"textures": textures, "gui_light": "front", "display": disp, "elements": elements + (hands or [])}
 
 
-def write_weapon(w):
+# ------------------------------------------------------------------ first-person hands
+# The game draws no arm next to a held item, so the gloved hands are part of the first-person models: resource-pack/art/valoblock_bb/
+# fp_hands.bbmodel (edit it in Blockbench) holds three groups, each built round its group pivot in the gun's frame (+x to the muzzle,
+# +y up, +z the gun's right): "right" (the firing hand round a vertical pistol grip), "left" (the support hand under a handguard) and
+# "left_pistol" (the support hand cupping the firing hand). Each gun puts them on its own parts, found by name in its .bbmodel:
+# the firing hand on "grip" (turned with it), the support hand under the first fore part (or round a "vertical grip", or cupping
+# the firing hand on a pistol). Shown only in first person: the item definition picks the *_hands_* models for firstperson_*.
+HANDS_SOURCE = SOURCES / "fp_hands.bbmodel"
+HANDS_TEXTURE = "vampyuyu:item/valoblock/fp_hands"
+GRIP_PARTS = ("grip", "grip frame")
+FORE_PARTS = ("handguard", "lower handguard", "fore end", "forend", "pump")
+PISTOLS = ("pip", "tickhand", "gravebell")
+EPS = 0.013
+HAND_SCALE = 1.3                              # the gloves are drawn 1.3 x the size they are modelled at, round their pivot
+FORE_AT = {"grinder": (16.6, 7.25, 8.0)}      # the LMG has no fore part: the hand goes under the barrels, behind the first clamp
+
+
+class Hands:
+    def __init__(self, path=HANDS_SOURCE):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        self.res = data["resolution"]["width"], data["resolution"]["height"]
+        self.png = base64.b64decode(data["textures"][0]["source"].split(",", 1)[1])
+        by_uuid = {e["uuid"]: e for e in data["elements"]}
+        meta = {g["uuid"]: g for g in data.get("groups", [])}
+        self.parts = {}
+        for node in data["outliner"]:
+            g = meta.get(node["uuid"], node)
+            self.parts[g["name"]] = (g["origin"], [by_uuid[c] for c in node.get("children", []) if isinstance(c, str)])
+
+    def place(self, group, at, angle=0.0, mirror_z=False, k=HAND_SCALE):
+        """The group's boxes scaled k about its pivot (a gloved hand reads bigger than a bare one), moved from the pivot to `at`
+        (model units) and turned `angle` degrees about z there."""
+        pivot, els = self.parts[group]
+        su, sv = 16 / self.res[0], 16 / self.res[1]
+        out = []
+        for el in els:
+            rot = el.get("rotation", [0, 0, 0])
+            if rot[0] or (rot[1] and rot[2]):
+                raise ValueError(f"fp_hands {group}/{el['name']}: turn about z (follows the grip) or y (a forearm), not both, not x")
+            frm = [(el["from"][i] - pivot[i]) * k for i in range(3)]
+            to = [(el["to"][i] - pivot[i]) * k for i in range(3)]
+            o = [(el.get("origin", pivot)[i] - pivot[i]) * k for i in range(3)]
+            a, yaw = rot[2], rot[1]
+            if mirror_z:
+                frm[2], to[2], o[2] = -to[2], -frm[2], -o[2]
+                a, yaw = a, -yaw
+            # a point p of the box ends at  at + Rz(angle) . (o + Rz(a) . (p - o)):  a box about O = at + Rz(angle) . o, turned angle + a
+            c, s_ = math.cos(math.radians(angle)), math.sin(math.radians(angle))
+            big_o = [at[0] + c * o[0] - s_ * o[1], at[1] + s_ * o[0] + c * o[1], at[2] + o[2]]
+            # every glove box is pulled in by EPS so none of its faces lies in the plane of a gun face (they would flicker)
+            j = {"from": [round(big_o[i] + frm[i] - o[i] + EPS, 3) for i in range(3)], "to": [round(big_o[i] + to[i] - o[i] - EPS, 3) for i in range(3)],
+                 "shade": False, "faces": {}}
+            if yaw:   # a forearm swung out about y: it keeps its own axis (one axis per element), only its pivot follows the grip
+                j["rotation"] = {"angle": round(yaw, 3), "axis": "y", "origin": [round(v, 3) for v in big_o]}
+            elif angle + a:
+                j["rotation"] = {"angle": round(angle + a, 3), "axis": "z", "origin": [round(v, 3) for v in big_o]}
+            for f, face in el["faces"].items():
+                if face.get("texture") is None:
+                    continue
+                if mirror_z and f in ("north", "south"):
+                    f = "south" if f == "north" else "north"
+                u0, v0, u1, v1 = face["uv"]
+                j["faces"][f] = {"uv": [round(u0 * su, 4), round(v0 * sv, 4), round(u1 * su, 4), round(v1 * sv, 4)], "texture": "#1"}
+            out.append(j)
+        return out
+
+    def on(self, src, follow=(0.0, 0.0, 0.0)):
+        """Both hands placed on one gun (a Source), or [] for a weapon held one-handed (the knife). `follow` moves the support hand
+        (model units): in the reload frames it carries the magazine."""
+        if src.name == "shard_knife":
+            return []
+        named = {}
+        for _, el in src.elements:
+            named.setdefault(el["name"], el)
+        grip = next((named[n] for n in GRIP_PARTS if n in named), None)
+        if grip is None:
+            raise ValueError(f"{src.name}: no grip part for the firing hand")
+        g_at, g_angle = part_centre(grip), grip.get("rotation", [0, 0, 0])[2]
+        out = self.place("right", g_at, g_angle)
+        f = list(follow)
+
+        def moved(at):
+            return [at[i] + f[i] for i in range(3)]
+
+        if src.name in PISTOLS:
+            return out + self.place("left_pistol", moved(g_at), g_angle)
+        if "vertical grip" in named:       # a fist round the vertical grip: the firing hand's shape, mirrored to the left
+            v = named["vertical grip"]
+            return out + self.place("right", moved(part_centre(v)), v.get("rotation", [0, 0, 0])[2], mirror_z=True)
+        if src.name in FORE_AT:
+            return out + self.place("left", moved(FORE_AT[src.name]))
+        fore = next((named[n] for n in FORE_PARTS if n in named), None)
+        if fore is None:
+            raise ValueError(f"{src.name}: no fore part for the support hand (add one to FORE_AT)")
+        return out + self.place("left", moved([(fore["from"][0] + fore["to"][0]) / 2, fore["from"][1], (fore["from"][2] + fore["to"][2]) / 2]))
+
+
+def part_centre(el):
+    """The middle of a box after its own z rotation."""
+    c = [(el["from"][i] + el["to"][i]) / 2 for i in range(3)]
+    rot = el.get("rotation", [0, 0, 0])[2]
+    x, y = turn(c[0], c[1], rot, el.get("origin", [8, 8, 8]))
+    return [x, y, c[2]]
+
+
+HANDS_LIFT = (-1.0, 2.5, -1.0)   # first person with hands: the gun a little higher, nearer the middle and further out, so both gloves show
+
+
+def lifted(d):
+    """A display block with the first-person translation moved by HANDS_LIFT (before the crossbow compensation)."""
+    out = dict(d)
+    e = dict(d["firstperson_righthand"])
+    e["translation"] = [round(e["translation"][i] + HANDS_LIFT[i], 3) for i in range(3)]
+    out["firstperson_righthand"] = e
+    return mirror({k: v for k, v in out.items() if "lefthand" not in k})
+
+
+def held_two_handed(w):
+    """Whether the plugin hands this weapon out as a charged crossbow (weapons.json "base"): it is posed with both arms."""
+    return w.get("base", "STICK").upper() == "CROSSBOW"
+
+
+def write_weapon(w, hands=None):
     name = w["id"]
     src = Source(SOURCES / f"{name}.bbmodel")
     d = PACK / "models/item/valoblock"
     base = src.java()
-    dump(d / f"{name}_3d.json", model_json(base, HIP, name))
-    dump(d / f"{name}_aim.json", model_json(base, AIM, name))
-    dump(d / f"{name}_inspect.json", model_json(base, INSPECT, name))
+    two = held_two_handed(w)
+    grip = None
+    if two:
+        named = {el["name"]: el for _, el in reversed(src.elements)}
+        grip = part_centre(next(named[n] for n in GRIP_PARTS if n in named))
+
+    def disp(x):
+        return two_handed(x, grip) if two else x
+
+    states = {"3d": (base, HIP), "aim": (base, AIM), "inspect": (base, INSPECT)}
     if w["texture"] == "knife":   # no reload, no flash: the states fall back to the held model
-        for state in ("fire", "reload"):
-            dump(d / f"{name}_{state}.json", model_json(base, HIP, name))
+        states.update({"fire": (base, HIP), "reload": (base, HIP)})
     else:
-        dump(d / f"{name}_fire.json", model_json(src.java("fire"), with_kick(HIP), name))
-        dump(d / f"{name}_reload.json", model_json(src.java("reload"), RELOAD, name))
-    dump(PACK / "items/valoblock" / f"{name}.json", definition(name))
+        states.update({"fire": (src.java("fire"), with_kick(HIP)), "reload": (src.java("reload"), RELOAD)})
+    on = hands.on(src) if hands and two else []
+    for state, (els, dsp) in states.items():
+        dump(d / f"{name}_{state}.json", model_json(els, disp(dsp), name))
+        if on:   # the first-person twin with the gloved hands, <id>_hands_<hip|aim|inspect|fire|reload> (not *_3d: that is a gun)
+            held = dsp if state == "aim" else lifted(dsp)   # the aiming pose keeps the sights under the crosshair
+            dump(d / f"{name}_hands_{'hip' if state == '3d' else state}.json", model_json(els, disp(held), name, on))
+    if w["texture"] != "knife":   # the reload animation: reload_0 .. reload_5
+        frames = RELOAD_FRAMES[RELOAD_KIND.get(name, "magazine")]
+        move = src.mag_move()
+        for k, (tilt, mag, hand, jolt, side) in enumerate(frames):
+            els, dsp = src.java("reload", mag, side), reload_frame(tilt, jolt, RELOAD_ROLL.get(RELOAD_KIND.get(name, "magazine"), 0) * (tilt >= 1.0))
+            dump(d / f"{name}_reload_{k}.json", model_json(els, disp(dsp), name))
+            if on:
+                follow = [move[0] * hand, move[1] * hand, move[2] * hand + side * (1 if hand else 0)]
+                dump(d / f"{name}_hands_reload_{k}.json", model_json(els, disp(lifted(dsp)), name, hands.on(src, follow)))
+    dump(PACK / "items/valoblock" / f"{name}.json", definition(name, bool(on), w["texture"] != "knife"))
     tex = PACK / "textures/item/valoblock"
     tex.mkdir(parents=True, exist_ok=True)
     (tex / f"{name}_3d.png").write_bytes(src.png)
@@ -365,10 +664,14 @@ def scope_overlay(width=512, height=288, radius=0.46, cross=False):
 
 def main():
     n = 0
+    hands = Hands()
+    tex = PACK / "textures/item/valoblock"
+    tex.mkdir(parents=True, exist_ok=True)
+    (tex / "fp_hands.png").write_bytes(hands.png)
     for w in vi.weapons():
         if w["texture"] == "ward":   # shields are the flat sprite
             continue
-        write_weapon(w)
+        write_weapon(w, hands)
         n += 1
     out = PACK / "textures/misc/scope.png"
     out.parent.mkdir(parents=True, exist_ok=True)

@@ -2,6 +2,7 @@ package win.vampyuyu.valoblock;
 
 import static org.junit.Assert.*;
 
+import java.util.List;
 import org.junit.Test;
 
 public class GunVisualTest {
@@ -54,5 +55,23 @@ public class GunVisualTest {
     assertTrue(gs.poll(1_000_000, true, false));
     assertEquals("fire", GunVisual.state(false, gs.sinceShot(1_000_050), false));
     assertEquals("", GunVisual.state(false, gs.sinceShot(1_000_200), false));
+  }
+
+  @Test
+  public void theReloadPlaysSixFramesOverTheReloadTime() {
+    VbWeapon flux = VbData.weapons().get("flux_rifle"); // 2.5 s
+    GunState gs = new GunState(flux, 3);
+    assertEquals(0, gs.reloadProgress(1_000_000), 0);
+    assertTrue(gs.startReload(1_000_000));
+    assertEquals(0.5, gs.reloadProgress(1_001_250), 1e-9);
+    List<String> seen = new java.util.ArrayList<>();
+    for (long t = 1_000_000; t < 1_002_500; t += 50) {
+      String s = GunVisual.state(gs.reloadProgress(t), gs.reloading(), gs.sinceShot(t), false, false, flux.zoom());
+      if (seen.isEmpty() || !seen.get(seen.size() - 1).equals(s)) seen.add(s);
+    }
+    assertEquals(List.of("reload_0", "reload_1", "reload_2", "reload_3", "reload_4", "reload_5"), seen);
+    assertEquals(GunVisual.RELOAD_FRAMES, GunVisual.RELOAD_AT.length);
+    assertEquals("not reloading: no frame", "", GunVisual.state(0, false, 10_000, false, false, flux.zoom()));
+    assertEquals("the scope still wins", GunVisual.SCOPE, GunVisual.state(0, false, 10_000, true, false, 3.5));
   }
 }

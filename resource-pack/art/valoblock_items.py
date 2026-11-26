@@ -112,9 +112,11 @@ def weapons():
 
 def main():
     n = 0
+    import valoblock_shields  # the shields are painted (valoblock_shields.py); the guns' sprites are redrawn from their models
     for w in weapons():
-        write_item(w["id"], sprite(w["texture"], w["metal"]), definition=w["texture"] == "ward")
-        write_item(w["id"] + "_locked", sprite(w["texture"], w["metal"], LOCKED_ALPHA))
+        art = valoblock_shields.sprite(w["id"]) if w["texture"] == "ward" else sprite(w["texture"], w["metal"])
+        write_item(w["id"], art, definition=w["texture"] == "ward")
+        write_item(w["id"] + "_locked", [[(r, g, b, round(a * LOCKED_ALPHA)) for r, g, b, a in row] for row in art])
         n += 2
     print(f"wrote {n} items under {PACK}")
     import valoblock_models  # the 3D models and their item definitions come second, on purpose

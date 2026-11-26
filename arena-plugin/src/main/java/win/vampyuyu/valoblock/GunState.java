@@ -8,6 +8,7 @@ public final class GunState {
   private final VbWeapon w;
   private int mag;
   private long reloadEnd; // 0 = not reloading
+  private long reloadStart;
   private long nextShot;
   private int burstLeft;
   private long burstStart;
@@ -71,6 +72,7 @@ public final class GunState {
   public boolean startReload(long now) {
     tick(now);
     if (reloadEnd != 0 || mag >= w.magazine() || w.magazine() <= 0 || reloadFactor <= 0) return false;
+    reloadStart = now;
     reloadEnd = now + Math.round(w.reload() * 1000 / reloadFactor);
     burstLeft = 0;
     return true;
@@ -80,6 +82,12 @@ public final class GunState {
   public void cancelReload() {
     reloadEnd = 0;
     burstLeft = 0;
+  }
+
+  /** How far the reload is, 0 (just started, or not reloading) to 1 (done). */
+  public double reloadProgress(long now) {
+    if (reloadEnd == 0 || reloadEnd <= reloadStart) return 0;
+    return Math.max(0, Math.min(1, (now - reloadStart) / (double) (reloadEnd - reloadStart)));
   }
 
   /** Remaining reload time in ms, 0 when not reloading. */

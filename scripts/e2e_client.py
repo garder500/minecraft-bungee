@@ -1298,7 +1298,7 @@ def valoblock_extras(ctx, rcon, map_id, failures):
             while "Phase COMBAT" not in vb(rcon, "status") and time.time() - t0 < 60:
                 time.sleep(1)  # the buy phase opens the Armory over the view
             tp(sx, 65, sz, 180, 0)
-            rcon.command(f'item replace entity E2EBot hotbar.0 with {w["base"].lower() if ":" in w["base"] else "minecraft:" + w["base"].lower()}[item_model="vampyuyu:valoblock/{w["id"]}"]')
+            rcon.command(f'item replace entity E2EBot hotbar.0 with {w["base"].lower() if ":" in w["base"] else "minecraft:" + w["base"].lower()}[item_model="vampyuyu:valoblock/{w["id"]}"' + (',charged_projectiles=[{id:"minecraft:arrow"}]' if w["base"] == "CROSSBOW" else "") + ']')  # charged like WeaponItems: the two-handed pose
             key("key", "1")
             time.sleep(1.5)
             shot(tools, shots / f"vb-40-{w['id']}-first.png")

@@ -39,6 +39,8 @@ public final class WeaponItems {
   /** The weapon as carried: the stack size shows the rounds left (1 while reloading or empty). */
   public static ItemStack carried(VbWeapon w, int mag) {
     ItemStack it = new ItemStack(base(w));
+    boolean twoHanded = it.getType() == Material.CROSSBOW;
+    if (twoHanded) it.unsetData(io.papermc.paper.datacomponent.DataComponentTypes.MAX_DAMAGE); // a damageable item cannot stack (the stack is the magazine)
     ItemMeta meta = it.getItemMeta();
     meta.displayName(text(w.name(), WeaponText.GOLD));
     meta.setItemModel(model(w, false));
@@ -64,8 +66,41 @@ public final class WeaponItems {
           io.papermc.paper.datacomponent.DataComponentTypes.USE_EFFECTS,
           io.papermc.paper.datacomponent.item.UseEffects.useEffects().canSprint(false).interactVibrations(false).speedMultiplier((float) w.scopedSlow()).build());
     }
+    if (twoHanded) holdWithBothHands(it);
     it.setAmount(w.isGun() ? Math.max(1, Math.min(99, mag)) : 1);
     return it;
+  }
+
+  /**
+   * The cooldown group of the two-handed guns. A charged crossbow's use succeeds on the client, which then dips the held item (the
+   * re-equip bob, 0.6 block for 150 ms) at every right-click; an item on cooldown is not used at all by the client, which still sends
+   * the click (PlayerInteractEvent fires before the server checks the cooldown, Paper 26.3). VbWeaponService keeps every match player
+   * on this cooldown; the ValoBlock pack's gui shader hides the white cooldown sweep over the hotbar slot.
+   */
+  public static final net.kyori.adventure.key.Key GUN_COOLDOWN = net.kyori.adventure.key.Key.key("vampyuyu", "vb_gun");
+  public static final int GUN_COOLDOWN_TICKS = 200;
+
+  /**
+   * The two-handed hold: the guns are crossbows (weapons.json "base") carrying one arrow, so the client poses whoever holds one, player
+   * or bot, with both arms raised (vanilla's charged-crossbow pose, the only two-armed pose an item can ask for; the pack's display
+   * transforms undo the crossbow's own offsets, see resource-pack/art/valoblock_models.py). The arrow is never shot: VbWeaponService
+   * denies the item use of every ValoBlock weapon (and cancels a crossbow shot as a backstop). The "Projectile" tooltip line is hidden.
+   */
+  static void holdWithBothHands(ItemStack it) {
+    it.setData(io.papermc.paper.datacomponent.DataComponentTypes.USE_COOLDOWN,
+        io.papermc.paper.datacomponent.item.UseCooldown.useCooldown(0.05f).cooldownGroup(GUN_COOLDOWN).build());
+    it.setData(io.papermc.paper.datacomponent.DataComponentTypes.CHARGED_PROJECTILES,
+        io.papermc.paper.datacomponent.item.ChargedProjectiles.chargedProjectiles(List.of(new ItemStack(Material.ARROW))));
+    var shown = it.getData(io.papermc.paper.datacomponent.DataComponentTypes.TOOLTIP_DISPLAY);
+    var hidden = new java.util.HashSet<io.papermc.paper.datacomponent.DataComponentType>(shown == null ? java.util.Set.of() : shown.hiddenComponents());
+    hidden.add(io.papermc.paper.datacomponent.DataComponentTypes.CHARGED_PROJECTILES);
+    it.setData(io.papermc.paper.datacomponent.DataComponentTypes.TOOLTIP_DISPLAY,
+        io.papermc.paper.datacomponent.item.TooltipDisplay.tooltipDisplay().hiddenComponents(hidden).build());
+  }
+
+  /** Whether the stack is held with both hands (a charged crossbow: see {@link #holdWithBothHands}). */
+  static boolean twoHanded(ItemStack it) {
+    return it != null && it.getType() == Material.CROSSBOW && it.hasData(io.papermc.paper.datacomponent.DataComponentTypes.CHARGED_PROJECTILES);
   }
 
   /** The look the pack draws for the held stack (custom_model_data string 0), "" for the plain held model. */

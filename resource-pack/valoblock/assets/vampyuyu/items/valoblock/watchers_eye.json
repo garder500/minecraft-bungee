@@ -31,6 +31,48 @@
      }
     },
     {
+     "when": "reload_0",
+     "model": {
+      "type": "minecraft:model",
+      "model": "vampyuyu:item/valoblock/watchers_eye_reload_0"
+     }
+    },
+    {
+     "when": "reload_1",
+     "model": {
+      "type": "minecraft:model",
+      "model": "vampyuyu:item/valoblock/watchers_eye_reload_1"
+     }
+    },
+    {
+     "when": "reload_2",
+     "model": {
+      "type": "minecraft:model",
+      "model": "vampyuyu:item/valoblock/watchers_eye_reload_2"
+     }
+    },
+    {
+     "when": "reload_3",
+     "model": {
+      "type": "minecraft:model",
+      "model": "vampyuyu:item/valoblock/watchers_eye_reload_3"
+     }
+    },
+    {
+     "when": "reload_4",
+     "model": {
+      "type": "minecraft:model",
+      "model": "vampyuyu:item/valoblock/watchers_eye_reload_4"
+     }
+    },
+    {
+     "when": "reload_5",
+     "model": {
+      "type": "minecraft:model",
+      "model": "vampyuyu:item/valoblock/watchers_eye_reload_5"
+     }
+    },
+    {
      "when": "inspect",
      "model": {
       "type": "minecraft:model",
@@ -56,5 +98,6 @@
     "model": "vampyuyu:item/valoblock/watchers_eye_3d"
    }
   }
- }
+ },
+ "hand_animation_on_swap": false
 }

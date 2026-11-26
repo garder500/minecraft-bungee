@@ -56,7 +56,7 @@ def main():
         errors.append("no 3D weapon models found")
     for m in models:
         name = m.stem[:-3]
-        for state in ("3d", "fire", "reload", "aim", "inspect"):
+        for state in ("3d", "fire", "reload", "aim", "inspect") + (() if name == "shard_knife" else tuple(f"reload_{k}" for k in range(6))):
             if not (PACK / f"models/item/valoblock/{name}_{state}.json").exists():
                 errors.append(f"{name}: missing {state} model")
         w, h, px = read_png(PACK / f"textures/item/valoblock/{name}_3d.png")
@@ -82,6 +82,22 @@ def main():
                     u0, v0, u1, v1 = f["uv"]
                     if not (0 <= u0 < u1 <= 16 and 0 <= v0 < v1 <= 16):
                         errors.append(f"{name}_{state}: bad uv {f['uv']}")
+    # The first-person twins with the gloved hands (<id>_hands_<state>): complete boxes, unshaded, no flickering shared planes.
+    hands = sorted((PACK / "models/item/valoblock").glob("*_hands_*.json"))
+    if len(hands) < 11 * 11:
+        errors.append(f"only {len(hands)} first-person hand models (11 guns x (5 states + 6 reload frames) expected)")
+    for h in hands:
+        data = json.loads(h.read_text())
+        errors += coplanar(h.stem, data["elements"])
+        for el in data["elements"]:
+            if el.get("shade", True):
+                errors.append(f"{h.stem}: an element is shaded")
+            if set(el["faces"]) != {"north", "east", "south", "west", "up", "down"}:
+                errors.append(f"{h.stem}: element with missing faces")
+            for f in el["faces"].values():
+                u0, v0, u1, v1 = f["uv"]
+                if not (0 <= u0 < u1 <= 16 and 0 <= v0 < v1 <= 16):
+                    errors.append(f"{h.stem}: bad uv {f['uv']}")
     # The Rift Seed (rift_seed_model: not a *_3d gun): same floor under the darkest pixel, every box has six textured faces.
     seed = PACK / "models/item/valoblock/rift_seed_model.json"
     if not seed.exists():

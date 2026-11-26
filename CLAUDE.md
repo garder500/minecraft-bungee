@@ -51,6 +51,15 @@ Every ValoBlock asset (flat sprites, 3D gun models and their fire/reload/aim sta
 (`VALOBLOCK_PACK_FILE`); the plugin (`valoblock/VbPack.java`, bookkeeping in `PackTracker`) adds it on match join over the
 base pack and removes it on leave, match end or quit; a client that declines or fails the download is taken out of the match
 (`VALOBLOCK_PACK_REQUIRED=false` makes it optional). `make test-pack` checks both packs.
+- Minimap: the "minimap" glyph-HUD element (top left): one framed plan per map (`art/valoblock_minimap.py`) and marker glyphs
+  coloured (86 small / 87 big, x, y) that the shader centres on the plan (`MiniMapMath`, `MiniMapService`, written by `VbHudService`).
+- Two-handed hold: the guns are charged crossbows (`weapons.json` base, `WeaponItems.holdWithBothHands`): the client's
+  CROSSBOW_HOLD arm pose in third person; first person draws gloved hands from `art/valoblock_bb/fp_hands.bbmodel`
+  (`valoblock_models.py` places them on each gun's "grip"/fore part and undoes the crossbow's offsets). The spyglass sniper and the
+  knife stay one-handed.
+- Reload animation: `reload_0`..`reload_5` (`RELOAD_FRAMES` in `valoblock_models.py`, picked from the reload progress by
+  `GunVisual.reloadFrame`). The guns' item definitions set `hand_animation_on_swap: false` (each shot changes the stack) and the
+  guns sit on a hidden `use_cooldown` (`WeaponItems.GUN_COOLDOWN`, sweep hidden by the pack's `gui.vsh`) so the gun never dips.
 
 ## Werewolf controls (arena-plugin, `werewolf/hud/ClickControls.java`)
 

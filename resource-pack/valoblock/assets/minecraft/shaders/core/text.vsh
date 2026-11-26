@@ -29,59 +29,59 @@ layout(location = 5) out vec2 screenUv;
 
 const vec2 CORNERS[4] = vec2[](vec2(-1.0, 1.0), vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(1.0, 1.0));
 
-const int HUD_COUNT = 45;
-const int HUD_FILL = 4;
-const int HUD_ANCHOR[HUD_COUNT] = int[](0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+const int HUD_COUNT = 44;
+const int HUD_FILL = 3;
+const int HUD_TEXT = 37;
+const int HUD_ANCHOR[HUD_COUNT] = int[](0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1);
 const vec4 HUD_BOX[HUD_COUNT] = vec4[](
-    vec4(-125.0, 4.0, 250.0, 44.0),
-    vec4(-115.0, 14.0, 24.0, 24.0),
-    vec4(-96.0, 32.0, 7.0, 9.0),
-    vec4(-81.0, 8.0, 136.0, 17.0),
-    vec4(-80.0, 32.0, 140.0, 4.0),
-    vec4(65.0, 8.0, 12.0, 17.0),
-    vec4(78.0, 8.0, 6.0, 17.0),
-    vec4(85.0, 8.0, 12.0, 17.0),
-    vec4(98.0, 8.0, 12.0, 17.0),
-    vec4(-134.0, -54.0, 128.0, 108.0),
-    vec4(-122.0, -42.0, 32.0, 32.0),
-    vec4(-80.0, -42.0, 68.0, 9.0),
-    vec4(-80.0, -30.0, 68.0, 9.0),
-    vec4(-84.0, 2.0, 12.0, 17.0),
-    vec4(-72.0, 2.0, 12.0, 17.0),
-    vec4(-60.0, 2.0, 8.0, 17.0),
-    vec4(-52.0, 2.0, 12.0, 17.0),
-    vec4(-40.0, 2.0, 12.0, 17.0),
-    vec4(-126.0, 24.0, 5.0, 8.0),
-    vec4(-121.0, 24.0, 5.0, 8.0),
-    vec4(-116.0, 24.0, 5.0, 8.0),
-    vec4(-111.0, 24.0, 5.0, 8.0),
-    vec4(-106.0, 24.0, 5.0, 8.0),
-    vec4(-101.0, 24.0, 5.0, 8.0),
-    vec4(-96.0, 24.0, 5.0, 8.0),
-    vec4(-91.0, 24.0, 5.0, 8.0),
-    vec4(-86.0, 24.0, 5.0, 8.0),
-    vec4(-81.0, 24.0, 5.0, 8.0),
-    vec4(-76.0, 24.0, 5.0, 8.0),
-    vec4(-71.0, 24.0, 5.0, 8.0),
-    vec4(-66.0, 24.0, 5.0, 8.0),
-    vec4(-61.0, 24.0, 5.0, 8.0),
-    vec4(-56.0, 24.0, 5.0, 8.0),
-    vec4(-51.0, 24.0, 5.0, 8.0),
-    vec4(-46.0, 24.0, 5.0, 8.0),
-    vec4(-41.0, 24.0, 5.0, 8.0),
-    vec4(-36.0, 24.0, 5.0, 8.0),
-    vec4(-31.0, 24.0, 5.0, 8.0),
-    vec4(-126.0, 38.0, 12.0, 12.0),
-    vec4(-112.0, 38.0, 12.0, 12.0),
-    vec4(-98.0, 38.0, 12.0, 12.0),
-    vec4(-84.0, 38.0, 12.0, 12.0),
-    vec4(-134.0, 58.0, 128.0, 30.0),
-    vec4(-44.0, 64.0, 12.0, 17.0),
-    vec4(-31.0, 64.0, 12.0, 17.0));
+    vec4(-94.0, 4.0, 188.0, 34.0),
+    vec4(-86.0, 11.0, 20.0, 20.0),
+    vec4(-68.0, 26.0, 7.0, 9.0),
+    vec4(-57.0, 27.0, 104.0, 3.0),
+    vec4(56.0, 14.0, 9.0, 13.0),
+    vec4(64.0, 14.0, 4.0, 13.0),
+    vec4(67.0, 14.0, 9.0, 13.0),
+    vec4(75.0, 14.0, 9.0, 13.0),
+    vec4(-102.0, -39.0, 96.0, 78.0),
+    vec4(-94.0, -31.0, 24.0, 24.0),
+    vec4(-94.0, 26.0, 4.0, 7.0),
+    vec4(-90.0, 26.0, 4.0, 7.0),
+    vec4(-86.0, 26.0, 4.0, 7.0),
+    vec4(-82.0, 26.0, 4.0, 7.0),
+    vec4(-78.0, 26.0, 4.0, 7.0),
+    vec4(-74.0, 26.0, 4.0, 7.0),
+    vec4(-70.0, 26.0, 4.0, 7.0),
+    vec4(-66.0, 26.0, 4.0, 7.0),
+    vec4(-62.0, 26.0, 4.0, 7.0),
+    vec4(-58.0, 26.0, 4.0, 7.0),
+    vec4(-54.0, 26.0, 4.0, 7.0),
+    vec4(-50.0, 26.0, 4.0, 7.0),
+    vec4(-46.0, 26.0, 4.0, 7.0),
+    vec4(-42.0, 26.0, 4.0, 7.0),
+    vec4(-38.0, 26.0, 4.0, 7.0),
+    vec4(-34.0, 26.0, 4.0, 7.0),
+    vec4(-30.0, 26.0, 4.0, 7.0),
+    vec4(-26.0, 26.0, 4.0, 7.0),
+    vec4(-22.0, 26.0, 4.0, 7.0),
+    vec4(-18.0, 26.0, 4.0, 7.0),
+    vec4(-63.0, -19.0, 13.0, 13.0),
+    vec4(-50.0, -19.0, 13.0, 13.0),
+    vec4(-37.0, -19.0, 13.0, 13.0),
+    vec4(-24.0, -19.0, 13.0, 13.0),
+    vec4(-102.0, 43.0, 96.0, 26.0),
+    vec4(-30.0, 49.0, 9.0, 13.0),
+    vec4(-22.0, 49.0, 9.0, 13.0),
+    vec4(-58.0, 9.0, 10.0, 14.0),
+    vec4(-58.0, 10.0, 9.0, 12.0),
+    vec4(-54.0, -34.0, 9.0, 12.0),
+    vec4(-96.0, 2.0, 9.0, 12.0),
+    vec4(-96.0, 12.0, 7.0, 12.0),
+    vec4(-96.0, 45.0, 9.0, 12.0),
+    vec4(-96.0, 54.0, 7.0, 12.0));
 
-const int VB_COUNT = 40;
-const int VB_ANCHOR[VB_COUNT] = int[](3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 3, 6, 6);
-const int VB_STRETCH[VB_COUNT] = int[](0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
+const int VB_COUNT = 41;
+const int VB_ANCHOR[VB_COUNT] = int[](3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 3, 6, 6, 0);
+const int VB_STRETCH[VB_COUNT] = int[](0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0);
 const vec4 VB_BOX[VB_COUNT] = vec4[](
     vec4(4.0, -26.0, 60.0, 22.0),
     vec4(8.0, -12.0, 34.0, 3.0),
@@ -122,7 +122,8 @@ const vec4 VB_BOX[VB_COUNT] = vec4[](
     vec4(-10.0, -10.0, 21.0, 21.0),
     vec4(66.0, -24.0, 16.0, 16.0),
     vec4(-26.0, 22.0, 52.0, 7.0),
-    vec4(-24.0, 24.0, 48.0, 3.0));
+    vec4(-24.0, 24.0, 48.0, 3.0),
+    vec4(6.0, 6.0, 80.0, 80.0));
 
 // 0 top left, 1 bottom left, 2 bottom right, 3 top right of a HUD glyph quad. Every glyph of a HUD run is followed by one that
 // takes its advance back (see hud_fonts: the sprites have a non-clear last column so the advance is exact), so each quad starts at
@@ -140,19 +141,25 @@ void main() {
     ivec3 rgb = ivec3(round(Color.rgb * 255.0));
     if (rgb.r >= 78 && rgb.r <= 81 && rgb.g >= 100 && rgb.g < 100 + HUD_COUNT) {
         // A custom HUD glyph: move its quad to its element's box, in GUI pixels. The red channel
-        // picks the size: 78 follows the window, 79 full, 80 three quarters, 81 half.
+        // picks the size: 78 follows the window, 79 full, 80 three quarters, 81 half. The plates are drawn small
+        // enough to stay at full size (the only one that keeps the pixel text whole) down to a 416 x 234 GUI.
         int e = rgb.g - 100;
         vec2 gui = vec2(2.0 / ProjMat[0][0], -2.0 / ProjMat[1][1]);
         float fit = min(gui.x / 640.0, gui.y / 360.0);
-        float f = rgb.r == 79 ? 1.0 : rgb.r == 80 ? 0.75 : rgb.r == 81 ? 0.5 : (fit >= 0.9 ? 1.0 : fit >= 0.65 ? 0.75 : 0.5);
+        float f = rgb.r == 79 ? 1.0 : rgb.r == 80 ? 0.75 : rgb.r == 81 ? 0.5 : (fit >= 0.65 ? 1.0 : fit >= 0.45 ? 0.75 : 0.5);
         vec2 anchor = HUD_ANCHOR[e] == 0 ? vec2(floor(gui.x * 0.5), 0.0) : vec2(gui.x, floor(gui.y * 0.5));
         // The role panel (right side) is drawn a little smaller than the top plate.
         if (HUD_ANCHOR[e] == 1) f *= 1.0;
         vec4 box = HUD_BOX[e];
+        // A character of a line of text (elements from HUD_TEXT on): the blue channel is how far right of the
+        // line's origin its cell starts.
+        bool isText = e >= HUD_TEXT;
+        if (isText) box.x += float(rgb.b);
         float w = e == HUD_FILL ? max(1.0, floor(box.z * float(rgb.b) / 255.0 + 0.5)) : box.z;
         int k = gl_VertexIndex % 4;
         vec2 corner = vec2((k == 2 || k == 3) ? w : 0.0, (k == 1 || k == 2) ? box.w : 0.0);
-        vec2 px = anchor + floor((box.xy + corner) * f + 0.5);
+        // Text rounds its origin and its size apart, so every cell of a line keeps the same size at 0.75 and 0.5.
+        vec2 px = anchor + (isText ? floor(box.xy * f + 0.5) + floor(corner * f + 0.5) : floor((box.xy + corner) * f + 0.5));
         clip = ProjMat * ModelViewMat * vec4(px, Position.z, 1.0);
         fx = 10 + e;
     } else if (rgb.r == 84 && rgb.g >= 160 && rgb.g < 160 + VB_COUNT) {
@@ -169,6 +176,17 @@ void main() {
         vec2 corner = vec2((k == 2 || k == 3) ? w : 0.0, (k == 1 || k == 2) ? box.w : 0.0);
         clip = ProjMat * ModelViewMat * vec4(vec2(ax, ay) + box.xy + corner, Position.z, 1.0);
         fx = 10;
+    } else if (rgb.r == 86 || rgb.r == 87) {
+        // A minimap marker: centred on the point (green, blue) / 255 of the plan inside the minimap element (4 GUI px in
+        // from its edge), 8 or 16 GUI px square. Sent with no text shadow.
+        vec2 gui = vec2(2.0 / ProjMat[0][0], -2.0 / ProjMat[1][1]);
+        vec4 box = VB_BOX[40];
+        vec2 plan = box.xy + 4.0 + vec2(float(rgb.g), float(rgb.b)) / 255.0 * (box.zw - 8.0);
+        float size = rgb.r == 86 ? 8.0 : 16.0;
+        int k = vbCorner(gui);
+        vec2 corner = vec2((k == 2 || k == 3) ? size : 0.0, (k == 1 || k == 2) ? size : 0.0);
+        clip = ProjMat * ModelViewMat * vec4(floor(plan - size * 0.5 + 0.5) + corner, Position.z, 1.0);
+        fx = 10;
     } else if (rgb.r == 21 && rgb.g >= 39 && rgb.g <= 51) {
         clip = vec4(2.0, 2.0, 2.0, 1.0); // the text shadow of a HUD glyph (colour / 4)
     } else if (rgb.r == 78 && rgb.g == 92 && rgb.b >= 1 && rgb.b <= 4) {
@@ -176,7 +194,7 @@ void main() {
         vec2 corner = CORNERS[gl_VertexIndex % 4];
         uv = corner * 0.5 + 0.5;
         clip = vec4(corner * clip.w, clip.z, clip.w);
-    } else if (rgb.r >= 19 && rgb.r <= 20 && ((rgb.g == 23 && rgb.b <= 1) || (rgb.g >= 25 && rgb.g <= 37))) {
+    } else if (rgb.r >= 19 && rgb.r <= 20 && ((rgb.g == 23 && rgb.b <= 1) || (rgb.g >= 25 && rgb.g <= 36))) {
         clip = vec4(2.0, 2.0, 2.0, 1.0);
     }
     gl_Position = clip;
