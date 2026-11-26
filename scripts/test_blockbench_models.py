@@ -34,6 +34,8 @@ def outputs(path):
         return [(PACK / f"models/item/werewolf/{model_id}.json", model_id) for model_id, _ in werewolf_models.outputs(bbmodel.Source(path))]
     if family == "valoblock":   # ValoBlock map set pieces, in the second pack (valoblock_structures.py)
         return [(ROOT / f"resource-pack/valoblock/assets/vampyuyu/models/item/valoblock/map/{stem}.json", False)]
+    if family == "hubs":   # the arena waiting hubs (hub_models.py)
+        return [(PACK / f"models/item/hub/{stem}.json", False)]
     if family == "bosses":
         return [(PACK / f"models/item/boss/skin/{stem}.json", False)]
     if family == "fx":   # boss VFX primitives (fx_models.py), recoloured through their tint

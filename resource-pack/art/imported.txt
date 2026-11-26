@@ -34,6 +34,12 @@ equipment/starcore_asset
 equipment/void
 forge/forge
 forge/forge_3d
+hub/vb_drone
+hub/vb_gate_ring
+hub/vb_holomap
+hub/ww_moon_ring
+hub/ww_weathervane
+hub/ww_wolf_statue
 items/hot_potato_book
 items/recombobulator
 machine/battery

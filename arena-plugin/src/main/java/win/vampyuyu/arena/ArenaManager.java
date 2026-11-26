@@ -133,39 +133,28 @@ public final class ArenaManager {
   }
 
   /**
-   * Provisions a built-in arena (e.g. ValoBlock / Werewolf waiting hub) when no arena with that id
-   * exists yet, or migrates a legacy overworld ({@code "world"}) arena of the same id/preset into
-   * its dedicated void waiting hub while keeping custom rules and rewards.
+   * Provisions a built-in arena (the ValoBlock / Werewolf waiting hubs): the config always comes from the code, so a
+   * copy saved by an earlier version (other bounds, spawn, world or rules) is overwritten. An arena in use is left
+   * alone until the next start. Returns whether the file was written.
    */
   public synchronized boolean ensureBuiltin(ArenaConfig config) throws IOException {
     ArenaSession existing = sessions.get(config.id());
-    if (existing != null) {
-      ArenaConfig old = existing.config;
-      if (!old.preset().equals(config.preset()) || !"world".equals(old.worldName())) return false;
-      ArenaConfig migrated =
-          new ArenaConfig(
-              old.id(),
-              old.name(),
-              config.worldName(),
-              old.preset(),
-              config.bounds(),
-              config.spawn(),
-              old.allowedBreakBlocks(),
-              old.allowedPlaceBlocks(),
-              old.allowPvP(),
-              old.allowChests(),
-              old.allowDoors(),
-              old.gameMode(),
-              old.durationSeconds(),
-              old.minPlayers(),
-              old.maxPlayers(),
-              old.rewards(),
-              old.options());
-      save(migrated);
-      return true;
-    }
+    if (!builtinNeedsWrite(
+        existing == null ? null : existing.config,
+        existing != null
+            && (!existing.players.isEmpty()
+                || existing.stopping
+                || existing.finishing
+                || existing.game != null),
+        migrated(config))) return false;
     save(config);
     return true;
+  }
+
+  /** Whether a built-in arena's file must be (re)written: missing or different from the code, and not in use. */
+  static boolean builtinNeedsWrite(ArenaConfig saved, boolean inUse, ArenaConfig fresh) {
+    if (saved == null) return true;
+    return !inUse && !saved.equals(fresh);
   }
 
   public synchronized void delete(String id) throws IOException {
@@ -280,6 +269,7 @@ public final class ArenaManager {
                           p.setExp(0);
                           p.setTotalExperience(0);
                           teleports.add(uuid);
+                          WaitingHubs.prepare(plugin, s.config);
                           return s.config.location();
                         }))
             .thenCompose(location -> p.teleportAsync(location))
@@ -297,6 +287,7 @@ public final class ArenaManager {
                           border.setWarningDistance(0);
                           border.setDamageAmount(0);
                           p.setWorldBorder(border);
+                          WaitingHubs.joined(p, s.config);
                           plugin.gui.giveCompass(p);
                           s.hooks.onJoin(s, p);
                           if (plugin.waitingHotbar != null) plugin.waitingHotbar.give(p, s);
@@ -731,6 +722,7 @@ public final class ArenaManager {
               player.setFireTicks(0);
               player.setFallDistance(0);
               player.setNoDamageTicks(40);
+              WaitingHubs.joined(player, s.config);
               return s.config.location();
             })
         .thenCompose(location -> player.teleportAsync(location))

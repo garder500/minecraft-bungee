@@ -853,6 +853,75 @@ def worlds_scenario(ctx):
     say("worlds: menu, both game cards and the Werewolf join checked")
 
 
+# Camera views of the hubs scenario: (name, x, y, z, yaw, pitch) relative to the hub centre (WaitingHubs.HUB_X) and the
+# players' standing height; all inside the hub's +-40 world border and the client's 4-chunk view.
+HUB_VIEWS = [("close", 9, 7, 13, 145, 22), ("wide", 0.5, 16, 36, 180, 20), ("high", 30, 30, 30, 135, 35),
+             ("back", 0.5, 8, -27, 0, 12), ("under", 22, -14, 26, 140, -18)]
+
+
+def hubs_scenario(ctx):
+    """The two built-in waiting hubs (WaitingHubs; SERVER_ID=creative provisions their arenas): joins the valoblock
+    arena (the Staging Deck in vb_arena, fixed noon), then the werewolf one (the Moonlit Village in ww_sky, midnight for
+    waiting players). A hub is built when its first player joins, so the join is the real check: the spawn shot keeps the
+    HUD and hotbar, then a spectator camera with the HUD hidden takes the wide views. E2E_HUBS=vb or ww shortens it."""
+    tools, env, shots, failures, server = (ctx[k] for k in ("tools", "env", "shots", "failures", "server"))
+    xdo = tools["xdotool"]
+    me = offline_uuid("E2EBot")
+    for _ in range(60):
+        try:
+            api("GET", "/arenas")
+            break
+        except Exception:
+            time.sleep(2)
+    else:
+        failures.append("the plugin's private API never answered")
+        return
+    rcon = Rcon()
+    which = os.environ.get("E2E_HUBS", "vb,ww").split(",")
+    hubs = [("vb", "valoblock", "vb_arena", 65, "day"), ("ww", "werewolf", "ww_sky", 100, "night")]
+    for key, arena, world, floor, label in hubs:
+        if key not in which:
+            continue
+        try:
+            api("POST", "/arenas/action", {"action": "arena-join", "arenaId": arena, "uuid": me})
+        except Exception as e:
+            failures.append(f"hubs: joining {arena} failed: {e}")
+            continue
+        time.sleep(10)
+        out = re.sub("\u00a7.", "", rcon.command("data get entity E2EBot Pos"))
+        if f"{-512 + 1}" not in out and "-511" not in out:
+            failures.append(f"hubs: E2EBot is not at the {arena} hub after the join: {out.strip()[:120]}")
+        if key == "vb":
+            subprocess.run([xdo, "key", "Escape"], env=env)  # the ValoBlock map vote opens on join
+            time.sleep(2)
+        shot(tools, shots / f"hub-{key}-{label}-spawn.png")
+        # The arena keeps its members in place: leave it (the hub stays built, its models stay up while anyone is
+        # near), then fly a spectator camera at the hub's own time of day.
+        api("POST", "/arenas/action", {"action": "arena-leave", "arenaId": arena, "uuid": me})
+        time.sleep(6)
+        rcon.command(f"execute in minecraft:{world} run time set " + ("18000" if label == "night" else "6000"))
+        subprocess.run([xdo, "key", "F1"], env=env)
+        rcon.command("gamemode spectator E2EBot")
+        for name, dx, dy, dz, yaw, pitch in HUB_VIEWS:
+            out = rcon.command(f"execute in minecraft:{world} run tp E2EBot {-512 + dx} {floor + dy} {dz} {yaw} {pitch}")
+            if "Teleported" not in out:
+                failures.append(f"hubs: tp into {world} failed: {out.strip()[:120]}")
+            time.sleep(5)
+            shot(tools, shots / f"hub-{key}-{label}-{name}.png")
+        subprocess.run([xdo, "key", "F1"], env=env)
+        rcon.command("gamemode creative E2EBot")
+        rcon.command("execute in minecraft:overworld run tp E2EBot 0 -60 0")
+        time.sleep(4)
+    console = (server / "console.log").read_text(errors="replace")
+    for hub in (["ValoBlock"] if "vb" in which else []) + (["Werewolf"] if "ww" in which else []):
+        if f"Built the {hub} waiting hub" not in console:
+            failures.append(f"hubs: the {hub} hub was not built on join (no 'Built the {hub} waiting hub' line)")
+    for line in console.splitlines():
+        if ("win.vampyuyu" in line or "NexusArena" in line) and ("Exception" in line or "SEVERE" in line):
+            failures.append("server: " + line.strip()[:200])
+    say("hubs: " + ", ".join(which) + " captured")
+
+
 def staffchat_scenario(ctx):
     """The private staff<->player channel through the network plugin's management API, with a real client:
     staff write to the bot, the bot answers by typing in the chat box, and /exitchat leaves."""
@@ -4569,7 +4638,7 @@ def realms_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds", "dev", "vfx"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds", "dev", "vfx", "hubs"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -4580,6 +4649,8 @@ def main():
     global WITH_SURVIVAL, VALOBLOCK
     VALOBLOCK = args.scenario in ("valoblock", "vbhold")
     WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "sbhold", "vfx")
+    if args.scenario == "hubs":
+        os.environ.setdefault("E2E_SERVER_ID", "creative")  # WaitingHubs only builds on the creative server
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
@@ -4602,7 +4673,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds", "vfx"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds", "vfx", "hubs"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -4633,7 +4704,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds", "vfx"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds", "vfx", "hubs"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -4668,6 +4739,8 @@ def main():
             staffchat_scenario(ctx)
         elif args.scenario == "worlds":
             worlds_scenario(ctx)
+        elif args.scenario == "hubs":
+            hubs_scenario(ctx)
         elif args.scenario == "back":
             back_scenario(ctx)
         elif args.scenario == "skyblock":
