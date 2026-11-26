@@ -51,7 +51,7 @@ in the **Tempest Bastion key** and in the Rod's own recipe. Per GDD 3.2 it is no
 * Note: the island worlds clear the weather, so on a player island a rod normally runs on Thunder Quartz only.
 
 ## Bastion and Guardian
-* **Primordial Thunder Dragon** (`thunder_dragon`, tier 4 curve, ender dragon model at scale 0.8, boss bar yellow). Three
+* **Primordial Thunder Dragon** (`thunder_dragon`, tier 4 curve, a hidden 0.8x ender dragon under its own rigged model, boss bar yellow; see "The last four models" in `boss.md`). Three
   phases: *Circling* (lightning strikes, dive bombs), *Stormfront* at 65 % (lightning rods as shield crystals, wisps),
   *Eye of the Storm* at 30 % (more strikes, a laser beam, faster dives). Readability rules of GDD 8.7 are checked by
   `GuardianTest`. Spoken lines, resource and component follow the other Guardians (`boss.guardian.thunder_dragon.*`).

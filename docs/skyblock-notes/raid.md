@@ -2,7 +2,8 @@
 
 The final boss of the main story. It is a **Bastion** (`devourer_raid`, `win.vampyuyu.survival.bastion`) with three extra rules, so it
 reuses the instance, party, key, lives, time limit and reward plumbing of `docs/skyblock-notes/bastion.md`. The boss is `devourer`
-(`boss.sql`), spawned by `BossApi.spawnFight` only (no summon rule).
+(`boss.sql`), spawned by `BossApi.spawnFight` only (no summon rule). It is an invisible 3x warden under its own rigged model
+(`resource-pack/art/blockbench/bosses/devourer.bbmodel`, see "The last four models" in `boss.md`).
 
 ## Player flow
 * Entry: `/bastion enter devourer_raid` (or `BastionApi.enter`). The leader holds an **Event Horizon Key** (`devourer_sigil`), forged

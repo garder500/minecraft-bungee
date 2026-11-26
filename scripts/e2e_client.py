@@ -3413,7 +3413,8 @@ def bosses_scenario(ctx):
     only = [b for b in os.environ.get("E2E_BOSSES", "").split(",") if b]   # e.g. E2E_BOSSES=magma_warden
     for boss, scale in (("magma_warden", 2.4), ("frost_revenant", 3.6), ("sylvan_matriarch", 2.8),
                         ("abyssal_leviathan", 2.8), ("crypt_lord", 2.4), ("voidwyrm", 4.2),
-                        ("hell_gao", 3.4)):
+                        ("hell_gao", 3.4), ("thunder_dragon", 3.4), ("temporal_pharaoh", 3.5),
+                        ("mire_abomination", 3.8), ("devourer", 4.4)):
         if only and boss not in only:
             continue
         rcon.command("boss kill all")
