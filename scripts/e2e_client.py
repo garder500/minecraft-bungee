@@ -1518,6 +1518,90 @@ def hold_scenario(ctx):
     (WORK / "tour-ready").unlink(missing_ok=True)
 
 
+def vfx_scenario(ctx):
+    """The custom boss VFX and the potion-free status veils with a real client: Hell Gao on a flat floor at night, a
+    targetable unhurt bot in front of it, each ability cast with /boss cast and filmed (.e2e/vfx-videos/<ability>.mp4),
+    then each status veil laid with /boss status and shot. E2E_VFX=void_zones,laser_beam picks the abilities.
+    E2E_VFX_BOSS picks the boss (default hell_gao)."""
+    import math
+    tools, env, shots, failures = (ctx[k] for k in ("tools", "env", "shots", "failures"))
+    xdo, rcon = tools["xdotool"], Rcon()
+
+    def command(text, wait=3):
+        subprocess.run([xdo, "key", "slash"], env=env)
+        time.sleep(.5)
+        subprocess.run([xdo, "type", "--delay", "35", text], env=env)
+        subprocess.run([xdo, "key", "Return"], env=env)
+        time.sleep(wait)
+
+    def as_bot(text):
+        return rcon.command("execute as E2EBot at E2EBot run " + text)
+
+    rcon.command("op E2EBot")
+    command("menu skyblock")
+    for _ in range(150):
+        if "sb_world" in rcon.command("data get entity E2EBot Dimension"):
+            break
+        time.sleep(1)
+    else:
+        failures.append("never reached sb_world")
+        return
+    time.sleep(8)
+    pos = player_state(rcon)["pos"]
+    cx, y, cz = math.floor(pos[0]) + 8, math.floor(pos[1]), math.floor(pos[2])
+    # night shows the glow, but night spawns monsters: no spawning in this world, and every stray monster killed before a take
+    for rule in ("spawn_mobs", "spawn_monsters", "spawn_patrols", "spawn_phantoms"):
+        say(f"vfx: gamerule {rule}: " + as_bot(f"gamerule {rule} false")[:60])
+    hostiles = ",".join(f"type=!{t}" for t in ("player", "item_display", "text_display", "item", "enderman"))
+
+    def clear_monsters():
+        as_bot(f"kill @e[{hostiles},distance=..120]")
+    as_bot("time set midnight")
+    as_bot(f"fill {cx-40} {y-1} {cz-40} {cx+40} {y-1} {cz+40} deepslate_tiles")
+    for yy in range(y, y + 24):
+        as_bot(f"fill {cx-40} {yy} {cz-40} {cx+40} {yy} {cz+40} air")
+    as_bot("kill @e[type=!player,distance=..80]")
+    rcon.command("gamerule send_command_feedback false")
+    boss = os.environ.get("E2E_VFX_BOSS", "hell_gao")
+    abilities = [a for a in os.environ.get("E2E_VFX", "void_zones,lightning_strikes,laser_beam").split(",") if a]
+    out_dir = ROOT / ".e2e" / "vfx-videos"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    mob = "@e[type=!player,type=!item_display,type=!text_display,type=!item,distance=..30,sort=nearest,limit=1]"
+    subprocess.run([xdo, "key", "F1"], env=env)
+    for ability in abilities:
+        rcon.command("boss kill all")
+        clear_monsters()
+        time.sleep(1)
+        rcon.command(f"boss spawn {boss} {cx+0.5} {y} {cz+0.5} sb_world")
+        time.sleep(2)
+        as_bot(f"execute as {mob} run data merge entity @s {{NoAI:1b}}")
+        as_bot(f"tp {mob} {cx+0.5} {y} {cz+0.5} 0 0")
+        say(f"vfx: {boss} mob Silent: " + as_bot(f"data get entity {mob} Silent").strip()[-40:])
+        # the target: adventure (targetable), unhurt, 9 blocks in front of the boss, looking at it from a little above
+        rcon.command("gamemode adventure E2EBot")
+        rcon.command("effect give E2EBot minecraft:resistance infinite 255 true")
+        rcon.command("effect give E2EBot minecraft:regeneration infinite 255 true")
+        as_bot(f"tp @s {cx+0.5} {y} {cz+9.5} 180 12")
+        time.sleep(2)
+        say(f"vfx: {ability}: " + rcon.command(f"boss cast {ability}")[:120])
+        record(tools, out_dir / f"{boss}-{ability}.mp4", 7)
+        shot(tools, shots / f"vfx-{ability}-end.png")
+        say(f"vfx: {ability}: displays left after the clip: "
+            + rcon.command("execute if entity @e[type=item_display,distance=..60]")[:80])
+    rcon.command("boss kill all")
+    clear_monsters()
+    rcon.command("effect clear E2EBot")
+    rcon.command("gamemode survival E2EBot")   # the Skyblock HUD line (which carries the veils) is the survival player's
+    rcon.command("effect give E2EBot minecraft:resistance infinite 255 true")
+    subprocess.run([xdo, "key", "F1"], env=env)   # the HUD back on: the veil rides on the action bar
+    as_bot(f"tp @s {cx+0.5} {y} {cz+9.5} 180 0")
+    for status in ("blind", "frost", "decay", "burn", "lift"):
+        command(f"boss status {status} 6", 1.5)
+        time.sleep(1.5)
+        shot(tools, shots / f"veil-{status}.png")
+        command("boss status clear", 1.5)
+
+
 def dev_server():
     """Server only (arena + network jars, JDWP open): the target of scripts/hotswap.py. No client, no pack check."""
     import fcntl
@@ -2955,7 +3039,8 @@ def bosses_scenario(ctx):
     # boss -> plugin scale (BossSkinService.LOOKS): the model is 32 units high at most, 16 units = scale blocks
     only = [b for b in os.environ.get("E2E_BOSSES", "").split(",") if b]   # e.g. E2E_BOSSES=magma_warden
     for boss, scale in (("magma_warden", 2.4), ("frost_revenant", 3.6), ("sylvan_matriarch", 2.8),
-                        ("abyssal_leviathan", 2.8), ("crypt_lord", 2.4), ("voidwyrm", 4.2)):
+                        ("abyssal_leviathan", 2.8), ("crypt_lord", 2.4), ("voidwyrm", 4.2),
+                        ("hell_gao", 3.4)):
         if only and boss not in only:
             continue
         rcon.command("boss kill all")
@@ -3834,6 +3919,21 @@ def realms_scenario(ctx):
     time.sleep(3)
     shot(tools, shots / "rl-0-hub-above.png")
     undo()
+    if os.environ.get("E2E_HUB_VIEWS"):  # the Hub from inside, from outside, from under, by day and by night, no HUD
+        views = [("spire", 0.5, HUB_Y + 1, 18.5, 180, -22), ("outside", 52.5, HUB_Y + 18, -40.5, 52, 12),
+                 ("keel", -40.5, HUB_Y - 26, 30.5, -128, -26), ("north-road", 0.5, HUB_Y + 3, -40.5, 0, -10)]
+        subprocess.run([xdo, "key", "F1"], env=env)
+        for when in ("day", "night"):
+            rcon.command(f"execute in minecraft:sb_hub run time set {'noon' if when == 'day' else 'midnight'}")
+            for label, vx, vy, vz, yaw, pitch in views:
+                if when == "night" and label in ("keel", "north-road"):
+                    continue
+                undo = perch("sb_hub", vx, vy, vz, yaw, pitch)
+                time.sleep(4)
+                shot(tools, shots / f"rl-0h-{label}-{when}.png")
+                undo()
+        rcon.command("execute in minecraft:sb_hub run time set noon")
+        subprocess.run([xdo, "key", "F1"], env=env)
 
     # 2. The Quai des Huit, dark then lit (the lit look is client-side blocks, resent every second near the Quai)
     typed("quai")
@@ -3851,6 +3951,25 @@ def realms_scenario(ctx):
     shot(tools, shots / "rl-1-quai-lit.png")
     subprocess.run([xdo, "key", "F1"], env=env)
     undo()
+
+    # 2a. E2E_QUAI_VIEWS=1: the Quai from where players see it (arrival, the hub, outside, under the keel, a lit Gate and
+    # its halo), by day and by night, without the HUD
+    if os.environ.get("E2E_QUAI_VIEWS"):
+        views = [("arrival", 0.5, HUB_Y + 1, 53.5, 0, -12), ("from-hub", 0.5, HUB_Y + 16, 16.5, 0, 14),
+                 ("outside", -46.5, HUB_Y + 16, 36.5, -52, 14), ("keel", 26.5, HUB_Y - 18, 96.5, 135, -24),
+                 ("gate-lit", 3.6, HUB_Y + 1, 65.1, -157.5, -32)]
+        subprocess.run([xdo, "key", "F1"], env=env)
+        for when in ("day", "night"):
+            rcon.command(f"execute in minecraft:sb_hub run time set {'noon' if when == 'day' else 'midnight'}")
+            for label, vx, vy, vz, yaw, pitch in views:
+                if when == "night" and label in ("from-hub", "keel"):
+                    continue
+                undo = perch("sb_hub", vx, vy, vz, yaw, pitch)
+                time.sleep(4)
+                shot(tools, shots / f"rl-1q-{label}-{when}.png")
+                undo()
+        rcon.command("execute in minecraft:sb_hub run time set noon")
+        subprocess.run([xdo, "key", "F1"], env=env)
 
     # 2b. A Guardian clear that wakes Gates: title and chat where the bot stands, then the Gates light one by one on its next
     # visit to the Quai (E2E_SKIP=reveal skips it). The Mycelial Queen lights five Gates; the bot is made to kill her with
@@ -3944,6 +4063,14 @@ def realms_scenario(ctx):
         time.sleep(3)
         shot(tools, shots / f"rl-3-{realm}-above.png")
         undo()
+        if os.environ.get("E2E_REALM_VIEWS"):  # the floating monument and its relic, from the landing and from afar
+            subprocess.run([xdo, "key", "F1"], env=env)
+            for label, dx, dy, dz, yaw, pitch in (("monument", 0, 0, 0, 180, -28), ("wide", 26, 18, 22, 140, -6)):
+                undo = perch(world, x + dx, y + dy, z + dz, yaw, pitch)
+                time.sleep(3)
+                shot(tools, shots / f"rl-3-{realm}-{label}.png")
+                undo()
+            subprocess.run([xdo, "key", "F1"], env=env)
 
         # The return arch (ReturnArch): two blocks behind the arrival spot, veil on the south side. Stand 3 blocks from
         # the glass facing it (yaw 0 = south), take the shot, walk into it, and expect the Quai (the hub world).
@@ -3955,6 +4082,18 @@ def realms_scenario(ctx):
                 as_bot(f"tp @s {bx + 0.5} {y} {bz + 0.5 - 1.0} 0 4")
             time.sleep(3)
             shot(tools, shots / f"rl-3-{realm}-arch.png")
+            if os.environ.get("E2E_ARCH_FAR"):  # the whole arch and the halo over it, from the far side of the landing
+                if realm == "grove":
+                    far_undo = perch(world, bx + 0.5 - 7.0, y + 1, bz + 0.5, -90, -14)
+                else:
+                    far_undo = perch(world, bx + 0.5, y + 1, bz + 0.5 - 7.0, 0, -14)
+                time.sleep(3)
+                subprocess.run([xdo, "key", "F1"], env=env)
+                shot(tools, shots / f"rl-3-{realm}-arch-far.png")
+                subprocess.run([xdo, "key", "F1"], env=env)
+                far_undo()
+                as_bot(f"tp @s {bx + 0.5 - (1.0 if realm == 'grove' else 0)} {y} {bz + 0.5 - (0 if realm == 'grove' else 1.0)} {-90 if realm == 'grove' else 0} 4")
+                time.sleep(1)
             subprocess.run([xdo, "keydown", "w"], env=env)
             time.sleep(2.5)
             subprocess.run([xdo, "keyup", "w"], env=env)
@@ -4074,6 +4213,16 @@ def realms_scenario(ctx):
             time.sleep(3)
             shot(tools, shots / "rl-4-astral-above.png")
             undo()
+            if os.environ.get("E2E_ASTRAL_VIEWS"):  # every region from where it reads best, no HUD
+                subprocess.run([xdo, "key", "F1"], env=env)
+                for label, vx, vy, vz, yaw, pitch in (("wound", 0.5, 102, 7.5, 180, -18), ("sea", 60.5, 126, -48.5, -24, 24),
+                                                      ("tree", 160.5, 142, -32.5, -47, -4), ("singularity", 252.5, 206, -38.5, -52, 6),
+                                                      ("throne", 308.5, 203, 7.5, -110, -14)):
+                    undo = perch("sb_astral", vx, vy, vz, yaw, pitch)
+                    time.sleep(10)  # a jump of a hundred blocks: let the chunks arrive
+                    shot(tools, shots / f"rl-4a-{label}.png")
+                    undo()
+                subprocess.run([xdo, "key", "F1"], env=env)
         else:
             failures.append("/astral go force did not reach sb_astral: " + dimension()[:80] + " " + tail())
             shot(tools, shots / "rl-4-astral-failed.png")
@@ -4111,6 +4260,17 @@ def realms_scenario(ctx):
             as_bot(f"tp @s {entry[0]} {entry[1] + 2} {entry[2] + 4} 180 12")  # the entry faces the arena; step back
             time.sleep(2)
             shot(tools, shots / "rl-5-bastion-guardian.png")
+            if os.environ.get("E2E_BASTION_VIEWS"):  # the arena itself (after the key check: the views take longer than the countdown)
+                bworld = _re.search(r'"minecraft:(sb_bastion_[0-9]+)', dimension())
+                if bworld:
+                    subprocess.run([xdo, "key", "F1"], env=env)
+                    for label, vx, vy, vz, yaw, pitch in (("over-entry", 0.5, 114, 34.5, 180, 24), ("outside", 52.5, 122, 52.5, 135, 18),
+                                                          ("floor", 0.5, 101, 20.5, 180, -8)):
+                        undo = perch(bworld.group(1), vx, vy, vz, yaw, pitch)
+                        time.sleep(3)
+                        shot(tools, shots / f"rl-5b-{label}.png")
+                        undo()
+                    subprocess.run([xdo, "key", "F1"], env=env)
             rcon.command("bastion admin abort all")
             time.sleep(4)
             shot(tools, shots / "rl-5-bastion-aborted.png")
@@ -4123,7 +4283,7 @@ def realms_scenario(ctx):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds", "dev"], default="shader")
+    ap.add_argument("--scenario", choices=["shader", "werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds", "dev", "vfx"], default="shader")
     ap.add_argument("--only", default="", help="roles scenario: comma-separated role names")
     ap.add_argument("--rules", default="", help="werewolf scenario: variants, e.g. voting=nominate,reveal=none,amulet=on,dice=on")
     ap.add_argument("--keep", action="store_true", help="leave the server and client running")
@@ -4133,7 +4293,7 @@ def main():
         return dev_server()
     global WITH_SURVIVAL, VALOBLOCK
     VALOBLOCK = args.scenario in ("valoblock", "vbhold")
-    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "sbhold")
+    WITH_SURVIVAL = args.scenario in ("back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "sbhold", "vfx")
     if not (PRISM / "instances" / INSTANCE).exists():
         sys.exit(f"No Prism instance {INSTANCE} under {PRISM}")
     WORK.mkdir(exist_ok=True)
@@ -4156,7 +4316,7 @@ def main():
     http_server = serve_pack(pack_dir)
     procs, failures = [], []
     try:
-        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds"))
+        server_proc, server = start_server(zip_path, sha1, plugin=args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds", "vfx"))
         procs.append(server_proc)
         say("server up (creative flat, offline)")
         data, game = prepare_client(tools)
@@ -4187,7 +4347,7 @@ def main():
         if not wait_for(server / "console.log", "E2EBot joined the game", 120, [client]):
             shot(tools, shots / "join-failed.png")
             sys.exit("the bot never joined: see " + str(shots / "join-failed.png"))
-        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds"):
+        if args.scenario in ("werewolf", "roles", "tooltip", "debughud", "showcase", "staffchat", "back", "skyblock", "quarry", "progress", "bosses", "swords", "armorwings", "tools", "imported", "dungeon", "start", "craft", "realms", "machines", "endgame", "valoblock", "vbhold", "sbhold", "worlds", "vfx"):
             # The network plugin offers the pack after the join: accept it, then wait for the reload.
             time.sleep(4)
             shot(tools, shots / "after-join.png")
@@ -4252,6 +4412,8 @@ def main():
             machines_scenario(ctx)
         elif args.scenario == "endgame":
             endgame_scenario(ctx)
+        elif args.scenario == "vfx":
+            vfx_scenario(ctx)
         elif args.scenario == "valoblock":
             valoblock_scenario(ctx)
         elif args.scenario in ("vbhold", "sbhold"):

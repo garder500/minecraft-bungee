@@ -31,6 +31,10 @@ def outputs(path):
         return [(PACK / f"models/item/{stem}_3d.json", None)]   # reported missing
     if family == "bosses":
         return [(PACK / f"models/item/boss/skin/{stem}.json", False)]
+    if family == "fx":   # boss VFX primitives (fx_models.py), recoloured through their tint
+        return [(PACK / f"models/item/fx/{stem}.json", False)]
+    if family == "structures":   # world structure display models (structure_models.py): checked in main()
+        return []
     if stem.endswith("_helmet"):
         return [(PACK / f"models/item/armor/{stem}_3d.json", False)]
     if stem.startswith("wings_tier"):
@@ -80,6 +84,33 @@ def main():
         for need in ("idle", "death"):
             if need not in rig.animations:
                 errors.append(f"{src.name}: no {need} clip")
+    # the halo shells: one per primitive the converter lists, and the plugin's list (BossVfx.HALOS) is the same
+    import re
+    import fx_models
+    java = (ROOT / "survival-plugin/src/main/java/win/vampyuyu/survival/boss/BossVfx.java").read_text()
+    found = re.search(r"HALOS = java.util.Set.of\((.*?)\);", java, re.S)
+    if not found or set(re.findall(r'"([a-z_]+)"', found.group(1))) != set(fx_models.HALOS):
+        errors.append("BossVfx.HALOS and fx_models.HALOS differ")
+    for name in fx_models.HALOS:
+        if not (PACK / f"items/fx/{name}_halo.json").exists():
+            errors.append(f"fx/{name}_halo missing (run fx_models.py)")
+    # world structure display models: the pack matches the sources, and every model a plan names exists
+    import structure_models
+    for path in sorted((bbmodel.ROOT / "structures").glob("*.bbmodel")):
+        for model_id, _, _, elements, tinted in structure_models.outputs(bbmodel.Source(path)):
+            out = PACK / f"models/item/structure/{model_id}.json"
+            item = PACK / f"items/structure/{model_id}.json"
+            if not out.exists() or not item.exists():
+                errors.append(f"structure/{model_id} missing (run structure_models.py)")
+            elif json.loads(out.read_text())["elements"] != elements:
+                errors.append(f"structure/{model_id} is not the conversion of its source (run structure_models.py)")
+            elif tinted != ("tints" in json.loads(item.read_text())["model"]):
+                errors.append(f"structure/{model_id}: tint does not match")
+    plans = ROOT / "survival-plugin/src/main/java/win/vampyuyu/survival"
+    for java_file in plans.rglob("*.java"):
+        for model_id in re.findall(r'"structure/([a-z0-9_]+)"', java_file.read_text()):
+            if not (PACK / f"items/structure/{model_id}.json").exists():
+                errors.append(f"{java_file.name} names structure/{model_id}, which the pack does not have")
     for e in errors[:40]:
         print("FAIL", e)
     print(f"blockbench models: {n} sources checked, {len(errors)} problems")

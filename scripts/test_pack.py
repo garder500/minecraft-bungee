@@ -330,8 +330,9 @@ class PackTest(unittest.TestCase):
             self.assertEqual(hashlib.sha1(first.read_bytes()).hexdigest(), digest)
             self.assertEqual(first.read_bytes(), second.read_bytes())
             self.assertRegex((pathlib.Path(a) / "vampyuyu-menus.sha1").read_text().strip(), r"^[0-9a-f]{40}$")
-            # 8 MB until the boss voices (99 mono Vorbis clips, about 2.3 MB at 24 kHz); keep it small all the same
-            self.assertLess(first.stat().st_size, 10 << 20, "keep the optional pack small")
+            # 8 MB until the boss voices (99 mono Vorbis clips, about 2.3 MB at 24 kHz), 10 MB until the boss VFX (16 fx
+            # primitives and their halo shells, 42 generated sound effects at 32 kHz, about 0.8 MB); keep it small all the same
+            self.assertLess(first.stat().st_size, 12 << 20, "keep the optional pack small")
 
 def walk_models(node):
     """Every model reference of an item definition tree (model, select cases and fallback)."""

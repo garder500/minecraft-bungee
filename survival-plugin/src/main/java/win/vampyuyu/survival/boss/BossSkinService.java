@@ -50,7 +50,9 @@ final class BossSkinService {
         // the spider's eyes glow through invisibility: it is hidden too
         "sylvan_matriarch", new Look("vampyuyu:boss/skin/sylvan_matriarch", 2.8f, true, 0f),
         "abyssal_leviathan", new Look("vampyuyu:boss/skin/abyssal_leviathan", 2.8f),
-        "crypt_lord", new Look("vampyuyu:boss/skin/crypt_lord", 2.4f));
+        "crypt_lord", new Look("vampyuyu:boss/skin/crypt_lord", 2.4f),
+        // the enderman's eyes glow through invisibility, like the spider's: hidden too
+        "hell_gao", new Look("vampyuyu:boss/skin/hell_gao", 3.4f, true, 0f));
 
     private static final NamespacedKey MARK = new NamespacedKey("vampyuyu", "boss_skin");
 

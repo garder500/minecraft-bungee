@@ -36,6 +36,7 @@ public final class HudService implements Listener {
 
     public void start() {
         task = core.scheduler().repeating(5, engine.settings().hudPeriodTicks, this::tick);
+        win.vampyuyu.survival.core.ScreenVeil.owner(engine::active);
     }
 
     private XpProgress progress;
@@ -45,6 +46,7 @@ public final class HudService implements Listener {
         if (task != null) {
             task.cancel();
         }
+        win.vampyuyu.survival.core.ScreenVeil.owner(null);
         for (Player player : Bukkit.getOnlinePlayers()) {
             engine.existing(player.getUniqueId()).ifPresent(st -> st.lastHud = "");
         }
@@ -81,8 +83,10 @@ public final class HudService implements Listener {
         } else if (st.xpPopupUntil > now && !st.xpPopup.isEmpty()) {
             centre = Component.text(st.xpPopup, NamedTextColor.DARK_AQUA);
         }
-        return HudFormat.line(player.getHealth(), max, player.getAbsorptionAmount(), st.stat(Stat.WARD), centre,
+        Component line = HudFormat.line(player.getHealth(), max, player.getAbsorptionAmount(), st.stat(Stat.WARD), centre,
             st.mana.mana(), st.stat(Stat.AETHER), st.mana.overflow());
+        // the boss status veils (ScreenVeil): drawn full screen by the pack shader, they take no room in the line
+        return line.append(win.vampyuyu.survival.core.ScreenVeil.of(player));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

@@ -49,6 +49,20 @@ public final class Fx {
         }
     }
 
+    /**
+     * Plays a boss sound effect of the resource pack, {@code vampyuyu:fx.<cue>} (resource-pack/art/boss_sfx.py: generated
+     * clips, never vanilla sounds), on the hostile channel. Never throws.
+     */
+    public static void sfx(World world, Location at, String cue, float volume, float pitch) {
+        if (world != null && at != null) {
+            try {
+                world.playSound(at, "vampyuyu:fx." + cue, org.bukkit.SoundCategory.HOSTILE, volume, pitch);
+            } catch (RuntimeException e) {
+                // a test server without sounds
+            }
+        }
+    }
+
     /** Points of a horizontal circle (at most {@code points}). */
     public static List<Location> circlePoints(Location center, double radius, int points) {
         List<Location> list = new ArrayList<>(points);

@@ -7,8 +7,6 @@ import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 /**
@@ -79,24 +77,21 @@ final class Gravity {
             Vector ahead = clampToArena(leadPoint(here.toVector(), here.getDirection(), lead), centre.toVector(), arena);
             future.add(Abilities.ground(s.world, new Location(s.world, ahead.getX(), here.getY() + 1, ahead.getZ())));
         }
-        Fx.sound(s.world, s.location(), Sound.BLOCK_BEACON_ACTIVATE, 3f, 0.6f);
-        s.every(0, 4, Math.max(1, tele / 4), step -> {
-            for (Location mark : past) {
-                Fx.dustCircle(s.world, mark.clone().add(0, 0.1, 0), radius, Color.AQUA, 1.2f, 24);
-                Fx.particle(s.world, Particle.REVERSE_PORTAL, mark.clone().add(0, 0.5, 0), 4, radius / 3, 0.4, radius / 3, 0.05);
-            }
-            for (Location mark : future) {
-                Fx.dustCircle(s.world, mark.clone().add(0, 0.1, 0), radius, Color.FUCHSIA, 1.2f, 24);
-                Fx.particle(s.world, Particle.END_ROD, mark.clone().add(0, 0.5, 0), 3, radius / 3, 0.4, radius / 3, 0.02);
-            }
-        }, () -> {
+        Fx.sfx(s.world, s.location(), "power_up", 3f, 1f);
+        for (Location mark : past) {     // where they stood: the echo of the past, turning backwards
+            BossVfx.decal(mark, "sigil", BossVfx.FROST, radius, tele + 2, -160f);
+        }
+        for (Location mark : future) {   // where they are heading: the echo of the future
+            BossVfx.decal(mark, "sigil", BossVfx.RIFT, radius, tele + 2, 160f);
+        }
+        s.every(0, 4, Math.max(1, tele / 4), step -> { }, () -> {
             List<Location> all = new ArrayList<>(past);
             all.addAll(future);
             for (Location mark : all) {
-                Fx.particle(s.world, Particle.EXPLOSION, mark.clone().add(0, 0.5, 0), 1, 0, 0, 0, 0);
-                Fx.particle(s.world, Particle.PORTAL, mark.clone().add(0, 1, 0), 50, radius / 2, 1.2, radius / 2, 0.4);
+                BossVfx.impact(mark, past.contains(mark) ? BossVfx.FROST : BossVfx.RIFT, radius);
+                BossVfx.column(mark, "pillar", past.contains(mark) ? BossVfx.FROST : BossVfx.RIFT, radius * 0.5, 3.5, 2, 5);
             }
-            Fx.sound(s.world, s.location(), Sound.ENTITY_ENDERMAN_TELEPORT, 3f, 0.5f);
+            Fx.sfx(s.world, s.location(), "blink", 3f, 1f);
             for (Player p : s.players()) {
                 for (Location mark : all) {
                     if (p.getLocation().distanceSquared(mark) <= radius * radius) {
@@ -121,19 +116,21 @@ final class Gravity {
         double ceiling = spec.num("ceiling", 9);
         double current = Math.max(0, Math.min(DRIFT_CAP, spec.num("current", 0.06)));
         int tele = Abilities.tele(spec, 30);
-        Fx.sound(s.world, s.location(), Sound.BLOCK_BEACON_DEACTIVATE, 3f, 0.5f);
+        Fx.sfx(s.world, s.location(), "gravity_fail", 3f, 1f);
         s.broadcastNearby(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
             "<light_purple><bold>GRAVITY FAILS! <gray>Let go, drift, and keep your feet toward the light."));
+        // the singularity: a huge slow funnel over the boss and a ring of floating shards for the whole zero gravity
+        BossVfx.spin(s.location(), "vortex", BossVfx.VOID, 9, 7, tele + duration, Math.max(2, (tele + duration) / 40), s.entity());
+        BossVfx.decal(Abilities.ground(s.world, s.location()), "disc", BossVfx.VOID, 12, tele + duration, -30f);
         s.later(tele, () -> s.every(0, 5, Math.max(1, duration / 5), step -> {
             Location core = s.location();
             double bossY = core.getY();
             for (Player p : s.players()) {
-                p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 40, 0, false, false, true));
+                BossStatus.apply(p, StatusKind.FLOAT, 40, 1);
                 if (mayRise(p.getLocation().getY(), bossY, ceiling)) {
-                    p.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, win.vampyuyu.survival.movement.MovementMath.levitationTicks(12),
-                        win.vampyuyu.survival.movement.MovementMath.levitationAmp(0), false, false, true));
+                    BossStatus.apply(p, StatusKind.LIFT, win.vampyuyu.survival.movement.MovementMath.levitationTicks(12), 1);
                 } else {
-                    p.removePotionEffect(PotionEffectType.LEVITATION);
+                    BossStatus.remove(p, StatusKind.LIFT);
                 }
                 Vector to = core.toVector().subtract(p.getLocation().toVector()).setY(0);
                 if (to.lengthSquared() > 4 && Double.isFinite(to.lengthSquared())) {
@@ -141,10 +138,9 @@ final class Gravity {
                     Fx.push(p, p.getVelocity().multiply(0.8).add(tangent), DRIFT_CAP, LIFT_CAP);
                 }
             }
-            Fx.particle(s.world, Particle.REVERSE_PORTAL, core.clone().add(0, 3, 0), 30, 6, 4, 6, 0.1);
         }, () -> {
             for (Player p : s.players()) {
-                p.removePotionEffect(PotionEffectType.LEVITATION);
+                BossStatus.remove(p, StatusKind.LIFT);
             }
         }));
         return tele + duration + 20;

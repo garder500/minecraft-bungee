@@ -145,7 +145,8 @@ public class ShippedConfigTest {
             assertTrue(entry.getValue().model().startsWith("vampyuyu:boss/skin/"));
             assertTrue(entry.getValue().scale() > 0);
         }
-        assertEquals("every Skyblock boss has a custom look", 6, BossSkinService.LOOKS.size());
+        assertEquals("every Skyblock boss has a custom look", 7, BossSkinService.LOOKS.size());
+        assertTrue("the enderman's eyes glow through invisibility, so it is hidden", BossSkinService.LOOKS.get("hell_gao").hide());
         assertTrue("the dragon ignores invisibility, so it is hidden", BossSkinService.LOOKS.get("voidwyrm").hide());
     }
 

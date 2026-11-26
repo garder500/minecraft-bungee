@@ -5,7 +5,13 @@ Guardian is the boss row `hell_gao`; `hellgao/` only guards the entry and pays t
 
 ## Defaults chosen by the implementation (the owner has not defined them: change them in the data)
 
-- **Appearance**: a 2.4x glowing Enderman, purple boss bar. Placeholder look, easy to swap (`boss.entity`, `boss.scale`).
+- **Appearance**: a rigged Blockbench model (`resource-pack/art/blockbench/bosses/hell_gao.bbmodel`, 31 bones, 22 clips: idle,
+  walk, attack, hurt, ability, phase, death and one per ability), a legless lich over a rift star: a skull split in two that peels
+  open on a magenta eye (phase, laser_beam, blizzard, death), visible shoulder, elbow, wrist and knuckle joints, a talon arm and a bone-scythe arm, two mantis arms over a beating
+  heart, and the eight Realm shards as dark blades in its back (the Marshes one snapped). On a hidden 2.4x Enderman (its eyes
+  glow through invisibility), display scale 3.4 (`BossSkinService.LOOKS`), purple boss bar. Blockbench does not save
+  `light_emission` in the Generic format: re-save the project with the cube-shading flag of the format on during
+  `Codecs.project.compile`, or the 72 glowing cubes lose their glow.
 - **Six phases**, each borrowing a rule from a Guardian or the Devourer and bending it (`db/seed/boss.sql`):
   Between Pulses (teleport behind + void zones), Borrowed Chains (Leviathan anchors + Judge's bone cage),
   Inverted Storm (Thunder Dragon crystals and lightning + dash), Frozen Hour (blizzard + ice spikes + fire ring),

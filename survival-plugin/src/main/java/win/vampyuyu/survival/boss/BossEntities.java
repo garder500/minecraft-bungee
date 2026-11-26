@@ -56,7 +56,9 @@ public final class BossEntities {
         quiet(() -> e.setPersistent(false));
         quiet(() -> e.setCanPickupItems(false));
         quiet(() -> e.setMaximumNoDamageTicks(Math.max(1, settings.hitIframes())));
-        e.setSilent(false);
+        // the vanilla mob under a boss makes no sound of its own (ambient, hurt, death, an Enderman's teleport, a dragon's
+        // wings): every sound of a fight is the pack's (Fx.sfx, resource-pack/art/boss_sfx.py)
+        e.setSilent(true);
         base(e, Attribute.MAX_HEALTH, Math.min(1024, settings.visualHealth()));
         e.setHealth(Math.min(1024, settings.visualHealth()));
         base(e, Attribute.ARMOR, 0);

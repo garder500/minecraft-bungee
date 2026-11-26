@@ -1,0 +1,13 @@
+{
+ "model": {
+  "type": "minecraft:model",
+  "model": "vampyuyu:item/fx/burst",
+  "tints": [
+   {
+    "type": "minecraft:custom_model_data",
+    "index": 0,
+    "default": 16777215
+   }
+  ]
+ }
+}

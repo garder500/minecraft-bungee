@@ -54,6 +54,7 @@ test-pack: ## Validate both resource packs (menus and ValoBlock): structure, mod
 	@python3 scripts/test_hud_sheet.py
 	@python3 scripts/test_valoblock_models.py
 	@python3 scripts/test_blockbench_models.py
+	@python3 resource-pack/art/boss_sfx.py check
 	@python3 resource-pack/art/test_skyblock_icon.py
 hud-sheet: ## Render every HUD state to resource-pack/dist/hud-sheet/ (index.html is self-contained) [SCALE=2|3|4] [MODE=auto|large|medium|small]
 	@python3 resource-pack/art/hud_sheet.py --scale $(or $(SCALE),3) --mode $(or $(MODE),auto)

@@ -1043,5 +1043,349 @@
       }
     ],
     "subtitle": "subtitles.vampyuyu.voice"
+  },
+  "fx.abyss_call": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/abyss_call"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.abyss_call"
+  },
+  "fx.blink": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/blink"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.blink"
+  },
+  "fx.blizzard_wind": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/blizzard_wind"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.blizzard_wind"
+  },
+  "fx.bone_burst": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/bone_burst"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.bone_burst"
+  },
+  "fx.bone_rattle": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/bone_rattle"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.bone_rattle"
+  },
+  "fx.boss_death": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/boss_death"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.boss_death"
+  },
+  "fx.boss_hurt": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/boss_hurt"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.boss_hurt"
+  },
+  "fx.boss_rise": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/boss_rise"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.boss_rise"
+  },
+  "fx.breath_roar": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/breath_roar"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.breath_roar"
+  },
+  "fx.chains_snap": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/chains_snap"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.chains_snap"
+  },
+  "fx.charge_roar": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/charge_roar"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.charge_roar"
+  },
+  "fx.crystal_hit": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/crystal_hit"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.crystal_hit"
+  },
+  "fx.explosion": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/explosion"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.explosion"
+  },
+  "fx.fire_burst": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/fire_burst"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.fire_burst"
+  },
+  "fx.fire_wall": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/fire_wall"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.fire_wall"
+  },
+  "fx.fireball_launch": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/fireball_launch"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.fireball_launch"
+  },
+  "fx.gravity_fail": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/gravity_fail"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.gravity_fail"
+  },
+  "fx.ground_slam": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/ground_slam"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.ground_slam"
+  },
+  "fx.ice_shatter": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/ice_shatter"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.ice_shatter"
+  },
+  "fx.laser_beam": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/laser_beam"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.laser_beam"
+  },
+  "fx.laser_charge": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/laser_charge"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.laser_charge"
+  },
+  "fx.lava_bubble": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/lava_bubble"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.lava_bubble"
+  },
+  "fx.power_up": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/power_up"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.power_up"
+  },
+  "fx.roar": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/roar"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.roar"
+  },
+  "fx.shield_block": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/shield_block"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.shield_block"
+  },
+  "fx.shield_break": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/shield_break"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.shield_break"
+  },
+  "fx.slam_windup": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/slam_windup"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.slam_windup"
+  },
+  "fx.slash": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/slash"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.slash"
+  },
+  "fx.soul_drain": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/soul_drain"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.soul_drain"
+  },
+  "fx.storm_rise": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/storm_rise"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.storm_rise"
+  },
+  "fx.summon_call": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/summon_call"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.summon_call"
+  },
+  "fx.summon_rise": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/summon_rise"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.summon_rise"
+  },
+  "fx.swoop": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/swoop"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.swoop"
+  },
+  "fx.thunder_charge": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/thunder_charge"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.thunder_charge"
+  },
+  "fx.thunder_strike": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/thunder_strike"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.thunder_strike"
+  },
+  "fx.toxic_hiss": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/toxic_hiss"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.toxic_hiss"
+  },
+  "fx.void_open": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/void_open"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.void_open"
+  },
+  "fx.void_stare": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/void_stare"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.void_stare"
+  },
+  "fx.vortex_pull": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/vortex_pull"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.vortex_pull"
+  },
+  "fx.wave_rush": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/wave_rush"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.wave_rush"
+  },
+  "fx.web_snare": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/web_snare"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.web_snare"
+  },
+  "fx.wing_flap": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/wing_flap"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.wing_flap"
+  },
+  "fx.wither_moan": {
+    "sounds": [
+      {
+        "name": "vampyuyu:fx/wither_moan"
+      }
+    ],
+    "subtitle": "subtitles.vampyuyu.fx.wither_moan"
   }
 }
