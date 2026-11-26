@@ -22,10 +22,12 @@ import win.vampyuyu.survival.data.Settings;
  * @param repeatFloor the payout never falls below this fraction
  * @param damageNumbers show floating damage numbers on bosses (the generic damage indicators cannot, a boss takes
  *     a token real hit)
+ * @param flyerArrowMultiplier multiplies projectile hits on a flying boss (a dragon in the air is out of sword reach,
+ *     and a plain arrow against its pool looked like nothing at all)
  */
 public record BossSettings(double hpScale, double damageScale, double incomingScale, int tickPeriod, double barRange,
         double visualHealth, int hitIframes, double magicFindCap, boolean purgeOrphans, double scaleMinShare,
-        int repeatWindowMinutes, double repeatDecay, double repeatFloor, boolean damageNumbers) {
+        int repeatWindowMinutes, double repeatDecay, double repeatFloor, boolean damageNumbers, double flyerArrowMultiplier) {
 
     public static BossSettings defaults() {
         return parse(Settings.empty("boss"));
@@ -41,6 +43,7 @@ public record BossSettings(double hpScale, double damageScale, double incomingSc
             Math.max(0, Math.min(1, s.getDouble("settings.scale-min-share", 0.01))),
             Math.max(0, s.getInt("settings.repeat-window-minutes", 60)),
             Math.max(0, Math.min(1, s.getDouble("settings.repeat-decay", 0.2))),
-            Math.max(0, Math.min(1, s.getDouble("settings.repeat-floor", 0.25))), s.getBoolean("settings.damage-numbers", true));
+            Math.max(0, Math.min(1, s.getDouble("settings.repeat-floor", 0.25))), s.getBoolean("settings.damage-numbers", true),
+            Math.max(1, Math.min(50, s.getDouble("settings.flyer-arrow-multiplier", 5))));
     }
 }

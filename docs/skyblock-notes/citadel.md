@@ -5,7 +5,7 @@ GDD 3.1: "Des fleuves de poussière d'or coulent à l'envers. Le temps local est
 - **Zone**: `sb_citadel`, built once by `island/CitadelRealm` from `CitadelPlan` (marker `island/citadel-build.json`, bump
   `CitadelPlan.VERSION` to rebuild). Main island of sand around a giant hourglass, six dune islets, four dust columns, the
   Pharaoh's stepped pyramid in the north (its gate is the sealed door of the Citadel Bastion; the corridor behind it is plugged). The Sky Gate lights for the players who fought the boss named by the setting
-  `island.citadel.gate-boss` (the Mycelial Queen).
+  `island.citadel.gate-boss` (the Boreal Watcher of the Heights: a straight chain of Gates).
 - **Time Tide** (`api/TimeTide`): calm 720 s, surge 240 s, stall 240 s (`island.citadel.tide.*`), computed from the clock only, so
   there is no state to save and every server agrees. In the Citadel: surge = Speed + Haste, stall = Slowness, an action bar
   shows the phase, and `citadel_tide:<phase>` quest events fire when it changes.

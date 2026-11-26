@@ -179,6 +179,18 @@ public final class BastionService {
                 }
             }
         }
+        // A Realm's Bastion is behind that Realm's seal: /bastion enter must not skip the Gate that leads there
+        String realmId = cfg.realmOf(b.id());
+        win.vampyuyu.survival.api.Realm realm = realmId == null ? null : win.vampyuyu.survival.api.Realm.byId(realmId);
+        Optional<win.vampyuyu.survival.api.SkyGateApi> gates = core.service(win.vampyuyu.survival.api.SkyGateApi.class);
+        if (realm != null && gates.isPresent()) {
+            for (UUID id : members) {
+                if (!gates.get().isLit(id, realm)) {
+                    String name = party == null ? leader.getName() : party.nameOf(id);
+                    return name + " has not woken the Gate of the " + realm.title() + " yet. Its Bastion lies beyond it.";
+                }
+            }
+        }
         if (keysOf(leader, b.keyItem()) < 1) {
             String key = core.items().def(b.keyItem()).map(d -> d.name()).orElse("key");
             return "You need a " + key + " to open the " + b.name() + ". The party leader spends it when the fight opens.";

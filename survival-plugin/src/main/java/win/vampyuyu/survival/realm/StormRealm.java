@@ -70,7 +70,7 @@ import win.vampyuyu.survival.island.WorldSetup;
  */
 public final class StormRealm implements Listener {
     public static final String WORLD = SkyblockWorlds.STORM;
-    public static final String DEFAULT_GATE_BOSS = "sylvan_matriarch";
+    public static final String DEFAULT_GATE_BOSS = "mire_abomination";
     public static final String THUNDER_QUARTZ = RealmItems.THUNDER_QUARTZ;
     public static final String MARKER_FILE = "realms/storm-world.json";
     public static final String ADMIN = "vampyuyu.sb.storm.admin";
@@ -689,7 +689,7 @@ public final class StormRealm implements Listener {
                 } else {
                     boolean lit = core.service(SkyGateApi.class).map(g -> g.isLit(player.getUniqueId(), Realm.ARCHIPELAGO)).orElse(false);
                     if (!lit) {
-                        core.msg().warn(player, "Gate 6 is dark. Defeat the Mycelial Queen to open the Tempestuous Archipelago.");
+                        core.msg().warn(player, "Gate 6 is dark. Defeat the Guardian of the Putrid Marshes to open the Tempestuous Archipelago.");
                     } else {
                         core.service(SkyGateApi.class).ifPresent(g -> g.travel(player, Realm.ARCHIPELAGO));
                     }

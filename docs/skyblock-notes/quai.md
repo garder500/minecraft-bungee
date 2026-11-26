@@ -23,8 +23,9 @@ pillar: Realm name / "Walk through the" / "arch to the Quai" / "/hub or /island"
 Each `*Realm` registers its arrival spot with `SkyGateApi.setReturnArch` (world and position come from `spawn()`). `QuaiLanding` (a small platform per Realm in the sky of the hub) is only a fallback for a
 Realm that registers no destination (none today); while a Realm is not ready its destination returns null and the
 player sees "The way through the Gate is not open right now." instead.
-- **Waking Gates (title, then reveal)**: every Guardian kill that lights Gates (`*.gate-boss` settings: the Queen wakes five at
-  once, each `*Realm` handler calls `SkyGateApi.light`) goes through `SkyGates.light`, which does two things for the player.
+- **Waking Gates (title, then reveal)**: every Guardian kill that lights Gates (`*.gate-boss` settings: a straight chain since 2026-11-27, the
+  Guardian of Realm N lights Gate N+1: Echo > Ashes, Lava Colossus > Grove, Queen > Heights, Boreal Watcher > Citadel, Pharaoh >
+  Marshes, Mire Abomination > Archipelago, Thunder Dragon > Depths, Leviathan > Necropolis; each `*Realm` handler calls `SkyGateApi.light`) goes through `SkyGates.light`, which does two things for the player.
   (1) The same tick, one batch (`SkyGates.announce`, words in `island/GateReveal`, fr/de in `lang/menu_*.properties`
   `quai.wake.*`): a short title ("A Gate wakes", or "5 Gates wake"; a longer one clips in a small window) with the Realm name(s) as subtitle
   (one or two Gates; more would not fit, the names go to the chat line "... wake on the Quai: names"), a beacon and amethyst sound, and a chat line with a clickable `[Go to the Quai]` (`/quai`).

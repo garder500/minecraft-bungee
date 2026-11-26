@@ -75,7 +75,7 @@ public final class DepthsRealm implements Listener {
     public static final String ADMIN = "vampyuyu.sb.depths.admin";
     public static final String USE = "vampyuyu.sb.depths.use";
     /** Boss whose defeat lights the Gate for the players who fought it (setting {@code realm.depths.gate-boss}). */
-    public static final String DEFAULT_GATE_BOSS = "sylvan_matriarch";
+    public static final String DEFAULT_GATE_BOSS = "thunder_dragon";
     private static final String LANE = "depths";
     private static final double DISCOVER_RADIUS = 8;
     private static final double BORDER = 500;
@@ -591,7 +591,7 @@ public final class DepthsRealm implements Listener {
                 } else {
                     boolean lit = core.service(SkyGateApi.class).map(g -> g.isLit(player.getUniqueId(), Realm.DEPTHS)).orElse(false);
                     if (!lit) {
-                        core.msg().warn(player, "Gate 7 is dark. Defeat the guardian that keeps it shut to open the Abyssal Depths.");
+                        core.msg().warn(player, "Gate 7 is dark. Defeat the Guardian of the Tempestuous Archipelago to open the Abyssal Depths.");
                     } else {
                         core.service(SkyGateApi.class).ifPresent(g -> g.travel(player, Realm.DEPTHS));
                     }

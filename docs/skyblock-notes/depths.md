@@ -6,7 +6,7 @@ Package `depths/` (feature `depths`, listed after `ashes`). World `sb_depths` (v
 - **Zone**: Pressure Landing, four suspended domes (Lantern Shoals, Kelp Spire, Hollow Trench, Chain Dome) = the lower half of a
   sphere of water in a prismarine shell, rim at the landing height; a Drowned Bell platform on the road; the sealed door of the
   Sarcophagus on the east side of the Chain Dome. Shells, rims, landing and the water cannot be broken, built on or bucketed.
-- **Opening**: setting `realm.depths.gate-boss` (default `sylvan_matriarch`, a proposal) lights Gate 7 for the players who fought it.
+- **Opening**: setting `realm.depths.gate-boss` (default `thunder_dragon`, the Archipelago's Guardian: the Gates are a straight chain) lights Gate 7 for the players who fought it.
   `/depths go`, `/depths go force` (admin), `/depths` journal.
 - **Pressure** (`DepthsMath`): depth under the surface 0-6 free, 7-11 tier 1 (needs 20), 12+ tier 2 (needs 45). Resistance =
   Respiration x10 + turtle helmet 10 + item PDC `pressure_resist` + 20 after Pressure Attunement; Conduit Power = immune. Too little:

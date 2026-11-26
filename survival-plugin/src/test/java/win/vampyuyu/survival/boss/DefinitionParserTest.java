@@ -280,4 +280,15 @@ public class DefinitionParserTest {
         assertEquals(20, s.visualHealth(), 0);
         assertEquals(1, BossSettings.defaults().hpScale(), 0);
     }
+
+    @Test
+    public void arrowsHitAFlyingBossHarder() {
+        assertEquals(5, BossSettings.defaults().flyerArrowMultiplier(), 0);
+        exec("INSERT INTO setting (id, type, value) VALUES ('boss.settings.flyer-arrow-multiplier', 'real', '0.2')");
+        assertEquals(1, BossSettings.parse(Settings.load(db, "boss")).flyerArrowMultiplier(), 0); // never weaker than vanilla
+        assertEquals(30, BossMath.flyerHit(6, true, true, false, 5), 1e-9);   // an arrow on the Echo in the air
+        assertEquals(6, BossMath.flyerHit(6, true, true, true, 5), 1e-9);     // stunned on the ground: swords' turn
+        assertEquals(6, BossMath.flyerHit(6, false, true, false, 5), 1e-9);   // a melee hit
+        assertEquals(6, BossMath.flyerHit(6, true, false, false, 5), 1e-9);   // a walking boss
+    }
 }

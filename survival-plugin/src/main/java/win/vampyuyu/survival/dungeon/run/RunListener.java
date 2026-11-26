@@ -516,8 +516,14 @@ public final class RunListener implements Listener {
         }
         event.setCancelled(true);
         DungeonRun run = active(p);
+        if (flask && run == null && win.vampyuyu.survival.core.SkyblockWorlds.isBastion(p.getWorld().getName())) {
+            // the flask also heals in a Bastion fight (a mod brought some to the Echo of the Rift and they did nothing)
+            drinkFlask(p, held, text -> ctx.core.msg().info(p, text.replace("<gray>", "")));   // plain text
+            return true;
+        }
         if (run == null || run.state.over()) {
-            ctx.core.msg().warn(p, "This item only works inside a dungeon run.");
+            ctx.core.msg().warn(p, flask ? "This item only works inside a dungeon run or a Bastion."
+                : "This item only works inside a dungeon run.");
             return true;
         }
         RunPlayer rp = run.player(p.getUniqueId());
@@ -533,20 +539,29 @@ public final class RunListener implements Listener {
             held.setAmount(held.getAmount() - 1);
             return true;
         }
+        drinkFlask(p, held, text -> run.say(p, text));
+        return true;
+    }
+
+    /** Drinks a Healing Flask: a share of max health back, behind the flask cooldown. */
+    private void drinkFlask(Player p, ItemStack held, java.util.function.Consumer<String> say) {
+        GameMode mode = p.getGameMode();
+        if (p.isDead() || (mode != GameMode.SURVIVAL && mode != GameMode.ADVENTURE)) {
+            return; // an eliminated Bastion fighter watches as a spectator
+        }
         if (!cooldowns.tryUse(p.getUniqueId(), "flask", ctx.cfg.flaskCooldownSeconds * 1000L)) {
-            run.say(p, "<gray>The flask is still empty for " + (cooldowns.remaining(p.getUniqueId(), "flask") / 1000 + 1) + "s.");
-            return true;
+            say.accept("<gray>The flask is still empty for " + (cooldowns.remaining(p.getUniqueId(), "flask") / 1000 + 1) + "s.");
+            return;
         }
         var max = p.getAttribute(Attribute.MAX_HEALTH);
         if (max == null || p.getHealth() >= max.getValue()) {
             cooldowns.clear(p.getUniqueId(), "flask");
-            run.say(p, "<gray>You are already at full health.");
-            return true;
+            say.accept("<gray>You are already at full health.");
+            return;
         }
         held.setAmount(held.getAmount() - 1);
         p.setHealth(Math.min(max.getValue(), p.getHealth() + max.getValue() * ctx.cfg.flaskHealPercent / 100.0));
         p.getWorld().playSound(p.getLocation(), org.bukkit.Sound.ENTITY_GENERIC_DRINK, 1f, 1.2f);
-        return true;
     }
 
     /** Armor stand equipment swaps have their own events: nothing may be taken from or put on a stand. */

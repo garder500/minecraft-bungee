@@ -26,6 +26,7 @@ INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.repeat-window
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.repeat-decay', 'real', '0.2', '...by this fraction per earlier kill...');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.repeat-floor', 'real', '0.25', '...down to this fraction (0 decay turns the damper off).');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.damage-numbers', 'bool', 'true', 'Floating damage numbers on bosses (they take a token real hit, so the generic ones read 0).');
+INSERT INTO setting (id, type, value, note) VALUES ('boss.settings.flyer-arrow-multiplier', 'real', '5.0', 'Multiplies arrows and other projectiles that hit a flying boss (the Echo, the Thunder Dragon) while it is in the air; out of sword reach, a plain arrow barely moved its bar (1-50).');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.slayer.enabled', 'bool', 'true', '');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.slayer.ignore-spawner-mobs', 'bool', 'true', '');
 INSERT INTO setting (id, type, value, note) VALUES ('boss.slayer.spawn-min-distance', 'int', '6', '');
