@@ -60,7 +60,7 @@ It uses disposable UUIDs and correctly signed private forwarding, never changes 
 
 ## Expanded casts and free-play objectives (1.1)
 
-The panel's arena editor includes **Automatic cast** or exact role counts. Automatic casting follows the rulebook's wolf table and adds roles as the table grows (see above). Each role has a maximum count (masons up to 3, vampires up to 6, most roles once). Custom counts must fit the minimum participant count, with the killers (wolves and vampires) strictly in the minority. The GUI always shows the viewer's private role instructions.
+`/ww cast` sets an **automatic cast** or exact role counts. Automatic casting follows the rulebook's wolf table and adds roles as the table grows (see above). Each role has a maximum count (masons up to 3, vampires up to 6, most roles once). Custom counts must fit the minimum participant count, with the killers (wolves and vampires) strictly in the minority. The GUI always shows the viewer's private role instructions.
 
 * **Cupid** selects two lovers on the opening night; if time runs out first, nobody is bound and Cupid is told. A lover's elimination also eliminates their partner. A surviving mixed wolf/village couple has a Lovers victory when only they remain.
 * **Hunter** gets a timed final-shot phase after game elimination, including elimination through a lover. Winner resolution waits for the shot or its timeout. The shot keeps the time of day it interrupts: a hunter killed at night shoots at dawn, in daylight. A disconnected hunter forfeits the shot.
@@ -84,7 +84,7 @@ The local Creative `werewolf` arena is configured for X 1241–1315, Z -982–-8
 
 ### Solo practice
 
-In the panel, select a waiting Werewolf arena and use **Solo practice → Start practice**. Choose a connected player if nobody has joined yet (a single eligible player is selected automatically), then choose the number of virtual participants. The default is seven, bounded by the configured minimum/maximum total player count. The real player joins through the normal snapshot/teleport path before the game starts. No real player is moved until the administrator confirms.
+In game, run `/ww debug practice <bots> [player]` on a waiting Werewolf arena (the bearer API's `arena-practice-start` does the same for scripts). Name a connected player if nobody has joined yet, then the number of virtual participants. The default is seven, bounded by the configured minimum/maximum total player count. The real player joins through the normal snapshot/teleport path before the game starts. No real player is moved until the administrator confirms.
 
 Virtual participants are labeled `[Bot] Guest N` in the panel and compass. They receive ordinary randomized secret roles and act through the same rules as a click, each at a random moment of its turn, so their ballots appear under name tags while the vote is open. Every role acts: Cupid binds two lovers, the guard protects someone (never twice in a row), the seer inspects players she has not seen yet, the witch saves the wolves' victim most of the time, sometimes poisons and then goes back to sleep, and a dead bot hunter shoots. A bot only uses what its role may know (its pack, its lover, its visions, the witch's victim, public ballots). Bot wolves never split the pack: they follow a real wolf's pick as soon as it is made and line up behind one victim at the deadline. In the day vote bots follow the leader, vote at random or skip; a seer votes against a wolf she saw; nobody votes against their lover or their pack. If the vote is still tied at the deadline, bots move to one of the leaders so the day is decided. When the timer runs out, every bot that has not acted yet acts at once. Each bot click is written to the game log (see Werewolf game logs) with the game's answer, like a player's. Bots do not simulate conversation. Practice phases last at most 15 seconds; normal game timings remain unchanged. Bots never connect to Minecraft, appear in TAB, spawn NPC entities, create player accounts or write inventories/snapshots. Their presence is in-memory only.
 
@@ -202,7 +202,7 @@ The old spellings `/ww practice`, `force`, `act`, `click`, `peek` and `phase` st
 
 Roles: Villager, Werewolf, Seer, Witch, Hunter, Cupid, Guard and new in 1.6 **Alpha wolf** (his night vote counts double), **Infector** (once per game the victim becomes a wolf instead of dying), **Wolf cub** (when he dies the pack kills two players the next night), **Scapegoat** (dies when the day vote is tied) and **Bear tamer** (at dawn everyone hears a growl if a living wolf sits next to him). The automatic cast adds the scapegoat from 11 players and the bear tamer from 12; the new wolf roles come with `/ww cast set` (the wolf side wins and loses together). Not implemented: little girl, pause and resume.
 
-### Variants (`/ww rules`, or the panel's arena editor)
+### Variants (`/ww rules`)
 
 | Setting | Default | Does |
 | --- | --- | --- |
@@ -238,9 +238,8 @@ the game's answer or the reason it was refused, menu clicks that were ignored (s
 presentation running), the vote tallies, the wolves' choice, guard and witch saves, every death with
 its cause, the hunter's shot, departures, the winner and the final roles, and the arena's stop.
 
-The panel lists the logs under **Arenas › Game logs** and downloads them; a running game's log
-downloads as far as it is written. The arena API serves them at `GET /arenas/logs` and
-`GET /arenas/logs/<name>`.
+The arena's bearer API serves them at `GET /arenas/logs` and `GET /arenas/logs/<name>`
+(`scripts/e2e_client.py` reads them); a running game's log downloads as far as it is written.
 
 ## ValoBlock Quick Actions (open the shop with a key)
 

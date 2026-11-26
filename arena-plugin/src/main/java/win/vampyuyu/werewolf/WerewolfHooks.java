@@ -405,7 +405,7 @@ public final class WerewolfHooks implements GameHooks {
 
   // ------------------------------------------------------------------- panel
 
-  /** The play-by-play logs of the games, listed and downloaded by the panel. */
+  /** The play-by-play logs of the games, listed and downloaded over the bearer API (scripts/e2e_client.py). */
   @Override
   public List<Route> extraRoutes() {
     return List.of(this::logs);

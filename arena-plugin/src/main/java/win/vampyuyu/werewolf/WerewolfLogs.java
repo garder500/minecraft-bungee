@@ -13,7 +13,7 @@ import win.vampyuyu.arena.NexusArenaEngine;
 
 /**
  * Werewolf game journals on disk: one text file per game in plugins/NexusArenaEngine/logs/werewolf,
- * mirrored to the server console, listed and served to the panel for download.
+ * mirrored to the server console, listed and served over the bearer API for download.
  */
 public final class WerewolfLogs {
   /** Old journals are deleted beyond this many files. */

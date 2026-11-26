@@ -212,13 +212,13 @@ func TestInventoryManagementAuthValidationAndAudit(t *testing.T) {
 func TestArenaActionsRequireCSRFAndFixedOperation(t *testing.T) {
 	s, _ := setup(t)
 	cookie, csrf := login(t, s)
-	for _, action := range []string{"arena-save", "arena-start", "arena-ban", "arena-announce", "ww-config-save", "ww-start"} {
+	for _, action := range []string{"arena-save", "arena-start", "arena-ban", "arena-announce"} {
 		body := `{"action":"` + action + `","arenaId":"werewolf"}`
 		if w := request(t, s, "POST", "/api/v1/servers/creative/game/action", body, cookie, ""); w.Code != 403 {
 			t.Fatal(action, w.Code)
 		}
 	}
-	for _, action := range []string{"arena-exec", "arena-op", "arena-command", "ww-exec"} {
+	for _, action := range []string{"arena-exec", "arena-op", "arena-command", "ww-exec", "ww-start", "ww-config-save"} {
 		if w := request(t, s, "POST", "/api/v1/servers/creative/game/action", `{"action":"`+action+`"}`, cookie, csrf); w.Code != 400 {
 			t.Fatal(action, w.Code)
 		}
@@ -295,32 +295,5 @@ func TestBothPacksAreServedEachByItsOwnHash(t *testing.T) {
 		if w.Code != 404 {
 			t.Fatal("a pack that is not configured must be 404")
 		}
-	}
-}
-
-func TestGameLogDownloadsNeedALoginAndAPlainLogName(t *testing.T) {
-	var seen []string
-	controller := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		seen = append(seen, r.URL.Path)
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Write([]byte("line one\n"))
-	}))
-	defer controller.Close()
-	s, _ := setup(t)
-	s.Controller = controller.URL
-	route := "/api/v1/servers/creative/game/logs/2026-10-22_18-55-01_village_abcd1234.log"
-	if w := request(t, s, "GET", route, "", nil, ""); w.Code != 401 {
-		t.Fatal(w.Code)
-	}
-	cookie, _ := login(t, s)
-	w := request(t, s, "GET", route, "", cookie, "")
-	if w.Code != 200 || w.Body.String() != "line one\n" || w.Header().Get("Content-Type") != "text/plain; charset=utf-8" || !strings.Contains(w.Header().Get("Content-Disposition"), "abcd1234.log") {
-		t.Fatal(w.Code, w.Header(), w.Body.String())
-	}
-	if w := request(t, s, "GET", "/api/v1/servers/creative/game/logs/notes.txt", "", cookie, ""); w.Code != 400 {
-		t.Fatal(w.Code)
-	}
-	if len(seen) != 1 || seen[0] != "/servers/creative/game/logs/2026-10-22_18-55-01_village_abcd1234.log" {
-		t.Fatal(seen)
 	}
 }

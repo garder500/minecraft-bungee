@@ -2201,7 +2201,6 @@ body.confirmation-open {
   margin-right: auto;
   color: var(--muted);
 }
-.game-logs a.button,
 .player-table a.button {
   border: 1px solid var(--border);
   background: var(--surface);
@@ -2210,7 +2209,6 @@ body.confirmation-open {
   padding: 9px 15px;
   text-decoration: none;
 }
-.game-logs a.button:hover,
 .player-table a.button:hover {
   border-color: var(--accent-hover);
 }
@@ -2276,42 +2274,6 @@ body.confirmation-open {
 }
 .arena-game-rules h3 {
   margin: 10px 0 18px;
-}
-.arena-editor .arena-inline-toggle {
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-}
-.arena-editor .arena-inline-toggle input {
-  width: 17px;
-  height: 17px;
-  accent-color: var(--accent);
-}
-.arena-role-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px;
-  margin: 20px 0;
-}
-.arena-editor .arena-role-card {
-  padding: 18px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  gap: 10px;
-}
-.arena-role-card > span {
-  font-size: 27px;
-  color: var(--accent);
-}
-.arena-role-card small {
-  min-height: 48px;
-  color: var(--muted);
-  line-height: 1.6;
-}
-.arena-role-card b {
-  font-size: 11px;
-  color: var(--accent);
 }
 .arena-kit-row {
   display: grid;
