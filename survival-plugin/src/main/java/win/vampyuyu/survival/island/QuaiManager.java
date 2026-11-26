@@ -25,10 +25,15 @@ public final class QuaiManager {
         public int hubY;
     }
 
+    /** Square cleared before a new plan version is built: x -25..25, z 47..97 (the old Quais stayed inside it; hub
+     * blocks south of z 45 all sit at |x| >= 26, so the hub is never touched). */
+    static final int WIPE_RADIUS = 25;
+
     private final Core core;
     private final IslandService service;
     private final IslandConfig cfg;
     private volatile boolean ready;
+    private StructureModels models;
 
     public QuaiManager(Core core, IslandService service) {
         this.core = core;
@@ -74,9 +79,38 @@ public final class QuaiManager {
         Marker marker = core.store().read(MARKER_FILE, Marker.class, Marker::new);
         if (upToDate(marker, cfg.hubY) && present(hub)) {
             ready = true;
+            showModels(hub);
+            return;
+        }
+        if (marker.complete && marker.version != QuaiPlan.VERSION && present(hub)) {
+            // a new layout: clear the old one first, its gates and column would show through the new Quai
+            service.logger().info("The Quai layout changed (plan " + QuaiPlan.VERSION + "): clearing the old Quai before the rebuild");
+            service.runner().submit(HUB_LANE, new WipeJob(core.getPlugin(), "quai (old plan)", hub, 0, QuaiPlan.CENTER_Z,
+                WIPE_RADIUS, cfg.chunkTimeoutTicks)).thenAccept(ok -> rebuild());
             return;
         }
         rebuild();
+    }
+
+    /** The display models of the Quai (armillary, halos), or null before it stands. */
+    public StructureModels models() {
+        return models;
+    }
+
+    private void showModels(World hub) {
+        if (models != null) {
+            models.remove();
+        }
+        models = new StructureModels(core.getPlugin(), "quai", hub, 0, cfg.hubY, QuaiPlan.CENTER_Z,
+            QuaiPlan.build(cfg.hubMaxBlocks).models());
+    }
+
+    /** Removes the display models (feature stop). */
+    public void close() {
+        if (models != null) {
+            models.remove();
+            models = null;
+        }
     }
 
     /** Builds the Quai again over the old one (admin command, layout change). */
@@ -86,6 +120,10 @@ public final class QuaiManager {
             return;
         }
         ready = false;
+        if (models != null) {
+            models.remove();
+            models = null;
+        }
         BlockPlan plan = QuaiPlan.build(cfg.hubMaxBlocks);
         service.runner().submit(HUB_LANE, new PlanJob(core.getPlugin(), "quai", hub, plan, 0, cfg.hubY, QuaiPlan.CENTER_Z,
             cfg.chunkTimeoutTicks)).thenAccept(ok -> {
@@ -94,6 +132,7 @@ public final class QuaiManager {
                     return;
                 }
                 ready = true;
+                showModels(hub);
                 Marker marker = new Marker();
                 marker.version = QuaiPlan.VERSION;
                 marker.complete = true;

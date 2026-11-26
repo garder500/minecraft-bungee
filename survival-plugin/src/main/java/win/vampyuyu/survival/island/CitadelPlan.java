@@ -12,7 +12,7 @@ import win.vampyuyu.survival.api.Realm;
  */
 public final class CitadelPlan {
     /** Bump when the layout changes so an existing Citadel is rebuilt (the marker file stores it). */
-    public static final int VERSION = 3;
+    public static final int VERSION = 4; // 4: the monumental return arch and sealed door
     public static final int MAIN_RADIUS = 26;
     public static final int ISLET_COUNT = 6;
     public static final int ISLET_ORBIT = 46;
@@ -74,6 +74,7 @@ public final class CitadelPlan {
         ShapeKit.ring(plan, s[0], 0, s[2], 3.2, 4.4, Material.CUT_SANDSTONE);
         plan.set(s[0], 0, s[2], Material.GOLD_BLOCK);
         // the return arch and its sign (it also clears the cell of the old standing sign on a rebuild)
+        RealmLandmarks.landing(plan, Realm.CITADEL, s[0], s[1], s[2]); // the arrival plaza
         ReturnArch.build(plan, Realm.CITADEL, s[0], s[1], s[2]);
         plan.anchor("spawn", s[0], s[1], s[2]);
         // the sealed door where the exploration ends: right-click the seal with the Bastion key
@@ -84,6 +85,7 @@ public final class CitadelPlan {
         plan.anchor("hourglass", 0, 1, 0);
         plan.biome(-MAIN_RADIUS - 4, -20, -MAIN_RADIUS - 4, MAIN_RADIUS + 4, 14, MAIN_RADIUS + 4, "minecraft:desert");
         ShapeKit.fixSupport(plan, Material.SAND, Material.SANDSTONE);
+        RealmLandmarks.build(plan, Realm.CITADEL); // the floating monument and its relic, last
         return plan;
     }
 

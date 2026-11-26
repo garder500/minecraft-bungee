@@ -12,7 +12,7 @@ import java.util.List;
  */
 public final class AstralLayout {
     /** Bump to rebuild existing worlds when the layout changes. */
-    public static final int VERSION = 1;
+    public static final int VERSION = 2; // 2: the rift wound, flotsam and drift, tree veins, glowing disc, Throne, models
     /** World y of the Rift Landing surface. */
     public static final int ORIGIN_Y = 100;
     /** Plans placed above this many blocks are cut: the test keeps the layout well below it. */

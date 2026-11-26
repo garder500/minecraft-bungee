@@ -5,9 +5,9 @@ import org.bukkit.Material;
 import win.vampyuyu.survival.api.Realm;
 
 /**
- * The return arch of a Realm landing: the same small shape in all eight Realms (two pillars and a lintel around a
- * 3 x 3 veil of stained glass, a wall sign on the left face), two blocks behind the arrival spot, only the palette
- * changes. Walking into the veil takes the player back to the Quai ({@code SkyGates}). Pure geometry, no server needed.
+ * The return arch of a Realm landing: the same shape in all eight Realms (pillars five high around a 3 x 3 veil of
+ * stained glass, buttresses, a pointed crown, a wall sign on the pillar, the Gate's halo turning above), two blocks
+ * behind the arrival spot, only the palette changes. Walking into the veil takes the player back to the Quai ({@code SkyGates}). Pure geometry, no server needed.
  *
  * <p>Everything is relative to the arrival spot {@code (sx, sy, sz)}: the spot a player stands on after the Gate
  * ({@code sy} is the standing height, the floor is {@code sy - 1}). The arch faces north (-z), like the arrival view
@@ -84,34 +84,72 @@ public final class ReturnArch {
         return List.of(signName(realm), "Walk through the", "arch to the Quai", "/hub or /island");
     }
 
-    /** Adds the arch of a Realm to the plan, around the arrival spot. Call it after the rest of the landing. */
+    /** Height of the pillars over the floor (the veil is three high, the pointed crown goes above it). */
+    public static final int PILLAR_TOP = 4;
+    /** Height of the halo's centre over the standing level, and its scale. */
+    public static final double HALO_DY = 8.5;
+    static final float HALO_SCALE = 1.5f;
+
+    /**
+     * Adds the arch of a Realm to the plan, around the arrival spot. Call it after the rest of the landing. The same
+     * shape everywhere: a threshold seven wide, two pillars five high around the veil, low buttresses with lights, a
+     * pointed crown (lintel, a row above it, the keystone light), lights on the pillars. Over it the halo of the
+     * Realm's Gate turns (a display model, {@link #models}): the way home is the Gate's own light.
+     */
     public static void build(BlockPlan plan, Realm realm, int sx, int sy, int sz) {
         Palette p = palette(realm);
         Side d = side(realm);
         // free the arch's box and the strip in front of the veil (decor placed earlier must not stand in the way)
-        for (int u = -REACH; u <= REACH; u++) {
-            for (int y = sy; y <= sy + VEIL_HEIGHT + 1; y++) {
+        for (int u = -REACH - 1; u <= REACH + 1; u++) {
+            for (int y = sy; y <= sy + PILLAR_TOP + 2; y++) {
                 plan.air(d.x(sx, u, DZ), y, d.z(sz, u, DZ));
-                plan.air(d.x(sx, u, DZ - 1), y, d.z(sz, u, DZ - 1));
+                if (Math.abs(u) <= REACH) {
+                    plan.air(d.x(sx, u, DZ - 1), y, d.z(sz, u, DZ - 1));
+                }
             }
         }
-        for (int u = -REACH; u <= REACH; u++) {
+        for (int u = -REACH - 1; u <= REACH + 1; u++) {
             plan.set(d.x(sx, u, DZ), sy - 1, d.z(sz, u, DZ), p.pillar());
+        }
+        // pillars, five high, and their lights
+        for (int side : new int[] {-REACH, REACH}) {
+            for (int y = sy; y <= sy + PILLAR_TOP; y++) {
+                plan.set(d.x(sx, side, DZ), y, d.z(sz, side, DZ), p.pillar());
+            }
+            plan.set(d.x(sx, side, DZ), sy + PILLAR_TOP + 1, d.z(sz, side, DZ), p.light());
+            // a low buttress outside each pillar, a light on it
+            int out = side < 0 ? side - 1 : side + 1;
+            plan.set(d.x(sx, out, DZ), sy, d.z(sz, out, DZ), p.pillar());
+            plan.set(d.x(sx, out, DZ), sy + 1, d.z(sz, out, DZ), p.cap());
+            plan.set(d.x(sx, out, DZ), sy + 2, d.z(sz, out, DZ), p.light());
+        }
+        // the pointed crown: the lintel over the veil, a narrower row, the keystone
+        for (int u = -1; u <= 1; u++) {
             plan.set(d.x(sx, u, DZ), sy + VEIL_HEIGHT, d.z(sz, u, DZ), p.cap());
         }
-        for (int y = sy; y < sy + VEIL_HEIGHT; y++) {
-            plan.set(d.x(sx, -REACH, DZ), y, d.z(sz, -REACH, DZ), p.pillar());
-            plan.set(d.x(sx, REACH, DZ), y, d.z(sz, REACH, DZ), p.pillar());
-        }
-        plan.set(d.x(sx, -REACH, DZ), sy + VEIL_HEIGHT + 1, d.z(sz, -REACH, DZ), p.light());
-        plan.set(d.x(sx, REACH, DZ), sy + VEIL_HEIGHT + 1, d.z(sz, REACH, DZ), p.light());
-        plan.set(d.x(sx, 0, DZ), sy + VEIL_HEIGHT + 1, d.z(sz, 0, DZ), p.light()); // keystone: an arch, not a box
+        plan.set(d.x(sx, -1, DZ), sy + VEIL_HEIGHT + 1, d.z(sz, -1, DZ), p.cap());
+        plan.set(d.x(sx, 1, DZ), sy + VEIL_HEIGHT + 1, d.z(sz, 1, DZ), p.cap());
+        plan.set(d.x(sx, 0, DZ), sy + VEIL_HEIGHT + 1, d.z(sz, 0, DZ), p.light());
+        plan.set(d.x(sx, 0, DZ), sy + VEIL_HEIGHT + 2, d.z(sz, 0, DZ), p.cap());
         for (int[] cell : veilCells(realm, sx, sy, sz)) {
             plan.set(cell[0], cell[1], cell[2], p.veil());
         }
         List<String> lines = signLines(realm);
         plan.sign(d.x(sx, REACH, DZ - 1), sy + 1, d.z(sz, REACH, DZ - 1), p.wallSign(), "facing=" + d.signFacing,
             lines.get(0), lines.get(1), lines.get(2), lines.get(3));
+    }
+
+    /**
+     * The display model over a Realm's arch, in world coordinates: the lit halo of its Gate (the Quai's model), in the
+     * Realm's colour, turning in the plane of the veil, seen by everybody (the way home is always open).
+     */
+    public static List<BlockPlan.Model> models(Realm realm, int sx, int sy, int sz) {
+        Side d = side(realm);
+        double x = d.x(sx, 0, DZ) + 0.5;
+        double z = d.z(sz, 0, DZ) + 0.5;
+        float yaw = (float) Math.toDegrees(Math.atan2(d.ox, d.oz));
+        return List.of(BlockPlan.Model.of("structure/quai_halo_lit", x, sy + HALO_DY, z, HALO_SCALE).tilt(0, yaw, 0)
+            .spin(16, "z").color(QuaiPlan.haloColor(realm)));
     }
 
     /** The glass cells of the veil, as {x, y, z}. */

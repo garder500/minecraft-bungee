@@ -78,6 +78,9 @@ public final class SkyGates implements SkyGateApi, Listener {
 
     /** A Realm's arrival spot as block coordinates, the reference of {@link ReturnArch}. */
     private record ArchSite(Realm realm, int x, int y, int z) {}
+    /** The halo over each Realm's return arch (display models), by Realm. */
+    private final Map<Realm, StructureModels> archModels = new EnumMap<>(Realm.class);
+    private final Map<Realm, Location> archModelSpots = new EnumMap<>(Realm.class);
     /** Gates currently shown lit to a player, so a gate put out is restored. */
     private final Map<UUID, Set<Realm>> shown = new HashMap<>();
     /** Players who are shown the Devourer's mouth open, and the last answer of the access check (it is not free). */
@@ -119,6 +122,10 @@ public final class SkyGates implements SkyGateApi, Listener {
             viewTask.cancel();
             viewTask = null;
         }
+        quai.close();
+        archModels.values().forEach(StructureModels::remove);
+        archModels.clear();
+        RealmLandmarks.close();
     }
 
     private void save() {
@@ -568,6 +575,7 @@ public final class SkyGates implements SkyGateApi, Listener {
             if (spot == null || spot.getWorld() == null) {
                 continue;
             }
+            archModels(entry.getKey(), spot);
             double[] c = ReturnArch.veilCentre(entry.getKey(), spot.getBlockX(), spot.getBlockY(), spot.getBlockZ());
             Location at = new Location(spot.getWorld(), c[0], c[1], c[2]);
             boolean alongZ = ReturnArch.side(entry.getKey()) == ReturnArch.Side.EAST; // the veil runs north-south
@@ -582,6 +590,22 @@ public final class SkyGates implements SkyGateApi, Listener {
         }
     }
 
+    /** Keeps the halo over a Realm's return arch up while players are near it. */
+    private void archModels(Realm realm, Location spot) {
+        Location known = archModelSpots.get(realm);
+        StructureModels models = archModels.get(realm);
+        if (models == null || known == null || !known.equals(spot)) {
+            if (models != null) {
+                models.remove();
+            }
+            models = new StructureModels(core.getPlugin(), "arch:" + realm.id(), spot.getWorld(), 0, 0, 0,
+                ReturnArch.models(realm, spot.getBlockX(), spot.getBlockY(), spot.getBlockZ()));
+            archModels.put(realm, models);
+            archModelSpots.put(realm, spot.clone());
+        }
+        models.tick(TICK_PERIOD);
+    }
+
     private void tick() {
         viewTick++;
         archParticles();
@@ -589,6 +613,11 @@ public final class SkyGates implements SkyGateApi, Listener {
         if (hub == null) {
             return;
         }
+        StructureModels models = quai.models();
+        if (models != null) {
+            models.tick(TICK_PERIOD);
+        }
+        RealmLandmarks.tick(core.getPlugin(), TICK_PERIOD);
         Location center = quai.center();
         for (Player player : hub.getPlayers()) {
             if (player.getLocation().distanceSquared(center) > VIEW_RANGE * VIEW_RANGE) {
@@ -685,6 +714,11 @@ public final class SkyGates implements SkyGateApi, Listener {
         changes.put(new Location(hub, crown[0], cfg.hubY + crown[1], QuaiPlan.CENTER_Z + crown[2]),
             (lit ? QuaiPlan.LIT_CROWN : QuaiPlan.DARK_CROWN).createBlockData());
         player.sendMultiBlockChange(changes);
+        StructureModels models = quai.models();
+        if (models != null) { // the halo over the Gate: the lit one in the Realm's colour for its owner only
+            models.visible(player, "halo_lit:" + realm.id(), lit);
+            models.visible(player, "halo:" + realm.id(), !lit);
+        }
         int[] at = QuaiPlan.signPos(gate);
         Block block = hub.getBlockAt(at[0], cfg.hubY + 1, QuaiPlan.CENTER_Z + at[1]);
         if (block.getState() instanceof Sign sign) {

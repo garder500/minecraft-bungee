@@ -67,7 +67,7 @@ public class HubPlanTest {
 
     @Test
     public void versionIsBumpedAndTheOldWipeSquareLeavesTheQuaiBridge() {
-        assertEquals(4, HubPlan.VERSION);
+        assertEquals(5, HubPlan.VERSION);
         HubManager.Marker old = new HubManager.Marker();
         old.version = 2;
         old.complete = true;
@@ -209,8 +209,10 @@ public class HubPlanTest {
         assertTrue(FULL.count(Material.LIGHT_BLUE_STAINED_GLASS) >= 8);
         assertTrue(FULL.count(Material.SEA_LANTERN) >= 8);
         assertTrue(FULL.count(Material.CRYING_OBSIDIAN) >= 4);
-        assertTrue("memory spire", FULL.solidAt(0, 14, 0));
-        assertEquals(Material.AMETHYST_CLUSTER, FULL.get(0, 16, 0));
+        assertTrue("memory spire", FULL.solidAt(0, 14, 0) && FULL.solidAt(0, HubPlan.SPIRE_HEIGHT - 2, 0));
+        assertEquals(Material.AMETHYST_CLUSTER, FULL.get(0, HubPlan.SPIRE_HEIGHT + 1, 0));
+        assertTrue("the crystal rings turn round its tip", FULL.models().stream()
+            .anyMatch(m -> m.item().startsWith("structure/hub_memory") && m.y() > HubPlan.SPIRE_HEIGHT));
         assertTrue("island arch", FULL.solidAt(-4, 5, -29));
         assertTrue("Threshold", FULL.solidAt(5, 5, 41) && FULL.solidAt(-5, 5, 41));
         assertEquals("no fountain water", 0, FULL.count(Material.WATER));

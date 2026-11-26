@@ -14,7 +14,7 @@ import org.bukkit.Material;
  */
 public final class HubPlan {
     /** Bump when the layout changes so existing hubs are rebuilt (the marker file stores it). */
-    public static final int VERSION = 4; // 4: the Breach (HubBreach), the hub's one damage zone
+    public static final int VERSION = 5; // 5: the crystal monolith, taller arches and colonnade, deep keel, lights, display models
     public static final int SPAWN_X = 0;
     public static final int SPAWN_Z = 14;
     /** The Quai bridge (QuaiPlan) starts at this hub Z; the processional ends one block before it. */
@@ -141,12 +141,16 @@ public final class HubPlan {
         waymarks(plan);
         spire(plan, 0, 0, 1.0);
         for (int[] at : RIM_SPIRES) {
-            spire(plan, at[0], at[1], 0.55);
+            spire(plan, at[0], at[1], 0.6);
         }
         rimRuins(plan);
         breach(plan);
         debris(plan);
         underside(plan);
+        lights(plan);
+        double tip = spireHeight(1.0) + 1.5;
+        plan.model(BlockPlan.Model.of("structure/hub_memory_shards", 0.5, tip, 0.5, 6f).spin(7, "y"));
+        plan.model(BlockPlan.Model.of("structure/hub_memory_motes", 0.5, tip - 1, 0.5, 6f).spin(-15, "y"));
         plan.anchor("spawn", SPAWN_X, 1, SPAWN_Z);
         for (Pad pad : PADS) {
             plan.anchor("pad:" + pad.id(), pad.x(), 1, pad.z());
@@ -155,6 +159,23 @@ public final class HubPlan {
     }
 
     // ---------------------------------------------------------------- helpers
+
+    /**
+     * Invisible light blocks four above the ground on a loose grid, so the fragment reads at night (the lanterns are
+     * pools of gold, these fill the dark between them). Never where a block already stands.
+     */
+    private static void lights(BlockPlan plan) {
+        for (int x = -36; x <= 36; x += 7) {
+            for (int z = -40; z <= CAUSEWAY_END_Z; z += 7) {
+                int lx = x + h(x, z, 31) % 3 - 1;
+                int lz = z + h(x, z, 32) % 3 - 1;
+                if (!ground(lx, lz) || plan.get(lx, 4, lz) != null || plan.get(lx, 3, lz) != null) {
+                    continue;
+                }
+                plan.set(lx, 4, lz, Material.LIGHT, "level=13");
+            }
+        }
+    }
 
     /** Sets a top surface block only where nothing was placed yet (earlier, more specific pieces win). */
     private static void top(BlockPlan plan, int x, int z, Material m) {
@@ -324,22 +345,64 @@ public final class HubPlan {
         }
     }
 
-    /** The Memory Spire: a cluster of amethyst shards wrapped in light blue glass, a sea lantern in each. */
+    /** Height of the Memory Spire's monolith at scale 1 (its tip cluster is one above). */
+    public static final int SPIRE_HEIGHT = 30;
+
+    /** Height of a spire's monolith at a scale. */
+    static int spireHeight(double scale) {
+        return Math.max(6, (int) Math.round(SPIRE_HEIGHT * scale));
+    }
+
+    /**
+     * The Memory Spire: a tapering monolith of amethyst banded with light blue glass, lit from inside by sea lanterns,
+     * four lesser shards leaning out of its foot, a cluster at its tip. At scale 1 it is the landmark of the whole hub
+     * (thirty blocks); the rim spires are smaller copies. Floating crystal rings turn round its tip (display models).
+     */
     private static void spire(BlockPlan plan, int cx, int cz, double scale) {
-        int[][] shards = {{0, 0, 15}, {2, 1, 10}, {-2, 1, 12}, {1, -2, 9}, {-1, -2, 11}};
-        ShapeKit.disc(plan, cx, 1, cz, 2.6 * Math.max(scale, 0.8), Material.AMETHYST_BLOCK);
-        for (int[] s : shards) {
-            int x = cx + (int) Math.round(s[0] * scale);
-            int z = cz + (int) Math.round(s[1] * scale);
-            int height = Math.max(4, (int) Math.round(s[2] * scale));
-            for (int y = 2; y <= height; y++) {
-                Material m = y % 4 == 0 ? Material.LIGHT_BLUE_STAINED_GLASS
-                    : y == 3 ? Material.SEA_LANTERN : Material.AMETHYST_BLOCK;
-                plan.set(x, y, z, m);
+        int height = spireHeight(scale);
+        double base = 2.6 * Math.max(scale, 0.6);
+        ShapeKit.disc(plan, cx, 1, cz, base + 0.8, Material.AMETHYST_BLOCK);
+        for (int y = 2; y <= height; y++) {
+            double t = (double) (y - 2) / Math.max(1, height - 2);
+            double r = Math.max(0.45, base * Math.pow(1 - t, 0.75));
+            int ri = (int) Math.ceil(r);
+            for (int dx = -ri; dx <= ri; dx++) {
+                for (int dz = -ri; dz <= ri; dz++) {
+                    double d = Math.sqrt((double) dx * dx + dz * dz);
+                    if (d > r + 0.01) {
+                        continue;
+                    }
+                    boolean skin = d > r - 1.0;
+                    Material m = skin && y % 6 == 0 ? Material.LIGHT_BLUE_STAINED_GLASS
+                        : !skin && y % 5 == 3 ? Material.SEA_LANTERN : Material.AMETHYST_BLOCK;
+                    plan.set(cx + dx, y, cz + dz, m);
+                }
             }
-            plan.set(x, height + 1, z, Material.AMETHYST_CLUSTER, "facing=up");
         }
-        plan.set(cx, 2, cz, Material.SEA_LANTERN);
+        plan.set(cx, height + 1, cz, Material.AMETHYST_CLUSTER, "facing=up");
+        // four lesser shards leaning out of the foot
+        for (int k = 0; k < 4; k++) {
+            double a = Math.toRadians(45 + 90 * k + 20 * scale);
+            int h = (int) Math.round(height * (0.42 + 0.07 * k));
+            for (int y = 2; y <= h; y++) {
+                double t = (double) (y - 2) / Math.max(1, h - 2);
+                double out = base + 0.4 + (y - 2) * 0.16;
+                double r = Math.max(0.5, 1.2 * Math.max(scale, 0.6) * (1 - t));
+                int x0 = cx + (int) Math.round(Math.cos(a) * out);
+                int z0 = cz + (int) Math.round(Math.sin(a) * out);
+                int ri = (int) Math.ceil(r);
+                for (int dx = -ri; dx <= ri; dx++) {
+                    for (int dz = -ri; dz <= ri; dz++) {
+                        if (Math.sqrt((double) dx * dx + dz * dz) <= r + 0.01) {
+                            plan.set(x0 + dx, y, z0 + dz, y % 4 == 0 ? Material.LIGHT_BLUE_STAINED_GLASS : Material.AMETHYST_BLOCK);
+                        }
+                    }
+                }
+                if (y == h) {
+                    plan.set(x0, y + 1, z0, Material.AMETHYST_CLUSTER, "facing=up");
+                }
+            }
+        }
         plan.set(cx, 1, cz, Material.AMETHYST_BLOCK);
     }
 
@@ -636,9 +699,12 @@ public final class HubPlan {
 
     /** The Island Gate: a tall pale arch at the end of the north road, an amethyst keystone, a landing beyond. */
     private static void islandGate(BlockPlan plan) {
-        arch(plan, 0, -29, true, 4, 9, 0);
-        plan.set(0, 11, -29, Material.AMETHYST_CLUSTER, "facing=up");
-        plan.set(0, 12, -29, Material.END_ROD, "facing=up");
+        arch(plan, 0, -29, true, 4, 13, 0);
+        plan.set(0, 15, -29, Material.AMETHYST_BLOCK);
+        plan.set(0, 16, -29, Material.AMETHYST_CLUSTER, "facing=up");
+        for (int sx : new int[] {-4, 4}) {
+            plan.set(sx, 15, -29, Material.AMETHYST_CLUSTER, "facing=up");
+        }
         for (int sx : new int[] {-5, 5}) {
             lampPost(plan, sx, -26, 2);
         }
@@ -695,12 +761,12 @@ public final class HubPlan {
         int x = -29;
         for (int sz : new int[] {-4, 4}) {
             plan.set(x, 0, sz, Material.OBSIDIAN);
-            for (int y = 1; y <= 10; y++) {
+            for (int y = 1; y <= (sz < 0 ? 15 : 12); y++) {
                 plan.set(x, y, sz, y % 3 == 0 ? Material.CRYING_OBSIDIAN : Material.OBSIDIAN);
             }
         }
         for (int z = -4; z <= 1; z++) {
-            plan.set(x, 11, z, z == -1 ? Material.CRYING_OBSIDIAN : Material.OBSIDIAN);
+            plan.set(x, 13, z, z == -1 ? Material.CRYING_OBSIDIAN : Material.OBSIDIAN);
         }
         for (int z = -3; z <= 3; z++) {
             for (int y = 1; y <= 10; y++) {
@@ -721,8 +787,8 @@ public final class HubPlan {
 
     /** The processional: ruined arches, lantern posts, the Threshold at its end. */
     private static void processional(BlockPlan plan) {
-        arch(plan, 0, 24, true, 4, 8, 0);
-        arch(plan, 0, 32, true, 4, 8, 1);
+        arch(plan, 0, 24, true, 4, 11, 0);
+        arch(plan, 0, 32, true, 4, 11, 1);
         for (int z = 20; z <= 40; z += 6) {
             if (z == 24 || z == 32 || z == 38) {
                 continue;
@@ -735,11 +801,17 @@ public final class HubPlan {
             }
         }
         // the Threshold: tall pillars either side of the road, a crowned lintel
-        arch(plan, 0, 41, true, 5, 11, 0);
-        plan.set(0, 13, 41, Material.SEA_LANTERN);
-        plan.set(0, 14, 41, Material.END_ROD, "facing=up");
-        plan.set(-5, 13, 41, Material.AMETHYST_CLUSTER, "facing=up");
-        plan.set(5, 13, 41, Material.AMETHYST_CLUSTER, "facing=up");
+        arch(plan, 0, 41, true, 5, 16, 0);
+        plan.set(0, 18, 41, Material.SEA_LANTERN);
+        plan.set(0, 19, 41, Material.END_ROD, "facing=up");
+        plan.set(-5, 18, 41, Material.AMETHYST_CLUSTER, "facing=up");
+        plan.set(5, 18, 41, Material.AMETHYST_CLUSTER, "facing=up");
+        for (int sx : new int[] {-6, 6}) { // buttresses so the Threshold does not read as two sticks
+            plan.set(sx, 0, 41, Material.POLISHED_DIORITE);
+            ShapeKit.column(plan, sx, 1, 7, 41, Material.QUARTZ_PILLAR);
+            plan.set(sx, 8, 41, Material.CHISELED_QUARTZ_BLOCK);
+            plan.set(sx, 9, 41, Material.LANTERN, "hanging=false");
+        }
     }
 
     // ---------------------------------------------------------------- rim and debris
@@ -754,8 +826,16 @@ public final class HubPlan {
                 if (nearPad(x, z, 8) || nearSpire(x, z, 5) || h(x, z, 15) % 40 != 0) {
                     continue;
                 }
-                int height = 1 + h(x, z, 16) % 4;
-                ShapeKit.column(plan, x, 1, height, z, h(x, z, 17) % 3 == 0 ? Material.CRACKED_STONE_BRICKS : Material.QUARTZ_PILLAR);
+                // a colonnade that once stood round the ceremonial quarter: a few still tall, most broken
+                int height = h(x, z, 16) % 3 == 0 ? 7 + h(x, z, 18) % 7 : 1 + h(x, z, 16) % 4;
+                boolean cracked = h(x, z, 17) % 3 == 0;
+                ShapeKit.column(plan, x, 1, height, z, cracked ? Material.CRACKED_STONE_BRICKS : Material.QUARTZ_PILLAR);
+                if (height >= 7) {
+                    plan.set(x, height + 1, z, Material.CHISELED_QUARTZ_BLOCK);
+                    if (!cracked) {
+                        plan.set(x, height + 2, z, Material.LANTERN, "hanging=false");
+                    }
+                }
                 if (ground(x + 1, z) && plan.get(x + 1, 1, z) == null) {
                     plan.set(x + 1, 1, z, Material.MOSS_CARPET);
                 }
@@ -945,7 +1025,7 @@ public final class HubPlan {
         if (u > 1 || approach(x, z) && u > 0.85) {
             return 3;
         }
-        int depth = Math.max(2, (int) Math.round(13 * Math.pow(1 - u, 0.85)) + h(x, z, 3) % 3 - 1);
+        int depth = Math.max(2, (int) Math.round(24 * Math.pow(1 - u, 1.1)) + h(x, z, 3) % 3 - 1);
         if (h(x, z, 5) % 23 == 0 && u < 0.8) {
             depth += 3 + h(x, z, 6) % 4;
         }
@@ -972,6 +1052,16 @@ public final class HubPlan {
                 }
                 if (depth >= 6 && h(x, z, 25) % 17 == 0) {
                     plan.set(x, -depth - 1, z, Material.AMETHYST_CLUSTER, "facing=down");
+                } else if (depth <= 5 && depth >= 3 && h(x, z, 26) % 9 == 0) {
+                    // roots and old chains hang off the rim of the fragment
+                    int len = 2 + h(x, z, 27) % 5;
+                    boolean chain = h(x, z, 28) % 3 == 0;
+                    for (int k = 1; k <= len; k++) {
+                        plan.set(x, -depth - k, z, chain ? Material.IRON_CHAIN : Material.HANGING_ROOTS, chain ? "axis=y" : null);
+                    }
+                    if (chain) {
+                        plan.set(x, -depth - len - 1, z, Material.SOUL_LANTERN, "hanging=true");
+                    }
                 }
             }
         }
