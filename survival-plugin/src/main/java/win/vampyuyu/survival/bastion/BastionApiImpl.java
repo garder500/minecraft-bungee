@@ -35,6 +35,11 @@ public final class BastionApiImpl implements BastionApi {
     }
 
     @Override
+    public boolean busy(java.util.UUID player) {
+        return service.busy(player);
+    }
+
+    @Override
     public boolean inArena(java.util.UUID player) {
         BastionRun run = service.runOf(player);
         return run != null && run.world != null && !run.closed;

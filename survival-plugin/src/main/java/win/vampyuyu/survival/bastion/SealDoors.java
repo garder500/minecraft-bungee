@@ -49,6 +49,8 @@ public final class SealDoors implements Listener {
     private final Supplier<BastionApi> api;
     private final BiConsumer<Player, String> warn;
     private final List<Site> sites;
+    /** Last seal click per player: one click must never open two Bastions (see BastionService#opening). */
+    private final java.util.Map<String, Long> lastClick = new java.util.HashMap<>();
 
     /** The listener of the plugin: {@code config} is read at each click, an {@code /bastion admin reload} swaps it. */
     public SealDoors(Supplier<BastionConfig> config, Supplier<BastionApi> api, BiConsumer<Player, String> warn) {
@@ -149,6 +151,11 @@ public final class SealDoors implements Listener {
         }
         event.setCancelled(true);
         Player player = event.getPlayer();
+        long now = System.currentTimeMillis();
+        Long last = lastClick.put(player.getUniqueId() + ":" + site.realm().id(), now);
+        if (last != null && now - last < 1000) {
+            return; // the same click arriving again, or a second click while the first is still opening
+        }
         BastionApi bastions = api.get();
         String bastion = bastionOf(site.realm());
         if (bastions == null || bastion == null) {

@@ -63,7 +63,7 @@ public class ShippedConfigTest {
                 phase.abilities().stream().anyMatch(a -> a.type() == AbilityType.PERCH && a.num("seconds", 0) >= 4));
         }
         assertTrue("slower than the vanilla dragon", def.speed() < 1.0);
-        assertEquals(curve.bossHealth(5, 180, 0.5) * 0.85, def.health(), curve.bossHealth(5, 180, 0.5) * 0.01);
+        assertEquals(curve.bossHealth(1, 180, 0.5) * 0.85, def.health(), curve.bossHealth(1, 180, 0.5) * 0.01); // tier 1: the entry boss
     }
 
     @Test
@@ -236,7 +236,7 @@ public class ShippedConfigTest {
             assertEquals(java.util.Map.ofEntries(java.util.Map.entry("crypt_lord", 1), java.util.Map.entry("magma_warden", 2),
                 java.util.Map.entry("frost_revenant", 3), java.util.Map.entry("sylvan_matriarch", 3), java.util.Map.entry("mire_abomination", 3),
                 java.util.Map.entry("temporal_pharaoh", 3), java.util.Map.entry("abyssal_leviathan", 4), java.util.Map.entry("thunder_dragon", 4),
-                java.util.Map.entry("voidwyrm", 5), java.util.Map.entry("devourer", 5), java.util.Map.entry("hell_gao", 5)), tiers);
+                java.util.Map.entry("voidwyrm", 1), java.util.Map.entry("devourer", 5), java.util.Map.entry("hell_gao", 5)), tiers);
         }
     }
 }

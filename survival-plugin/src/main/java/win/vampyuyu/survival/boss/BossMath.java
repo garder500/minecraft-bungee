@@ -32,6 +32,14 @@ public final class BossMath {
     }
 
     /** Damage kept after a defense value: {@code 100 / (100 + defense)}, so 100 defense halves the damage. */
+    /**
+     * The damage a hit lands on a boss before its Defense: a projectile on a flyer that is in the air (not stunned on the
+     * ground) is multiplied by {@code flyerArrowMultiplier}; anything else is unchanged.
+     */
+    public static double flyerHit(double raw, boolean projectile, boolean flyer, boolean grounded, double flyerArrowMultiplier) {
+        return projectile && flyer && !grounded ? raw * Math.max(1, flyerArrowMultiplier) : raw;
+    }
+
     public static double defenseMultiplier(double defense) {
         return 100.0 / (100.0 + Math.max(0, defense));
     }

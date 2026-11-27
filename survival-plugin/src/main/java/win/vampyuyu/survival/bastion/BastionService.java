@@ -41,6 +41,12 @@ public final class BastionService {
     private final RunManager.WorldFactory worlds;
     private final Map<Integer, BastionRun> runs = new LinkedHashMap<>();
     private final Map<UUID, BastionRun> byPlayer = new HashMap<>();
+    /**
+     * Players whose Bastion is being created right now. Creating the world runs the server's pending tasks, the player's
+     * next packets among them, so a second interaction of the same click came back into {@link #enter} before the first
+     * had put the player in {@link #byPlayer}: one click on a seal opened two Bastions (seen in production 2026-11-27).
+     */
+    private final java.util.Set<UUID> opening = new java.util.HashSet<>();
     private final List<BastionHook> hooks = new ArrayList<>();
     private int counter;
     private boolean shuttingDown;
@@ -97,6 +103,9 @@ public final class BastionService {
     }
 
     public boolean inBastion(UUID player) { return byPlayer.containsKey(player); }
+
+    /** In a run, or one is being created for the player right now. */
+    public boolean busy(UUID player) { return byPlayer.containsKey(player) || opening.contains(player); }
 
     /** Number of keys of the item in the inventory. */
     int keysOf(Player p, String keyItem) {
@@ -162,7 +171,7 @@ public final class BastionService {
             if (p == null || !p.isOnline()) {
                 return name + " is offline.";
             }
-            if (byPlayer.containsKey(id)) {
+            if (byPlayer.containsKey(id) || opening.contains(id)) {
                 return name + " is already in a Bastion.";
             }
             if (RunManager.inDungeonWorld(p) || SkyblockWorlds.isBastion(p.getWorld().getName())) {
@@ -176,6 +185,18 @@ public final class BastionService {
                     String name = party == null ? leader.getName() : party.nameOf(id);
                     return name + " has not cleared " + RaidRules.names(cfg, missing)
                         + ". The Devourer only wakes for those who beat the Guardians.";
+                }
+            }
+        }
+        // A Realm's Bastion is behind that Realm's seal: /bastion enter must not skip the Gate that leads there
+        String realmId = cfg.realmOf(b.id());
+        win.vampyuyu.survival.api.Realm realm = realmId == null ? null : win.vampyuyu.survival.api.Realm.byId(realmId);
+        Optional<win.vampyuyu.survival.api.SkyGateApi> gates = core.service(win.vampyuyu.survival.api.SkyGateApi.class);
+        if (realm != null && gates.isPresent()) {
+            for (UUID id : members) {
+                if (!gates.get().isLit(id, realm)) {
+                    String name = party == null ? leader.getName() : party.nameOf(id);
+                    return name + " has not woken the Gate of the " + realm.title() + " yet. Its Bastion lies beyond it.";
                 }
             }
         }
@@ -214,6 +235,17 @@ public final class BastionService {
         }
         Party party = partyOf(leader);
         List<UUID> members = membersOf(leader);
+        opening.addAll(members);
+        try {
+            return createRun(leader, b, party, members);
+        } finally {
+            opening.removeAll(members);
+        }
+    }
+
+    /** Creates the instance and brings the party in (see {@link #opening} for why it is guarded). */
+    private @org.jspecify.annotations.Nullable String createRun(Player leader, BastionConfig.Bastion b, @org.jspecify.annotations.Nullable Party party,
+            List<UUID> members) {
         BastionRun run = new BastionRun(++counter, b, leader.getUniqueId(), party == null ? null : party.id);
         World world;
         try {

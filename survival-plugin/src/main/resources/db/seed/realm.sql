@@ -54,7 +54,7 @@ INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('pressure_pea
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('pressure_pearl', 'block', 'PRISMARINE_BRICKS');
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('pressure_pearl', 'mob', 'GUARDIAN');
 INSERT INTO realm_resource_source (resource_id, kind, key) VALUES ('pressure_pearl', 'mob', 'DROWNED');
-INSERT INTO setting (id, type, value, note) VALUES ('realm.depths.gate-boss', 'text', 'sylvan_matriarch', 'Boss id whose defeat lights the Sky Gate of the Abyssal Depths for the players who fought it (a proposal: the Guardian of Realm 2).');
+INSERT INTO setting (id, type, value, note) VALUES ('realm.depths.gate-boss', 'text', 'thunder_dragon', 'Linear chain (each Realm''s Guardian lights the next Gate): the Thunder Dragon (Archipelago, Gate 6) lights the Abyssal Depths (Gate 7) for the players who fought it.');
 -- Thunder Quartz (Tempestuous Archipelago). The nodes of the zone give it for sure; these rows are the pity roll for the rest.
 INSERT INTO realm_world (world, realm) VALUES ('sb_storm', 'archipelago');
 INSERT INTO realm_resource (id, realm, item, p0, soft, dur, amount_min, amount_max) VALUES ('thunder_quartz', 'archipelago', 'thunder_quartz', 0.06, 12, 36, 1, 1);

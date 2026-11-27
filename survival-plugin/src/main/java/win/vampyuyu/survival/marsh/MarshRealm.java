@@ -50,7 +50,7 @@ import win.vampyuyu.survival.island.WorldSetup;
  * destination of the fifth Sky Gate. Mechanics: a miasma that weakens (until the Filtered affinity), the Rot Vats where
  * expired items are salvaged into Rot Resin rolls ({@link Salvage}) and purification points ({@link MarshProgress}), a rescue
  * from the void, and no building on the landing. The Gate lights for the players who defeat the boss named by the setting
- * {@code island.marsh.gate-boss} (the Mycelial Queen by default, the previous Guardian of the chain).
+ * {@code island.marsh.gate-boss} (the Temporal Pharaoh by default, the previous Guardian of the chain).
  */
 public final class MarshRealm implements Listener {
     public static final String WORLD = SkyblockWorlds.MARSH;
@@ -58,7 +58,7 @@ public final class MarshRealm implements Listener {
     public static final String RESIN = "rot_resin";
     public static final String VAT_KIND = "vat";
     private static final String LANE = "marsh";
-    private static final String DEFAULT_GATE_BOSS = "sylvan_matriarch";
+    private static final String DEFAULT_GATE_BOSS = "temporal_pharaoh";
     private static final int MIASMA_TICKS = 100;
     private static final int VOID_DEPTH = 70;
 

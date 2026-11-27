@@ -195,7 +195,8 @@ public final class BossListener implements Listener {
             notice(player, "boss-shield", "The shield absorbs your attacks. Destroy the crystals!");
             return;
         }
-        double raw = event.getDamage();
+        double raw = BossMath.flyerHit(event.getDamage(), by.getDamager() instanceof Projectile,
+            session.entity() instanceof org.bukkit.entity.EnderDragon, session.grounded(), session.settings.flyerArrowMultiplier());
         double damage = raw * BossMath.defenseMultiplier(session.def.armor());
         double credited = session.applyHit(player, damage);
         event.setCancelled(false); // bosses are exempt from region protections (hub, claims)
@@ -271,6 +272,12 @@ public final class BossListener implements Listener {
         BossSession session = manager.sessionOfBoss(damager);
         if (session == null || session.inAbilityHit()) {
             return; // an ability hit: the amount already includes its multiplier
+        }
+        if (session.grounded()) {
+            // a stunned flyer is the opening: a landed dragon still hurts whoever touches its head or neck (vanilla does
+            // that even when sitting), which this listener turned into a full boss hit. Its abilities still land.
+            event.setCancelled(true);
+            return;
         }
         // always the boss's own number: the held weapon and the world difficulty must not add to it
         event.setDamage(Math.max(0.5, session.hitDamage(1.0)));

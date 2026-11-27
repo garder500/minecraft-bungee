@@ -99,6 +99,8 @@ public final class BossSession {
     final Random random = new Random();
     final Set<UUID> minions = new HashSet<>();
     final Map<UUID, Integer> crystals = new HashMap<>();
+    /** Where each crystal or anchor was spawned: it is collidable (projectiles need that), so a player could shove it. */
+    private final Map<UUID, Location> crystalHomes = new HashMap<>();
     private final List<Scheduler.Handle> handles = new ArrayList<>();
     private final Map<Long, Long> nextCast = new HashMap<>();
     private final Set<UUID> barViewers = new HashSet<>();
@@ -538,8 +540,17 @@ public final class BossSession {
         updateShield();
         updateAnchors();
         contactDamage(inArena);
+        // a hit above can kill the last fighter, and a Bastion then aborts the fight from the death event: end() has run
+        // in the middle of this tick. Going on re-showed the bar end() had just hidden, and nothing ever hid it again
+        // (it stayed on screen in the Hub, frozen at the last health).
+        if (ended) {
+            return;
+        }
         if (!shielded && ticks >= gcdUntil && ticks >= casting && !inArena.isEmpty()) {
             castNext();
+        }
+        if (ended) {
+            return;
         }
         updateBar();
         updateNameplate();
@@ -757,19 +768,21 @@ public final class BossSession {
     /** Spawns the crystals of a shield or of the anchors, evenly around the arena centre; they are tracked in {@link #crystals}. */
     private void spawnCrystals(int count, double radius, double height, int hitsPerCrystal, org.bukkit.Color look) {
         crystals.clear();
+        crystalHomes.clear();
         for (int i = 0; i < count; i++) {
             double angle = 2 * Math.PI * i / count + random.nextDouble() * 0.3;
             Location at = anchor.clone().add(Math.cos(angle) * radius, height, Math.sin(angle) * radius);
             try {
                 // the hit box: an invisible, silent, still slime (melee and arrows both land on it); the look is ours, a
-                // glowing shard turning over it (BossVfx), never the vanilla End crystal
+                // glowing shard turning over it (BossVfx), never the vanilla End crystal. It must stay collidable: on
+                // Paper setCollidable(false) also makes the entity unpickable, and arrows then fly straight through it
+                // (a mod emptied a quiver into the Echo's crystals). keepCrystalsHome undoes any shove instead.
                 org.bukkit.entity.Slime crystal = world.spawn(at, org.bukkit.entity.Slime.class, sl -> {
                     sl.setSize(2);
                     sl.setInvisible(true);
                     sl.setSilent(true);
                     sl.setAI(false);
                     sl.setGravity(false);
-                    sl.setCollidable(false);
                     sl.setRemoveWhenFarAway(false);
                 });
                 crystal.setPersistent(false);
@@ -777,6 +790,7 @@ public final class BossSession {
                     2.2, 20 * 120);
                 crystal.getPersistentDataContainer().set(Tags.MINION, PersistentDataType.STRING, sessionId.toString());
                 crystals.put(crystal.getUniqueId(), hitsPerCrystal);
+                crystalHomes.put(crystal.getUniqueId(), crystal.getLocation());
                 manager.registerAux(crystal.getUniqueId(), this);
                 if (owner != null) {
                     hideFromEveryoneButOwner(crystal);
@@ -842,6 +856,7 @@ public final class BossSession {
                 dead.add(id);
                 continue;
             }
+            keepHome(anchor);
             if (ticks % 10 == 0) {   // the chain to the boss, redrawn every half second as both move
                 BossVfx.beam(anchor.getLocation().add(0, 1, 0), boss, "beam", BossVfx.TIDE, 0.35, 11);
             }
@@ -877,6 +892,7 @@ public final class BossSession {
             }
         }
         crystals.clear();
+        crystalHomes.clear();
         if (broken) {
             vulnerableUntil = ticks + 160;
             broadcastNearby(MINI.deserialize("<green><bold>The chains snap! <gray>" + plain(def.name())
@@ -905,6 +921,7 @@ public final class BossSession {
                 dead.add(id);
                 continue;
             }
+            keepHome(crystal);
             if (ticks % 10 == 0) {   // the crystal feeding the shield, redrawn every half second
                 BossVfx.beam(crystal.getLocation().add(0, 1, 0), boss, "beam", BossVfx.RIFT, 0.3, 11);
             }
@@ -917,6 +934,15 @@ public final class BossSession {
         }
         if (ticks >= shieldDeadline) {
             endShield(false);
+        }
+    }
+
+    /** Puts a crystal or anchor shoved by a player (they are collidable) back where it was spawned. */
+    private void keepHome(org.bukkit.entity.Entity crystal) {
+        Location home = crystalHomes.get(crystal.getUniqueId());
+        if (home != null && crystal.getLocation().distanceSquared(home) > 0.01) {
+            crystal.teleport(home);
+            crystal.setVelocity(new Vector(0, 0, 0));
         }
     }
 
@@ -940,6 +966,7 @@ public final class BossSession {
             return;
         }
         crystals.remove(crystalId);
+        crystalHomes.remove(crystalId);
         manager.unregisterAux(crystalId);
         if (crystal != null) {
             BossVfx.impact(crystal.getLocation(), BossVfx.RIFT, 2.5);
@@ -962,6 +989,7 @@ public final class BossSession {
             }
         }
         crystals.clear();
+        crystalHomes.clear();
         if (broken) {
             vulnerableUntil = ticks + 160;
             broadcastNearby(MINI.deserialize("<green><bold>The shield shatters! <gray>" + plain(def.name())
@@ -1207,7 +1235,7 @@ public final class BossSession {
     }
 
     private void updateBar() {
-        if (bar == null) {
+        if (bar == null || ended) {
             return;
         }
         bar.name(barTitle());
@@ -1341,6 +1369,7 @@ public final class BossSession {
             }
         }
         crystals.clear();
+        crystalHomes.clear();
         if (entity != null && entity.isValid()) {
             entity.remove();
         }

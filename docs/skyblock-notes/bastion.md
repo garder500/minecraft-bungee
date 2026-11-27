@@ -39,6 +39,9 @@ Table `bastion` (migration V017, seed `bastion.sql`, domain `ContentDomains.BAST
 `vampyuyu.sb.bastion.admin`.
 
 ## Seals: where a Realm's exploration ends (`bastion/SealDoors.java`)
+* **Gate first**: a Realm's Bastion (the one its seal opens, `BastionConfig.realmOf`) refuses `/bastion enter` (and the seal)
+  until every party member has lit that Realm's Gate (`SkyGateApi.isLit`), so the command cannot skip the Gate chain. Bastions no
+  seal opens (the Echo's Rift, the Interpulse Rift, the Raid) keep their own rules.
 Every Realm ends at a sealed door next to its Guardian. Right-clicking the **seal block** (main hand, any item or none) calls
 `BastionApi.enter` exactly like `/bastion enter`: the key, the party and every refusal are the Bastion's own (a missing key
 is refused by its display name: "You need a Ashes Bastion Key to open the Ashes Bastion..."). One listener for the eight

@@ -50,6 +50,41 @@ class BastionConfigTest {
     }
 
     @Test
+    void aRealmsBastionIsFoundBehindItsSeal() {
+        BastionConfig cfg = BastionConfig.load(seeded());
+        assertEquals("heights", cfg.realmOf("heights_bastion"));
+        assertEquals("archipelago", cfg.realmOf("tempest_bastion"));
+        assertEquals("necropolis", cfg.realmOf("necropolis_bastion"));
+        // no seal opens these: they keep their own rules (Hub altar, Interpulse, the Raid's eight clears)
+        assertEquals(null, cfg.realmOf("echo_rift"));
+        assertEquals(null, cfg.realmOf("devourer_raid"));
+        assertEquals(null, cfg.realmOf("hell_gao_bastion"));
+    }
+
+    /** The Gates are a straight chain: the Guardian of Realm N (its Bastion's boss) lights Gate N+1. */
+    @Test
+    void eachGuardianLightsTheNextGate() {
+        Db db = Db.memory();
+        Seeds.sync(db, List.of(ContentDomains.BASTION, ContentDomains.ISLAND, ContentDomains.REALM), null);
+        BastionConfig cfg = BastionConfig.load(db);
+        win.vampyuyu.survival.data.Settings island = win.vampyuyu.survival.data.Settings.load(db, "island");
+        win.vampyuyu.survival.data.Settings realm = win.vampyuyu.survival.data.Settings.load(db, "realm");
+        java.util.Map<win.vampyuyu.survival.api.Realm, String> gateBoss = new java.util.EnumMap<>(win.vampyuyu.survival.api.Realm.class);
+        gateBoss.put(win.vampyuyu.survival.api.Realm.GROVE, island.getString("grove.gate-boss", ""));
+        gateBoss.put(win.vampyuyu.survival.api.Realm.HEIGHTS, island.getString("frost.gate-boss", ""));
+        gateBoss.put(win.vampyuyu.survival.api.Realm.CITADEL, island.getString("citadel.gate-boss", ""));
+        gateBoss.put(win.vampyuyu.survival.api.Realm.MARSHES, island.getString("marsh.gate-boss", ""));
+        gateBoss.put(win.vampyuyu.survival.api.Realm.ARCHIPELAGO, island.getString("storm.gate-boss", ""));
+        gateBoss.put(win.vampyuyu.survival.api.Realm.DEPTHS, realm.getString("depths.gate-boss", ""));
+        gateBoss.put(win.vampyuyu.survival.api.Realm.NECROPOLIS, island.getString("necropolis.gate-boss", ""));
+        win.vampyuyu.survival.api.Realm[] order = win.vampyuyu.survival.api.Realm.values();
+        for (int i = 1; i < order.length; i++) {
+            String previousGuardian = cfg.get(cfg.seals.get(order[i - 1].id())).orElseThrow().guardian();
+            assertEquals(previousGuardian, gateBoss.get(order[i]), "Gate " + (i + 1) + " " + order[i].id());
+        }
+    }
+
+    @Test
     void everyGuardianIsABossOfTheSeed() {
         Db boss = BossTestData.seeded();
         BastionConfig cfg = BastionConfig.load(seeded());

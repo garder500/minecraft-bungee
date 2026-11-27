@@ -6,7 +6,7 @@ Package `marsh/` (feature `marsh`, listed after `ashes`). Written without a Pape
   (marker `realms/marsh-world.json`, bump `MarshPlan.VERSION` to rebuild): sunken bog island, five pools, four islets on
   causeways (Vat Works, Landfill, Weeping Mangrove, Overflow Pit), three **Rot Vats** (water cauldrons), landing at the Gate.
 - **Gate**: `SkyGateApi.setDestination(Realm.MARSHES, ...)`; lit by defeating the boss in setting `island.marsh.gate-boss`
-  (default `sylvan_matriarch`, the previous Guardian: a guess, edit in the panel).
+  (default `temporal_pharaoh`, the Citadel's Guardian: the Gates are a straight chain, edit in the panel).
 - **Rot Resin** (`rot_resin`, `RealmItems`, seed `realm.sql`): same pity shape as the other local resources (6 % / 12 / 36, a
   proposal), from muddy mangrove roots, slime blocks, sculk, slimes, witches, drowned. The name was "to validate" in the GDD.
   Vat salvage rolls use the pity kind `vat`.

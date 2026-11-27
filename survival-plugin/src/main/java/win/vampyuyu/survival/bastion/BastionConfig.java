@@ -27,6 +27,19 @@ public final class BastionConfig {
     public List<String> raidRequires = List.of();
     /** The Bastion each Realm's seal opens, by {@link win.vampyuyu.survival.api.Realm#id()} (settings {@code bastion.seal.<realm>}). */
     public Map<String, String> seals = new LinkedHashMap<>();
+
+    /**
+     * The Realm whose seal opens {@code bastionId} (a {@link win.vampyuyu.survival.api.Realm} id), or null for a Bastion no
+     * seal opens (the Echo's Rift in the Hub, the Interpulse Rift, the Raid): those keep their own rules.
+     */
+    public @org.jspecify.annotations.Nullable String realmOf(String bastionId) {
+        for (Map.Entry<String, String> e : seals.entrySet()) {
+            if (e.getValue().equalsIgnoreCase(bastionId)) {
+                return e.getKey();
+            }
+        }
+        return null;
+    }
     /** Coins each member gets the first time they clear the Raid (GDD 16.2: at most 5 000). */
     public double raidFirstClearCoins = 4000;
     /** Phase index (0 = first) from which the arena collapses. */

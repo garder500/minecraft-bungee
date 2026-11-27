@@ -9,8 +9,8 @@ Seven islands in a chain, joined by movement mechanics instead of bridges: **Gal
 moving platform -> **Weathervane Isle** -> wind pad -> **Rod Field** -> moving platform -> **Cirrus Shelf** -> wind pad ->
 **Maelstrom Heart** -> moving platform -> **Roc Roost** -> wind pad -> **Dragon's Eyrie** (the Sarcophagus seal).
 Every island has its own height. Landmarks give a title and a lore line the first time a player stands on them.
-Gate 6 lights for whoever defeats the boss of the setting `island.storm.gate-boss` (default `sylvan_matriarch`, the
-Mycelial Queen: the Realms are opened in the order of the GDD); `/gateadmin light <player> archipelago` also works, and
+Gate 6 lights for whoever defeats the boss of the setting `island.storm.gate-boss` (default `mire_abomination`, the
+Marshes' Guardian: the Gates are a straight chain); `/gateadmin light <player> archipelago` also works, and
 `/storm go force` (admin) skips the Gate. Back: `/quai`, `/hub`.
 
 ## Movement prototype (GDD 12.5)

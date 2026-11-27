@@ -36,14 +36,14 @@ import win.vampyuyu.survival.data.Settings;
  * its mechanic: the Time Tide ({@link TimeTide}). In a surge, time runs fast for the players here (Speed and Haste); in a
  * stall it crawls (Slowness). The same tide drives the Chrono Module of the Miners, so the Citadel is where players learn
  * to read it. Dust rises from the four columns, and a fall into the void brings the player back to the landing. The Gate
- * lights for the players who defeat the boss named by the setting {@code island.citadel.gate-boss} (the Mycelial Queen).
+ * lights for the players who defeat the boss named by the setting {@code island.citadel.gate-boss} (the Boreal Watcher of the Heights: each Guardian lights the next Gate).
  */
 public final class CitadelRealm implements Listener {
     public static final String MARKER_FILE = "island/citadel-build.json";
     public static final int SURFACE_Y = 100;
     private static final String LANE = "hub";
     private static final int EFFECT_TICKS = 60;
-    private static final String DEFAULT_GATE_BOSS = "sylvan_matriarch";
+    private static final String DEFAULT_GATE_BOSS = "frost_revenant";
 
     /** Persisted build marker. */
     public static final class Marker {
