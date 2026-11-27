@@ -82,6 +82,7 @@ public class BossSeedTest {
         Seeds.sync(db, List.of(ContentDomains.BOSS), null);
         assertEquals(0, count(db, "boss", "tier IS NULL"));
         assertEquals(1, count(db, "boss", "id = 'crypt_lord' AND tier = 1"));
-        assertEquals(1, count(db, "boss", "id = 'voidwyrm' AND tier = 5"));
+        // the Echo opens Gate 1: the first boss of the climb, below the Lava Colossus (tier 2), not an endgame boss
+        assertEquals(1, count(db, "boss", "id = 'voidwyrm' AND tier = 1"));
     }
 }

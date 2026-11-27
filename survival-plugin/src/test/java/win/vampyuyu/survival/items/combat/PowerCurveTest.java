@@ -223,7 +223,9 @@ public class PowerCurveTest {
         }
         // bosses of the same tier share the health, a higher tier has more
         assertEquals(config.bosses().get("frost_revenant").health(), config.bosses().get("sylvan_matriarch").health(), 0);
-        assertTrue(config.bosses().get("voidwyrm").health() > config.bosses().get("abyssal_leviathan").health());
+        // the Echo is the entry boss (Gate 1): softer and weaker-hitting than the Lava Colossus it leads to
+        assertTrue(config.bosses().get("voidwyrm").health() < config.bosses().get("magma_warden").health());
+        assertTrue(config.bosses().get("voidwyrm").damage() < config.bosses().get("magma_warden").damage());
         assertTrue("only the flying Echo and the final Raid have their own factor", config.bosses().values().stream()
             .filter(b -> hpFactor(b) != 0.5).map(BossDefinition::id).allMatch(id -> id.equals("voidwyrm") || id.equals("devourer")));
         assertTrue(config.bosses().get("abyssal_leviathan").health() > config.bosses().get("frost_revenant").health());
@@ -241,11 +243,12 @@ public class PowerCurveTest {
     }
 
     @Test
-    public void theVoidwyrmHasAboutFortyFourThousandHealthAtTierFive() {
+    public void theEchoIsAnEntryBossAtTierOne() {
         BossDefinition wyrm = config.bosses().get("voidwyrm");
-        // GDD 8.7: DPS_ref(5) 576 x 180 s x 0.5, then 85 % because it flies (boss.settings.hp-factor.voidwyrm 0.425)
-        assertEquals(52_000 * 0.85, wyrm.health(), 520);
-        assertEquals(576, curve.referenceDps(5), 1e-6);
+        // tier 1 since 2026-11-27 (it opens Gate 1; at tier 5 it hit for 147 against Hell Gao's 12): the tier-1 health
+        // (crypt_lord's 10 368) times 85 % because it flies (boss.settings.hp-factor.voidwyrm 0.425)
+        assertEquals(10_368 * 0.85, wyrm.health(), 2);
+        assertEquals(curve.bossHitDamage(1), wyrm.damage(), 1e-9);
         assertEquals(1.0, BossSettings.parse(Settings.load(db, "boss")).hpScale(), 0); // no second halving on top
     }
 
