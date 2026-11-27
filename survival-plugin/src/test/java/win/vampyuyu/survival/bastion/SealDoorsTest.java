@@ -134,6 +134,18 @@ public class SealDoorsTest {
         assertTrue("no refusal when the Bastion opens", warned.isEmpty());
     }
 
+    /** Production 2026-11-27: one click on the Grove seal came in twice and opened two Bastions. */
+    @Test
+    public void theSameClickArrivingTwiceOpensOneBastion() {
+        Player player = server.addPlayer("Seeker");
+        Block seal = sealBlock(site(Realm.GROVE));
+        click(player, seal, Action.RIGHT_CLICK_BLOCK, EquipmentSlot.HAND);
+        PlayerInteractEvent again = click(player, seal, Action.RIGHT_CLICK_BLOCK, EquipmentSlot.HAND);
+        assertTrue("the repeat is still swallowed", again.isCancelled());
+        assertEquals(List.of("grove_bastion"), entered);
+        assertTrue(warned.isEmpty());
+    }
+
     @Test
     public void theBastionsOwnRefusalIsShownAsItIs() {
         refusal = "You need a Ashes Bastion Key to open the Ashes Bastion. The party leader spends it when the fight opens.";

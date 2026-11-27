@@ -30,4 +30,9 @@ public interface BastionApi {
     default boolean inArena(java.util.UUID player) {
         return false;
     }
+
+    /** True while the player is in a Bastion run or one is being opened for them (a key there is no summon item). */
+    default boolean busy(java.util.UUID player) {
+        return false;
+    }
 }

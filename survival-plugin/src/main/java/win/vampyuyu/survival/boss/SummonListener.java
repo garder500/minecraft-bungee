@@ -70,6 +70,11 @@ public final class SummonListener implements Listener {
                 .map(b -> b.isSeal(event.getClickedBlock())).orElse(false)) {
             return; // a key against its seal is the seal's business (SealDoors): no "take it to a gate" refusal
         }
+        if (core.service(win.vampyuyu.survival.api.BastionApi.class).map(b -> b.busy(event.getPlayer().getUniqueId())).orElse(false)
+                && core.service(win.vampyuyu.survival.api.BastionApi.class).flatMap(b -> b.bastionOfKey(id.get())).isPresent()) {
+            event.setCancelled(true); // the same click that opened the Bastion, or a key carried inside: not a summon
+            return;
+        }
         if (def == null) {
             if (BossItems.byId().containsKey(id.get()) && BossItems.byId().get(id.get()).type().equals("SUMMON ITEM")) {
                 event.setCancelled(true);
